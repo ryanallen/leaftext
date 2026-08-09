@@ -363,7 +363,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             &vault_state.vaults(),
             vault_state.active,
         ))
-        .with_initialization_script(initial_state_script(&recent.files))
+        .with_initialization_script(initial_state_script(&recent.files, &favorites))
         .with_initialization_script(initial_document_exts_script())
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script())

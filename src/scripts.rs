@@ -8,17 +8,17 @@ fn call_with_json(function: &str, value: &serde_json::Value) -> String {
     format!("{function}({value});")
 }
 
-/// Initial workspace state as `window.__leafInitialState`. Run as an init script (before any page script) so the boot bootstrap applies it on the first render.
-pub fn initial_state_script(recent: &[PathBuf]) -> String {
-    let recent: Vec<String> = recent
-        .iter()
-        .map(|path| path.display().to_string())
-        .collect();
-    let state = serde_json::json!({
-        "recent": recent,
-        "document": serde_json::Value::Null,
-    });
-    format!("window.__leafInitialState = {};", state)
+/// Initial workspace state as `window.__leafInitialState`. Run as an init script (before any page script) so the boot bootstrap applies it on the first render. Both lists, because the start screen draws both and a cold launch is the one render nothing else answers for.
+pub fn initial_state_script(recent: &[PathBuf], favorites: &Favorites) -> String {
+    let state = workspace_payload(recent, favorites, &[], None, None);
+    format!(
+        "window.__leafInitialState = {};",
+        serde_json::json!({
+            "recent": state["recent"],
+            "favorites": state["favorites"],
+            "document": serde_json::Value::Null,
+        })
+    )
 }
 
 /// Persisted UI toggles as `window.__leafSettings`. Run as an init script so theme and library pane render from saved state on the first paint. Keys are camelCase to match the frontend, not the snake_case on-disk format.

@@ -119,13 +119,18 @@ fn normalize_entries_collapses_existing_duplicate_spellings_on_load() {
 fn recent_files_are_deduplicated_and_limited() {
     let mut recent = RecentFiles::default();
 
-    for index in 0..10 {
+    // One past the cap, so the oldest is the one that has to go.
+    for index in 0..=MAX_RECENT_FILES {
         recent.record(PathBuf::from(format!("file-{index}.md")));
     }
     recent.record(PathBuf::from("file-5.md"));
 
     assert_eq!(recent.files.first(), Some(&PathBuf::from("file-5.md")));
     assert_eq!(recent.files.len(), MAX_RECENT_FILES);
+    assert_eq!(MAX_RECENT_FILES, 50);
+    // Deep enough that yesterday's reading is still in it: the first file opened is what falls off, not the ninth.
+    assert!(!recent.files.contains(&PathBuf::from("file-0.md")));
+    assert!(recent.files.contains(&PathBuf::from("file-1.md")));
     assert_eq!(
         recent
             .files

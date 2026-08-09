@@ -150,6 +150,7 @@ Beyond `-Doc`, `-Width`, `-Height`, `-ThemeFamily` and `-ThemeMode`:
 | `-LibraryOpen` | Opens the [library](../01-features/03-library.md) pane |
 | `-Vault <folder>` | Registers a [vault](../01-features/03-library.md#vaults). The search box and the vault switcher do not exist without one |
 | `-Recents <files>` | Fills the home screen's [recent files](../01-features/02-navigation.md#recent-files) list |
+| `-Favorites <files>` | Fills the home screen's [favorites](../01-features/02-navigation.md#favorites) column. Without one the screen draws the recent list alone |
 | `-Unlocked` | Lifts the [padlocks](../01-features/07-editing.md#the-padlock), for a picture of typing in the page or the source |
 | `-GraphScope <size>` | How much of the link graph the [graph view](../01-features/03-library.md#graph) draws: `small`, `medium`, `large` or `xl`. A big vault at `xl` is a hairball with no readable name in it |
 | `-Do <steps>` | Drives the window before the shot: `click:X,Y`, `rclick:X,Y`, `move:X,Y`, `drag:X1,Y1,X2,Y2`, `hold:…` (a drag caught mid-gesture), `scroll:X,Y,NOTCHES`, `type:text`, `key:{ESC}`, `wait:MS` |

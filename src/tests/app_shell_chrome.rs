@@ -23,11 +23,11 @@ fn app_shell_csp_allows_bundled_data_fonts() {
 
 #[test]
 fn every_bottom_sheet_is_the_same_bottom_sheet() {
-    // The glossary, the theme picker and the flowchart editor's shape picker all slide up from the bottom, and all differ only in what they are anchored to and filled with. A fourth that forgets the class gets no slide and no grip.
+    // The glossary, the theme picker, the flowchart editor's shape picker and a folded start-screen list all slide up from the bottom, and all differ only in what they are anchored to and filled with. A fifth that forgets the class gets no slide and no grip.
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    for sheet in ["glossarySheet", "themeSheet", "flowPicker"] {
+    for sheet in ["glossarySheet", "themeSheet", "flowPicker", "homeSheet"] {
         let at = html
             .find(&format!("id=\"{sheet}\""))
             .unwrap_or_else(|| panic!("{sheet} is in the shell"));
@@ -44,8 +44,8 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
         );
     }
     // One grab bar and one X, each defined once.
-    assert_eq!(html.matches("class=\"leaf-sheet-grip\"").count(), 3);
-    assert_eq!(html.matches("class=\"leaf-sheet-close\"").count(), 3);
+    assert_eq!(html.matches("class=\"leaf-sheet-grip\"").count(), 4);
+    assert_eq!(html.matches("class=\"leaf-sheet-close\"").count(), 4);
     for bespoke in [
         ".glossary-sheet-grip",
         ".theme-sheet-grip",
@@ -60,8 +60,8 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
     assert_contains(&css, ".leaf-sheet-close {");
     assert_contains(&css, ".leaf-sheet-grip {");
     assert_contains(&css, ".leaf-sheet.open {");
-    // And one scrim behind all of them, rather than four identical ones — the three sheets plus the confirmation, which is not a sheet but dims the page the same way. The flowchart picker opens over the flow sheet, so only its layer differs.
-    assert_eq!(html.matches("class=\"lt-backdrop\"").count(), 4);
+    // And one scrim behind all of them, rather than five identical ones — the four sheets plus the confirmation, which is not a sheet but dims the page the same way. The flowchart picker opens over the flow sheet, so only its layer differs.
+    assert_eq!(html.matches("class=\"lt-backdrop\"").count(), 5);
     assert_contains(&css, ".lt-backdrop {");
     assert_contains(
         rule_body(&css, "#flowBackdrop {"),
@@ -97,7 +97,20 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
         assert_contains(&css, wearer);
     }
     // A second definition is how the pane ended up with a bar 10px wide beside a reader's at 14.
-    assert_eq!(css.matches("::-webkit-scrollbar-thumb").count(), 12);
+    assert_eq!(css.matches("::-webkit-scrollbar-thumb").count(), 13);
+    // The one rule outside that shared definition, and all it may say is what color the thumb is and how it fades: the home lists show theirs while the list is moving and take it away after. Its width, its inset and the floor under its length stay the shared ones.
+    let home = rule_body(
+        &css,
+        "\n.home-list-scroll.leaf-scroll::-webkit-scrollbar-thumb {",
+    );
+    assert_eq!(
+        home.lines()
+            .filter(|line| line.contains(':') && !line.contains("::-webkit"))
+            .count(),
+        2,
+        "a thumb rule of its own may set a color and the fade that takes it away, nothing else"
+    );
+    assert_contains(home, "background-color: var(--home-list-thumb);");
     assert_contains(&html, "flow-picker-body leaf-scroll");
 }
 
@@ -809,10 +822,12 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
     }
 
     let initial_state_position = html
-        .find("window.leafSetState(window.__leafInitialState || { recent: [], document: null });")
+        .find(
+            "window.leafSetState(window.__leafInitialState || { recent: [], favorites: [], document: null });",
+        )
         .expect("app shell renders the initial empty state");
     let state_declaration = html
-        .find("let currentState = { recent: [], tabs: [], active: null, document: null };")
+        .find("let currentState = { recent: [], favorites: [], tabs: [], active: null, document: null };")
         .expect("app shell declares reader state");
     assert!(
         state_declaration < initial_state_position,
@@ -1073,18 +1088,20 @@ fn the_app_carries_no_gallery_of_its_own() {
 fn a_tab_carries_the_heart_and_the_menu_marks_everything_else() {
     let page = app_shell_page();
 
-    // The tab of whatever you are reading, and the right-click item for everything that is not open — the two places the drawing approved, and no mark in any list.
+    // The tab of whatever you are reading, the right-click item for everything that is not open, and the kept column on the start screen, where the heart is the mark and the way off the list at once.
     for expected in [
         r#"<button type="button" class="tab-favorite${kept ? ' is-on' : ''}""#,
         r#"<span class="lt-icon lt-icon-favorite-${kept ? 'on' : 'off'}"></span>"#,
         "{ action: 'favorite', label: 'Favorite' },",
         "return { action: entry.action, label: 'Unfavorite' };",
+        r#"<button type="button" class="home-row-heart" data-home-unfavorite="${attr}""#,
     ] {
         assert_contains(&page, expected);
     }
+    // Not in the pane, where a row really is one button and a second control inside it is not markup.
     assert!(
-        !page.contains("library-file-favorite") && !page.contains("recent-favorite"),
-        "a mark in a list row was turned down: each row is one button"
+        !page.contains("library-file-favorite"),
+        "a mark in a pane row was turned down: each of those is one button"
     );
 }
 
@@ -1094,8 +1111,8 @@ fn marking_from_the_tab_and_from_the_menu_take_the_same_path() {
 
     // One function, so the heart and the menu item can never disagree about what marking means — and it flips the page's own copy before it tells the host, which is what makes the change instant.
     assert_eq!(script.matches("function toggleFavorite(").count(), 1);
-    // The declaration, the heart's click, and the menu item: two gestures, one path.
-    assert_eq!(script.matches("toggleFavorite(").count(), 3);
+    // The declaration, the tab heart's click, the menu item, and the kept row's heart — which calls it twice, once to drop and once to take that back. Three gestures, one path.
+    assert_eq!(script.matches("toggleFavorite(").count(), 5);
     assert_contains(
         script,
         "send({ command: 'toggleFavorite', path, kind: kind || 'document' });",

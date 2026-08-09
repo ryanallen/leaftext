@@ -231,6 +231,18 @@
     <a href="#" id="themeSheetBrowse" class="theme-sheet-browse">Add your own theme on GitHub →</a>
   </div>
 </aside>
+<div id="homeSheetBackdrop" class="lt-backdrop" hidden></div>
+<!-- A folded start-screen list, given the whole width of the window. Outside the
+     reader on purpose: the start screen is rebuilt on every render, and a sheet
+     inside it would be thrown away mid-scroll. -->
+<aside id="homeSheet" class="leaf-sheet home-sheet" role="dialog" aria-modal="true" aria-label="Recent" hidden>
+  <div class="leaf-sheet-grip"></div>
+  <div class="home-sheet-head">
+    <span class="home-sheet-title" id="homeSheetTitle"></span>
+    <button type="button" id="homeSheetClose" class="leaf-sheet-close" aria-label="Close"><span class="lt-icon lt-icon-close"></span></button>
+  </div>
+  <div class="home-sheet-body" id="homeSheetBody"></div>
+</aside>
 <div id="flowBackdrop" class="lt-backdrop" hidden></div>
 <!-- The flowchart sheet: a canvas and a code pane, peers over one graph. Both
      panes are built by flow-canvas.js; only the frame is declared here. -->

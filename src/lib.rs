@@ -111,7 +111,8 @@ use syntect::{
 };
 use url::Url;
 
-const MAX_RECENT_FILES: usize = 8;
+/// How deep the history the start screen scrolls goes. Past what anyone scrolls, and still a file of a few KB rewritten whole on every open. Not uncapped: that is [`Favorites`]' rule on purpose — a kept path is a decision, a recent is a rolling record of what happened.
+const MAX_RECENT_FILES: usize = 50;
 const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 
 /// The front-end script as ordered fragments, concatenated into one script sharing one scope — the page has no module loader. Order is load-bearing: the last fragment ends with the bootstrap call that must run after everything else.
@@ -905,7 +906,7 @@ fn replace_terms_in_text(
     result
 }
 
-/// Find the nearest `GLOSSARY.md` by walking up from `doc_dir` to the root (the glossary usually sits at a project root well above the document). Each folder is read and the name compared ignoring case, the way [`pager::readme_in`] finds a `README.md`, so `Glossary.md` counts on a disk that tells the spellings apart and the path handed back carries the file's own name. The glossary sheet takes this too, so nothing can disagree about which file is the glossary.
+/// Find the nearest `GLOSSARY.md` by walking up from `doc_dir` to the root (the glossary usually sits at a project root well above the document). Each folder is read and the name compared ignoring case, the way `pager::readme_in` finds a `README.md`, so `Glossary.md` counts on a disk that tells the spellings apart and the path handed back carries the file's own name. The glossary sheet takes this too, so nothing can disagree about which file is the glossary.
 pub fn nearest_glossary_file(doc_dir: &Path) -> Option<PathBuf> {
     let mut dir = Some(doc_dir);
     while let Some(folder) = dir {

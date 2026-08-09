@@ -1,4 +1,4 @@
-let currentState = { recent: [], tabs: [], active: null, document: null };
+let currentState = { recent: [], favorites: [], tabs: [], active: null, document: null };
 let navigationState = { canGoBack: false, canGoForward: false };
 // Subtext under the home-screen hero: one of several palm-leaf facts, chosen at
 // random per showing. The chosen one is kept so a re-render shows the same fact

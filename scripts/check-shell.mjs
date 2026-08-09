@@ -293,7 +293,7 @@ function runShell(source) {
     __leafMacFrame: false,
     __leafMaximized: false,
     __leafSettings: {},
-    __leafInitialState: { recent: [], document: null },
+    __leafInitialState: { recent: [], favorites: [], document: null },
     __leafVaults: { vaults: [], active: 0 },
     __leafVersion: '0.0.0',
     __leafUpdateAsset: '',
@@ -3092,7 +3092,376 @@ if (booted) {
   });
 }
 
-// ---- 5. the page reports its own errors -------------------------------------
+// ---- 5. the rows on the start screen ----------------------------------------
+
+// A row on the start screen is one button carrying the path twice: `data-path` opens it, and `data-reveal-path` is the only thing the right-click menu finds a start-screen row by — so a rewritten row that dropped it would take Favorite and Reveal off the screen with nothing failing.
+
+if (booted) {
+  const { homeRowMarkup } = booted;
+
+  check('a home row reads as a name over its folder', () => {
+    const path = 'C:\\Users\\me\\Vault\\Journal\\A note.md';
+    const row = homeRowMarkup(path);
+    if (!/<span class="home-row-name">A note<\/span>/.test(row)) {
+      throw new Error(`the first line is not the name without its extension: ${row}`);
+    }
+    if (!/<span class="home-row-folder">C:\\Users\\me\\Vault\\Journal<\/span>/.test(row)) {
+      throw new Error(`the second line is not the folder holding it: ${row}`);
+    }
+    // The name comes first, or the folder is what the eye lands on.
+    if (row.indexOf('home-row-name') > row.indexOf('home-row-folder')) {
+      throw new Error('the folder is drawn above the name');
+    }
+    for (const attribute of ['data-path', 'data-reveal-path']) {
+      if (!row.includes(`${attribute}="C:\\Users\\me\\Vault\\Journal\\A note.md"`)) {
+        throw new Error(`the row dropped ${attribute}, so nothing can find it by path`);
+      }
+    }
+    if (!row.includes('title="Open C:\\Users\\me\\Vault\\Journal\\A note.md"')) {
+      throw new Error(`the whole path is no longer the row's tooltip: ${row}`);
+    }
+    // A recent has nothing to unmark, so it carries one button and no heart.
+    if ((row.match(/<button/g) || []).length !== 1) {
+      throw new Error(`a recent row should be one button: ${row}`);
+    }
+  });
+
+  check('a home row with nothing above it draws one line', () => {
+    const bare = homeRowMarkup('notes.md');
+    if (bare.includes('home-row-folder')) {
+      throw new Error(`a path with no folder above it drew a second line: ${bare}`);
+    }
+    if (!/<span class="home-row-name">notes<\/span>/.test(bare)) {
+      throw new Error(`a bare name lost its name: ${bare}`);
+    }
+    // Only a document extension comes off. A name the app cannot open keeps every character it has, or the row says a file is called something it is not.
+    const kept = homeRowMarkup('/home/me/archive.tar.gz');
+    if (!/<span class="home-row-name">archive\.tar\.gz<\/span>/.test(kept)) {
+      throw new Error(`a name with no document extension was trimmed anyway: ${kept}`);
+    }
+    if (!/<span class="home-row-folder">\/home\/me<\/span>/.test(kept)) {
+      throw new Error(`the folder line lost its path: ${kept}`);
+    }
+    // A file at a root: the separator is the whole folder, so it stays rather than emptying the line.
+    const root = homeRowMarkup('/notes.md');
+    if (!/<span class="home-row-folder">\/<\/span>/.test(root)) {
+      throw new Error(`a file at a root lost its folder line: ${root}`);
+    }
+  });
+}
+
+if (booted) {
+  const { homeListsMarkup } = booted;
+
+  /** Draw both lists against a made-up vault registry, then put the page's own back. Pushed through the call the host itself uses, because the registry is a `let` inside the script's own scope — nothing outside it can reach the binding, which is the same reason a test may not reach past a page's own entry points. */
+  function withVaults(vaults, active, run) {
+    booted.leafSetVaults({ vaults, active });
+    try {
+      return run();
+    } finally {
+      booted.leafSetVaults({ vaults: [], active: 0 });
+    }
+  }
+
+  const VAULTS = [
+    { id: 1, name: 'Dharma' },
+    { id: 2, name: 'Work' },
+  ];
+  const KEPT = [
+    { vaultId: 1, path: 'C:\\Vaults\\Dharma\\A sutta.md', kind: 'document' },
+    { vaultId: 2, path: 'C:\\Vaults\\Work\\Standup.md', kind: 'document' },
+    { vaultId: 1, path: 'C:\\Vaults\\Dharma\\Journal', kind: 'folder' },
+    { vaultId: null, path: 'C:\\Users\\me\\Desktop\\Loose.md', kind: 'document' },
+  ];
+
+  check('outside a vault every vault shows at once, labeled', () => {
+    const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT }));
+    const groups = [...markup.matchAll(/<li class="home-list-group">([^<]*)<\/li>/g)].map((m) => m[1]);
+    // One per vault the kept paths name, plus one for the paths inside none — a file on the desktop is still a file you kept.
+    if (groups.join('|') !== 'Dharma|Work|Outside a vault') {
+      throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
+    }
+    if (!markup.includes('Favorites (4)')) {
+      throw new Error(`the heading lost its count: ${markup}`);
+    }
+    // Every kept row wears the heart, whatever it points at: the column says it is kept, and that is the fact the mark owes. It is a button, because pressing it is how a row leaves without opening the file you were trying not to open.
+    const folderRow = markup.slice(markup.indexOf('data-folder-path'));
+    if ((markup.match(/lt-icon-favorite-on/g) || []).length !== 4) {
+      throw new Error(`a kept row drew no heart: ${markup}`);
+    }
+    if (markup.includes('lt-icon-leaf') || markup.includes('lt-icon-folder')) {
+      throw new Error('a kept row is back to saying what kind of thing it points at');
+    }
+    if ((markup.match(/data-home-unfavorite=/g) || []).length !== 4) {
+      throw new Error('a kept row drew its heart as a mark rather than a control');
+    }
+    if (!markup.includes('data-home-unfavorite="C:\\Vaults\\Dharma\\Journal" data-home-kind="folder"')) {
+      throw new Error(`the heart does not carry its own path and kind: ${markup}`);
+    }
+    if (!folderRow.startsWith('data-folder-path="C:\\Vaults\\Dharma\\Journal"')) {
+      throw new Error(`the folder row does not carry its own path: ${folderRow.slice(0, 120)}`);
+    }
+  });
+
+  check('inside a vault only that vault shows, with no label', () => {
+    const markup = withVaults(VAULTS, 2, () => homeListsMarkup({ recent: [], favorites: KEPT }));
+    if (markup.includes('home-list-group')) {
+      throw new Error('one group was labeled anyway — there is nothing to tell it from');
+    }
+    if (!markup.includes('Standup')) throw new Error("the vault you are in lost its own kept file");
+    if (markup.includes('A sutta') || markup.includes('Loose')) {
+      throw new Error('another vault leaked into the column');
+    }
+    if (!markup.includes('Favorites (1)')) throw new Error(`the count is not this vault's: ${markup}`);
+  });
+
+  check('Show all appears only past what the folded layout holds, and names the count', () => {
+    // With something kept, because a list on its own is the plain one this screen had before there was a pair — no box to fold and nothing to show all of.
+    const short = homeListsMarkup({ recent: ['a.md', 'b.md', 'c.md', 'd.md', 'e.md'], favorites: KEPT });
+    // Five fit, so there is nothing the folded layout cannot already show.
+    if (short.includes('data-home-list="recent"')) {
+      throw new Error('a list the folded layout can hold whole grew a way out of itself');
+    }
+    const long = homeListsMarkup({
+      recent: Array.from({ length: 24 }, (unused, index) => `C:\\Notes\\file-${index}.md`),
+      favorites: KEPT,
+    });
+    if (!long.includes('data-home-list="recent"')) {
+      throw new Error(`the button does not say which list it opens: ${long}`);
+    }
+    if (!long.includes('>Show all 24</button>')) {
+      throw new Error(`the button does not name the count: ${long}`);
+    }
+  });
+
+  check('the sheet opens on one list, reports itself, and closes on Escape', () => {
+    const sheet = booted.document.getElementById('homeSheet');
+    const scrim = booted.document.getElementById('homeSheetBackdrop');
+    const body = booted.document.getElementById('homeSheetBody');
+    // The sheet's hide runs off a transition end or the timer behind it, and neither happens on its own here — so the timer is what the check drives.
+    const wasTimeout = booted.setTimeout;
+    booted.setTimeout = (fn) => {
+      fn();
+      return 0;
+    };
+    try {
+      booted.window.leafSetState({ recent: [], favorites: KEPT, tabs: [], active: null, document: null });
+      booted.__frames.drain();
+      withVaults(VAULTS, 0, () => booted.openHomeSheet('favorites'));
+      booted.__frames.drain();
+      if (sheet.hidden) throw new Error('the sheet was opened and stayed shut');
+      if (scrim.hidden) throw new Error('the sheet came up with no scrim behind it');
+      if (booted.homeSheetShowing !== 'favorites') {
+        throw new Error(`the sheet does not know which list it is showing: ${booted.homeSheetShowing}`);
+      }
+      // The same box as the column, so a list read here is the list read there — same bar, same fades.
+      if (!body.innerHTML.includes('home-list-box') || !body.innerHTML.includes('A sutta')) {
+        throw new Error(`the sheet was filled with something other than that list: ${body.innerHTML}`);
+      }
+      // The page's own answer about what is open. The ask pipe reads this, so a panel missing from it is one nothing outside the window can see.
+      if (!booted.window.leafReaderState().panels.homeList) {
+        throw new Error('the sheet does not report itself as an open panel');
+      }
+
+      // Escape, through the handler the sheet put on the document.
+      booted.onHomeSheetKey({ key: 'Escape' });
+      if (!sheet.hidden || !scrim.hidden) throw new Error('Escape left the sheet up');
+      if (booted.window.leafReaderState().panels.homeList) {
+        throw new Error('a shut sheet still reports itself open');
+      }
+    } finally {
+      booted.setTimeout = wasTimeout;
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+    }
+  });
+
+  check('a home list draws an edge only where there is more list past it', () => {
+    /** A scroll box that really has a position and a size, and the box holding it, with the classes recorded. */
+    function boxAt(scrollTop, clientHeight, scrollHeight) {
+      const classes = new Set();
+      const scroll = Object.assign(fakeElement('scroll'), { scrollTop, clientHeight, scrollHeight });
+      let onScroll = null;
+      scroll.addEventListener = (name, handler) => {
+        if (name === 'scroll') onScroll = handler;
+      };
+      const box = Object.assign(fakeElement('box'), {
+        classList: {
+          add: (name) => classes.add(name),
+          remove: (name) => classes.delete(name),
+          contains: (name) => classes.has(name),
+          toggle: (name, on) => (on ? classes.add(name) : classes.delete(name)),
+        },
+        querySelector: () => scroll,
+      });
+      booted.watchHomeList(box);
+      return { classes, scroll, scrolled: () => onScroll && onScroll() };
+    }
+
+    const top = boxAt(0, 400, 900);
+    if (top.classes.has('has-above')) throw new Error('a list at its first row drew a soft top edge');
+    if (!top.classes.has('has-below')) throw new Error('a list with more below drew no bottom edge');
+
+    const bottom = boxAt(500, 400, 900);
+    if (!bottom.classes.has('has-above')) throw new Error('a scrolled list drew no top edge');
+    if (bottom.classes.has('has-below')) throw new Error('a list at its last row drew a soft bottom edge');
+
+    const short = boxAt(0, 400, 400);
+    if (short.classes.has('has-above') || short.classes.has('has-below')) {
+      throw new Error('a list that fits whole drew an edge');
+    }
+
+    // The bar is the scroll's own: it goes up when the list moves, and the timer that takes it away is armed in the same breath.
+    if (top.classes.has('is-scrolling')) throw new Error('the bar was up before anything moved');
+    const wasTimeout = booted.setTimeout;
+    let armed = null;
+    booted.setTimeout = (fn) => {
+      armed = fn;
+      return 1;
+    };
+    try {
+      top.scrolled();
+      if (!top.classes.has('is-scrolling')) throw new Error('the list moved and the bar stayed away');
+      if (!armed) throw new Error('nothing was set to take the bar away again');
+      armed();
+      if (top.classes.has('is-scrolling')) throw new Error('the bar never goes once the list stops');
+    } finally {
+      booted.setTimeout = wasTimeout;
+    }
+  });
+
+  check('a dropped favorite stays on screen long enough to be taken back', () => {
+    const sent = [];
+    const wasSend = booted.ipc.postMessage;
+    const wasTimeout = booted.setTimeout;
+    let waiting = null;
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.setTimeout = (fn) => {
+      waiting = fn;
+      return 7;
+    };
+    const path = 'C:\\Vaults\\Work\\Standup.md';
+    // What the page's own copy holds once that path has been dropped, which is what the column is drawn from.
+    const without = { recent: [], favorites: KEPT.filter((one) => one.path !== path) };
+    try {
+      withVaults(VAULTS, 0, () => {
+        booted.window.leafSetState({ recent: [], favorites: KEPT, tabs: [], active: null, document: null });
+        booted.__frames.drain();
+        booted.pressHomeHeart(path, 'document');
+        // The host is told at once: a crash between here and the wait ending must not put back a file that was deliberately dropped.
+        if (!sent.some((one) => one.command === 'toggleFavorite' && one.path === path)) {
+          throw new Error(`the host was not told: ${JSON.stringify(sent)}`);
+        }
+        if (!waiting) throw new Error('nothing was set to end the wait');
+        let markup = booted.homeListsMarkup(without);
+        // Still drawn, marked as going, with a hollow heart and a sentence saying what happens next.
+        if (!markup.includes('home-row is-going')) throw new Error(`the dropped row left at once: ${markup}`);
+        if (!markup.includes('Standup')) throw new Error('the dropped row is not on screen');
+        if (!markup.includes('lt-icon-favorite-off')) throw new Error('the row still says it is kept');
+        if (!markup.includes('press the heart to keep it')) {
+          throw new Error(`the row does not say what is about to happen: ${markup}`);
+        }
+        // The count is what the list will be, not what is drawn.
+        if (!markup.includes('Favorites (3)')) throw new Error(`the count still holds the dropped row: ${markup}`);
+
+        // Pressing it again inside the wait takes it off the way out.
+        booted.pressHomeHeart(path, 'document');
+        markup = booted.homeListsMarkup({ recent: [], favorites: KEPT });
+        if (markup.includes('is-going')) throw new Error('the row is still on its way out');
+        if (!markup.includes('Favorites (4)')) throw new Error(`taking it back did not restore the count: ${markup}`);
+        if (!markup.includes('Standup')) throw new Error('taking it back lost the row');
+
+        // And once the wait really ends, the row is gone.
+        waiting = null;
+        booted.pressHomeHeart(path, 'document');
+        if (!waiting) throw new Error('the second drop set no wait');
+        waiting();
+        markup = booted.homeListsMarkup(without);
+        if (markup.includes('Standup')) throw new Error(`the row outlived its wait: ${markup}`);
+      });
+    } finally {
+      booted.homeDropping.clear();
+      booted.ipc.postMessage = wasSend;
+      booted.setTimeout = wasTimeout;
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+    }
+  });
+
+  check('a kept folder goes to the pane, not the reader', () => {
+    const sent = [];
+    const was = booted.ipc.postMessage;
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      booted.openHomeFolder('C:\\Vaults\\Dharma\\Journal');
+    } finally {
+      booted.ipc.postMessage = was;
+    }
+    const commands = sent.map((one) => one.command);
+    // A folder is not a document. Opening one as if it were is the reader trying to render a directory.
+    if (commands.includes('openRecent')) {
+      throw new Error(`a kept folder was opened as a document: ${JSON.stringify(commands)}`);
+    }
+    const asked = sent.find((one) => one.command === 'getFolder');
+    if (!asked || asked.path !== 'C:\\Vaults\\Dharma\\Journal') {
+      throw new Error(`the pane was not sent to that folder: ${JSON.stringify(sent)}`);
+    }
+  });
+
+  check('with nothing kept the screen is the one this ticket found', () => {
+    // A box saying how to keep a file is an advertisement on the screen somebody sees most, and the heart is on every tab under the pointer. So with nothing kept there is no pair at all — the screen is the plain recent list it already had, whole paths one to a line, and none of this ticket's markup is on it.
+    const empty = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: [] }));
+    if (empty !== '<p class="empty-help">Files you open show up here, so you can pick up where you left off.</p>') {
+      throw new Error(`nothing open and nothing kept is not the line it was: ${empty}`);
+    }
+
+    const plain = withVaults(VAULTS, 0, () =>
+      homeListsMarkup({ recent: ['C:\Notes\Journal\A note.md'], favorites: [] }),
+    );
+    if (!plain.startsWith('<div class="recent"><h2>Recent (1)</h2><ol>')) {
+      throw new Error(`a lone list is not the block it was: ${plain}`);
+    }
+    // The whole path on one line, in one button.
+    if (!plain.includes('>C:\Notes\Journal\A note.md</button>')) {
+      throw new Error(`a lone list drew the two-line row: ${plain}`);
+    }
+    for (const paired of ['home-list-grid', 'home-list-box', 'home-row', 'Favorites']) {
+      if (plain.includes(paired)) throw new Error(`a lone list is still drawn as half a pair: ${paired}`);
+    }
+
+    // With something kept, both are there and Recent is first — on the screen, and first again when the columns fold.
+    const both = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: ['a.md'], favorites: KEPT }));
+    if (!both.includes('home-list-grid')) throw new Error('a pair was drawn as a lone list');
+    if (both.indexOf('Recent') > both.indexOf('Favorites')) {
+      throw new Error('Favorites was drawn above Recent');
+    }
+  });
+
+}
+
+// A row strips the document extension off its name, and theme.js runs renderState() as it loads — which reaches the branch that draws these rows. The regex behind that strip is a `const`, so a fragment declaring it after theme.js leaves it in its dead zone and the very first paint throws. Order, not behavior, so it is read off the list the binary joins.
+check('the document extensions are in scope before the first render', () => {
+  const declares = names.filter((name) =>
+    /^\s*const DOCUMENT_NAME_RE\b/m.test(readFileSync(join(root, 'src/assets', name), 'utf8')),
+  );
+  if (declares.length !== 1) {
+    throw new Error(`one fragment should declare DOCUMENT_NAME_RE, found ${declares.length}`);
+  }
+  // Code only: half the fragments mention the load-time render in a comment, and a comment renders nothing.
+  const code = (name) =>
+    readFileSync(join(root, 'src/assets', name), 'utf8')
+      .split('\n')
+      .filter((line) => !line.trim().startsWith('//'))
+      .join('\n');
+  // render-document.js declares it rather than calling it.
+  const renders = names.filter((name) => name !== 'shell/render-document.js' && /\brenderState\(\)/.test(code(name)));
+  const first = Math.min(...renders.map((name) => names.indexOf(name)));
+  if (names.indexOf(declares[0]) > first) {
+    throw new Error(`${declares[0]} declares DOCUMENT_NAME_RE after ${names[first]} has already rendered`);
+  }
+});
+
+// ---- 6. the page reports its own errors -------------------------------------
 
 // journal.js leads the list so that a fragment throwing as it loads is reported instead of vanishing. That claim is about load order, so it is checked by loading things in order — journal.js, then a fragment that throws — rather than by reading the list and trusting it.
 

@@ -79,7 +79,7 @@ Missing fields fall back to defaults when the file is loaded, and unknown ones a
 
 ## Recents
 
-`recent-files.json` stores the last 8 opened file paths.
+`recent-files.json` stores the last 50 opened file paths, and the [favorites](02-navigation.md#favorites) beside them in the same file. A favorite carries the vault it was marked inside (`null` for one outside every vault), the path, and whether it points at a document or a folder; there is no cap on that list, because each entry is a choice somebody made.
 
 Example:
 
@@ -88,11 +88,14 @@ Example:
   "files": [
     "/Users/alice/projects/api/README.md",
     "/Users/alice/notes/daily.md"
+  ],
+  "favorites": [
+    { "vaultId": 1, "path": "/Users/alice/notes/daily.md", "kind": "document" }
   ]
 }
 ```
 
-Leaftext removes broken entries automatically and collapses equivalent path spellings to one item.
+Leaftext removes broken entries from the recent list automatically and collapses equivalent path spellings to one item.
 
 ## Behavior
 

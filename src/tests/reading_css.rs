@@ -77,7 +77,6 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
         "background: var(--lt-editor-code-selection-background);",
         "color: var(--lt-editor-code-selection-foreground);",
         "background: var(--lt-markdown-keyboard-background);",
-        "border-top: var(--lt-stroke-1) solid var(--lt-navigation-recent-border);",
         "border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);",
     ] {
         assert_contains(css, rule);
@@ -826,8 +825,8 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
     );
     assert_eq!(
         css.matches("  container-type:").count(),
-        2,
-        "only the reading layout and the clone's frame declare a container query"
+        3,
+        "only the reading layout, the clone's frame and the start screen declare a container query"
     );
     // The frame is the transformed element now, so the clone needs a containing block of its own or every absolutely positioned part of a rendered document measures off a box the width of the layout.
     assert!(
@@ -1779,4 +1778,169 @@ fn the_confirmation_throws_the_shared_dot_shadow_rather_than_a_blur_of_its_own()
     );
     // On the layer already named for a sheet over the sheets' own scrim, so it needs no new token.
     assert_contains(dialog, "z-index: var(--lt-z-41);");
+}
+
+/// Every `@media` block whose condition is about width, with the CSS inside it. Written by hand because the check is exactly "does any of these mention that screen".
+fn width_media_blocks(css: &str) -> Vec<&str> {
+    let mut blocks = Vec::new();
+    let mut rest = css;
+    while let Some(at) = rest.find("@media") {
+        let after = &rest[at..];
+        let open = after.find('{').expect("a media block opens");
+        if after[..open].contains("width") {
+            let mut depth = 0usize;
+            let mut end = open;
+            for (offset, byte) in after[open..].bytes().enumerate() {
+                if byte == b'{' {
+                    depth += 1;
+                } else if byte == b'}' {
+                    depth -= 1;
+                    if depth == 0 {
+                        end = open + offset;
+                        break;
+                    }
+                }
+            }
+            blocks.push(&after[open..end]);
+        }
+        rest = &after[open..];
+    }
+    blocks
+}
+
+#[test]
+fn the_start_screen_folds_on_its_own_width_and_never_on_the_windows() {
+    // The library pane is a remembered width the reader column shrinks under, and it can be dragged to the window less the reader's minimum — so a 1160px window can leave this section 320px wide while an 880px one with the pane shut leaves it 720px. A window breakpoint would call both of those the same thing. One container query on the section sets the column count, and it is the only thing allowed to.
+    let css = reading_mode_css();
+    let column = rule_body(&css, "\n.reader-shell.empty {");
+    assert_contains(column, "container-type: inline-size;");
+    assert_contains(column, "container-name: home;");
+    assert_contains(&css, "@container home (min-width: 600px) {");
+    let grid = rule_body(&css, "\n.home-list-grid {");
+    // One column until the query says two, so the fold and the column count are one number in one place.
+    assert_contains(grid, "grid-template-columns: minmax(0, 1fr);");
+    // The writing's own width, growing past it only where a path needs the room and never past the reader. Stretched to the reader it left two thin columns at opposite edges of an empty screen; held to its content it was narrower than the writing above it.
+    assert_contains(grid, "width: max-content;");
+    assert_contains(grid, "min-width: 100%;");
+    assert_contains(
+        grid,
+        "max-width: max(100%, calc(100cqi - 2 * var(--reader-table-lane-inset)));",
+    );
+    // And the list fills its column, so the fill under the pointer ends where the list ends.
+    assert_contains(
+        rule_body(
+            &css,
+            "
+.home-list {",
+        ),
+        "width: 100%;",
+    );
+    assert_contains(grid, "transform: translateX(-50%);");
+    // Each list is a box of its own rather than a section of the writing, so nothing draws a rule across the screen above them.
+    let card = rule_body(&css, "\n.home-list {");
+    assert_contains(card, "border: var(--lt-stroke-1) solid var(--lt-border);");
+    assert_contains(card, "border-radius: var(--lt-radius-lg);");
+    // With nothing kept the screen is prod's own: the plain recent block, its own rules, its own color.
+    assert_contains(
+        rule_body(
+            &css,
+            "
+.recent {",
+        ),
+        "border-top: var(--lt-stroke-1) solid var(--lt-navigation-recent-border);",
+    );
+    assert_contains(
+        rule_body(
+            &css,
+            "
+.recent button {",
+        ),
+        "overflow-wrap: anywhere;",
+    );
+
+    for block in width_media_blocks(&css) {
+        for named in [".home-list", ".home-row", ".home-list-grid", ".empty-state"] {
+            assert!(
+                !block.contains(named),
+                "a width media block names {named}; this screen measures itself"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_home_lists_bar_and_edges_answer_the_scroll_not_the_pointer() {
+    // Asked for by name: the bar is there while the list is moving and gone a moment after it stops. Never on hover — pointing at a list on the way somewhere else is not asking to be told how long it is.
+    let css = reading_mode_css();
+    let box_ = rule_body(&css, "\n.home-list-scroll {");
+    assert_contains(box_, "--home-list-thumb: transparent;");
+    // The bar's width is held whether or not there is one, so a list too short to need it keeps the same inset as the one beside it.
+    assert_contains(box_, "scrollbar-gutter: stable;");
+    assert!(
+        !box_.contains("scrollbar-width:") && !box_.contains("scrollbar-color:"),
+        "either of those silently kills every rule painting this box's bar"
+    );
+    assert!(
+        !css.contains(".home-list-scroll:hover") && !css.contains(".home-list-scroll:focus-within"),
+        "the bar is back on the pointer"
+    );
+    assert_contains(
+        rule_body(&css, "\n.home-list-box.is-scrolling .home-list-scroll {"),
+        "--home-list-thumb: color-mix(",
+    );
+    // The bar itself is the app's own; this list sets its color and the fade that takes it away.
+    let thumb = rule_body(
+        &css,
+        "\n.home-list-scroll.leaf-scroll::-webkit-scrollbar-thumb {",
+    );
+    assert_contains(thumb, "background-color: var(--home-list-thumb);");
+    assert_contains(thumb, "transition: background-color var(--lt-duration-200)");
+
+    // The soft edge is the reader's own ramp to the surface the start screen paints. It takes no pointer events, and it stops short of the right edge — a wash laid over the bar would bury the thumb, which starts at that same edge.
+    let fade = rule_body(&css, "\n.home-list-fade {");
+    assert_contains(fade, "pointer-events: none;");
+    assert_contains(fade, "inset: 0 var(--reader-scrollbar) 0 0;");
+    // Neither edge until there is list past it: a soft top on a list sitting at its first row says something is above it that is not.
+    assert_contains(fade, "--home-list-fade-top: 0px;");
+    assert_contains(fade, "--home-list-fade-bottom: 0px;");
+    assert_contains(
+        fade,
+        "background-size: 100% var(--home-list-fade-top), 100% var(--home-list-fade-bottom);",
+    );
+    assert_contains(fade, "background-position: 0 0, 0 100%;");
+    assert_contains(
+        rule_body(&css, "\n.home-list-box.has-above .home-list-fade {"),
+        "--home-list-fade-top: var(--reader-edge-fade-depth);",
+    );
+    assert_contains(
+        rule_body(&css, "\n.home-list-box.has-below .home-list-fade {"),
+        "--home-list-fade-bottom: var(--reader-edge-fade-depth);",
+    );
+}
+
+#[test]
+fn a_folded_list_shows_five_and_hands_the_rest_to_the_sheet() {
+    // The way out is drawn only where the columns have folded: wide, the box scrolls and a button saying "show all" would be offering what is already on screen. The button is in the markup either way, so this rule is the whole of the mode.
+    let css = reading_mode_css();
+    assert_contains(rule_body(&css, "\n.home-showall {"), "display: none;");
+    let folded = css
+        .find("@container home (max-width: 599px) {")
+        .map(|at| &css[at..])
+        .expect("the folded layout is a container query on the section");
+    let folded = &folded[..folded.find("\n}\n").expect("the query closes")];
+    assert_contains(folded, "display: block;");
+    // Five rows, and no scroll box: a nested scroller inside a page that also scrolls takes a wheel meant for the page.
+    assert_contains(folded, "max-height: calc(var(--home-row-height) * 5);");
+    assert_contains(folded, "overflow-y: hidden;");
+    // And no soft edge either — a fade over a box that cannot scroll says there is more below when there is not.
+    assert_contains(folded, ".home-list-fade {\n    display: none;\n  }");
+
+    // In the sheet the same box is uncapped, because the sheet's own ceiling is what bounds it.
+    let inside = rule_body(&css, "\n.home-sheet .home-list-scroll {");
+    assert_contains(inside, "max-height: none;");
+    // The sheet dissolves to its own surface rather than the reader's, or the ramp ends on a color that is not under it.
+    assert_contains(
+        rule_body(&css, "\n.home-sheet .home-list-fade {"),
+        "--home-list-surface: var(--lt-background);",
+    );
 }

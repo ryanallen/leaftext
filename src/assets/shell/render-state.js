@@ -16,7 +16,7 @@ function runViewRender(payload, render) {
   }
 }
 window.leafSetState = (state) => {
-  currentState = state || { recent: [], tabs: [], active: null, document: null };
+  currentState = state || { recent: [], favorites: [], tabs: [], active: null, document: null };
   // Only the gestures that meant "leave the map" close it. Opening a file from
   // the pane while reading the map is a change of subject, not a change of
   // view — the graph stays up and moves its highlight to what you opened.
@@ -68,7 +68,7 @@ window.leafReloadDocument = (state) => {
   // top-visible capture, which would target the momentarily zero-height block.
   const anchor = pendingEditAnchor || captureReaderScrollAnchor();
   pendingEditAnchor = null;
-  currentState = state || currentState || { recent: [], tabs: [], active: null, document: null };
+  currentState = state || currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = false;
     renderState();
@@ -109,7 +109,7 @@ function renderStateKeepingPlace() {
 // anchor that survives the re-render, null the first time (starts at the top).
 // Skips the reset-to-top that leafSetState runs so a tab click never jumps up.
 window.leafSwitchTab = (state, anchor) => {
-  currentState = state || { recent: [], tabs: [], active: null, document: null };
+  currentState = state || { recent: [], favorites: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
     emptyDescription = pickEmptyDescription();
   }
@@ -207,6 +207,7 @@ window.leafReaderState = () => {
       map: !!graphViewOpen,
       findBar: !!findBar && !findBar.hidden,
       glossary: !!glossarySheet && !glossarySheet.hidden,
+      homeList: !!homeSheet && !homeSheet.hidden,
     },
     // Long enough to tell which text it is, short enough not to send a page back.
     selection: selected ? selected.slice(0, 500) : null,
@@ -225,13 +226,6 @@ window.leafRestoreScrollAnchor = (anchor) => {
     updateMinimapViewport();
   });
 };
-// Every extension the app reads, injected at boot from the table in
-// `src/format.rs` — never a copy kept here.
-const DOCUMENT_EXTS = (window.__leafDocumentExts || ['md']).join('|');
-/** A bare file name ending in a document extension. */
-const DOCUMENT_NAME_RE = new RegExp(`\\.(${DOCUMENT_EXTS})$`, 'i');
-/** An href pointing at a document, fragment or query allowed. */
-const DOCUMENT_HREF_RE = new RegExp(`\\.(${DOCUMENT_EXTS})(?:[#?].*)?$`, 'i');
 // Tabs and the library both show the file name (basename, minus the document
 // extension), not the document's heading title. Falls back to the title, then the
 // raw path. Every format loses its extension, so tabs read alike.

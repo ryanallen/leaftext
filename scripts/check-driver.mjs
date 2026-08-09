@@ -101,7 +101,7 @@ const short = dryRun(['scroll:1,2']);
 if (short.ok) problems.push('scroll with two numbers instead of three was accepted');
 
 // -Attach is the owner's own session, so a flag that would rewrite their settings is refused with the reason.
-for (const flag of ['-ThemeFamily fern', '-Doc x.md', '-Unlocked', '-Width 800', '-Recents x.md']) {
+for (const flag of ['-ThemeFamily fern', '-Doc x.md', '-Unlocked', '-Width 800', '-Recents x.md', '-Favorites x.md']) {
   const refused = dryRun(['click:1,2'], `-Attach ${flag}`);
   if (refused.ok) problems.push(`-Attach accepted ${flag}, which shapes a throwaway profile it must not write`);
   else if (!refused.text.includes('cannot set')) {

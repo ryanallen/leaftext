@@ -71,6 +71,9 @@ param(
   [string[]]$Vault = @(),
   # Files to seed the home screen's recent list with, newest first.
   [string[]]$Recents = @(),
+  # Paths to seed the home screen's kept list with. Without one the screen draws
+  # the plain recent list, so a picture of the pair needs this.
+  [string[]]$Favorites = @(),
   # Pointer and keyboard steps run after the page settles and before the shot.
   # Coordinates are pixels in the captured image, which is what you can measure
   # off the last screenshot you took at the same size:
@@ -138,7 +141,7 @@ function Read-Step([string]$step) {
 # app somebody else opened, so these are refused with the reason rather than
 # quietly doing nothing — a silently ignored -ThemeFamily reads as a theme bug.
 $PROFILE_FLAGS = @(
-  'Doc', 'Vault', 'Recents', 'Unlocked', 'ThemeFamily', 'ThemeMode',
+  'Doc', 'Vault', 'Recents', 'Favorites', 'Unlocked', 'ThemeFamily', 'ThemeMode',
   'Width', 'Height', 'GraphScope', 'LibraryOpen', 'Work'
 )
 
@@ -270,7 +273,16 @@ else {
   # list of wherever they have been working. Written on every run, empty when none
   # were asked for: the app appends to it as it opens files, so a profile reused
   # across a batch would otherwise carry the last shot's document into this one.
-  (@{ files = @($Recents) } | ConvertTo-Json -Depth 3) |
+  # Kept paths ride the same file. No vault id: a shot registers its vaults from
+  # nothing, so a kept path belongs to the group for those outside every vault.
+  $kept = @($Favorites | ForEach-Object {
+      @{
+        vaultId = $null
+        path    = $_
+        kind    = if (Test-Path -LiteralPath $_ -PathType Container) { 'folder' } else { 'document' }
+      }
+    })
+  (@{ files = @($Recents); favorites = $kept } | ConvertTo-Json -Depth 3) |
     Out-File -FilePath (Join-Path $config 'recent-files.json') -Encoding utf8
 
   # The vault registry, for the reason written above the recent list: a vault registered for one picture is still registered for the next, and the app registers cloud folders itself at every launch. Deleted rather than emptied — the app owns the schema and builds it.

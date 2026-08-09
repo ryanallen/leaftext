@@ -11,12 +11,20 @@ fn navigation_state_script_updates_webview_navigation_controls() {
 }
 
 #[test]
-fn initial_state_script_returns_reader_to_no_file_state_with_recent_files() {
-    let script = initial_state_script(&[PathBuf::from("README.md")]);
+fn initial_state_script_returns_reader_to_no_file_state_with_both_lists() {
+    // Both, because the start screen draws both and nothing else answers for the first paint: sent with recents alone, the kept column came up empty on every launch and only filled once some later state arrived.
+    let favorites = Favorites {
+        entries: vec![Favorite {
+            vault_id: Some(3),
+            path: PathBuf::from("NOTES.md"),
+            kind: FavoriteKind::Document,
+        }],
+    };
+    let script = initial_state_script(&[PathBuf::from("README.md")], &favorites);
 
     assert_eq!(
         script,
-        r#"window.__leafInitialState = {"document":null,"recent":["README.md"]};"#
+        r#"window.__leafInitialState = {"document":null,"favorites":[{"kind":"document","path":"NOTES.md","vaultId":3}],"recent":["README.md"]};"#
     );
 }
 

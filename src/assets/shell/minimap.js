@@ -1162,7 +1162,7 @@ function formatCount(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number.toLocaleString('en-US') : String(value);
 }
-window.leafSetState(window.__leafInitialState || { recent: [], document: null });
+window.leafSetState(window.__leafInitialState || { recent: [], favorites: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
 // Came up on defaults because the settings file would not read. Nothing on
 // screen distinguishes that from a first launch, so say it; the file is left

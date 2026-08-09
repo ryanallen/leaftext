@@ -27,7 +27,7 @@ flowchart LR
 
 ## 1. Open a file
 
-![The Leaftext home screen with no document open: the Choose file and New document buttons, and the recent files list beneath them](../imgs/home.png)
+![The Leaftext home screen with no document open: the Choose file and New document buttons, with the recent files list and the kept files beside it beneath them](../imgs/home.png)
 
 | Method | How |
 | --- | --- |
@@ -38,7 +38,7 @@ flowchart LR
 | Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document) |
 
 > [!TIP]
-> Recent files keeps the last 8 opened files, so reopening a doc is usually one click.
+> Recent files keeps the last 50 opened files, so reopening a doc is usually one click. Keep the ones you come back to and they get a column of their own beside it — see [Favorites](01-features/02-navigation.md#favorites).
 
 ## 2. Know what you are looking at
 

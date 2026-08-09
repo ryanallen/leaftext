@@ -197,4 +197,3 @@
 | markdown-table-border      | `#39435f`   |
 | markdown-thematic-break    | `#39435fb3` |
 | markdown-keyboard-border   | `#39435f`   |
-| navigation-recent-border   | `#39435f`   |

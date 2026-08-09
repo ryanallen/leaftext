@@ -14,8 +14,8 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Live reload](#reload) | Reload a changed file without losing your place |
-| [Recent files](#recent-files) | Reopen the last 8 files quickly |
-| [Favorites](#favorites) | Keep a file or folder so it is never lost off the end of Recent |
+| [Recent files](#recent-files) | Reopen any of the last 50 files from the home screen |
+| [Favorites](#favorites) | Keep a file or folder so it is never lost off the end of Recent, in its own column beside it |
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is and where it points |
@@ -146,22 +146,28 @@ A re-pin reads your place at the moment it runs, never the moment it was queued.
 
 ### Recent files
 
-![The Leaftext home screen with no document open: the Choose file and New document buttons above a list of the last eight files opened, each with its folder path](../../imgs/home.png)
+![The Leaftext home screen with no document open: the Choose file and New document buttons above two boxes side by side, Recent on the left and Favorites on the right, each row a file name over the folder it sits in and each kept row carrying a heart](../../imgs/home.png)
 
-The no-file home screen shows the last 8 opened files, under the **Choose file** and **New document** buttons.
+The no-file home screen shows the last 50 opened files, under the **Choose file** and **New document** buttons. Until you keep something it is one list of paths; with anything [kept](#favorites) it becomes two boxes side by side, Recent on the left and Favorites on the right, and a row is then the file's name with the folder it sits in underneath, so you read the name rather than the path. The whole path is still the row's tooltip either way, and a right-click gives the same menu it always did.
 
+- Each box is eight rows deep and scrolls, with a thin bar that appears while you are scrolling and goes again once you stop, and a soft edge wherever there is more list past it.
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.
 - Clicking a recent file opens it immediately.
 
+Where the window is too narrow for two columns, each list shows its first five rows with a **Show all** button under it, which opens that list in a sheet from the bottom of the window — drag it down or press Escape to close it.
+
 ### Favorites
 
-Recent holds eight, and anything that fails to open drops off it. A favorite is a choice you made, so it is kept until you say otherwise.
+Recent is a record of where you have been, and anything that fails to open drops off it. A favorite is a choice you made, so it is kept until you say otherwise, and it has its own column on the home screen beside Recent.
 
 - **From the tab you are reading.** Point at the tab and a heart appears in its top-left corner: click it to keep the file, click it again to stop. It is filled when the file is already kept, and it fades out a beat after the pointer leaves — a strip of tabs at rest carries no marks, so the list is where you see them all.
 - **From a right-click, for anything else.** **Favorite** in the menu, reading **Unfavorite** on one you already keep. It works on a row in the [library](03-library.md) pane, on a tab, and on a row in the recent list — and on a folder as well as a file.
+- **From the home screen.** Every row in the Favorites column carries a filled heart: click it and the file is dropped. The row stays for half a minute, dimmed, and clicking the heart again puts it back — so dropping one is never a click you cannot take back.
 - Marking shows straight away and is saved beside the recent list, in the same file.
 - A favorite is kept with the [vault](03-library.md#vaults) it was marked inside. Something opened from outside every vault is still kept; removing a vault takes its own favorites with it.
+- Outside a vault the column shows every vault's favorites at once, under the vault's name; inside one it shows that vault's alone, with no heading. A kept folder opens the [library](03-library.md) pane at that folder rather than opening as a document.
+- With nothing kept there is no second column: the home screen is the Recent list on its own.
 
 ### Loading
 

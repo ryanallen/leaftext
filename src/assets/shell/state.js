@@ -11,6 +11,19 @@
 // document-link handler that picks the modifier.
 const isMacPlatform = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
 
+// ---- what counts as a document (render-state.js, glossary.js, render-document.js)
+
+// Every extension the app reads, injected at boot from the table in
+// `src/format.rs` — never a copy kept here.
+const DOCUMENT_EXTS = (window.__leafDocumentExts || ['md']).join('|');
+/** A bare file name ending in a document extension. */
+const DOCUMENT_NAME_RE = new RegExp(`\\.(${DOCUMENT_EXTS})$`, 'i');
+/** An href pointing at a document, fragment or query allowed. */
+const DOCUMENT_HREF_RE = new RegExp(`\\.(${DOCUMENT_EXTS})(?:[#?].*)?$`, 'i');
+// Here rather than with the tabs: theme.js runs renderState() as it loads, and the
+// home screen strips an extension off every row it draws — a const declared further
+// down is in its dead zone at that point, so the first paint would throw.
+
 // ---- the reader's render (render-state.js) ---------------------------------
 
 // Above this many characters of view HTML, building the DOM (innerHTML plus

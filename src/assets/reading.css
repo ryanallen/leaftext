@@ -15,6 +15,13 @@
      a gradient. At :root because a widened table's own ends use it too, and every
      edge in the app is one profile. */
   --reader-edge-fade-depth: 36px;
+  /* One row in a start-screen list, exactly: two lines that never wrap, plus its own
+     padding. Every cap on those lists is a whole number of these, so one never ends
+     part-way down a row. At :root because the sheet draws the same rows outside the
+     grid that holds them on the screen. */
+  --home-row-height: calc(
+    var(--lt-text-14) * var(--lt-leading-1-4) + var(--lt-text-12) * var(--lt-leading-1-4) + var(--lt-space-8) * 2
+  );
   /* How long a fade holds at full before going, so the cut is crossed solid.
      Shared for the same reason as the depth: one profile, not two. */
   --reader-edge-fade-hold: 2px;
@@ -4707,8 +4714,17 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0 auto;
   padding: 14vh 0;
 }
+/* The reader column is what the start screen measures itself against, and what the
+   two lists break out to. A window breakpoint cannot do either: the library pane is
+   a remembered width draggable to the window minus the reader's minimum, so one
+   window can leave this column anywhere from a third of itself to all of it. */
+.reader-shell.empty {
+  container-type: inline-size;
+  container-name: home;
+}
 .empty-state .kicker,
-.recent h2 {
+.recent h2,
+.home-list h2 {
   color: var(--lt-primary);
   font: 700 13px var(--app-font);
   letter-spacing: var(--lt-tracking-120);
@@ -4808,6 +4824,270 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .recent button:hover {
   color: var(--lt-navigation-recent-item-hover-foreground);
+}
+/* Both lists under the two buttons. One column at rest; the container query below
+   is what puts them side by side, so the fold is measured off this section. */
+/* The pair sizes to what is in it and sits centered. It may grow out past the
+   writing's own column — a path is longer than a line of prose — as far as the
+   reader, and no further; stretched to the reader it left two thin columns at
+   opposite edges with nothing between them, because a file name never fills that.
+   The break-out is `.table-lane`'s: CSS cannot read a used width, so the centering
+   is a percentage transform. */
+.home-list-grid {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Starts at the writing's own width and grows past it only where a path needs the
+     room, never past the reader. Three declarations because a math function cannot
+     hold `max-content`: the floor is the writing's column, the reach is the longest
+     path, and the ceiling is what the reader can give. */
+  width: max-content;
+  min-width: 100%;
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-table-lane-inset)));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-16);
+  margin-top: var(--lt-space-48);
+}
+@container home (min-width: 600px) {
+  .home-list-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Each list is a box of its own, not a section of the writing: a hairline round it
+   and the page's own surface inside, so the rows sit on what everything else on
+   this screen sits on.
+   No inset on the right at all: the bar takes its own width out of the box below,
+   and its thumb is drawn inset inside that, so the gap it leaves to the box's edge
+   and the gap it leaves to the row fill beside it are the same one. Any padding
+   here is added to the first of those and to neither of the others. */
+/* Full width of its column, so the fill under the pointer ends where the list ends
+   rather than where its longest path happens to. */
+.home-list {
+  min-width: 0;
+  width: 100%;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  padding: var(--lt-space-16) 0 var(--lt-space-16) var(--lt-space-16);
+}
+.home-list h2 {
+  margin: 0 0 var(--lt-space-10);
+}
+/* Holds the scroll box and the soft edge over it, which has to be placed against
+   the box rather than the scrolled rows or it would slide away with them. Pulled
+   out by a row's own inset, the way a wide table breaks its column: a name then
+   opens where the heading above it does, and the fill under the pointer runs past
+   that into the margin instead of crowding the first letter. */
+.home-list-box {
+  position: relative;
+  margin-left: calc(var(--lt-space-10) * -1);
+}
+.home-list-scroll {
+  /* The bar answers the scroll, not the pointer: it is there while the list is
+     moving and gone a moment after it stops. Pointing at a list is not asking to
+     be told how long it is. */
+  --home-list-thumb: transparent;
+  max-height: calc(var(--home-row-height) * 8);
+  overflow-y: auto;
+  /* The bar's width is held whether or not there is one, so a list short enough not
+     to need it still has the same inset on the right as the one beside it — without
+     this a one-row list ran its fill into the box's own edge. Not `scrollbar-width`
+     or `scrollbar-color`: either of those silently kills every rule painting the bar
+     on this box. */
+  scrollbar-gutter: stable;
+}
+.home-list-box.is-scrolling .home-list-scroll {
+  --home-list-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+}
+/* Both classes, so this beats the shared bar's own thumb color wherever the two
+   sit in the file. Everything else about the bar — its width, the inset and the
+   floor under its length — is still .leaf-scroll's. */
+.home-list-scroll.leaf-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--home-list-thumb);
+  transition: background-color var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+/* The bar takes its own width out of this box, so a row already stops where the bar
+   starts and needs no inset of its own. Never a negative inset on the left — this
+   box clips, so the rounded corner of the row under the pointer would be cut. */
+.home-list-scroll ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* Which vault a group of kept files was marked in. Drawn only where there is more
+   than one, so it is never a label with nothing to tell apart. */
+.home-list-group {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+  letter-spacing: var(--lt-tracking-120);
+  padding: var(--lt-space-10) var(--lt-space-10) var(--lt-space-4);
+  text-transform: uppercase;
+}
+/* The reader's own soft edge, on this box: the same ramp to the same surface, top
+   and bottom. Takes no pointer events, and stops short of the right edge so it
+   never paints over the bar. */
+.home-list-fade {
+  /* The surface being dissolved to: the page's own on the screen, and the sheet's
+     where the same box is drawn in one. */
+  --home-list-surface: var(--lt-markdown-background);
+  /* An edge is drawn only where there really is more list past it. A soft top on a
+     list sitting at its first row says something is above it that is not. */
+  --home-list-fade-top: 0px;
+  --home-list-fade-bottom: 0px;
+  position: absolute;
+  inset: 0 var(--reader-scrollbar) 0 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+      to bottom,
+      var(--home-list-surface) 0 var(--reader-edge-fade-hold),
+      transparent
+    ),
+    linear-gradient(to top, var(--home-list-surface) 0 var(--reader-edge-fade-hold), transparent);
+  background-size: 100% var(--home-list-fade-top), 100% var(--home-list-fade-bottom);
+  background-position: 0 0, 0 100%;
+  background-repeat: no-repeat;
+}
+.home-list-box.has-above .home-list-fade {
+  --home-list-fade-top: var(--reader-edge-fade-depth);
+}
+.home-list-box.has-below .home-list-fade {
+  --home-list-fade-bottom: var(--reader-edge-fade-depth);
+}
+/* The way out of a folded list. Flat, because the two buttons above it are the only
+   real controls on this screen and a third framed one would stand beside them as an
+   equal. Drawn only where the columns have folded — wide, the box scrolls instead. */
+.home-showall {
+  display: none;
+  width: 100%;
+  margin-top: var(--lt-space-8);
+  padding: var(--lt-space-8) 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--lt-primary);
+  font-size: var(--lt-text-13);
+  text-align: left;
+}
+.home-showall:hover {
+  background: var(--lt-wash-hover);
+}
+/* Folded: one column, five rows, and the rest a press away. Not a scroll box — a
+   nested scroller inside a page that also scrolls takes a wheel meant for the page,
+   and this app's answer to a window too narrow is already a sheet. */
+@container home (max-width: 599px) {
+  .home-list-scroll {
+    max-height: calc(var(--home-row-height) * 5);
+    overflow-y: hidden;
+  }
+  .home-list-fade {
+    display: none;
+  }
+  .home-showall {
+    display: block;
+  }
+}
+/* One row in a home list: the file's name, with the folder holding it under it.
+   Both lines are one line each and neither wraps, so every row is the same height
+   and a list can be capped at a whole number of them. The mark, where a row has
+   one, spans both lines in a column of its own — placed rather than auto-flowed,
+   or a row without one would put its name where the mark goes. */
+/* A wrapper, not a control: it holds the two buttons side by side and carries the
+   path the right-click menu keys on. Nothing is drawn here. */
+.home-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+/* The row's own target: everything but the heart. Inset on all four sides, so the
+   fill under the pointer is a chip around the two lines rather than a band with the
+   words pressed against its edges. */
+.home-row-open {
+  grid-column: 2;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border-color: transparent;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  padding: var(--lt-space-8) var(--lt-space-10);
+  text-align: left;
+}
+/* The heart the tab strip wears, doing the same job on the same call. Outside the
+   row's own button because a button inside a button is not markup. */
+.home-row-heart {
+  grid-column: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: none;
+  color: var(--lt-primary);
+}
+.home-row-heart:hover {
+  background: var(--lt-wash-hover);
+}
+.home-row-heart .lt-icon {
+  width: 16px;
+  height: 16px;
+}
+.home-row-name {
+  display: block;
+  color: var(--lt-navigation-recent-item-foreground);
+  font-size: var(--lt-text-14);
+  line-height: var(--lt-leading-1-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Clipped from the left, not the right: every path on this screen shares a long
+   prefix, and the end is the part that says which folder it is. `direction` does
+   the clipping — the text stays a left-to-right run because it opens with a
+   letter, and the trailing separator is stripped before it gets here. */
+.home-row-folder {
+  display: block;
+  color: var(--lt-muted-foreground);
+  direction: rtl;
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-4);
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The app's own wash, and both lines keep their own ink. The generic button hover
+   under this one fills with the accent, which leaves a muted second line unreadable
+   on it in every theme — and no theme is checked for that pair, because it is a
+   fill nothing on this screen was meant to take. */
+.home-row-open:hover,
+.home-row-open:focus-visible {
+  background: var(--lt-wash-hover);
+  border-color: transparent;
+}
+.home-row-open:hover .home-row-name {
+  color: var(--lt-navigation-recent-item-hover-foreground);
+}
+/* Dropped, and still on screen so the press can be taken back. Dimmed rather than
+   struck through: it is a row you can still read, still open and still keep. */
+.home-row.is-going {
+  opacity: var(--lt-opacity-45);
+}
+/* And then it goes: it dissolves while the rows under it close the gap, on the app's
+   own curve. Both on the item holding the row, because a height that snapped shut
+   under a row still fading would drag the list up in one jump — and only an item
+   holding a row, since a group heading is not one of these and is not this tall.
+   Reduce Motion answers this rule with everything else, so the row simply goes. */
+.home-list-scroll li:has(> .home-row) {
+  overflow: hidden;
+  max-height: var(--home-row-height);
+  opacity: 1;
+  transition: max-height var(--lt-duration-300) var(--lt-ease-decelerate),
+    opacity var(--lt-duration-300) var(--lt-ease-decelerate);
+}
+.home-list-scroll li.is-leaving {
+  max-height: 0;
+  opacity: 0;
 }
 @media (max-width: 900px) {
   :root {
@@ -5116,6 +5396,47 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: var(--lt-z-41);
   background: var(--lt-background);
   color: var(--lt-foreground);
+}
+/* A folded start-screen list, given the window — same slide-up pattern again. */
+.home-sheet {
+  position: fixed;
+  z-index: var(--lt-z-41);
+  padding: 0 var(--lt-space-20) var(--lt-space-24);
+  background: var(--lt-background);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+}
+.home-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+}
+.home-sheet-title {
+  color: var(--lt-primary);
+  font: var(--lt-weight-700) var(--lt-text-13) var(--app-font);
+  letter-spacing: var(--lt-tracking-120);
+  text-transform: uppercase;
+}
+/* The box fills whatever the sheet's own 78vh ceiling leaves it, so the list scrolls
+   inside the sheet rather than the sheet growing past the window. */
+.home-sheet-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.home-sheet .home-list-box {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.home-sheet .home-list-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+.home-sheet .home-list-fade {
+  --home-list-surface: var(--lt-background);
 }
 /* Theme selector bottom sheet — same slide-up pattern as the glossary sheet. */
 .theme-sheet {

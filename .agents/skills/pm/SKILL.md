@@ -21,15 +21,15 @@ It is **kept**, not deleted, because the row is the only place that says what th
 
 **`PLAN.md` is one file, rewritten in place.** It is not dated per run and there is no folder of snapshots: git holds every earlier version, so an old ranking is a `git log` away. The date at the top says when it was last ranked.
 
-### A row is named, not numbered
+### A row is numbered by position
 
-**The ticket's name is the row's identity**, in both files, in every line of prose, in that ticket's own record and in a commit message from months ago. So a row has nothing to keep in step: adding one is one line, moving one is one line, and a row that ships carries its name across unchanged.
+**The ticket's name is the row's identity.** The live table also shows one global position number, starting at 1 and continuing through every tier. The number belongs to the current ranking, so adding, removing or moving a row renumbers every position below it; the number never follows a ticket.
 
-Rows carried numbers until 4 August 2026. They were retired with their rows and never reused, which is what made them useless — five shipped rows left gaps, so the number could not be read as a position, and the name was already doing the job of a name. Anything written before that date citing `#8` or `#38` means the row; look for the ticket.
+The number is not the ticket's identity and is not copied into `done/PLAN.md`. A shipped row keeps its name and leaves the live count, so a number written down anywhere else is a pointer that moves under the reader.
 
 ### A row moves unchanged
 
-Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across** bar the `Status` cell, which becomes the date the row closed — a live status has no meaning once the work is built. So the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/done`](../done/SKILL.md)'s job, not this skill's.
+Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found, but without the live position number. **Nothing else is rewritten on the way across** bar the `Status` cell, which becomes the date the row closed — a live status has no meaning once the work is built. So the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/done`](../done/SKILL.md)'s job, not this skill's.
 
 ## 1. Read before ranking
 
@@ -87,34 +87,27 @@ Tier 0 comes first because the list is only as good as the statuses it rests on.
 
 **It is read to answer one question: what do I pick up now.** Everything that is not that answer pushes it further down the page, and a reader who has to scroll past four paragraphs of method to reach row one stops reading the file. So the rules here are size rules, and they are the point of the skill rather than a note on it.
 
-**Four lines above the first table. Hard limit.**
+**One compact count line above the first table.**
 
 ```markdown
 # What to build next, in order
 
-**Last ranked 3 August 2026.** Live rows only — a row that ships moves to
-[what was built](done/PLAN.md). Tickets: [README.md](README.md).
-Method, and why a row sits where it does: `/pm`.
-
-**A row is named, not numbered.** One line saying so, and that both files cite
-the ticket's name.
-
-**Status** — where the ticket is in the workflow. `Ready` means it needs design, `Designed` means design is complete, `In development` means implementation has started, and `Released for test` means the release happened but `/done` has not retired it.
+**Last ranked 3 August 2026.** Live: <count>. Retired: <count>. Total: <count>. Numbers show current position; names identify tickets. Shipped rows move to what was built.
 
 ## Tier 1 — wrong today, and cheap
 
-| Ticket | Status | Why here | Cost |
+| # | Ticket | Status | Why here | Cost |
 ```
 
-That is four lines, and the last two each buy something: one says a row is a name so nobody starts numbering again, and the other buys the column, because a reader deciding what to pick up needs to know an unticked row is a guess.
+The count line is the only summary allowed above the tables. The number column shows position; the ticket name remains the stable reference.
 
-- **The `Status` cell is second, right after the ticket.** Use only `Ready`, `Designed`, `In development`, or `Released for test` — no date, no who. It sits before the reasoning because it tells the reader what can happen next.
+- **The `Status` cell is third, after the position and ticket name.** Use only `Ready`, `Designed`, `In development`, or `Released for test` — no date, no who. It sits before the reasoning because it tells the reader what can happen next.
 - **A cell is one or two sentences.** Not a paragraph. Not a citation — a `path:line` belongs in the ticket's measured table, where somebody building it will look, and a cost belongs in the ticket's phases. The cell says *why this row is above the next one*, and nothing else.
 - **No tier preamble.** The heading says what the tier is. A paragraph under it restates the heading.
 - **An empty tier is deleted, heading and all.** It comes back when it has a row. A heading over nothing is a line to scroll past, and tier 0 sat empty over a link to somewhere else for exactly one edit before this rule existed.
 - **No method in the file.** How rows are ranked is this skill; the file links to it. Copying the three criteria into the file means two copies that drift.
 - **No record in the file.** What an earlier ranking got wrong goes in `done/PLAN.md`, beside the rows it is about. Anything that belongs to one ticket rather than to the ordering goes on that ticket, in its own record — that is what a ticket's record section is for.
-- **No summary of what the list adds up to.** The tables are the list. A paragraph reading them back is the file arguing with itself.
+- **No summary paragraph.** The compact count line is the only summary above the tables; the tables are the list.
 - **No picture, and no diagram.** A wireframe and a flow diagram both belong to one ticket, where somebody building it will look; drawn in the ranking they push row one down the page and go stale the moment that ticket is designed. A [track](../../../docs/GLOSSARY.md#track) is numbered steps for the same reason — an order reads faster as a short list than as a graph.
 
 Then, after the tables, only these:
@@ -132,7 +125,7 @@ It ends with two things the live file is kept clear of. **What the retired rows 
 
 ### Rules both tables hold to
 
-- **The prose cites a row by its ticket's name**, never by a number and never by "the row above". A name still points at the right thing after the list is reordered.
+- **The prose cites a row by its ticket's name**, never by its position number and never by "the row above". A name still points at the right thing after the list is reordered.
 - **Every row says why it is *there*, not what the ticket is.** The index already says what a ticket is. A row that only restates it is a row nobody can argue with.
 - **A retired row is struck through and says what the build found** — what the plan had wrong, and what changed shape. That is the half a later reader cannot get anywhere else, and it is why the row is kept rather than deleted.
 - **A claim cites the repo or the ticket.** A cost, a dependency, a "this already ships" — the same bar as a ticket's measured table.
