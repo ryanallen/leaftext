@@ -70,7 +70,7 @@ On screens narrower than 600 px the minimap gutters shrink alongside the preview
 
 The minimap is not a choice. There is nothing to switch and nothing saved: it is the reader's scroll indicator at every window size, so turning it off left a page with no answer to "where am I in this".
 
-The rail still comes and goes with the document — there is none on the home screen, and none while the [graph](03-library.md#graph) is up. With no rail its column collapses to zero and the page widens back out to the window gutter, so no empty band remains, and the reader's native scrollbar comes back as a thin one. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
+The rail still comes and goes with the document — there is none on the home screen, and none while the [graph](03-library.md#graph) is up. With no rail its column collapses to zero and the page widens back out to the window gutter, so no empty band remains, and the reader's own thin [scrollbar](02-navigation.md#scrollbars) comes back — drawn while the page is being scrolled and gone a moment after it stops. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
 
 > [!TIP]
 > Use the minimap to quickly gauge document length and find dense sections at a glance. Because it is a real rendering of the page, headings, code blocks, verse, and dense paragraphs each keep their own shape — so you can pick out section breaks and dense passages in the rail from the layout itself, without reading a word.

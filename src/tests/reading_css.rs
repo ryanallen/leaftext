@@ -1873,7 +1873,6 @@ fn a_home_lists_bar_and_edges_answer_the_scroll_not_the_pointer() {
     // Asked for by name: the bar is there while the list is moving and gone a moment after it stops. Never on hover — pointing at a list on the way somewhere else is not asking to be told how long it is.
     let css = reading_mode_css();
     let box_ = rule_body(&css, "\n.home-list-scroll {");
-    assert_contains(box_, "--home-list-thumb: transparent;");
     // The bar's width is held whether or not there is one, so a list too short to need it keeps the same inset as the one beside it.
     assert_contains(box_, "scrollbar-gutter: stable;");
     assert!(
@@ -1884,17 +1883,11 @@ fn a_home_lists_bar_and_edges_answer_the_scroll_not_the_pointer() {
         !css.contains(".home-list-scroll:hover") && !css.contains(".home-list-scroll:focus-within"),
         "the bar is back on the pointer"
     );
-    assert_contains(
-        rule_body(&css, "\n.home-list-box.is-scrolling .home-list-scroll {"),
-        "--home-list-thumb: color-mix(",
+    // The list has no bar of its own: it wears .leaf-scroll, so the shared one paints it, on the same class and the same timer as the pane, the reader and a wide table.
+    assert!(
+        !css.contains("--home-list-thumb") && !css.contains(".home-list-box.is-scrolling"),
+        "the start screen keeps a private answer to the same question"
     );
-    // The bar itself is the app's own; this list sets its color and the fade that takes it away.
-    let thumb = rule_body(
-        &css,
-        "\n.home-list-scroll.leaf-scroll::-webkit-scrollbar-thumb {",
-    );
-    assert_contains(thumb, "background-color: var(--home-list-thumb);");
-    assert_contains(thumb, "transition: background-color var(--lt-duration-200)");
 
     // The soft edge is the reader's own ramp to the surface the start screen paints. It takes no pointer events, and it stops short of the right edge — a wash laid over the bar would bury the thumb, which starts at that same edge.
     let fade = rule_body(&css, "\n.home-list-fade {");
@@ -1915,6 +1908,75 @@ fn a_home_lists_bar_and_edges_answer_the_scroll_not_the_pointer() {
     assert_contains(
         rule_body(&css, "\n.home-list-box.has-below .home-list-fade {"),
         "--home-list-fade-bottom: var(--reader-edge-fade-depth);",
+    );
+}
+
+#[test]
+fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
+    // Four wearers, one answer: the library pane, a document with no picture down its side, a widened table's sideways bar, and any box marked .leaf-scroll — the shape picker and the start screen's lists among them.
+    let css = reading_mode_css();
+    const WEARERS: [&str; 4] = [
+        ".leaf-scroll",
+        ".library-scroll",
+        ".reader-shell:not(.has-minimap)",
+        ".table-lane > table",
+    ];
+
+    // At rest the thumb is painted in nothing at all. A scrollbar pseudo has no box of its own to fade, so what moves is a property the thumb rule reads — which is also why the bar's width is reserved either way and nothing on the page reflows when one appears.
+    let resting = rule_body(&css, "\n.leaf-scroll,\n.library-scroll,");
+    assert_contains(resting, "--lt-scroll-thumb: transparent;");
+    let moving = rule_body(&css, "\n.leaf-scroll.is-scrolling,");
+    assert_contains(moving, "--lt-scroll-thumb: color-mix(");
+    for wearer in WEARERS {
+        assert_contains(resting, wearer);
+        assert!(
+            css.contains(&format!("\n{wearer}.is-scrolling,"))
+                || css.contains(&format!("\n{wearer}.is-scrolling {{")),
+            "{wearer} never gets the class the watcher stamps, so its bar can never come up"
+        );
+        // Never the pointer. Asked for twice: a bar on hover is still a bar nobody asked for.
+        assert!(
+            !css.contains(&format!("{wearer}:hover::-webkit-scrollbar"))
+                && !css.contains(&format!("{wearer}:focus-within::-webkit-scrollbar")),
+            "{wearer} brings its bar back on the pointer"
+        );
+    }
+
+    // Either standard scrollbar property silently kills every ::-webkit-scrollbar rule on the element it sits on. Only the two boxes meaning to draw no bar at all set one: the tab strip, and the reader while the picture down its side is up.
+    assert!(
+        !css.contains("scrollbar-color:"),
+        "scrollbar-color kills every rule painting the bar it is set on"
+    );
+    assert_eq!(
+        css.matches("scrollbar-width:").count(),
+        2,
+        "a third box took a standard scrollbar property, so its bar can never be painted at all"
+    );
+    assert_contains(rule_body(&css, "\n.tab-bar {"), "scrollbar-width: none;");
+    assert_contains(
+        rule_body(&css, "\n.reader-shell.has-minimap {"),
+        "scrollbar-width: none;",
+    );
+
+    let thumb = rule_body(&css, "\n.leaf-scroll::-webkit-scrollbar-thumb,");
+    assert_contains(thumb, "background-color: var(--lt-scroll-thumb);");
+    assert_contains(
+        thumb,
+        "transition: background-color var(--lt-duration-200) var(--lt-ease-decelerate);",
+    );
+
+    // The stylesheet's one reduced-motion block matches `*`, `*::before` and `*::after`; a scrollbar pseudo is none of the three, so the fade is named here or it survives the setting.
+    let reduced = css
+        .find("@media (prefers-reduced-motion: reduce) {\n  .leaf-scroll::-webkit-scrollbar-thumb,")
+        .map(|at| &css[at..])
+        .expect("the shared thumb has no reduced-motion block of its own");
+    let reduced = &reduced[..reduced.find("\n}").expect("the block should close")];
+    for wearer in WEARERS {
+        assert_contains(reduced, &format!("{wearer}::-webkit-scrollbar-thumb"));
+    }
+    assert_contains(
+        reduced,
+        "transition-duration: var(--lt-duration-0) !important;",
     );
 }
 

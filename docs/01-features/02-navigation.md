@@ -13,6 +13,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Outline](#outline) | A collapsed table of contents, built from the document's headings, at the top of each page, labeled with the document's line count |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
+| [Scrollbars](#scrollbars) | Every bar appears while its box is being scrolled and fades out a moment after it stops |
 | [Live reload](#reload) | Reload a changed file without losing your place |
 | [Recent files](#recent-files) | Reopen any of the last 50 files from the home screen |
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
@@ -150,7 +151,7 @@ A re-pin reads your place at the moment it runs, never the moment it was queued.
 
 The no-file home screen shows the last 50 opened files, under the **Choose file** and **New document** buttons. Until you favorite something it is one list of paths; with any [favorites](#favorites) it becomes two boxes side by side, Recent on the left and Favorites on the right, and a row is then the file's name with the folder it sits in underneath, so you read the name rather than the path. The whole path is still the row's tooltip either way, and a right-click gives the same menu it always did.
 
-- Each box is eight rows deep and scrolls, with a thin bar that appears while you are scrolling and goes again once you stop, and a soft edge wherever there is more list past it.
+- Each box is eight rows deep and scrolls, with the app's own thin [bar](#scrollbars) and a soft edge wherever there is more list past it.
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.
 - Clicking a recent file opens it immediately.
@@ -183,6 +184,10 @@ Opening a document hands it to the Rust side to parse and render before the view
 - A safety timeout lowers it even if a response never comes, so it can never get stuck on screen.
 
 ## Moving within a document
+
+### Scrollbars
+
+Every scrollbar in the app appears while its box is moving and fades out a moment after it stops — the reading page, the [library](03-library.md#browsing) pane, the lists on the home screen, a table too wide for the page, and the shape picker in the [flowchart editor](07-editing.md#the-flowchart-editor). Resting the pointer on one does not bring it back; only scrolling does, including a scroll Leaftext makes itself when it restores your place or jumps to a find match. The space the bar takes is held whether or not it is drawn, so nothing on the page shifts when one arrives, and with the [minimap](04-minimap.md) rail up the reading page draws no bar at all because the rail is that indicator.
 
 ### Find in this document
 

@@ -6586,20 +6586,10 @@ body.is-block-dragging .document-body [data-src-start] {
   margin-left: calc(var(--lt-space-10) * -1);
 }
 .home-list-scroll {
-  /* The bar answers the scroll, not the pointer: it is there while the list is moving and gone a moment after it stops. Pointing at a list is not asking to be told how long it is. */
-  --home-list-thumb: transparent;
   max-height: calc(var(--home-row-height) * 8);
   overflow-y: auto;
   /* The bar's width is held whether or not there is one, so a list short enough not to need it still has the same inset on the right as the one beside it — without this a one-row list ran its fill into the box's own edge. Not `scrollbar-width` or `scrollbar-color`: either of those silently kills every rule painting the bar on this box. */
   scrollbar-gutter: stable;
-}
-.home-list-box.is-scrolling .home-list-scroll {
-  --home-list-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
-}
-/* Both classes, so this beats the shared bar's own thumb color wherever the two sit in the file. Everything else about the bar — its width, the inset and the floor under its length — is still .leaf-scroll's. */
-.home-list-scroll.leaf-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--home-list-thumb);
-  transition: background-color var(--lt-duration-200) var(--lt-ease-decelerate);
 }
 /* The bar takes its own width out of this box, so a row already stops where the bar starts and needs no inset of its own. Never a negative inset on the left — this box clips, so the rounded corner of the row under the pointer would be cut. */
 .home-list-scroll ol {
@@ -7059,6 +7049,20 @@ body.is-home-row-dragging .home-list-scroll li {
   /* Transparent, not the surface color: an opaque track masks the grain and leaves an ungrained strip down the edge it sits on. */
   background: transparent;
 }
+/* The bar answers the scroll, not the pointer: gone at rest, there while that box is moving, and gone again a moment after it stops. Never on hover — pointing at a list on the way somewhere else is not asking to be told how long it is. `is-scrolling` is stamped on whatever scrolled by the one watcher in `dom.js`. */
+.leaf-scroll,
+.library-scroll,
+.reader-shell:not(.has-minimap),
+.table-lane > table {
+  --lt-scroll-thumb: transparent;
+}
+.leaf-scroll.is-scrolling,
+.library-scroll.is-scrolling,
+.reader-shell:not(.has-minimap).is-scrolling,
+.table-lane > table.is-scrolling {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+}
+/* What fades is that property, not an opacity: a scrollbar pseudo has no box of its own to fade. It also means the bar's width is reserved whether or not the thumb is painted, so nothing on the page moves when one appears. */
 .leaf-scroll::-webkit-scrollbar-thumb,
 .library-scroll::-webkit-scrollbar-thumb,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
@@ -7067,7 +7071,17 @@ body.is-home-row-dragging .home-list-scroll li {
   border: var(--lt-stroke-4) solid transparent;
   background-clip: padding-box;
   border-radius: var(--lt-radius-md);
-  background-color: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  background-color: var(--lt-scroll-thumb);
+  transition: background-color var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+/* Named, because the stylesheet's one reduced-motion block matches `*`, `*::before` and `*::after` and a scrollbar pseudo is none of the three. With motion reduced the bar still arrives and still leaves; it just does it without a ramp. */
+@media (prefers-reduced-motion: reduce) {
+  .leaf-scroll::-webkit-scrollbar-thumb,
+  .library-scroll::-webkit-scrollbar-thumb,
+  .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
+  .table-lane > table::-webkit-scrollbar-thumb {
+    transition-duration: var(--lt-duration-0) !important;
+  }
 }
 /* Floor the grabber so a long page can't shrink it to a sliver. Per axis: a bare `min-height` on a sideways bar sets its thickness instead of its length, which swells the 14px bar into a 56px band. */
 .leaf-scroll::-webkit-scrollbar-thumb:vertical,

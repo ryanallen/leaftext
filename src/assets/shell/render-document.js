@@ -169,23 +169,15 @@ function homeList(which, state) {
 function homeListBox(rows) {
   return `<div class="home-list-box"><div class="home-list-scroll leaf-scroll"><ol>${rows}</ol></div><div class="home-list-fade" aria-hidden="true"></div></div>`;
 }
-// How long the bar stays up after the list stops moving.
-var HOME_SCROLL_REST_MS = 700;
-// The bar and the soft edges both answer the scroll rather than the pointer: the bar is up while the list is moving and gone shortly after, and an edge is drawn only where there really is more list past it.
+// The soft edges answer the scroll: one is drawn only where there really is more list past it, which is measured on the box rather than the rows because the edge is painted by a sibling of the scroller. The bar over them is every box's now, stamped by the shared watcher in `dom.js`.
 function watchHomeList(box) {
   const scroll = box.querySelector('.home-list-scroll');
   if (!scroll) return;
-  let resting = 0;
   const edges = () => {
     box.classList.toggle('has-above', scroll.scrollTop > 1);
     box.classList.toggle('has-below', scroll.scrollTop + scroll.clientHeight < scroll.scrollHeight - 1);
   };
-  scroll.addEventListener('scroll', () => {
-    box.classList.add('is-scrolling');
-    clearTimeout(resting);
-    resting = setTimeout(() => box.classList.remove('is-scrolling'), HOME_SCROLL_REST_MS);
-    edges();
-  });
+  scroll.addEventListener('scroll', edges);
   edges();
 }
 function watchHomeLists(root) {

@@ -3666,23 +3666,106 @@ if (booted) {
       throw new Error('a list that fits whole drew an edge');
     }
 
-    // The bar is the scroll's own: it goes up when the list moves, and the timer that takes it away is armed in the same breath.
-    if (top.classes.has('is-scrolling')) throw new Error('the bar was up before anything moved');
+    // The bar over these edges is not this watcher's: it belongs to the shared one below, which serves the pane, the reader and a wide table by the same route.
+    top.scrolled();
+    if (top.classes.has('is-scrolling')) throw new Error('a home list still raises its own bar');
+  });
+
+  // Every bar in the app answers the scroll rather than the pointer, off one watcher: the pane, the reader with no rail, a widened table and any box marked .leaf-scroll, plus the start screen's two lists.
+  check('the shared watcher raises a bar on the box that moved and takes it away when that box rests', () => {
+    const classes = new Set();
+    const box = Object.assign(fakeElement('scroll'), {
+      classList: {
+        add: (name) => classes.add(name),
+        remove: (name) => classes.delete(name),
+        contains: (name) => classes.has(name),
+      },
+    });
     const wasTimeout = booted.setTimeout;
+    const wasClear = booted.clearTimeout;
     let armed = null;
+    let cleared = [];
     booted.setTimeout = (fn) => {
       armed = fn;
-      return 1;
+      return 42;
     };
+    booted.clearTimeout = (id) => cleared.push(id);
     try {
-      top.scrolled();
-      if (!top.classes.has('is-scrolling')) throw new Error('the list moved and the bar stayed away');
+      booted.leafMarkScrolling(box);
+      if (!classes.has('is-scrolling')) throw new Error('the box moved and the bar stayed away');
       if (!armed) throw new Error('nothing was set to take the bar away again');
+      // A second notch restarts that box's own timer rather than stacking another one, or a bar goes while the box is still moving.
+      const first = armed;
+      booted.leafMarkScrolling(box);
+      if (!cleared.includes(42)) throw new Error('a second notch left the first timer running');
+      if (armed === first) throw new Error('a second notch never rearmed the timer');
       armed();
-      if (top.classes.has('is-scrolling')) throw new Error('the bar never goes once the list stops');
+      if (classes.has('is-scrolling')) throw new Error('the bar never goes once the box stops');
+      // Scrolling the page itself targets the document, which has no classes to stamp.
+      booted.leafMarkScrolling(booted.document);
+      booted.leafMarkScrolling(null);
     } finally {
       booted.setTimeout = wasTimeout;
+      booted.clearTimeout = wasClear;
     }
+  });
+
+  // The two wearers with nothing to bind to: the reader shell, replaced by every render, and a wide table, which comes out of Markdown with nowhere to carry a class. Delegation is what covers them, so a box that did not exist at boot has to be stamped like any other, and each has to rest on its own clock.
+  check('a scroller made after boot is stamped, and one box resting does not take another box’s bar', () => {
+    const made = () => {
+      const classes = new Set();
+      return {
+        classes,
+        el: Object.assign(fakeElement('made-later'), {
+          classList: {
+            add: (name) => classes.add(name),
+            remove: (name) => classes.delete(name),
+            contains: (name) => classes.has(name),
+          },
+        }),
+      };
+    };
+    const reader = made();
+    const table = made();
+    const wasTimeout = booted.setTimeout;
+    const wasClear = booted.clearTimeout;
+    const armed = [];
+    const cleared = [];
+    booted.setTimeout = (fn) => armed.push(fn);
+    booted.clearTimeout = (id) => {
+      if (id !== undefined) cleared.push(id);
+    };
+    try {
+      booted.leafMarkScrolling(reader.el);
+      booted.leafMarkScrolling(table.el);
+      if (!reader.classes.has('is-scrolling') || !table.classes.has('is-scrolling')) {
+        throw new Error('a box created after boot was left unwatched');
+      }
+      if (armed.length !== 2) throw new Error('the two boxes share one clock');
+      // The second box must not have reset the first one's clock, or a page with two scrollers leaves a bar up for ever.
+      if (cleared.length) throw new Error('a second box moving reset the first box’s clock');
+      armed[0]();
+      if (reader.classes.has('is-scrolling')) throw new Error('the first box kept its bar past its rest');
+      if (!table.classes.has('is-scrolling')) throw new Error('one box resting took the bar off another still moving');
+    } finally {
+      booted.setTimeout = wasTimeout;
+      booted.clearTimeout = wasClear;
+    }
+  });
+
+  // The stand-in page takes document listeners and drops them, so the registration cannot be reached through it. Read off the fragment instead, the way the canvas's own listeners are.
+  check('one passive listener in the capture phase is what sees every scroller', () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/dom.js'), 'utf8');
+    const registered = /document\.addEventListener\(\s*'scroll',[^;]*\{[^}]*capture:\s*true[^}]*passive:\s*true[^}]*\}\s*\)/.test(fragment);
+    if (!registered) {
+      throw new Error('dom.js does not register the scroll listener on document in the capture phase, passively');
+    }
+    if (!/leafMarkScrolling\(event\.target\)/.test(fragment)) {
+      throw new Error('the listener stamps something other than the box that scrolled');
+    }
+    // A per-box binding is the one way this quietly breaks: the reader is rebuilt on every render and a table has nothing to bind to.
+    const others = readFileSync(join(root, 'src/assets/shell/render-document.js'), 'utf8');
+    if (/is-scrolling/.test(others)) throw new Error('the start screen still stamps a bar of its own');
   });
 
   check('an unfavorited row stays on screen long enough to be taken back', () => {

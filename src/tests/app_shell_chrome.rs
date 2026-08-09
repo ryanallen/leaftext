@@ -96,21 +96,8 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
     ] {
         assert_contains(&css, wearer);
     }
-    // A second definition is how the pane ended up with a bar 10px wide beside a reader's at 14.
-    assert_eq!(css.matches("::-webkit-scrollbar-thumb").count(), 13);
-    // The one rule outside that shared definition, and all it may say is what color the thumb is and how it fades: the home lists show theirs while the list is moving and take it away after. Its width, its inset and the floor under its length stay the shared ones.
-    let home = rule_body(
-        &css,
-        "\n.home-list-scroll.leaf-scroll::-webkit-scrollbar-thumb {",
-    );
-    assert_eq!(
-        home.lines()
-            .filter(|line| line.contains(':') && !line.contains("::-webkit"))
-            .count(),
-        2,
-        "a thumb rule of its own may set a color and the fade that takes it away, nothing else"
-    );
-    assert_contains(home, "background-color: var(--home-list-thumb);");
+    // A second definition is how the pane ended up with a bar 10px wide beside a reader's at 14. Four wearers named in each of three blocks — the thumb, and the floor under its length per axis — plus the same four in the reduced-motion block that has to name them, because the stylesheet's universal one cannot reach a scrollbar pseudo. Nothing else may paint a thumb: a private copy is how the app ends up with two answers to when a bar is there.
+    assert_eq!(css.matches("::-webkit-scrollbar-thumb").count(), 16);
     assert_contains(&html, "flow-picker-body leaf-scroll");
 }
 

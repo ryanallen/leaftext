@@ -372,5 +372,16 @@ function leafFocusForKeyboard(target) {
   target.focus();
   return true;
 }
+// Every bar in the app answers the scroll, not the pointer: it is there while that box is moving and gone a moment after it stops. Pointing at a list on the way somewhere else is not asking to be told how long it is.
+var LEAF_SCROLL_REST_MS = 700;
+const leafScrollResting = new WeakMap();
+function leafMarkScrolling(box) {
+  if (!box || !box.classList) return;
+  box.classList.add('is-scrolling');
+  clearTimeout(leafScrollResting.get(box));
+  leafScrollResting.set(box, setTimeout(() => box.classList.remove('is-scrolling'), LEAF_SCROLL_REST_MS));
+}
+// `scroll` does not bubble, but it does reach an ancestor in the capture phase — so one listener sees every scroller in the page. It has to be one: the reader is rebuilt on every render and a wide table comes out of Markdown with nothing to bind to, and a box a re-bind missed would be a box whose bar never comes back.
+document.addEventListener('scroll', (event) => leafMarkScrolling(event.target), { capture: true, passive: true });
 window.leafSetWindowMaximized(window.__leafMaximized);
 
