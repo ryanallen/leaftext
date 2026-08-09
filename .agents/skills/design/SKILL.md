@@ -1,13 +1,15 @@
 ---
 name: design
-description: Design a ticket before anyone builds it. Opens every line it cites against the code, holds the plan against the rules this repo already paid for, fixes what is wrong in place, dates the top of the file, and records what was wrong at the bottom. Never edits app code. Use when the user says "design this ticket", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket.
+description: Design a ticket before anyone builds it. Opens every line it cites against the code, holds the plan against the rules this repo already paid for, fixes what is wrong in place, draws it — a photographed wireframe where it touches the window, a flow where it does not, and never a ticket left with no picture — dates the top of the file, and records what was wrong at the bottom. Never edits app code. Use when the user says "design this ticket", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
 
 # Design a ticket
 
-A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this reads the file against the code, decides between the researched options, fixes what is wrong in the plan, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
+A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this reads the file against the code, decides between the researched options, fixes what is wrong in the plan, draws it, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
+
+**Every ticket comes out of this pass with a picture in it** — step 6a. That is the part a builder reads first and the part an owner can disagree with before anything is built, and a plan handed on as prose alone is one where whoever builds it draws it in their own head instead.
 
 **Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug, it stays a box in the ticket — fixing it is a separate job with its own `/check`.
 
@@ -105,7 +107,9 @@ Then check the three middle headings answer one question each and stop. `## Why`
 
 **Anything the running order should not be carrying belongs here.** A row in `../docs/PLAN.md` is two sentences; if this ticket's row has grown past that, move the words into this file and shorten the row in the same pass.
 
-## 6a. Anything the reader will see gets drawn here, and the owner says yes to the drawing
+## 6a. Every ticket leaves this pass with a picture in it, and the owner says yes to a drawn interface
+
+**No ticket this skill touches ends without a drawing.** A plan is read months later by somebody who will not rebuild it out of prose, and the picture is the part they trust, so it is drawn while the code is open rather than left to whoever builds it. Where the phases touch the window that drawing is a photographed wireframe under `## What it looks like`, below; where they touch nothing a reader sees, it is the flow in step 6b — a Mermaid block in `## How it is built`. One of the two, every time. A ticket that arrives already carrying one still has it opened against the code here rather than taken on trust, and a ticket carrying neither is one this pass draws before it signs the top.
 
 **A ticket whose phases touch the window and has no `## What it looks like` section is one this pass draws.** Sketch it as HTML under `../docs/imgs/wireframes/` and photograph it with `node scripts/wireframe.mjs` — a **picture** in the ticket, never box characters: `just check-ascii-art` fails on a `┌` anywhere in the tree, because no renderer lines them up — with the markup and the `design/components.md` row each new control will take. See [ticket](../ticket/SKILL.md) for the command and the shape of a sketch.
 
@@ -130,7 +134,7 @@ Then two readings nothing else in this repo does:
 - **The diagram against the code.** Every node named as the code names it, every edge a call that exists, and the files cited under the block. Where the ticket is adding a piece, its node says so — an undated drawing that mixes what ships with what is planned is one a builder reads as all shipping.
 - **The diagram against the phase list.** A node nothing in the phases builds is either a node to cut or a box nobody wrote, and a hop the phases build that the picture does not show means the picture is out of date. This is the one check that turns the drawing from decoration into the thing that makes a plan followable, and it takes one pass.
 
-A diagram answering more than one question gets split; a diagram of two boxes and an arrow is cut back to the sentence it was.
+A diagram answering more than one question gets split; a diagram of two boxes and an arrow is cut back to the sentence it was — unless it is the ticket's only picture, in which case draw the thing the ticket actually turns on: what the code does today beside what it will do, or the shape of the file the work leaves behind. Step 6a asks every ticket for a picture, and "there was nothing worth drawing" is the answer that gets a ticket built off four paragraphs.
 
 ## 7. The file itself has to read well
 
@@ -146,10 +150,10 @@ A plan is read as a file, so how it sits on the page is part of whether it is fo
 **Say on the file that this ran, and when.** One short line, directly under the `> **Not built.**` note:
 
 ```markdown
-> **Designed 3 August 2026.** Citations opened; plan held against `AGENTS.md`.
+> **Designed 3 August 2026.** Citations opened; plan held against `AGENTS.md`; the interface drawn and approved.
 ```
 
-That is the whole line. It is a date and a scope, not a summary — what the reading *found* is the record at the bottom, and a paragraph here is a paragraph between the reader and the ticket.
+The last clause is the drawing step 6a asked for, named so a reader can see at the top that there is one — `the mechanism drawn` where the picture is a flow rather than a wireframe. A dated line that claims neither is a ticket with no picture in it, which is the thing this pass exists to stop shipping. That is the whole line. It is a date and a scope, not a summary — what the reading *found* is the record at the bottom, and a paragraph here is a paragraph between the reader and the ticket.
 
 It goes at the top because that is where somebody decides whether to trust the file, and it carries a date because a plan designed in March against code that moved in August is a plan nobody has read. Designing it again replaces the line rather than stacking another one.
 
@@ -188,7 +192,7 @@ Fix the small stuff in place without a line in the record — a stale line numbe
 
 Say what changed in the plan, in plain words. The ticket is a file in `../docs/`; nothing in the app moved, so there is nothing to verify and nothing to bundle. The tree stays dirty.
 
-Two things have to be on the file when this ends: the dated line at the top, and the record at the bottom. Missing either one, nothing downstream can tell a checked plan from an unchecked one.
+Three things have to be on the file when this ends: the dated line at the top, a picture in the body — a photographed wireframe or a Mermaid flow — and the record at the bottom. Missing the first or the last, nothing downstream can tell a checked plan from an unchecked one; missing the middle, the plan is four paragraphs somebody has to hold in their head, and what they build instead is whatever they pictured.
 
 ## Reference
 
