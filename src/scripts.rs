@@ -49,6 +49,14 @@ pub fn settings_unreadable_script(unreadable: bool) -> String {
     format!("window.__leafSettingsUnreadable = {unreadable};")
 }
 
+/// Which favorites are not on the disk, and which vaults' own folders have gone, as `window.leafSetFavoritesMissing`. Sent when the start screen asks, because only the binary reads the disk: this payload's builder is library code a browser compiles too, and it is rebuilt on every render — including every document open, where nobody is looking at the favorites. Nothing marked is the resting state, so a browser and a reply still in flight both say the same true thing.
+pub fn favorites_missing_script(paths: &[String], vaults: &[i64]) -> String {
+    format!(
+        "window.leafSetFavoritesMissing({});",
+        serde_json::json!({ "paths": paths, "vaults": vaults })
+    )
+}
+
 /// The link graph, for the graph view. Every string is file-derived and untrusted; the page escapes them before they reach a label.
 pub fn graph_script(graph: &DocumentGraph) -> String {
     let payload = serde_json::json!({
@@ -144,7 +152,7 @@ pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> S
     call_with_json("window.leafSetState", &state)
 }
 
-/// The payload every workspace script carries: recents, the kept paths, tabs, active index and document (`null` on the home screen). One builder so the four senders agree — a screen left out of it is a screen that never hears about a change.
+/// The payload every workspace script carries: recents, the favorites, tabs, active index and document (`null` on the home screen). One builder so the four senders agree — a screen left out of it is a screen that never hears about a change.
 fn workspace_payload(
     recent: &[PathBuf],
     favorites: &Favorites,
@@ -156,7 +164,7 @@ fn workspace_payload(
         .iter()
         .map(|path| path.display().to_string())
         .collect();
-    // Spelled out rather than serialized whole, so a kept path reaches the page the way a recent does: as the text the page compares against a document's own path.
+    // Spelled out rather than serialized whole, so a favorite reaches the page the way a recent does: as the text the page compares against a document's own path.
     let favorites: Vec<serde_json::Value> = favorites
         .entries
         .iter()

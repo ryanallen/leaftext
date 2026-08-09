@@ -32,7 +32,7 @@ Only the marked row has been run as written. The rest are reconstructed from the
 | `format-bar.png` | The format bar floating over a few selected words | `-Unlocked`, a `drag:` across words in a paragraph, cropped to 720x152 |
 | `glossary-sheet.png` | A glossary entry open in a bottom sheet over the page | `-Doc <a document with a glossary>`, then click an underlined term |
 | `graph.png` | The link graph filling the page | `-Vault <folder> -GraphScope xl`, then open the graph |
-| `home.png` | The home screen: the two buttons, the recent list and the kept list beside it | no `-Doc`, `-Recents <files> -Favorites <files>` |
+| `home.png` | The home screen: the two buttons, the recent list and the favorites beside it | no `-Doc`, `-Recents <files> -Favorites <files>` |
 | `insert-row.png` | The insert row fanned out over an empty line | `-Unlocked`, then click an empty line |
 | `leaftext.png` | The whole window: library, rendered page, minimap | `-Doc <a document> -Vault <folder> -LibraryOpen` |
 | `library-sheet.png` | The library over the page as a sheet in a narrow window | `-Width 390 -Vault <folder> -LibraryOpen` |

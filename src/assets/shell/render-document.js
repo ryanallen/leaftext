@@ -14,17 +14,51 @@ var homeSheetTitle = document.getElementById('homeSheetTitle');
 var homeSheetClose = document.getElementById('homeSheetClose');
 var homeSheetShowing = null;
 var homeSheetLastFocus = null;
-// How long a dropped favorite stays on screen before it really goes. The host is
+// How long an unfavorited file stays on screen before it really goes. The host is
 // told at once, so nothing is riding on this timer but the chance to change your
 // mind — and a row you can still see is a row you can still press.
 var HOME_UNDO_MS = 30000;
-// Kept paths that have been dropped and are still drawn: path to its timer. Read
+// Favorites that have been unfavorited and are still drawn: path to its timer. Read
 // through `homeIsDropping` — theme.js runs the first render before this line does,
 // and a `var` is undefined until then.
 var homeDropping = new Map();
 function homeIsDropping(path) {
   return !!homeDropping && homeDropping.has(String(path));
 }
+// Favorites the host says are not on the disk, and vaults whose own folder has
+// gone. Empty until an answer arrives, which is the true answer while the reply is
+// in flight and the true answer in a browser, where nobody reads a disk. `var` for
+// the reason above: the first render runs before this fragment does.
+var homeMissing = new Set();
+var homeMissingVaults = new Set();
+// The host's answer, applied to the rows already on screen. Never a redraw: a row
+// unfavorited with the heart is held there by its own timer, and rebuilding the list
+// would throw its half-finished dissolve away and jump the list under the reader.
+function markHomeFavorites(root) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('[data-home-favorite]').forEach((row) => {
+    const path = row.getAttribute('data-home-favorite') || '';
+    const vault = row.getAttribute('data-home-vault');
+    // A row on its way out is off the store, so it is never named missing: what the
+    // reader is watching is it leaving.
+    const going = homeIsDropping(path);
+    const vaultGone = !going && vault != null && homeMissingVaults.has(Number(vault));
+    row.classList.toggle('is-missing', !going && (vaultGone || homeMissing.has(path)));
+    // No way out on a row inside a folder that is not there: repointing one file
+    // in it is not the fix.
+    row.classList.toggle('is-vault-gone', vaultGone);
+  });
+  root.querySelectorAll('.home-list-group[data-home-vault]').forEach((group) => {
+    const vault = group.getAttribute('data-home-vault');
+    group.classList.toggle('is-missing', homeMissingVaults.has(Number(vault)));
+  });
+}
+window.leafSetFavoritesMissing = (answer) => {
+  homeMissing = new Set(((answer && answer.paths) || []).map(String));
+  homeMissingVaults = new Set(((answer && answer.vaults) || []).map(Number));
+  markHomeFavorites(app);
+  if (homeSheetShowing) markHomeFavorites(homeSheetBody);
+};
 // The class comes off again so a document at rest carries no animation. Guarded on
 // the target: animation events bubble, and a rendered document animates things of
 // its own — a table's edge bands finishing their scroll strip the fade off the page
@@ -57,12 +91,12 @@ function homeRowParts(path) {
 }
 // One row for either home list, so both draw the same thing. The row carries the
 // path twice: `data-path` opens it and `data-reveal-path` is what the right-click
-// menu finds a start-screen row by. `kind` is a kept path's own — a recent is always
+// menu finds a start-screen row by. `kind` is a favorite's own — a recent is always
 // a document, so it wears no heart and passes none.
 //
-// A kept row is a wrapper holding two buttons rather than one button holding a
+// A favorite row is a wrapper holding two buttons rather than one button holding a
 // button, which is not markup: the same shape a tab already uses for its own heart.
-function homeRowMarkup(path, kind) {
+function homeRowMarkup(path, kind, vaultId) {
   const { name, folder } = homeRowParts(path);
   const attr = escapeAttr(String(path == null ? '' : path));
   const under = folder ? `<span class="home-row-folder">${escapeText(folder)}</span>` : '';
@@ -70,26 +104,45 @@ function homeRowMarkup(path, kind) {
   // click below reads it to open the pane rather than a document.
   const folderAttr = kind === 'folder' ? ` data-folder-path="${attr}"` : '';
   // The heart the tab strip already wears, and it does the same job: the column is
-  // called Favorites, so what the mark owes is that the row is kept — and pressing
-  // it is how a row leaves without opening the file you were trying not to open.
+  // called Favorites, so what the mark owes is that the row is a favorite — and
+  // pressing it is how a row leaves without opening the file you meant not to open.
   const going = kind ? homeIsDropping(path) : false;
-  const mark = going ? 'Keep this one after all' : 'Unfavorite';
+  const mark = going ? 'Favorite it again' : 'Unfavorite';
   // A row on its way out says so where it usually says its path: what is about to
   // happen matters more than where the file is, and the sentence names the way back.
-  const said = going ? 'Dropped. This goes in a moment — press the heart to keep it.' : `Open ${attr}`;
+  const said = going ? 'Unfavorited. This goes in a moment — press the heart to put it back.' : `Open ${attr}`;
   const open = `<button type="button" class="home-row-open" title="${going ? escapeAttr(said) : said}" data-path="${attr}"><span class="home-row-name">${escapeText(name)}</span>${under}</button>`;
   const heart = kind
     ? `<button type="button" class="home-row-heart" data-home-unfavorite="${attr}" data-home-kind="${escapeAttr(kind)}" aria-label="${mark}" title="${going ? escapeAttr(said) : mark}"><span class="lt-icon lt-icon-favorite-${going ? 'off' : 'on'}"></span></button>`
     : '';
-  return `<span class="home-row${going ? ' is-going' : ''}" data-reveal-path="${attr}"${folderAttr}>${heart}${open}</span>`;
+  // Drawn on every favorite document and shown only on a row whose file has gone, so
+  // saying it has gone is a class on a row already on screen rather than a redraw.
+  // A favorite folder gets none: this opens the picker Open opens, which picks a file.
+  const repair =
+    kind === 'document'
+      ? `<button type="button" class="home-row-repair" data-home-repair="${attr}" title="Find this file where it is now">Find it…</button>`
+      : '';
+  // What the answer keys on. A favorite and a recent can be the same file, so the
+  // mark needs the favorite row rather than any row wearing that path — and the row
+  // needs its own vault, because a vault whose folder has gone takes its rows with it.
+  const favorite = kind ? ` data-home-favorite="${attr}"` : '';
+  const vault = kind && vaultId != null ? ` data-home-vault="${escapeAttr(String(vaultId))}"` : '';
+  return `<span class="home-row${going ? ' is-going' : ''}" data-reveal-path="${attr}"${folderAttr}${favorite}${vault}>${heart}${open}${repair}</span>`;
 }
-// The kept paths, split by the vault each was marked inside. In a vault that is
+// One group's heading. It carries the vault it names, and the line saying that
+// vault's own folder has gone — drawn always and shown only when the heading is
+// marked, so a whole vault going says so once, here, rather than on every row.
+function homeGroupMarkup(group) {
+  const vault = group.vaultId == null ? '' : ` data-home-vault="${escapeAttr(String(group.vaultId))}"`;
+  return `<li class="home-list-group"${vault}>${escapeText(group.name)}<span class="home-list-group-gone">folder missing</span></li>`;
+}
+// The favorites, split by the vault each was marked inside. In a vault that is
 // the one you are in and nothing else; outside every vault it is all of them at
 // once, since there is no current one to prefer.
 function homeFavoriteGroups(favorites) {
   if (activeVaultId) {
     const mine = favorites.filter((favorite) => favorite && favorite.vaultId === activeVaultId);
-    return mine.length ? [{ name: libraryRootLabel(), entries: mine }] : [];
+    return mine.length ? [{ name: libraryRootLabel(), vaultId: activeVaultId, entries: mine }] : [];
   }
   const groups = [];
   const byVault = new Map();
@@ -98,8 +151,8 @@ function homeFavoriteGroups(favorites) {
     const id = favorite.vaultId == null ? null : favorite.vaultId;
     if (!byVault.has(id)) {
       const vault = id == null ? null : leafVaults.find((one) => one && one.id === id);
-      // A file on the desktop belongs to no vault and is still a file you kept.
-      const group = { name: vault ? vault.name : 'Outside a vault', entries: [] };
+      // A file on the desktop belongs to no vault and is still a file you favorited.
+      const group = { name: vault ? vault.name : 'Outside a vault', vaultId: id, entries: [] };
       byVault.set(id, group);
       groups.push(group);
     }
@@ -107,8 +160,8 @@ function homeFavoriteGroups(favorites) {
   }
   return groups;
 }
-// The kept list as the screen draws it: what the store holds, plus every row that
-// has been dropped and is still on its way out, back where it was.
+// The favorites as the screen draws them: what the store holds, plus every row that
+// has been unfavorited and is still on its way out, back where it was.
 function homeFavoritesDrawn(favorites) {
   if (!homeDropping || !homeDropping.size) return favorites;
   const drawn = favorites.slice();
@@ -138,8 +191,10 @@ function homeList(which, state) {
       rows: groups
         .map(
           (group) =>
-            (labeled ? `<li class="home-list-group">${escapeText(group.name)}</li>` : '') +
-            group.entries.map((favorite) => `<li>${homeRowMarkup(favorite.path, favorite.kind)}</li>`).join(''),
+            (labeled ? homeGroupMarkup(group) : '') +
+            group.entries
+              .map((favorite) => `<li>${homeRowMarkup(favorite.path, favorite.kind, favorite.vaultId)}</li>`)
+              .join(''),
         )
         .join(''),
     };
@@ -185,13 +240,13 @@ function watchHomeLists(root) {
 // One column: a heading carrying its count, then the box — or, with nothing in it, a
 // line saying what would put something there. The Show all button is drawn whenever
 // the list is longer than the folded layout can hold; the stylesheet hides it wide,
-// where the box scrolls instead. Only ever a column of a pair: with nothing kept the
+// where the box scrolls instead. Only ever a column of a pair: with no favorites the
 // screen is the plain list above instead.
 function homeColumnMarkup(which, state) {
   const list = homeList(which, state);
   const heading = list.count ? `${escapeText(list.title)} (${escapeText(formatCount(list.count))})` : escapeText(list.title);
   // Empty is nothing left to draw, which is not the same as a count of none: the
-  // last kept row can be on its way out and still be on screen, and still pressable.
+  // last favorite row can be on its way out and still on screen, and still pressable.
   if (!list.drawn) {
     return `<section class="home-list"><h2>${heading}</h2><p class="empty-help">${escapeText(list.help || '')}</p></section>`;
   }
@@ -201,11 +256,11 @@ function homeColumnMarkup(which, state) {
       : '';
   return `<section class="home-list"><h2>${heading}</h2>${homeListBox(list.rows)}${showAll}</section>`;
 }
-// Both lists, side by side. Neither asks the host for anything: recents and kept
-// paths already ride the payload every render reads.
+// Both lists, side by side. Neither asks the host for anything: recents and favorites
+// already ride the payload every render reads.
 //
-// With nothing kept there is no second column at all: a box saying how to keep a file
-// is an advertisement on the screen somebody sees most, and the heart is on every tab
+// With no favorites there is no second column at all: a box saying how to favorite a
+// file is an advertisement on the screen somebody sees most, and the heart is on every tab
 // under the pointer. And one list is not half a pair — it is the plain Recent list
 // this screen carried before there was a pair, whole paths on one line each, in the
 // writing's own column under a rule.
@@ -218,7 +273,7 @@ function homeListsMarkup(state) {
   }
   return `<div class="home-list-grid">${homeColumnMarkup('recent', state)}${homeColumnMarkup('favorites', state)}</div>`;
 }
-// A kept folder is not a document: it opens the library pane at that folder, which
+// A favorite folder is not a document: it opens the library pane at that folder, which
 // is the one place a folder can be looked at.
 function openHomeFolder(path) {
   if (libraryIsClosed()) toggleLibrary();
@@ -227,8 +282,26 @@ function openHomeFolder(path) {
 // Every row in a home list, wherever it is drawn. Rebound on each render because the
 // screen is rebuilt whole, and again for the sheet's own copy of the same rows.
 function bindHomeRows(root) {
+  // The row itself is the handle, past a small threshold — no grip, which would be a
+  // fourth column on every row of a list of eight for a gesture used rarely.
+  root.querySelectorAll('[data-home-favorite]').forEach((row) => {
+    row.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || row.classList.contains('is-going')) return;
+      // The heart and the way out are pressed, not dragged.
+      if (event.target && event.target.closest && event.target.closest('.home-row-heart, .home-row-repair')) return;
+      homeRowDrag = {
+        path: row.getAttribute('data-home-favorite'),
+        row,
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        moved: false,
+      };
+    });
+  });
   root.querySelectorAll('[data-path]').forEach((button) => {
     button.addEventListener('click', () => {
+      // The press that ended a drag is not a press on the file.
+      if (suppressHomeRowClick) return;
       closeHomeSheet();
       // The folder mark is on the row, not on the button inside it.
       const row = button.closest('.home-row');
@@ -245,8 +318,178 @@ function bindHomeRows(root) {
       pressHomeHeart(button.dataset.homeUnfavorite, button.dataset.homeKind);
     });
   });
+  // The way out of a favorite whose file has moved: the picker Open opens, and the host
+  // points this entry at whatever comes back. Nothing is repointed on its own.
+  root.querySelectorAll('[data-home-repair]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      send({ command: 'repointFavorite', path: button.dataset.homeRepair });
+    });
+  });
 }
-// The heart on a kept row. Pressing it drops the file at once — the host is told,
+// How far the pointer goes before a press on a favorite row is a drag rather than a
+// click. Under it the row still opens, which is what the row is for.
+var HOME_DRAG_THRESHOLD = 4;
+// The row under the pointer, once one is being dragged.
+var homeRowDrag = null;
+// A drag that ended over the row's own button: the click still comes, and it must
+// not open the file that was just moved. Cleared the way the tab strip clears its own.
+var suppressHomeRowClick = false;
+// The items of a favorite row's own group: the run between the headings around it. A
+// row never leaves the vault it was marked in — dragging it out would rename what it
+// belongs to by accident.
+function homeRowGroup(row) {
+  const item = row.parentElement;
+  const list = item && item.parentElement;
+  if (!list || !list.children) return [];
+  const items = Array.prototype.slice.call(list.children);
+  const at = items.indexOf(item);
+  if (at < 0) return [];
+  const heading = (one) => one && one.classList && one.classList.contains('home-list-group');
+  const holdsRow = (one) => !!(one && one.querySelector && one.querySelector('[data-home-favorite]'));
+  const group = [];
+  for (let index = at; index >= 0 && !heading(items[index]); index -= 1) {
+    if (holdsRow(items[index])) group.unshift(items[index]);
+  }
+  for (let index = at + 1; index < items.length && !heading(items[index]); index += 1) {
+    if (holdsRow(items[index])) group.push(items[index]);
+  }
+  return group;
+}
+function homeRowIn(item) {
+  return item && item.querySelector ? item.querySelector('[data-home-favorite]') : null;
+}
+function homeRowPath(item) {
+  const row = homeRowIn(item);
+  return row ? row.getAttribute('data-home-favorite') : null;
+}
+// Which slot the row would drop into: the first neighbor whose middle the pointer has
+// passed, and the end of the group past the last of them. Measured against positions
+// taken before anything moved, so the rows stepping aside cannot change the answer
+// that decided to move them.
+function homeDropIndex(baselines, y) {
+  const before = baselines.findIndex((middle) => y < middle);
+  return before === -1 ? baselines.length : before;
+}
+// The row a drop lands in front of, as a path — never a position, because the drawn
+// list is grouped and can still be showing a row that has left the store. `null` is
+// the end of the group, and a row on its way out is stepped over: it is off the store,
+// so the host could not find it.
+function homeLandingPath(others, to) {
+  for (let index = to; index < others.length; index += 1) {
+    const row = homeRowIn(others[index]);
+    if (row && !row.classList.contains('is-going')) return homeRowPath(others[index]);
+  }
+  return null;
+}
+// One slot: the item plus the space to its neighbor, so a row stepping aside lands
+// exactly where the dragged one was.
+function homeSlotHeight(items, index) {
+  const box = items[index].getBoundingClientRect();
+  const next = items[index + 1];
+  if (next) return next.getBoundingClientRect().top - box.top;
+  const previous = items[index - 1];
+  if (previous) return box.bottom - previous.getBoundingClientRect().bottom;
+  return box.height;
+}
+// The row lifted off the list and carried by the pointer. A copy, because the original
+// item stays in the list holding its space — that space is the room the others open,
+// and it wears the grain, so where the row lands is a thing you can see.
+function startHomeRowGhost(drag, box) {
+  const ghost = document.createElement('div');
+  ghost.className = 'home-row-ghost';
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.innerHTML = drag.row.outerHTML;
+  ghost.style.left = box.left + 'px';
+  ghost.style.top = box.top + 'px';
+  ghost.style.width = box.width + 'px';
+  document.body.appendChild(ghost);
+  drag.ghost = ghost;
+}
+// Open the gap where the row would land: everything between its own slot and that one
+// steps one slot the other way, and the empty slot travels with them. A transform, so
+// nothing reflows and every step eases on the app's own curve.
+function slideHomeRowsAside(drag) {
+  drag.others.forEach((item, index) => {
+    let shift = 0;
+    if (index >= drag.from && index < drag.to) shift = -drag.span;
+    else if (index < drag.from && index >= drag.to) shift = drag.span;
+    item.style.transform = shift ? 'translateY(' + shift + 'px)' : '';
+  });
+  const moved = (drag.to - drag.from) * drag.span;
+  drag.item.style.transform = moved ? 'translateY(' + moved + 'px)' : '';
+}
+// Past the threshold: measure the group before anything moves, lift the copy, and
+// leave the empty slot behind wearing the grain.
+function beginHomeRowDrag(drag, event) {
+  const items = homeRowGroup(drag.row);
+  const item = drag.row.parentElement;
+  const from = items.indexOf(item);
+  if (from < 0) return false;
+  const others = items.filter((one) => one !== item);
+  drag.moved = true;
+  drag.item = item;
+  drag.others = others;
+  drag.from = from;
+  drag.to = from;
+  drag.span = homeSlotHeight(items, from);
+  drag.baselines = others.map((one) => {
+    const box = one.getBoundingClientRect();
+    return box.top + box.height / 2;
+  });
+  const box = drag.row.getBoundingClientRect();
+  drag.grabOffset = event.clientY - box.top;
+  // Held here and not on the press: a captured pointer sends the click that follows to whatever holds the capture, so capturing on every press takes the click off the button inside the row and the row stops opening its file. Past the threshold there is no click left to lose.
+  leafHoldPointer(drag.row, drag.pointerId);
+  startHomeRowGhost(drag, box);
+  drag.item.classList.add('is-dropzone');
+  drag.row.classList.add('is-dragging');
+  document.body.classList.add('is-home-row-dragging');
+  return true;
+}
+function endHomeRowDrag() {
+  if (!homeRowDrag) return;
+  const drag = homeRowDrag;
+  homeRowDrag = null;
+  leafReleasePointer(drag.row, drag.pointerId);
+  if (!drag.moved) return;
+  drag.row.classList.remove('is-dragging');
+  drag.item.classList.remove('is-dropzone');
+  document.body.classList.remove('is-home-row-dragging');
+  if (drag.ghost) drag.ghost.remove();
+  drag.item.style.transform = '';
+  drag.others.forEach((one) => {
+    one.style.transform = '';
+  });
+  suppressHomeRowClick = true;
+  setTimeout(() => {
+    suppressHomeRowClick = false;
+  }, 0);
+  if (drag.to !== drag.from) dropHomeRow(drag.path, homeLandingPath(drag.others, drag.to));
+}
+function dropHomeRow(path, before) {
+  if (!path || before === path) return;
+  send({ command: 'moveFavorite', path, before: before == null ? null : before });
+}
+document.addEventListener('pointermove', (event) => {
+  if (!homeRowDrag || event.pointerId !== homeRowDrag.pointerId) return;
+  if (!homeRowDrag.moved) {
+    if (Math.abs(event.clientY - homeRowDrag.startY) < HOME_DRAG_THRESHOLD) return;
+    if (!beginHomeRowDrag(homeRowDrag, event)) {
+      homeRowDrag = null;
+      return;
+    }
+  }
+  // The copy goes with the pointer; the list makes room under it.
+  homeRowDrag.ghost.style.top = event.clientY - homeRowDrag.grabOffset + 'px';
+  const to = homeDropIndex(homeRowDrag.baselines, event.clientY);
+  if (to === homeRowDrag.to) return;
+  homeRowDrag.to = to;
+  slideHomeRowsAside(homeRowDrag);
+});
+document.addEventListener('pointerup', endHomeRowDrag);
+document.addEventListener('pointercancel', endHomeRowDrag);
+// The heart on a favorite row. Pressing it drops the file at once — the host is told,
 // and a crash between here and the wait ending must not put it back — but the row
 // stays on screen, dimmed, so the press can be taken back. Pressing it again inside
 // the wait re-marks the file and puts the row back the way it was.
@@ -263,12 +506,12 @@ function pressHomeHeart(path, kind) {
     renderState();
     return;
   }
-  const kept = currentFavorites();
-  const at = kept.findIndex((favorite) => favorite && favorite.path === key);
+  const favorites = currentFavorites();
+  const at = favorites.findIndex((one) => one && one.path === key);
   if (at < 0) return;
   homeDropping.set(key, {
     at,
-    favorite: kept[at],
+    favorite: favorites[at],
     timer: setTimeout(() => endHomeDrop(key), HOME_UNDO_MS),
   });
   toggleFavorite(key, kind);
@@ -311,6 +554,7 @@ function openHomeSheet(which) {
   homeSheetBody.innerHTML = homeListBox(list.rows);
   bindHomeRows(homeSheetBody);
   watchHomeLists(homeSheetBody);
+  markHomeFavorites(homeSheetBody);
   if (homeSheet.hidden) homeSheetLastFocus = document.activeElement;
   homeSheetBackdrop.hidden = false;
   homeSheet.hidden = false;
@@ -487,10 +731,15 @@ function renderState() {
   app.querySelector('.primary-new').addEventListener('click', () => send({ command: 'newDocument' }));
   bindHomeRows(app);
   watchHomeLists(app);
+  // The last answer, back on the fresh rows, so a heart press does not unmark the
+  // column for as long as the next answer takes — then ask again, because the disk
+  // is the answer and only the binary can read it.
+  markHomeFavorites(app);
+  if (app.querySelector('[data-home-favorite]')) send({ command: 'checkFavorites' });
   app.querySelectorAll('[data-home-list]').forEach((button) => {
     button.addEventListener('click', () => openHomeSheet(button.dataset.homeList));
   });
-  // A list that changed under an open sheet — a file kept from its own right-click
+  // A list that changed under an open sheet — a file favorited from its own right-click
   // menu — has to change in the sheet too, or the two disagree about one list.
   if (homeSheetShowing) openHomeSheet(homeSheetShowing);
 }

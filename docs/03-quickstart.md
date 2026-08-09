@@ -27,7 +27,7 @@ flowchart LR
 
 ## 1. Open a file
 
-![The Leaftext home screen with no document open: the Choose file and New document buttons, with the recent files list and the kept files beside it beneath them](../imgs/home.png)
+![The Leaftext home screen with no document open: the Choose file and New document buttons, with the recent files list and your favorites beside it beneath them](../imgs/home.png)
 
 | Method | How |
 | --- | --- |

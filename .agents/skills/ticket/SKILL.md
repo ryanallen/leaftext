@@ -23,6 +23,7 @@ The ticket tree is `leaftext/docs/`, the folder beside the app — not `app/docs
 | `../docs/features/` | the app cannot do this yet |
 | `../docs/refactor/` | the app already does it; this changes how |
 | `../docs/fixes/` | something is wrong and this is the fix |
+| `../docs/refactor/workflow/` | a skill, a hook or a check — how the work gets done, rather than what the app does |
 | `../docs/done/` | shipped. Move it here when the last box is ticked |
 | `../docs/canceled/` | decided against. Keep the reasoning |
 
@@ -152,6 +153,22 @@ Drop the bundler line when the work is nowhere near `design/`.
 - **Say in the phase what cannot be tested here**, where that is true: a real window, live selected text, a held pointer. One line, so the next reader does not take a missing test for an oversight. Never a general caveat about the Mac build, the installer or the workflows — GitHub compiles all three on a tagged release, and a caveat that is true on every ticket is one nobody reads.
 
 **A test gap outside this ticket is its own ticket.** Reading the code to write a plan is the pass most likely to turn up a subject nothing covers, and that finding is worth keeping: it does not survive the session any other way. It does **not** become a box here — a ticket about the find bar that quietly grows four tests for the pager is a ticket nobody can review and a diff nobody can read. Write the second file in the same pass, under `../docs/refactor/` in the subject folder the gap is in, with its row in the index, and run [`/pm`](../pm/SKILL.md) once for both. Every skill that reads the code holds to this — [`/design`](../design/SKILL.md), [`/dev`](../dev/SKILL.md), [`/pm`](../pm/SKILL.md) and [`/sync-tests`](../sync-tests/SKILL.md) all file rather than fix in passing, and **it is always a ticket**, never a sentence in a hand-back.
+
+## A round of fixes on built work is a checklist before it is a change
+
+**When the owner looks at something already built and says what is wrong, every clause of what they said becomes a box in the ticket before a line is changed.** One box per thing they will look for — the aside at the end of the sentence is a box too, and it is the one that gets lost. They go in the phase the work belongs to, under a bold line naming the round, and each is ticked in the same edit as its own fix. Working from memory instead loses whichever ask came last, and the owner has to say it twice.
+
+- **Write them in what they will see**, not in what the code does: *the pointer is a grabbed hand while dragging*, not *set the cursor property*. The owner reads these back to check the round, so a box they cannot check is a box that failed.
+- **A box nobody built is struck with the reason**, never quietly dropped, and never ticked because something near it was done.
+- **The round's own record goes under the boxes**, saying what was tried and thrown away, so the next reader does not rebuild the version that was refused.
+
+## A change to a skill or the workflow is a ticket too
+
+**A skill, a hook, a check or anything else about how the work gets done is a ticket like any other**, written the moment it is asked for and closed the moment it ships. Without one there is no record of why the rule exists — and a rule nobody can trace is the first one somebody deletes. These are usually written and built in the same pass, so the file is short: what went wrong, what the rule is now, and a box per file changed.
+
+- **It goes in `../docs/refactor/workflow/`**, its own subject folder beside the app's, because it changes how the work is done rather than what the app does. It takes a row in the index and a row in the running order like everything else, and [`/done`](../done/SKILL.md) moves it to `../docs/done/repo/` once it is shipped.
+- **The trigger is the same as any other fix**: something was missed, went wrong twice, or has to be remembered. What the rule prevents goes in the file, in the words of what went wrong.
+- **A rule that already cost a version number belongs in `AGENTS.md` as well** — the ticket says why it was added; that file says what to do.
 
 ## A picture the owner hands over goes in the tree, not in the chat
 

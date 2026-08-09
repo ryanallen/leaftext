@@ -1053,7 +1053,7 @@ fn the_front_end_shares_its_repeated_plumbing() {
 
     // Holding the pointer through a drag, wrapped because a browser may refuse.
     assert_contains(script, "function leafHoldPointer(el, pointerId) {");
-    assert_eq!(script.matches("leafHoldPointer(").count(), 9);
+    assert_eq!(script.matches("leafHoldPointer(").count(), 10);
     assert_eq!(
         script.matches(".setPointerCapture(").count(),
         1,
@@ -1088,10 +1088,10 @@ fn the_app_carries_no_gallery_of_its_own() {
 fn a_tab_carries_the_heart_and_the_menu_marks_everything_else() {
     let page = app_shell_page();
 
-    // The tab of whatever you are reading, the right-click item for everything that is not open, and the kept column on the start screen, where the heart is the mark and the way off the list at once.
+    // The tab of whatever you are reading, the right-click item for everything that is not open, and the Favorites column on the start screen, where the heart is the mark and the way off the list at once.
     for expected in [
-        r#"<button type="button" class="tab-favorite${kept ? ' is-on' : ''}""#,
-        r#"<span class="lt-icon lt-icon-favorite-${kept ? 'on' : 'off'}"></span>"#,
+        r#"<button type="button" class="tab-favorite${favorite ? ' is-on' : ''}""#,
+        r#"<span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span>"#,
         "{ action: 'favorite', label: 'Favorite' },",
         "return { action: entry.action, label: 'Unfavorite' };",
         r#"<button type="button" class="home-row-heart" data-home-unfavorite="${attr}""#,
@@ -1111,7 +1111,7 @@ fn marking_from_the_tab_and_from_the_menu_take_the_same_path() {
 
     // One function, so the heart and the menu item can never disagree about what marking means — and it flips the page's own copy before it tells the host, which is what makes the change instant.
     assert_eq!(script.matches("function toggleFavorite(").count(), 1);
-    // The declaration, the tab heart's click, the menu item, and the kept row's heart — which calls it twice, once to drop and once to take that back. Three gestures, one path.
+    // The declaration, the tab heart's click, the menu item, and the favorite row's heart — which calls it twice, once to unfavorite and once to take that back. Three gestures, one path.
     assert_eq!(script.matches("toggleFavorite(").count(), 5);
     assert_contains(
         script,

@@ -11,7 +11,7 @@ pub(crate) fn run_page_script(webview: Option<&WebView>, script: &str, what: &st
     }
 }
 
-/// What it takes to put a document on screen: the window to title, the page to write to, the tabs to draw, the recents to record, the kept paths to mark, and where images resolve from. One bundle because they always travel together.
+/// What it takes to put a document on screen: the window to title, the page to write to, the tabs to draw, the recents to record, the favorites to mark, and where images resolve from. One bundle because they always travel together.
 pub(crate) struct Reader {
     pub(crate) window: tao::window::Window,
     pub(crate) webview: Option<WebView>,
@@ -50,7 +50,7 @@ impl Reader {
         self.save_recent();
     }
 
-    /// Save the kept paths, if there is a file to save them to.
+    /// Save the favorites, if there is a file to save them to.
     fn persist_favorites(&self) {
         if let Some(config_path) = self.config_path.as_ref() {
             if let Err(error) = save_favorites(config_path, &self.favorites) {
@@ -77,7 +77,23 @@ impl Reader {
         self.refresh_tab_strip();
     }
 
-    /// Drop what was kept inside a vault that has just been removed.
+    /// Point the favorite row at `from` at the file the picker handed back, save, and redraw. Unlike marking, the page cannot draw this ahead of the host: the path the row now holds is one only the dialog knows.
+    pub(crate) fn repoint_favorite(&mut self, from: &Path, to: &Path, vault_id: Option<i64>) {
+        if self.favorites.repoint(from, to, vault_id) {
+            self.persist_favorites();
+            self.render(ScrollIntent::Preserve);
+        }
+    }
+
+    /// Move the favorite row for `path` so it sits before `before`, save, and redraw.
+    pub(crate) fn move_favorite(&mut self, path: &Path, before: Option<&Path>) {
+        if self.favorites.move_before(path, before) {
+            self.persist_favorites();
+            self.render(ScrollIntent::Preserve);
+        }
+    }
+
+    /// Drop the favorites inside a vault that has just been removed.
     pub(crate) fn forget_vault_favorites(&mut self, vault_id: i64) {
         if self.favorites.forget_vault(vault_id) {
             self.persist_favorites();

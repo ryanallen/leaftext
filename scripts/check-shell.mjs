@@ -3176,7 +3176,7 @@ if (booted) {
 
   check('outside a vault every vault shows at once, labeled', () => {
     const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT }));
-    const groups = [...markup.matchAll(/<li class="home-list-group">([^<]*)<\/li>/g)].map((m) => m[1]);
+    const groups = [...markup.matchAll(/<li class="home-list-group"[^>]*>([^<]*)</g)].map((m) => m[1]);
     // One per vault the kept paths name, plus one for the paths inside none — a file on the desktop is still a file you kept.
     if (groups.join('|') !== 'Dharma|Work|Outside a vault') {
       throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
@@ -3184,16 +3184,16 @@ if (booted) {
     if (!markup.includes('Favorites (4)')) {
       throw new Error(`the heading lost its count: ${markup}`);
     }
-    // Every kept row wears the heart, whatever it points at: the column says it is kept, and that is the fact the mark owes. It is a button, because pressing it is how a row leaves without opening the file you were trying not to open.
+    // Every favorite row wears the heart, whatever it points at: the column says it is kept, and that is the fact the mark owes. It is a button, because pressing it is how a row leaves without opening the file you were trying not to open.
     const folderRow = markup.slice(markup.indexOf('data-folder-path'));
     if ((markup.match(/lt-icon-favorite-on/g) || []).length !== 4) {
-      throw new Error(`a kept row drew no heart: ${markup}`);
+      throw new Error(`a favorite row drew no heart: ${markup}`);
     }
     if (markup.includes('lt-icon-leaf') || markup.includes('lt-icon-folder')) {
-      throw new Error('a kept row is back to saying what kind of thing it points at');
+      throw new Error('a favorite row is back to saying what kind of thing it points at');
     }
     if ((markup.match(/data-home-unfavorite=/g) || []).length !== 4) {
-      throw new Error('a kept row drew its heart as a mark rather than a control');
+      throw new Error('a favorite row drew its heart as a mark rather than a control');
     }
     if (!markup.includes('data-home-unfavorite="C:\\Vaults\\Dharma\\Journal" data-home-kind="folder"')) {
       throw new Error(`the heart does not carry its own path and kind: ${markup}`);
@@ -3216,7 +3216,7 @@ if (booted) {
   });
 
   check('Show all appears only past what the folded layout holds, and names the count', () => {
-    // With something kept, because a list on its own is the plain one this screen had before there was a pair — no box to fold and nothing to show all of.
+    // With favorites, because a list on its own is the plain one this screen had before there was a pair — no box to fold and nothing to show all of.
     const short = homeListsMarkup({ recent: ['a.md', 'b.md', 'c.md', 'd.md', 'e.md'], favorites: KEPT });
     // Five fit, so there is nothing the folded layout cannot already show.
     if (short.includes('data-home-list="recent"')) {
@@ -3330,7 +3330,7 @@ if (booted) {
     }
   });
 
-  check('a dropped favorite stays on screen long enough to be taken back', () => {
+  check('an unfavorited row stays on screen long enough to be taken back', () => {
     const sent = [];
     const wasSend = booted.ipc.postMessage;
     const wasTimeout = booted.setTimeout;
@@ -3341,7 +3341,7 @@ if (booted) {
       return 7;
     };
     const path = 'C:\\Vaults\\Work\\Standup.md';
-    // What the page's own copy holds once that path has been dropped, which is what the column is drawn from.
+    // What the page's own copy holds once that path has gone, which is what the column is drawn from.
     const without = { recent: [], favorites: KEPT.filter((one) => one.path !== path) };
     try {
       withVaults(VAULTS, 0, () => {
@@ -3355,14 +3355,14 @@ if (booted) {
         if (!waiting) throw new Error('nothing was set to end the wait');
         let markup = booted.homeListsMarkup(without);
         // Still drawn, marked as going, with a hollow heart and a sentence saying what happens next.
-        if (!markup.includes('home-row is-going')) throw new Error(`the dropped row left at once: ${markup}`);
-        if (!markup.includes('Standup')) throw new Error('the dropped row is not on screen');
-        if (!markup.includes('lt-icon-favorite-off')) throw new Error('the row still says it is kept');
-        if (!markup.includes('press the heart to keep it')) {
+        if (!markup.includes('home-row is-going')) throw new Error(`the unfavorited row left at once: ${markup}`);
+        if (!markup.includes('Standup')) throw new Error('the unfavorited row is not on screen');
+        if (!markup.includes('lt-icon-favorite-off')) throw new Error('the row still says it is a favorite');
+        if (!markup.includes('press the heart to put it back')) {
           throw new Error(`the row does not say what is about to happen: ${markup}`);
         }
         // The count is what the list will be, not what is drawn.
-        if (!markup.includes('Favorites (3)')) throw new Error(`the count still holds the dropped row: ${markup}`);
+        if (!markup.includes('Favorites (3)')) throw new Error(`the count still holds the unfavorited row: ${markup}`);
 
         // Pressing it again inside the wait takes it off the way out.
         booted.pressHomeHeart(path, 'document');
@@ -3388,7 +3388,317 @@ if (booted) {
     }
   });
 
-  check('a kept folder goes to the pane, not the reader', () => {
+  /** The rows and headings a drawn column really has, as nodes the marking can toggle classes on. Parsed out of the markup the page just produced, so the half that draws a row and the half that marks it are held to each other rather than to a fixture written by hand. */
+  function drawnColumn(markup) {
+    const node = (className, attrs) => {
+      const classes = new Set(String(className).split(/\s+/).filter(Boolean));
+      return {
+        classes,
+        getAttribute: (name) => (name in attrs ? attrs[name] : null),
+        classList: {
+          add: (one) => classes.add(one),
+          remove: (one) => classes.delete(one),
+          contains: (one) => classes.has(one),
+          toggle: (one, on) => (on ? classes.add(one) : classes.delete(one)),
+        },
+      };
+    };
+    const attributesOf = (raw) => {
+      const attrs = {};
+      for (const one of raw.matchAll(/([a-z-]+)="([^"]*)"/g)) attrs[one[1]] = one[2];
+      return attrs;
+    };
+    const rows = [];
+    const groups = [];
+    for (const tag of markup.matchAll(/<(span|li) class="([^"]*)"([^>]*)>/g)) {
+      const [, , className, raw] = tag;
+      const attrs = attributesOf(raw);
+      if (attrs['data-home-favorite']) rows.push(node(className, attrs));
+      else if (className.includes('home-list-group') && attrs['data-home-vault']) groups.push(node(className, attrs));
+    }
+    return {
+      rows,
+      groups,
+      row: (path) => rows.find((one) => one.getAttribute('data-home-favorite') === path),
+      group: (vault) => groups.find((one) => one.getAttribute('data-home-vault') === String(vault)),
+      querySelectorAll: (selector) =>
+        selector === '[data-home-favorite]' ? rows : selector === '.home-list-group[data-home-vault]' ? groups : [],
+    };
+  }
+
+  /** Answer the host's check with what is missing, then mark one drawn column with it. */
+  function answerMissing(column, paths, vaults) {
+    booted.window.leafSetFavoritesMissing({ paths, vaults: vaults || [] });
+    booted.markHomeFavorites(column);
+  }
+
+  check('a favorite whose file is not there is struck where it stands, with a way out', () => {
+    const gone = 'C:\\Vaults\\Dharma\\A sutta.md';
+    const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT }));
+    // Every kept document carries the way out already, so saying a file has gone is a class on a row that is already on screen — never a redraw, which would throw a dropped row's half-finished dissolve away.
+    if ((markup.match(/data-home-repair=/g) || []).length !== 3) {
+      throw new Error(`the repair is not drawn on every favorite document: ${markup}`);
+    }
+    // Except on a folder: this opens the picker Open opens, which picks a file.
+    const folderRow = markup.slice(markup.indexOf('data-folder-path'), markup.indexOf('data-folder-path') + 400);
+    if (folderRow.includes('data-home-repair')) {
+      throw new Error(`a favorite folder was offered a file picker: ${folderRow}`);
+    }
+    const column = drawnColumn(markup);
+    if (column.rows.length !== 4) throw new Error(`the column drew ${column.rows.length} favorite rows`);
+    // Nothing is marked before an answer arrives — the resting state, and the true one in a browser, where nobody reads a disk.
+    if (column.rows.some((row) => row.classList.contains('is-missing'))) {
+      throw new Error('a row was marked before the host had answered');
+    }
+    answerMissing(column, [gone]);
+    const struck = column.row(gone);
+    if (!struck.classList.contains('is-missing')) throw new Error('the file that has gone was not marked');
+    if (struck.classList.contains('is-vault-gone')) {
+      throw new Error('one missing file was read as its whole vault going');
+    }
+    // Every other row is what it was.
+    for (const row of column.rows) {
+      if (row === struck) continue;
+      if (row.classList.contains('is-missing')) {
+        throw new Error(`a row nobody named was marked: ${row.getAttribute('data-home-favorite')}`);
+      }
+    }
+    // And the same path in Recent is not this list's row: a file can be in both.
+    const both = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [gone], favorites: KEPT }));
+    if ((both.match(/data-home-favorite=/g) || []).length !== 4) {
+      throw new Error('a recent row was drawn as a favorite');
+    }
+  });
+
+  check('a vault whose folder has gone says so once, on its heading', () => {
+    const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT }));
+    const column = drawnColumn(markup);
+    answerMissing(column, [], [1]);
+    const heading = column.group(1);
+    if (!heading || !heading.classList.contains('is-missing')) {
+      throw new Error("the gone vault's heading was not marked");
+    }
+    if (column.group(2).classList.contains('is-missing')) {
+      throw new Error('a vault that is there was marked too');
+    }
+    // Its rows are struck and carry no way out: repointing one file inside a folder that is not there is not the fix.
+    for (const row of column.rows) {
+      const inside = row.getAttribute('data-home-vault') === '1';
+      if (row.classList.contains('is-missing') !== inside) {
+        throw new Error(`a row inside the gone vault was marked wrong: ${row.getAttribute('data-home-favorite')}`);
+      }
+      if (row.classList.contains('is-vault-gone') !== inside) {
+        throw new Error(`a row still offers to repoint inside a folder that is not there: ${row.getAttribute('data-home-favorite')}`);
+      }
+    }
+    // Said once, where the vault is already named, rather than on every row under it.
+    if ((markup.match(/home-list-group-gone/g) || []).length !== 3) {
+      throw new Error(`the line saying a folder has gone is not one per heading: ${markup}`);
+    }
+  });
+
+  check('a file that is back is unmarked by the next answer, with nothing pressed', () => {
+    const gone = 'C:\\Vaults\\Work\\Standup.md';
+    const column = drawnColumn(withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT })));
+    answerMissing(column, [gone], [2]);
+    if (!column.row(gone).classList.contains('is-missing')) throw new Error('the first answer did not mark it');
+    // The disk is the answer, every time it is asked. A file put back outside the app is a row that stops being struck on the next answer, with nobody pressing anything.
+    answerMissing(column, [], []);
+    if (column.row(gone).classList.contains('is-missing')) throw new Error('the row stayed struck after the file came back');
+    if (column.row(gone).classList.contains('is-vault-gone')) throw new Error('the row still says its vault has gone');
+    if (column.group(2).classList.contains('is-missing')) throw new Error("the heading still says the vault's folder has gone");
+  });
+
+  check('a row on its way out is never named missing, and still goes on its own timer', () => {
+    const sent = [];
+    const wasSend = booted.ipc.postMessage;
+    const wasTimeout = booted.setTimeout;
+    let waiting = null;
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.setTimeout = (fn) => {
+      waiting = fn;
+      return 7;
+    };
+    const path = 'C:\\Vaults\\Work\\Standup.md';
+    const without = { recent: [], favorites: KEPT.filter((one) => one.path !== path) };
+    try {
+      withVaults(VAULTS, 0, () => {
+        booted.window.leafSetState({ recent: [], favorites: KEPT, tabs: [], active: null, document: null });
+        booted.__frames.drain();
+        booted.pressHomeHeart(path, 'document');
+        // Off the store and held on screen by its own timer, so it is not a favorite whose file has gone — what the reader is watching is it leaving.
+        const column = drawnColumn(booted.homeListsMarkup(without));
+        answerMissing(column, [path]);
+        const going = column.row(path);
+        if (!going) throw new Error('the unfavorited row left the column at once');
+        if (going.classList.contains('is-missing')) throw new Error('a row on its way out was struck as missing');
+
+        // Pressing the heart again inside the wait still brings it back, marked or not.
+        booted.pressHomeHeart(path, 'document');
+        if (booted.homeListsMarkup({ recent: [], favorites: KEPT }).includes('is-going')) {
+          throw new Error('taking it back left it on its way out');
+        }
+        // And the timer still ends it.
+        waiting = null;
+        booted.pressHomeHeart(path, 'document');
+        if (!waiting) throw new Error('the second drop set no wait');
+        waiting();
+        if (booted.homeListsMarkup(without).includes('Standup')) throw new Error('the row outlived its wait');
+      });
+    } finally {
+      booted.homeDropping.clear();
+      booted.window.leafSetFavoritesMissing({ paths: [], vaults: [] });
+      booted.ipc.postMessage = wasSend;
+      booted.setTimeout = wasTimeout;
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+    }
+  });
+
+  check('a row dropped inside its group names the row it lands before, and one dropped outside it moves nothing', () => {
+    // The middles of the rows it is being dragged past, measured before any of them moved — so the rows stepping aside cannot change the answer that decided to move them.
+    const baselines = [10, 30, 50];
+    if (booted.homeDropIndex(baselines, 5) !== 0) throw new Error('a drop at the top did not land first');
+    if (booted.homeDropIndex(baselines, 25) !== 1) throw new Error('a drop landed in the wrong slot');
+    if (booted.homeDropIndex(baselines, 55) !== 3) throw new Error('a drop past the last row is not the end of the group');
+    if (booted.homeDropIndex([], 10) !== 0) throw new Error('a group of one is not its own only slot');
+
+    /** The items a slot lands in front of, as the landing arithmetic sees them. */
+    const item = (path, going) => ({
+      querySelector: () => ({
+        getAttribute: (name) => (name === 'data-home-favorite' ? path : null),
+        classList: { contains: (one) => going && one === 'is-going' },
+      }),
+    });
+    const others = [item('first.md'), item('second.md', true), item('third.md')];
+    if (booted.homeLandingPath(others, 0) !== 'first.md') throw new Error('the first slot named the wrong row');
+    // A row on its way out is off the store, so the host could not find it: the drop lands in front of the next real one.
+    if (booted.homeLandingPath(others, 1) !== 'third.md') throw new Error('a drop named a row that has left the store');
+    if (booted.homeLandingPath(others, 3) !== null) throw new Error('the end of the group is not the end of the list');
+
+    const sent = [];
+    const was = booted.ipc.postMessage;
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      booted.dropHomeRow('third.md', 'first.md');
+      // The end of a group carries no landing row, and the host reads that as last.
+      booted.dropHomeRow('first.md', null);
+      // A row dropped where it already is asks for nothing.
+      booted.dropHomeRow('first.md', 'first.md');
+    } finally {
+      booted.ipc.postMessage = was;
+    }
+    const moves = sent.filter((one) => one.command === 'moveFavorite');
+    if (moves.length !== 2) throw new Error(`the drops sent ${moves.length} moves: ${JSON.stringify(sent)}`);
+    if (moves[0].path !== 'third.md' || moves[0].before !== 'first.md') {
+      throw new Error(`the drop did not name both rows: ${JSON.stringify(moves[0])}`);
+    }
+    if (moves[1].path !== 'first.md' || moves[1].before !== null) {
+      throw new Error(`the drop at the end of a group did not say so: ${JSON.stringify(moves[1])}`);
+    }
+    // Never an index: the drawn list is grouped and can still be showing a row that has left the store.
+    if (moves.some((one) => 'index' in one || 'from' in one || 'to' in one)) {
+      throw new Error('a drop sent a position rather than the paths');
+    }
+  });
+
+  check('a drag lifts a copy, holds the space it left, and steps the rows around it aside', () => {
+    /** An item in a list, with the classes it is wearing and any transform written on it. */
+    function listItem(path) {
+      const classes = new Set();
+      const row = {
+        outerHTML: `<span class="home-row" data-home-favorite="${path}"></span>`,
+        classes: new Set(),
+        getAttribute: (name) => (name === 'data-home-favorite' ? path : null),
+        getBoundingClientRect: () => ({ top: 0, left: 0, width: 200, height: 20, bottom: 20 }),
+      };
+      const item = {
+        style: {},
+        classList: {
+          add: (one) => classes.add(one),
+          remove: (one) => classes.delete(one),
+          contains: (one) => classes.has(one),
+          toggle: (one, on) => (on ? classes.add(one) : classes.delete(one)),
+        },
+        classes,
+        querySelector: () => row,
+        getBoundingClientRect: () => ({ top: 0, left: 0, width: 200, height: 20, bottom: 20 }),
+      };
+      row.classList = {
+        add: (one) => row.classes.add(one),
+        remove: (one) => row.classes.delete(one),
+        contains: (one) => row.classes.has(one),
+      };
+      row.parentElement = item;
+      return { item, row };
+    }
+
+    const rows = ['first.md', 'second.md', 'third.md'].map(listItem);
+    const list = { children: rows.map((one) => one.item) };
+    rows.forEach((one) => {
+      one.item.parentElement = list;
+    });
+    const dragged = rows[0];
+    const drag = { path: 'first.md', row: dragged.row, pointerId: 1, startY: 0, moved: false };
+    const body = booted.document.body;
+    const bodyClasses = new Set();
+    body.classList = {
+      add: (one) => bodyClasses.add(one),
+      remove: (one) => bodyClasses.delete(one),
+      contains: (one) => bodyClasses.has(one),
+    };
+    const carried = [];
+    const wasAppend = body.appendChild;
+    body.appendChild = (child) => carried.push(child);
+    try {
+      if (!booted.beginHomeRowDrag(drag, { clientY: 4 })) throw new Error('the drag never started');
+    } finally {
+      body.appendChild = wasAppend;
+    }
+    // A copy is carried, the original holds its space rather than being drawn twice, and the space it holds is the one that wears the grain.
+    if (carried.length !== 1 || !String(carried[0].className).includes('home-row-ghost')) {
+      throw new Error('nothing was lifted off the list under the pointer');
+    }
+    if (!String(carried[0].innerHTML).includes('data-home-favorite="first.md"')) {
+      throw new Error('the carried copy is not the row that was grabbed');
+    }
+    if (!dragged.row.classes.has('is-dragging')) throw new Error('the row is drawn twice, in place and carried');
+    if (!dragged.item.classes.has('is-dropzone')) throw new Error('the space it left is not marked as where it lands');
+    if (!bodyClasses.has('is-home-row-dragging')) throw new Error('the pointer is not a grabbed hand while dragging');
+
+    // Dragged one slot down: the row it passes steps up into the space, the one past the landing slot stays where it is, and the room travels with the pointer.
+    drag.to = 1;
+    drag.span = 20;
+    booted.slideHomeRowsAside(drag);
+    if (drag.others[0].style.transform !== 'translateY(-20px)') throw new Error('a row it passed did not step aside');
+    if (drag.others[1].style.transform) throw new Error('a row past the landing slot moved anyway');
+    if (drag.item.style.transform !== 'translateY(20px)') throw new Error('the room it lands in did not travel with it');
+    // And two slots down moves both of them, so the room is always one slot deep wherever it goes.
+    drag.to = 2;
+    booted.slideHomeRowsAside(drag);
+    if (drag.others[1].style.transform !== 'translateY(-20px)') throw new Error('the second row it passed stayed put');
+    if (drag.item.style.transform !== 'translateY(40px)') throw new Error('the room stopped short of the landing slot');
+  });
+
+  check('a press on a favorite row takes no pointer, so the row still opens its file', () => {
+    // A captured pointer sends the click that follows to whatever holds the capture, so taking the pointer on every press took every click off the button inside the row and no favorite would open. The hold belongs past the drag threshold, where there is no click left to lose.
+    const row = Object.assign(fakeElement('row'), {
+      getAttribute: (name) => (name === 'data-home-favorite' ? 'C:\\Vaults\\Work\\Standup.md' : null),
+      classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+    });
+    let pressed = null;
+    row.addEventListener = (name, handler) => {
+      if (name === 'pointerdown') pressed = handler;
+    };
+    booted.bindHomeRows({ querySelectorAll: (selector) => (selector === '[data-home-favorite]' ? [row] : []) });
+    if (!pressed) throw new Error('a favorite row is no longer listening for a press');
+    const held = [];
+    row.setPointerCapture = (id) => held.push(id);
+    pressed({ button: 0, pointerId: 3, clientY: 100, target: { closest: () => null } });
+    if (held.length) throw new Error('the press took the pointer, which takes the click off the row');
+  });
+
+  check('a favorite folder goes to the pane, not the reader', () => {
     const sent = [];
     const was = booted.ipc.postMessage;
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
@@ -3408,8 +3718,8 @@ if (booted) {
     }
   });
 
-  check('with nothing kept the screen is the one this ticket found', () => {
-    // A box saying how to keep a file is an advertisement on the screen somebody sees most, and the heart is on every tab under the pointer. So with nothing kept there is no pair at all — the screen is the plain recent list it already had, whole paths one to a line, and none of this ticket's markup is on it.
+  check('with no favorites the screen is the one this ticket found', () => {
+    // A box saying how to favorite a file is an advertisement on the screen somebody sees most, and the heart is on every tab under the pointer. So with no favorites there is no pair at all — the screen is the plain recent list it already had, whole paths one to a line, and none of this ticket's markup is on it.
     const empty = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: [] }));
     if (empty !== '<p class="empty-help">Files you open show up here, so you can pick up where you left off.</p>') {
       throw new Error(`nothing open and nothing kept is not the line it was: ${empty}`);
@@ -3429,7 +3739,7 @@ if (booted) {
       if (plain.includes(paired)) throw new Error(`a lone list is still drawn as half a pair: ${paired}`);
     }
 
-    // With something kept, both are there and Recent is first — on the screen, and first again when the columns fold.
+    // With favorites, both are there and Recent is first — on the screen, and first again when the columns fold.
     const both = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: ['a.md'], favorites: KEPT }));
     if (!both.includes('home-list-grid')) throw new Error('a pair was drawn as a lone list');
     if (both.indexOf('Recent') > both.indexOf('Favorites')) {

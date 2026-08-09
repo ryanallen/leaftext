@@ -128,6 +128,19 @@ pub(crate) enum IpcCommand {
     /// Mark or unmark a path — the heart on a tab, and the right-click item for everything not open. Which vault it belongs to is worked out here rather than sent, since the page never knows it.
     #[serde(rename = "toggleFavorite")]
     ToggleFavorite { path: PathBuf, kind: FavoriteKind },
+    /// Which favorites are no longer on the disk. Asked as the start screen draws its favorites column; the answer marks the rows already on screen rather than redrawing the list.
+    #[serde(rename = "checkFavorites")]
+    CheckFavorites,
+    /// Point a favorite row at the file it has become: opens the picker Open opens, and repoints that entry in place. Never automatic, at any name — silent and wrong is worse than visible and broken.
+    #[serde(rename = "repointFavorite")]
+    RepointFavorite { path: PathBuf },
+    /// Move a favorite row so it sits before `before`, or last when that is `None`. Paths, not indices: the page's list is grouped by vault and can still be drawing a row that has left the store.
+    #[serde(rename = "moveFavorite")]
+    MoveFavorite {
+        path: PathBuf,
+        #[serde(default)]
+        before: Option<PathBuf>,
+    },
     #[serde(rename = "renameFile")]
     RenameFile {
         path: PathBuf,

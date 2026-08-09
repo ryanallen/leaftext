@@ -864,6 +864,7 @@ body.mac-frame.is-fullscreen .window-controls {
 .flow-menu::before,
 .link-hover-tip::before,
 .block-drag-ghost::before,
+.home-row-ghost::before,
 .find-bar::before,
 .confirm-dialog::before,
 .leaf-sheet::before {
@@ -4914,7 +4915,7 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0;
   padding: 0;
 }
-/* Which vault a group of kept files was marked in. Drawn only where there is more
+/* Which vault a group of favorites was marked in. Drawn only where there is more
    than one, so it is never a label with nothing to tell apart. */
 .home-list-group {
   color: var(--lt-muted-foreground);
@@ -4994,7 +4995,7 @@ body.is-block-dragging .document-body [data-src-start] {
    path the right-click menu keys on. Nothing is drawn here. */
 .home-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
 }
 /* The row's own target: everything but the heart. Inset on all four sides, so the
@@ -5068,8 +5069,91 @@ body.is-block-dragging .document-body [data-src-start] {
 .home-row-open:hover .home-row-name {
   color: var(--lt-navigation-recent-item-hover-foreground);
 }
-/* Dropped, and still on screen so the press can be taken back. Dimmed rather than
-   struck through: it is a row you can still read, still open and still keep. */
+/* A favorite that is not where it was. Struck rather than unfavorited, because a
+   favorite is a decision somebody made and the file is usually not gone at all —
+   and the folder line stays, dimmed, since where it used to be is what helps you
+   find it. The row keeps its height: it is capped at one, and a line underneath
+   would be clipped. */
+.home-row.is-missing .home-row-name {
+  color: var(--lt-muted-foreground);
+  text-decoration: line-through;
+}
+.home-row.is-missing .home-row-folder {
+  opacity: var(--lt-opacity-60);
+}
+/* The way out, in a third column on the row itself. Drawn on every favorite document
+   and shown only on a row that has lost its file, so the answer marks rows already
+   on screen instead of rebuilding the list under a row that is mid-dissolve. */
+.home-row-repair {
+  display: none;
+  grid-column: 3;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  color: var(--lt-primary);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-4);
+  white-space: nowrap;
+}
+.home-row.is-missing .home-row-repair {
+  display: block;
+}
+/* Except where the whole vault's folder has gone: repointing one file inside a
+   folder that is not there is not the fix, and the heading says so once. */
+.home-row.is-vault-gone .home-row-repair {
+  display: none;
+}
+.home-row-repair:hover {
+  background: var(--lt-wash-hover);
+}
+/* Said once, on the heading that already names the vault. */
+.home-list-group-gone {
+  display: none;
+}
+.home-list-group.is-missing .home-list-group-gone {
+  display: inline;
+}
+.home-list-group.is-missing .home-list-group-gone::before {
+  content: " — ";
+}
+/* The row being carried, on the pattern a dragged block already uses: a copy over the
+   gap the rows open for it, wearing the same halftone every floating surface throws.
+   The row is its own handle past a small threshold; under it the press opens the file. */
+.home-row-ghost {
+  position: fixed;
+  z-index: var(--lt-z-50);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-markdown-background);
+  pointer-events: none;
+}
+/* The original stays where it is holding its space — carrying a copy and the thing
+   itself would be two of one row — and the space it holds is the one that travels. */
+.home-row.is-dragging {
+  visibility: hidden;
+}
+/* Where it will land, said as room made rather than a line drawn: the empty slot wears
+   the app's own dot grain, so the gap reads as a place for something rather than a
+   list that lost a row. */
+.home-list-scroll li.is-dropzone {
+  --lt-grain-dot: var(--lt-grain-hover);
+  border-radius: var(--lt-radius-md);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+}
+/* Rows step aside rather than jumping, so the list reads as making room. Only while a
+   drag is on: no list pays for this at rest, and Reduce Motion answers it with the
+   rest of the app. */
+body.is-home-row-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+body.is-home-row-dragging .home-list-scroll li {
+  transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
+}
+/* Unfavorited, and still on screen so the press can be taken back. Dimmed rather than
+   struck through: it is a row you can still read, still open and still favorite. */
 .home-row.is-going {
   opacity: var(--lt-opacity-45);
 }

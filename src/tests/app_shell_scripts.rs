@@ -12,7 +12,7 @@ fn navigation_state_script_updates_webview_navigation_controls() {
 
 #[test]
 fn initial_state_script_returns_reader_to_no_file_state_with_both_lists() {
-    // Both, because the start screen draws both and nothing else answers for the first paint: sent with recents alone, the kept column came up empty on every launch and only filled once some later state arrived.
+    // Both, because the start screen draws both and nothing else answers for the first paint: sent with recents alone, the Favorites column came up empty on every launch and only filled once some later state arrived.
     let favorites = Favorites {
         entries: vec![Favorite {
             vault_id: Some(3),

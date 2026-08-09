@@ -312,6 +312,96 @@ fn favorites_reorder_moves_one_entry_and_ignores_an_index_it_does_not_have() {
 }
 
 #[test]
+fn repointing_a_favorite_keeps_its_place_in_the_order() {
+    let mut favorites = Favorites::default();
+    for path in ["first.md", "second.md", "third.md"] {
+        favorites.add(Favorite {
+            vault_id: Some(1),
+            path: PathBuf::from(path),
+            kind: FavoriteKind::Document,
+        });
+    }
+
+    // The middle entry moved to another folder — and to another vault with it.
+    let moved = Path::new("archive")
+        .join(".tmp")
+        .join("..")
+        .join("second.md");
+    assert!(favorites.repoint(Path::new("second.md"), &moved, Some(2)));
+    assert_eq!(
+        favorites
+            .entries
+            .iter()
+            .map(|kept| kept.path.clone())
+            .collect::<Vec<_>>(),
+        vec![
+            PathBuf::from("first.md"),
+            // Normalized on the way in, like every other path the store takes.
+            Path::new("archive").join("second.md"),
+            PathBuf::from("third.md"),
+        ]
+    );
+    assert_eq!(favorites.entries[1].vault_id, Some(2));
+
+    // A path the list does not hold changes nothing: an answer about a row that has since been dropped must not put one back.
+    assert!(!favorites.repoint(Path::new("gone.md"), Path::new("found.md"), None));
+    assert_eq!(favorites.entries.len(), 3);
+
+    // Pointed at a file the list already keeps: one path, kept once, and the entry that was already there keeps its own place.
+    assert!(favorites.repoint(Path::new("third.md"), Path::new("first.md"), Some(1)));
+    assert_eq!(
+        favorites
+            .entries
+            .iter()
+            .map(|kept| kept.path.clone())
+            .collect::<Vec<_>>(),
+        vec![
+            PathBuf::from("first.md"),
+            Path::new("archive").join("second.md"),
+        ]
+    );
+}
+
+#[test]
+fn a_drop_names_the_rows_it_lands_between_rather_than_their_positions() {
+    let mut favorites = Favorites::default();
+    for path in ["first.md", "second.md", "third.md", "fourth.md"] {
+        favorites.add(Favorite {
+            vault_id: None,
+            path: PathBuf::from(path),
+            kind: FavoriteKind::Document,
+        });
+    }
+    let order = |favorites: &Favorites| {
+        favorites
+            .entries
+            .iter()
+            .map(|kept| kept.path.display().to_string())
+            .collect::<Vec<_>>()
+            .join(",")
+    };
+
+    // Dragged up: it lands in front of the row it was dropped on.
+    assert!(favorites.move_before(Path::new("third.md"), Some(Path::new("first.md"))));
+    assert_eq!(order(&favorites), "third.md,first.md,second.md,fourth.md");
+
+    // Dragged down: taking it out first shifts the row it lands before up by one, and it must still end up in front of it.
+    assert!(favorites.move_before(Path::new("third.md"), Some(Path::new("fourth.md"))));
+    assert_eq!(order(&favorites), "first.md,second.md,third.md,fourth.md");
+
+    // Dropped past the last row of the group: the end of the list.
+    assert!(favorites.move_before(Path::new("first.md"), None));
+    assert_eq!(order(&favorites), "second.md,third.md,fourth.md,first.md");
+
+    // Either path being one the list does not hold changes nothing — the drawn list can still be showing a row that has left the store.
+    assert!(!favorites.move_before(Path::new("gone.md"), Some(Path::new("second.md"))));
+    assert!(!favorites.move_before(Path::new("second.md"), Some(Path::new("gone.md"))));
+    // And a row dropped where it already is.
+    assert!(!favorites.move_before(Path::new("third.md"), Some(Path::new("fourth.md"))));
+    assert_eq!(order(&favorites), "second.md,third.md,fourth.md,first.md");
+}
+
+#[test]
 fn settings_persistence_round_trips_and_falls_back_safely() {
     let unique = SystemTime::now()
         .duration_since(UNIX_EPOCH)

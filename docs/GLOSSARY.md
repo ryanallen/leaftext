@@ -152,7 +152,7 @@ A force-directed map of how your documents link to each other. Each **node** is 
 
 ## Home screen
 
-What you see with no document open: **Choose file**, **New document**, and your [recent files](GLOSSARY.md#recent-files) — with the files you [kept](01-features/02-navigation.md#favorites) in a column beside them once there are any. Closing the last tab returns you here, and so does clicking the [leaf mark](GLOSSARY.md#leaf-mark).
+What you see with no document open: **Choose file**, **New document**, and your [recent files](GLOSSARY.md#recent-files) — with your [favorites](01-features/02-navigation.md#favorites) in a column beside them once there are any. Closing the last tab returns you here, and so does clicking the [leaf mark](GLOSSARY.md#leaf-mark).
 
 ## Image box
 
@@ -268,7 +268,7 @@ Your system's accessibility setting for cutting animation, which Leaftext follow
 
 ## Recent files
 
-The last 50 files you opened, listed on the [home screen](GLOSSARY.md#home-screen) beside the ones you [kept](01-features/02-navigation.md#favorites). Missing files drop off by themselves, and two spellings of one path collapse to a single entry.
+The last 50 files you opened, listed on the [home screen](GLOSSARY.md#home-screen) beside your [favorites](01-features/02-navigation.md#favorites). Missing files drop off by themselves, and two spellings of one path collapse to a single entry.
 
 ## Save
 

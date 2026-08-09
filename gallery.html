@@ -3249,6 +3249,7 @@ body.mac-frame.is-fullscreen .window-controls {
 .flow-menu::before,
 .link-hover-tip::before,
 .block-drag-ghost::before,
+.home-row-ghost::before,
 .find-bar::before,
 .confirm-dialog::before,
 .leaf-sheet::before {
@@ -7299,7 +7300,7 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0;
   padding: 0;
 }
-/* Which vault a group of kept files was marked in. Drawn only where there is more
+/* Which vault a group of favorites was marked in. Drawn only where there is more
    than one, so it is never a label with nothing to tell apart. */
 .home-list-group {
   color: var(--lt-muted-foreground);
@@ -7379,7 +7380,7 @@ body.is-block-dragging .document-body [data-src-start] {
    path the right-click menu keys on. Nothing is drawn here. */
 .home-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
 }
 /* The row's own target: everything but the heart. Inset on all four sides, so the
@@ -7453,8 +7454,91 @@ body.is-block-dragging .document-body [data-src-start] {
 .home-row-open:hover .home-row-name {
   color: var(--lt-navigation-recent-item-hover-foreground);
 }
-/* Dropped, and still on screen so the press can be taken back. Dimmed rather than
-   struck through: it is a row you can still read, still open and still keep. */
+/* A favorite that is not where it was. Struck rather than unfavorited, because a
+   favorite is a decision somebody made and the file is usually not gone at all —
+   and the folder line stays, dimmed, since where it used to be is what helps you
+   find it. The row keeps its height: it is capped at one, and a line underneath
+   would be clipped. */
+.home-row.is-missing .home-row-name {
+  color: var(--lt-muted-foreground);
+  text-decoration: line-through;
+}
+.home-row.is-missing .home-row-folder {
+  opacity: var(--lt-opacity-60);
+}
+/* The way out, in a third column on the row itself. Drawn on every favorite document
+   and shown only on a row that has lost its file, so the answer marks rows already
+   on screen instead of rebuilding the list under a row that is mid-dissolve. */
+.home-row-repair {
+  display: none;
+  grid-column: 3;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  color: var(--lt-primary);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-4);
+  white-space: nowrap;
+}
+.home-row.is-missing .home-row-repair {
+  display: block;
+}
+/* Except where the whole vault's folder has gone: repointing one file inside a
+   folder that is not there is not the fix, and the heading says so once. */
+.home-row.is-vault-gone .home-row-repair {
+  display: none;
+}
+.home-row-repair:hover {
+  background: var(--lt-wash-hover);
+}
+/* Said once, on the heading that already names the vault. */
+.home-list-group-gone {
+  display: none;
+}
+.home-list-group.is-missing .home-list-group-gone {
+  display: inline;
+}
+.home-list-group.is-missing .home-list-group-gone::before {
+  content: " — ";
+}
+/* The row being carried, on the pattern a dragged block already uses: a copy over the
+   gap the rows open for it, wearing the same halftone every floating surface throws.
+   The row is its own handle past a small threshold; under it the press opens the file. */
+.home-row-ghost {
+  position: fixed;
+  z-index: var(--lt-z-50);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-markdown-background);
+  pointer-events: none;
+}
+/* The original stays where it is holding its space — carrying a copy and the thing
+   itself would be two of one row — and the space it holds is the one that travels. */
+.home-row.is-dragging {
+  visibility: hidden;
+}
+/* Where it will land, said as room made rather than a line drawn: the empty slot wears
+   the app's own dot grain, so the gap reads as a place for something rather than a
+   list that lost a row. */
+.home-list-scroll li.is-dropzone {
+  --lt-grain-dot: var(--lt-grain-hover);
+  border-radius: var(--lt-radius-md);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+}
+/* Rows step aside rather than jumping, so the list reads as making room. Only while a
+   drag is on: no list pays for this at rest, and Reduce Motion answers it with the
+   rest of the app. */
+body.is-home-row-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+body.is-home-row-dragging .home-list-scroll li {
+  transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
+}
+/* Unfavorited, and still on screen so the press can be taken back. Dimmed rather than
+   struck through: it is a row you can still read, still open and still favorite. */
 .home-row.is-going {
   opacity: var(--lt-opacity-45);
 }
@@ -9471,7 +9555,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </section>
 <section class="part">
 <header><h3>Tab favorite heart</h3><code class="built">.tab-favorite</code><span class="built">render-state.js</span></header>
-<div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-favorite" style="opacity:1"><span class="lt-icon lt-icon-favorite-off"></span></button><button type="button" class="tab-label">A note.md</button></span><span class="tab"><button type="button" class="tab-favorite is-on" style="opacity:1"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="tab-label">A kept note.md</button></span></div></div>
+<div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-favorite" style="opacity:1"><span class="lt-icon lt-icon-favorite-off"></span></button><button type="button" class="tab-label">A note.md</button></span><span class="tab"><button type="button" class="tab-favorite is-on" style="opacity:1"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="tab-label">A favorite note.md</button></span></div></div>
 </section>
 <section class="part">
 <header><h3>Overflow menu</h3><code class="built">.app-actions</code><span class="built">app-shell.html, driven by overflow.js</span></header>
@@ -9659,11 +9743,11 @@ body.is-block-dragging .document-body [data-src-start] {
 </section>
 <section class="part">
 <header><h3>Home list row</h3><code class="built">.home-row</code><span class="built">render-document.js</span></header>
-<div class="stage"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">A note</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A kept note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">Journal</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div></div>
+<div class="stage"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">A note</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A favorite note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">Journal</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li><li><span class="home-row is-missing"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A note that moved</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button><button type="button" class="home-row-repair">Find it…</button></span></li><li class="home-list-group is-missing">A vault that is not there<span class="home-list-group-gone">folder missing</span></li></ol></div><div class="home-list-box" style="margin-top:12px"><div class="home-list-scroll"><ol><li class="is-dropzone" style="height:44px"></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A row it made room above</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-row-ghost" style="position:static;width:260px"><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">The row being carried</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></div></div></div>
 </section>
 <section class="part">
 <header><h3>Home lists</h3><code class="built">.home-list</code><span class="built">render-document.js</span></header>
-<div class="stage"><div class="empty-state" style="padding:0"><div class="home-list-grid" style="border:0;margin:0;padding:0"><section class="home-list"><h2>Recent (2)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">A note</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">Another note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section><section class="home-list"><h2>Favorites (1)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li class="home-list-group">A vault</li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A kept note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section></div></div></div>
+<div class="stage"><div class="empty-state" style="padding:0"><div class="home-list-grid" style="border:0;margin:0;padding:0"><section class="home-list"><h2>Recent (2)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">A note</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">Another note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section><section class="home-list"><h2>Favorites (1)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li class="home-list-group">A vault</li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A favorite note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section></div></div></div>
 </section>
 <section class="part">
 <header><h3>Show all</h3><code class="built">.home-showall</code><span class="built">render-document.js</span></header>
@@ -9671,7 +9755,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </section>
 <section class="part">
 <header><h3>Home list sheet</h3><code class="built">.home-sheet</code><span class="built">app-shell.html, filled by render-document.js</span></header>
-<div class="stage"><div class="leaf-sheet home-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="home-sheet-head"><span class="home-sheet-title">Favorites (3)</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="home-sheet-body"><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A kept note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">Journal</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></div></div></div>
+<div class="stage"><div class="leaf-sheet home-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="home-sheet-head"><span class="home-sheet-title">Favorites (3)</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="home-sheet-body"><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A favorite note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">Journal</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Reader frame</h3><code class="built">.reader-shell</code><span class="built">app-shell.html</span></header>

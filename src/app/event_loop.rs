@@ -357,13 +357,51 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::ToggleFavorite { path, kind } => {
-                    // Which vault holds it is the registry's answer, not the pane's: something opened from outside every vault is kept under none.
+                    // Which vault holds it is the registry's answer, not the pane's: something opened from outside every vault belongs to none.
                     let vault_id = vault_state
                         .conn
                         .as_ref()
                         .and_then(|conn| vault_containing(conn, &path))
                         .map(|vault| vault.id);
                     reader.toggle_favorite(path, kind, vault_id);
+                }
+                IpcCommand::CheckFavorites => {
+                    // A metadata read per favorite, and only while the start screen is up: the list is short and the user marked every path in it, so this is not a crawl. Never stored, because a stored answer is wrong the moment a file moves with the app shut.
+                    let missing: Vec<String> = reader
+                        .favorites
+                        .entries
+                        .iter()
+                        .filter(|one| !one.path.exists())
+                        .map(|one| one.path.display().to_string())
+                        .collect();
+                    // A vault whose own folder has gone is one fact, not one per row inside it: repointing a file inside a folder that is not there is not the fix.
+                    let gone_vaults: Vec<i64> = vault_state
+                        .conn
+                        .as_ref()
+                        .and_then(|conn| list_vaults(conn).ok())
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter(|vault| !Path::new(&vault.root_path).is_dir())
+                        .map(|vault| vault.id)
+                        .collect();
+                    run_page_script(
+                        reader.page(),
+                        &favorites_missing_script(&missing, &gone_vaults),
+                        "Failed to mark the favorites that have gone",
+                    );
+                }
+                IpcCommand::RepointFavorite { path } => {
+                    if let Some(chosen) = pick_document_file() {
+                        let vault_id = vault_state
+                            .conn
+                            .as_ref()
+                            .and_then(|conn| vault_containing(conn, &chosen))
+                            .map(|vault| vault.id);
+                        reader.repoint_favorite(&path, &chosen, vault_id);
+                    }
+                }
+                IpcCommand::MoveFavorite { path, before } => {
+                    reader.move_favorite(&path, before.as_deref());
                 }
                 IpcCommand::CopyPath { path } => {
                     if let Err(error) = copy_path_to_clipboard(&path) {
@@ -956,7 +994,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::RemoveVault { id } => {
                     remove_vault_row(id, &mut vault_state, reader.page());
-                    // The registry was the only record of what that id meant, so what was kept inside it goes too.
+                    // The registry was the only record of what that id meant, so the favorites inside it go too.
                     reader.forget_vault_favorites(id);
                     // Removing the vault on screen lands back at the top of the whole library.
                     vault_state.folder.clear();

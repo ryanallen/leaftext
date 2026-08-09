@@ -236,7 +236,7 @@ function tabDisplayName(tab) {
   const base = (tab.path || '').split(/[\\/]/).pop() || '';
   return stripDocumentExt(base) || tab.title || tab.path || '';
 }
-// The kept paths the host last sent, and whether one of them is this file.
+// The favorites the host last sent, and whether one of them is this file.
 function currentFavorites() {
   return (currentState && currentState.favorites) || [];
 }
@@ -246,10 +246,10 @@ function isFavoritePath(path) {
 // Mark or unmark, showing it immediately: the page flips its own copy and redraws, so the heart fills under the pointer rather than a beat later, and the host's next payload is it agreeing. The vault is the host's to work out — the page only ever compares paths.
 function toggleFavorite(path, kind) {
   if (!path) return;
-  const kept = currentFavorites();
+  const favorites = currentFavorites();
   currentState.favorites = isFavoritePath(path)
-    ? kept.filter((favorite) => favorite.path !== path)
-    : kept.concat([{ vaultId: null, path, kind: kind || 'document' }]);
+    ? favorites.filter((favorite) => favorite.path !== path)
+    : favorites.concat([{ vaultId: null, path, kind: kind || 'document' }]);
   renderTabs(currentState);
   send({ command: 'toggleFavorite', path, kind: kind || 'document' });
 }
@@ -258,9 +258,9 @@ function renderTabs(state) {
   const active = state.active;
   // A pure HTML write; the strip's listeners live on the bar itself (below).
   tabBar.innerHTML = tabs.map((tab, index) => {
-    const kept = isFavoritePath(tab.path);
-    const mark = kept ? 'Unfavorite' : 'Favorite';
-    return `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${kept ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${kept}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${kept ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`;
+    const favorite = isFavoritePath(tab.path);
+    const mark = favorite ? 'Unfavorite' : 'Favorite';
+    return `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`;
   }).join('');
   // A tab opening, closing, or changing title changes what the strip needs —
   // refold so a longer title takes a button rather than getting clipped.

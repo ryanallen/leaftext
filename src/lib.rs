@@ -111,7 +111,7 @@ use syntect::{
 };
 use url::Url;
 
-/// How deep the history the start screen scrolls goes. Past what anyone scrolls, and still a file of a few KB rewritten whole on every open. Not uncapped: that is [`Favorites`]' rule on purpose — a kept path is a decision, a recent is a rolling record of what happened.
+/// How deep the history the start screen scrolls goes. Past what anyone scrolls, and still a file of a few KB rewritten whole on every open. Not uncapped: that is [`Favorites`]' rule on purpose — a favorite is a decision, a recent is a rolling record of what happened.
 const MAX_RECENT_FILES: usize = 50;
 const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 
@@ -279,7 +279,7 @@ impl RecentFiles {
     }
 }
 
-/// What a kept path points at. A folder is keepable too, so a shortcut to one is the same store rather than a second list.
+/// What a favorite points at. A folder can be favorited too, so a shortcut to one is the same store rather than a second list.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FavoriteKind {
@@ -287,7 +287,7 @@ pub enum FavoriteKind {
     Folder,
 }
 
-/// One kept path, with the vault it was marked inside. `vault_id` is `None` for something outside every vault — kept in its own group rather than refused, since a file on the desktop is still a file you can keep.
+/// One favorite, with the vault it was marked inside. `vault_id` is `None` for something outside every vault — drawn in its own group rather than refused, since a file on the desktop is still a file you can favorite.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Favorite {
@@ -297,7 +297,7 @@ pub struct Favorite {
     pub kind: FavoriteKind,
 }
 
-/// The kept paths, in the order the user put them in. Unlike [`RecentFiles`] there is no cap and nothing but the user takes an entry out: a recent is a record of what happened, and this is a decision somebody made.
+/// The favorites, in the order the user put them in. Unlike [`RecentFiles`] there is no cap and nothing but the user takes an entry out: a recent is a record of what happened, and this is a decision somebody made.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Favorites {
@@ -305,30 +305,30 @@ pub struct Favorites {
 }
 
 impl Favorites {
-    /// Keep `favorite`, at the end of the list. Returns whether it was added; marking something twice is not an error and never moves it.
+    /// Favorite `favorite`, at the end of the list. Returns whether it was added; marking something twice is not an error and never moves it.
     pub fn add(&mut self, favorite: Favorite) -> bool {
         let favorite = Favorite {
             path: normalize_recent_path(&favorite.path),
             ..favorite
         };
-        if self.entries.iter().any(|kept| kept.path == favorite.path) {
+        if self.entries.iter().any(|one| one.path == favorite.path) {
             return false;
         }
         self.entries.push(favorite);
         true
     }
 
-    /// Stop keeping `path`. Returns whether it was there, so the save is skipped when nothing changed.
+    /// Unfavorite `path`. Returns whether it was there, so the save is skipped when nothing changed.
     pub fn remove(&mut self, path: &Path) -> bool {
         let path = normalize_recent_path(path);
         let before = self.entries.len();
-        self.entries.retain(|kept| kept.path != path);
+        self.entries.retain(|one| one.path != path);
         before != self.entries.len()
     }
 
     pub fn contains(&self, path: &Path) -> bool {
         let path = normalize_recent_path(path);
-        self.entries.iter().any(|kept| kept.path == path)
+        self.entries.iter().any(|one| one.path == path)
     }
 
     /// Move the entry at `from` so it sits at `to`. An index the list does not have changes nothing, so a drop the page mis-measured cannot scramble the order.
@@ -341,14 +341,60 @@ impl Favorites {
         true
     }
 
-    /// Drop everything marked inside `vault_id`, for a vault being removed. The registry is the only record of what that id meant, so keeping them would leave paths nobody can name.
+    /// Point the favorite at `from` at `to`, keeping its place in the list. Returns whether `from` was there — a path the list does not hold changes nothing, so an answer about a row that has since been unfavorited cannot put one back. `remove` then `add` would land it at the end instead, which loses the order the user set. The vault is the registry's answer about the new path, not the old entry's: a file that really moved to another vault belongs to that vault's group.
+    pub fn repoint(&mut self, from: &Path, to: &Path, vault_id: Option<i64>) -> bool {
+        let from = normalize_recent_path(from);
+        let to = normalize_recent_path(to);
+        let Some(at) = self.entries.iter().position(|one| one.path == from) else {
+            return false;
+        };
+        // Already a favorite somewhere else in the list: repointing here would hold one path twice, so the repaired row goes and the entry that was already there keeps its own place.
+        if self
+            .entries
+            .iter()
+            .enumerate()
+            .any(|(index, one)| index != at && one.path == to)
+        {
+            self.entries.remove(at);
+            return true;
+        }
+        self.entries[at].path = to;
+        self.entries[at].vault_id = vault_id;
+        true
+    }
+
+    /// Move the favorite at `path` so it sits directly before the one at `before`, or last when there is none. Paths rather than positions, because the list the page draws is grouped by vault and can still be drawing a row that has left the store — so a drawn index is not one of these. Either path being absent changes nothing.
+    pub fn move_before(&mut self, path: &Path, before: Option<&Path>) -> bool {
+        let path = normalize_recent_path(path);
+        let Some(from) = self.entries.iter().position(|one| one.path == path) else {
+            return false;
+        };
+        let to = match before {
+            Some(before) => {
+                let before = normalize_recent_path(before);
+                let Some(at) = self.entries.iter().position(|one| one.path == before) else {
+                    return false;
+                };
+                // Landing before a row further down: taking this one out first shifts that row up by one, and inserting at its old index would drop this one after it.
+                if from < at {
+                    at - 1
+                } else {
+                    at
+                }
+            }
+            None => self.entries.len() - 1,
+        };
+        self.reorder(from, to)
+    }
+
+    /// Unfavorite everything marked inside `vault_id`, for a vault being removed. The registry is the only record of what that id meant, so keeping them would leave paths nobody can name.
     pub fn forget_vault(&mut self, vault_id: i64) -> bool {
         let before = self.entries.len();
-        self.entries.retain(|kept| kept.vault_id != Some(vault_id));
+        self.entries.retain(|one| one.vault_id != Some(vault_id));
         before != self.entries.len()
     }
 
-    /// Collapse entries to normalized form, dropping duplicates in order. Run on load, like Recent's, so the same path kept under two spellings self-heals.
+    /// Collapse entries to normalized form, dropping duplicates in order. Run on load, like Recent's, so the same path favorited under two spellings self-heals.
     fn normalize_entries(&mut self) {
         let mut normalized: Vec<Favorite> = Vec::with_capacity(self.entries.len());
         for entry in self.entries.drain(..) {
@@ -356,7 +402,7 @@ impl Favorites {
                 path: normalize_recent_path(&entry.path),
                 ..entry
             };
-            if !normalized.iter().any(|kept| kept.path == entry.path) {
+            if !normalized.iter().any(|one| one.path == entry.path) {
                 normalized.push(entry);
             }
         }
@@ -364,7 +410,7 @@ impl Favorites {
     }
 }
 
-/// Resolve `.` and `..` in `path` lexically (not via the filesystem) so two spellings of the same file collapse to one entry in Recent or in the kept list. Lexical rather than canonicalized keeps the path human-readable (no `\\?\` prefix) and usable by OS file-reveal commands.
+/// Resolve `.` and `..` in `path` lexically (not via the filesystem) so two spellings of the same file collapse to one entry in Recent or in the favorites. Lexical rather than canonicalized keeps the path human-readable (no `\\?\` prefix) and usable by OS file-reveal commands.
 fn normalize_recent_path(path: &Path) -> PathBuf {
     use std::path::Component;
 
