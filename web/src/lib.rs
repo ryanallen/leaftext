@@ -141,7 +141,8 @@ pub extern "C" fn leaf_boot_script() -> *mut u8 {
     let boot = format!(
         "{}\n{}\n{}\n{}\n{}",
         leaftext::initial_settings_script(&settings),
-        leaftext::initial_state_script(&[]),
+        // No recents and no favorites: a page has neither, and an empty pair is what the start screen already draws from.
+        leaftext::initial_state_script(&[], &leaftext::Favorites::default()),
         leaftext::initial_document_exts_script(),
         leaftext::initial_version_script(),
         leaftext::initial_update_script(),

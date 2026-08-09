@@ -11,6 +11,7 @@ import { existsSync, readFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
+import { instantiateCore } from './web-module.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const target = 'wasm32-unknown-unknown';
@@ -64,30 +65,15 @@ const highlight = build('highlight', 'highlight');
 // The whole app in a browser, page and front end included. An embedding product has no use for either, which is why they are not in the two above.
 const app = build('app', 'shell');
 
-// A module that builds is not a module that renders. Both are loaded and asked for a document, which is the only thing here a compiler cannot check.
+// A module that builds is not a module that answers. Every module is loaded and asked, which is the only thing here a compiler cannot check.
 const fixture = '# Hello\n\nA paragraph with a [link](https://example.com).\n\n- [x] done\n\n```rust\nfn main() {}\n```\n';
 
-/** Load a module and render `fixture` through it, the way an embedding page does: write bytes in, read a length-prefixed answer out. */
+/** Load a module and render `fixture` through it, the way an embedding page does. Loaded through the same wrapper the static export is built on, so the byte protocol has one copy in this repo rather than one per caller. */
 async function render(file, source = fixture) {
-  const { instance } = await WebAssembly.instantiate(readFileSync(file), {});
-  const exports = instance.exports;
-  const encoder = new TextEncoder();
-  const write = (text) => {
-    const bytes = encoder.encode(text);
-    const at = exports.leaf_alloc(bytes.length);
-    new Uint8Array(exports.memory.buffer).set(bytes, at);
-    return [at, bytes.length];
-  };
-  const [text, sourceLen] = write(source);
-  const [path, pathLen] = write('notes.md');
-  const answer = exports.leaf_render(text, sourceLen, path, pathLen);
-  if (!answer) throw new Error('the module refused the document');
-  const length = new DataView(exports.memory.buffer).getUint32(answer, true);
-  const json = new TextDecoder().decode(new Uint8Array(exports.memory.buffer, answer + 4, length));
-  exports.leaf_free(text, sourceLen);
-  exports.leaf_free(path, pathLen);
-  exports.leaf_free(answer, 4 + length);
-  return JSON.parse(json);
+  const module_ = await instantiateCore(file);
+  const document = module_.render(source, 'notes.md');
+  if (!document) throw new Error('the module refused the document');
+  return document;
 }
 
 const problems = [];
@@ -111,6 +97,27 @@ if (!fenced.html.includes(fence.code_html)) {
   problems.push('the browser module colors a fence differently from the desktop — see web/fence.json');
   problems.push(`  it rendered: ${fenced.html.slice(0, 400)}`);
 }
+
+// The third module is the app, so a document is not the question: what a published site serves is its own page, its front end and the boot state the page reads before anything is open. Those three exports exist only behind the shell feature, so nothing else here can ask for them.
+const shell = await instantiateCore(app.file);
+
+const boot = shell.boot();
+for (const line of ['window.__leafInitialState', 'window.__leafSettings', 'window.__leafDocumentExts']) {
+  if (!boot?.includes(line)) problems.push(`whole app: the boot state does not set ${line}`);
+}
+
+const page = shell.page();
+if (!page?.includes('assets/app.js')) problems.push('whole app: the page does not fetch its front end from the host that served it');
+if (page?.includes('src="leaf-asset') || page?.includes('href="leaf-asset')) problems.push("whole app: the page carries the desktop's own asset scheme, which no browser can fetch");
+
+// The front end is a join of ordered fragments, and the last one ends with the call that boots the page — so a truncated or reordered join shows up here rather than as a blank window.
+const script = shell.script();
+if (!script?.includes('window.ipc')) problems.push('whole app: the front end does not reach the web view, so the first fragment is missing');
+if (!/\)\s*;\s*$/.test(script?.trimEnd() ?? '')) problems.push('whole app: the front end does not end with the call that boots the page');
+
+const documentScript = shell.documentScript(fixture, 'notes.md');
+if (!documentScript?.includes('window.leafSetState')) problems.push('whole app: an opened document does not reach the page as the state call it reads');
+if (!documentScript?.includes('Hello')) problems.push('whole app: the document reached the page without its own title');
 
 if (problems.length) {
   console.error('the browser modules do not do what they are for:');

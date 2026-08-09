@@ -6,6 +6,11 @@ default:
 check:
     cargo check --all-targets
 
+# Type-check the browser package: `check` above never reaches it, because the workspace's one default member is the app. Both feature ends, since the shell's exports sit behind a feature the core does not have — so a library signature the browser crate no longer matches fails here instead of staying green. No wasm target and no network.
+check-web:
+    cargo check -p leaftext-web
+    cargo check -p leaftext-web --features shell
+
 test:
     cargo test
 
@@ -228,7 +233,7 @@ preview-web folder="":
 drive-web url *steps:
     node scripts/drive-web.mjs "{{ url }}" {{ steps }}
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
+verify: format-check check check-web test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
