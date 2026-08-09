@@ -87,19 +87,15 @@ Tier 0 comes first because the list is only as good as the statuses it rests on.
 
 **It is read to answer one question: what do I pick up now.** Everything that is not that answer pushes it further down the page, and a reader who has to scroll past four paragraphs of method to reach row one stops reading the file. So the rules here are size rules, and they are the point of the skill rather than a note on it.
 
-**One compact count line above the first table.**
+**The live file starts with its first work table.** Put the title, count line, summary, and any other notes after all work tables. The work stays first; context goes at the bottom.
 
 ```markdown
-# What to build next, in order
-
-**Last ranked 3 August 2026.** Live: <count>. Retired: <count>. Total: <count>. Numbers show current position; names identify tickets. Shipped rows move to what was built.
-
 ## Tier 1 — wrong today, and cheap
 
 | # | Ticket | Status | Why here | Cost |
 ```
 
-The count line is the only summary allowed above the tables. The number column shows position; the ticket name remains the stable reference.
+The number column shows position; the ticket name remains the stable reference. Put the compact count line at the bottom after the work tables, tracks, and off-list notes.
 
 - **The `Status` cell is third, after the position and ticket name.** Use only `Ready`, `Designed`, `In development`, or `Released for test` — no date, no who. It sits before the reasoning because it tells the reader what can happen next.
 - **A cell is one or two sentences.** Not a paragraph. Not a citation — a `path:line` belongs in the ticket's measured table, where somebody building it will look, and a cost belongs in the ticket's phases. The cell says *why this row is above the next one*, and nothing else.
@@ -107,7 +103,7 @@ The count line is the only summary allowed above the tables. The number column s
 - **An empty tier is deleted, heading and all.** It comes back when it has a row. A heading over nothing is a line to scroll past, and tier 0 sat empty over a link to somewhere else for exactly one edit before this rule existed.
 - **No method in the file.** How rows are ranked is this skill; the file links to it. Copying the three criteria into the file means two copies that drift.
 - **No record in the file.** What an earlier ranking got wrong goes in `done/PLAN.md`, beside the rows it is about. Anything that belongs to one ticket rather than to the ordering goes on that ticket, in its own record — that is what a ticket's record section is for.
-- **No summary paragraph.** The compact count line is the only summary above the tables; the tables are the list.
+- **Context goes at the bottom.** The tables are the list. Put counts, ranking notes, and other context after all work tables, tracks, and off-list notes, or omit them.
 - **No picture, and no diagram.** A wireframe and a flow diagram both belong to one ticket, where somebody building it will look; drawn in the ranking they push row one down the page and go stale the moment that ticket is designed. A [track](../../../docs/GLOSSARY.md#track) is numbered steps for the same reason — an order reads faster as a short list than as a graph.
 
 Then, after the tables, only these:

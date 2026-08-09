@@ -13,6 +13,8 @@ A ticket is followed months later by somebody with none of the conversation in t
 
 Written for the tickets in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, each of which groups its files into subject folders. Read [ticket](../ticket/SKILL.md) first: it is the shape this holds a file to.
 
+**It runs mid-build as well as before one.** [`/dev`](../dev/SKILL.md) calls it when a round of refinement opens a real fork, when a line the plan rests on turns out to be false, or when what the owner asked for reaches past the phases — and it answers the same way it would on a cold ticket: decide from the code and the repo's rules, fix the plan in place, leave the record. A phase already built is not evidence a decision was made; the ticket is.
+
 ## 1. Every citation is opened
 
 A ticket earns its keep with the measured table — the claim beside the line it came from. That is also the part that rots.
