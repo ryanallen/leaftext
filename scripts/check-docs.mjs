@@ -9,6 +9,8 @@
 // It also fails on a plan whose boxes are all ticked and which is still filed as live work. v0.1.462 shipped `scroll-position` and left it there, so the running order still called it next up. `/sync-docs` and `/done` both own the move; this is the thing that notices when neither ran.
 //
 // And it opens every document link both trees make. Retiring a ticket moves the file and fixes its own links, never the ones pointing at it, so each retirement left a few dead — forty of them by August 2026, twelve inside live tickets.
+//
+// It also refuses a live ticket that adds a control and never says what it looks like. See `drawingOwed` for what that question really asks and what it cannot see.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
@@ -126,6 +128,103 @@ if (selfTestFails.length) {
   process.exit(1);
 }
 
+// Where work that has not shipped lives. Used twice: a plan with every box ticked does not belong here, and a plan here that adds a control owes a drawing.
+const LIVE_PLANS = ['features', 'refactor', 'fixes'];
+const livePlan = (file) => LIVE_PLANS.some((p) => file.startsWith(`../docs/${p}/`));
+
+// A ticket that adds, moves or restyles anything in the window carries a `## What it looks like` section, so whoever builds it can see it first — v0.1.479 put a second search box, a `?` button and a popup panel into the library pane with no line of the plan asking for any of them, and all three came straight back out.
+//
+// No script can read a ticket and answer "does this change the window", so this asks an exact question that catches the same tickets: do the phases name `design/components.md`. They cannot dodge it — `check-classes.mjs` refuses any class the stylesheet paints with no row in that file, so a ticket adding a control has to name it.
+//
+// **What this cannot see: a ticket that moves or restyles a control without touching `design/`.** That is a real gap, and the one-off sweep in `../docs/refactor/workflow/ticket-drawings.md` is what covered it. Nothing here notices if it reopens.
+//
+// The section is also how a ticket says no in writing: where nothing new is drawn it is one sentence saying so and why, which is what stops the rule refusing a ticket it has no business refusing.
+function phasesSection(text) {
+  const out = [];
+  let inPhases = false;
+  for (const line of text.split('\n')) {
+    if (/^##(?!#)\s/.test(line)) {
+      inPhases = /^##\s+Phases\s*$/.test(line);
+      continue;
+    }
+    if (inPhases) out.push(line);
+  }
+  return out.join('\n');
+}
+
+function drawingOwed(file, text) {
+  if (!livePlan(file)) return false;
+  if (/^##[ \t]+What it looks like[ \t]*$/m.test(text)) return false;
+  return /design\/components\.md/.test(phasesSection(text));
+}
+
+const DRAWING_CASES = [
+  [
+    'phases naming the component table with no drawn section is refused',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [ ] A row in `design/components.md`\n',
+    true,
+  ],
+  [
+    'the same ticket with the section passes',
+    '../docs/features/reading/a.md',
+    '## What it looks like\n\n![a](../../imgs/a.png)\n\n## Phases\n\n- [ ] A row in `design/components.md`\n',
+    false,
+  ],
+  [
+    'a section saying nothing is drawn, with no picture in it, satisfies the rule',
+    '../docs/features/reading/a.md',
+    '## What it looks like\n\nNothing new is drawn.\n\n## Phases\n\n- [ ] A row in `design/components.md`\n',
+    false,
+  ],
+  [
+    'the same file name in prose outside the phases does not trip it',
+    '../docs/features/reading/a.md',
+    '## How it is built\n\nEvery class is already in `design/components.md`.\n\n## Phases\n\n- [ ] Nothing new\n',
+    false,
+  ],
+  [
+    'a heading that only starts with Phases is not the phases',
+    '../docs/features/reading/a.md',
+    '## Phases and what they cost\n\n- [ ] A row in `design/components.md`\n',
+    false,
+  ],
+  [
+    'a shipped ticket is not held to the rule',
+    '../docs/done/app/a.md',
+    '## Phases\n\n- [ ] A row in `design/components.md`\n',
+    false,
+  ],
+  [
+    'a refused ticket is not held to the rule',
+    '../docs/canceled/a.md',
+    '## Phases\n\n- [ ] A row in `design/components.md`\n',
+    false,
+  ],
+  [
+    'a published page is not a ticket',
+    'docs/01-features/a.md',
+    '## Phases\n\n- [ ] A row in `design/components.md`\n',
+    false,
+  ],
+];
+
+function drawingSelfTest() {
+  const fails = [];
+  for (const [name, file, text, want] of DRAWING_CASES) {
+    const got = drawingOwed(file, text);
+    if (got !== want) fails.push(`${name}: got ${got}, want ${want}`);
+  }
+  return fails;
+}
+
+const drawingFails = drawingSelfTest();
+if (drawingFails.length) {
+  console.error('drawings: the matcher is wrong, so nothing was read:');
+  for (const line of drawingFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 const rows = [];
 const orphans = [];
 const scanned = [];
@@ -161,15 +260,26 @@ if (orphans.length) {
   process.exit(1);
 }
 
-// Every phase ticked and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line.
-const LIVE_PLANS = ['features', 'refactor', 'fixes'];
+// Every phase ticked and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question, so each live ticket is read once.
 const finished = [];
+const undrawn = [];
 for (const file of rows.map(([f]) => f)) {
-  if (!LIVE_PLANS.some((p) => file.startsWith(`../docs/${p}/`))) continue;
+  if (!livePlan(file)) continue;
   const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
   const ticked = (text.match(/^\s*- \[x\]/gm) || []).length;
   const open = (text.match(/^\s*- \[ \]/gm) || []).length;
   if (ticked > 0 && open === 0) finished.push(`${file} (${ticked} ${ticked === 1 ? 'box' : 'boxes'}, all ticked)`);
+  if (drawingOwed(file, text)) undrawn.push(file);
+}
+
+if (undrawn.length) {
+  console.error('these live tickets add a control and never say what it looks like:');
+  for (const file of undrawn) console.error(`  ${file}  ->  no "## What it looks like" section`);
+  console.error('their phases name design/components.md, which only a ticket adding a control has to do.');
+  console.error('Draw it: write the sketch as HTML in ../docs/imgs/wireframes/<ticket>.html, photograph it with');
+  console.error('node scripts/wireframe.mjs, and embed the picture under that heading — see the "ticket" skill.');
+  console.error('If nothing new is drawn, the section is one sentence saying so and why.');
+  process.exit(1);
 }
 
 if (finished.length) {
@@ -202,4 +312,4 @@ if (dead.length) {
 }
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, ${opened} document links all opening something`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live ticket that adds a control saying what it looks like, ${opened} document links all opening something`);
