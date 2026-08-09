@@ -1,18 +1,10 @@
 /* docs.css
    ==========================================================================
-   Docs-only chrome layered on top of the shared site/styles.css: a fixed left
-   navigation sidebar, a prev/next pager, and a mobile nav select. The reading
-   column, minimap, and all Markdown styling are inherited from styles.css, so
-   the docs look identical to the root README reader.
+   Docs-only chrome layered on top of the shared site/styles.css: a fixed left navigation sidebar, a prev/next pager, and a mobile nav select. The reading column, minimap, and all Markdown styling are inherited from styles.css, so the docs look identical to the root README reader.
 
-   Shared verbatim across sites (leaftext, emptyguru, …) alongside docs.js — see
-   that file's header. Nothing here is site-specific.
+   Shared verbatim across sites (leaftext, emptyguru, …) alongside docs.js — see that file's header. Nothing here is site-specific.
 
-   Deep nesting: the sidebar supports groups inside groups. Each depth level
-   gets progressively smaller, lighter group titles. Leaf-page links use an
-   inline padding-left set by docs.js (8px + depth × 14px), so no fixed CSS
-   hierarchy is needed for indentation. (A shallow tree simply never uses the
-   deeper tiers.)
+   Deep nesting: the sidebar supports groups inside groups. Each depth level gets progressively smaller, lighter group titles. Leaf-page links use an inline padding-left set by docs.js (8px + depth × 14px), so no fixed CSS hierarchy is needed for indentation. (A shallow tree simply never uses the deeper tiers.)
    ========================================================================== */
 
 :root {
@@ -97,8 +89,7 @@
   text-transform: none;
 }
 
-/* A folder heading that links to its README: same look as a plain heading, but
-   clickable (block target, hover feedback, active state when it is the page). */
+/* A folder heading that links to its README: same look as a plain heading, but clickable (block target, hover feedback, active state when it is the page). */
 .docs-nav-group-link {
   display: block;
   text-decoration: none;
@@ -193,9 +184,7 @@
   border-radius: var(--radius);
   color: var(--text);
 }
-/* The fill the nav links already hover with. The app grains this button instead; the
-   site has no lattice anywhere, so a texture here would be a second one with nothing
-   behind it. */
+/* The fill the nav links already hover with. The app grains this button instead; the site has no lattice anywhere, so a texture here would be a second one with nothing behind it. */
 .docs-pager a:hover,
 .docs-pager a:focus-visible {
   background: var(--bg-elevated);

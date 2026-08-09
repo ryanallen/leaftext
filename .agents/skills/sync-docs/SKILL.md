@@ -87,7 +87,7 @@ A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu i
 
 **Deepen existing page-level links too.** A link that already points at a page top is wrong when the link text or its sentence names a *specific* topic that has its own section on that page — upgrade it to `page#section`. For example, `Data paths → See [Settings](features/settings.md)` should be `features/settings.md#paths`; `the [library](library.md) pane stays current` (about live updates) should be `library.md#live-updates`. Page-level links remain correct where they genuinely point at the whole page: "Next" lists, overview tables, and a deliberate "relative link" demo.
 
-- **A paragraph is one line.** Never hard-wrap. The renderer reflows, GitHub reflows, every editor reflows — a wrap only costs, on every edit after it. `just check-wrapping` fails on one and names the file; `--fix` joins them, in Markdown and in `.rs`/`.js` comments alike — but it reads no stylesheet, so a wrapped comment in `reading.css` is found by reading, never by the check. A break doing real work keeps two trailing spaces, or the file carries `<!-- keep-wrapping -->` on a line of its own. **This applies to every file the sweep in step 7 reaches, not only the page being edited** — a wrapped file is fixed where it is found.
+- **A paragraph is one line.** Never hard-wrap. The renderer reflows, GitHub reflows, every editor reflows — a wrap only costs, on every edit after it. `just check-wrapping` fails on one and names the file; `--fix` joins them, in Markdown and in `.rs`/`.js`/`.css` comments alike. A break doing real work keeps two trailing spaces, or the file carries `<!-- keep-wrapping -->` on a line of its own. **This applies to every file the sweep in step 7 reaches, not only the page being edited** — a wrapped file is fixed where it is found.
 - A single `# Title` H1, followed by a one-line `> tagline` blockquote, then the intro paragraph.
 - Plain, factual prose. No marketing fluff, no changelog entries ("now supports…"). State current behavior.
 - Keep version numbers and counts (e.g. "last 8 files", "4 parse workers", "2 MB limit", current `Cargo.toml` version) matching the code.
@@ -209,7 +209,7 @@ Page list, titles, summaries, and `<lastmod>` dates are all derived from the cur
 
 ### 9. Verify
 
-- `just check-wrapping` — no paragraph or comment broken across lines in either tree, `src/assets/` excepted.
+- `just check-wrapping` — no paragraph or comment broken across lines in either tree, the stylesheets included.
 - Grep the changed files for leftovers: no `<Tabs`, `<Card`, `<Step`, `<Note`, `<Tip`, `<Warning`, `<Accordion`, or `theme={null}`.
 - `node scripts/doc-images.mjs` — every picture a touched page asks for is there, and any that are not are named in the hand-back with the reason.
 - Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 8 was skipped or a doc changed after it ran).

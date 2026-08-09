@@ -2,13 +2,9 @@
    ==========================================================================
    The design system for the README viewer.
 
-   EVERYTHING you would normally want to tweak lives in the :root block right
-   below as named "tokens" (CSS variables). Change a value there and the whole
-   page updates. The rules after that just wire those tokens into the page, so
-   you rarely need to touch them.
+   EVERYTHING you would normally want to tweak lives in the :root block right below as named "tokens" (CSS variables). Change a value there and the whole page updates. The rules after that just wire those tokens into the page, so you rarely need to touch them.
 
-   The default values are GitHub's dark theme: a near-black canvas, near-white
-   text, and blue links.
+   The default values are GitHub's dark theme: a near-black canvas, near-white text, and blue links.
    ========================================================================== */
 
 :root {
@@ -32,9 +28,7 @@
   --checkbox: #6e7681; /* task-list checkbox color */
 
   /* ---- Syntax highlighting ------------------------------------------ */
-  /* Colors for highlighted code blocks (highlight.js, loaded lazily by
-     reader.js). These mirror GitHub's dark "prettylights" palette, the same
-     scheme the desktop app uses, so fenced code reads the same in both. */
+  /* Colors for highlighted code blocks (highlight.js, loaded lazily by reader.js). These mirror GitHub's dark "prettylights" palette, the same scheme the desktop app uses, so fenced code reads the same in both. */
   --syntax-comment: #9198a1; /* comments */
   --syntax-keyword: #ff7b72; /* keywords, storage, types (red) */
   --syntax-string: #a5d6ff; /* strings, regexps (light blue) */
@@ -50,19 +44,14 @@
   --syntax-deleted-bg: #67060c;
 
   /* ---- Type --------------------------------------------------------- */
-  /* Noto first (bundled in site/noto-fonts.css), then system fallbacks. Mirrors
-     the desktop app's font stacks. --font-heading is Noto Serif, available if
-     you want the headings in the app's display face. */
+  /* Noto first (bundled in site/noto-fonts.css), then system fallbacks. Mirrors the desktop app's font stacks. --font-heading is Noto Serif, available if you want the headings in the app's display face. */
   --font-body: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
     Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
   --font-heading: 'Noto Serif', Georgia, Cambria, 'Times New Roman', serif;
   --font-mono: 'Noto Sans Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
     Consolas, 'Liberation Mono', monospace;
 
-  /* Hand-tuned heading scale, matching the desktop app. --type-base is the body
-     size; it grows with the viewport above 1280px so wide windows scale up like
-     the native app. Headings are multiples of it (overridden smaller at the
-     breakpoints below). */
+  /* Hand-tuned heading scale, matching the desktop app. --type-base is the body size; it grows with the viewport above 1280px so wide windows scale up like the native app. Headings are multiples of it (overridden smaller at the breakpoints below). */
   --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
   --type-spacing: calc(var(--type-base) * 1.5);
   --font-size: var(--type-base);
@@ -105,13 +94,8 @@
   color-scheme: dark;
 }
 
-/* ==========================================================================
-   Themes
-   The :root block above is the default (GitHub dark). The settings menu
-   (site/settings.js) writes data-theme="light" | "dark" | "dracula" onto <html>
-   ("System" resolves to light or dark at runtime); each block below re-skins the
-   COLOR tokens only. Type, layout, and minimap geometry are shared, so a theme
-   is purely a palette swap. The palettes mirror the desktop app's themes.
+/* ==== Themes =============================================================
+   The :root block above is the default (GitHub dark). The settings menu (site/settings.js) writes data-theme="light" | "dark" | "dracula" onto <html> ("System" resolves to light or dark at runtime); each block below re-skins the COLOR tokens only. Type, layout, and minimap geometry are shared, so a theme is purely a palette swap. The palettes mirror the desktop app's themes.
    ========================================================================== */
 
 /* ---- Light (GitHub light) ------------------------------------------- */
@@ -322,9 +306,7 @@ body {
 }
 
 /* ---- Outline (table of contents) ------------------------------------ */
-/* A collapsed <details> built from the document's headings, sitting just under
-   the title (see site/outline.js). Closed by default so it never crowds the
-   top; open it to jump to any heading. */
+/* A collapsed <details> built from the document's headings, sitting just under the title (see site/outline.js). Closed by default so it never crowds the top; open it to jump to any heading. */
 .markdown-body .document-outline {
   margin: var(--type-spacing) 0;
   border: 1px solid var(--border);
@@ -340,8 +322,7 @@ body {
   list-style: none;
   user-select: none;
 }
-/* Draw our own disclosure triangle so it sits inline with the label in every
-   engine (Safari/WebKit hides the default marker when list-style is none). */
+/* Draw our own disclosure triangle so it sits inline with the label in every engine (Safari/WebKit hides the default marker when list-style is none). */
 .markdown-body .document-outline-summary::-webkit-details-marker {
   display: none;
 }
@@ -369,8 +350,7 @@ body {
   font-weight: 400;
   color: var(--text-muted);
 }
-/* Bulleted, not numbered: a deep outline runs a counter into the hundreds and
-   the wide markers overflow the panel's left edge. */
+/* Bulleted, not numbered: a deep outline runs a counter into the hundreds and the wide markers overflow the panel's left edge. */
 .markdown-body .document-outline > ul {
   margin: 0;
   padding: 0 1.4em 0.7em 2.4em;
@@ -392,10 +372,7 @@ body {
 }
 
 /* ---- TEI document titles --------------------------------------------- */
-/* Alternate-language title lines under a TEI document's main title (the
-   Sanskrit main title, then the English and Sanskrit long titles). Muted and
-   tight so the stack reads as one title block; pulled up toward the h1 it
-   belongs to. */
+/* Alternate-language title lines under a TEI document's main title (the Sanskrit main title, then the English and Sanskrit long titles). Muted and tight so the stack reads as one title block; pulled up toward the h1 it belongs to. */
 .markdown-body .tei-doc-subtitles {
   margin: calc(-0.5 * var(--type-spacing)) 0 var(--type-spacing);
   color: var(--text-muted);
@@ -408,9 +385,7 @@ body {
 }
 
 /* ---- TEI front matter ------------------------------------------------ */
-/* Summary, acknowledgments, and introduction from `text > front`, rendered
-   as a collapsed <details> (see site/tei-xml.js) so the reader lands on the
-   translation body. Mirrors the outline toggle above. */
+/* Summary, acknowledgments, and introduction from `text > front`, rendered as a collapsed <details> (see site/tei-xml.js) so the reader lands on the translation body. Mirrors the outline toggle above. */
 .markdown-body .tei-front {
   margin: var(--type-spacing) 0;
   border: 1px solid var(--border);
@@ -482,8 +457,7 @@ body {
 :root[data-speed-reader='true'] .markdown-body .github-ref,
 :root[data-speed-reader='true'] .markdown-body .github-mention {
   color: inherit;
-  /* Quiet, dim underline so links stay findable without competing with the
-     bold lead anchors. */
+  /* Quiet, dim underline so links stay findable without competing with the bold lead anchors. */
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
   text-underline-offset: 0.18em;
@@ -500,15 +474,7 @@ body {
   font-weight: 700;
 }
 
-/* Glossary term links read as a quiet dotted underline in every theme and mode
-   (including speed reader). They take the surrounding text's color — not the
-   accent link color — and the underline is a dimmed wash of that same color,
-   so an expandable term stays discoverable without standing out from the prose
-   it sits in. Because the dim is relative to currentColor, prose that is
-   already muted (blockquotes, captions) gets a fainter underline still.
-   Matches both the `glossary:slug` shorthand and a real `…/GLOSSARY.md#slug`
-   relative link. Placed last so it wins ties against the generic link and hover
-   rules above (in every state, including :hover). */
+/* Glossary term links read as a quiet dotted underline in every theme and mode (including speed reader). They take the surrounding text's color — not the accent link color — and the underline is a dimmed wash of that same color, so an expandable term stays discoverable without standing out from the prose it sits in. Because the dim is relative to currentColor, prose that is already muted (blockquotes, captions) gets a fainter underline still. Matches both the `glossary:slug` shorthand and a real `…/GLOSSARY.md#slug` relative link. Placed last so it wins ties against the generic link and hover rules above (in every state, including :hover). */
 .markdown-body a[href^="glossary:" i],
 .markdown-body a[href*="GLOSSARY.md#" i],
 .markdown-body a[href^="glossary:" i]:hover,
@@ -554,8 +520,7 @@ body {
 }
 
 /* ---- GitHub-style alerts ------------------------------------------- */
-/* A blockquote tagged `markdown-alert markdown-alert-TYPE` by the renderer; the
-   colored title comes from ::before, matching the desktop app. */
+/* A blockquote tagged `markdown-alert markdown-alert-TYPE` by the renderer; the colored title comes from ::before, matching the desktop app. */
 
 .markdown-body .markdown-alert {
   padding: 0.6em 1em;
@@ -639,10 +604,7 @@ body {
 .markdown-body li > ol {
   margin: 0.25em 0 0;
 }
-/* Ordered lists follow the classic outline sequence by nesting depth —
-   I, II, III then A, B, C then 1, 2, 3 then a, b, c then i, ii, iii — instead
-   of restarting at decimal on every level. Depth is counted by ordered-list
-   ancestors, so an <ol> nested inside a <ul> still reads as its own level. */
+/* Ordered lists follow the classic outline sequence by nesting depth — I, II, III then A, B, C then 1, 2, 3 then a, b, c then i, ii, iii — instead of restarting at decimal on every level. Depth is counted by ordered-list ancestors, so an <ol> nested inside a <ul> still reads as its own level. */
 .markdown-body ol {
   list-style-type: upper-roman;
 }
@@ -687,8 +649,7 @@ body {
 }
 
 /* ---- Code block chrome (language label + copy button) --------------- */
-/* Mirrors the desktop app: a languaged block (<pre class="highlight">) shows its
-   language in the top-right, and every code block gets a "copy all" button. */
+/* Mirrors the desktop app: a languaged block (<pre class="highlight">) shows its language in the top-right, and every code block gets a "copy all" button. */
 .markdown-body pre.highlight::before {
   content: attr(data-language);
   position: absolute;
@@ -699,8 +660,7 @@ body {
   text-transform: uppercase;
   pointer-events: none;
 }
-/* Always present but muted at rest, brightening on hover/focus; swaps to a check
-   mark for a moment after a successful copy. */
+/* Always present but muted at rest, brightening on hover/focus; swaps to a check mark for a moment after a successful copy. */
 .markdown-body pre > .code-copy {
   position: absolute;
   top: 6px;
@@ -748,16 +708,9 @@ body {
 }
 
 /* ---- Anchor links (gutter line numbers) ----------------------------- */
-/* Every anchorable block shows its line number in the left gutter as faint
-   monospace text, like a code editor's line gutter. It lives in the gutter so it
-   never shifts the text; it is hidden until its block (or the number itself) is
-   hovered on pointer devices — always shown on touch or narrow viewports (see the
-   media query below) — and clicking it copies the deep link.
+/* Every anchorable block shows its line number in the left gutter as faint monospace text, like a code editor's line gutter. It lives in the gutter so it never shifts the text; it is hidden until its block (or the number itself) is hovered on pointer devices — always shown on touch or narrow viewports (see the media query below) — and clicking it copies the deep link.
 
-   The anchor inherits the block's font metrics (font-size / line-height), so its
-   first line box is exactly as tall as the block's first line. The small number
-   inside then sits on that line's baseline (.anchor-link-num), i.e. flush with the
-   bottom of the text rather than floating up like a superscript on a tall heading. */
+   The anchor inherits the block's font metrics (font-size / line-height), so its first line box is exactly as tall as the block's first line. The small number inside then sits on that line's baseline (.anchor-link-num), i.e. flush with the bottom of the text rather than floating up like a superscript on a tall heading. */
 .markdown-body .has-anchor-link {
   position: relative;
 }
@@ -777,39 +730,29 @@ body {
   user-select: none;
   transition: opacity 0.12s ease, color 0.12s ease;
 }
-/* The visible glyph: a fixed small monospace number, baseline-aligned onto the
-   block's first-line baseline by the inherited line box above. */
+/* The visible glyph: a fixed small monospace number, baseline-aligned onto the block's first-line baseline by the inherited line box above. */
 .markdown-body .anchor-link-num {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
   vertical-align: baseline;
 }
-/* The digit is drawn from a data attribute, never a DOM text node, so a crawler
-   rendering the page can't scrape the gutter number into a search snippet. */
+/* The digit is drawn from a data attribute, never a DOM text node, so a crawler rendering the page can't scrape the gutter number into a search snippet. */
 .markdown-body .anchor-link-num::before {
   content: attr(data-locus-num);
 }
-/* The "Line numbers" setting (off) hides the gutter permalink numbers. Blocks keep
-   their ids and hidden locus aliases, so #locus deep links still resolve — only the
-   visible number goes away. */
+/* The "Line numbers" setting (off) hides the gutter permalink numbers. Blocks keep their ids and hidden locus aliases, so #locus deep links still resolve — only the visible number goes away. */
 :root[data-line-numbers="off"] .markdown-body .anchor-link {
   display: none;
 }
-/* A zero-size alias that carries a heading's #locus without disturbing its
-   layout (the heading keeps its slug id for the table of contents). */
+/* A zero-size alias that carries a heading's #locus without disturbing its layout (the heading keeps its slug id for the table of contents). */
 .markdown-body .locus-alias {
   position: absolute;
   width: 0;
   height: 0;
   overflow: hidden;
 }
-/* Anchorable blocks nest (a list item lives inside its parent list item, a
-   paragraph inside its blockquote), so hovering a deep block also hovers every
-   ancestor block — without the :not(:has(...)) guard each ancestor would light up
-   its own button and, since they all share one gutter column, stack as ghost
-   buttons above the one you are pointing at. Reveal only the innermost hovered (or
-   focused) block's button: the one that contains no other hovered/focused block. */
+/* Anchorable blocks nest (a list item lives inside its parent list item, a paragraph inside its blockquote), so hovering a deep block also hovers every ancestor block — without the :not(:has(...)) guard each ancestor would light up its own button and, since they all share one gutter column, stack as ghost buttons above the one you are pointing at. Reveal only the innermost hovered (or focused) block's button: the one that contains no other hovered/focused block. */
 .markdown-body .has-anchor-link:hover:not(:has(.has-anchor-link:hover)) > .anchor-link,
 .markdown-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .anchor-link,
 .markdown-body .has-anchor-link > .anchor-link:hover,
@@ -822,17 +765,12 @@ body {
   color: var(--link);
   text-decoration: none;
 }
-/* Brief confirmation that a click copied the deep link: hold the gutter number
-   lit for the timeout decorateAnchorLinks sets, even after the jump scrolls. */
+/* Brief confirmation that a click copied the deep link: hold the gutter number lit for the timeout decorateAnchorLinks sets, even after the jump scrolls. */
 .markdown-body .anchor-link.is-copied {
   opacity: 1;
   color: var(--link);
 }
-/* A narrow viewport (and any touch device) has little left margin to host the
-   number gutter, so tuck the numbers tighter to the content edge and shrink them.
-   They stay always-visible here (opacity restored) — there is no hover to reveal
-   them — so a single direct tap copies the deep link (and jumps) with no reveal
-   step to swallow the first tap. */
+/* A narrow viewport (and any touch device) has little left margin to host the number gutter, so tuck the numbers tighter to the content edge and shrink them. They stay always-visible here (opacity restored) — there is no hover to reveal them — so a single direct tap copies the deep link (and jumps) with no reveal step to swallow the first tap. */
 @media (hover: none), (max-width: 600px) {
   .markdown-body .anchor-link {
     padding-right: 3px;
@@ -844,10 +782,7 @@ body {
 }
 
 /* ---- Syntax highlighting (highlight.js tokens) ---------------------- */
-/* reader.js lazily runs highlight.js over fenced code blocks, which wraps
-   tokens in <span class="hljs-…"> elements. These rules color those tokens
-   using the --syntax-* tokens above. Class names follow highlight.js's scope
-   naming; the groupings mirror GitHub's github-dark theme. */
+/* reader.js lazily runs highlight.js over fenced code blocks, which wraps tokens in <span class="hljs-…"> elements. These rules color those tokens using the --syntax-* tokens above. Class names follow highlight.js's scope naming; the groupings mirror GitHub's github-dark theme. */
 .markdown-body .hljs-doctag,
 .markdown-body .hljs-keyword,
 .markdown-body .hljs-meta .hljs-keyword,
@@ -944,8 +879,7 @@ body {
 }
 
 /* ---- Frontmatter table --------------------------------------------- */
-/* A leading `--- … ---` block renders as a compact metadata table: small, no
-   table chrome, distinct from a normal GFM table. */
+/* A leading `--- … ---` block renders as a compact metadata table: small, no table chrome, distinct from a normal GFM table. */
 
 .markdown-body .frontmatter {
   margin: 0 0 16px;
@@ -976,8 +910,7 @@ body {
 }
 
 /* ---- Mermaid diagrams ---------------------------------------------- */
-/* Before the runtime processes it the fence shows its source; once rendered it
-   holds a centered SVG with no code-block chrome. */
+/* Before the runtime processes it the fence shows its source; once rendered it holds a centered SVG with no code-block chrome. */
 
 .markdown-body pre.mermaid {
   background: transparent;
@@ -1011,9 +944,7 @@ body {
   font-size: 0.85em;
   color: var(--text-muted);
 }
-/* Footnotes are numbered notes, not an outline: keep them Arabic (1, 2, 3) to
-   match the inline superscript references and APA/MLA/Chicago style, overriding
-   the upper-roman default used for ordinary ordered lists. */
+/* Footnotes are numbered notes, not an outline: keep them Arabic (1, 2, 3) to match the inline superscript references and APA/MLA/Chicago style, overriding the upper-roman default used for ordinary ordered lists. */
 .markdown-body .footnotes > ol {
   list-style-type: decimal;
 }
@@ -1033,9 +964,7 @@ body {
 }
 
 /* ---- Minimap -------------------------------------------------------- */
-/* A fixed rail on the right holding a shrunk thumbnail of the whole document
-   (built in minimap.js) and a rectangle marking the visible part. Clicking or
-   dragging it scrolls the window. It stands in for the hidden scrollbar. */
+/* A fixed rail on the right holding a shrunk thumbnail of the whole document (built in minimap.js) and a rectangle marking the visible part. Clicking or dragging it scrolls the window. It stands in for the hidden scrollbar. */
 
 .document-minimap {
   position: fixed;
@@ -1043,9 +972,7 @@ body {
   right: 0;
   z-index: 5;
   width: var(--minimap-width);
-  /* The rail wraps the track, which minimap.js sizes to the thumbnail (capped
-     at the viewport). A short document gets a short rail, not a full-height one
-     with the overview stranded at the top. */
+  /* The rail wraps the track, which minimap.js sizes to the thumbnail (capped at the viewport). A short document gets a short rail, not a full-height one with the overview stranded at the top. */
   max-height: 100vh;
   background: var(--bg);
 }
@@ -1089,12 +1016,8 @@ body {
   pointer-events: none;
 }
 
-/* ==========================================================================
-   Settings menu (site/settings.js)
-   A gear button fixed at the top-right of the page, sitting just to the LEFT of
-   the minimap rail (its right edge stops at the rail), never a header above it.
-   Clicking it drops a small panel with the theme picker and the show/hide
-   toggles. Mirrors the desktop app's settings menu look.
+/* ==== Settings menu (site/settings.js) ===================================
+   A gear button fixed at the top-right of the page, sitting just to the LEFT of the minimap rail (its right edge stops at the rail), never a header above it. Clicking it drops a small panel with the theme picker and the show/hide toggles. Mirrors the desktop app's settings menu look.
    ========================================================================== */
 
 .site-settings {
@@ -1105,8 +1028,7 @@ body {
   z-index: 20;
   font-family: var(--font-body);
 }
-/* With the minimap hidden (toggle off, or the narrow breakpoint), the rail's
-   footprint is gone, so tuck the gear into the corner. */
+/* With the minimap hidden (toggle off, or the narrow breakpoint), the rail's footprint is gone, so tuck the gear into the corner. */
 :root[data-minimap='off'] .site-settings {
   right: 6px;
 }
@@ -1118,8 +1040,7 @@ body {
   height: 34px;
   border: 1px solid transparent;
   border-radius: 6px;
-  /* A faint page-colored fill so the icon stays legible over any content it
-     floats above, without reading as a heavy button at rest. */
+  /* A faint page-colored fill so the icon stays legible over any content it floats above, without reading as a heavy button at rest. */
   background: color-mix(in srgb, var(--bg) 72%, transparent);
   color: var(--text-muted);
   cursor: pointer;
@@ -1191,10 +1112,7 @@ body {
 }
 
 /* ---- Show / hide toggles -------------------------------------------- */
-/* The settings checkboxes write these attributes onto <html>. Hiding a panel
-   also reclaims the space styles.css (and docs.css) reserved for it. The
-   attribute selectors out-rank the plain `body` padding rules regardless of
-   source order, so they win over docs.css too. */
+/* The settings checkboxes write these attributes onto <html>. Hiding a panel also reclaims the space styles.css (and docs.css) reserved for it. The attribute selectors out-rank the plain `body` padding rules regardless of source order, so they win over docs.css too. */
 
 :root[data-minimap='off'] .document-minimap {
   display: none;
@@ -1203,9 +1121,7 @@ body {
   padding-right: 0;
 }
 
-/* "Show library" hides the docs navigation (the sidebar and its mobile select).
-   These elements only exist on the /docs reader; on the plain README site the
-   selectors simply match nothing. */
+/* "Show library" hides the docs navigation (the sidebar and its mobile select). These elements only exist on the /docs reader; on the plain README site the selectors simply match nothing. */
 :root[data-library='off'] .docs-sidebar,
 :root[data-library='off'] .docs-mobile-nav {
   display: none;
@@ -1260,16 +1176,11 @@ body {
   }
 }
 
-/* ==========================================================================
-   Glossary bottom sheet
-   Shared by the README reader and the /docs site (see site/glossary.js). A
-   glossary link opens here, sliding up over the reading view; the doc keeps its
-   place underneath. The body reuses .document-body so entries are styled like
-   ordinary Markdown.
+/* ==== Glossary bottom sheet ==============================================
+   Shared by the README reader and the /docs site (see site/glossary.js). A glossary link opens here, sliding up over the reading view; the doc keeps its place underneath. The body reuses .document-body so entries are styled like ordinary Markdown.
    ========================================================================== */
 
-/* Hidden state must win over the display:flex below, or the sheet sits
-   off-screen with its shadow peeking up from the bottom edge. */
+/* Hidden state must win over the display:flex below, or the sheet sits off-screen with its shadow peeking up from the bottom edge. */
 .glossary-backdrop[hidden],
 .glossary-sheet[hidden] {
   display: none;
@@ -1307,10 +1218,8 @@ body {
   transform: translateY(0);
 }
 
-/* ==========================================================================
-   Link hover tooltip
-   Desktop-only helper for ordinary links. JS creates the element only on fine
-   hover pointers, so mobile/touch gets no new UI.
+/* ==== Link hover tooltip =================================================
+   Desktop-only helper for ordinary links. JS creates the element only on fine hover pointers, so mobile/touch gets no new UI.
    ========================================================================== */
 
 .link-hover-tip {
@@ -1370,8 +1279,7 @@ body {
   background: var(--bg-elevated);
 }
 .glossary-sheet-body {
-  /* Fill the sheet width so the scrollbar sits at the right edge (under the
-     close button) rather than inset by the reading-column measure. */
+  /* Fill the sheet width so the scrollbar sits at the right edge (under the close button) rather than inset by the reading-column measure. */
   width: auto;
   max-width: none;
   margin: 0;
@@ -1381,9 +1289,7 @@ body {
 .glossary-sheet-body > :first-child {
   margin-top: 0;
 }
-/* The sheet body is .document-body, not .markdown-body, so the reader's link
-   color does not reach it. Match it here, or term links fall back to the dull
-   browser-default link color. */
+/* The sheet body is .document-body, not .markdown-body, so the reader's link color does not reach it. Match it here, or term links fall back to the dull browser-default link color. */
 .glossary-sheet-body a {
   color: var(--link);
   text-decoration: none;
@@ -1423,10 +1329,7 @@ body {
   }
 }
 
-/* Skip-to-content link: the first thing a keyboard or screen-reader user
-   reaches. Off-screen until focused, then it drops into the top-left so the
-   user can jump straight past the navigation to the article. Hidden visually
-   has no effect on the page's normal appearance. */
+/* Skip-to-content link: the first thing a keyboard or screen-reader user reaches. Off-screen until focused, then it drops into the top-left so the user can jump straight past the navigation to the article. Hidden visually has no effect on the page's normal appearance. */
 .skip-link {
   position: absolute;
   left: 8px;

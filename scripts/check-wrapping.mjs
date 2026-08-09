@@ -4,7 +4,7 @@
 //   node scripts/check-wrapping.mjs           fail, naming every file and line
 //   node scripts/check-wrapping.mjs --fix     join them
 //
-// Markdown in this repo and the plan tree next door; comments in this repo's `.rs`, `.js` and `.mjs`. A comment joins only where two lines are both flush prose: a body with an indent of its own is a command, a table or a list, where the shape is the content.
+// Markdown in this repo and the plan tree next door; comments in this repo's `.rs`, `.js`, `.mjs` and `.css`. A comment joins only where two lines are both flush prose: a body with an indent of its own is a command, a table or a list, where the shape is the content. A `/* */` block is flush against its own base indent, because its continuation lines are aligned under the opener rather than starting at column zero.
 //
 // What is left alone, because the break is doing something:
 //
@@ -218,6 +218,76 @@ export function unwrapComments(text) {
   return { text: out.join('\n'), joined };
 }
 
+/// A `/*` opening a block on a line of its own: its indent and the prose after the marker. A `/*` after a declaration on the same line is not one, and neither is a block that closes on the line it opens.
+const BLOCK_OPEN = /^([ \t]*)\/\*(.*)$/;
+
+/// A line inside a block, split at its own indent.
+function blockLineAt(line) {
+  const indent = line.match(/^[ \t]*/)[0];
+  return { indent: indent.length, body: line.slice(indent.length) };
+}
+
+/// Join the wrapped prose inside a `/* … */` block, in `.css`.
+///
+/// The one thing this does that `unwrapComments` does not is measure the indent from the block rather than from the line: a CSS block's continuation lines are aligned under its `/*`, so read as `//` lines every one of them would look like an indented example and nothing would join. The block's base is the smallest indent among its continuation lines — a line at that base is prose, a line deeper than it is an example and keeps its shape. A star-led block needs no rule of its own: its ` * ` continuation reads as a list item, which never joins.
+export function unwrapBlockComments(text) {
+  const lines = text.split('\n');
+  const out = [];
+  const joined = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const open = BLOCK_OPEN.exec(line);
+    if (!open || open[2].includes('*/')) {
+      out.push(line);
+      continue;
+    }
+
+    let close = -1;
+    for (let scan = index + 1; scan < lines.length; scan += 1) {
+      if (lines[scan].includes('*/')) {
+        close = scan;
+        break;
+      }
+    }
+    if (close === -1) {
+      out.push(line);
+      continue;
+    }
+
+    // The closer alone on its line says nothing about where the prose sits, and neither does a blank line.
+    let base = null;
+    for (let scan = index + 1; scan <= close; scan += 1) {
+      const { indent, body } = blockLineAt(lines[scan]);
+      if (body === '' || body === '*/') continue;
+      if (base === null || indent < base) base = indent;
+    }
+
+    out.push(line);
+    let previousBody = open[2].trim();
+    let joinable = base !== null && previousBody !== '' && !RULE.test(previousBody);
+
+    for (let scan = index + 1; scan <= close; scan += 1) {
+      const raw = lines[scan];
+      const { indent, body } = blockLineAt(raw);
+      const prose = body !== '' && body !== '*/' && indent === base && !RULE.test(body) && !opens(body);
+      const previousLine = out[out.length - 1];
+      if (prose && joinable && absorbs(previousLine, previousBody)) {
+        out[out.length - 1] = `${previousLine}${SPLIT_WORD.test(previousLine) ? '' : ' '}${body}`;
+        previousBody = `${previousBody} ${body}`;
+        joined.push(scan + 1);
+        continue;
+      }
+      out.push(raw);
+      previousBody = body;
+      joinable = prose;
+    }
+    index = close;
+  }
+
+  return { text: out.join('\n'), joined };
+}
+
 /// What the joining has to get right, each case as the text going in and the text coming out. This runs before the sweep, because a wrong transform rewrites 150 files and the only thing that would notice is somebody reading one.
 const CASES = [
   ['a paragraph', 'one two\nthree four\n', 'one two three four\n'],
@@ -256,6 +326,22 @@ const COMMENT_CASES = [
   ['an em dash keeps its space', '// taken back --\n// and the history\n', '// taken back -- and the history\n'],
 ];
 
+/// The same, for a `/* */` block. The indent in these is the block's own, which is the whole of what the reader has to get right.
+const BLOCK_CASES = [
+  ['a wrapped block carries its closer along', '  /* one two\n     three four */\n', '  /* one two three four */\n'],
+  ['a body deeper than the base is an example', '/* one\n   two\n     node scripts/x.mjs\n   three */\n', '/* one two\n     node scripts/x.mjs\n   three */\n'],
+  ['a blank line breaks the paragraph', '/* one\n   two\n\n   three\n   four */\n', '/* one two\n\n   three four */\n'],
+  ['a banner rule takes nothing', '/* ---- Title ----\n   one\n   two */\n', '/* ---- Title ----\n   one two */\n'],
+  ['a banner rule joins onto nothing', '/* one\n   ----\n   two */\n', '/* one\n   ----\n   two */\n'],
+  ['a comment opened after a declaration is untouched', 'a { color: red; /* one\n   two */ }\n', 'a { color: red; /* one\n   two */ }\n'],
+  ['a one-liner is untouched', '/* one two */\n', '/* one two */\n'],
+  ['a star-led block is left alone', '/* one\n * two\n */\n', '/* one\n * two\n */\n'],
+  ['a closer on its own line stays there', '/* one\n   two\n*/\n', '/* one two\n*/\n'],
+  ['a split word joins tight', '/* a reading-\n   view affordance */\n', '/* a reading-view affordance */\n'],
+  ['an em dash keeps its space', '/* taken back --\n   and the history */\n', '/* taken back -- and the history */\n'],
+  ['an unterminated block is left alone', '/* one\n   two\n', '/* one\n   two\n'],
+];
+
 /// Which files the sweep never opens, and which only look like they say so. A file that names the marker inside a sentence is read like any other, because a rule nobody can see written down is a rule that exempts whoever writes it out.
 const EXEMPT_CASES = [
   ['the marker on a line of its own opts out', optedOut, '# Title\n\n<!-- keep-wrapping -->\n', true],
@@ -277,6 +363,10 @@ function selfTest() {
     const got = unwrapComments(input).text;
     if (got !== want) fails.push(`comments, ${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
   }
+  for (const [name, input, want] of BLOCK_CASES) {
+    const got = unwrapBlockComments(input).text;
+    if (got !== want) fails.push(`block comments, ${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+  }
   for (const [name, test, input, want] of EXEMPT_CASES) {
     const got = test(input);
     if (got !== want) fails.push(`exemption, ${name}: got ${got}, want ${want}`);
@@ -287,6 +377,9 @@ function selfTest() {
   }
   if (unwrapComments(unwrapComments('// one\n// two\n// three\n').text).joined.length) {
     fails.push('a joined comment still reports wrapped lines');
+  }
+  if (unwrapBlockComments(unwrapBlockComments('/* one\n   two\n   three */\n').text).joined.length) {
+    fails.push('a joined block comment still reports wrapped lines');
   }
   return fails;
 }
@@ -311,6 +404,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     ...listed(root, ['.md'], unwrap),
     ...listed(plans, ['.md'], unwrap),
     ...listed(root, ['.rs', '.js', '.mjs'], unwrapComments),
+    ...listed(root, ['.css'], unwrapBlockComments),
   ];
 
   let wrapped = 0;
