@@ -224,7 +224,7 @@ Reading order follows the same depth-first walk the docs viewer uses: inside eac
 
 Working out the Previous / Next links means scanning the folder tree, so Leaftext does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
-Point at either button and it fills with the same fine dot texture the code blocks and table headers on that page wear, so it reads as one of the page's own surfaces rather than a panel laid over it, and the document name on it stays plain. The [hover tooltip](#link-hints) names the page that button opens, with the address underneath, and sits clear of the button rather than over it.
+Point at either button and it fills with the same fine dot texture the code blocks and table headers on that page wear, so it reads as one of the page's own surfaces rather than a panel laid over it, and the document name on it stays plain. The [hover tooltip](#link-hints) gives it the same card any other document link gets — that it opens another page, the address of that page, and how long it is — and sits clear of the button rather than over it. A middle click and the right-click menu treat it as a page too.
 
 The pager is always there; it is not a [setting](05-settings.md#pager).
 
@@ -239,14 +239,13 @@ Hovering a link shows a small tooltip that names what kind of link it is and sho
 | Glossary entry | A `glossary:` term link, or a link to `GLOSSARY.md#term` |
 | Full glossary | A bare `glossary:` link that opens the whole glossary |
 | In-page jump | A `#fragment` link to a heading on the current page |
-| Another page | A relative link to any document Leaftext reads — `.md`, [`.xml`](01-rendering.md#xml), [`.json`, `.yaml`](01-rendering.md#data-files-json-and-yaml), [`.eml`](01-rendering.md#email-eml) (its line count is shown too) |
+| Another page | A link to any document Leaftext reads — `.md`, [`.xml`](01-rendering.md#xml), [`.json`, `.yaml`](01-rendering.md#data-files-json-and-yaml), [`.eml`](01-rendering.md#email-eml) — including a [Previous / Next](#pager) button (its line count is shown too) |
 | External site | An `http://` or `https://` link |
 | Email link | A `mailto:` link |
 | App link | Any other URL scheme |
 | Local path | A root-relative `/path` link |
-| The page's own name | A [Previous / Next](#pager) button, which names the document it opens rather than the kind of link it is |
 
-This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll or when the window loses focus. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the name it is giving you.
+This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll or when the window loses focus. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the document name printed on it.
 
 The hint also tells you where a click will land. A link to a document Leaftext reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet) is handed to your operating system to open in whatever owns that type.
 
@@ -254,7 +253,7 @@ The hint also tells you where a click will land. A link to a document Leaftext r
 
 A plain click follows a link in the [tab](#tabs) you are reading, so coming back means a trip through [Back](#history). Hold `Ctrl` (`Cmd` on macOS) as you click, or click with the middle button, and the linked document opens as a new tab behind the one you are in: you keep your place, and the document waits in the tab strip until you go to it. `Shift` and `Alt` are not part of the gesture.
 
-This works on a link to any document Leaftext reads — the `Another page` hint above. An outside site has no page here to open, so the gesture follows it the way a plain click does, into your browser; an in-page jump has nowhere to go and simply jumps. A document that is already open in another tab does not get a second one, and you are not moved to it — you asked to stay where you are.
+This works on a link to any document Leaftext reads — the `Another page` hint above — and on the [Previous / Next](#pager) buttons under a document. An outside site has no page here to open, so the gesture follows it the way a plain click does, into your browser; an in-page jump has nowhere to go and simply jumps. A document that is already open in another tab does not get a second one, and you are not moved to it — you asked to stay where you are.
 
 Right-click a link for the same thing by name, plus copying it:
 

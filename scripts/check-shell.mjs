@@ -500,21 +500,21 @@ if (booted) {
     }
   });
 
-  // The card over a pager button has to name the page it opens rather than call the document behind it an app command. Its target is a `file://` URL, so the scheme branch answers first unless the page the pager stamped on the button is read ahead of everything.
-  check('a pager button’s hint names its page and keeps the address under it', () => {
-    const { linkHoverInfo, linkHoverKind } = booted;
-    const anchor = (attributes) => ({ getAttribute: (name) => (name in attributes ? attributes[name] : null) });
+  // A pager button opens a page, and three things have to agree about that: the card, the middle click and the menu. Only the card is ever handed the button, so the answer comes off the address — a `file://` URL, which the scheme branch would otherwise call an app command.
+  check('a pager button is another page to the card, the middle click and the menu alike', () => {
+    const { linkHoverInfo, linkHoverKind, isAnotherPageHref } = booted;
     const href = 'file:///docs/002-rains.md';
-    const pager = linkHoverInfo(href, anchor({ href, 'data-pager-title': 'The Rains Retreat' }));
-    if (pager.kind !== 'The Rains Retreat') throw new Error(`the card calls it ${pager.kind}`);
+    const pager = linkHoverInfo(href);
+    if (pager.kind !== 'Another page') throw new Error(`the card calls it ${pager.kind}`);
     if (pager.detail !== href) throw new Error(`the address moved: ${pager.detail}`);
 
-    // An ordinary document link keeps the answer it has, its line count included.
-    const plain = linkHoverInfo('notes/other.md', anchor({ href: 'notes/other.md' }));
-    if (plain.kind !== 'Another page') throw new Error(`a plain link became ${plain.kind}`);
+    // The kind is what gates the line-count request, so this is also what puts a length on that card.
+    if (linkHoverKind(href) !== 'Another page') throw new Error(`the menu reads a pager link as ${linkHoverKind(href)}`);
+    if (!isAnotherPageHref(href)) throw new Error('a middle click on a pager button has nowhere to open');
 
-    // The right-click menu asks with the href alone, so a pager button there is unmoved.
-    if (linkHoverKind(href) !== 'App link') throw new Error('the menu’s reading of a pager link moved');
+    // An ordinary document link keeps the answer it has, and a file that is not a page is still not one.
+    if (linkHoverInfo('notes/other.md').kind !== 'Another page') throw new Error('a plain link stopped being a page');
+    if (linkHoverInfo('file:///docs/logo.png').kind !== 'App link') throw new Error('a file the app cannot read became a page');
   });
 
   // The card follows the pointer at a fixed offset, which lands inside a target this size — so it covered the very page name it had just been given. Pure arithmetic over two rectangles, and the one part of this nothing else can see.

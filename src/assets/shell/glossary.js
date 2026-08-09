@@ -231,15 +231,13 @@ function positionLinkHoverTip(event) {
 function hoverDetail(rawHref) {
   try { return decodeURIComponent(rawHref); } catch (e) { return rawHref; }
 }
-// The page a pager button opens, which the pager stamped on it. Read ahead of every branch below, because the target is a `file://` URL and the scheme test would answer it as an app command.
+// The page a pager button was stamped with. Placement only: the card stands clear of a target this big.
 function pagerHoverTitle(link) {
   return link && link.getAttribute ? (link.getAttribute('data-pager-title') || '').trim() : '';
 }
-// The element is optional: the right-click menu asks what a link is with the href alone, and a pager button there keeps whatever it resolves to.
-function linkHoverInfo(rawHref, link) {
+// The href alone, so the card, the middle click and the menu cannot answer differently about one link.
+function linkHoverInfo(rawHref) {
   if (!rawHref) return null;
-  const pagerTitle = pagerHoverTitle(link);
-  if (pagerTitle) return { kind: pagerTitle, detail: hoverDetail(rawHref) };
   if (/^glossary:\s*$/i.test(rawHref)) {
     return { kind: 'Full glossary', detail: hoverDetail(rawHref) };
   }
@@ -254,6 +252,10 @@ function linkHoverInfo(rawHref, link) {
   }
   if (/^https?:\/\//i.test(rawHref)) {
     return { kind: 'External site', detail: hoverDetail(rawHref) };
+  }
+  // The pager's buttons carry one, and the host opens it in place like any page — so this goes ahead of the scheme test, which would call it an app command.
+  if (/^file:/i.test(rawHref) && DOCUMENT_HREF_RE.test(rawHref)) {
+    return { kind: 'Another page', detail: hoverDetail(rawHref) };
   }
   if (/^[a-z][a-z0-9+.-]*:/i.test(rawHref)) {
     return { kind: 'App link', detail: hoverDetail(rawHref) };
@@ -273,7 +275,7 @@ if (canHoverLinks) {
     const link = event.target.closest('a[href]');
     if (!link) return;
     const rawHref = (link.getAttribute('href') || '').trim();
-    const info = linkHoverInfo(rawHref, link);
+    const info = linkHoverInfo(rawHref);
     if (!info) {
       hideLinkHoverTip();
       return;

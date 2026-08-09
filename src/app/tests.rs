@@ -475,6 +475,16 @@ fn only_a_link_with_a_file_behind_it_resolves_to_a_path() {
         linked_document_path("./other.md#top", &current),
         Some(fixture_source_path("guide/chapter/other.md"))
     );
+
+    // A Previous / Next button carries a `file://` address, and Reveal file, Copy path and the line count all resolve it here.
+    let neighbor = fixture_source_path("guide/chapter/other.md");
+    let neighbor_url =
+        url::Url::from_file_path(&neighbor).expect("an absolute path has a file URL");
+    assert_eq!(
+        linked_document_path(neighbor_url.as_str(), &current),
+        Some(neighbor)
+    );
+
     for href in [
         "https://example.com/page.md",
         "mailto:someone@example.com",
