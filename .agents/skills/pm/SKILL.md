@@ -19,13 +19,13 @@ user-invocable: true
 
 - [`../docs/README.md`](../../../../docs/README.md) — every ticket, one line, and the source of every ticket path.
 - [`../docs/GLOSSARY.md`](../../../../docs/GLOSSARY.md) — the words the ranking is written in.
-- **Every ticket under `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, off the disk.** Those hold subject folders, so walk them rather than one level. A ticket the index missed still gets a row.
+- **Every ticket under `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, off the disk.** Those hold subject folders, so walk them rather than one level. A ticket the README missed still gets a row.
 - **Every file under `../docs/canceled/`, off the disk too.** That is the only way a refused plan is found: nothing announces one, and a ticket moved there with no row is a decision that exists nowhere anybody reads.
 - [`../docs/done/PLAN.md`](../../../../docs/done/PLAN.md) and [`../docs/canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) — rows already closed or refused are rows not to re-rank.
 
 ## 2. Re-derive every status
 
-Never trust the cell. `Ready` — no dated [`/design`](../design/SKILL.md) line. `Designed` — that line exists, no box ticked. `In development` — a box is ticked. `Released for test` — shipped, not yet retired. The ticket is the authority; when the index disagrees, fix the index.
+Never trust the cell. `Ready` — no dated [`/design`](../design/SKILL.md) line. `Designed` — that line exists, no box ticked. `In development` — a box is ticked. `Released for test` — shipped, not yet retired. The ticket is the authority; when the README disagrees, fix the README.
 
 Then check in the code, not in the file:
 
@@ -48,7 +48,7 @@ The tests pick the tier in that order, then run again inside it, which is what m
 
 **Unrankable, because the cost is unknown.** The ticket stays `Ready` with the reason in its row: it changes the window and has no drawn `What it looks like` section, or its phases carry no test box. Check both over every ticket while walking the folders.
 
-**A gap this pass turns up gets a ticket, not a row** — write it with [`/ticket`](../ticket/SKILL.md), give it its index row, rank it here in the same pass.
+**A gap this pass turns up gets a ticket, not a row** — write it with [`/ticket`](../ticket/SKILL.md), give it its README row, rank it here in the same pass.
 
 ## 4. The tiers
 
@@ -74,9 +74,9 @@ It opens with the first work table. Title, counts and anything off the list go a
 
 - **The number is the position**, not the ticket's identity: moving a row renumbers everything under it, and the number is never copied anywhere else. The name is what every line of prose cites.
 - **One sentence a cell**, and it says why this row is above the next one. Two only when the second one earns it.
-- **Nothing that belongs to the ticket** — no citation, no phase count, no box count, no cost breakdown, no date of who asked for it, no restating what the index already says the ticket is.
+- **Nothing that belongs to the ticket** — no citation, no phase count, no box count, no cost breakdown, no date of who asked for it, no restating what the README already says the ticket is.
 - **No preamble under a heading, no method, no record, no picture.** How rows are ranked is this skill; what an earlier ranking got wrong is `done/PLAN.md`'s.
-- **Every ticket name is a link**, in every cell and every line of prose, using the path from the index. A bare name is a ranking error.
+- **Every ticket name is a link**, in every cell and every line of prose, using the path from the README. A bare name is a ranking error.
 - **A track is `TRACKS.md`'s.** A row says which step it is and nothing more. But a track's steps are an order to build in, so where this pass proves a dependency the other way round, the steps are swapped there in the same edit — a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one.
 - **Off the list** — a sentence, with what would put it back. Off with a reason beats bottom of the list.
 
@@ -90,7 +90,7 @@ If a cell needs more words, the ticket is what needs them.
 
 ## 7. Which folder a ticket sits in is the version it ships under
 
-`features/` takes the middle number up and the last back to zero; `refactor/` and `fixes/` take the last number up one. [`/git-release`](../git-release/SKILL.md) reads the folder and does what it says, so a ticket filed wrong ships under the wrong number — and this is the only pass that walks all three folders. `features/` is the app not doing something yet, `refactor/` is doing it differently, `fixes/` is doing it wrong today. Move it, fix its index row, say so in the hand-back. **No version number goes in `PLAN.md`.**
+`features/` takes the middle number up and the last back to zero; `refactor/` and `fixes/` take the last number up one. [`/git-release`](../git-release/SKILL.md) reads the folder and does what it says, so a ticket filed wrong ships under the wrong number — and this is the only pass that walks all three folders. `features/` is the app not doing something yet, `refactor/` is doing it differently, `fixes/` is doing it wrong today. Move it, fix its README row, say so in the hand-back. **No version number goes in `PLAN.md`.**
 
 ## 8. The shipped file
 
@@ -107,7 +107,7 @@ If a cell needs more words, the ticket is what needs them.
 
 ## 10. The five files know each other
 
-The tree is read from whichever file somebody opens first, so each one names the rest: [the index](../../../../docs/README.md) says what every plan is, [`PLAN.md`](../../../../docs/PLAN.md) what is left, [`done/PLAN.md`](../../../../docs/done/PLAN.md) what shipped, [`canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) what was refused, and [`TRACKS.md`](../../../../docs/TRACKS.md) the subject orders cutting across the tiers — with [`GLOSSARY.md`](../../../../docs/GLOSSARY.md) holding the words all five are written in. Check the links each way in this pass: a ranking nobody can get to from the file they opened is one they plan against without.
+The tree is read from whichever file somebody opens first, so each one names the rest: [the README](../../../../docs/README.md) says what every plan is, [`PLAN.md`](../../../../docs/PLAN.md) what is left, [`done/PLAN.md`](../../../../docs/done/PLAN.md) what shipped, [`canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) what was refused, and [`TRACKS.md`](../../../../docs/TRACKS.md) the subject orders cutting across the tiers — with [`GLOSSARY.md`](../../../../docs/GLOSSARY.md) holding the words all five are written in. Check the links each way in this pass: a ranking nobody can get to from the file they opened is one they plan against without.
 
 ## 11. Hand back
 

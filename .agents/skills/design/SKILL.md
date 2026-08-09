@@ -93,7 +93,7 @@ grep -rn "<the behavior>" src/tests/ src/app/tests.rs src/store/tests.rs scripts
 - The box names the file it goes in — `src/tests/` per subject, `src/app/tests.rs` for the binary, `scripts/check-shell.mjs` for `src/assets/shell/`. A phase whose only work is a row in `design/` asks for no test; the design checks already refuse what is not listed.
 - **What genuinely cannot be tested here gets its line in the phase** — a real window, live selected text, a held pointer. Nothing about the Mac build, the installer or the workflows: GitHub compiles those on a tagged release, and the caveat is true on every ticket.
 
-**A gap this reading turns up outside the ticket is its own ticket, never a box smuggled into this one.** Opening every citation walks a lot of code, so this is the pass that notices a subject nothing covers. File it — `../docs/refactor/` in the subject folder it belongs to, its row in the index, [`/pm`](../pm/SKILL.md) once — and name it in this ticket's **Still open** so nobody reads it as covered. Widening the ticket in front of you is how a plan stops being reviewable.
+**A gap this reading turns up outside the ticket is its own ticket, never a box smuggled into this one.** Opening every citation walks a lot of code, so this is the pass that notices a subject nothing covers. File it — `../docs/refactor/` in the subject folder it belongs to, its row in the README, [`/pm`](../pm/SKILL.md) once — and name it in this ticket's **Still open** so nobody reads it as covered. Widening the ticket in front of you is how a plan stops being reviewable.
 
 ## 6. The six parts are there, and the summary earns its keep
 

@@ -25,9 +25,11 @@ Tests come before `verify` because `verify` runs the tests that exist. A change 
 just verify
 ```
 
-Twenty-four steps: `format-check`, `cargo check --all-targets`, `cargo test`, `check-vendor`, `check-themes`, `check-tokens`, `check-icons`, `check-gallery`, `check-design-docs`, `check-classes`, `check-literals`, `check-verify`, `check-spelling`, `check-docs`, `check-wrapping`, `check-ascii-art`, `check-site`, `check-shell`, `check-identity`, `check-hooks`, `check-release-package`, `check-mcp`, `check-driver`, `check-shot-edges`.
+Twenty-six steps: `format-check`, `cargo check --all-targets`, `check-web`, `check-web-commands`, `cargo test`, `check-vendor`, `check-themes`, `check-tokens`, `check-icons`, `check-gallery`, `check-design-docs`, `check-classes`, `check-literals`, `check-verify`, `check-spelling`, `check-docs`, `check-wrapping`, `check-ascii-art`, `check-site`, `check-shell`, `check-identity`, `check-hooks`, `check-release-package`, `check-mcp`, `check-driver`, `check-shot-edges`.
 
 Six of those hold the design system together: a value, a class, a component, an icon or a token that `design/` does not list fails the build. When one fires, the fix is a row in `design/` and a bundler run — see `/design-tokens` — never a loosened check.
+
+Three hold the browser half, which is the same front end under a different host: `check-web` type-checks the browser crate at both feature ends, `check-web-commands` fails on a command the app can send that the browser's own host says nothing about, and `check-shell` boots that host over a stand-in module. When `check-web-commands` fires, the fix is the missing line in `web/preview/host.js` — answered, refused on purpose with the reason, or not yet with the ticket that owns it — and never a row removed to make it quiet. What none of them reach is a break that only appears when the crate is built for `wasm32`; that is a tagged release's, and `just build-web` is the same thing by hand.
 
 ### 3. A failure is fixed, not narrated
 

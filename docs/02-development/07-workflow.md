@@ -37,6 +37,7 @@ Work here starts as a written plan and ends as a released version, and the same 
 | `src/app/**.rs` — the binary | `src/app/tests.rs` |
 | `src/store/**.rs` | `src/store/tests.rs` |
 | `src/assets/shell/*.js` — the page's script | `scripts/check-shell.mjs`, which boots the fragments in order against a stand-in page |
+| `web/preview/host.js` — the browser's own host | `scripts/check-shell.mjs` as well, which boots it over a stand-in module in that same page. A new command also owes a row in the host's own table, which `just check-web-commands` refuses the build without |
 | `reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
 | A new class, component, token or icon | No test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` refuse what `design/` does not list |
 | A new `scripts/*.mjs` | Its own `--check` mode, plus a line in `just verify` — `check-verify` fails on a check the suite does not run |

@@ -223,13 +223,13 @@ function fakePage() {
   return { document, byId };
 }
 
-function runShell(source) {
+function runShell(source, extras = {}) {
   const { document } = fakePage();
   const noop = () => {};
   const frames = new Map();
   let frameId = 0;
   const sandbox = {
-    console: { log: noop, warn: noop, error: noop, debug: noop },
+    console: { log: noop, warn: noop, error: noop, debug: noop, info: noop },
     document,
     addEventListener: noop,
     removeEventListener: noop,
@@ -239,7 +239,9 @@ function runShell(source) {
     devicePixelRatio: 1,
     scrollX: 0,
     scrollY: 0,
-    location: { href: 'about:blank', hash: '' },
+    // An origin and a history, because the published page has both and the browser's own host reaches for them: it decides whether a link leaves the site by comparing origins, and it writes the open document into the address.
+    location: { href: 'https://leaf.test/', origin: 'https://leaf.test', hash: '' },
+    history: { replaceState() {}, pushState() {} },
     navigator: { userAgent: 'leaf-check', platform: 'test', clipboard: { writeText: noop } },
     performance: { now: () => 0 },
     setTimeout: () => 0,
@@ -339,6 +341,9 @@ function runShell(source) {
       return ran;
     },
   };
+
+  // Whatever this run needs on top of the page: the browser host's fetch, its module, and the queue the export writes above it.
+  Object.assign(sandbox, extras);
 
   const context = vm.createContext(sandbox);
   new vm.Script(source, { filename: 'app-shell.js' }).runInContext(context);
@@ -4203,6 +4208,207 @@ check('an unhandled rejection reaches the same place', () => {
   }
 });
 
+// ---- the browser's own host -------------------------------------------------
+//
+// The app and a published site are one front end with two hosts under it, and `web/preview/host.js` is the browser's half — shipped to every site the export writes, and reachable nowhere else outside a browser.
+//
+// It runs here in the same fake page the fragments do, over a stand-in module rather than the real one: no wasm, no network, no browser. That stand-in carries a real linear memory and speaks the length-prefixed byte protocol, so the host's own copy of that protocol is proved as well as its arms — the copy `scripts/web-module.mjs` exists to stop drifting from.
+
+/** The workspace payload the module answers a document with: the shape `workspace_state_script` builds, so the page reads it the way it reads the desktop's. */
+const standInState = (path) => ({
+  recent: [],
+  favorites: [],
+  tabs: [{ title: path.split('/').pop().replace(/\.[^.]+$/, ''), path }],
+  active: 0,
+  document: {
+    title: path.split('/').pop().replace(/\.[^.]+$/, ''),
+    path,
+    html: `<p>${path}</p>`,
+    minimap: { lines: [], headings: [] },
+    format: 'Markdown',
+    blocks: [],
+    tasks: [],
+    source: '',
+  },
+});
+
+/** A stand-in for the browser module: a real `WebAssembly.Memory`, a bump allocator over it, and the length-prefixed answers the host reads. */
+function standInModule() {
+  const memory = new WebAssembly.Memory({ initial: 4 });
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  const asked = [];
+  let glossary = '';
+  // Zero is the host's "nothing came back", so nothing is ever handed out at it.
+  let next = 8;
+
+  const alloc = (length) => {
+    const at = next;
+    next += length + ((8 - (length % 8)) % 8);
+    if (next > memory.buffer.byteLength) throw new Error('the stand-in module ran out of memory');
+    return at;
+  };
+  const take = (pointer, length) => decoder.decode(new Uint8Array(memory.buffer, pointer, length));
+  const give = (text) => {
+    const bytes = encoder.encode(text);
+    const at = alloc(4 + bytes.length);
+    new DataView(memory.buffer).setUint32(at, bytes.length, true);
+    new Uint8Array(memory.buffer).set(bytes, at + 4);
+    return at;
+  };
+
+  return {
+    asked,
+    exports: {
+      memory,
+      leaf_alloc: (length) => alloc(length),
+      leaf_free: () => {},
+      leaf_set_glossary: (pointer, length) => {
+        glossary = take(pointer, length);
+      },
+      leaf_document_script: (sourcePointer, sourceLength, pathPointer, pathLength) => {
+        const path = take(pathPointer, pathLength);
+        asked.push({ call: 'documentScript', path, source: take(sourcePointer, sourceLength) });
+        return give(`window.leafSetState(${JSON.stringify(standInState(path))});`);
+      },
+      leaf_glossary_script: (pointer, length) => {
+        const href = take(pointer, length);
+        asked.push({ call: 'glossaryScript', href, glossary });
+        return give(`window.__leafGlossary = ${JSON.stringify({ href, glossary })};`);
+      },
+    },
+  };
+}
+
+/** The host, in a page that has what the published one has. The export writes the pending-command stub, not the host, so it is installed here exactly as the export writes it — a check without it is not testing the page a reader is served. */
+async function bootWebHost({ pending = [] } = {}) {
+  const module_ = standInModule();
+  const extras = {
+    // The published page's own queue: the front end sends its first commands before any module script can have run, and the host drains them.
+    __leafPending: [...pending],
+    fetch: async (url) => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8), url }),
+    WebAssembly: {
+      Memory: WebAssembly.Memory,
+      instantiate: async () => ({ instance: { exports: module_.exports } }),
+    },
+  };
+  const context = runShell(source, extras);
+  context.window.ipc = { postMessage: noopPost };
+
+  // Everything the host hands the page, recorded on the way through. The pane and the strip still run the page's own call, so a payload the front end cannot take fails here. The state call is recorded and not run: it renders a whole document, and nothing is rendered on this page for it to render into — what is being proved is that the host reached the page by the call it reads a document in by.
+  const seen = { state: [], folder: [], pager: [] };
+  const watch = (name, into, through) => {
+    const was = context.window[name];
+    context.window[name] = (payload) => {
+      into.push(payload);
+      if (through && typeof was === 'function') was(payload);
+    };
+  };
+  watch('leafSetState', seen.state, false);
+  watch('leafSetLibraryFolder', seen.folder, true);
+  watch('leafSetPager', seen.pager, true);
+
+  const host = readFileSync(join(root, 'web/preview/host.js'), 'utf8');
+  // The host is an ES module with three exports and no imports, so it evaluates as a script once the export keyword is off. Nothing else about it is touched.
+  new vm.Script(host.replace(/^export /gm, '') + '\nglobalThis.__startLeaftext = startLeaftext;\nglobalThis.__COMMANDS = COMMANDS;\nglobalThis.__answers = answers;\nglobalThis.__LATER = LATER;', {
+    filename: 'host.js',
+  }).runInContext(context);
+
+  const documents = [
+    { path: 'README.md' },
+    { path: 'notes/one.md' },
+    { path: 'notes/two.md' },
+  ];
+  const leaf = await context.__startLeaftext({
+    documents,
+    read: async (path) => `# ${path}\n\nWords.\n`,
+  });
+  return { context, leaf, seen, asked: module_.asked, send: (message) => context.window.ipc.postMessage(JSON.stringify(message)) };
+}
+
+const noopPost = () => {};
+
+/** Let every promise the host started settle. A command is handed over and answered later, the way the page hands one over. */
+const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+checkSettled('the browser host opens a document, fills the pane and fills the strip', async () => {
+  const { leaf, seen, asked } = await bootWebHost();
+  await leaf.openDocument('notes/one.md');
+
+  const opened = asked.find((one) => one.call === 'documentScript' && one.path === 'notes/one.md');
+  if (!opened) throw new Error('opening a document never reached the module');
+  if (!opened.source.includes('notes/one.md')) throw new Error('the module was handed the wrong source');
+  if (!seen.state.some((one) => one.document && one.document.path === 'notes/one.md')) {
+    throw new Error(`the document never reached the page as a state call: ${JSON.stringify(seen.state.map((one) => one.document && one.document.path))}`);
+  }
+  // The pane follows the document, the way it does in the app.
+  const folder = seen.folder[seen.folder.length - 1];
+  if (!folder || folder.path !== 'notes') throw new Error(`the pane was pointed at ${JSON.stringify(folder && folder.path)} instead of the document's own folder`);
+  if (!folder.entries.some((entry) => entry.path === 'notes/two.md')) throw new Error('the pane listing left out a document in that folder');
+  // A waiting state is a promise: the strip is drawn empty and this is what fills it.
+  const pager = seen.pager[seen.pager.length - 1];
+  if (!pager || !pager.html.includes('docs-pager-next')) throw new Error(`the Previous/Next strip came back empty: ${JSON.stringify(pager)}`);
+});
+
+checkSettled('the browser host follows a link inside the site and refuses one outside it', async () => {
+  const { leaf, send, asked } = await bootWebHost();
+  await leaf.openDocument('notes/one.md');
+  const opened = () => asked.filter((one) => one.call === 'documentScript').map((one) => one.path);
+
+  send({ command: 'openLink', href: 'two.md' });
+  await settle();
+  if (!opened().includes('notes/two.md')) throw new Error(`a link beside the document opened ${JSON.stringify(opened())}`);
+
+  const before = opened().length;
+  send({ command: 'openLink', href: 'https://example.com/notes/two.md' });
+  await settle();
+  if (opened().length !== before) throw new Error('a link off the site was followed as if it were a document here');
+
+  // A folder link is that folder's own page, which is how the app reads one too.
+  if (leaf.resolveFrom('notes/one.md', '../README.md') !== 'README.md') throw new Error(`a link up to the top of the site resolved to ${leaf.resolveFrom('notes/one.md', '../README.md')}`);
+});
+
+checkSettled('the commands sent while the host was still loading are drained, not dropped', async () => {
+  // What the export's stub keeps: the front end's first commands, sent before any module script can have run. Losing them loses the first paint.
+  const { seen } = await bootWebHost({
+    pending: [JSON.stringify({ command: 'getFolder', path: 'notes' })],
+  });
+  if (!seen.folder.some((one) => one.path === 'notes')) {
+    throw new Error(`a command sent while the host was loading was dropped: ${JSON.stringify(seen.folder.map((one) => one.path))}`);
+  }
+});
+
+checkSettled('a command the browser host has no arm for is refused where something can see it', async () => {
+  const { leaf, send, context } = await bootWebHost();
+  send({ command: 'search', query: 'anything' });
+  const [refusal] = leaf.refused;
+  if (!refusal) throw new Error('an unanswered command was swallowed — nothing but a console line said so');
+  if (refusal.command !== 'search' || refusal.kind !== context.__LATER) throw new Error(`the refusal does not say what kind it is: ${JSON.stringify(refusal)}`);
+  if (!refusal.reason.includes('web-app-commands')) throw new Error(`the refusal does not name the ticket that owns it: ${refusal.reason}`);
+
+  // The five arms and the table agree about which of them are answered, which is what a page hiding its dead controls will ask.
+  const answered = Object.keys(context.__COMMANDS).filter((name) => context.__answers(name));
+  if (answered.join(',') !== 'openRecent,openLink,openGlossary,getFolder,loadPager') {
+    throw new Error(`the table says these are answered: ${answered.join(',')}`);
+  }
+  for (const name of answered) {
+    send({ command: name, path: 'README.md', href: 'README.md' });
+  }
+  await settle();
+  if (leaf.refused.length !== 1) throw new Error(`an arm the table calls answered was refused: ${JSON.stringify(leaf.refused)}`);
+});
+
+checkSettled('the browser host raises the glossary out of the text it was handed', async () => {
+  const { leaf, send, asked } = await bootWebHost();
+  leaf.core.setGlossary('## Vault\n\nA folder you named.\n');
+  send({ command: 'openGlossary', href: 'glossary:vault' });
+  await settle();
+  const raised = asked.find((one) => one.call === 'glossaryScript');
+  if (!raised) throw new Error('the glossary command never reached the module');
+  if (raised.href !== 'glossary:vault') throw new Error(`the term was lost on the way: ${raised.href}`);
+  if (!raised.glossary.includes('A folder you named.')) throw new Error('the glossary text never crossed into the module');
+});
+
 // ---- report -----------------------------------------------------------------
 
 await Promise.all(settled);
@@ -4212,4 +4418,4 @@ if (failures.length) {
   for (const failure of failures) console.error(`  - ${failure}`);
   process.exit(1);
 }
-console.log(`front-end: ${names.length} fragments parse, boot, and agree on edit offsets`);
+console.log(`front-end: ${names.length} fragments parse, boot, and agree on edit offsets — and the browser's own host answers its five commands over a stand-in module`);

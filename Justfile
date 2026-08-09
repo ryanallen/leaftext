@@ -146,6 +146,13 @@ check-hooks:
 check-shell:
     node scripts/check-shell.mjs
 
+# Fail on a command in the app's one typed list that the browser host says nothing
+# about — answered, refused on purpose with the reason, or not yet with the ticket.
+# The names come off IpcCommand, never off the front end. It also fails on a stale
+# row, and on a literal command the front end sends that no arm exists for.
+check-web-commands:
+    node scripts/check-web-commands.mjs
+
 # Rebuild the vendored Monaco bundle (the code view's editor). Manual, like the
 # other vendored assets — first: npm i --no-save monaco-editor@0.52.2 esbuild@0.24.0
 bundle-monaco:
@@ -233,7 +240,7 @@ preview-web folder="":
 drive-web url *steps:
     node scripts/drive-web.mjs "{{ url }}" {{ steps }}
 
-verify: format-check check check-web test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
+verify: format-check check check-web check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

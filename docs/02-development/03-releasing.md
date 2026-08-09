@@ -46,6 +46,8 @@ Both artifacts are automatically attached to the GitHub Release at [github.com/r
 
 **Only the newest release is kept.** Each platform job deletes every older release and its tag once its own upload succeeds, so the releases page holds exactly one version — the current one. That cleanup runs after publishing and can never fail the build: both jobs race to do it, so whichever finishes second routinely finds the release, or its tag, already gone.
 
+A third workflow runs on the same tag and **publishes nothing**: it installs the `wasm32` target and runs `just build-web`, so a break that only appears when the renderer is built for a browser is caught by the release rather than by whoever next builds it by hand. It holds read-only permissions and is deliberately not a step inside either job above — both of those can write and delete releases, and a tag can never be re-pushed, so a failure there would cost a version number instead of a message. That is the same shape as the installer check, which compiles the MSI on a branch push and inspects it without publishing.
+
 ## Before releasing
 
 Always run the full verification suite before cutting a release to confirm formatting, type-checking, and tests all pass:

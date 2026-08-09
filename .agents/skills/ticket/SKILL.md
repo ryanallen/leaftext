@@ -1,6 +1,6 @@
 ---
 name: ticket
-description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, filed in a subject folder under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Reads ../docs/README.md first so it never re-plans what the tree already answered, writes that index row in the same pass, then runs /pm to rank the new ticket. It researches the code and records options; /design makes the decisions. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
+description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, filed in a subject folder under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Reads ../docs/README.md first so it never re-plans what the tree already answered, writes that README row in the same pass, then runs /pm to rank the new ticket. It researches the code and records options; /design makes the decisions. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
 argument-hint: "[what the ticket is for]"
 user-invocable: true
 ---
@@ -33,19 +33,19 @@ Not sure between the first three? It is a **feature** if a user would notice it 
 
 The file name is kebab-case and names the thing, not the change: `highlight-annotate.md`, `search.md`, `update-system.md`.
 
-## The index — read it first, then keep it
+## The README — read it first, then keep it
 
-`../docs/README.md` is one line per ticket in the tree, grouped by subject, saying what shipped, what is planned and what was turned down. **Read it before writing a word.** Ninety-odd plans is more than anyone holds in their head, and the two ways that costs are both expensive: planning a thing this tree already turned down, or planning around plumbing that already has a ticket. The index is where a ticket finds its neighbors — the vault tickets ride on one piece of plumbing, the filter tickets share one syntax, and a plan that ignores that gets built twice.
+`../docs/README.md` is one line per ticket in the tree, grouped by subject, saying what shipped, what is planned and what was turned down. **Read it before writing a word.** Ninety-odd plans is more than anyone holds in their head, and the two ways that costs are both expensive: planning a thing this tree already turned down, or planning around plumbing that already has a ticket. The README is where a ticket finds its neighbors — the vault tickets ride on one piece of plumbing, the filter tickets share one syntax, and a plan that ignores that gets built twice.
 
-**Then keep it.** Adding, renaming, or moving a ticket is not finished until the index matches, in the same edit:
+**Then keep it.** Adding, renaming, or moving a ticket is not finished until the README matches, in the same edit:
 
 - A new ticket gets a row in the group it belongs to — or a new group if it starts one. The row says what the ticket is in the owner's words, not the file name again.
 - A ticket moved to `done/` or `canceled/` moves rows too, and the row changes from what it plans to **what it shipped, or why not**. A canceled row that does not say why is the row someone re-plans against.
 - A ticket that replaces another says so in both rows, so nobody builds the old one.
 
-The index carries no change log. Git holds when a ticket moved; the outcomes worth keeping go in `AGENTS.md`, under the rules each paid for.
+The README carries no change log. Git holds when a ticket moved; the outcomes worth keeping go in `AGENTS.md`, under the rules each paid for.
 
-**When the index and a ticket disagree, do not quietly fix it.** A ticket in `done/` whose own status line says nothing is built is a claim about the app, and only reading the code settles it. It goes in the index's **Needs a second look** table with both halves of the disagreement stated.
+**When the README and a ticket disagree, do not quietly fix it.** A ticket in `done/` whose own status line says nothing is built is a claim about the app, and only reading the code settles it. It goes in the README's **Needs a second look** table with both halves of the disagreement stated.
 
 ## Before writing: read, then ask
 
@@ -130,7 +130,7 @@ phase rides on the same plumbing.*
 
 A box is one piece of work with an obvious done. "Make search fast" is not a box. Tests get their own boxes, in the phase that needs them — see [how a phase is proved](#every-phase-says-how-it-is-proved) below, which is where the shape of that box is written.
 
-**Every phase in a file has to be buildable off this repo as it stands, plus the phases above it.** A phase that waits on *another ticket* does not belong in this one — it belongs in its own file, whose first line says what it rides on. A file with a buildable half and a blocked half cannot be finished, so it never moves to `done/`, its index row goes on describing a plan forever, and whoever picks it up stops halfway with no idea whether that was the plan. Split it at the seam and cross-reference both halves: the buildable file ships and closes, the blocked one waits with a name of its own.
+**Every phase in a file has to be buildable off this repo as it stands, plus the phases above it.** A phase that waits on *another ticket* does not belong in this one — it belongs in its own file, whose first line says what it rides on. A file with a buildable half and a blocked half cannot be finished, so it never moves to `done/`, its README row goes on describing a plan forever, and whoever picks it up stops halfway with no idea whether that was the plan. Split it at the seam and cross-reference both halves: the buildable file ships and closes, the blocked one waits with a name of its own.
 
 End the phase list with the block that closes every phase:
 
@@ -152,7 +152,9 @@ Drop the bundler line when the work is nowhere near `design/`.
 - **A new class, component, token or icon has no test to ask for.** `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list, so that phase's box is the row in `design/` and the bundler run — asking for a test there is a box nobody can write.
 - **Say in the phase what cannot be tested here**, where that is true: a real window, live selected text, a held pointer. One line, so the next reader does not take a missing test for an oversight. Never a general caveat about the Mac build, the installer or the workflows — GitHub compiles all three on a tagged release, and a caveat that is true on every ticket is one nobody reads.
 
-**A test gap outside this ticket is its own ticket.** Reading the code to write a plan is the pass most likely to turn up a subject nothing covers, and that finding is worth keeping: it does not survive the session any other way. It does **not** become a box here — a ticket about the find bar that quietly grows four tests for the pager is a ticket nobody can review and a diff nobody can read. Write the second file in the same pass, under `../docs/refactor/` in the subject folder the gap is in, with its row in the index, and run [`/pm`](../pm/SKILL.md) once for both. Every skill that reads the code holds to this — [`/design`](../design/SKILL.md), [`/dev`](../dev/SKILL.md), [`/pm`](../pm/SKILL.md) and [`/sync-tests`](../sync-tests/SKILL.md) all file rather than fix in passing, and **it is always a ticket**, never a sentence in a hand-back.
+**A ticket that touches the front end says what the browser does about it.** The app and a published site are one front end with two hosts under it, so anything that adds or changes a command the page sends is two pieces of work — and the second one is decided here, while the work is being scoped, or it is decided by nobody. One line per new command in the phase that adds it: the browser answers it, will not and here is why, or not yet and here is the ticket that owns it. That line becomes the row in `web/preview/host.js`'s table, which `just check-web-commands` refuses the build without. Where the browser's answer is real work rather than a line, it is its own ticket in the same pass, ranked with [`/pm`](../pm/SKILL.md) — never a phase quietly widened to carry it.
+
+**A test gap outside this ticket is its own ticket.** Reading the code to write a plan is the pass most likely to turn up a subject nothing covers, and that finding is worth keeping: it does not survive the session any other way. It does **not** become a box here — a ticket about the find bar that quietly grows four tests for the pager is a ticket nobody can review and a diff nobody can read. Write the second file in the same pass, under `../docs/refactor/` in the subject folder the gap is in, with its row in the README, and run [`/pm`](../pm/SKILL.md) once for both. Every skill that reads the code holds to this — [`/design`](../design/SKILL.md), [`/dev`](../dev/SKILL.md), [`/pm`](../pm/SKILL.md) and [`/sync-tests`](../sync-tests/SKILL.md) all file rather than fix in passing, and **it is always a ticket**, never a sentence in a hand-back.
 
 ## A round of fixes on built work is a checklist before it is a change
 
@@ -166,7 +168,7 @@ Drop the bundler line when the work is nowhere near `design/`.
 
 **A skill, a hook, a check or anything else about how the work gets done is a ticket like any other**, written the moment it is asked for and closed the moment it ships. Without one there is no record of why the rule exists — and a rule nobody can trace is the first one somebody deletes. These are usually written and built in the same pass, so the file is short: what went wrong, what the rule is now, and a box per file changed.
 
-- **It goes in `../docs/refactor/workflow/`**, its own subject folder beside the app's, because it changes how the work is done rather than what the app does. It takes a row in the index and a row in the running order like everything else, and [`/done`](../done/SKILL.md) moves it to `../docs/done/repo/` once it is shipped.
+- **It goes in `../docs/refactor/workflow/`**, its own subject folder beside the app's, because it changes how the work is done rather than what the app does. It takes a row in the README and a row in the running order like everything else, and [`/done`](../done/SKILL.md) moves it to `../docs/done/repo/` once it is shipped.
 - **The trigger is the same as any other fix**: something was missed, went wrong twice, or has to be remembered. What the rule prevents goes in the file, in the words of what went wrong.
 - **A rule that already cost a version number belongs in `AGENTS.md` as well** — the ticket says why it was added; that file says what to do.
 
@@ -229,19 +231,19 @@ The host's arm is `src/app/event_loop.rs:141` and the readable test is `src/form
 
 A ticket nobody can find is a ticket nobody builds. So writing the plan is two-thirds of the work, and neither of the other files is optional — do both in the same pass, before handing back.
 
-**1. The index row.** `../docs/README.md`, in the group the ticket belongs to, saying what it is in the owner's words. The rules for a row are up under [the index](#the-index--read-it-first-then-keep-it): a ticket moved between folders moves its row, a ticket that replaces another says so in both, and a row that only restates the file name is a row nobody can argue with.
+**1. The README row.** `../docs/README.md`, in the group the ticket belongs to, saying what it is in the owner's words. The rules for a row are up under [the README](#the-readme--read-it-first-then-keep-it): a ticket moved between folders moves its row, a ticket that replaces another says so in both, and a row that only restates the file name is a row nobody can argue with.
 
 **2. The running order — run [`/pm`](../pm/SKILL.md) over the whole tree.** Not a row placed by hand. A new ticket changes what somebody should pick up next, and the author is the last person who can judge that: they have just spent an hour on one file and read none of the others, so a self-placed row lands wherever the writing left them feeling about it. Running the ranking is also the only pass that walks the three live folders off the disk, which is how a ticket with no row at all gets found — the ranking on 4 August 2026 turned up three, one of them a diagram bug that takes the whole drawing down.
 
-So finishing a ticket is: write the file, write the index row, then `/pm`. It re-derives every `Status` cell from the tickets, re-checks statuses against the code, and rewrites `../docs/PLAN.md` in place with the new ticket ranked among the rest. Nothing here places a tier by hand, and nothing here writes a `PLAN.md` row.
+So finishing a ticket is: write the file, write the README row, then `/pm`. It re-derives every `Status` cell from the tickets, re-checks statuses against the code, and rewrites `../docs/PLAN.md` in place with the new ticket ranked among the rest. Nothing here places a tier by hand, and nothing here writes a `PLAN.md` row.
 
 **Absent is not wrong** — a capability the app never had does not reach tier 1 however big its audience. Worth knowing while writing, because a ticket that argues the app is *broken* when it is merely *incomplete* is a ticket the ranking has to argue back at.
 
-Two things to check before handing back: the ticket has a row in the index, and `/pm` has run and left it a row in `PLAN.md`. Missing either, the work is not findable.
+Two things to check before handing back: the ticket has a row in the README, and `/pm` has run and left it a row in `PLAN.md`. Missing either, the work is not findable.
 
 ## Working a ticket later
 
-That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box**. Shipping is [git-release](../git-release/SKILL.md)'s; closing is [done](../done/SKILL.md)'s, on the owner's word alone: the shipped note at the top, the move into the right subject folder under `../docs/done/`, the index row rewritten to say what shipped, and the running-order row moved into `../docs/done/PLAN.md`.
+That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box**. Shipping is [git-release](../git-release/SKILL.md)'s; closing is [done](../done/SKILL.md)'s, on the owner's word alone: the shipped note at the top, the move into the right subject folder under `../docs/done/`, the README row rewritten to say what shipped, and the running-order row moved into `../docs/done/PLAN.md`.
 
 ## Reference
 

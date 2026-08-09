@@ -1,0 +1,62 @@
+name: Validate Browser Modules
+
+# Builds the three browser modules for wasm32 and asks each one whether it
+# answers. Publishes nothing, tags nothing, deletes nothing — the same shape as
+# validate-installer.yml, and for the same reason.
+#
+# Not a step inside either release workflow. Both of those hold `contents: write`
+# and delete the older releases as they publish, and a tag can never be
+# re-pushed — so a wasm break failing a step in one of them costs a patch bump
+# rather than a message. This runs beside them on the same tag and can only ever
+# report.
+#
+# `just verify` deliberately leaves this build out: the gate has to be quick and
+# offline, and this needs a target installed. So a break that only appears when
+# the crate is built for wasm32 has nowhere else to show up.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# Read-only: this workflow must never be able to publish or delete a release.
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build and question the browser modules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/git
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-wasm-
+
+      # The recipe, not the script under it, so this cannot drift from what a
+      # person runs on their own machine.
+      - name: Install just
+        run: cargo install just --locked
+
+      - name: Build the browser modules
+        run: just build-web

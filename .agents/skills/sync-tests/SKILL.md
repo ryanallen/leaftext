@@ -72,7 +72,7 @@ Report one row per change: the change, the test that covers it, or **missing**. 
 
 This pass writes the tests **this change** needed. Walking the suite to do that is also how a subject with no coverage at all gets noticed, and that finding is real work — it is not this pass's.
 
-- **File it, do not fix it.** [`/ticket`](../ticket/SKILL.md) under `../docs/refactor/` in the subject folder the gap is in, with its row in the index and [`/pm`](../pm/SKILL.md) run once. Tests written for code the change never touched make a diff nobody can review and a release nobody can read back.
+- **File it, do not fix it.** [`/ticket`](../ticket/SKILL.md) under `../docs/refactor/` in the subject folder the gap is in, with its row in the README and [`/pm`](../pm/SKILL.md) run once. Tests written for code the change never touched make a diff nobody can review and a release nobody can read back.
 - **Never leave it in the hand-back only.** A sentence in a reply dies with the session; a ticket is the one place a finding survives, and it is always a ticket.
 - Where a phase in the ticket being built asked for a test and the suite already has it, say which one covers it rather than writing a second.
 
