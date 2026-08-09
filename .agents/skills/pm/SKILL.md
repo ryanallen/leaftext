@@ -59,13 +59,22 @@ A ticket that cannot be settled by reading gets a **tier 0** row rather than a g
 
 That order is the whole method, and it is what makes a row arguable rather than a matter of taste. A ticket that four others ask questions of outranks a bigger feature even when the bigger feature is more interesting.
 
+**The three tests pick the tier, then run again inside it.** Test one puts a row in tier 1 or leaves it out; test two puts what is left in tier 2 or leaves it out; test three separates tier 3 from tier 4 and settles every remaining pair. A claim the rest of the list rests on that reading has not settled is tier 0 and comes above all of them. Applied in that order the tier table below is an outcome rather than a second judgment, which is why no row is ever placed by taste.
+
+### What the tests do not count
+
 **Absent is not wrong.** "The app cannot open a `.docx`" is missing capability, not incorrect behavior — it does not lift a row into tier 1 however big its audience. Say that in the row, or the next reader moves it.
 
-**A ticket that changes the window and has not drawn it in the file is not rankable.** Its `Status` is `Ready` and its row says so — "owes a drawn `What it looks like` section" — because the cost of a row nobody has drawn is unknown, and the thing that gets built is whatever the builder invents. [ticket](../ticket/SKILL.md) holds the shape of that section; [design](../design/SKILL.md) is what fails a ticket without one.
-
-**A ticket whose phases do not say how they are proved is not rankable either.** Every phase owes a test box naming where the test goes; a file with none is `Ready` with "owes test boxes" in its row, however finished the rest of it reads. The cost is the reason it belongs here rather than only in [design](../design/SKILL.md): a phase that has not counted its tests is a phase costed at half, and the row is what somebody picks up work from. This is the check to run over every ticket while walking the folders, not only over the ones being re-ranked.
-
 **A missing test is not the app being wrong.** [Absent is not wrong](../../../../docs/GLOSSARY.md#absent-is-not-wrong) covers this too: a subject nothing covers is a risk, not a bug, so a test-coverage ticket ranks on what it unblocks and what it costs, not in tier 1 — unless something ships wrong today, which is then the row's real reason. Say that in the cell, or the next reader moves it.
+
+**A dependency counts only where the ticket names what it needs.** Test two counts tickets waiting on this one, and a count drawn from one ticket's own account of another is how a plan ends up circular. Read the ticket doing the waiting.
+
+### What cannot be ranked at all
+
+**Two things stop a ticket getting a position, and both are the same fault: the work cannot be costed.** Test three has nothing to weigh, so the row would be placed on a guess. Each leaves the ticket at `Ready` with the reason in its row, and each is checked over every ticket while walking the folders, not only over the ones being re-ranked.
+
+- **It changes the window and has not drawn it in the file.** The row says "owes a drawn `What it looks like` section", because the cost of a screen nobody has drawn is unknown and the thing that gets built is whatever the builder invents. [ticket](../ticket/SKILL.md) holds the shape of that section; [design](../design/SKILL.md) is what fails a ticket without one.
+- **Its phases do not say how they are proved.** Every phase owes a test box naming where the test goes; a file with none is `Ready` with "owes test boxes" in its row, however finished the rest of it reads. A phase that has not counted its tests is a phase costed at half, and the row is what somebody picks up work from.
 
 **A gap this pass turns up gets a ticket, not a row.** Ranking is the only pass that walks the three live folders off the disk and reads the code behind them, so it finds subjects nothing covers. A row cannot hold work no ticket describes: write the file with [`/ticket`](../ticket/SKILL.md), give it its index row, and rank it here in the same pass.
 
