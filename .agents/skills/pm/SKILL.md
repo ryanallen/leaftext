@@ -128,15 +128,23 @@ It ends with two things the live file is kept clear of. **What the retired rows 
 - **Never re-plan.** A row points at a ticket. Deciding a phase in the ranking puts the decision where nobody building the ticket will look.
 - **A row that has to say "phases 1–2 only" is a ticket that wants splitting.** Ranking half a file in one tier and the rest four tiers down is the ranking admitting the file holds two jobs; the annotation keeps the list honest but leaves a ticket nobody can finish. Say so in the row, and name the split as the work — `/design` on that file does it, and then each row points at a file that can be closed.
 
-## 6. When something ships
+## 6. Filing a ticket sets the number it will ship under
+
+**Which folder a ticket sits in is decided here, and that decision is the version.** A ticket out of `features/` takes the middle number up and the last back to zero; anything out of `refactor/` or `fixes/` takes the last number up one. [`/git-release`](../git-release/SKILL.md) does not weigh that up — it reads the folder off the path and does what it says. So a ticket filed in the wrong place ships under the wrong number, and this is the pass that catches it, because this is the only pass that walks all three folders off the disk.
+
+So check the filing as part of checking the status. `features/` is the app not being able to do something yet, `refactor/` is it doing that thing differently, `fixes/` is it doing something wrong today — and a ticket in the wrong one of those is a wrong row *and* a wrong version. Move it, fix its row in `../docs/README.md`, and say so in the hand-back.
+
+**No version number goes in `PLAN.md`.** A number written into a row is wrong the moment the row moves, and the file is a running order rather than a schedule. Say it in the hand-back instead, in one clause on the top row — the reader gets to see a feature at the top of the list mean the middle number, which is the whole reason the rule is a folder and not a judgment.
+
+## 7. When something ships
 
 **A ticket mention without a link is a ranking error.** Before handing back, compare every live and shipped ticket name in `PLAN.md` with the paths in `README.md`; check the next-up note, every tier cell and every track paragraph and step. Fix the link in the same edit. Do not make a second list of ticket names in the skill — `README.md` is the source of paths.
 
 That is [done](../done/SKILL.md)'s job, not this skill's: it moves the row into `done/PLAN.md` unchanged, marks the date, says what the build found, and moves the "where this stands" pointer on in the live file. Run this again when enough has moved that the *order* is wrong rather than one row.
 
-## 7. Hand back
+## 8. Hand back
 
-Say what moved and why, in plain words: which rows changed tier, what tier 0 turned up, and what the top of the list now is. Both files are in `../docs/`, so nothing in the app moved and there is nothing to bundle. The tree stays dirty.
+Say what moved and why, in plain words: which rows changed tier, what tier 0 turned up, what the top of the list now is, and which number the next release moves. Both files are in `../docs/`, so nothing in the app moved and there is nothing to bundle. The tree stays dirty.
 
 ## Reference
 
@@ -147,5 +155,6 @@ Say what moved and why, in plain words: which rows changed tier, what tier 0 tur
 - `/ticket` — writes the tickets this ranks.
 - `/design` — fixes a ticket this finds wrong. A tier 0 row is often "run `/design` on that file".
 - `/dev` — builds the top row. `/git-release` ships it for testing. `/done` retires its row after that release when the owner says it works.
+- `/git-release` — holds which number a release moves. The folder of the ticket at the top of this list is what decides it.
 
 <!-- keycode: LEAF-7A15 -->
