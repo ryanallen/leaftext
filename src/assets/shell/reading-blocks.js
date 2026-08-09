@@ -94,6 +94,8 @@ function attachMarkdownBlockRanges(body, blocks, source) {
     el.dataset.srcEnd = String(block.end);
     el.dataset.blockKind = block.kind;
     if (block.editable) el.dataset.editable = 'true';
+    // A footnote was written in here and is drawn at the foot of the page instead, so what this block draws is not all of its source.
+    if (block.holds_footnote) el.dataset.holdsFootnote = 'true';
   }
 }
 

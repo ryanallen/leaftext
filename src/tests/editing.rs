@@ -527,6 +527,132 @@ fn block_source_map_keeps_every_block_under_a_footnote_on_its_own_bytes() {
     assert_eq!(ids, (0..spans.len()).collect::<Vec<usize>>());
 }
 
+/// Every element drawn at the top level of the rendered body, named the way the page tells them apart, with the reader's own additions left out — the list the page pairs the block map against.
+fn drawn_top_level_elements(html: &str) -> Vec<String> {
+    const BODY: &str = r#"<article class="document-body">"#;
+    let start = html.find(BODY).expect("a rendered body") + BODY.len();
+    let inner = &html[start..];
+    let inner = inner.strip_suffix("</article>").unwrap_or(inner);
+    let mut drawn = Vec::new();
+    let mut depth = 0usize;
+    let mut rest = inner;
+    while let Some(open) = rest.find('<') {
+        rest = &rest[open + 1..];
+        let close = rest.find('>').expect("a tag closes");
+        let (tag, after) = (&rest[..close], &rest[close + 1..]);
+        rest = after;
+        if tag.starts_with('!') {
+            continue;
+        }
+        if tag.starts_with('/') {
+            depth = depth.saturating_sub(1);
+            continue;
+        }
+        if depth == 0 {
+            let name = tag.split([' ', '\n']).next().unwrap_or("");
+            // The one class the page reads off an element it is pairing.
+            drawn.push(if tag.contains(r#"class="footnote-definition""#) {
+                format!("{name}.footnote-definition")
+            } else {
+                name.to_string()
+            });
+        }
+        depth += 1;
+    }
+    // The Previous/Next strip is the reader's, not the document's; the page steps past it.
+    drawn.retain(|name| name != "nav");
+    drawn
+}
+
+#[test]
+fn block_source_map_reports_a_footnote_written_inside_a_quote() {
+    // The renderer lifts a footnote out of the quote it was written in and draws it at the foot as a top-level element, while the map only ever recorded top-level blocks — so the page had one element more than it had blocks, threw every range in the document away, and the whole note went read-only with nothing on screen saying why. This is the test that fails the moment a nested definition goes unmapped again.
+    let markdown = "Text [^x] here.\n\n> a quote line\n>\n> [^x]: the note\n\nAfter the quote.\n";
+    let document = opened_document_from_markdown(markdown, "note.md");
+
+    assert_eq!(
+        drawn_top_level_elements(&document.html),
+        ["p", "blockquote", "p", "div.footnote-definition"],
+        "{}",
+        document.html
+    );
+    let kinds: Vec<&str> = document.blocks.iter().map(|span| span.kind).collect();
+    assert_eq!(
+        kinds,
+        [
+            "paragraph",
+            "blockquote",
+            "paragraph",
+            "footnote_definition"
+        ],
+        "{:?}",
+        document.blocks
+    );
+}
+
+#[test]
+fn block_source_map_reports_a_footnote_nested_in_every_shape_that_hides_one() {
+    // The other three shapes that lift a definition out of a container: a quote holding nothing but the note, a list item holding nothing but the note, and a GitHub alert holding one. Each draws its container without the footnote *and* the footnote's own div, so each was one element over.
+    for markdown in [
+        "Text [^x] here.\n\n> [^x]: the note\n",
+        "Text [^x] here.\n\n- [^x]: the note\n",
+        "Text [^x] here.\n\n> [!NOTE]\n> a note\n>\n> [^x]: the note\n",
+    ] {
+        let document = opened_document_from_markdown(markdown, "note.md");
+        let drawn = drawn_top_level_elements(&document.html);
+        assert_eq!(
+            drawn.len(),
+            document.blocks.len(),
+            "{markdown:?} draws {drawn:?} against {:?}",
+            document.blocks
+        );
+        assert_eq!(
+            drawn.last().map(String::as_str),
+            Some("div.footnote-definition"),
+            "{markdown:?}"
+        );
+        assert_eq!(
+            document.blocks.last().map(|span| span.kind),
+            Some("footnote_definition"),
+            "{markdown:?}"
+        );
+    }
+}
+
+#[test]
+fn block_source_map_marks_the_block_a_footnote_was_written_inside() {
+    // The page draws that quote without the footnote, so anything writing it back has to put the footnote's line on again — and the mark is how it knows to. The footnote's own span is its own line and nothing of the quote's markers around it: an edit that only changes the words must not splice away the blank quote line the parser's range runs on into.
+    let markdown =
+        "Text [^x] here.\n\n> first line\n>\n> [^x]: the note\n>\n> last line\n\nAfter.\n";
+    let spans = block_source_map(markdown);
+    let slice = |index: usize| &markdown[spans[index].start..spans[index].end];
+
+    assert_eq!(
+        slice(1),
+        "> first line\n>\n> [^x]: the note\n>\n> last line"
+    );
+    assert_eq!(slice(3), "[^x]: the note");
+
+    let marked: Vec<bool> = spans.iter().map(|span| span.holds_footnote).collect();
+    assert_eq!(marked, [false, true, false, false], "{spans:?}");
+
+    // Every shape that hides one is marked, and the footnote's own span never carries a container marker.
+    for markdown in [
+        "Text [^x] here.\n\n> a quote line\n>\n> [^x]: the note\n",
+        "Text [^x] here.\n\n- item\n\n  [^x]: the note\n",
+        "Text [^x] here.\n\n> [^x]: the note\n",
+        "Text [^x] here.\n\n- [^x]: the note\n",
+    ] {
+        let spans = block_source_map(markdown);
+        assert!(spans[1].holds_footnote, "{markdown:?} {spans:?}");
+        assert_eq!(&markdown[spans[2].start..spans[2].end], "[^x]: the note");
+    }
+
+    // A footnote written at the top level hides nothing: it is written where it is drawn.
+    let plain = block_source_map("Text [^x] here.\n\n[^x]: the note\n");
+    assert!(plain.iter().all(|span| !span.holds_footnote), "{plain:?}");
+}
+
 #[test]
 fn a_dropped_block_really_does_reach_the_page_as_nothing() {
     // The whole fix rests on the sanitizer removing these, so read it back out of the render rather than trusting the reading of its configuration: the page is handed a document with two paragraphs and nothing between them.

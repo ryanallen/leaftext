@@ -1068,7 +1068,8 @@ function bindEditableBlocks(format) {
       (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
         (kind === 'list' && listWysiwygSafe(el)) ||
         (kind === 'table' && tableWysiwygSafe(el)) ||
-        (kind === 'blockquote' && blockquoteWysiwygSafe(el)));
+        (kind === 'blockquote' && blockquoteWysiwygSafe(el)) ||
+        (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el)));
     if (wysiwyg) {
       wysiwygBlocks.push(el);
     } else if (Number.isFinite(Number(el.dataset.srcStart)) && Number.isFinite(Number(el.dataset.srcEnd))) {

@@ -577,6 +577,137 @@ if (booted) {
     if (body.children.some((el) => 'srcStart' in el.dataset)) throw new Error('the drift stamped a range, so a click into one block would write over another');
   });
 
+  // ---- footnotes edit as they are drawn ---------------------------------------
+  //
+  // A stand-in element with enough of a node to be serialized and enough of a class list to be tested. `text` is a bare text node; anything else is an element.
+  const node = (tag, options = {}) => {
+    const classes = new Set((options.className || '').split(/\s+/).filter(Boolean));
+    const attributes = { id: options.id || '', ...(options.attributes || {}) };
+    const kids = (options.children || []).map((child) => (typeof child === 'string' ? { nodeType: 3, nodeValue: child, textContent: child } : child));
+    const wired = [];
+    const el = {
+      nodeType: 1,
+      tagName: tag.toUpperCase(),
+      dataset: options.dataset ? { ...options.dataset } : {},
+      childNodes: kids,
+      children: kids.filter((child) => child.nodeType === 1),
+      wired,
+      classList: { contains: (name) => classes.has(name), add: (name) => classes.add(name), remove: (name) => classes.delete(name) },
+      getAttribute: (name) => (name in attributes ? attributes[name] : null),
+      hasAttribute: (name) => name in attributes && attributes[name] !== '',
+      setAttribute() {},
+      removeAttribute() {},
+      addEventListener: (type) => wired.push(type),
+      get textContent() {
+        return kids.map((child) => child.textContent || '').join('');
+      },
+    };
+    // Enough of a query to answer the safety tests: a comma list of tags and classes, matched against the whole subtree.
+    const descendants = (from) => from.children.flatMap((child) => [child, ...descendants(child)]);
+    const matching = (selector) => {
+      const wants = String(selector).split(',').map((one) => one.trim());
+      return descendants(el).filter((child) =>
+        wants.some((one) => (one.startsWith('.') ? child.classList.contains(one.slice(1)) : child.tagName.toLowerCase() === one.split(/[ :]/)[0])),
+      );
+    };
+    el.querySelector = (selector) => matching(selector)[0] || null;
+    el.querySelectorAll = (selector) => matching(selector);
+    el.cloneNode = () => node(tag, { ...options, children: (options.children || []).map((child) => (typeof child === 'string' ? child : child.cloneNode())) });
+    kids.forEach((child) => {
+      if (child.nodeType !== 1) return;
+      child.remove = () => {
+        el.children = el.children.filter((one) => one !== child);
+        el.childNodes = el.childNodes.filter((one) => one !== child);
+      };
+    });
+    return el;
+  };
+  // A footnote as the renderer draws it at the foot of the page: the number it wears and the arrow back are the renderer's, not the file's.
+  const drawnFootnote = (name, words, range) =>
+    node('div', {
+      className: 'footnote-definition',
+      id: name,
+      dataset: range ? { blockKind: 'footnote_definition', srcStart: String(range[0]), srcEnd: String(range[1]) } : { blockKind: 'footnote_definition' },
+      children: [
+        node('sup', { className: 'footnote-definition-label', children: ['1'] }),
+        node('p', { children: [...words, node('a', { className: 'footnote-backref', attributes: { href: '#fnref-' + name }, children: [node('svg', {})] })] }),
+      ],
+    });
+
+  // A footnote reference is a superscript number on screen and `[^name]` in the file, so a paragraph carrying one used to drop out of typing-as-it-looks and open as raw source instead. The name is on the element; the number is assigned by first use and cannot be written back.
+  check('a sentence carrying a footnote is typed in as it looks and keeps its marker', () => {
+    const marker = node('sup', { className: 'footnote-reference', id: 'fnref-why', children: [node('a', { attributes: { href: '#why' }, children: ['1'] })] });
+    const paragraph = node('p', { dataset: { blockKind: 'paragraph' }, children: ['Before the note.', marker, ' After it.'] });
+    if (!booted.markdownBlockWysiwygSafe(paragraph)) throw new Error('a paragraph with a footnote in it still opens as raw source');
+    const written = booted.blockDomToMarkdown(paragraph);
+    if (written !== 'Before the note.[^why] After it.') throw new Error(`the marker did not survive the write-back: ${JSON.stringify(written)}`);
+  });
+
+  // The other end of the same complaint: the footnote's own words at the foot of the page. The number and the back-arrow are drawn into the block and are not in the file, so both come off on the way out and the marker is rebuilt from the name.
+  check('a footnote at the foot of the page is typed in as it looks', () => {
+    const definition = drawnFootnote('why', ['The note itself.']);
+    if (!booted.footnoteDefinitionWysiwygSafe(definition)) throw new Error('the footnote still opens as raw source');
+    const written = booted.blockDomToMarkdown(definition);
+    if (written !== '[^why]: The note itself.') throw new Error(`the footnote wrote back wrong: ${JSON.stringify(written)}`);
+
+    // A footnote holding a second paragraph is indented in the file and that indent cannot be read off the page, so it keeps the source editor.
+    const two = drawnFootnote('why', ['First.']);
+    two.children.push(node('p', { children: ['Second.'] }));
+    if (booted.footnoteDefinitionWysiwygSafe(two)) throw new Error('a two-paragraph footnote was offered the as-it-looks editor');
+  });
+
+  // A footnote written inside a quote is lifted out and drawn at the foot, so the quote on screen no longer holds it — writing the quote back from what is drawn would delete that line. Its own lines go back on the end, taken from the file rather than rebuilt (`block_source_map_marks_the_block_a_footnote_was_written_inside`).
+  check('a quote a footnote was written in keeps that footnote when the quote is typed in', () => {
+    const source = 'Text [^x] here.\n\n> a quote line\n>\n> [^x]: the note\n\nAfter.\n';
+    const definition = drawnFootnote('x', ['the note'], [36, 50]);
+    const quote = node('blockquote', {
+      dataset: { blockKind: 'blockquote', holdsFootnote: 'true', srcStart: '17', srcEnd: '50' },
+      children: [node('p', { children: ['a quote line'] })],
+    });
+    const body = { children: [quote, definition], querySelectorAll: () => [definition] };
+    const appEl = booted.document.getElementById('app');
+    const wasQuery = appEl.querySelector;
+    appEl.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery.call(appEl, selector));
+    let written;
+    let emptied;
+    try {
+      booted.window.leafBlocksResynced({ source });
+      written = booted.blockDomToMarkdown(quote);
+      // The quote drawn with nothing in it — its only content was the footnote — writes back as the footnote alone rather than as an empty quote.
+      quote.children.length = 0;
+      quote.childNodes.length = 0;
+      emptied = booted.blockDomToMarkdown(quote);
+    } finally {
+      appEl.querySelector = wasQuery;
+    }
+    if (written !== '> a quote line\n>\n> [^x]: the note') throw new Error(`the footnote's line was lost writing the quote back: ${JSON.stringify(written)}`);
+    if (emptied !== '> [^x]: the note') throw new Error(`an empty-looking quote wrote the footnote out of the file: ${JSON.stringify(emptied)}`);
+  });
+
+  // A list written with blank lines between its items draws each item's words in a paragraph of their own, and any paragraph in a list used to send the whole list to the raw-source editor — so spacing a list out took typing-as-it-looks away from it. The blank lines go back on the way out, or the list would close up under the reader.
+  check('a list with blank lines between its items is typed in as it looks', () => {
+    const item = (words) => node('li', { children: [node('p', { children: [words] })] });
+    const list = node('ul', { dataset: { blockKind: 'list' }, children: [item('First item.'), item('Second item.')] });
+    if (!booted.listWysiwygSafe(list)) throw new Error('a list spaced out with blank lines still opens as raw source');
+    const written = booted.blockDomToMarkdown(list);
+    if (written !== '- First item.\n\n- Second item.') throw new Error(`the blank line between the items was lost: ${JSON.stringify(written)}`);
+
+    // A list whose items sit together writes back the way it always has, with no blank line invented between them.
+    const tight = node('ul', { dataset: { blockKind: 'list' }, children: [node('li', { children: ['First item.'] }), node('li', { children: ['Second item.'] })] });
+    if (booted.blockDomToMarkdown(tight) !== '- First item.\n- Second item.') throw new Error('a list whose items sit together came back spaced out');
+
+    // An item holding a second paragraph is a continuation whose indent cannot be read off the page, so it keeps the source editor.
+    const twoParagraphs = node('ul', { children: [node('li', { children: [node('p', { children: ['First.'] }), node('p', { children: ['Continued.'] })] })] });
+    if (booted.listWysiwygSafe(twoParagraphs)) throw new Error('an item with two paragraphs was offered the as-it-looks editor');
+  });
+
+  // The other way that same empty-looking quote can be written over: the plus in the margin writes its block onto the line it is offered on, which is a delete rather than an edit. Clicking it still opens it.
+  check('the plus is not offered on a quote a footnote was lifted out of', () => {
+    const quote = (holds) => ({ tagName: 'BLOCKQUOTE', dataset: holds ? { holdsFootnote: 'true' } : {}, textContent: '', querySelector: () => null });
+    if (!booted.blockAcceptsInsert(quote(false))) throw new Error('the plus stopped being offered on an empty line');
+    if (booted.blockAcceptsInsert(quote(true))) throw new Error("pressing the plus there would write over the footnote's line");
+  });
+
   // The ask pipe's reader half is one call into this function (`READER_STATE` in src/pipe.rs), so nothing else in the suite notices when an element it reads is renamed — the next `{"ask":"state","reader":true}` would be the first to find out, and what it loses is silent.
   check('the page can say what the reader sees', () => {
     const readerState = () => booted.window.leafReaderState();

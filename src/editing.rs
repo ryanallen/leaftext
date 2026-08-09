@@ -326,6 +326,8 @@ pub struct BlockSpan {
     pub end: usize,
     /// Whether the reading view may turn this block into a live editor. A non-editable mapped block still carries its range (so it re-renders when a neighbor's edit shifts offsets) but is edited via the code view.
     pub editable: bool,
+    /// Whether a footnote was written inside this block, so what the page draws is not all of its source: the renderer lifts the footnote out to the foot of the page. Anything writing this block back has to put those lines on again.
+    pub holds_footnote: bool,
 }
 
 impl BlockSpan {
@@ -336,6 +338,7 @@ impl BlockSpan {
             start,
             end,
             editable: kind_is_editable(kind),
+            holds_footnote: false,
         }
     }
 }
@@ -350,6 +353,8 @@ pub fn kind_is_editable(kind: &str) -> bool {
 /// A leading frontmatter block is taken off first, because the renderer takes it off too and draws it from its own parse — so it has no element the page can pair a span with. Left in, its fences read as a rule and a setext heading, and the page drops every range in the document rather than trust a mapping it cannot line up. The ranges stay the file's: the body's own offset goes back on at the end.
 ///
 /// The list comes out in the order the page draws the blocks, not the order the file was written in: a footnote definition is written mid-file and drawn at the foot of the page, so its span moves to the end by the renderer's own rule.
+///
+/// A footnote written inside a quote or a list item is the one nested block with a span of its own, because the renderer lifts it out and draws it at the foot as a top-level element like any other. Left out, the page has one element more than it has blocks and drops every range in the document, taking the whole note read-only. The block it was written inside is marked — see [`BlockSpan::holds_footnote`].
 pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
     let body = match crate::markdown::split_leading_frontmatter(markdown) {
         Some((_, rest)) => rest,
@@ -361,24 +366,46 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
     let mut depth = 0usize;
     let mut definitions: Vec<(usize, String)> = Vec::new();
     let mut references: Vec<String> = Vec::new();
+    // The top-level block currently open, so a footnote written inside one can mark it.
+    let mut container: Option<usize> = None;
 
     for (event, range) in parser {
         match &event {
             Event::Start(tag) => {
                 if depth == 0 {
+                    container = None;
                     if let Some(kind) = block_kind(tag) {
                         let end = trim_block_end(body, range.start, range.end);
                         if !block_reaches_the_page_as_nothing(kind, &body[range.start..end]) {
                             spans.push(BlockSpan::new(spans.len(), kind, range.start, end));
+                            container = Some(spans.len() - 1);
                             if let Tag::FootnoteDefinition(name) = tag {
                                 definitions.push((spans.len() - 1, name.to_string()));
                             }
                         }
                     }
+                } else if let Tag::FootnoteDefinition(name) = tag {
+                    // Nested, and still drawn at the foot as a top-level element, so it needs a block of its own or the page has one element more than it has blocks. The end also drops the container's own markers, so the span is the definition's line and nothing of the quote around it.
+                    let end = trim_nested_block_end(body, range.start, range.end);
+                    spans.push(BlockSpan::new(
+                        spans.len(),
+                        "footnote_definition",
+                        range.start,
+                        end,
+                    ));
+                    definitions.push((spans.len() - 1, name.to_string()));
+                    if let Some(index) = container {
+                        spans[index].holds_footnote = true;
+                    }
                 }
                 depth += 1;
             }
-            Event::End(_) => depth = depth.saturating_sub(1),
+            Event::End(_) => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    container = None;
+                }
+            }
             // Rules and raw HTML blocks are leaf events (no Start/End pair) but still top-level blocks.
             Event::Rule if depth == 0 => {
                 let end = trim_block_end(body, range.start, range.end);
@@ -646,7 +673,21 @@ fn shift_table_map(table: &mut TableMap, offset: usize) {
     }
 }
 
-/// Trim a block's trailing whitespace/newlines, which pulldown-cmark folds into the range but are really separators between blocks. Excluding them keeps the surrounding blank lines intact when an edit replaces the range.
+/// Trim a block's trailing whitespace/newlines, which pulldown-cmark folds into the range but are really separators between blocks. Excluding them keeps the surrounding blank lines intact when an edit replaces the range. Same, for a block nested inside a quote: the parser's range runs on past the definition's own line to take in the blank quote line after it, and a `>` left on the end of the span would be spliced away by an edit that only meant to change the words.
+fn trim_nested_block_end(source: &str, start: usize, end: usize) -> usize {
+    let bytes = source.as_bytes();
+    let mut end = end.min(source.len());
+    while end > start
+        && matches!(
+            bytes.get(end - 1),
+            Some(b'\n' | b'\r' | b' ' | b'\t' | b'>')
+        )
+    {
+        end -= 1;
+    }
+    end
+}
+
 fn trim_block_end(source: &str, start: usize, end: usize) -> usize {
     let bytes = source.as_bytes();
     let mut end = end.min(source.len());

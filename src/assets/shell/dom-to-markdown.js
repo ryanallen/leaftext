@@ -1,3 +1,17 @@
+// Whether this is one of the two things the renderer adds inside a footnote and the source never had: the number it is drawn with, and the arrow back to the sentence. Both carry a class saying so, in the Markdown renderer and in the TEI one alike.
+function isRenderedFootnoteMark(el) {
+  return !!(
+    el.classList &&
+    (el.classList.contains('footnote-definition-label') || el.classList.contains('footnote-backref'))
+  );
+}
+
+// A footnote's name, off the element rather than off the number on screen: the reference wears `fnref-name`, the definition wears the name itself.
+function footnoteNameOf(el) {
+  const id = el.getAttribute ? el.getAttribute('id') || '' : '';
+  return id.startsWith('fnref-') ? id.slice('fnref-'.length) : id;
+}
+
 function htmlAttributeEscape(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -31,7 +45,17 @@ function inlineDomToMarkdown(node) {
       return;
     }
     if (child.nodeType !== Node.ELEMENT_NODE) return;
+    // The renderer's own marks inside a footnote — the number it is drawn with and the arrow back to the sentence. Neither is in the source, so neither is written back.
+    if (isRenderedFootnoteMark(child)) return;
     const tag = child.tagName.toLowerCase();
+    // A footnote reference is a superscript number on screen and `[^name]` in the file. The name is on the element; the number is assigned by first use and cannot be written back.
+    if (tag === 'sup' && child.classList.contains('footnote-reference')) {
+      const name = footnoteNameOf(child);
+      if (name) {
+        out += '[^' + name + ']';
+        return;
+      }
+    }
     if (tag === 'br') {
       // Keep breaks inline. A backslash-newline hard break would end an ATX
       // heading's source line and split the rendered heading apart on re-render.
@@ -67,16 +91,59 @@ function inlineDomToMarkdown(node) {
   return out;
 }
 
+// The line a byte offset sits on, as offsets into `bytes`.
+function sourceLineStart(bytes, at) {
+  let index = Math.max(0, Math.min(at, bytes.length));
+  while (index > 0 && bytes[index - 1] !== 10) index -= 1;
+  return index;
+}
+
+function sourceLineEnd(bytes, at) {
+  let index = Math.max(0, Math.min(at, bytes.length));
+  while (index < bytes.length && bytes[index] !== 10) index += 1;
+  return index;
+}
+
+// A footnote written inside a quote or a list item is lifted out and drawn at the
+// foot of the page, so it is not in what the container draws — serializing the
+// container alone would write its line out of the file. Its own lines go back on
+// the end, taken from the source verbatim rather than rebuilt, separated by the
+// container's own blank line (`>` in a quote, nothing in a list item).
+function restoreLiftedFootnotes(el, markdown) {
+  if (el.dataset.holdsFootnote !== 'true') return markdown;
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  const body = app.querySelector('.document-body');
+  if (!body || !Number.isFinite(start) || !Number.isFinite(end)) return markdown;
+  const bytes = sourceByteEncoder.encode(currentDocumentSource || '');
+  const lifted = [];
+  body.querySelectorAll('.footnote-definition[data-src-start]').forEach((note) => {
+    const from = Number(note.dataset.srcStart);
+    const to = Number(note.dataset.srcEnd);
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from < start || to > end) return;
+    const lines = sourceByteDecoder.decode(bytes.slice(sourceLineStart(bytes, from), sourceLineEnd(bytes, to)));
+    // A trailing line holding nothing but the quote's own marker is the separator, not the note.
+    lifted.push(lines.replace(/(\n[ \t>]*)+$/, ''));
+  });
+  if (!lifted.length) return markdown;
+  const head = sourceByteDecoder.decode(bytes.slice(sourceLineStart(bytes, start), sourceLineEnd(bytes, start)));
+  const gap = '\n' + (head.trimStart().startsWith('>') ? '>' : '') + '\n';
+  return (markdown ? [markdown, ...lifted] : lifted).join(gap);
+}
+
 function blockDomToMarkdown(el) {
   const kind = el.dataset.blockKind;
   if (kind === 'list') {
-    return listDomToMarkdown(el, '');
+    return restoreLiftedFootnotes(el, listDomToMarkdown(el, ''));
   }
   if (kind === 'table') {
     return tableDomToMarkdown(el);
   }
   if (kind === 'blockquote') {
-    return blockquoteDomToMarkdown(el);
+    return restoreLiftedFootnotes(el, blockquoteDomToMarkdown(el));
+  }
+  if (kind === 'footnote_definition') {
+    return '[^' + footnoteNameOf(el) + ']: ' + inlineDomToMarkdown(el).trim();
   }
   const text = inlineDomToMarkdown(el).trim();
   if (kind === 'heading') {
@@ -86,14 +153,23 @@ function blockDomToMarkdown(el) {
   return text;
 }
 
+// Whether the list is drawn with its items spaced apart, which is how a list
+// written with blank lines between its items comes out: each item's words go in a
+// paragraph of their own. The blank lines are what put them there, so they go back
+// on the way out or the list closes up under the reader.
+function listIsSpacedApart(listEl) {
+  return Array.from(listEl.children).some((li) =>
+    Array.from(li.children || []).some((child) => child.tagName && child.tagName.toLowerCase() === 'p'),
+  );
+}
+
 // Serialize a rendered list back to Markdown item by item. Checkboxes read their
 // live checked property, nested lists recurse with the marker-width indent, and
-// ordered lists renumber from `start`. Only tight inline-content lists reach here
-// (listWysiwygSafe gates the rest to the raw editor).
+// ordered lists renumber from `start`. Items spaced apart keep their blank lines.
 function listDomToMarkdown(listEl, indent) {
   const ordered = listEl.tagName.toLowerCase() === 'ol';
   const startNum = Number(listEl.getAttribute('start') || '1') || 1;
-  const lines = [];
+  const items = [];
   let index = 0;
   Array.from(listEl.children).forEach((li) => {
     if (li.tagName.toLowerCase() !== 'li') return;
@@ -111,15 +187,16 @@ function listDomToMarkdown(listEl, indent) {
       const tag = child.tagName ? child.tagName.toLowerCase() : '';
       if (tag === 'ul' || tag === 'ol' || tag === 'input') child.remove();
     });
-    lines.push(indent + marker + task + inlineDomToMarkdown(clone).trim());
+    const lines = [indent + marker + task + inlineDomToMarkdown(clone).trim()];
     Array.from(li.children).forEach((child) => {
       const tag = child.tagName ? child.tagName.toLowerCase() : '';
       if (tag === 'ul' || tag === 'ol') {
         lines.push(listDomToMarkdown(child, indent + ' '.repeat(marker.length)));
       }
     });
+    items.push(lines.join('\n'));
   });
-  return lines.join('\n');
+  return items.join(listIsSpacedApart(listEl) ? '\n\n' : '\n');
 }
 
 // Serialize a rendered blockquote to `> `-prefixed Markdown, one quoted paragraph
@@ -255,11 +332,14 @@ const MARKDOWN_WYSIWYG_INLINE_TAGS = new Set([
   'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div',
 ]);
 
+// Walked rather than handed to a tree walker so a subtree the serializer drops can
+// be stepped over: the number a footnote is drawn with and its arrow back are not
+// the block's to round-trip.
 function inlineMarkdownDomWysiwygSafe(el) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const tag = node.tagName.toLowerCase();
-    if (!MARKDOWN_WYSIWYG_INLINE_TAGS.has(tag)) return false;
+  for (const node of Array.from(el.children || [])) {
+    if (isRenderedFootnoteMark(node)) continue;
+    if (!MARKDOWN_WYSIWYG_INLINE_TAGS.has(node.tagName.toLowerCase())) return false;
+    if (!inlineMarkdownDomWysiwygSafe(node)) return false;
   }
   return true;
 }
@@ -268,24 +348,26 @@ function inlineMarkdownDomWysiwygSafe(el) {
 // (anchorToMarkdown reproduces each form), but raw HTML elements such as <sub>
 // cannot be reconstructed from their rendered DOM, so they use source editing.
 function markdownBlockWysiwygSafe(el) {
-  return (
-    inlineMarkdownDomWysiwygSafe(el) &&
-    !el.querySelector('img, sup.footnote-reference, .katex, .mermaid, input')
-  );
+  return inlineMarkdownDomWysiwygSafe(el) && !el.querySelector('img, .katex, .mermaid, input');
 }
 
-// A list serializes faithfully only when tight and inline-content (plus
-// checkboxes and nested lists). Loose lists or ones holding blocks fall back to
-// the raw-source editor.
+// A list serializes faithfully when its items hold inline content, plus
+// checkboxes and nested lists. A list spaced apart draws each item's words in one
+// paragraph, and that writes back — a *second* paragraph in an item is a
+// continuation whose indent cannot be read off the page, so those keep the source
+// editor along with lists holding real blocks.
 function listWysiwygSafe(el) {
-  return !el.querySelector('p, pre, blockquote, table, img, sup.footnote-reference, .katex, .mermaid');
+  if (el.querySelector('pre, blockquote, table, img, .katex, .mermaid')) return false;
+  return Array.from(el.querySelectorAll('li')).every(
+    (item) => Array.from(item.children).filter((child) => child.tagName.toLowerCase() === 'p').length <= 1,
+  );
 }
 
 // A table serializes back faithfully when its cells hold only inline content
 // (checkbox cells included) and it has a real header row to key the pipes off.
 function tableWysiwygSafe(el) {
   return (
-    !el.querySelector('img, pre, blockquote, table, sup.footnote-reference, .katex, .mermaid') &&
+    !el.querySelector('img, pre, blockquote, table, .katex, .mermaid') &&
     !!el.querySelector(':scope > thead > tr > th')
   );
 }
@@ -294,9 +376,19 @@ function tableWysiwygSafe(el) {
 // and quotes holding nested blocks keep the raw-source editor.
 function blockquoteWysiwygSafe(el) {
   if (el.classList.contains('markdown-alert')) return false;
-  if (el.querySelector('blockquote, pre, table, ul, ol, img, sup.footnote-reference, .katex, .mermaid, input')) {
+  if (el.querySelector('blockquote, pre, table, ul, ol, img, .katex, .mermaid, input')) {
     return false;
   }
   return Array.from(el.children).every((child) => child.tagName.toLowerCase() === 'p');
+}
+
+// A footnote edits as it is drawn when it holds one paragraph. A second one is
+// indented in the source and that indent cannot be read back off the page, so
+// those keep the source editor.
+function footnoteDefinitionWysiwygSafe(el) {
+  const paragraphs = Array.from(el.children).filter((child) => child.tagName.toLowerCase() === 'p');
+  if (paragraphs.length !== 1) return false;
+  if (el.querySelector('ul, ol, pre, table, blockquote, img, .katex, .mermaid, input')) return false;
+  return !!footnoteNameOf(el) && inlineMarkdownDomWysiwygSafe(paragraphs[0]);
 }
 

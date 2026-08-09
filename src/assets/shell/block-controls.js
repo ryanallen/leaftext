@@ -100,6 +100,14 @@ function blockIsEmpty(el) {
   return !el.textContent.trim();
 }
 
+// Whether the plus may write a block onto this line, replacing what is there. A
+// quote whose only content was a footnote is drawn with nothing in it and still
+// holds that footnote's line in the source, so the emptiest-looking line in the
+// note is the one line the plus must not overwrite. Clicking it still opens it.
+function blockAcceptsInsert(el) {
+  return el.dataset.holdsFootnote !== 'true' && blockIsEmpty(el);
+}
+
 function blockInsertOptions(target) {
   if (currentDocumentFormat === 'markdown') return MARKDOWN_INSERTS;
   if (currentDocumentFormat === 'xml') return xmlInserts(target);
@@ -315,7 +323,7 @@ function aimBlockGutter(el, fromMargin) {
   blockGutterGap = null;
   closeBlockGapLine();
   const canMove = !!blockSiblingRun(el);
-  const canInsert = blockIsEmpty(el) && blockInsertOptions(el).length > 0;
+  const canInsert = blockAcceptsInsert(el) && blockInsertOptions(el).length > 0;
   blockGutterGrip.hidden = !canMove;
   blockGutterAdd.hidden = !canInsert;
   labelBlockAdd(false);
@@ -675,7 +683,7 @@ function runBlockInsert(target, option) {
   // The plus is only offered on an empty line, and replacing the range is only
   // safe there. Checked again here rather than trusted: a drifted button is a
   // paragraph overwritten.
-  if (!blockIsEmpty(target)) return;
+  if (!blockAcceptsInsert(target)) return;
   sendEditCommand({ command: 'editBlock', start, end, text: option.text });
   if (option.caret) setPendingCaret({ srcStart: start });
 }
