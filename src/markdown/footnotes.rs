@@ -1,6 +1,7 @@
 //! Footnotes: collecting definitions and linking back to the reference.
 
 use super::*;
+use crate::editing::BlockSpan;
 
 /// Move every footnote definition to the end of the document in reference order (unreferenced ones trailing in source order), mirroring GitHub. Emitting them in reference order also lines up pulldown-cmark's printed labels with the superscript numbers, since its HTML writer labels by emission order.
 pub(crate) fn relocate_footnote_definitions(
@@ -39,20 +40,65 @@ pub(crate) fn relocate_footnote_definitions(
     result
 }
 
+/// Move every footnote definition's block to the end of the list, by the same rule [`relocate_footnote_definitions`] moves its events, so the blocks the host reports arrive in the order the page draws the elements. `definitions` names each definition block by its place in `blocks`; `references` is every footnote reference in the order the parse met them.
+pub(crate) fn relocate_footnote_definition_blocks(
+    blocks: Vec<BlockSpan>,
+    definitions: &[(usize, String)],
+    references: &[String],
+) -> Vec<BlockSpan> {
+    if definitions.is_empty() {
+        return blocks;
+    }
+
+    let mut footnotes = FootnoteTracker::default();
+    for name in references {
+        footnotes.number(name);
+    }
+
+    // Stable sort keeps unreferenced definitions (usize::MAX key) in source order.
+    let mut order: Vec<usize> = (0..definitions.len()).collect();
+    order.sort_by_key(|&i| footnotes.number_of(&definitions[i].1).unwrap_or(usize::MAX));
+
+    let mut moved = vec![false; blocks.len()];
+    for (index, _) in definitions {
+        moved[*index] = true;
+    }
+
+    let mut slots: Vec<Option<BlockSpan>> = blocks.into_iter().map(Some).collect();
+    let mut result = Vec::with_capacity(slots.len());
+    for index in 0..slots.len() {
+        if !moved[index] {
+            result.push(slots[index].take().expect("block taken once"));
+        }
+    }
+    for &i in &order {
+        result.push(
+            slots[definitions[i].0]
+                .take()
+                .expect("footnote block taken once"),
+        );
+    }
+    result
+}
+
 #[derive(Debug, Default)]
 pub(crate) struct FootnoteTracker {
     pub(crate) numbers: HashMap<String, usize>,
 }
 
 impl FootnoteTracker {
+    /// The number a footnote is drawn with: where its first reference sits among the document's references. Separate from `render_reference` so the block map can take the same order without rendering anything.
+    pub(crate) fn number(&mut self, name: &str) -> usize {
+        if let Some(number) = self.numbers.get(name) {
+            return *number;
+        }
+        let number = self.numbers.len() + 1;
+        self.numbers.insert(name.to_string(), number);
+        number
+    }
+
     pub(crate) fn render_reference(&mut self, name: &str) -> String {
-        let number = if let Some(number) = self.numbers.get(name) {
-            *number
-        } else {
-            let number = self.numbers.len() + 1;
-            self.numbers.insert(name.to_string(), number);
-            number
-        };
+        let number = self.number(name);
 
         format!(
             r##"<sup class="footnote-reference" id="fnref-{}"><a href="#{}">{}</a></sup>"##,

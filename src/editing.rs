@@ -348,6 +348,8 @@ pub fn kind_is_editable(kind: &str) -> bool {
 /// Map every top-level block of `markdown` to its source byte range. Nested blocks (list items, table cells, inline spans) fold into their enclosing top-level block's range.
 ///
 /// A leading frontmatter block is taken off first, because the renderer takes it off too and draws it from its own parse — so it has no element the page can pair a span with. Left in, its fences read as a rule and a setext heading, and the page drops every range in the document rather than trust a mapping it cannot line up. The ranges stay the file's: the body's own offset goes back on at the end.
+///
+/// The list comes out in the order the page draws the blocks, not the order the file was written in: a footnote definition is written mid-file and drawn at the foot of the page, so its span moves to the end by the renderer's own rule.
 pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
     let body = match crate::markdown::split_leading_frontmatter(markdown) {
         Some((_, rest)) => rest,
@@ -357,7 +359,8 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
     let parser = Parser::new_ext(body, markdown_options()).into_offset_iter();
     let mut spans = Vec::new();
     let mut depth = 0usize;
-    let mut next_id = 0usize;
+    let mut definitions: Vec<(usize, String)> = Vec::new();
+    let mut references: Vec<String> = Vec::new();
 
     for (event, range) in parser {
         match &event {
@@ -366,8 +369,10 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
                     if let Some(kind) = block_kind(tag) {
                         let end = trim_block_end(body, range.start, range.end);
                         if !block_reaches_the_page_as_nothing(kind, &body[range.start..end]) {
-                            spans.push(BlockSpan::new(next_id, kind, range.start, end));
-                            next_id += 1;
+                            spans.push(BlockSpan::new(spans.len(), kind, range.start, end));
+                            if let Tag::FootnoteDefinition(name) = tag {
+                                definitions.push((spans.len() - 1, name.to_string()));
+                            }
                         }
                     }
                 }
@@ -377,19 +382,23 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
             // Rules and raw HTML blocks are leaf events (no Start/End pair) but still top-level blocks.
             Event::Rule if depth == 0 => {
                 let end = trim_block_end(body, range.start, range.end);
-                spans.push(BlockSpan::new(next_id, "rule", range.start, end));
-                next_id += 1;
+                spans.push(BlockSpan::new(spans.len(), "rule", range.start, end));
             }
             Event::Html(_) if depth == 0 => {
                 let end = trim_block_end(body, range.start, range.end);
-                spans.push(BlockSpan::new(next_id, "html_block", range.start, end));
-                next_id += 1;
+                spans.push(BlockSpan::new(spans.len(), "html_block", range.start, end));
             }
+            // A reference numbers its footnote wherever it sits, nested ones included, exactly as the render pass numbers them.
+            Event::FootnoteReference(name) => references.push(name.to_string()),
             _ => {}
         }
     }
 
-    for span in &mut spans {
+    let mut spans =
+        crate::markdown::relocate_footnote_definition_blocks(spans, &definitions, &references);
+    // The id is the block's place in this list, so it is stamped after the move rather than at the parse.
+    for (id, span) in spans.iter_mut().enumerate() {
+        span.id = id;
         span.start += offset;
         span.end += offset;
     }

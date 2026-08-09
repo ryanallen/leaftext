@@ -441,6 +441,93 @@ fn block_source_map_leaves_out_a_script_or_style_block() {
 }
 
 #[test]
+fn block_source_map_reports_a_footnote_where_the_page_draws_it() {
+    // The renderer moves every definition to the foot of the page in reference order; this map is built straight off the parser, in written order. The page pairs the two lists by position, so any disagreement stamps one block's bytes on another block's element — the way a click into the paragraph under a footnote once opened the footnote's own text and wrote the keystrokes over it. This is the one test that fails if the two orderings ever part company.
+    let markdown = "First.[^second]\n\nSecond.[^first]\n\n[^first]: Defined first.\n\n[^second]: Defined second.\n\n## Later\n\nTrailing prose.\n";
+    let document = opened_document_from_markdown(markdown, "note.md");
+
+    // The label off each footnote span, in the order the host reports them.
+    let mapped: Vec<&str> = document
+        .blocks
+        .iter()
+        .filter(|span| span.kind == "footnote_definition")
+        .map(|span| {
+            let source = &markdown[span.start..span.end];
+            let inner = source
+                .strip_prefix("[^")
+                .expect("a footnote span starts at its label");
+            &inner[..inner.find(']').expect("the label closes")]
+        })
+        .collect();
+
+    // The label off each definition the page draws, in the order it draws them.
+    let mut drawn: Vec<&str> = Vec::new();
+    let mut rest = document.html.as_str();
+    while let Some(at) = rest.find(r#"<div class="footnote-definition" id=""#) {
+        rest = &rest[at + r#"<div class="footnote-definition" id=""#.len()..];
+        drawn.push(&rest[..rest.find('"').expect("the id closes")]);
+    }
+
+    assert_eq!(drawn, ["second", "first"], "{}", document.html);
+    assert_eq!(mapped, drawn);
+
+    // Both of them come after everything the file was written with, because that is where they are drawn.
+    let kinds: Vec<&str> = document.blocks.iter().map(|span| span.kind).collect();
+    assert_eq!(
+        kinds,
+        [
+            "paragraph",
+            "paragraph",
+            "heading",
+            "paragraph",
+            "footnote_definition",
+            "footnote_definition"
+        ]
+    );
+}
+
+#[test]
+fn block_source_map_keeps_every_block_under_a_footnote_on_its_own_bytes() {
+    // The shape this was measured on: a footnote written in the middle of a note, with a maths line, a rule and a last paragraph under it. Every one of those was stamped with the block above it — the maths line showed the footnote's source, and the last paragraph inherited the rule's kind, which is the one kind the page never opens for editing.
+    let markdown = "# Title\n\nOpening words.\n\n```mermaid\nflowchart TB\n    A --> B\n```\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\n```rust\nfn main() {}\n```\n\n> A quote.\n\n## Middle\n\n- one\n- two\n\n### Note\n\nReferencing prose.[^1]\n\n[^1]: The note's own words.\n\n$$\nE = mc^2\n$$\n\n---\n\nThe last words in the file.\n";
+    let spans = block_source_map(markdown);
+    let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
+    assert_eq!(
+        kinds,
+        [
+            "heading",
+            "paragraph",
+            "code_block",
+            "table",
+            "code_block",
+            "blockquote",
+            "heading",
+            "list",
+            "heading",
+            "paragraph",
+            "paragraph",
+            "rule",
+            "paragraph",
+            "footnote_definition"
+        ],
+        "{spans:?}"
+    );
+
+    let slice = |index: usize| &markdown[spans[index].start..spans[index].end];
+    assert_eq!(slice(10), "$$\nE = mc^2\n$$");
+    assert_eq!(slice(11), "---");
+    assert_eq!(slice(12), "The last words in the file.");
+    assert_eq!(slice(13), "[^1]: The note's own words.");
+
+    // The last block of the file edits in place again: it is a paragraph, not the rule above it.
+    assert!(spans[12].editable);
+
+    // The id is a block's place in this list, which the move would otherwise leave pointing at where the footnote was written.
+    let ids: Vec<usize> = spans.iter().map(|span| span.id).collect();
+    assert_eq!(ids, (0..spans.len()).collect::<Vec<usize>>());
+}
+
+#[test]
 fn a_dropped_block_really_does_reach_the_page_as_nothing() {
     // The whole fix rests on the sanitizer removing these, so read it back out of the render rather than trusting the reading of its configuration: the page is handed a document with two paragraphs and nothing between them.
     for markdown in [

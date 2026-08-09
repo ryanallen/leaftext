@@ -451,6 +451,132 @@ if (booted) {
     if (withComment.children.some((el) => 'srcStart' in el.dataset)) throw new Error('a span with no element still stamped, so the guard that makes this fix necessary is gone');
   });
 
+  // A footnote is written in the middle of a note and drawn at the foot of the page, so the host reports its block last and the walk pairs the two lists by position — it has no other way to know where the renderer moved it. Before that, every element from the footnote down wore the block above it: the paragraph under it opened on the footnote's own words and typing there wrote over them (`block_source_map_reports_a_footnote_where_the_page_draws_it`).
+  check('a note with a footnote in the middle gets a range on every block', () => {
+    const source = '# Title\n\nBefore the note.[^1]\n\n[^1]: The note itself.\n\nAfter the note.\n\n---\n\nThe last words.\n';
+    // In the order the page draws them, which is the order the host reports them in: tag, class, kind, and the source the element is showing.
+    const drawn = [
+      ['H1', '', 'heading', '# Title'],
+      ['P', '', 'paragraph', 'Before the note.[^1]'],
+      ['P', '', 'paragraph', 'After the note.'],
+      ['HR', '', 'rule', '---'],
+      ['P', '', 'paragraph', 'The last words.'],
+      ['DIV', 'footnote-definition', 'footnote_definition', '[^1]: The note itself.'],
+    ];
+    const blocks = drawn.map(([, , kind, text], id) => ({
+      id,
+      kind,
+      start: source.indexOf(text),
+      end: source.indexOf(text) + text.length,
+      editable: kind === 'paragraph' || kind === 'heading',
+    }));
+    const body = {
+      children: drawn.map(([tag, className]) => ({
+        nodeType: 1,
+        tagName: tag,
+        dataset: {},
+        children: [],
+        classList: { contains: (name) => className !== '' && name === className },
+      })),
+    };
+    booted.attachMarkdownBlockRanges(body, blocks, source);
+
+    body.children.forEach((el, index) => {
+      const [, , kind, text] = drawn[index];
+      if (!('srcStart' in el.dataset)) throw new Error(`the ${kind} was left unstamped, so the note is read-only with nothing saying why`);
+      const shown = source.slice(Number(el.dataset.srcStart), Number(el.dataset.srcEnd));
+      if (shown !== text) throw new Error(`the ${kind} wears somebody else's bytes: ${JSON.stringify(shown)}`);
+      if (el.dataset.blockKind !== kind) throw new Error(`the ${kind} is stamped as a ${el.dataset.blockKind}`);
+    });
+    // The last block of the file used to inherit the rule above it, and a rule is the one kind the page never opens.
+    if (body.children[4].dataset.editable !== 'true') throw new Error('the last block of the file cannot be edited');
+  });
+
+  // The count guard only fires on a block left over or an element with no block, and a list that drifted out of order keeps both counts equal — so a kind that can only ever be one tag is the second thing held to the element it landed on. Four kinds and no others: the rest have more than one tag each and would refuse documents that are fine.
+  check('a block whose kind cannot be the element it landed on stamps nothing', () => {
+    const source = 'A paragraph.\n\n---\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n';
+    const element = (tag, className) => ({
+      nodeType: 1,
+      tagName: tag,
+      dataset: {},
+      children: [],
+      classList: { contains: (name) => className !== undefined && name === className },
+    });
+    const stamped = (blocks, tags) => {
+      const body = { children: tags.map((tag) => element(tag)) };
+      booted.attachMarkdownBlockRanges(body, blocks, source);
+      return body.children.filter((el) => 'srcStart' in el.dataset).length;
+    };
+    // Each of the four kinds, handed the wrong element, with a good paragraph in front of it to prove the refusal drops that one too rather than stamping what it liked.
+    const good = { id: 0, kind: 'paragraph', start: 0, end: 12, editable: true };
+    const wrong = [
+      ['rule', 'P'],
+      ['table', 'DIV'],
+      ['list', 'P'],
+      ['footnote_definition', 'P'],
+    ];
+    for (const [kind, tag] of wrong) {
+      const count = stamped([good, { id: 1, kind, start: 14, end: 17, editable: false }], ['P', tag]);
+      if (count !== 0) throw new Error(`a ${kind} on a <${tag.toLowerCase()}> still stamped ${count} of 2 blocks`);
+    }
+    // The same four kinds on the elements they belong to still stamp, or the guard would take editing away from every document that has one.
+    const right = [
+      ['rule', 'HR'],
+      ['table', 'TABLE'],
+      ['list', 'UL'],
+      ['list', 'OL'],
+    ];
+    for (const [kind, tag] of right) {
+      const count = stamped([good, { id: 1, kind, start: 14, end: 17, editable: false }], ['P', tag]);
+      if (count !== 2) throw new Error(`a ${kind} on its own <${tag.toLowerCase()}> stamped ${count} of 2 blocks`);
+    }
+    // A footnote definition is the one of the four that needs its class as well as its tag.
+    const definition = { id: 1, kind: 'footnote_definition', start: 14, end: 17, editable: false };
+    const body = { children: [element('P'), element('DIV', 'footnote-definition')] };
+    booted.attachMarkdownBlockRanges(body, [good, definition], source);
+    if (!body.children.every((el) => 'srcStart' in el.dataset)) throw new Error('a footnote definition on its own div was refused');
+  });
+
+  // The drift as it arrived: the host reported its blocks in the order the file was written, and the page draws the footnote at the foot. Fourteen blocks, fourteen elements, every pair wrong from the footnote on — and nothing said so. This is that list, handed in unfixed, refused by the kind check alone.
+  check('the footnote drift is refused by the kind check on its own', () => {
+    const source = '# Title\n\nBefore the note.[^1]\n\n[^1]: The note itself.\n\nAfter the note.\n\n---\n\nThe last words.\n';
+    // In the order the file was written, which is what the host used to report.
+    const written = [
+      ['heading', '# Title'],
+      ['paragraph', 'Before the note.[^1]'],
+      ['footnote_definition', '[^1]: The note itself.'],
+      ['paragraph', 'After the note.'],
+      ['rule', '---'],
+      ['paragraph', 'The last words.'],
+    ];
+    const blocks = written.map(([kind, text], id) => ({
+      id,
+      kind,
+      start: source.indexOf(text),
+      end: source.indexOf(text) + text.length,
+      editable: kind === 'paragraph' || kind === 'heading',
+    }));
+    // In the order the page draws them, with the definition at the foot.
+    const body = {
+      children: [
+        ['H1', ''],
+        ['P', ''],
+        ['P', ''],
+        ['HR', ''],
+        ['P', ''],
+        ['DIV', 'footnote-definition'],
+      ].map(([tag, className]) => ({
+        nodeType: 1,
+        tagName: tag,
+        dataset: {},
+        children: [],
+        classList: { contains: (name) => className !== '' && name === className },
+      })),
+    };
+    booted.attachMarkdownBlockRanges(body, blocks, source);
+    if (body.children.some((el) => 'srcStart' in el.dataset)) throw new Error('the drift stamped a range, so a click into one block would write over another');
+  });
+
   // The ask pipe's reader half is one call into this function (`READER_STATE` in src/pipe.rs), so nothing else in the suite notices when an element it reads is renamed — the next `{"ask":"state","reader":true}` would be the first to find out, and what it loses is silent.
   check('the page can say what the reader sees', () => {
     const readerState = () => booted.window.leafReaderState();

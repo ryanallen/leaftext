@@ -1,27 +1,18 @@
 // ---------------------------------------------------------------------------
 // Live editing in the reading view (source-anchored, both Markdown and XML).
 //
-// The source buffer is the single source of truth in Rust. Every editable block
-// carries its source byte range (Markdown ranges attached here from `blocks`,
-// XML ranges stamped inline by the TEI renderer); an edit serializes the block
-// back to source and asks the host to splice that range and re-render. Markdown
-// text edits WYSIWYG; XML edits its exact source (TEI can't be reconstructed from
-// the HTML). Anything not safely round-trippable stays read-only (code view only).
+// The source buffer is the single source of truth in Rust. Every editable block carries its source byte range (Markdown ranges attached here from `blocks`, XML ranges stamped inline by the TEI renderer); an edit serializes the block back to source and asks the host to splice that range and re-render. Markdown text edits WYSIWYG; XML edits its exact source (TEI can't be reconstructed from the HTML). Anything not safely round-trippable stays read-only (code view only).
 // ---------------------------------------------------------------------------
 
 const sourceByteEncoder = new TextEncoder();
 const sourceByteDecoder = new TextDecoder();
-// The raw source between two UTF-8 byte offsets. Block ranges are byte offsets
-// (Rust), but JS strings are UTF-16, so slice on the encoded bytes.
+// The raw source between two UTF-8 byte offsets. Block ranges are byte offsets (Rust), but JS strings are UTF-16, so slice on the encoded bytes.
 function sliceSourceBytes(source, start, end) {
   const bytes = sourceByteEncoder.encode(source || '');
   return sourceByteDecoder.decode(bytes.slice(start, end));
 }
 
-// The source ranges of a run of blocks, in document order — or null unless every
-// one is present, ordered and non-overlapping. The host refuses a run the same way,
-// and a drifted map must not be given the chance to shred a file. Shared by the
-// gutter's drag and the cross-block delete, which both hand the host one run.
+// The source ranges of a run of blocks, in document order — or null unless every one is present, ordered and non-overlapping. The host refuses a run the same way, and a drifted map must not be given the chance to shred a file. Shared by the gutter's drag and the cross-block delete, which both hand the host one run.
 function blockRunRanges(elements) {
   const ranges = [];
   let previousEnd = -1;
@@ -35,13 +26,15 @@ function blockRunRanges(elements) {
   return ranges;
 }
 
-// Attach each Markdown block's source range to its rendered element. Blocks come
-// in document order, but a raw-HTML wrapper (e.g. `<div align="center">`) nests
-// the blocks that follow it, so they aren't all immediate children of the body.
-// Walk the tree instead: descend into wrappers to reach their blocks, and step
-// over a wrapper's closing tag (`</div>`), which renders to no element. If the
-// structure can't be matched cleanly, attach nothing so a misaligned range can't
-// drive an edit. XML ranges are stamped inline by the renderer, not here.
+// The kinds that can only ever be drawn as one thing, so a block landing on another element means the host's list and the drawn page have drifted apart — which the counts cannot see, because a drift keeps them equal. The other kinds are left out because more than one tag is right for each: a heading is one of six, a paragraph is also how a display-maths line is drawn, a code block is a `<pre>` unless it is a diagram, and a raw HTML block is whatever it opens with.
+const BLOCK_KIND_FITS = {
+  rule: (el) => el.tagName === 'HR',
+  table: (el) => el.tagName === 'TABLE',
+  list: (el) => el.tagName === 'UL' || el.tagName === 'OL',
+  footnote_definition: (el) => el.tagName === 'DIV' && el.classList.contains('footnote-definition'),
+};
+
+// Attach each Markdown block's source range to its rendered element. Blocks come in the order the page draws them, which is what makes pairing by position possible at all, but a raw-HTML wrapper (e.g. `<div align="center">`) nests the blocks that follow it, so they aren't all immediate children of the body. Walk the tree instead: descend into wrappers to reach their blocks, and step over a wrapper's closing tag (`</div>`), which renders to no element. If the structure can't be matched cleanly, attach nothing so a misaligned range can't drive an edit. XML ranges are stamped inline by the renderer, not here.
 function attachMarkdownBlockRanges(body, blocks, source) {
   const src = typeof source === 'string' ? source : '';
   // Reader-injected, non-source elements to skip while walking.
@@ -50,8 +43,7 @@ function attachMarkdownBlockRanges(body, blocks, source) {
     el.classList.contains('docs-pager') ||
     el.classList.contains('docs-pager-loading') ||
     el.classList.contains('frontmatter');
-  // A raw-HTML block whose source is a closing tag (`</div>`) closes a wrapper
-  // rather than opening an element, so it maps to no element and is stepped over.
+  // A raw-HTML block whose source is a closing tag (`</div>`) closes a wrapper rather than opening an element, so it maps to no element and is stepped over.
   const isClosingHtmlBlock = (block) =>
     block.kind === 'html_block' &&
     sliceSourceBytes(src, block.start, block.end).trimStart().startsWith('</');
@@ -67,9 +59,7 @@ function attachMarkdownBlockRanges(body, blocks, source) {
   const walk = (elements) => {
     for (const el of elements) {
       if (el.nodeType !== 1 || isInjected(el)) continue;
-      // The reader's own lane round a wide table is a box the page added, not a
-      // block: stamp the table inside it, or an edit would serialize the wrapper
-      // and find no rows in it.
+      // The reader's own lane round a wide table is a box the page added, not a block: stamp the table inside it, or an edit would serialize the wrapper and find no rows in it.
       if (el.classList.contains('table-lane')) {
         walk(el.children);
         continue;
@@ -80,9 +70,12 @@ function attachMarkdownBlockRanges(body, blocks, source) {
         return;
       }
       cursor += 1;
-      // A raw-HTML wrapper is a transparent container, not an editable block:
-      // descend to its blocks but never stamp the wrapper itself, or source-
-      // editing it would replace its rendered children with raw tag text.
+      const fits = BLOCK_KIND_FITS[block.kind];
+      if (fits && !fits(el)) {
+        mismatch = true;
+        return;
+      }
+      // A raw-HTML wrapper is a transparent container, not an editable block: descend to its blocks but never stamp the wrapper itself, or source-editing it would replace its rendered children with raw tag text.
       if (block.kind === 'html_block' && hasElementChild(el)) {
         walk(el.children);
       } else {
@@ -91,8 +84,7 @@ function attachMarkdownBlockRanges(body, blocks, source) {
     }
   };
   walk(body.children);
-  // Every non-closing block must have found an element, or the mapping drifted
-  // and none of it can be trusted.
+  // Every non-closing block must have found an element, or the mapping drifted and none of it can be trusted.
   if (nextBlock() !== null) mismatch = true;
   if (mismatch) return;
 
@@ -105,9 +97,7 @@ function attachMarkdownBlockRanges(body, blocks, source) {
   }
 }
 
-// The document-order checkboxes the reader may toggle: every body checkbox not in
-// a table cell. Table-cell markers are synthesized (not `TaskListMarker`s), so the
-// host's offsets exclude them; excluding them here keeps the Nth checkbox aligned.
+// The document-order checkboxes the reader may toggle: every body checkbox not in a table cell. Table-cell markers are synthesized (not `TaskListMarker`s), so the host's offsets exclude them; excluding them here keeps the Nth checkbox aligned.
 function readingTaskCheckboxes() {
   const body = app.querySelector('.document-body');
   if (!body) return [];
@@ -124,19 +114,14 @@ function bindTaskCheckboxes(tasks) {
   boxes.forEach((box, index) => {
     box.removeAttribute('disabled');
     box.dataset.taskIndex = String(index);
-    // A checkbox toggle auto-saves and records no undo, so it uses a plain send
-    // (not sendEditCommand, which would optimistically flag the doc dirty).
+    // A checkbox toggle auto-saves and records no undo, so it uses a plain send (not sendEditCommand, which would optimistically flag the doc dirty).
     box.addEventListener('change', () => {
       send({ command: 'toggleTask', index });
     });
   });
 }
 
-// Make table-cell checkboxes interactive. They have no marker offset to flip
-// (synthesized from cell text), so a click sends the box's own cell for the host to
-// write, with the whole table re-serialized behind it as the fallback. WYSIWYG
-// tables only — checked directly, since these bind even when reader editing is off
-// (no contenteditable).
+// Make table-cell checkboxes interactive. They have no marker offset to flip (synthesized from cell text), so a click sends the box's own cell for the host to write, with the whole table re-serialized behind it as the fallback. WYSIWYG tables only — checked directly, since these bind even when reader editing is off (no contenteditable).
 function bindTableCheckboxes() {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -156,8 +141,7 @@ function bindTableCheckboxes() {
   });
 }
 
-// Serialize an anchor back to Markdown. The renderer makes several kinds of `<a>`
-// that must NOT all become `[text](href)`:
+// Serialize an anchor back to Markdown. The renderer makes several kinds of `<a>` that must NOT all become `[text](href)`:
 //   - glossary links and GitHub refs (`.github-ref`) → their plain text;
 //   - autolinks (visible text == URL) → kept bare;
 //   - everything else → `[text](href)`.
