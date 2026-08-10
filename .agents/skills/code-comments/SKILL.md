@@ -91,7 +91,7 @@ So, per rewrite: grep every identifier the replacement names and confirm it is r
 
 ## Process
 
-1. List the comments in the touched files. A grep finds candidates — `used to · no longer · any more · is gone · was · were` — and decides nothing.
+1. List the comments in the touched files. Candidate grep: `used to · no longer · any more · is gone · was · were`.
 2. Read each with the code under it and give it a verdict.
 3. Edit in place, checking every rewrite as above.
 4. Run `cargo doc --no-deps --lib` if any Rust changed, then `just verify`.

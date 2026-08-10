@@ -40,11 +40,7 @@ Three hold the browser half, which is the same front end under a different host:
 
 ### 4. Never say what this machine cannot build
 
-The Mac build, the installer and the GitHub workflows do not run here. That is permanent, the owner has always known it, and **it never goes in a hand-back** — not as a caveat, not as a footnote, not "it ships unproven", and not when the change you just made is in one of them. That is when it is most obvious.
-
-GitHub builds the Mac app and the installer on a tagged release, so a break shows up there. Say it only if you are asked about it directly.
-
-A caveat that is true on every hand-back teaches the reader to skip the whole line.
+The Mac build, the installer and the GitHub workflows do not run here, GitHub builds all three on a tagged release, and **it never goes in a hand-back** — not as a caveat, not as a footnote, not "it ships unproven", and least of all when the change you just made is in one of them. A caveat that is true every single time teaches the reader to skip the line. Say it only if asked directly. This is the rule every other skill points at.
 
 ### 5. Hand back
 

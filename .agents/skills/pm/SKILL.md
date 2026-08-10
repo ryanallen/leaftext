@@ -38,13 +38,15 @@ What reading cannot settle is a tier 0 row, not a guess.
 
 ## 3. Rank on three things, in this order
 
-1. **Is something wrong today** — a bug, a panic, a vault opening incorrectly. Incorrect outranks incomplete.
-2. **How many tickets wait on it** — a piece four tickets want is built once here or four times below.
+1. **Is something wrong today** — a bug, a panic, a vault opening incorrectly, or a rule the work runs under saying something untrue. Incorrect outranks incomplete.
+2. **Is it built twice if it goes second** — a piece two or more rows want, and smaller than they are, is built once here or several times below. A root *bigger* than the rows under it saves nothing by going first: that is a subject's order, which is `TRACKS.md`'s, not a tier.
 3. **What it costs** — the cheaper of two rows that tie goes first.
 
 The tests pick the tier in that order, then run again inside it, which is what makes a row arguable rather than a matter of taste.
 
-**Not counted:** absent is not wrong, so missing capability never reaches tier 1; a missing test is a risk, not the app being wrong; a dependency counts only where the waiting ticket names it.
+**Cost never moves a row between tiers.** It orders rows inside one. Joining it to test 1 is what once left every expensive fault sitting in the middle of the features.
+
+**Not counted:** absent is not wrong, so missing capability never reaches tier 1; a missing test is a risk, not the app being wrong; a dependency counts only where the waiting ticket names it, and a shipped ticket is not a dependency at all.
 
 **Unrankable, because the cost is unknown.** The ticket stays `Ready` with the reason in its row: it changes the window and has no drawn `What it looks like` section, or its phases carry no test box. Check both over every ticket while walking the folders.
 
@@ -55,19 +57,25 @@ The tests pick the tier in that order, then run again inside it, which is what m
 | Tier | What is in it |
 | --- | --- |
 | **0** | Not builds. Somebody reading the code to settle a claim the rest of the list rests on |
-| **1** | Wrong today, and cheap |
-| **2** | The pieces other tickets are waiting on. Nothing here is a feature a reader would name |
-| **3** | The features people would name |
-| **4** | Big swings. Each absorbs the time all of tiers 1 to 3 take together |
+| **1** | **Wrong today.** Whatever the app, or a rule the work runs under, does incorrectly — at whatever it costs |
+| **2** | **The shared piece.** Two or more rows wait on it and it is smaller than they are, so it is built once here or several times below |
+| **3** | The features people would name, cheapest first |
+| **4** | Big swings, each absorbing the time all of tiers 1 to 3 take together — and anything sitting behind one, however small |
 
 Tier 0 comes first, because the list is only as good as the statuses under it. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days. A tier is an ordering, and a number beside it reads as a promise about a calendar nobody made.
+
+**No row sits in a tier above its own blocker.** It is the one rule that outranks the three tests: a shared piece behind a big swing goes with the swing, and a one-line row behind one stays behind it, because a row somebody cannot start is worse than a row somebody has to scroll to.
+
+**Inside tier 1, what stops somebody using the app comes before what looks wrong.** A machine that cannot install it outranks a shadow drawn the wrong way however the two compare on cost.
+
+**A tier holding most of the list is the tier definitions failing, not the tree.** Three of these emptied once by asking for two things at once or for something no row could satisfy, and the file went on calling itself ranked on three tests while sorting on one.
 
 ## 5. The live file is a table
 
 It opens with the first work table. Title, counts and anything off the list go after every table.
 
 ```markdown
-## Tier 1 — wrong today, and cheap
+## Tier 1 — wrong today
 
 | # | Ticket | Status | Depends on | Why here |
 ```
@@ -77,7 +85,8 @@ It opens with the first work table. Title, counts and anything off the list go a
 - **Nothing that belongs to the ticket** — no citation, no phase count, no box count, no cost breakdown, no date of who asked for it, no restating what the README already says the ticket is.
 - **No preamble under a heading, no method, no record, no picture.** How rows are ranked is this skill; what an earlier ranking got wrong is `done/PLAN.md`'s.
 - **Every ticket name is a link**, in every cell and every line of prose, using the path from the README. A bare name is a ranking error.
-- **A track is `TRACKS.md`'s.** A row says which step it is and nothing more. But a track's steps are an order to build in, so where this pass proves a dependency the other way round, the steps are swapped there in the same edit — a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one.
+- **`Depends on` holds live blockers only**, linked, or `—`. A ticket that has shipped does not block anything, so naming one there reads as a wait that is over.
+- **A track is `TRACKS.md`'s.** A row says which step it is and nothing more, and the ranking does not import the track's order — most steps are a preference the track says so about, and only a real block moves a row. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is a track**, so a subject the ranking is carrying in three separate cells gets one written instead.
 - **Off the list** — a sentence, with what would put it back. Off with a reason beats bottom of the list.
 
 If a cell needs more words, the ticket is what needs them.
@@ -86,7 +95,7 @@ If a cell needs more words, the ticket is what needs them.
 
 [`../docs/GLOSSARY.md`](../../../../docs/GLOSSARY.md) is what makes the ranking readable by somebody who did not write it, so a planning word spent here and missing there gets a row in this pass. That covers the ones easiest to miss: **each column heading**, **each status value**, tier, row, position, track, step, and anything off the list.
 
-**A glossary row is short.** One or two sentences saying what the word means today, and a link to whatever owns it. No history, no dates, no counts of how many files carry it, no account of what it used to be — that is a log, and it belongs in a ticket. A word nothing uses any more loses its row.
+**A row is one or two sentences saying what the word means today**, with a link to whatever owns it. No history, no dates, no counts of how many files carry it — that is a log, and it belongs in a ticket. A word nothing uses any more loses its row.
 
 ## 7. Which folder a ticket sits in is the version it ships under
 

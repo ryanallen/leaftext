@@ -17,7 +17,7 @@ Build the phase's test box with its code, and write the test's name on the box. 
 
 **A phase that adds or changes a command writes its browser line in the same edit as the code**, the way it ticks a box in the same edit. The app and a published site are one front end with two hosts under it, so a new command is two pieces of work and only one of them is obvious: the line goes in `web/preview/host.js`'s table, saying the browser answers it, will not and why, or not yet and which ticket owns it. `just check-web-commands` refuses the build without it, and the answer is decided while the code is in front of you rather than by whoever finds the dead control months later. A command whose browser answer turns out to be real work is that work's own ticket, not this phase's.
 
-A test gap outside this ticket is its own ticket, written with [`/ticket`](../ticket/SKILL.md) and ranked by [`/pm`](../pm/SKILL.md) in the same pass. Never fix it in passing and never leave it in the hand-back: a diff that grows tests for code this ticket did not touch is one nobody can review, and it is always a ticket.
+A test gap outside this ticket is its own ticket, written with [`/ticket`](../ticket/SKILL.md) and ranked by [`/pm`](../pm/SKILL.md) in the same pass — never fixed in passing, never left in the hand-back.
 
 ## Refining what was built goes in the ticket, every round, unasked
 
@@ -29,7 +29,7 @@ A test gap outside this ticket is its own ticket, written with [`/ticket`](../ti
 - **Each phase ends with its record**, under a bold line: what changed while building, what the owner turned down, and what was found by looking at the built thing. Say what was tried and failed where a later reader would otherwise try it again; do not say who said it or when the session ran.
 - **A refinement that moves the interface owes the drawing too.** Where the shipped thing no longer matches `## What it looks like`, say so under that section rather than redrawing it — the picture is the plan as approved, and the record below the boxes is what happened to it.
 
-**A change to a skill, a hook or a check gets its own ticket, written in the same pass.** It goes in `../docs/refactor/workflow/` with its row in the README, ranked by [`/pm`](../pm/SKILL.md), and it is usually written and built together — [`/ticket`](../ticket/SKILL.md) holds the shape. A rule with no ticket behind it is one nobody can trace, and it is the first one somebody deletes.
+**A change to a skill, a hook or a check gets its own ticket, written in the same pass** — `../docs/refactor/workflow/`, its README row, ranked by [`/pm`](../pm/SKILL.md); [`/ticket`](../ticket/SKILL.md) holds the shape and the reason.
 
 **Ask the other skills rather than doing their job badly.** [`/design`](../design/SKILL.md) when a round opens a real fork, when the ticket's own words turn out to be false, or when a change reaches past what the phases cover — it decides and records, and this skill does not. [`/ticket`](../ticket/SKILL.md) when a round turns up work that is not this ticket's: a second file and a row in the README, ranked by [`/pm`](../pm/SKILL.md) in the same pass. Neither needs the owner's permission to be run; needing one and not running it is what the owner has to ask for twice.
 

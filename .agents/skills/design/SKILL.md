@@ -9,7 +9,7 @@ user-invocable: true
 
 A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this reads the file against the code, decides between the researched options, fixes what is wrong in the plan, draws it, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
 
-**Every ticket comes out of this pass with a picture in it** — step 6a. That is the part a builder reads first and the part an owner can disagree with before anything is built, and a plan handed on as prose alone is one where whoever builds it draws it in their own head instead.
+**Every ticket comes out of this pass with a picture in it** — step 6a. A plan handed on as prose alone is one where whoever builds it draws it in their own head instead.
 
 **Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug, it stays a box in the ticket — fixing it is a separate job with its own `/check`.
 
@@ -93,17 +93,17 @@ grep -rn "<the behavior>" src/tests/ src/app/tests.rs src/store/tests.rs scripts
 - Where a test already covers the claim, **the box says so and names it** rather than asking for a second one. A phase that writes a test the suite already has is work done twice, and the second copy is the one that rots.
 - **A box naming a test that does not exist is struck**, with the reason, and rewritten as the test that is actually missing. That belongs in the record: a reader trusts a named test the way they trust a citation.
 - The box names the file it goes in — `src/tests/` per subject, `src/app/tests.rs` for the binary, `scripts/check-shell.mjs` for `src/assets/shell/`. A phase whose only work is a row in `design/` asks for no test; the design checks already refuse what is not listed.
-- **What genuinely cannot be tested here gets its line in the phase** — a real window, live selected text, a held pointer. Nothing about the Mac build, the installer or the workflows: GitHub compiles those on a tagged release, and the caveat is true on every ticket.
+- **What genuinely cannot be tested here gets its line in the phase** — a real window, live selected text, a held pointer. Never the Mac build, the installer or the workflows; [`/check`](../check/SKILL.md) step 4 holds that rule.
 
-**A gap this reading turns up outside the ticket is its own ticket, never a box smuggled into this one.** Opening every citation walks a lot of code, so this is the pass that notices a subject nothing covers. File it — `../docs/refactor/` in the subject folder it belongs to, its row in the README, [`/pm`](../pm/SKILL.md) once — and name it in this ticket's **Still open** so nobody reads it as covered. Widening the ticket in front of you is how a plan stops being reviewable.
+**A gap this reading turns up outside the ticket is its own ticket, never a box smuggled into this one.** Opening every citation walks a lot of code, so this is the pass that notices a subject nothing covers. File it — `../docs/refactor/` in the subject folder it belongs to, its row in the README, [`/pm`](../pm/SKILL.md) once — and name it in this ticket's **Still open** so nobody reads it as covered.
 
 ## 6. The six parts are there, and the summary earns its keep
 
-A ticket has the same six parts in the same order — title and one-sentence summary, `## Why`, `## What was measured`, `## How it is built`, `## Phases`, `## What an earlier draft got wrong`. A file missing one, or carrying its own invented heading, is one a reader has to search rather than skim. [ticket](../ticket/SKILL.md) holds the shape; this holds the file to it.
+[ticket](../ticket/SKILL.md) holds the six parts and their order; this holds the file to them. A file missing one, or carrying its own invented heading, is one a reader has to search rather than skim.
 
-**The summary sentence is checked hardest, because it is the only part most readers finish.** It has four pieces — who it is for, what they will be able to do, the change that does it, and the evidence it will work — and the fourth is the one that goes missing. A summary that stops at the change is a wish: add the reason out of the measured table, or say plainly that nothing measured backs it yet.
+**The summary sentence is checked hardest, because it is the only part most readers finish**, and the piece that goes missing is always the fourth — the evidence it will work. A summary that stops at the change is a wish: add the reason out of the measured table, or say plainly that nothing measured backs it yet.
 
-Then check the three middle headings answer one question each and stop. `## Why` is the cost of doing nothing and does not describe the build; `## What was measured` is claims with citations and nothing else; `## How it is built` is where the code goes and what was decided, not the why again. A paragraph that could sit under two of them belongs under neither — cut it.
+Then check the three middle headings answer one question each and stop. A paragraph that could sit under two of them belongs under neither — cut it.
 
 **Anything the running order should not be carrying belongs here.** A row in `../docs/PLAN.md` is two sentences; if this ticket's row has grown past that, move the words into this file and shorten the row in the same pass.
 
@@ -111,7 +111,7 @@ Then check the three middle headings answer one question each and stop. `## Why`
 
 **No ticket this skill touches ends without a drawing.** A plan is read months later by somebody who will not rebuild it out of prose, and the picture is the part they trust, so it is drawn while the code is open rather than left to whoever builds it. Where the phases touch the window that drawing is a photographed wireframe under `## What it looks like`, below; where they touch nothing a reader sees, it is the flow in step 6b — a Mermaid block in `## How it is built`. One of the two, every time. A ticket that arrives already carrying one still has it opened against the code here rather than taken on trust, and a ticket carrying neither is one this pass draws before it signs the top.
 
-**A ticket whose phases touch the window and has no `## What it looks like` section is one this pass draws.** Sketch it as HTML under `../docs/imgs/wireframes/` and photograph it with `node scripts/wireframe.mjs` — a **picture** in the ticket, never box characters: `just check-ascii-art` fails on a `┌` anywhere in the tree, because no renderer lines them up — with the markup and the `design/components.md` row each new control will take. See [ticket](../ticket/SKILL.md) for the command and the shape of a sketch.
+**A ticket whose phases touch the window and has no `## What it looks like` section is one this pass draws.** Sketch it as HTML under `../docs/imgs/wireframes/` and photograph it with `node scripts/wireframe.mjs`, with the markup and the `design/components.md` row each new control will take. Never box characters — `just check-ascii-art` fails on one anywhere in the tree. See [ticket](../ticket/SKILL.md) for the command and the shape of a sketch.
 
 **Every position in the drawing is traced, never invented.** Before a line of the sketch is written, read where each control actually sits — the markup in `src/assets/app-shell.html`, the zones in `reading.css`, and, when a copy is up, `leaftext_eval` for the real rectangles. Then draw at those numbers and say on the picture that they are measured. A drawing that puts an existing control somewhere it does not live is worse than no drawing: it reads as a decision somebody made, so the next person builds the move as if it were the fix. A sketch drawn from memory of what the bar "looks like" is the same fault with a nicer excuse.
 
@@ -127,7 +127,7 @@ And check the drawing for the thing it most often gets wrong: **new interface wh
 
 ## 6b. The flow diagram is held to the code and to the phases
 
-**Where a ticket explains a mechanism in prose that a picture would carry, this pass draws it** — a Mermaid block in `## How it is built`, per [ticket](../ticket/SKILL.md)'s rule: three or more hops, a branch, anything crossing the line between the page and the host, or an order the phases rest on. It is a block in the file, not a photographed sketch — the wireframe rule above is for layouts, and a flow costs no file at all. Never box characters.
+**Where a ticket explains a mechanism in prose that a picture would carry, this pass draws it** — a Mermaid block in `## How it is built`, on [ticket](../ticket/SKILL.md)'s test for when one earns its place. It is a block in the file, not a photographed sketch: the wireframe rule above is for layouts, and a flow costs no file at all.
 
 Then two readings nothing else in this repo does:
 
@@ -140,7 +140,7 @@ A diagram answering more than one question gets split; a diagram of two boxes an
 
 A plan is read as a file, so how it sits on the page is part of whether it is followed.
 
-- **A paragraph is one line.** A ticket hard-wrapped at some column is one nobody can edit without re-flowing it by hand, and a one-word change diffs as the whole paragraph. Join them — `just check-wrapping --fix` does the whole tree — and leave a break only where it is doing work: verse, a quoted line, two trailing spaces.
+- **A paragraph is one line.** Join what is wrapped — `just check-wrapping --fix` does the whole tree — leaving a break only where it is doing work: verse, a quoted line, two trailing spaces.
 - **It uses the tree's own words for the tree's own parts.** `../docs/GLOSSARY.md` defines them — ticket, phase, box, tier, seam, the record. A ticket calling a phase a "stage" or a box a "task" reads as a different process to somebody who has only read the glossary, so the word is corrected here. A planning word the ticket genuinely needs and the glossary does not have gets a row **there**, in this pass — that is the one edit this skill makes outside the ticket.
 - **No open question, no TBD, no "decide later"** — step 5's rule, and the one most often left in.
 - **Every phase's boxes are boxes**, not prose with a dash in front.

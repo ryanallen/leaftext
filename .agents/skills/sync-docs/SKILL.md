@@ -7,20 +7,15 @@ user-invocable: true
 
 # Sync Docs
 
-Keep the user-facing documentation in `docs/` truthful to the app. This is a **docs-only** task: edit Markdown (and, if pages are added or removed, the site nav and README list), take any screenshot a page asks for and does not have (step 5), lint the whole set for the faults that live between pages (step 6), sweep every Markdown file in the repo and the plan tree next door, read off the disk rather than off a list (step 7), then regenerate the SEO/AIO/LLM discovery files with `scripts/seo-gen.mjs` (step 8). **Never run git** — releasing is a separate step handled by `/git-release`.
+Keep the user-facing documentation in `docs/` truthful to the app. This is a **docs-only** task — Markdown, the pictures the pages ask for, and the generated discovery files; nothing in `src/`. **Never run git**: releasing is [`/git-release`](../git-release/SKILL.md)'s.
 
 The docs are served at **leaftext.com/docs** by the static SPA in `docs/` (`index.html` + `docs.js` + `docs.css`). Each page is a plain `.md` file; `docs.js` renders it with the same renderer the root site uses (`site/markdown.js`) and routes by `#/<path>` (a route is the file path under `docs/` without `.md`).
 
-## When to run
+## When to run, and on what
 
-- Before cutting a release, so the published docs describe what shipped.
-- Any time app behavior changes: new feature, changed shortcut, renamed setting, new theme, new dependency, changed install/release flow.
-- On request for a specific area (pass it as the argument, e.g. `sync-docs themes`).
+Before cutting a release, so the published docs describe what shipped; and any time app behavior changes — a new feature, a changed shortcut, a renamed setting, a new theme, a new dependency, a changed install or release flow.
 
-## Inputs
-
-1. **Topic** (optional): a specific area to update (e.g. `library`, `themes`, `releasing`). If given, jump straight to the mapped page(s) below.
-2. **Since-ref** (optional): a git ref to diff against to discover what changed (e.g. `v0.1.200`). If omitted, inspect the working tree plus recent commits to find changed app areas. **Read only** — do not commit, tag, or push.
+The argument is optional and is either of two things: a **topic** (`sync-docs themes`), which jumps straight to the pages step 2 maps it to, or a **git ref** (`v0.1.200`) to diff against. With neither, read the working tree plus recent commits.
 
 ## Process
 
@@ -83,11 +78,9 @@ Update **every** page a change touches. A renamed setting, for example, may appe
 
 A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu items, the settings fields) and confirm the doc table has exactly those rows — no extras, none missing.
 
-**Link every concept that has a home — deep-link to the section, not just the page.** When prose names a feature, view, setting, theme, or concept that is documented, make it a link rather than plain text. Prefer the *most specific* target: link to `page#section-slug` when a matching section exists, not just the page top. This covers the README intro and cross-references between doc pages. The docs SPA supports `#/<route>#<anchor>` deep links; a section's slug is its heading text lowercased with spaces turned to hyphens and punctuation dropped (e.g. "Mermaid diagrams" → `mermaid-diagrams`, "Recent files" → `recent-files`). For the README, that means a relative `docs/<route>.md#<anchor>`; between doc pages, a relative `<page>.md#<anchor>` (which `docs.js` intercepts). Don't over-link: link the first, most relevant mention in a passage, not every repetition, and never link a word to the very page it sits on.
+**Link every concept that has a home, and deep-link to the section rather than the page.** When prose names a feature, view, setting, theme or concept that is documented, make it a link, and aim it at `page#section-slug` where a matching section exists. That covers links being written now and page-top links already there: `Data paths → See [Settings](features/settings.md)` should be `features/settings.md#paths`, and `the [library](library.md) pane stays current` (about live updates) should be `library.md#live-updates`. A slug is the heading text lowercased, spaces to hyphens, punctuation dropped ("Mermaid diagrams" → `mermaid-diagrams`). From the README that is a relative `docs/<route>.md#<anchor>`; between doc pages a relative `<page>.md#<anchor>`, which `docs.js` intercepts. Don't over-link: the first, most relevant mention in a passage, never every repetition, and never a word linked to the page it sits on. Page-level links stay page-level where they genuinely mean the whole page — "Next" lists, overview tables, and the deliberate relative-link demo.
 
-**Deepen existing page-level links too.** A link that already points at a page top is wrong when the link text or its sentence names a *specific* topic that has its own section on that page — upgrade it to `page#section`. For example, `Data paths → See [Settings](features/settings.md)` should be `features/settings.md#paths`; `the [library](library.md) pane stays current` (about live updates) should be `library.md#live-updates`. Page-level links remain correct where they genuinely point at the whole page: "Next" lists, overview tables, and a deliberate "relative link" demo.
-
-- **A paragraph is one line.** Never hard-wrap. The renderer reflows, GitHub reflows, every editor reflows — a wrap only costs, on every edit after it. `just check-wrapping` fails on one and names the file; `--fix` joins them, in Markdown and in `.rs`/`.js`/`.css` comments alike. A break doing real work keeps two trailing spaces, or the file carries `<!-- keep-wrapping -->` on a line of its own. **This applies to every file the sweep in step 7 reaches, not only the page being edited** — a wrapped file is fixed where it is found.
+- **A paragraph is one line**, in every file the sweep in step 7 reaches and not only the page being edited — a wrapped file is fixed where it is found. A break doing real work keeps two trailing spaces, or the file carries `<!-- keep-wrapping -->` on a line of its own.
 - A single `# Title` H1, followed by a one-line `> tagline` blockquote, then the intro paragraph.
 - Plain, factual prose. No marketing fluff, no changelog entries ("now supports…"). State current behavior.
 - Keep version numbers and counts (e.g. "last 8 files", "4 parse workers", "2 MB limit", current `Cargo.toml` version) matching the code.
@@ -177,7 +170,7 @@ What each role means in practice:
 | **plan** (`../docs/features/`, `../docs/refactor/`, `../docs/fixes/`, each grouped into subject folders) | **The one this step exists for.** A plan for something that now ships is the most misleading writing in either tree: move the file into the matching subject folder under `../docs/done/`, and move its row in [`../docs/README.md`](../../../../docs/README.md) under Shipped saying what shipped. A plan half-built gets the built part struck through, not deleted |
 | **the running order** (`../docs/PLAN.md`) | The live tickets ranked, one file rewritten in place. When one ships, its row is wrong here: strike it, say what the build found, then **move it into [`../docs/done/PLAN.md`](../../../../docs/done/PLAN.md)** without its position number, which belongs to the live list only. The live file is the work that is left; the shipped one keeps the reasons |
 | **the ticket README** (`../docs/README.md`) | Its "What the folders mean" paragraph names every folder next door, its paragraph under that names every subject folder inside them, and its "Needs a second look" table holds every ticket whose own status disagrees with the folder it sits in. A new folder or a settled status lands here |
-| **the planning glossary** (`../docs/GLOSSARY.md`) | Every word that tree uses about itself, and what makes it untrue is the *process* changing, not the app: a new folder, a renamed part of a ticket, a rule about rows or tiers that moved. Sweep it whenever a skill under `.agents/skills/` changed, since those are what spend the words. A word used in a ticket or a ranking and defined nowhere gets a row — column headings and status values included; a word this file defines and nothing uses any more loses its row. **An entry is one or two sentences saying what the word means today**, with a link to whatever owns it: no history, no dates, no counts, no account of what it used to be |
+| **the planning glossary** (`../docs/GLOSSARY.md`) | Every word that tree uses about itself, and what makes it untrue is the *process* changing, not the app: a new folder, a renamed part of a ticket, a rule about rows or tiers that moved. Sweep it whenever a skill under `.agents/skills/` changed, since those are what spend the words. A word used in a ticket or a ranking and defined nowhere gets a row — column headings and status values included; a word this file defines and nothing uses any more loses its row. [`/pm`](../pm/SKILL.md) step 6 holds the shape of a row |
 | **shipped / canceled / a test document** | Kept for the reasoning. Left alone unless it is now factually wrong about the app |
 | **reading from elsewhere** (`../docs/learn/`) | Somebody else's writing, copied in to read. It is not about this app, so nothing this session did can make it untrue. Never edited here — a correction belongs upstream, and rewriting it loses what was actually said |
 
@@ -203,9 +196,9 @@ It rewrites five files at the repo root (the deployed site root) from `README.md
 - `llms.txt` — a concise index: page title → `.md` link.
 - `llms-full.txt` — a fuller enumeration: title, page URL, Markdown URL, and a one-line description per page.
 
-Page list, titles, summaries, and `<lastmod>` dates are all derived from the current files, so there is no list to maintain by hand. It is deterministic — byte-identical output for the same tree, so a no-op run leaves git untouched. (`<lastmod>` reads the last commit date per file; it refreshes on the next run after you commit.)
+Page list, titles, summaries and dates are all derived from the current files, and the output is byte-identical for the same tree, so a no-op run leaves git untouched. (`<lastmod>` reads the last commit date per file; it refreshes on the next run after you commit.)
 
-**Forgetting this step is now caught rather than shipped.** `check-site.mjs` runs the generator in memory on every `just verify` and names any committed file that disagrees, along with the address it should gain or lose — so a doc page added, renamed or removed cannot leave the discovery files quietly stale. Dates are not compared: a file's `<lastmod>` is its own last commit date, which the commit that changes it cannot know in advance.
+**Forgetting this step is caught rather than shipped.** `check-site.mjs` runs the generator in memory on every `just verify` and names any committed file that disagrees, along with the address it should gain or lose. Dates are not compared: a file's `<lastmod>` is its own last commit date, which the commit that changes it cannot know in advance.
 
 ### 9. Verify
 
@@ -213,10 +206,8 @@ Page list, titles, summaries, and `<lastmod>` dates are all derived from the cur
 - Grep the changed files for leftovers: no `<Tabs`, `<Card`, `<Step`, `<Note`, `<Tip`, `<Warning`, `<Accordion`, or `theme={null}`.
 - `node scripts/doc-images.mjs` — every picture a touched page asks for is there, and any that are not are named in the hand-back with the reason.
 - Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 8 was skipped or a doc changed after it ran).
-- For every touched page, confirm each Summary/overview table, shortcut list, and enumerated command/settings/feature table matches the source one-for-one — no stale, missing, or extra rows.
-- Confirm every internal link resolves to a real `.md` / route, and that each `#anchor` (including the anchor half of a deep link) matches a real heading slug on the target page.
-- Scan touched pages and the README intro for feature/concept names left as plain text that have a doc page or section — link them, deep-linking to the section anchor where one exists.
-- Audit existing page-top links: if the link text or its sentence names a specific section that exists on the target page, deepen it to `page#section` (leave "Next" lists, overview tables, and the relative-link demo at page level).
+- Every enumeration on a touched page matches the source one-for-one — no stale, missing or extra rows.
+- Every internal link resolves to a real `.md` / route, each `#anchor` matches a real heading slug on the target page, and step 3's linking pass has actually been made over the touched pages and the README intro.
 - Optional but preferred: serve and click through.
 
   ```bash
@@ -240,9 +231,7 @@ Leave the changes uncommitted. Tell the user what pages changed, and what the li
 - `docs/index.html`, `docs/docs.css` — the docs shell and chrome.
 - `site/markdown.js` — the renderer that defines what Markdown the docs may use.
 - `README.md` — the **Documentation** section with relative `docs/<route>.md` links.
-- `scripts/doc-images.mjs` — which pictures the docs ask for, and which are missing.
-- `scripts/capture-screenshot.ps1` + `just squeeze-png` — how a picture gets taken. See [Building](../../../docs/02-development/02-building.md#documentation-screenshots).
-- `scripts/seo-gen.mjs` — regenerates the SEO/AIO/LLM discovery files (`robots.txt`, `sitemap.xml`, `sitemap-md.txt`, `llms.txt`, `llms-full.txt`) from `README.md` + `docs/`.
+- [Building](../../../docs/02-development/02-building.md#documentation-screenshots) — the published account of how a picture gets taken.
 - `/git-release` — the separate skill that commits and pushes (site-only changes don't bump the version).
 
 <!-- keycode: LEAF-8F50 -->

@@ -87,9 +87,7 @@ Both, every time — a Rust change can break the front-end check through `app_sh
 
 ### 5. Say what cannot be tested — about this change, not in general
 
-Only one thing is worth saying here: a change that needs a **real window, live selected text, or a held pointer** has no test, and it is worth naming which part.
-
-**Never say that Mac code, the installer or the GitHub workflows are unproven.** GitHub compiles all three on a tagged release, and the sentence is true on every hand-back — which is what makes it noise. A list repeated every time is a list nobody reads.
+Only one thing is worth saying here: a change that needs a **real window, live selected text, or a held pointer** has no test, and it is worth naming which part. Never the Mac build, the installer or the workflows — [`/check`](../check/SKILL.md) step 4 holds that rule.
 
 ### 6. Hand back
 
