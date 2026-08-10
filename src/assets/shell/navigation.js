@@ -5,8 +5,6 @@ function currentScrollAnchor() {
 function sendNavigationCommand(command) {
   send({ command, scroll_anchor: currentScrollAnchor() });
 }
-backButton.addEventListener('click', () => sendNavigationCommand('goBack'));
-forwardButton.addEventListener('click', () => sendNavigationCommand('goForward'));
 function isEditableMouseTarget(target) {
   const element = target instanceof Element ? target : target?.parentElement;
   return Boolean(element?.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]'));
@@ -23,11 +21,16 @@ function navigationCommandForMouseButton(event) {
   }
   return null;
 }
-window.addEventListener('mousedown', (event) => {
-  const command = navigationCommandForMouseButton(event);
-  if (!command) {
-    return;
-  }
-  event.preventDefault();
-  sendNavigationCommand(command);
-});
+// Nothing to wire on a published site: dom.js has taken the strip out, and the browser's own pair one row up is what a reader presses. Canceling the mouse's own back gesture is what this watch does before it sends, so on a site not watching at all is the whole point of removing the buttons rather than hiding them.
+if (backButton && forwardButton) {
+  backButton.addEventListener('click', () => sendNavigationCommand('goBack'));
+  forwardButton.addEventListener('click', () => sendNavigationCommand('goForward'));
+  window.addEventListener('mousedown', (event) => {
+    const command = navigationCommandForMouseButton(event);
+    if (!command) {
+      return;
+    }
+    event.preventDefault();
+    sendNavigationCommand(command);
+  });
+}

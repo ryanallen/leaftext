@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { POLICY, sitePage } from './web-page.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const failures = [];
@@ -114,7 +115,15 @@ function fakeElement(id = '') {
       return child;
     },
     insertBefore: (child) => child,
-    remove() {},
+    // A real removal, because a control taken out of the page is a control the rest of the shell has to cope with being gone: the published site takes the history strip out, and a stub that returned quietly would leave every later query still answering with it.
+    remove() {
+      detachChild(this);
+      const drop = (node) => {
+        node.isConnected = false;
+        for (const child of node.children) drop(child);
+      };
+      drop(this);
+    },
     setAttribute() {},
     removeAttribute() {},
     getAttribute: () => null,
@@ -167,6 +176,8 @@ function pageElements() {
     if (id || classAttr) {
       node = fakeElement(id || '');
       node.className = classAttr;
+      // Shipped hidden in the markup, which is how the window's own three buttons reach a browser: only a native window frame reveals them, and a stand-in that started every element visible could not tell the two apart. `aria-hidden` is not this, so the boundary matters.
+      if (/(^|\s)hidden(\s|=|$)/.test(attrs)) node.hidden = true;
       if (id) byId.set(id, node);
       for (const one of classAttr.split(/\s+/)) if (one && !byClass.has(one)) byClass.set(one, node);
       const holder = [...open].reverse().find((one) => one.node);
@@ -181,20 +192,21 @@ function fakePage() {
   const { byId, byClass } = pageElements();
   // Every id the markup declares has a stand-in, including any the walker's nesting missed.
   for (const id of elementIds()) if (!byId.has(id)) byId.set(id, fakeElement(id));
-  // Only what the page really declares gets an answer. A selector for a class or id the markup does not have returns null, the way it would in the app.
+  // Only what the page really declares gets an answer. A selector for a class or id the markup does not have returns null, the way it would in the app. An element taken out of the page stops answering, the way it does in a browser: a query only finds what is still in the document.
+  const standing = (node) => (node && node.isConnected !== false ? node : null);
   const find = (selector) => {
     const one = String(selector).trim();
-    if (one.startsWith('#')) return byId.get(one.slice(1)) || null;
+    if (one.startsWith('#')) return standing(byId.get(one.slice(1)));
     // The page's own element, not a fresh one each call: two fragments asking for the same container have to get the same container, or one of them writes into a copy nobody reads.
-    if (/^\.[A-Za-z0-9_-]+$/.test(one)) return byClass.get(one.slice(1)) || null;
+    if (/^\.[A-Za-z0-9_-]+$/.test(one)) return standing(byClass.get(one.slice(1)));
     return null;
   };
   const document = {
     documentElement: fakeElement('documentElement'),
     body: fakeElement('body'),
     head: fakeElement('head'),
-    // Unknown ids answer null, exactly as the real page does — so code that guards on a missing element is exercised, not papered over.
-    getElementById: (id) => byId.get(id) || null,
+    // Unknown ids answer null, exactly as the real page does — so code that guards on a missing element is exercised, not papered over. An id taken out of the page is one of them.
+    getElementById: (id) => standing(byId.get(id)),
     querySelector: find,
     // Nothing is loaded at boot, so a list query is legitimately empty.
     querySelectorAll: () => [],
@@ -236,6 +248,59 @@ function fakePage() {
 const VIEW_WIDTH = 1080;
 const VIEW_HEIGHT = 820;
 
+/** A real address and a real history stack. The published page has both and the browser's own host spends them: it decides whether a link leaves the site by comparing origins, and it writes an entry per document opened so the browser's own Back has somewhere to go. A stub that swallows a push can only ever report that nothing happened. */
+function fakeAddress(start, raise) {
+  const entries = [{ state: null, url: start }];
+  let at = 0;
+  const resolve = (url) => (url === undefined || url === null ? entries[at].url : new URL(String(url), entries[at].url).href);
+  const location = {
+    origin: new URL(start).origin,
+    get href() {
+      return entries[at].url;
+    },
+    get hash() {
+      const cut = entries[at].url.indexOf('#');
+      return cut === -1 ? '' : entries[at].url.slice(cut);
+    },
+  };
+  // One gesture, and browsers differ about which event announces it, so both are raised — a host that answered only one of them would be right on one browser.
+  const travel = (delta) => {
+    const to = Math.min(entries.length - 1, Math.max(0, at + delta));
+    if (to === at) return false;
+    at = to;
+    raise('popstate', { state: entries[at].state });
+    raise('hashchange', {});
+    return true;
+  };
+  const history = {
+    get length() {
+      return entries.length;
+    },
+    get state() {
+      return entries[at].state;
+    },
+    pushState(state, _title, url) {
+      // Forward is gone the moment a new entry is added, the way it is in a browser.
+      entries.length = at + 1;
+      entries.push({ state, url: resolve(url) });
+      at = entries.length - 1;
+    },
+    replaceState(state, _title, url) {
+      entries[at] = { state, url: resolve(url) };
+    },
+    back: () => travel(-1),
+    forward: () => travel(1),
+    go: (delta) => travel(delta || 0),
+  };
+  return {
+    location,
+    history,
+    urls: () => entries.map((one) => one.url),
+    states: () => entries.map((one) => one.state),
+    at: () => at,
+  };
+}
+
 function runShell(source, extras = {}) {
   const { document, byId } = fakePage();
   // The app surface is the window at rest. A stand-in reporting an empty box would put every overlay in the page at the origin, and read as though the app had no room in it.
@@ -253,20 +318,35 @@ function runShell(source, extras = {}) {
   const noop = () => {};
   const frames = new Map();
   let frameId = 0;
+  // Kept rather than swallowed, the way the document's are: a check raises a made-up event on the window and gets the page's own handlers. The mouse's own back button and the browser's own history both arrive this way.
+  const windowListeners = new Map();
+  const address = fakeAddress('https://leaf.test/', (type, event) => {
+    for (const handler of [...(windowListeners.get(type) || [])]) handler(event);
+  });
   const sandbox = {
     console: { log: noop, warn: noop, error: noop, debug: noop, info: noop },
     document,
-    addEventListener: noop,
-    removeEventListener: noop,
+    addEventListener(type, handler) {
+      if (typeof handler !== 'function') return;
+      if (!windowListeners.has(type)) windowListeners.set(type, []);
+      windowListeners.get(type).push(handler);
+    },
+    removeEventListener(type, handler) {
+      const held = windowListeners.get(type) || [];
+      const at = held.indexOf(handler);
+      if (at >= 0) held.splice(at, 1);
+    },
     dispatchEvent: () => true,
     innerWidth: VIEW_WIDTH,
     innerHeight: VIEW_HEIGHT,
     devicePixelRatio: 1,
     scrollX: 0,
     scrollY: 0,
-    // An origin and a history, because the published page has both and the browser's own host reaches for them: it decides whether a link leaves the site by comparing origins, and it writes the open document into the address.
-    location: { href: 'https://leaf.test/', origin: 'https://leaf.test', hash: '' },
-    history: { replaceState() {}, pushState() {} },
+    location: address.location,
+    history: address.history,
+    // The stack itself, so a check can walk it and read back what each entry was stamped with.
+    __address: address,
+    __windowListeners: windowListeners,
     navigator: { userAgent: 'leaf-check', platform: 'test', clipboard: { writeText: noop } },
     performance: { now: () => 0 },
     setTimeout: () => 0,
@@ -3412,6 +3492,9 @@ if (booted) {
     // A strip that can never fit, so every candidate folds.
     tabBar.scrollWidth = 900;
     tabBar.clientWidth = 100;
+    // The window's own three, revealed the way a native frame reveals them: the markup ships them hidden, so the order they take in the menu is only ever a question once something has drawn them.
+    const shipped = booted.document.getElementById('windowControls');
+    shipped.hidden = false;
     try {
       booted.refitAppBar();
       const order = inside.map((el) => el.id);
@@ -3450,6 +3533,7 @@ if (booted) {
     } finally {
       delete panel.childElementCount;
       Object.assign(panel, original);
+      shipped.hidden = true;
       tabBar.scrollWidth = 0;
       tabBar.clientWidth = 0;
     }
@@ -3576,6 +3660,85 @@ if (booted) {
     }
   });
 }
+
+// ---- 4b. a published site is not an install ---------------------------------
+//
+// The browser draws its own Back one row above the app's and hands the reader its own history, so a site draws neither of the app's; and a first-run bubble is a once-per-install promise, which a reader landing on one page of a site has not made. Both come out of the page rather than being hidden in it.
+
+/** A boot with every command it sends captured, and the vault switch given a real rectangle — the fake page's elements have none, and a hint never points at something with no box. */
+function siteBoot(site) {
+  const sent = [];
+  const context = runShell(source, {
+    __leafSite: site,
+    ipc: { postMessage: (text) => sent.push(JSON.parse(text)) },
+  });
+  const switcher = context.document.getElementById('libraryVaultSwitch');
+  if (switcher) {
+    switcher.getBoundingClientRect = () => ({ left: 8, top: 700, right: 40, bottom: 726, width: 32, height: 26 });
+  }
+  context.runHintPass();
+  const surface = context.document.getElementById('appSurface');
+  const bubbles = surface.children.filter((child) => String(child.className || '').includes('hint-bubble'));
+  return { context, sent, bubbles };
+}
+
+check('a published site draws no Back, no Forward, no window buttons and no first-run bubble', () => {
+  const site = siteBoot(true);
+  for (const id of ['backButton', 'forwardButton']) {
+    if (site.context.document.getElementById(id)) throw new Error(`a site still has ${id} standing in the bar`);
+  }
+  if (site.context.document.querySelector('.history-actions')) throw new Error('a site still has the history strip in the bar');
+  // Never drawn in a browser: the page ships them hidden and only a native window frame reveals them.
+  if (site.context.document.getElementById('windowControls').hidden !== true) {
+    throw new Error("a site revealed the window's own minimize, maximize and close");
+  }
+  if (site.context.nextHint()) throw new Error('a site registered a first-run bubble');
+  if (site.bubbles.length) throw new Error(`a site drew ${site.bubbles.length} first-run bubbles`);
+  if (site.sent.some((message) => message.command === 'setHintState')) {
+    throw new Error('a site counted a launch of an app nobody installed');
+  }
+
+  // The desktop is untouched: both buttons, and the bubble it has always shown on a first launch.
+  const desktop = siteBoot(false);
+  for (const id of ['backButton', 'forwardButton']) {
+    if (!desktop.context.document.getElementById(id)) throw new Error(`the desktop lost ${id}`);
+  }
+  if (desktop.bubbles.length !== 1) throw new Error(`a desktop first launch drew ${desktop.bubbles.length} first-run bubbles`);
+
+  // The same three window buttons, revealed the moment there is a native frame to draw them for — the mechanism the site flag copies.
+  const framed = runShell(source, { __leafFrameless: true });
+  if (framed.document.getElementById('windowControls').hidden !== false) {
+    throw new Error('a frameless window did not reveal its own three buttons');
+  }
+});
+
+check("a site cancels no mouse back gesture, and the fold and the disabled pass cope with the strip gone", () => {
+  const site = siteBoot(true);
+  const press = (context, button) => {
+    let prevented = false;
+    for (const handler of [...(context.__windowListeners.get('mousedown') || [])]) {
+      handler({ button, target: context.document.body, preventDefault: () => (prevented = true) });
+    }
+    return prevented;
+  };
+  // The mouse's own back and forward buttons. On a site the browser handles them itself, which it cannot do if the page cancels the event first — which is why the strip is removed rather than hidden.
+  if (press(site.context, 3) || press(site.context, 4)) {
+    throw new Error("a site canceled the mouse's own back gesture, which the browser would have handled itself");
+  }
+  if (site.sent.some((message) => message.command === 'goBack' || message.command === 'goForward')) {
+    throw new Error('a site sent a history command no site host answers');
+  }
+  // Both of these reach for the strip. With it gone they have to run rather than throw: the fold would otherwise move two missing buttons into the chevron menu, and the disabled pass runs on every render.
+  site.context.refitAppBar();
+  site.context.leafSetNavigation({ canGoBack: true, canGoForward: true });
+
+  // The desktop still answers it, because there the strip is the app's own.
+  const desktop = siteBoot(false);
+  if (!press(desktop.context, 3)) throw new Error("the desktop stopped taking the mouse's own back button");
+  if (!desktop.sent.some((message) => message.command === 'goBack')) {
+    throw new Error("the desktop's mouse back button sent nothing");
+  }
+});
 
 // ---- 5. the rows on the start screen ----------------------------------------
 
@@ -4765,8 +4928,11 @@ function standInModule() {
   };
 }
 
+/** The served listing a boot reads unless a check hands over its own: shallowest first, the way the export writes it. `notes` has no page of its own, which is the fallback case. */
+const SERVED_DOCUMENTS = [{ path: 'README.md' }, { path: 'notes/one.md' }, { path: 'notes/two.md' }];
+
 /** The host, in a page that has what the published one has. The export writes the pending-command stub, not the host, so it is installed here exactly as the export writes it — a check without it is not testing the page a reader is served. */
-async function bootWebHost({ pending = [] } = {}) {
+async function bootWebHost({ pending = [], documents = SERVED_DOCUMENTS, name = '' } = {}) {
   const module_ = standInModule();
   const extras = {
     // The published page's own queue: the front end sends its first commands before any module script can have run, and the host drains them.
@@ -4781,7 +4947,7 @@ async function bootWebHost({ pending = [] } = {}) {
   context.window.ipc = { postMessage: noopPost };
 
   // Everything the host hands the page, recorded on the way through. The pane and the strip still run the page's own call, so a payload the front end cannot take fails here. The state call is recorded and not run: it renders a whole document, and nothing is rendered on this page for it to render into — what is being proved is that the host reached the page by the call it reads a document in by.
-  const seen = { state: [], folder: [], pager: [] };
+  const seen = { state: [], folder: [], pager: [], fragment: [], place: [] };
   const watch = (name, into, through) => {
     const was = context.window[name];
     context.window[name] = (payload) => {
@@ -4792,6 +4958,9 @@ async function bootWebHost({ pending = [] } = {}) {
   watch('leafSetState', seen.state, false);
   watch('leafSetLibraryFolder', seen.folder, true);
   watch('leafSetPager', seen.pager, true);
+  // The two the history work rides on. Recorded and not run, for the same reason the state call is: nothing is rendered on this page to scroll.
+  watch('leafScrollToFragment', seen.fragment, false);
+  watch('leafRestoreScrollAnchor', seen.place, false);
 
   const host = readFileSync(join(root, 'web/preview/host.js'), 'utf8');
   // The host is an ES module with three exports and no imports, so it evaluates as a script once the export keyword is off. Nothing else about it is touched.
@@ -4799,19 +4968,25 @@ async function bootWebHost({ pending = [] } = {}) {
     filename: 'host.js',
   }).runInContext(context);
 
-  const documents = [
-    { path: 'README.md' },
-    { path: 'notes/one.md' },
-    { path: 'notes/two.md' },
-  ];
   const leaf = await context.__startLeaftext({
     documents,
+    name,
     read: async (path) => `# ${path}\n\nWords.\n`,
   });
-  return { context, leaf, seen, asked: module_.asked, send: (message) => context.window.ipc.postMessage(JSON.stringify(message)) };
+  return {
+    context,
+    leaf,
+    seen,
+    asked: module_.asked,
+    address: context.__address,
+    send: (message) => context.window.ipc.postMessage(JSON.stringify(message)),
+  };
 }
 
 const noopPost = () => {};
+
+// How many commands the browser's own host answers, counted off its own table by the check below rather than written down twice.
+let webAnswered = 0;
 
 /** Let every promise the host started settle. A command is handed over and answered later, the way the page hands one over. */
 const settle = () => new Promise((resolve) => setImmediate(resolve));
@@ -4871,9 +5046,27 @@ checkSettled('a command the browser host has no arm for is refused where somethi
   if (refusal.command !== 'search' || refusal.kind !== context.__LATER) throw new Error(`the refusal does not say what kind it is: ${JSON.stringify(refusal)}`);
   if (!refusal.reason.includes('web-app-commands')) throw new Error(`the refusal does not name the ticket that owns it: ${refusal.reason}`);
 
-  // The five arms and the table agree about which of them are answered, which is what a page hiding its dead controls will ask.
+  // The arms and the table agree about which commands are answered, which is what a page hiding its dead controls will ask.
   const answered = Object.keys(context.__COMMANDS).filter((name) => context.__answers(name));
-  if (answered.join(',') !== 'openRecent,openLink,openGlossary,getFolder,loadPager') {
+  webAnswered = answered.length;
+  const expected = [
+    'openRecent',
+    'openLink',
+    'openGlossary',
+    // The choices a site keeps, each written by the one command that owns it.
+    'setSpeedReaderEnabled',
+    'setCodeIntelEnabled',
+    'setReadingUnlocked',
+    'setCodeUnlocked',
+    'setThemeFamily',
+    'setThemeMode',
+    'setThemeRandomBag',
+    'setLibraryState',
+    'setLibraryLayout',
+    'getFolder',
+    'loadPager',
+  ];
+  if (answered.join(',') !== expected.join(',')) {
     throw new Error(`the table says these are answered: ${answered.join(',')}`);
   }
   for (const name of answered) {
@@ -4881,6 +5074,238 @@ checkSettled('a command the browser host has no arm for is refused where somethi
   }
   await settle();
   if (leaf.refused.length !== 1) throw new Error(`an arm the table calls answered was refused: ${JSON.stringify(leaf.refused)}`);
+});
+
+checkSettled("the browser's own Back walks the site and lands on the paragraph the reader left", async () => {
+  const { leaf, send, seen, address } = await bootWebHost();
+  const opened = () => seen.state.map((one) => one.document && one.document.path);
+  const at = () => opened()[opened().length - 1];
+
+  // Arriving is not a step the reader took, so the entry they arrived on is replaced rather than added to.
+  await leaf.openAddress('README.md');
+  if (address.urls().length !== 1) throw new Error(`landing on the site left ${address.urls().length} entries instead of the one the reader arrived on`);
+
+  const walk = [
+    { href: 'notes/one.md', place: { section: 'readme-top', block: 3, offsetY: 12 } },
+    { href: 'two.md', place: { section: 'one-middle', block: 1, offsetY: 4 } },
+    { href: '#deep-heading', place: { section: 'two-middle', block: 2, offsetY: 8 } },
+  ];
+  for (const step of walk) {
+    send({ command: 'openLink', href: step.href, scroll_anchor: step.place });
+    await settle();
+  }
+  if (address.urls().length !== 4) throw new Error(`three steps through the site left ${address.urls().length} entries, so the browser's own Back has nowhere to go`);
+  if (address.location.hash !== '#notes/two.md#deep-heading') throw new Error(`a heading jump wrote the address as ${address.location.hash}`);
+
+  // Walking back: each entry says which document, and where the reader was when they left it.
+  const back = () => {
+    const moved = address.history.back();
+    return moved;
+  };
+  if (!back()) throw new Error('the first Back went nowhere');
+  await settle();
+  if (address.location.hash !== '#notes/two.md') throw new Error(`Back out of a heading jump landed on ${address.location.hash}`);
+  if ((seen.place[seen.place.length - 1] || {}).section !== 'two-middle') throw new Error(`Back landed at the top rather than the paragraph: ${JSON.stringify(seen.place[seen.place.length - 1])}`);
+
+  if (!back()) throw new Error('the second Back went nowhere');
+  await settle();
+  if (at() !== 'notes/one.md') throw new Error(`the second Back opened ${at()}`);
+  if ((seen.place[seen.place.length - 1] || {}).section !== 'one-middle') throw new Error('the second Back lost the place the reader left');
+
+  if (!back()) throw new Error('the third Back went nowhere');
+  await settle();
+  if (at() !== 'README.md') throw new Error(`the third Back opened ${at()} rather than the document the reader landed on`);
+  if ((seen.place[seen.place.length - 1] || {}).section !== 'readme-top') throw new Error('the third Back lost the place the reader left');
+
+  // The fourth is the arrival itself: nothing behind it, and nothing that walks off the site.
+  const documents = opened().length;
+  if (back()) throw new Error('a fourth Back walked off the site instead of stopping at the arrival');
+  await settle();
+  if (opened().length !== documents) throw new Error('a Back with nothing behind it still opened a document');
+});
+
+checkSettled('a link to a heading inside the document reaches the page rather than the document resolver', async () => {
+  const { leaf, send, seen, asked, address } = await bootWebHost();
+  await leaf.openAddress('notes/one.md');
+  const renders = () => asked.filter((one) => one.call === 'documentScript').length;
+  const before = renders();
+
+  send({ command: 'openLink', href: '#a-heading', scroll_anchor: { section: 'one-top', block: 0, offsetY: 0 } });
+  await settle();
+  if (!seen.fragment.includes('a-heading')) throw new Error(`a heading link never reached the page's own scroll: ${JSON.stringify(seen.fragment)}`);
+  // A bare fragment put through the document resolver matches nothing and becomes a console line, so it must never reach it.
+  if (renders() !== before) throw new Error('a heading link was put through the document resolver and opened something');
+  if (address.location.hash !== '#notes/one.md#a-heading') throw new Error(`a heading jump wrote the address as ${address.location.hash}`);
+});
+
+/** The choices a published site keeps, and the command that owns each. Ten keys across nine commands: the pane's two travel together. */
+const KEPT_CHOICES = [
+  [{ command: 'setSpeedReaderEnabled', enabled: true }, { speedReaderEnabled: true }],
+  [{ command: 'setCodeIntelEnabled', enabled: true }, { codeIntelEnabled: true }],
+  [{ command: 'setReadingUnlocked', enabled: true }, { readingUnlocked: true }],
+  [{ command: 'setCodeUnlocked', enabled: true }, { codeUnlocked: true }],
+  [{ command: 'setThemeFamily', family: 'amaranth' }, { themeFamily: 'amaranth' }],
+  [{ command: 'setThemeMode', mode: 'dark' }, { themeMode: 'dark' }],
+  [{ command: 'setThemeRandomBag', used: ['fern', 'github'] }, { themeRandomUsed: ['fern', 'github'] }],
+  [{ command: 'setLibraryState', projectPath: 'notes' }, { libraryProjectPath: 'notes' }],
+  [{ command: 'setLibraryLayout', closed: true, width: 320 }, { libraryClosed: true, libraryWidth: 320 }],
+];
+
+check('a site puts every choice a reader kept back on the page, and a storage that refuses leaves the defaults', () => {
+  const defaults = {
+    speedReaderEnabled: false,
+    codeIntelEnabled: false,
+    readingUnlocked: false,
+    codeUnlocked: false,
+    themeFamily: 'fern',
+    themeMode: 'system',
+    themeRandomUsed: [],
+    libraryProjectPath: '',
+    libraryClosed: false,
+    libraryWidth: 280,
+    // Nothing a site sends, so nothing the store carries: it has to come through untouched.
+    updateLastChecked: 0,
+  };
+  /** The store the site reads back, run the way the page runs it: a classic script, above everything, over the defaults the page was handed. */
+  const restore = (localStorage) => {
+    const sandbox = { __leafSettings: Object.assign({}, defaults), localStorage, JSON, Object, Array };
+    sandbox.window = sandbox;
+    const context = vm.createContext(sandbox);
+    new vm.Script(readFileSync(join(root, 'web/preview/settings.js'), 'utf8'), { filename: 'settings.js' }).runInContext(context);
+    return sandbox;
+  };
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  const kept = Object.assign({}, ...KEPT_CHOICES.map(([, keys]) => keys));
+  const back = restore({ getItem: () => JSON.stringify(kept), setItem() {} });
+  for (const [key, value] of Object.entries(kept)) {
+    if (!same(back.__leafSettings[key], value)) {
+      throw new Error(`${key} came back as ${JSON.stringify(back.__leafSettings[key])} rather than ${JSON.stringify(value)}`);
+    }
+  }
+  if (back.__leafSettings.updateLastChecked !== 0) throw new Error('a default the store says nothing about was lost');
+
+  // A store that refuses every touch — a browser with it turned off, or a page inside a frame that cannot reach it. The site reads on defaults rather than failing to boot, and a save is swallowed rather than thrown.
+  const refused = restore({
+    getItem() {
+      throw new Error('storage is not available');
+    },
+    setItem() {
+      throw new Error('storage is not available');
+    },
+  });
+  for (const [key, value] of Object.entries(defaults)) {
+    if (!same(refused.__leafSettings[key], value)) throw new Error(`a refused store lost the default for ${key}`);
+  }
+  refused.__leafSaveSettings({ themeMode: 'dark' });
+  if (refused.__leafSettings.themeMode !== 'dark') throw new Error('a choice made against a refused store did not even hold for this reading');
+
+  // A store holding something this version cannot read is the same case as no store at all.
+  const junk = restore({ getItem: () => '["not an object"]', setItem() {} });
+  if (junk.__leafSettings.themeFamily !== 'fern') throw new Error('a store holding the wrong shape overwrote the defaults');
+});
+
+checkSettled('each choice a site keeps is written by the one command that owns it', async () => {
+  const { context, send } = await bootWebHost();
+  const writes = [];
+  context.window.__leafSaveSettings = (changed) => writes.push(changed);
+  for (const [message, expected] of KEPT_CHOICES) {
+    writes.length = 0;
+    send(message);
+    await settle();
+    if (writes.length !== 1) throw new Error(`${message.command} wrote the store ${writes.length} times`);
+    if (JSON.stringify(writes[0]) !== JSON.stringify(expected)) {
+      throw new Error(`${message.command} wrote ${JSON.stringify(writes[0])} rather than ${JSON.stringify(expected)}`);
+    }
+  }
+});
+
+check("a published page fills its settings global above the page's own theme bootstrap, so a restored theme reaches the first paint", () => {
+  // The bootstrap's own source stands in, so what is being read is where the tag sits rather than what is inside it.
+  const page = sitePage(pageMarkup().replace('{{THEME_BOOTSTRAP_SCRIPT}}', 'window.__leafThemeResolved=1;'), 'window.__leafSettings={};');
+  const order = [
+    // The queue first: the theme bootstrap posts its random-theme draw, and without the stub already standing that message is lost.
+    'window.__leafPending',
+    'window.__leafSettings={}',
+    'window.__leafSite',
+    'assets/settings.js',
+    // Only then the paint.
+    'window.__leafThemeResolved',
+    // The app's own script, and the host's loader under it.
+    '{{APP_SCRIPT_URL}}',
+    'assets/boot.js',
+  ];
+  let at = -1;
+  for (const mark of order) {
+    const found = page.indexOf(mark);
+    if (found === -1) throw new Error(`the published page is missing ${mark}`);
+    if (found < at) throw new Error(`${mark} landed above something that has to come before it`);
+    at = found;
+  }
+  if (!page.includes(`content="${POLICY}"`)) throw new Error("the published page kept the desktop's own content policy");
+  // A page that stopped leading with its own bootstrap is refused rather than injected into the wrong place.
+  let refused = null;
+  try {
+    sitePage('<head><script src="elsewhere.js"></script></head><body></body>', 'x');
+  } catch (error) {
+    refused = error;
+  }
+  if (!refused) throw new Error('a page with no theme bootstrap to inject above was shaped anyway');
+});
+
+checkSettled("the trail's first word is the site's own name, and the desktop's word is untouched", async () => {
+  const site = await bootWebHost({ name: 'Emptyguru' });
+  await site.leaf.openAddress('README.md');
+  const payload = site.seen.folder[site.seen.folder.length - 1];
+  if (!payload || payload.rootName !== 'Emptyguru') {
+    throw new Error(`the pane was handed ${JSON.stringify(payload && payload.rootName)} as the name of its root`);
+  }
+  if (site.context.libraryRootLabel() !== 'Emptyguru') throw new Error(`a site's trail starts with ${site.context.libraryRootLabel()}`);
+  // And it reaches the trail itself, not only the label the trail asks.
+  if (site.context.crumbSegments([]).map((one) => one.name).join(',') !== 'Emptyguru') {
+    throw new Error('the name never reached the crumbs the trail is drawn from');
+  }
+
+  // A host that sends none — every desktop launch — keeps the word the app has always used.
+  const plain = await bootWebHost();
+  await plain.leaf.openAddress('README.md');
+  if (plain.context.libraryRootLabel() !== 'Library') throw new Error(`the desktop's trail now starts with ${plain.context.libraryRootLabel()}`);
+
+  // A vault still wins: on the desktop the root is the vault you are standing in.
+  plain.context.leafSetVaults({ vaults: [{ id: 4, name: 'Notes' }], active: 4 });
+  if (plain.context.libraryRootLabel() !== 'Notes') throw new Error('a vault stopped naming the root it is standing in');
+});
+
+checkSettled('a link to a folder opens its own page, or its first document when it has none', async () => {
+  // `notes` is listed with two before one, so the fallback proves it follows the listing's own order rather than sorting a fresh one — that order is the Previous/Next strip's, and the two must not disagree.
+  const { leaf, send, asked } = await bootWebHost({
+    documents: [
+      { path: 'README.md' },
+      { path: 'guide/README.md' },
+      { path: 'guide/deep.md' },
+      { path: 'notes/two.md' },
+      { path: 'notes/one.md' },
+    ],
+  });
+  await leaf.openAddress('README.md');
+  const at = () => {
+    const opened = asked.filter((one) => one.call === 'documentScript');
+    return opened.length ? opened[opened.length - 1].path : null;
+  };
+
+  send({ command: 'openLink', href: 'guide' });
+  await settle();
+  if (at() !== 'guide/README.md') throw new Error(`a folder with a page of its own opened ${at()}`);
+
+  send({ command: 'openLink', href: '../notes' });
+  await settle();
+  if (at() !== 'notes/two.md') throw new Error(`a folder with no page of its own opened ${at()} rather than the first document listed under it`);
+
+  // A folder that is not one still reports nothing rather than opening a neighbor whose name it is the start of.
+  const before = at();
+  send({ command: 'openLink', href: '../note' });
+  await settle();
+  if (at() !== before) throw new Error(`a link to nothing opened ${at()}`);
 });
 
 checkSettled('the browser host raises the glossary out of the text it was handed', async () => {
@@ -5100,4 +5525,4 @@ if (failures.length) {
   for (const failure of failures) console.error(`  - ${failure}`);
   process.exit(1);
 }
-console.log(`front-end: ${names.length} fragments parse, boot, and agree on edit offsets — and the browser's own host answers its five commands over a stand-in module`);
+console.log(`front-end: ${names.length} fragments parse, boot, and agree on edit offsets — and the browser's own host answers its ${webAnswered} commands over a stand-in module`);

@@ -77,7 +77,9 @@ try {
 // Leaftext's own stylesheet, straight out of the module: the themes, the tokens, the icons and the document rules.
 document.getElementById('leaf-styles').textContent = leaftext.styles;
 
-const documents = await (await fetch('/documents.json')).json();
+// The exported listing carries the site's name beside its documents; this page draws its own frame, so it wants only the list.
+const listing = await (await fetch('/documents.json')).json();
+const documents = listing.documents || listing;
 const known = new Set(documents.map((entry) => entry.path));
 const rows = new Map();
 

@@ -1,3 +1,8 @@
+// A published site draws no Back and no Forward: the browser has its own pair one row above them, and nothing on a site ever tells the page there is anywhere to go. Removed rather than hidden — a hidden button keeps its place in the tab order, keeps its listeners, and still cancels the mouse's own back gesture before sending a command no site host answers, which is the fault rather than a side effect of it. Above the references below, and above the bar's fold: the fold captures its candidates as it loads, and would otherwise move two buttons that are gone into the chevron menu the first time the bar folded.
+if (window.__leafSite) {
+  const historyActions = document.querySelector('.history-actions');
+  if (historyActions) historyActions.remove();
+}
 const app = document.getElementById('app');
 const appBar = document.getElementById('appBar');
 const appTrailing = document.querySelector('.app-trailing');

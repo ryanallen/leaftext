@@ -1089,9 +1089,9 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains("[{ path: '', name: libraryRootLabel() }]"));
     assert!(!html.contains("data-crumb-switcher"));
     assert!(!html.contains("library-crumb-switcher"));
-    // Its label is the vault's name, or the whole library's.
+    // Its label is the vault's name, the name a host gave the root — a published site sends its own folder's — or the whole library's.
     assert!(html.contains("function libraryRootLabel()"));
-    assert!(html.contains("return (vault && vault.name) || 'Library';"));
+    assert!(html.contains("return (vault && vault.name) || libraryRootName || 'Library';"));
 
     // The menu is the whole library, then every vault, then New vault…
     assert!(html.contains("function vaultMenuItems()"));

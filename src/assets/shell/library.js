@@ -1182,6 +1182,7 @@ window.leafSetLibraryFolder = (payload) => {
   libraryProjectPath = typeof next.path === 'string' ? next.path : '';
   libraryChain = Array.isArray(next.chain) ? next.chain : [];
   libraryEntries = Array.isArray(next.entries) ? next.entries : [];
+  libraryRootName = typeof next.rootName === 'string' ? next.rootName : '';
   // The trail changed, so it has to be laid out again.
   libraryCrumbFitKey = null;
   renderLibrary();

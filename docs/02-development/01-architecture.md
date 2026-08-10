@@ -268,7 +268,11 @@ A third build carries the app's own page and front end as well — `leaf_page`, 
 
 `just drive-web` presses things in it and reads the page back — the browser half of `just drive`, over the browser's own debugging port, no package added.
 
-`just export-web` writes a folder of documents out as one of those sites: page, front end, module, vendored runtimes, the document list and the documents. **Nothing serves it** — drop it on any static host. `just preview-web` exports and then serves that folder locally, only because a page cannot fetch its neighbors off `file://`; it serves nothing the export does not contain.
+`just export-web` writes a folder of documents out as one of those sites: page, front end, module, vendored runtimes, the settings script, the document list and the documents. **Nothing serves it** — drop it on any static host. `just preview-web` exports and then serves that folder locally, only because a page cannot fetch its neighbors off `file://`; it serves nothing the export does not contain.
+
+**The shape of that page is `scripts/web-page.mjs`'s, not the export's.** One function over the page and the boot script, so what is injected and in what order can be read back from the shipped file rather than inferred from a chain of string replacements. `window.__leafSite` is the one boolean saying this is a site, and the front end reshapes itself off it the way it reshapes off `window.__leafFrameless` in a frameless window: a site draws no Back, no Forward and no first-run bubble, because the browser has its own pair one row up and a reader who landed on a page has installed nothing. Everything injected goes immediately above the page's own theme bootstrap, which is its first script tag and the only one carrying no attributes — below it, a restored theme lands after the first paint and nothing re-applies one. A page that stops leading with that tag is refused rather than injected into the wrong place.
+
+**A site keeps a reader's choices; the desktop's page cannot.** `web/preview/settings.js` merges what the browser kept over the defaults the page was handed, and the host writes a key per command as it answers. The desktop's page is served on an opaque origin where `localStorage` throws, which is why its host injects settings instead — so this belongs beside the browser host and never in `src/assets/shell/`, which runs in both. A store that refuses the read, refuses the write, or holds a shape from another version leaves the site reading on defaults.
 
 ## The Windows EXE installer
 

@@ -681,6 +681,10 @@ function renderState() {
   if (homeSheetShowing) openHomeSheet(homeSheetShowing);
 }
 function renderNavigation() {
+  // A published site has no strip to draw a state on: see dom.js.
+  if (!backButton || !forwardButton) {
+    return;
+  }
   backButton.disabled = !navigationState.canGoBack;
   forwardButton.disabled = !navigationState.canGoForward;
 }

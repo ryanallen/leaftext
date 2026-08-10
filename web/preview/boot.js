@@ -4,9 +4,12 @@
 
 import { startLeaftext } from './host.js';
 
-const documents = await (await fetch('documents.json')).json();
+// The listing carries the site's own name beside its documents: the pane draws it as the trail's first word, where the desktop draws the vault it is standing in.
+const listing = await (await fetch('documents.json')).json();
+const documents = listing.documents || [];
 const leaf = await startLeaftext({
   documents,
+  name: listing.name || '',
   read: async (path) => (await fetch(`source/${path}`)).text(),
 });
 
@@ -16,10 +19,5 @@ if (glossary) leaf.core.setGlossary(await (await fetch(`source/${glossary.path}`
 
 leaf.showFolder('');
 
-const asked = decodeURIComponent(location.hash.slice(1));
-await leaf.openDocument(leaf.known.has(asked) ? asked : documents[0]?.path);
-
-addEventListener('hashchange', () => {
-  const wanted = decodeURIComponent(location.hash.slice(1));
-  if (leaf.known.has(wanted)) leaf.openDocument(wanted);
-});
+// The document the address names, or the first one. The host owns the address from here — it writes an entry per document opened and reads one back when the reader walks, so watching it here as well would be two things answering one Back.
+await leaf.openAddress(documents[0]?.path);

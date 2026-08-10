@@ -9,9 +9,10 @@
 
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
+import { sitePage } from './web-page.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'web', 'dist');
@@ -31,14 +32,6 @@ if (!existsSync(module_)) {
   console.error('the browser modules are not built yet — run: just build-web');
   process.exit(1);
 }
-
-// The page's own policy names the desktop's asset scheme and forbids WebAssembly, both of which are wrong for a static site: the assets sit beside the page and the renderer *is* WebAssembly.
-const POLICY =
-  "default-src 'self'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'";
-
-// The front end sends its first command while it boots, before a module script can have run. Keeping them is what stops the first paint being lost.
-const IPC_QUEUE =
-  '<script>window.__leafPending=[];window.ipc={postMessage:(m)=>window.__leafPending.push(m)};</script>';
 
 /** Every document under the folder, deepest last, labeled by something a person can pick from. */
 async function findDocuments(dir, base = dir, found = []) {
@@ -64,20 +57,16 @@ const documents = (await findDocuments(source)).sort(
 await rm(out, { recursive: true, force: true });
 await mkdir(join(out, 'assets'), { recursive: true });
 
-const page = leaf
-  .page()
-  .replace(/content="default-src[^"]*"/, `content="${POLICY}"`)
-  .replace('</head>', `${IPC_QUEUE}<script>${leaf.boot()}</script></head>`)
-  .replace('</body>', '<script type="module" src="assets/boot.js"></script></body>');
-
-await writeFile(join(out, 'index.html'), page);
+// Where each line lands in the head is the load-bearing part — see `scripts/web-page.mjs`, which is where it is held and tested.
+await writeFile(join(out, 'index.html'), sitePage(leaf.page(), leaf.boot()));
 await writeFile(join(out, 'assets', 'app.js'), leaf.script());
 await writeFile(join(out, 'assets', 'app.css'), leaf.styles());
-await writeFile(join(out, 'documents.json'), JSON.stringify(documents));
+// The site's own name beside the list rather than inside it: the pane's trail reads it as its first word, where the desktop reads the vault it is standing in or the app's own word. Rewritten on every run and read only by the page beside it, so no published copy is left behind by the shape.
+await writeFile(join(out, 'documents.json'), JSON.stringify({ name: basename(source), documents }));
 await cp(module_, join(out, 'assets', 'leaftext.wasm'));
 
-// The page's own host, and the loader under it.
-for (const name of ['boot.js', 'host.js']) {
+// The page's own host, the loader under it, and the store the reader's choices are kept in.
+for (const name of ['boot.js', 'host.js', 'settings.js']) {
   await cp(join(root, 'web', 'preview', name), join(out, 'assets', name));
 }
 

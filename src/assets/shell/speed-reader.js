@@ -189,10 +189,10 @@ function activeVault() {
   if (!activeVaultId) return null;
   return leafVaults.find((vault) => vault && vault.id === activeVaultId) || null;
 }
-// What the leftmost crumb reads: the vault's name, or the whole library's label.
+// What the leftmost crumb reads: the vault's name, the name the host gave the root, or the whole library's label. A vault wins because on the desktop the root is the vault you are standing in.
 function libraryRootLabel() {
   const vault = activeVault();
-  return (vault && vault.name) || 'Library';
+  return (vault && vault.name) || libraryRootName || 'Library';
 }
 // The folder the pane is inside ('' is the root); the breadcrumb is this path.
 let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';

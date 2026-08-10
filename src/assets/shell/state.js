@@ -23,6 +23,11 @@ function leafClampToApp(x, y, width, height, margin) {
   };
 }
 
+// ---- what the pane's trail calls its root (library.js, speed-reader.js) ----
+
+// The name the host gives the whole root. A published site sends its own, because a site is one folder and that folder has a name; the desktop sends none, where the leftmost crumb is the vault you are standing in or the word for the whole library. Written by the folder payload in library.js, read by libraryRootLabel() in speed-reader.js.
+let libraryRootName = '';
+
 // ---- the platform (context-menu.js, glossary.js) ---------------------------
 
 // Which gesture belongs to which key: Ctrl+click is the right-click on a Mac, so the open-in-a-new-page modifier there is Cmd. Read by the menu and by the document-link handler that picks the modifier.

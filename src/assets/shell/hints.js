@@ -11,6 +11,8 @@ const HINT_SIDES = ['right', 'left', 'above', 'below'];
 const HINT_TAIL_INSET = 18;
 // Read straight off the injected global rather than settings.js's copy: that fragment loads after this one, so its const is still in its dead zone here.
 const HINT_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
+// A published site draws none of these. A hint is a once-per-install promise — drawn to be met and then never again, counted in launches of an app somebody installed — and a reader landing on one page of a site has installed nothing. So nothing registers, no pass runs, and no launch is ever spent.
+const HINTS_OFF = !!window.__leafSite;
 const hintRegistry = new Map();
 // Launches that had a hint to draw, the names already met, and the launch the last bubble showed at. The host owns all three across restarts; they are read once here and reported back together whenever one changes.
 let hintLaunches = Number(HINT_SETTINGS.hintLaunches) || 0;
@@ -29,6 +31,7 @@ function saveHintState() {
 
 // `target` is a function, so a control that comes and goes is looked up at the moment of showing rather than at the moment of registering.
 function registerHint(name, target, text) {
+  if (HINTS_OFF) return;
   hintRegistry.set(name, { name, target, text });
 }
 
@@ -155,6 +158,7 @@ function hintLaunchIsQuiet(launch) {
 
 // The whole pass, run once at boot: pick the hint, and spend the launch only if there was something to point at. A quiet launch still spends one — it is the rest, not a launch that did not happen.
 function runHintPass() {
+  if (HINTS_OFF) return;
   const hint = nextHint();
   if (!hint) return;
   const target = hintTarget(hint);
