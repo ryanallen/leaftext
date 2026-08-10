@@ -3,11 +3,11 @@
 //
 //   node scripts/check-plan.mjs   fail on a running order that has stopped ranking every live ticket
 //
-// Seven rules, every one arithmetic. Whether a row is ranked well is the ranker's judgment and no script's.
+// Eight rules, every one arithmetic. Whether a row is ranked well is the ranker's judgment and no script's.
 //
 // Size is not a test: a band holding most of the rows is what a tree of mostly-features looks like, and no count makes a definition wrong. What makes one wrong is asking for two unrelated things at once, or asking for something no row can satisfy — read the words of a definition, never the count under it.
 //
-// So the only thing size buys here is a landmark: a band over half the file carries a sub-band heading and every row in it sits under one, which refuses a long run nobody can find a place in without refusing a long band that has one.
+// So the only thing size buys here is a landmark. A band is ordered cheapest first, so its sub-bands say how expensive the run under each one is, counted in the `### Phase` headings of the ticket — or of the run the `Ticket` cell names, where it names one. A band over half the file whose rows are not all the same size carries them, and every row sits under the heading its own count names, or under its blocker's where that is dearer.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -67,6 +67,22 @@ function planRows(text) {
     });
   }
   return rows;
+}
+
+// A band is ordered cheapest first, so its sub-bands are cost. The boundaries are the counts themselves — nothing here is measured in time.
+const SUB_BANDS = [
+  { name: 'One or two phases', upto: 2 },
+  { name: 'Three or four phases', upto: 4 },
+  { name: 'Five phases or more', upto: Infinity },
+];
+
+// `[table-editing](...) **phases 1–4**` ranks a run rather than the whole file, so the run is what the row costs.
+const RUN = /\*\*phases?\s+(\d+)(?:\s*[–—-]\s*(\d+))?\*\*/;
+
+function phaseCount(row, tree) {
+  const run = RUN.exec(row.shown);
+  if (run) return Number(run[2] ?? run[1]) - Number(run[1]) + 1;
+  return tree.phases.get(row.ticket) ?? null;
 }
 
 function count(text, label) {
@@ -139,7 +155,32 @@ function shapeProblems(text, tree) {
     }
   }
 
-  // A band over half the file is a run nobody can find a place in, so it carries a sub-band heading and every row sits under one. An empty heading cannot satisfy it.
+  // Which sub-band each row belongs in. Blockers sit above, so one pass down the positions is enough to carry a lift.
+  const want = new Map();
+  const ordered = rows.filter((r) => r.ticket !== null && tree.live.has(r.ticket)).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  for (const row of ordered) {
+    const count = phaseCount(row, tree);
+    if (count === null) {
+      say('phases', row.ticket, `${row.ticket} has no \`### Phase\` heading, so there is nothing to size its row by`);
+      continue;
+    }
+    let band = SUB_BANDS.findIndex((b) => count <= b.upto);
+    for (const blocker of row.blockers) {
+      const behind = want.get(blocker);
+      if (behind !== undefined && behind > band) band = behind;
+    }
+    want.set(row.ticket, band);
+  }
+
+  for (const row of ordered) {
+    const band = want.get(row.ticket);
+    if (band === undefined || row.sub === null) continue;
+    if (row.sub !== SUB_BANDS[band].name) {
+      say('sub-band', row.ticket, `position ${row.position} sits under "${row.sub}", and what its phases name is "${SUB_BANDS[band].name}"`);
+    }
+  }
+
+  // A band over half the file, holding rows of more than one size, is a run nobody can find a place in — so it carries the headings. A band of one size has nothing to cut.
   const bands = new Map();
   for (const row of rows) {
     if (!bands.has(row.tier)) bands.set(row.tier, []);
@@ -147,12 +188,11 @@ function shapeProblems(text, tree) {
   }
   for (const [tier, band] of bands) {
     if (band.length * 2 <= rows.length) continue;
-    // A sub-band is written only where the band holds both kinds of row, so a band nobody can cut is not asked to carry one.
-    const waiting = band.filter((r) => r.blockers.length).length;
-    if (waiting === 0 || waiting === band.length) continue;
+    const sizes = new Set(band.map((r) => want.get(r.ticket)).filter((b) => b !== undefined));
+    if (sizes.size < 2) continue;
     const loose = band.filter((r) => r.sub === null);
     if (loose.length === band.length) {
-      say('sub-band', tier, `tier ${tier} holds ${band.length} of the ${rows.length} rows and carries no sub-band heading, so it is one run with no landmark in it`);
+      say('sub-band', tier, `tier ${tier} holds ${band.length} of the ${rows.length} rows in ${sizes.size} sizes and carries no sub-band heading, so it is one run with no landmark in it`);
     } else if (loose.length) {
       say('sub-band', tier, `tier ${tier} holds ${band.length} of the ${rows.length} rows and ${loose.length} of them sit above its first sub-band heading`);
     }
@@ -175,8 +215,14 @@ function shapeProblems(text, tree) {
 // Every refusal is proved on made-up files before the real one is opened. Each case is a fault that has happened.
 const TABLE = '| # | Ticket | Status | Depends on | Why here |\n|---|---|---|---|---|\n';
 
-function tree(live, retired = 0, turnedDown = 0) {
-  return { live: new Set(live), retired, turnedDown };
+// `phases` is what the real run reads off each ticket. Left out, every ticket is three phases, which is the middle sub-band and the tree's own commonest row.
+function tree(live, retired = 0, turnedDown = 0, phases = null) {
+  const counts = new Map();
+  for (const path of live) {
+    const n = phases ? phases[path] : 3;
+    if (n) counts.set(path, n);
+  }
+  return { live: new Set(live), retired, turnedDown, phases: counts };
 }
 
 // `plan(t, [3, row, row], ...)` — one entry per tier heading, each with its rows. An entry starting `###` is a sub-band heading, and the rows after it get their own table. The foot is written from the tree, so only a case testing the counts has to disagree with it.
@@ -212,12 +258,36 @@ const FEATURE_ROW = '| 1 | [g](features/b/g.md) | Ready | — | not built yet |'
 
 const MIXED = tree(['fixes/a/f.md', 'refactor/b/two.md']);
 
-const STARTABLE = '### Can be started today';
-const WAITING = '### Waiting on a row above';
-const TRIO = tree(['refactor/a/one.md', 'refactor/b/two.md', 'refactor/c/three.md']);
-const THREE_BEHIND = '| 3 | [three](refactor/c/three.md) | Ready | [one](refactor/a/one.md) | third |';
-const QUAD = tree(['refactor/a/one.md', 'refactor/b/two.md', 'refactor/c/three.md', 'refactor/d/four.md']);
+const SMALL_HEAD = `### ${SUB_BANDS[0].name}`;
+const MID_HEAD = `### ${SUB_BANDS[1].name}`;
+const BIG_HEAD = `### ${SUB_BANDS[2].name}`;
+
+const THREE = '| 3 | [three](refactor/c/three.md) | Ready | — | third |';
+// One row of each size, so the band spans all three sub-bands.
+const SIZES = tree(['refactor/a/one.md', 'refactor/b/two.md', 'refactor/c/three.md'], 0, 0, {
+  'refactor/a/one.md': 1,
+  'refactor/b/two.md': 3,
+  'refactor/c/three.md': 7,
+});
+const NO_PHASES = tree(['refactor/a/one.md'], 0, 0, {});
+const QUAD = tree(['refactor/a/one.md', 'refactor/b/two.md', 'refactor/c/three.md', 'refactor/d/four.md'], 0, 0, {
+  'refactor/a/one.md': 1,
+  'refactor/b/two.md': 3,
+  'refactor/c/three.md': 7,
+  'refactor/d/four.md': 3,
+});
 const FOUR = '| 4 | [four](refactor/d/four.md) | Ready | — | fourth |';
+
+// A one-phase row behind a seven-phase one: it belongs under its blocker's heading, not its own.
+const BEHIND = tree(['refactor/a/big.md', 'refactor/b/small.md'], 0, 0, {
+  'refactor/a/big.md': 7,
+  'refactor/b/small.md': 1,
+});
+const BIG_ROW = '| 1 | [big](refactor/a/big.md) | Ready | — | first |';
+const SMALL_BEHIND = '| 2 | [small](refactor/b/small.md) | Ready | [big](refactor/a/big.md) | second |';
+
+const RUN_ONLY = tree(['refactor/a/big.md'], 0, 0, { 'refactor/a/big.md': 7 });
+const RUN_ROW = '| 1 | [big](refactor/a/big.md) **phases 1–4** | Ready | — | first |';
 
 // Each case wants the rules that fire and what each one names, so a rule firing on the wrong row is a failure.
 const CASES = [
@@ -234,22 +304,34 @@ const CASES = [
     PAIR, ['position 2', 'position 3']],
   ['a count that disagrees with the tree is refused',
     plan(PAIR, [1, ONE], [3, TWO]).replace('Live: 2', 'Live: 3'), PAIR, ['count Live']],
-  ['a row above what it waits on is refused, sub-band headings and all',
-    plan(PAIR, [3, STARTABLE, '| 1 | [one](refactor/a/one.md) | Ready | [two](refactor/b/two.md) | first |', WAITING, TWO]),
+  ['a row above what it waits on is refused, sub-band heading and all',
+    plan(PAIR, [3, MID_HEAD, '| 1 | [one](refactor/a/one.md) | Ready | [two](refactor/b/two.md) | first |', TWO]),
     PAIR, ['depends refactor/b/two.md']],
-  ['the same pair the other way round, each under its own sub-band heading, passes — so a row under a `###` line is still read',
-    plan(PAIR, [3, STARTABLE, '| 1 | [two](refactor/b/two.md) | Ready | — | first |', WAITING, '| 2 | [one](refactor/a/one.md) | Ready | [two](refactor/b/two.md) | second |']),
+  ['the same pair the other way round, under a sub-band heading, passes — so a row under a `###` line is still read',
+    plan(PAIR, [3, MID_HEAD, '| 1 | [two](refactor/b/two.md) | Ready | — | first |', '| 2 | [one](refactor/a/one.md) | Ready | [two](refactor/b/two.md) | second |']),
     PAIR, []],
-  ['a band holding most of the file, with both kinds of row and no sub-band heading, is refused',
-    plan(TRIO, [3, ONE, TWO, THREE_BEHIND]), TRIO, ['sub-band 3']],
-  ['the same band with every row under a sub-band heading passes',
-    plan(TRIO, [3, STARTABLE, ONE, TWO, WAITING, THREE_BEHIND]), TRIO, []],
+  ['a band holding most of the file, in three sizes and with no sub-band heading, is refused',
+    plan(SIZES, [3, ONE, TWO, THREE]), SIZES, ['sub-band 3']],
+  ['the same rows, each under the heading its phases name, pass',
+    plan(SIZES, [3, SMALL_HEAD, ONE, MID_HEAD, TWO, BIG_HEAD, THREE]), SIZES, []],
+  ['a row under the wrong sub-band heading is refused, and named',
+    plan(SIZES, [3, SMALL_HEAD, ONE, TWO, BIG_HEAD, THREE]), SIZES, ['sub-band refactor/b/two.md']],
   ['a sub-band heading with a row left above it is refused',
-    plan(TRIO, [3, ONE, STARTABLE, TWO, WAITING, THREE_BEHIND]), TRIO, ['sub-band 3']],
-  ['a band under half the file needs no sub-band heading',
-    plan(QUAD, [1, ONE, TWO], [3, THREE_BEHIND, FOUR]), QUAD, []],
-  ['a band holding most of the file whose every row can be started needs none either',
-    plan(TRIO, [3, ONE, TWO, '| 3 | [three](refactor/c/three.md) | Ready | — | third |']), TRIO, []],
+    plan(SIZES, [3, ONE, MID_HEAD, TWO, BIG_HEAD, THREE]), SIZES, ['sub-band 3']],
+  ['a band under half the file needs no sub-band heading, however many sizes it holds',
+    plan(QUAD, [1, ONE, TWO], [3, THREE, FOUR]), QUAD, []],
+  ['a band holding most of the file, every row the same size, needs none either',
+    plan(PAIR, [3, ONE, TWO]), PAIR, []],
+  ['a small row behind a big one belongs under its blocker\'s heading',
+    plan(BEHIND, [3, BIG_HEAD, BIG_ROW, SMALL_BEHIND]), BEHIND, []],
+  ['the same row under the heading its own phases name is refused',
+    plan(BEHIND, [3, BIG_HEAD, BIG_ROW, SMALL_HEAD, SMALL_BEHIND]), BEHIND, ['sub-band refactor/b/small.md']],
+  ['a run named in the Ticket cell is counted rather than the whole file',
+    plan(RUN_ONLY, [3, MID_HEAD, RUN_ROW]), RUN_ONLY, []],
+  ['the same row placed by the whole file it comes from is refused',
+    plan(RUN_ONLY, [3, BIG_HEAD, RUN_ROW]), RUN_ONLY, ['sub-band refactor/a/big.md']],
+  ['a ticket with no phase heading is refused rather than read as the cheapest thing in the tree',
+    plan(NO_PHASES, [3, ONE]), NO_PHASES, ['phases refactor/a/one.md']],
   ['a wait on a ticket that has shipped is refused',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) | Ready | [gone](done/app/gone.md) | first |'], [3, TWO]),
     PAIR, ['depends done/app/gone.md']],
@@ -321,8 +403,15 @@ const retired = readFileSync(join(plans, 'done', 'PLAN.md'), 'utf8')
 // `canceled/` holds that folder's own ranking file as well as the refused plans.
 const turnedDown = markdown(join(plans, 'canceled'), plans).filter((f) => f !== 'canceled/PLAN.md').length;
 
+// What a row costs: the slices its ticket ships in.
+const phases = new Map();
+for (const ticket of live) {
+  const found = readFileSync(join(plans, ticket), 'utf8').match(/^###\s+Phase\b/gm);
+  if (found) phases.set(ticket, found.length);
+}
+
 const text = readFileSync(join(plans, 'PLAN.md'), 'utf8');
-const problems = shapeProblems(text, { live, retired, turnedDown });
+const problems = shapeProblems(text, { live, retired, turnedDown, phases });
 
 if (problems.length) {
   console.error('the running order has stopped ranking every live ticket:');
@@ -332,4 +421,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`plan: ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, no band over half the file without a sub-band heading over every row in it, every fix in tier 1 and no feature in it`);
+console.log(`plan: ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every row under the sub-band heading its phases name, every fix in tier 1 and no feature in it`);

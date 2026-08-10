@@ -66,11 +66,19 @@ Tier 0 comes first, because the list is only as good as the statuses under it. *
 
 **No row sits in a tier above its own blocker.** It is the one rule that outranks the three tests: a shared piece behind a big swing goes with the swing, and a one-line row behind one stays behind it, because a row somebody cannot start is worse than a row somebody has to scroll to.
 
-**A long band is cut into two sub-bands: *Can be started today* and *Waiting on a row above*.** The test is the `Depends on` cell — whether it names a live ticket — so the cut is read off a column the ranking already keeps rather than judged. Blocked rows group at the foot of the band they are in, which can only move them further below what they wait on.
+**A long band is cut into sub-bands on cost**, because the band is already ordered cheapest first and the reader's question is how big the run under a heading is. A row's cost is the number of `### Phase` headings in its ticket — the slices it ships in — or, where the `Ticket` cell ranks a named run (`**phases 1–4**`, `**phase 1**`), the length of that run.
 
-- **A `###` heading, never a numbered band.** The number on a band says which of the three tests placed the row, and waiting on a row above is not one of them — it is the blocker rule, stated once above. A fourth thing inside a numbering that means one thing is how the tiers emptied the first time. Each sub-band gets its own table; [positions](../../../../docs/GLOSSARY.md#position) run straight through, because a sub-band holds none of its own.
-- **A sub-band with no rows is not written**, the way a tier with no rows is deleted heading and all — so a band whose every row can be started carries neither heading.
-- **A band over half the file, holding rows of both kinds, must be cut.** `scripts/check-plan.mjs` refuses one that is not, and refuses a row left above the first heading; it does not read the heading names, so which sub-band a row belongs under is this pass's judgment the same as which band is.
+| Sub-band | Phases |
+| --- | --- |
+| `### One or two phases` | 1–2 |
+| `### Three or four phases` | 3–4 |
+| `### Five phases or more` | 5 and up |
+
+- **A blocked row sits in its blocker's sub-band where that is the dearer of the two.** The blocker rule, one level down: a one-phase row behind an eight-phase one is not something anybody picks up cheaply.
+- **A `###` heading, never a numbered band.** The number on a band says which of the three tests placed the row, and cost is the test that never moves a row between bands. Each sub-band gets its own table; [positions](../../../../docs/GLOSSARY.md#position) run straight through, because a sub-band holds none of its own.
+- **A sub-band with no rows is not written**, the way a tier with no rows is deleted heading and all.
+- **Inside a sub-band, cheapest first as everywhere else**, except that a row never precedes what it waits on.
+- **A band over half the file, holding rows of more than one size, must be cut.** `scripts/check-plan.mjs` counts the phases itself: it refuses a band that should be cut and is not, a row left above the first heading, and a row under a heading its count does not name.
 
 **Inside tier 1, what stops somebody using the app comes before what looks wrong.** A machine that cannot install it outranks a shadow drawn the wrong way however the two compare on cost.
 
@@ -87,11 +95,11 @@ It opens with the first work table. Title, counts and anything off the list go a
 
 ## Tier 3 — the features people would name, cheapest first
 
-### Can be started today
+### One or two phases
 
 | # | Ticket | Status | Depends on | Why here |
 
-### Waiting on a row above
+### Three or four phases
 
 | # | Ticket | Status | Depends on | Why here |
 ```
