@@ -3,9 +3,11 @@
 //
 //   node scripts/check-plan.mjs   fail on a running order that has stopped ranking every live ticket
 //
-// Six rules, every one arithmetic. Whether a row is ranked well is the ranker's judgment and no script's.
+// Seven rules, every one arithmetic. Whether a row is ranked well is the ranker's judgment and no script's.
 //
-// Size is deliberately not a rule: tier 3 holding most of the rows is the healthy shape. What went wrong was tiers sitting empty.
+// Size is not a test: a band holding most of the rows is what a tree of mostly-features looks like, and no count makes a definition wrong. What makes one wrong is asking for two unrelated things at once, or asking for something no row can satisfy — read the words of a definition, never the count under it.
+//
+// So the only thing size buys here is a landmark: a band over half the file carries a sub-band heading and every row in it sits under one, which refuses a long run nobody can find a place in without refusing a long band that has one.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -27,16 +29,25 @@ function links(cell) {
 function planRows(text) {
   const rows = [];
   let tier = null;
+  // A `###` line is a sub-band: it groups rows inside the band it sits in and carries no position of its own.
+  let sub = null;
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     const heading = /^##(?!#)\s+Tier\s+(\d+)\b/.exec(line);
     if (heading) {
       tier = Number(heading[1]);
+      sub = null;
       continue;
     }
     if (/^##(?!#)\s/.test(line)) {
       tier = null;
+      sub = null;
+      continue;
+    }
+    const subHeading = /^###\s+(.+)$/.exec(line);
+    if (subHeading) {
+      sub = subHeading[1].trim();
       continue;
     }
     if (tier === null || !line.startsWith('|')) continue;
@@ -47,6 +58,7 @@ function planRows(text) {
     rows.push({
       line: i + 1,
       tier,
+      sub,
       position: /^\d+$/.test(cells[0]) ? Number(cells[0]) : null,
       // The first link only: a `Ticket` cell can carry words after it, and a `Why here` cell links neighbors.
       ticket: links(cells[1])[0] ?? null,
@@ -127,6 +139,25 @@ function shapeProblems(text, tree) {
     }
   }
 
+  // A band over half the file is a run nobody can find a place in, so it carries a sub-band heading and every row sits under one. An empty heading cannot satisfy it.
+  const bands = new Map();
+  for (const row of rows) {
+    if (!bands.has(row.tier)) bands.set(row.tier, []);
+    bands.get(row.tier).push(row);
+  }
+  for (const [tier, band] of bands) {
+    if (band.length * 2 <= rows.length) continue;
+    // A sub-band is written only where the band holds both kinds of row, so a band nobody can cut is not asked to carry one.
+    const waiting = band.filter((r) => r.blockers.length).length;
+    if (waiting === 0 || waiting === band.length) continue;
+    const loose = band.filter((r) => r.sub === null);
+    if (loose.length === band.length) {
+      say('sub-band', tier, `tier ${tier} holds ${band.length} of the ${rows.length} rows and carries no sub-band heading, so it is one run with no landmark in it`);
+    } else if (loose.length) {
+      say('sub-band', tier, `tier ${tier} holds ${band.length} of the ${rows.length} rows and ${loose.length} of them sit above its first sub-band heading`);
+    }
+  }
+
   // The folder is the one claim about a ticket a script can read. Tier 0 is allowed because it sits above tier 1.
   for (const row of rows) {
     if (row.ticket === null) continue;
@@ -148,9 +179,26 @@ function tree(live, retired = 0, turnedDown = 0) {
   return { live: new Set(live), retired, turnedDown };
 }
 
-// `plan(t, [3, row, row], ...)` — one entry per tier heading, each with its rows. The foot is written from the tree, so only a case testing the counts has to disagree with it.
+// `plan(t, [3, row, row], ...)` — one entry per tier heading, each with its rows. An entry starting `###` is a sub-band heading, and the rows after it get their own table. The foot is written from the tree, so only a case testing the counts has to disagree with it.
 function plan(t, ...tiers) {
-  const bands = tiers.map(([n, ...rows]) => `## Tier ${n} — a band\n\n${TABLE}${rows.join('\n')}\n`);
+  const bands = tiers.map(([n, ...items]) => {
+    let out = `## Tier ${n} — a band\n\n`;
+    let open = false;
+    for (const item of items) {
+      if (item.startsWith('###')) {
+        out += `${item}\n\n`;
+        open = false;
+        continue;
+      }
+      if (!open) {
+        out += TABLE;
+        open = true;
+      }
+      out += `${item}\n`;
+    }
+    if (!open) out += TABLE;
+    return out;
+  });
   return `${bands.join('\n')}\n## Off the list\n\n**Last ranked 9 August 2026.** Live: ${t.live.size}. Retired: ${t.retired}. Turned down: ${t.turnedDown}.\n`;
 }
 
@@ -163,6 +211,13 @@ const FEATURE = tree(['features/b/g.md']);
 const FEATURE_ROW = '| 1 | [g](features/b/g.md) | Ready | — | not built yet |';
 
 const MIXED = tree(['fixes/a/f.md', 'refactor/b/two.md']);
+
+const STARTABLE = '### Can be started today';
+const WAITING = '### Waiting on a row above';
+const TRIO = tree(['refactor/a/one.md', 'refactor/b/two.md', 'refactor/c/three.md']);
+const THREE_BEHIND = '| 3 | [three](refactor/c/three.md) | Ready | [one](refactor/a/one.md) | third |';
+const QUAD = tree(['refactor/a/one.md', 'refactor/b/two.md', 'refactor/c/three.md', 'refactor/d/four.md']);
+const FOUR = '| 4 | [four](refactor/d/four.md) | Ready | — | fourth |';
 
 // Each case wants the rules that fire and what each one names, so a rule firing on the wrong row is a failure.
 const CASES = [
@@ -179,12 +234,22 @@ const CASES = [
     PAIR, ['position 2', 'position 3']],
   ['a count that disagrees with the tree is refused',
     plan(PAIR, [1, ONE], [3, TWO]).replace('Live: 2', 'Live: 3'), PAIR, ['count Live']],
-  ['a row above what it waits on is refused',
-    plan(PAIR, [3, '| 1 | [one](refactor/a/one.md) | Ready | [two](refactor/b/two.md) | first |', TWO]),
+  ['a row above what it waits on is refused, sub-band headings and all',
+    plan(PAIR, [3, STARTABLE, '| 1 | [one](refactor/a/one.md) | Ready | [two](refactor/b/two.md) | first |', WAITING, TWO]),
     PAIR, ['depends refactor/b/two.md']],
-  ['the same pair the other way round passes',
-    plan(PAIR, [3, '| 1 | [two](refactor/b/two.md) | Ready | — | first |', '| 2 | [one](refactor/a/one.md) | Ready | [two](refactor/b/two.md) | second |']),
+  ['the same pair the other way round, each under its own sub-band heading, passes — so a row under a `###` line is still read',
+    plan(PAIR, [3, STARTABLE, '| 1 | [two](refactor/b/two.md) | Ready | — | first |', WAITING, '| 2 | [one](refactor/a/one.md) | Ready | [two](refactor/b/two.md) | second |']),
     PAIR, []],
+  ['a band holding most of the file, with both kinds of row and no sub-band heading, is refused',
+    plan(TRIO, [3, ONE, TWO, THREE_BEHIND]), TRIO, ['sub-band 3']],
+  ['the same band with every row under a sub-band heading passes',
+    plan(TRIO, [3, STARTABLE, ONE, TWO, WAITING, THREE_BEHIND]), TRIO, []],
+  ['a sub-band heading with a row left above it is refused',
+    plan(TRIO, [3, ONE, STARTABLE, TWO, WAITING, THREE_BEHIND]), TRIO, ['sub-band 3']],
+  ['a band under half the file needs no sub-band heading',
+    plan(QUAD, [1, ONE, TWO], [3, THREE_BEHIND, FOUR]), QUAD, []],
+  ['a band holding most of the file whose every row can be started needs none either',
+    plan(TRIO, [3, ONE, TWO, '| 3 | [three](refactor/c/three.md) | Ready | — | third |']), TRIO, []],
   ['a wait on a ticket that has shipped is refused',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) | Ready | [gone](done/app/gone.md) | first |'], [3, TWO]),
     PAIR, ['depends done/app/gone.md']],
@@ -267,4 +332,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`plan: ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every fix in tier 1 and no feature in it`);
+console.log(`plan: ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, no band over half the file without a sub-band heading over every row in it, every fix in tier 1 and no feature in it`);
