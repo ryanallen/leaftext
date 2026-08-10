@@ -15,11 +15,17 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { sessionOf, sessionTag, sweep } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /// Deleted and rewritten on every message. Temp on purpose: a record kept in the repo would be read back into a context window turn after turn.
-export const RECORD = join(tmpdir(), 'leaftext-keycode.json');
+///
+/// One file per session, because two agents share this machine: a message in one used to clear what the other had already reported, and hold it at the end of its turn for codes it did give. With no session id to be found this is the one file it always was, where the worst that happens is being asked again for a code already given.
+export function recordPath(session) {
+  const tag = sessionTag(session ?? sessionOf(''));
+  return join(tmpdir(), tag ? `leaftext-keycode-${tag}.json` : 'leaftext-keycode.json');
+}
 
 /// The rule file, required on every message that is not a host command.
 export const ALWAYS = 'AGENTS.md';
@@ -58,22 +64,24 @@ export function requiredFor(prompt) {
   return required;
 }
 
-/// Start a turn: forget the last one, and write down what this one owes.
-export function open(required) {
-  mkdirSync(dirname(RECORD), { recursive: true });
-  writeFileSync(RECORD, JSON.stringify({ required, reported: {} }) + '\n');
+/// Start a turn: forget the last one in this session, and write down what this one owes. The other session's record is left alone, and every other session's is swept once it is a day old — one file per session is a folder that grows otherwise.
+export function open(required, session) {
+  const record = recordPath(session);
+  mkdirSync(dirname(record), { recursive: true });
+  writeFileSync(record, JSON.stringify({ required, reported: {} }) + '\n');
+  sweep(tmpdir(), 'leaftext-keycode-');
 }
 
-export function read() {
+export function read(session) {
   try {
-    return JSON.parse(readFileSync(RECORD, 'utf8'));
+    return JSON.parse(readFileSync(recordPath(session), 'utf8'));
   } catch {
     return null;
   }
 }
 
-export function close() {
-  rmSync(RECORD, { force: true });
+export function close(session) {
+  rmSync(recordPath(session), { force: true });
 }
 
 /// Every file still owed, and every one reported with the wrong code.
@@ -106,7 +114,7 @@ function report(file, code) {
     process.exit(1);
   }
   record.reported = { ...record.reported, [file]: code };
-  writeFileSync(RECORD, JSON.stringify(record) + '\n');
+  writeFileSync(recordPath(), JSON.stringify(record) + '\n');
   const left = outstanding(record);
   console.log(left.length ? `${file}: ok. Still owed: ${left.length}` : `${file}: ok. Nothing owed.`);
 }
@@ -130,22 +138,42 @@ function selfTest() {
   if (codeIn('no code here') !== null) fails.push('codeIn: invented a code');
 
   // The whole cycle, because the part that would hurt is a turn that owes nothing by accident.
-  const kept = existsSync(RECORD) ? readFileSync(RECORD, 'utf8') : null;
+  const kept = existsSync(recordPath()) ? readFileSync(recordPath(), 'utf8') : null;
   try {
     open([ALWAYS]);
     if (outstanding(read()).length !== 1) fails.push('a fresh turn owed nothing');
     const record = read();
     record.reported = { [ALWAYS]: 'LEAF-WRONG' };
-    writeFileSync(RECORD, JSON.stringify(record) + '\n');
+    writeFileSync(recordPath(), JSON.stringify(record) + '\n');
     if (!outstanding(read())[0]?.includes('not its keycode')) fails.push('a wrong code was accepted');
     record.reported = { [ALWAYS]: codeOf(ALWAYS) };
-    writeFileSync(RECORD, JSON.stringify(record) + '\n');
+    writeFileSync(recordPath(), JSON.stringify(record) + '\n');
     if (outstanding(read()).length) fails.push('the right code was refused');
     close();
     if (outstanding(read()).length) fails.push('a closed turn still owes something');
   } finally {
     if (kept === null) close();
-    else writeFileSync(RECORD, kept);
+    else writeFileSync(recordPath(), kept);
+  }
+
+  // The same cycle twice over, under two session ids. A second agent starting a message used to wipe what the first had already reported, and the first was then held at the end of its turn for codes it did give.
+  const ONE = 'aaaaaaaa-1111-1111-1111-111111111111';
+  const TWO = 'bbbbbbbb-2222-2222-2222-222222222222';
+  if (recordPath(ONE) === recordPath(TWO)) fails.push('two sessions share one record file');
+  if (!recordPath('').endsWith('leaftext-keycode.json')) fails.push('no session id did not fall back to the one file');
+  try {
+    open([ALWAYS], ONE);
+    const mine = read(ONE);
+    mine.reported = { [ALWAYS]: codeOf(ALWAYS) };
+    writeFileSync(recordPath(ONE), JSON.stringify(mine) + '\n');
+    open([ALWAYS], TWO);
+    if (outstanding(read(ONE)).length) fails.push("a message in one session cleared the other's reported codes");
+    if (outstanding(read(TWO)).length !== 1) fails.push('a fresh turn in the second session owed nothing');
+    close(TWO);
+    if (outstanding(read(ONE)).length) fails.push("one session ending its turn took the other's record");
+  } finally {
+    close(ONE);
+    close(TWO);
   }
 
   if (fails.length) {

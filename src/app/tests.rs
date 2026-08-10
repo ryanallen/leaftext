@@ -186,7 +186,7 @@ fn content_hash_distinguishes_changed_documents() {
 
 #[test]
 fn watch_dir_for_uses_the_documents_parent_directory() {
-    let dir = std::env::temp_dir().join("leaf-watch-dir-fixture");
+    let dir = std::env::temp_dir().join(format!("leaf-watch-dir-fixture-{}", std::process::id()));
     fs::create_dir_all(&dir).expect("fixture directory is created");
     let document = dir.join("notes.md");
     fs::write(&document, "# Notes").expect("fixture document is written");
@@ -204,7 +204,10 @@ fn watch_dir_for_uses_the_documents_parent_directory() {
 
 #[test]
 fn desired_watches_cover_the_project_folder_and_the_open_document() {
-    let root = std::env::temp_dir().join("leaf-desired-watches-fixture");
+    let root = std::env::temp_dir().join(format!(
+        "leaf-desired-watches-fixture-{}",
+        std::process::id()
+    ));
     let project = root.join("project");
     let outside = root.join("outside");
     fs::create_dir_all(&project).expect("project directory is created");
@@ -1593,9 +1596,9 @@ fn a_window_that_never_answers_is_reported_not_waited_on() {
         .contains("did not answer in time"));
 }
 
-/// A folder of its own per journal test: these write real files and one of them runs in a second process, so they must not land on each other.
+/// A folder of its own per journal test, and per run: these write real files, so two runs of the suite at once must not land on each other either. The one test that spawns a second process tells the child which folder rather than letting it work the name out, because the child's own process id is a different number.
 fn journal_dir(name: &str) -> PathBuf {
-    std::env::temp_dir().join("leaf-journal").join(name)
+    std::env::temp_dir().join(format!("leaf-journal-{}-{name}", std::process::id()))
 }
 
 #[test]
@@ -1652,18 +1655,19 @@ fn a_data_folder_that_cannot_be_written_does_not_stop_the_app() {
 fn a_panic_reaches_the_journal() {
     // A crash is the one thing that cannot be reproduced by asking. This runs in a second process for two reasons: a panic here would be caught by the test harness instead of the hook, and the redirect is process-wide — done in this process it would swallow every other test's output.
     const CHILD: &str = "LEAFTEXT_JOURNAL_PANIC_CHILD";
-    let dir = journal_dir("panic");
 
-    if std::env::var_os(CHILD).is_some() {
-        journal::start_in(&dir);
+    // The folder is the parent's to name, and it is handed over rather than worked out again: it carries the parent's process id, which the child does not have.
+    if let Some(handed_over) = std::env::var_os(CHILD) {
+        journal::start_in(Path::new(&handed_over));
         panic!("the journal should be holding this");
     }
 
+    let dir = journal_dir("panic");
     let _ = fs::remove_dir_all(&dir);
     let child = Command::new(std::env::current_exe().expect("this test binary"))
         // --nocapture matters: with the harness capturing output, `eprintln!` is diverted before it ever reaches the handle the journal swapped.
         .args(["a_panic_reaches_the_journal", "--nocapture"])
-        .env(CHILD, "1")
+        .env(CHILD, &dir)
         .output()
         .expect("a second copy of the test binary");
 
@@ -1750,11 +1754,17 @@ fn removing_a_vault_left_its_favorites_drawn_on_the_start_screen() {
     );
 }
 
+/// A folder of this run's own per undo test. These delete real files into the real Recycle Bin, and two runs sharing a folder would each be putting the other's file back.
+#[cfg(windows)]
+fn undo_dir(name: &str) -> PathBuf {
+    std::env::temp_dir().join(format!("leaf-undo-{}-{name}", std::process::id()))
+}
+
 /// Deleted and put back, against the real Recycle Bin. The whole of the undo is a claim about the shell, so a test that mocked it would prove nothing — this one deletes a file of its own and asks for it back.
 #[test]
 #[cfg(windows)]
 fn undo_restores_a_deleted_file_to_its_folder_under_its_own_name() {
-    let folder = std::env::temp_dir().join("leaf-undo-delete-test");
+    let folder = undo_dir("delete-test");
     let _ = fs::create_dir_all(&folder);
     let file = folder.join("a note.md");
     fs::write(&file, b"the words that have to survive").expect("write the fixture");
@@ -1777,9 +1787,7 @@ fn undo_restores_a_deleted_file_to_its_folder_under_its_own_name() {
 #[test]
 #[cfg(windows)]
 fn putting_back_a_file_that_was_never_deleted_says_so() {
-    let missing = std::env::temp_dir()
-        .join("leaf-undo-delete-test")
-        .join("no such note.md");
+    let missing = undo_dir("delete-test").join("no such note.md");
     let error = restore_from_trash(&missing, None).expect_err("nothing to put back");
     assert!(
         error.contains("not in the Recycle Bin"),
@@ -1791,7 +1799,7 @@ fn putting_back_a_file_that_was_never_deleted_says_so() {
 #[test]
 #[cfg(windows)]
 fn a_name_taken_back_before_the_undo_stops_the_restore() {
-    let folder = std::env::temp_dir().join("leaf-undo-collide-test");
+    let folder = undo_dir("collide-test");
     let _ = fs::create_dir_all(&folder);
     let file = folder.join("collided.md");
     fs::write(&file, b"the first one").expect("write the fixture");

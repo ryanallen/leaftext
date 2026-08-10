@@ -16,9 +16,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { open, requiredFor } from './gate-keycode.mjs';
+import { KEEP, LICENSE_DIR, RING, keep, licensePath, ringLines, sessionOf, sweep } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const LICENSE = join(root, '.tmp', 'git-license');
 
 // Messages that are host commands rather than work. They get no context, but they still revoke the git license — otherwise a `/clear` after a release keeps it.
 const META = ['/clear', '/help', '/config', '/cost', '/compact', '/init', '/skills',
@@ -96,14 +96,20 @@ export function context(prompt, rule) {
   return out.join('\n');
 }
 
-function writeLicense(granted, prompt) {
+// This session's license, and no other agent's. With no session id there is nowhere to write it, and the git gate then refuses every write.
+function writeLicense(granted, prompt, session) {
+  const path = licensePath(session);
+  if (!path) return;
   try {
-    mkdirSync(dirname(LICENSE), { recursive: true });
-    writeFileSync(LICENSE, JSON.stringify({
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, JSON.stringify({
       state: granted ? 'granted' : 'denied',
       at: new Date().toISOString(),
+      session,
       prompt: prompt.slice(0, 120),
     }) + '\n');
+    // Nothing ever deleted a license: a stale one was only ignored on its age when something read it, and one file per session is a folder that grows.
+    sweep(LICENSE_DIR, 'git-license');
   } catch {
     // A license that cannot be written reads as denied, which is the safe way round.
   }
@@ -141,6 +147,24 @@ function selfTest() {
   if (!context('hello', rule).includes('refused')) fails.push('context: missing the git refusal');
   if (!context('/git-release', rule).includes('authorized')) fails.push('context: missing the license note');
 
+  // The ring, which all three hooks write to now. Per hook, because the tool gate fires on every command and would otherwise push the one prompt of the turn out before anyone read it back.
+  const line = (hook, n) => JSON.stringify({ hook, n });
+  const crowded = [];
+  for (let n = 0; n < 30; n += 1) crowded.push(line('PreToolUse', n));
+  crowded.push(line('Stop', 0));
+  const rung = ringLines(crowded, 'PreToolUse', line('PreToolUse', 30));
+  const mine = rung.filter((l) => JSON.parse(l).hook === 'PreToolUse');
+  if (mine.length !== KEEP) fails.push(`ring: kept ${mine.length} payloads of one hook, not ${KEEP}`);
+  if (JSON.parse(mine.at(-1)).n !== 30) fails.push('ring: the newest payload was not kept');
+  if (JSON.parse(mine[0]).n !== 30 - KEEP + 1) fails.push('ring: it dropped the newest end, not the oldest');
+  if (!rung.some((l) => JSON.parse(l).hook === 'Stop')) fails.push('ring: one hook pushed another hook out');
+
+  // Nothing arrived is not an answer worth a line, and a line every turn would push out the ones that carry one.
+  const before = existsSync(RING) ? readFileSync(RING, 'utf8') : null;
+  keep('SelfTest', '   ');
+  const after = existsSync(RING) ? readFileSync(RING, 'utf8') : null;
+  if (after !== before) fails.push('ring: an empty payload still wrote a line');
+
   if (fails.length) {
     console.error('gate-rules: failed');
     for (const f of fails) console.error(`  ${f}`);
@@ -153,21 +177,15 @@ if (process.argv.includes('--check')) {
   selfTest();
 } else {
   const raw = readStdin();
-  // What the host actually sends, kept for the last few turns. A slash command may reach here expanded, or not at all, and the license turns on which — guessing at that is what cost v0.1.442 a refused release. Untracked.
-  try {
-    const log = join(root, '.tmp', 'prompt-payloads.jsonl');
-    mkdirSync(dirname(log), { recursive: true });
-    const kept = (existsSync(log) ? readFileSync(log, 'utf8').split('\n').filter(Boolean) : []).slice(-19);
-    writeFileSync(log, [...kept, JSON.stringify({ at: new Date().toISOString(), raw: raw.slice(0, 4000) })].join('\n') + '\n');
-  } catch {
-    // A diagnostic that cannot be written is not worth failing a turn over.
-  }
+  // What the host actually sends, kept for the last few turns. A slash command may reach here expanded, or not at all, and the license turns on which — guessing at that is what cost v0.1.442 a refused release. All three hooks keep theirs now, because the license turns on the session id too.
+  keep('UserPromptSubmit', raw);
   const prompt = promptOf(raw);
-  writeLicense(hasReleaseLicense(prompt), prompt);
+  const session = sessionOf(raw);
+  writeLicense(hasReleaseLicense(prompt), prompt, session);
   if (prompt && !isMeta(prompt)) {
-    // A new turn owes its keycodes again. Clearing first is what keeps the record one message long instead of a growing file.
+    // A new turn owes its keycodes again. Clearing first is what keeps the record one message long instead of a growing file — and it clears this session's record only, or the other agent is held for codes it already gave.
     try {
-      open(requiredFor(prompt));
+      open(requiredFor(prompt), session);
     } catch {
       // A record that cannot be written owes nothing, which is the safe way round: a broken hook must never stop a turn.
     }

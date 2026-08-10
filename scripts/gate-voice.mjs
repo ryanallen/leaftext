@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { close, outstanding, read } from './gate-keycode.mjs';
+import { keep, sessionOf } from './hook-payload.mjs';
 
 const LIMIT = 500;
 
@@ -137,8 +138,8 @@ function selfTest() {
   if (!endsInSpeech(transcript)) fails.push('endsInSpeech: a finished turn read as unfinished');
   if (endsInSpeech(transcript.slice(0, 4))) fails.push('endsInSpeech: a turn mid-tool read as finished');
 
-  // Through the real entry point, because the three things that would hurt most are all in it: a malformed block does nothing and looks like a pass, a hook that blocks while a stop hook is already running spins the turn forever, and a reply that has not landed yet reads as no reply at all.
-  const path = join(tmpdir(), 'gate-voice-selftest.jsonl');
+  // Through the real entry point, because the three things that would hurt most are all in it: a malformed block does nothing and looks like a pass, a hook that blocks while a stop hook is already running spins the turn forever, and a reply that has not landed yet reads as no reply at all. This run's own: `just verify` beside another `just verify` would otherwise have one deleting the transcript the other is reading.
+  const path = join(tmpdir(), `gate-voice-selftest-${process.pid}.jsonl`);
   writeFileSync(path, [
     JSON.stringify({ type: 'user', message: { content: 'does it work on mac' } }),
     JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'x'.repeat(LIMIT + 1) }] } }),
@@ -181,9 +182,16 @@ function selfTest() {
 if (process.argv.includes('--check')) {
   selfTest();
 } else {
+  let raw = '';
+  try {
+    raw = readFileSync(0, 'utf8');
+  } catch {
+    process.exit(0);
+  }
+  keep('Stop', raw);
   let payload = {};
   try {
-    payload = JSON.parse(readFileSync(0, 'utf8'));
+    payload = JSON.parse(raw);
   } catch {
     process.exit(0);
   }
@@ -197,7 +205,9 @@ if (process.argv.includes('--check')) {
     process.exit(0);
   }
   const found = offenses(blocks);
-  const owed = blocks.length ? outstanding(read()) : [];
+  // This session's record, not the other agent's: it owes its own codes and holds its own turn.
+  const session = sessionOf(raw);
+  const owed = blocks.length ? outstanding(read(session)) : [];
   if (found.length || owed.length) {
     const parts = [];
     if (found.length) parts.push(`Rule 1, from CLAUDE.md:\n${found.map((f) => `- ${f}`).join('\n')}`);
@@ -211,6 +221,6 @@ if (process.argv.includes('--check')) {
     process.exit(0);
   }
   // The turn stands. Forget what it owed rather than leave a file behind.
-  close();
+  close(session);
   process.exit(0);
 }

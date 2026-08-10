@@ -120,6 +120,12 @@ check-ascii-art:
 check-site:
     node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-site.mjs
 
+# Fail on a scratch path in the OS temp folder built from a fixed name. Two agents can
+# work this checkout at once, and one file with two writers is how the gate started
+# failing on a clean tree. A row per path that is fixed on purpose, with the reason.
+check-scratch-names:
+    node scripts/check-scratch-names.mjs
+
 # Fail if a check the Justfile defines is not in `just verify` — a rule with no check
 # in the suite holds only while someone remembers it.
 check-verify:
@@ -252,7 +258,7 @@ preview-web folder="":
 drive-web url *steps:
     node scripts/drive-web.mjs "{{ url }}" {{ steps }}
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-scratch-names check-verify check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

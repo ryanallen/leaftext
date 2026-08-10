@@ -99,7 +99,14 @@ struct BatchFailure {
 }
 
 fn run_batch(suite: Suite, start: usize, count: usize) -> Result<(), BatchFailure> {
-    let log = std::env::temp_dir().join(format!("leaftext-conformance-{}.log", suite.id()));
+    // The parent's own process id as well as the suite: two runs of this test at
+    // once shared one path, and each truncated or deleted the file the other was
+    // about to read.
+    let log = std::env::temp_dir().join(format!(
+        "leaftext-conformance-{}-{}.log",
+        suite.id(),
+        std::process::id()
+    ));
     let file = std::fs::File::create(&log).expect("a scratch file for the child's output");
     let binary = std::env::current_exe().expect("this test binary");
     let mut child = Command::new(binary)
@@ -130,7 +137,8 @@ fn run_batch(suite: Suite, start: usize, count: usize) -> Result<(), BatchFailur
                 reached,
                 count,
                 "the child read {reached} of {count} cases and exited cleanly — \
-                 is `{}` still the name of the worker test?",
+                 the log is this run's own, so a second run of the suite beside \
+                 it is not the cause; is `{}` still the name of the worker test?",
                 worker_test_name()
             );
             return Ok(());
