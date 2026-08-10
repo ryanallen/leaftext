@@ -132,6 +132,9 @@ fn load_window_icon() -> Option<Icon> {
     Icon::from_rgba(buffer, info.width, info.height).ok()
 }
 
+/// The smallest readable page, plus the strip the app is held off the window by so the shadow has room: the page inside stays the size it was pinned at rather than losing the band out of it. Named because a resize the host drives itself sets the size directly and goes around the limit the platform holds, so it has to clamp to the same pair.
+pub(crate) const MIN_INNER_SIZE: (f64, f64) = (380.0 + 40.0, 480.0 + 23.0);
+
 /// Paint the native Windows frame to the page background, reported by the webview on theme change. The border is told to draw nothing: the app carries its own edge now, and with the window's client area running out to its own edge a frame line would trace the outside of the shadow band rather than the app. Caption/border/text colors need Windows 11 (build 22000+); older builds ignore the error, so it's a no-op there (dark mode still applies).
 #[cfg(windows)]
 fn apply_window_chrome(window: &tao::window::Window, r: u8, g: u8, b: u8, dark: bool) {
@@ -271,8 +274,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             settings.window_width as f64,
             settings.window_height as f64,
         ))
-        // The smallest readable page, plus the strip the app is held off the window by so the shadow has room: the page inside stays the size it was pinned at rather than losing the band out of it.
-        .with_min_inner_size(LogicalSize::new(380.0 + 40.0, 480.0 + 23.0))
+        .with_min_inner_size(LogicalSize::new(MIN_INNER_SIZE.0, MIN_INNER_SIZE.1))
         .with_maximized(settings.window_maximized);
     // On Windows we drop the native title bar (removing just its icon falls back to a placeholder) for a custom one: the app bar is the drag region and carries our own window controls (wired via IPC); the taskbar leaf rides the exe icon. Others: native.
     //

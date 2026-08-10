@@ -100,7 +100,7 @@ export const COMMANDS = {
   windowMinimize: [REFUSED, 'a browser tab has no window to minimize'],
   windowToggleMaximize: [REFUSED, 'a browser tab has no window to maximize'],
   windowClose: [REFUSED, 'a browser tab is closed by the reader, not by the page'],
-  windowResizeDrag: [REFUSED, 'a browser tab has no window frame to resize, and a page draws no shadow band to grab'],
+  windowResizeDrag: [REFUSED, 'a browser tab has no window frame to resize, and a page draws no shadow band to grab, so no phase of the drag is ever sent'],
   setWindowChrome: [REFUSED, 'there is no native title bar to paint'],
   setLibraryState: [LATER, 'web-polish'],
   setGraphView: [REFUSED, 'it only says whether a change on disk has a map to redraw, and nothing here watches a disk'],

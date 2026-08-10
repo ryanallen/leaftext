@@ -35,6 +35,55 @@ pub(crate) fn resize_direction(direction: &str) -> Option<tao::window::ResizeDir
     })
 }
 
+/// A window's place and size in logical pixels, top-left origin — the numbers a page-driven resize works in.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct WindowRect {
+    pub(crate) x: f64,
+    pub(crate) y: f64,
+    pub(crate) width: f64,
+    pub(crate) height: f64,
+}
+
+/// Where the window the drag started on ends up once the pointer has moved by this much. The edges named by the direction follow the pointer and the others stay put, so a drag from a corner moves two of them. Never smaller than the smallest window: setting the size directly goes around the limit the platform holds for us.
+pub(crate) fn resized_window(start: WindowRect, direction: &str, dx: f64, dy: f64) -> WindowRect {
+    let (min_width, min_height) = MIN_INNER_SIZE;
+    let mut end = start;
+    if direction.contains('e') {
+        end.width = (start.width + dx).max(min_width);
+    } else if direction.contains('w') {
+        // The left edge follows the pointer, so hitting the smallest width pins it where that width leaves it rather than letting the window walk right.
+        end.width = (start.width - dx).max(min_width);
+        end.x = start.x + start.width - end.width;
+    }
+    if direction.contains('s') {
+        end.height = (start.height + dy).max(min_height);
+    } else if direction.contains('n') {
+        end.height = (start.height - dy).max(min_height);
+        end.y = start.y + start.height - end.height;
+    }
+    end
+}
+
+/// The window where it stands, in the same logical pixels the page reports a pointer in. The place is the frame's and the size is the drawable area's, which are one rectangle on a window whose page runs the full height of its frame.
+fn window_rect(window: &tao::window::Window) -> Option<WindowRect> {
+    let scale = window.scale_factor();
+    let position = window.outer_position().ok()?.to_logical::<f64>(scale);
+    let size = window.inner_size().to_logical::<f64>(scale);
+    Some(WindowRect {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+    })
+}
+
+/// The window as it stood when a page-driven drag began, and where the pointer was on the screen. Held only between the press and the release.
+struct ResizeDrag {
+    direction: String,
+    window: WindowRect,
+    pointer: (f64, f64),
+}
+
 /// Apply a page command that records a setting; the one caller persists when this returns true. A new persisted toggle is its command plus an arm here.
 fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
     match command {
@@ -105,6 +154,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
 
     // The last file sent to the bin and where it landed, so Undo has something to act on. One deep on purpose: the offer lives only as long as its message, so a second delete has already retired the first.
     let mut last_delete: Option<(PathBuf, Option<PathBuf>)> = None;
+
+    // Only ever set on a platform the window library refuses `drag_resize_window`, where the host has to drive the resize itself.
+    let mut resize_drag: Option<ResizeDrag> = None;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -924,9 +976,48 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::WindowDrag => {
                     let _ = reader.window.drag_window();
                 }
-                IpcCommand::WindowResizeDrag { direction } => {
-                    if let Some(direction) = resize_direction(&direction) {
-                        let _ = reader.window.drag_resize_window(direction);
+                IpcCommand::WindowResizeDrag {
+                    direction,
+                    phase,
+                    x,
+                    y,
+                } => {
+                    // Windows hands the whole gesture to the platform on the press and hears nothing more: that loop brings snapping, the size limits and the live redraw. A Mac is refused that call, so the host holds the window as it stood and sets it from every move.
+                    if cfg!(windows) {
+                        if phase == "start" {
+                            if let Some(direction) = resize_direction(&direction) {
+                                let _ = reader.window.drag_resize_window(direction);
+                            }
+                        }
+                    } else {
+                        match phase.as_str() {
+                            "start" => {
+                                resize_drag =
+                                    window_rect(&reader.window).map(|window| ResizeDrag {
+                                        direction,
+                                        window,
+                                        pointer: (x, y),
+                                    });
+                            }
+                            "move" => {
+                                if let Some(drag) = &resize_drag {
+                                    let end = resized_window(
+                                        drag.window,
+                                        &drag.direction,
+                                        x - drag.pointer.0,
+                                        y - drag.pointer.1,
+                                    );
+                                    // Size before place: the platform anchors a size change at the top-left, so a drag on the north or west edge sets the size it will end at and then moves that corner to where the pointer put it.
+                                    reader
+                                        .window
+                                        .set_inner_size(LogicalSize::new(end.width, end.height));
+                                    reader.window.set_outer_position(
+                                        tao::dpi::LogicalPosition::new(end.x, end.y),
+                                    );
+                                }
+                            }
+                            _ => resize_drag = None,
+                        }
                     }
                 }
                 IpcCommand::WindowMinimize => {

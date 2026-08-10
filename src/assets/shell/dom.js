@@ -321,25 +321,56 @@ if (window.__leafFrameless || window.__leafMacFrame) {
   // The flowchart sheet covers the app bar, so its header is the drag bar while it is open — otherwise the window cannot be moved without closing the sheet.
   dragWindowFrom(document.getElementById('flowSheetHead'));
 }
-// The shadow band is the whole of the window's edge on Windows. With no platform frame left, the window is exactly the page it holds and the web view covers every pixel of it, so the window's own edge test is correct and never reached — the page has to take the press and hand the platform its resize loop, the way the app bar hands it a window move. The gate is the shell flag and not the `frameless` class, which a Mac carries too: that window keeps its platform frame and resizes itself, and a handler here would swallow the gesture.
-if (window.__leafFrameless) {
+// The shadow band is the window's edge on both. On Windows there is no platform frame left at all, so the window's own edge test is never reached; on a Mac the frame's resize edge is at the band's outer rim, a band's width outside where the app looks like it ends and dead everywhere inside that. Either way the page is the only thing that sees the press, and it hands the drag to the host — which is why this is gated on having a frame of the app's own rather than on being Windows. A browser carries neither flag and watches nothing.
+if (window.__leafFrameless || window.__leafMacFrame) {
   // Which of the eight compass points a press landed on, or null anywhere inside the app. Read off the app box rather than off the band's own sizes, so there is one copy of them; a window filling the screen has no band and no resize, and the platform refuses one anyway.
   const resizeEdgeAt = (x, y) => {
     if (document.body.classList.contains('is-maximized')) return null;
     const box = leafAppRect();
-    const northSouth = y < box.top ? 'n' : y > box.bottom ? 's' : '';
-    const eastWest = x < box.left ? 'w' : x > box.right ? 'e' : '';
+    // In as far as the inside of the app's own drawn line, which is the edge somebody aims at. The element knows how thick that line is, so the width is not written down a second time beside the one in `design/`.
+    const line = appSurface.clientTop || 0;
+    const northSouth = y < box.top + line ? 'n' : y >= box.bottom - line ? 's' : '';
+    const eastWest = x < box.left + line ? 'w' : x >= box.right - line ? 'e' : '';
     return northSouth + eastWest || null;
   };
+  const resizeDrag = (direction, phase, event) =>
+    send({ command: 'windowResizeDrag', direction, phase, x: event.screenX, y: event.screenY });
   // Watched on the document rather than on the body: everything the page has is inside one fixed box, so the body has no flowed content and no height of its own — a press in the band lands on the page root above it and never reaches a body listener at all.
-  document.addEventListener('mousedown', (event) => {
-    if (event.button !== 0) return;
-    const direction = resizeEdgeAt(event.clientX, event.clientY);
-    if (!direction) return;
-    // Otherwise the drag sweeps a text selection across the page under the band.
-    event.preventDefault();
-    send({ command: 'windowResizeDrag', direction });
-  });
+  if (window.__leafFrameless) {
+    // The press is the whole gesture here: the host hands the window to the platform's own resize loop, which swallows every later mouse event and brings snapping, the size limits and the live redraw with it.
+    document.addEventListener('mousedown', (event) => {
+      if (event.button !== 0) return;
+      const direction = resizeEdgeAt(event.clientX, event.clientY);
+      if (!direction) return;
+      // Otherwise the drag sweeps a text selection across the page under the band.
+      event.preventDefault();
+      resizeDrag(direction, 'start', event);
+    });
+  } else {
+    // No resize loop to hand a Mac window to, so the drag is followed here and the host sets the window from every move. Pointer events rather than mouse ones for the capture: a drag outward leaves the window at once, and without it the moves stop at the edge it started from.
+    let dragging = null;
+    document.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || !event.isPrimary) return;
+      const direction = resizeEdgeAt(event.clientX, event.clientY);
+      if (!direction) return;
+      event.preventDefault();
+      dragging = direction;
+      leafHoldPointer(document.documentElement, event.pointerId);
+      resizeDrag(direction, 'start', event);
+    });
+    document.addEventListener('pointermove', (event) => {
+      if (dragging) resizeDrag(dragging, 'move', event);
+    });
+    const endDrag = (event) => {
+      if (!dragging) return;
+      resizeDrag(dragging, 'end', event);
+      dragging = null;
+    };
+    document.addEventListener('pointerup', endDrag);
+    // A capture lost to the platform ends the drag too, or the host holds a window rectangle nothing will ever clear.
+    document.addEventListener('pointercancel', endDrag);
+    document.addEventListener('lostpointercapture', endDrag);
+  }
   // What tells somebody the band can be grabbed at all: the same eight zones the press reads, as the eight pointer shapes named after them. Set here rather than declared in the stylesheet, which would be a second copy of the zone table — and written only when it changes, since this runs on every move.
   let shape = '';
   document.addEventListener('mousemove', (event) => {

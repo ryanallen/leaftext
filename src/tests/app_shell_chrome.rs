@@ -961,9 +961,14 @@ fn both_shells_draw_their_own_three_window_buttons() {
         "if (window.__leafMacFrame) document.body.classList.add('mac-frame');",
     );
 
-    // Revealed and wired for both, not behind the Windows flag: a Mac with them hidden has no way to close the window at all now that Apple's are gone.
+    // Revealed and wired for both, not behind the Windows flag: a Mac with them hidden has no way to close the window at all now that Apple's are gone. Read over the stretch that draws them rather than over the whole script, which has its own Windows-only branches for things a Mac frame answers itself.
+    let drawing_them = html
+        .split("if (window.__leafFrameless || window.__leafMacFrame) {")
+        .nth(1)
+        .and_then(|rest| rest.split("winButton('winClose', 'windowClose');").next())
+        .expect("the shell draws the three window buttons");
     assert!(
-        !html.contains("  if (window.__leafFrameless) {\n"),
+        !drawing_them.contains("if (window.__leafFrameless) {"),
         "our own three are no longer Windows-only"
     );
     assert_contains(&html, "windowControls.hidden = false;");
@@ -1040,7 +1045,7 @@ fn the_front_end_shares_its_repeated_plumbing() {
 
     // Holding the pointer through a drag, wrapped because a browser may refuse.
     assert_contains(script, "function leafHoldPointer(el, pointerId) {");
-    assert_eq!(script.matches("leafHoldPointer(").count(), 10);
+    assert_eq!(script.matches("leafHoldPointer(").count(), 11);
     assert_eq!(
         script.matches(".setPointerCapture(").count(),
         1,

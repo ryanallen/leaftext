@@ -1770,10 +1770,15 @@ fn the_window_asks_for_no_platform_shadow_and_shows_what_is_behind_it() {
         !source.contains("border_r"),
         "the divider color is still being sent to a frame that draws nothing with it"
     );
-    // The smallest window grows by the band, so the smallest readable page is the size it was pinned at rather than 40px narrower.
-    assert!(
-        source.contains("LogicalSize::new(380.0 + 40.0, 480.0 + 23.0)"),
+    // The smallest window grows by the band, so the smallest readable page is the size it was pinned at rather than 40px narrower. Read off the value itself: a resize the host drives clamps to the same pair, and the two have to be one number.
+    assert_eq!(
+        MIN_INNER_SIZE,
+        (380.0 + 40.0, 480.0 + 23.0),
         "the smallest window lost the band out of its readable page"
+    );
+    assert!(
+        source.contains("with_min_inner_size(LogicalSize::new(MIN_INNER_SIZE.0, MIN_INNER_SIZE.1))"),
+        "the window is built with a smallest size of its own rather than the one the host clamps to"
     );
     // Asking the web view to be see-through is a no-op on a Mac unless the manifest names the crate feature that compiles that call in — which is how the band shipped as a solid gray slab on every Mac while every assert above passed.
     let manifest = include_str!("../../Cargo.toml");
@@ -1811,6 +1816,62 @@ fn a_press_in_the_shadow_band_resizes_the_window() {
         source.contains("reader.window.drag_resize_window(direction)"),
         "the resize command reaches no window call, so the band takes the press and nothing moves"
     );
+}
+
+#[test]
+fn the_band_below_a_mac_frames_own_edge_moves_the_window_it_was_grabbed_by() {
+    // A Mac is refused the call Windows hands its resize loop to, so without this the only thing that resizes there is the window frame's own edge, at the band's outer rim. The host drives it instead, off the window as it stood and how far the pointer has come — this is that arithmetic.
+    let start = WindowRect {
+        x: 100.0,
+        y: 200.0,
+        width: 900.0,
+        height: 700.0,
+    };
+    // The edges the direction names follow the pointer; the others stay where they were.
+    assert_eq!(
+        resized_window(start, "e", 40.0, 99.0),
+        WindowRect {
+            width: 940.0,
+            ..start
+        }
+    );
+    assert_eq!(
+        resized_window(start, "s", 99.0, 30.0),
+        WindowRect {
+            height: 730.0,
+            ..start
+        }
+    );
+    // Dragging the left edge out moves the window's own left with it, so the right stays put.
+    assert_eq!(
+        resized_window(start, "w", -50.0, 0.0),
+        WindowRect {
+            x: 50.0,
+            width: 950.0,
+            ..start
+        }
+    );
+    // A corner moves two edges at once.
+    assert_eq!(
+        resized_window(start, "nw", -50.0, -25.0),
+        WindowRect {
+            x: 50.0,
+            y: 175.0,
+            width: 950.0,
+            height: 725.0,
+        }
+    );
+    // Setting the size directly goes around the smallest window the platform is holding for us, so the clamp is the host's.
+    let (min_width, min_height) = MIN_INNER_SIZE;
+    let squashed = resized_window(start, "se", -5000.0, -5000.0);
+    assert_eq!(squashed.width, min_width);
+    assert_eq!(squashed.height, min_height);
+    assert_eq!((squashed.x, squashed.y), (start.x, start.y));
+    // And a north-west drag past it pins the corner the smallest window leaves, rather than walking the window across the screen.
+    let pinned = resized_window(start, "nw", 5000.0, 5000.0);
+    assert_eq!((pinned.width, pinned.height), (min_width, min_height));
+    assert_eq!(pinned.x, start.x + start.width - min_width);
+    assert_eq!(pinned.y, start.y + start.height - min_height);
 }
 
 #[test]
