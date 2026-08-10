@@ -1697,6 +1697,8 @@ fn the_mac_window_is_the_app_bar_with_our_own_three_dots() {
         "with_titlebar_transparent(true)",
         "with_title_hidden(true)",
         "with_titlebar_buttons_hidden(true)",
+        // The window's own shadow goes, because the app draws it: the dot lattice over the strip of page the app is held off the window by. `false` and not left out — AppKit's shadow is on unless something says otherwise, which is the same trap tao's Windows flag sets.
+        "with_has_shadow(false)",
     ] {
         assert_eq!(
             source.matches(call).count(),
@@ -1711,9 +1713,68 @@ fn the_mac_window_is_the_app_bar_with_our_own_three_dots() {
 
     // The Windows arm is a different shell — no native frame at all — and this change leaves it alone.
     assert_eq!(source.matches("with_decorations(false)").count(), 1);
-    assert_eq!(source.matches("with_undecorated_shadow(true)").count(), 1);
     // The dock and app-switcher icon is not the strip, so macOS keeps taking it.
     assert!(source.contains("#[cfg(not(windows))]"));
+}
+
+#[test]
+fn the_window_asks_for_no_platform_shadow_and_shows_what_is_behind_it() {
+    // The app throws its own shadow — the dot lattice, over the outer strip of the page — so the platform's smooth one has to go and the window has to be see-through for the app's to land anywhere. Both halves, or the window has two shadows or none.
+    //
+    // `false` and not merely left out: tao's flag is on unless something says otherwise, so a build with the call removed keeps the halo, keeps the frame insets that make the window bigger than the page it holds, and keeps a hit test that finds only the top edge.
+    let source = include_str!("../main.rs");
+    let windows_arm = source
+        .split("#[cfg(windows)]")
+        .find(|arm| arm.contains("with_decorations(false)"))
+        .expect("main.rs has a Windows window arm");
+    assert!(
+        windows_arm.contains("with_undecorated_shadow(false)"),
+        "the platform shadow is still on, so the app draws a second one inside it"
+    );
+    assert!(
+        !source.contains("with_undecorated_shadow(true)"),
+        "the platform shadow was asked for again"
+    );
+    assert!(
+        windows_arm.contains("with_transparent(true)"),
+        "an opaque window paints the app's own shadow band in the page color"
+    );
+    // Three asks in all: one per window arm, because an opaque window has nothing for the band to fall on, and one for the web view, because a see-through window over an opaque web view shows nothing.
+    assert_eq!(
+        source.matches("with_transparent(true)").count(),
+        3,
+        "a window arm or the web view is still opaque, so the app's own shadow lands on a page color there"
+    );
+    let mac_arm = source
+        .split("#[cfg(target_os = \"macos\")]")
+        .find(|arm| arm.contains("with_titlebar_buttons_hidden"))
+        .expect("main.rs has a macOS window arm");
+    assert!(
+        mac_arm.contains("with_has_shadow(false)"),
+        "the Mac window keeps AppKit's own shadow, so the app draws a second one inside it"
+    );
+    // And the web view with it: a see-through window over an opaque web view shows nothing.
+    assert!(
+        source.contains(
+            "WebViewBuilder::new_with_web_context(&mut web_context)\n        // See-through"
+        ),
+        "the web view is built opaque, so the window's transparency reaches nothing"
+    );
+    // The frame draws no line of its own. With the client area running out to the window's own edge, a border would trace the outside of the shadow band rather than the app — and the app carries its own edge now, so nothing is lost.
+    assert!(
+        source.contains("const DWMWA_COLOR_NONE: u32 = 0xFFFF_FFFE;")
+            && source.contains("let border = DWMWA_COLOR_NONE;"),
+        "the window frame still takes a border color"
+    );
+    assert!(
+        !source.contains("border_r"),
+        "the divider color is still being sent to a frame that draws nothing with it"
+    );
+    // The smallest window grows by the band, so the smallest readable page is the size it was pinned at rather than 40px narrower.
+    assert!(
+        source.contains("LogicalSize::new(380.0 + 40.0, 480.0 + 23.0)"),
+        "the smallest window lost the band out of its readable page"
+    );
 }
 
 #[test]

@@ -46,7 +46,7 @@ Button background, foreground, hover, and disabled states for the back/forward/o
 
 ### Radius scale, and no shadow scale
 
-Corners are tokenized as a **global scale** in the stylesheet's own `:root` block rather than per-theme values: `--lt-radius-xs/sm/md/lg/xl/2xl/pill/full`. Every surface pulls from it, so rounding swaps in one place. Elevation has no scale at all: nothing in the app casts a smooth blur. A floating surface throws the same dot lattice the grain is made of, thinning out under a mask — a halftone shadow, said once in the stylesheet and shared by every menu, panel, sheet and tooltip. What is left in `--lt-shadow-*` are strokes and one recess, not shadows.
+Corners are tokenized as a **global scale** in the stylesheet's own `:root` block rather than per-theme values: `--lt-radius-xs/sm/md/lg/xl/2xl/pill/full`. Every surface pulls from it, so rounding swaps in one place. Elevation has no scale at all: nothing in the app casts a smooth blur. A floating surface throws the same dot lattice the grain is made of, thinning out under a mask — a halftone shadow, said once in the stylesheet and shared by every menu, panel, sheet and tooltip. The window itself throws one too: the platform's own smooth shadow is turned off on both systems, the window and the web view are see-through, and the app is held 20px off the window's edge at the sides, 13px above and 10px below so the band has room to fall in. It is zeroed where there is nothing behind the window to cast onto — a maximized Windows window, a Mac in full screen — and in a browser, which has no window of its own. What is left in `--lt-shadow-*` are strokes and one recess, not shadows.
 
 ### Surface grain
 
@@ -73,7 +73,7 @@ The reading and code views borrow the lattice for a different job. The page slid
 
 A document's first line therefore has to open below the band, or it starts out half dissolved. `--reader-content-top-gap` is where it opens, measured from the reader's own top edge so the app bar's height is inside the number. The reading view reaches it by parking its scroll origin there; the [code view](../01-features/07-editing.md#code-view) hands the remainder to the editor as its own top padding, inside the editor's scroll height so no line can ever sit in the wash. One token, so the two views open at the same height and both clear the band.
 
-Every grained surface tiles from the window (`background-attachment: fixed`), not from its own box, so they all share one lattice — including both table stripes, so the dots run straight down the page across a stripe instead of breaking at each row edge. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
+Every grained surface tiles from the app rather than from its own box (`background-attachment: fixed`, anchored to the one contained element everything in the page sits inside), so they all share one lattice — including both table stripes, so the dots run straight down the page across a stripe instead of breaking at each row edge. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
 
 > [!NOTE]
 > The frontmatter table is the one table that carries no chrome, and its opt-out ties with the row rules on specificity — it wins only by coming later in the stylesheet. A row rule added after it would put a speckled stripe through it.

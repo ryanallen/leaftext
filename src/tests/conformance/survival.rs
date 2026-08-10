@@ -99,9 +99,8 @@ struct BatchFailure {
 }
 
 fn run_batch(suite: Suite, start: usize, count: usize) -> Result<(), BatchFailure> {
-    // The parent's own process id as well as the suite: two runs of this test at
-    // once shared one path, and each truncated or deleted the file the other was
-    // about to read.
+    // The parent's own process id as well as the suite: on one path, two runs at
+    // once truncate and delete the file the other is about to read.
     let log = std::env::temp_dir().join(format!(
         "leaftext-conformance-{}-{}.log",
         suite.id(),

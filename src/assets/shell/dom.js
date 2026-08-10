@@ -233,7 +233,7 @@ function leafToast(message, tone, action) {
   } else {
     toast.textContent = message;
   }
-  document.body.appendChild(toast);
+  appSurface.appendChild(toast);
   // A frame later, so the transition has a start state to move away from.
   window.requestAnimationFrame(() => toast.classList.add('is-shown'));
   toastTimer = setTimeout(() => {
@@ -335,15 +335,14 @@ window.leafSetWindowMaximized = (maximized) => {
     el.setAttribute('title', label);
   }
 };
-// Put a floating thing where it was asked for, but inside the window: a menu opened near the right edge would otherwise hang off it, and one at the bottom would open below the fold. Both menus place themselves this way, so the arithmetic is here.
+// Put a floating thing where it was asked for, but inside the app: a menu opened near the right edge would otherwise hang off it, and one at the bottom would open below the fold. Both menus place themselves this way, so the arithmetic is here. The point comes in as the window's and goes out as the app's — leafClampToApp does that crossing for everything that places an overlay.
 const LEAF_FLOAT_MARGIN = 8;
 function leafPlaceFloating(el, x, y) {
   // Measured, so it has to be shown first — hidden elements have no size.
   el.hidden = false;
-  const right = window.innerWidth - el.offsetWidth - LEAF_FLOAT_MARGIN;
-  const bottom = window.innerHeight - el.offsetHeight - LEAF_FLOAT_MARGIN;
-  el.style.left = Math.max(LEAF_FLOAT_MARGIN, Math.min(x, right)) + 'px';
-  el.style.top = Math.max(LEAF_FLOAT_MARGIN, Math.min(y, bottom)) + 'px';
+  const at = leafClampToApp(x, y, el.offsetWidth, el.offsetHeight, LEAF_FLOAT_MARGIN);
+  el.style.left = at.left + 'px';
+  el.style.top = at.top + 'px';
 }
 // Hold the pointer so it keeps reporting after it leaves the element — every drag in the app needs that, and it is the one line they all share. Wrapped because a browser may refuse: the drag still works, it just stops tracking outside the box, and an exception here would lose the whole gesture.
 function leafHoldPointer(el, pointerId) {

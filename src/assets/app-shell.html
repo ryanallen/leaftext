@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="{{APP_CSS_URL}}">
 </head>
 <body>
+<!-- One box that means "the app", holding everything the page has. It is what a fixed position is measured from and what a fixed position is clipped to, so a sheet, a scrim or a menu belongs to the app rather than to the window — which are the same rectangle today and are not once the window's outer edge is a shadow the app draws. Nothing is added beside it: see .app-surface in reading.css and appSurface in shell/state.js. -->
+<div id="appSurface" class="app-surface">
 <header id="appBar" class="app-bar">
   <div class="app-bar-lead">
     <button type="button" id="homeButton" class="brand-button" aria-label="Home" title="Home">
@@ -319,5 +321,6 @@
      script tag, not a module, because the fragments are written as one shared
      scope. -->
 <script src="{{APP_SCRIPT_URL}}"></script>
+</div>
 </body>
 </html>

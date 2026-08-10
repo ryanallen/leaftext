@@ -2,6 +2,27 @@
 //
 // Only shared state belongs here. What one fragment reads goes in that fragment.
 
+// ---- the box that means "the app" (dom.js, context-menu.js, glossary.js, hints.js, library.js, render-document.js, decorate.js, code-view.js, minimap.js, frontmatter-fields.js)
+
+// Everything the page has lives inside this one element, and every floating thing the script makes is added to it rather than beside it. A `position: fixed` child is measured from this box and clipped to it (see .app-surface), so an overlay belongs to the app; `<body>` is the window, and the two stop being the same rectangle once the window's outer edge is a shadow the app draws. Falls back to `<body>` for a host that serves its own page without the wrapper.
+const appSurface = document.getElementById('appSurface') || document.body;
+
+// Where the app is, in the window's own coordinates. The one place that knows, because a pointer event and a getBoundingClientRect are the window's numbers while a fixed overlay's `left` is this box's — so anything placing one has to cross between them, and seven copies of that arithmetic is seven chances for one overlay to keep believing it owns the whole window.
+function leafAppRect() {
+  return appSurface.getBoundingClientRect();
+}
+
+// Put a box of this size at this window point, held inside the app with a margin. Returns the app's own coordinates, ready for `style.left` / `style.top`. A margin bigger than the room left is floored rather than allowed to push the box back off the other edge.
+function leafClampToApp(x, y, width, height, margin) {
+  const room = leafAppRect();
+  const right = Math.max(margin, room.width - width - margin);
+  const bottom = Math.max(margin, room.height - height - margin);
+  return {
+    left: Math.min(Math.max(x - room.left, margin), right),
+    top: Math.min(Math.max(y - room.top, margin), bottom),
+  };
+}
+
 // ---- the platform (context-menu.js, glossary.js) ---------------------------
 
 // Which gesture belongs to which key: Ctrl+click is the right-click on a Mac, so the open-in-a-new-page modifier there is Cmd. Read by the menu and by the document-link handler that picks the modifier.

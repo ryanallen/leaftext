@@ -226,20 +226,9 @@ pub(crate) enum IpcCommand {
     WindowToggleMaximize,
     #[serde(rename = "windowClose")]
     WindowClose,
-    /// Paint the native title bar to the page color and the window border to the theme's divider color, both reported by the webview on theme change.
+    /// Paint the native frame to the page color, reported by the webview on theme change. No divider color rides along: the app draws its own edge, and the frame is told to draw none.
     #[serde(rename = "setWindowChrome")]
-    SetWindowChrome {
-        r: u8,
-        g: u8,
-        b: u8,
-        #[serde(rename = "borderR")]
-        border_r: u8,
-        #[serde(rename = "borderG")]
-        border_g: u8,
-        #[serde(rename = "borderB")]
-        border_b: u8,
-        dark: bool,
-    },
+    SetWindowChrome { r: u8, g: u8, b: u8, dark: bool },
     /// Persist the folder the library pane is inside.
     #[serde(rename = "setLibraryState")]
     SetLibraryState {

@@ -224,7 +224,7 @@ Key `IpcCommand` variants include:
 | `setLibraryState`      | Entering a folder, or stepping back out of one |
 | `setLibraryLayout`     | Library pane resize or collapse       |
 | `setHintState`         | The [first-launch bubble](../01-features/03-library.md#the-bubble-on-your-first-launch)'s one-shot state, sent whole: launches counted, hints met, and the launch the last one showed at |
-| `setWindowChrome`      | Theme change repainting the window border and dark-mode flag (Windows) |
+| `setWindowChrome`      | Theme change repainting the native frame to the page color, with the dark-mode flag (Windows). No border color rides along: the frame is told to draw none, and the app draws its own edge |
 | `windowDrag`           | The app bar is the title bar on both platforms: start moving the window (a press on empty app-bar space, or on the [flowchart sheet](../01-features/07-editing.md#the-flowchart-editor)'s header, which covers the bar while it is open) |
 | `windowMinimize` / `windowToggleMaximize` / `windowClose` | The custom minimize / maximize / close buttons, drawn on both platforms from one set of markup — squares at the bar's right on Windows, theme-colored dots at its left on macOS, where Apple's own are turned off so ours can fold into the overflow menu. A double-click on empty app-bar space also sends `windowToggleMaximize`, decided on the second press: dragging hands the window to the platform's move loop, which swallows the page's `dblclick` |
 

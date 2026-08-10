@@ -21,7 +21,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /// Deleted and rewritten on every message. Temp on purpose: a record kept in the repo would be read back into a context window turn after turn.
 ///
-/// One file per session, because two agents share this machine: a message in one used to clear what the other had already reported, and hold it at the end of its turn for codes it did give. With no session id to be found this is the one file it always was, where the worst that happens is being asked again for a code already given.
+/// One file per session, because two agents can share this machine: one file for all of them is cleared by whichever starts a message, which holds the other at the end of its turn for codes it did give. With no session id to be found this is a single file again, where the worst that happens is being asked twice for one code.
 export function recordPath(session) {
   const tag = sessionTag(session ?? sessionOf(''));
   return join(tmpdir(), tag ? `leaftext-keycode-${tag}.json` : 'leaftext-keycode.json');
@@ -156,7 +156,7 @@ function selfTest() {
     else writeFileSync(recordPath(), kept);
   }
 
-  // The same cycle twice over, under two session ids. A second agent starting a message used to wipe what the first had already reported, and the first was then held at the end of its turn for codes it did give.
+  // The same cycle twice over, under two session ids: a second agent starting a message must not wipe what the first has already reported.
   const ONE = 'aaaaaaaa-1111-1111-1111-111111111111';
   const TWO = 'bbbbbbbb-2222-2222-2222-222222222222';
   if (recordPath(ONE) === recordPath(TWO)) fails.push('two sessions share one record file');

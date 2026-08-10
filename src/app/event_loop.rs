@@ -922,25 +922,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     last_windowed_size,
                     control_flow,
                 ),
-                IpcCommand::SetWindowChrome {
-                    r,
-                    g,
-                    b,
-                    border_r,
-                    border_g,
-                    border_b,
-                    dark,
-                } => {
-                    apply_window_chrome(
-                        &reader.window,
-                        r,
-                        g,
-                        b,
-                        border_r,
-                        border_g,
-                        border_b,
-                        dark,
-                    );
+                IpcCommand::SetWindowChrome { r, g, b, dark } => {
+                    apply_window_chrome(&reader.window, r, g, b, dark);
                 }
                 IpcCommand::SetGraphView { open } => {
                     vault_state.graph_open = open;

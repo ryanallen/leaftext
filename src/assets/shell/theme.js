@@ -177,7 +177,7 @@ if (themeSheetBrowse) {
     send({ command: 'openExternal', url: THEME_REPO_URL });
   });
 }
-// Tell the host what the page background and divider color resolve to so it can paint the native title bar to match the page and the window border to the theme's divider color (a darker line on light themes, a colored rule on themes like Nightshade). Runs on every theme change, including system light/dark flips, so the OS chrome always tracks the document.
+// Tell the host what the page background resolves to so the native frame matches the page. Runs on every theme change, including system light/dark flips, so the OS chrome always tracks the document. No divider color: the app draws its own edge, and the frame is told to draw none — a line there would trace the outside of the shadow band rather than the app.
 function reportWindowChrome(theme) {
   const shell = document.getElementById('app');
   if (!shell) {
@@ -187,21 +187,11 @@ function reportWindowChrome(theme) {
   if (!parts || parts.length < 3) {
     return;
   }
-  // Resolve the divider color (a var() chain) to concrete rgb via a probe.
-  const probe = document.createElement('span');
-  probe.style.color = 'var(--lt-border)';
-  shell.appendChild(probe);
-  const borderParts = getComputedStyle(probe).color.match(/\d+(?:\.\d+)?/g);
-  probe.remove();
-  const border = borderParts && borderParts.length >= 3 ? borderParts : parts;
   send({
     command: 'setWindowChrome',
     r: Math.round(Number(parts[0])),
     g: Math.round(Number(parts[1])),
     b: Math.round(Number(parts[2])),
-    borderR: Math.round(Number(border[0])),
-    borderG: Math.round(Number(border[1])),
-    borderB: Math.round(Number(border[2])),
     dark: theme.resolvedTheme === 'dark',
   });
 }

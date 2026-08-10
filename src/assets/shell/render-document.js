@@ -322,7 +322,7 @@ function startHomeRowGhost(drag, box) {
   ghost.style.left = box.left + 'px';
   ghost.style.top = box.top + 'px';
   ghost.style.width = box.width + 'px';
-  document.body.appendChild(ghost);
+  appSurface.appendChild(ghost);
   drag.ghost = ghost;
 }
 // Open the gap where the row would land: everything between its own slot and that one steps one slot the other way, and the empty slot travels with them. A transform, so nothing reflows and every step eases on the app's own curve.

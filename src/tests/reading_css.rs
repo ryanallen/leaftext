@@ -2058,3 +2058,156 @@ fn a_folded_list_shows_five_and_hands_the_rest_to_the_sheet() {
         "--home-list-surface: var(--lt-background);",
     );
 }
+
+#[test]
+fn the_app_is_one_contained_box_and_nothing_takes_the_whole_window() {
+    // `contain: paint` is the whole of what makes this element mean "the app": it is what a fixed child is positioned from and what one is clipped to. Without it every overlay in the page goes back to being placed against the window, and the shadow band would have sheets and scrims sitting on top of it.
+    let css = reading_mode_css();
+    let surface = rule_body(&css, ".app-surface {");
+    assert_contains(surface, "position: fixed;");
+    assert_contains(surface, "contain: paint;");
+    // Nothing measures itself against the window: past the app's own inset the window is edge the app does not paint, so a box given the window's height is a box hanging into the shadow.
+    assert!(
+        !css.contains("100vh"),
+        "something still takes the whole window's height rather than the app surface's"
+    );
+}
+
+#[test]
+fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
+    // The grain is anchored rather than tiled from each box, so two surfaces meeting share one lattice and the seam between them cannot show. `contain: paint` moves what "anchored" means for everything inside it — from the window to the app surface — which costs nothing while every anchored surface is inside that box, and puts one lattice out of phase with all the others the moment one is not. Four boxes tile from themselves on purpose and are named here, so a fifth is a decision somebody made rather than a drift.
+    const OWN_BOX: [&str; 4] = [
+        ".tab",
+        ".table-lane::before",
+        ".table-lane::after",
+        ".home-list-scroll li.is-dropzone",
+    ];
+    let css = reading_mode_css();
+    let lattice = "background-image: radial-gradient(circle, var(--lt-grain-dot)";
+    let mut anchored = 0;
+    for (at, _) in css.match_indices(lattice) {
+        let opens = css[..at].rfind('}').map_or(0, |brace| brace + 1);
+        let shuts = at + css[at..].find('}').expect("the rule closes");
+        let rule = &css[opens..shuts];
+        let selector = strip_css_comments(rule);
+        let selector = selector.split('{').next().unwrap_or_default().trim();
+        if !rule.contains("background-attachment: fixed;") {
+            assert!(
+                OWN_BOX.contains(&selector),
+                "a new grained surface tiles from its own box rather than the shared lattice: {selector}"
+            );
+            continue;
+        }
+        anchored += 1;
+        // The shadow band is the one grained surface outside the app, so it is the one anchored to the window: it falls on the strip of page the app is held off the window by, never meets a surface inside the app, and so has nothing to show a seam against.
+        if selector == "body::before" {
+            continue;
+        }
+        // Everything else is inside the contained box, and grain anchored to the window there would be the one lattice anchored somewhere else.
+        for window in ["html", "body", ":root"] {
+            assert!(
+                !selector.split(',').any(|one| one.trim() == window),
+                "{selector} anchors its grain to the window rather than to the app, so it falls out of phase with every surface inside the app"
+            );
+        }
+    }
+    assert!(
+        anchored >= 10,
+        "the stylesheet should still anchor the dot lattice on the app's surfaces ({anchored} found)"
+    );
+}
+
+#[test]
+fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
+    // The outermost edge in the app follows the same rule as every floating surface inside it: the dot lattice, never the operating system's smooth blur onto whatever is behind the window.
+    let css = reading_mode_css();
+    let band = rule_body(&css, "body::before {");
+    // The lattice every other surface throws, in shadow ink.
+    assert_contains(band, "--lt-grain-dot: var(--lt-grain-dot-strong);");
+    assert_contains(
+        band,
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+    );
+    assert_contains(band, "background-size: 2px 2px;");
+    // Four edge gradients, intersected: nothing at the window's edge, full where the app starts, and each corner the product of two. Not the shared panel recipe's ellipse — on a box the size of a window its falloff is measured in hundreds of pixels and the band lands in the tail, where there is nothing left to draw.
+    assert_eq!(band.matches("linear-gradient(to ").count(), 8);
+    assert_contains(band, "mask-composite: intersect;");
+    assert_contains(
+        band,
+        "-webkit-mask-composite: source-in, source-in, source-in;",
+    );
+    assert!(
+        !band.contains("ellipse"),
+        "the band borrowed the panel recipe's ellipse, which has nothing left to draw at this size"
+    );
+    // No punch layer: this is a sibling of the app surface rather than a child, so the opaque surface paints over the middle on its own.
+    assert!(
+        !band.contains("mask-composite: subtract;"),
+        "the band punches a box out of itself, which is a child's problem and not a sibling's"
+    );
+
+    // One spread, said once, and the same one every panel inside the app throws. One class for both platforms: a Mac carries `frameless` as well as `mac-frame`.
+    let frame = rule_body(&css, "body.frameless {");
+    assert_contains(frame, "--app-shadow-top: 13px;");
+    assert_contains(frame, "--app-shadow-side: 20px;");
+    assert_contains(frame, "--app-shadow-bottom: 10px;");
+
+    // Nothing behind a maximized window to cast onto, and a band there would show the desktop through a frame inside the screen edge.
+    let maxed = rule_body(
+        &css,
+        "body.frameless:not(.mac-frame).is-maximized,\nbody.mac-frame.is-fullscreen {",
+    );
+    // A bare `body {` matches the `html, body` rule further up, so the page's own rule is anchored on its first declaration instead.
+    let page_rule = rule_body(
+        &css,
+        "body {
+  overflow: hidden;",
+    );
+    for zero in [
+        "--app-shadow-top: 0px;",
+        "--app-shadow-side: 0px;",
+        "--app-shadow-bottom: 0px;",
+    ] {
+        assert_contains(maxed, zero);
+        // And the same three on `body` itself, which is what a page carrying neither frame class gets: a browser has no window to cast a shadow off.
+        assert_contains(page_rule, zero);
+    }
+    // Drawn nowhere rather than masked to nothing, in all three cases.
+    assert_contains(
+        &css,
+        "body:not(.frameless)::before,\nbody.frameless:not(.mac-frame).is-maximized::before,\nbody.mac-frame.is-fullscreen::before {\n  content: none;\n}",
+    );
+    // A Mac carries `frameless` too, and it reports maximized for a zoomed window — one that still floats over what is behind it and still casts a shadow. So every rule that takes the band away for a screen-filling window has to say `:not(.mac-frame)`.
+    for flush in ["::before", " .app-surface"] {
+        assert!(
+            !css.contains(&format!("body.frameless.is-maximized{flush}"))
+                && !css.contains(&format!("body.is-maximized{flush}")),
+            "a zoomed Mac window loses its band, where there is still something behind it to cast onto"
+        );
+    }
+
+    // Whatever the platform stops drawing, the app starts: the page color, the edge and the corner are all the surface's now, and `<body>` paints nothing over the whole window.
+    let surface = rule_body(&css, ".app-surface {");
+    assert_contains(surface, "background: var(--lt-background);");
+    assert_contains(
+        surface,
+        "border: var(--lt-stroke-1) solid var(--lt-border);",
+    );
+    assert_contains(surface, "border-radius: var(--lt-radius-lg);");
+    assert_contains(
+        surface,
+        "inset: var(--app-shadow-top) var(--app-shadow-side) var(--app-shadow-bottom);",
+    );
+    assert_contains(page_rule, "background: transparent;");
+    assert!(
+        !rule_body(&css, "html,\nbody {").contains("background:"),
+        "the window is painted a page color again, which is the app drawing its own halo out to the frame"
+    );
+    // Maximized and in a browser the app is the whole window, so it draws neither edge nor corner — both would be a frame inside the screen edge.
+    let flush = rule_body(
+        &css,
+        "body:not(.frameless) .app-surface,\nbody.frameless:not(.mac-frame).is-maximized .app-surface,",
+    );
+    assert_contains(flush, "border: 0;");
+    assert_contains(flush, "border-radius: 0;");
+}

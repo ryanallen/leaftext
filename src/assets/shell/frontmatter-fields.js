@@ -18,7 +18,7 @@ function frontmatterKnownKeyList() {
       option.value = name;
       list.appendChild(option);
     }
-    document.body.appendChild(list);
+    appSurface.appendChild(list);
   }
   return FRONTMATTER_KEY_LIST_ID;
 }

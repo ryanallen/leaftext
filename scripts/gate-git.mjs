@@ -61,7 +61,7 @@ export function gitWrite(command) {
   return '';
 }
 
-// True only when the message being answered right now, in this session, said `/git-release`. Two agents share this checkout, so a license granted to one of them used to authorize the other for four hours — the rule the whole repo's git safety rests on, keyed on the machine. No session id at all refuses everything: an environment that changed shape must not turn the gate off.
+// True only when the message being answered right now, in this session, said `/git-release`. Two agents can share this checkout, and a license keyed on the machine authorizes whichever of them asks first, for four hours — which is the rule the whole repo's git safety rests on. No session id at all refuses everything: an environment that changed shape must not turn the gate off.
 export function licensed(raw, session, now = Date.now()) {
   if (!session || !raw) return false;
   try {

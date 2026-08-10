@@ -42,6 +42,7 @@ Work here starts as a written plan and ends as a released version, and the same 
 | `reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
 | A new class, component, token or icon | No test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` refuse what `design/` does not list |
 | A new `scripts/*.mjs` | Its own `--check` mode, plus a line in `just verify` — `check-verify` fails on a check the suite does not run |
+| A test that writes outside the repo | Anywhere above, but the name it writes under carries the run's own process id. Two people running the suite at once on one checkout share every fixed name, and `just check-scratch-names` refuses one |
 
 A test is named as a sentence about behavior — `a_staged_update_installs_itself_at_launch_but_only_once` — and tests the rule rather than the implementation, so a rewrite that changed nothing a reader sees does not fail it. See [Building](02-building.md#verification-suite) for what the suite runs and how to run one step of it.
 
@@ -64,4 +65,4 @@ A test is named as a sentence about behavior — `a_staged_update_installs_itsel
 | `/add-format` | Teaches the app another readable file type from the one table of formats |
 | `/add-dependency` | Weighs a crate before it ships: what it drags in, and what the platform already offers |
 
-Four hooks back the parts of this that are worth failing rather than remembering — they print the standing rules before each message, refuse a git write without an explicit release, hold a reply to the repo's own brevity rule, and prove the rules were read rather than recalled. `just verify` self-tests all four.
+Four hooks back the parts of this that are worth failing rather than remembering — they print the standing rules before each message, refuse a git write without an explicit release, hold a reply to the repo's own brevity rule, and prove the rules were read rather than recalled. `just verify` self-tests all four. Each record they keep belongs to one session, so two people working the same checkout cannot spend each other's release or clear what the other has read; a machine where no session can be identified is refused every git write rather than let through.

@@ -23,7 +23,7 @@ function monacoCodeFontWidths() {
   if (!family || !document.body) return null;
   const ruler = document.createElement('span');
   ruler.style.cssText = `position:absolute;top:-9999px;left:-9999px;white-space:pre;font:${MONACO_FONT_SIZE}px ${family}`;
-  document.body.appendChild(ruler);
+  appSurface.appendChild(ruler);
   const runWidth = (glyph) => {
     ruler.textContent = glyph.repeat(MONACO_MEASURE_RUN);
     return ruler.getBoundingClientRect().width / MONACO_MEASURE_RUN;

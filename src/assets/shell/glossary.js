@@ -158,7 +158,7 @@ linkHoverTip.innerHTML =
   '<div class="link-hover-tip-kind"></div>' +
   '<div class="link-hover-tip-detail"></div>' +
   '<div class="link-hover-tip-lines" hidden></div>';
-document.body.appendChild(linkHoverTip);
+appSurface.appendChild(linkHoverTip);
 const linkHoverTipKind = linkHoverTip.querySelector('.link-hover-tip-kind');
 const linkHoverTipDetail = linkHoverTip.querySelector('.link-hover-tip-detail');
 const linkHoverTipLines = linkHoverTip.querySelector('.link-hover-tip-lines');
@@ -190,25 +190,27 @@ function hideLinkHoverTip() {
   activeHoverLink = null;
   linkHoverTip.hidden = true;
 }
+// Worked out in the window's coordinates, which is what the pointer and the button's rectangle are given in, and written out in the app's — the tip is a fixed child of the app surface, so its `left` is measured from there.
 function positionLinkHoverTip(event) {
   const margin = 14;
   const rect = linkHoverTip.getBoundingClientRect();
+  const app = leafAppRect();
   let left = event.clientX + 18;
   let top = event.clientY + 18;
-  if (left + rect.width > window.innerWidth - margin) {
-    left = Math.max(margin, event.clientX - rect.width - 18);
+  if (left + rect.width > app.right - margin) {
+    left = Math.max(app.left + margin, event.clientX - rect.width - 18);
   }
-  if (top + rect.height > window.innerHeight - margin) {
-    top = Math.max(margin, event.clientY - rect.height - 18);
+  if (top + rect.height > app.bottom - margin) {
+    top = Math.max(app.top + margin, event.clientY - rect.height - 18);
   }
   // A pager button is a big target, so a card following the pointer into it covers the very page name it is there to give. It stands clear of the whole button instead — above it, or under it when there is no room.
   const button = pagerHoverTitle(activeHoverLink) ? activeHoverLink.getBoundingClientRect() : null;
   if (button && top < button.bottom && top + rect.height > button.top) {
     const above = button.top - rect.height - 10;
-    top = above >= margin ? above : Math.min(button.bottom + 10, window.innerHeight - margin - rect.height);
+    top = above >= app.top + margin ? above : Math.min(button.bottom + 10, app.bottom - margin - rect.height);
   }
-  linkHoverTip.style.left = left + 'px';
-  linkHoverTip.style.top = top + 'px';
+  linkHoverTip.style.left = (left - app.left) + 'px';
+  linkHoverTip.style.top = (top - app.top) + 'px';
 }
 // The tooltip's detail line. Decodes the percent-encoded href for readability, falling back to the raw href if it isn't valid percent-encoding.
 function hoverDetail(rawHref) {

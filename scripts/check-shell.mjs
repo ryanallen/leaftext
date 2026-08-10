@@ -223,8 +223,24 @@ function fakePage() {
   return { document, byId };
 }
 
+// The stand-in window's size. Named because the app surface has to report the same box: it is the window until its own edge becomes a shadow, and everything that places an overlay reads it.
+const VIEW_WIDTH = 1080;
+const VIEW_HEIGHT = 820;
+
 function runShell(source, extras = {}) {
-  const { document } = fakePage();
+  const { document, byId } = fakePage();
+  // The app surface is the window at rest. A stand-in reporting an empty box would put every overlay in the page at the origin, and read as though the app had no room in it.
+  const surface = byId.get('appSurface');
+  if (surface) {
+    surface.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: VIEW_WIDTH,
+      bottom: VIEW_HEIGHT,
+      width: VIEW_WIDTH,
+      height: VIEW_HEIGHT,
+    });
+  }
   const noop = () => {};
   const frames = new Map();
   let frameId = 0;
@@ -234,8 +250,8 @@ function runShell(source, extras = {}) {
     addEventListener: noop,
     removeEventListener: noop,
     dispatchEvent: () => true,
-    innerWidth: 1080,
-    innerHeight: 820,
+    innerWidth: VIEW_WIDTH,
+    innerHeight: VIEW_HEIGHT,
     devicePixelRatio: 1,
     scrollX: 0,
     scrollY: 0,
@@ -4136,13 +4152,15 @@ if (booted) {
       remove: (one) => bodyClasses.delete(one),
       contains: (one) => bodyClasses.has(one),
     };
+    // The carried copy goes to the app surface, not to the window: it is an overlay, and every overlay in the page belongs to the box that means the app.
+    const surface = booted.document.getElementById('appSurface');
     const carried = [];
-    const wasAppend = body.appendChild;
-    body.appendChild = (child) => carried.push(child);
+    const wasAppend = surface.appendChild;
+    surface.appendChild = (child) => carried.push(child);
     try {
       if (!booted.beginHomeRowDrag(drag, { clientY: 4 })) throw new Error('the drag never started');
     } finally {
-      body.appendChild = wasAppend;
+      surface.appendChild = wasAppend;
     }
     // A copy is carried, the original holds its space rather than being drawn twice, and the space it holds is the one that wears the grain.
     if (carried.length !== 1 || !String(carried[0].className).includes('home-row-ghost')) {
@@ -4541,6 +4559,42 @@ checkSettled('the browser host raises the glossary out of the text it was handed
   if (!raised) throw new Error('the glossary command never reached the module');
   if (raised.href !== 'glossary:vault') throw new Error(`the term was lost on the way: ${raised.href}`);
   if (!raised.glossary.includes('A folder you named.')) throw new Error('the glossary text never crossed into the module');
+});
+
+// ---- the app's own box, not the window's ------------------------------------
+
+check('a menu opened hard against the edge lands inside the app, not inside the window', () => {
+  const win = booted.window;
+  const surface = win.document.getElementById('appSurface');
+  if (!surface) throw new Error('the page has no app surface to place anything inside');
+  // The app, inset from a 1080x820 window the way the shadow band insets it: 20px at the sides, 13px above, 10px below.
+  const room = { left: 20, top: 13, right: 1060, bottom: 810, width: 1040, height: 797 };
+  const was = surface.getBoundingClientRect;
+  surface.getBoundingClientRect = () => room;
+  const place = (x, y) => {
+    const box = { hidden: true, offsetWidth: 200, offsetHeight: 120, style: {} };
+    win.leafPlaceFloating(box, x, y);
+    return box.style;
+  };
+  try {
+    // Asked for past the app's own right and bottom edges: held inside it, with the 8px margin, in the app's own coordinates.
+    const corner = place(1075, 805);
+    if (corner.left !== '832px' || corner.top !== '669px') {
+      throw new Error(`a menu at the edge landed at ${corner.left},${corner.top} instead of inside the app at 832px,669px`);
+    }
+    // Asked for at a point well inside: the window's number crosses into the app's, so the menu opens where the pointer is rather than 20px off it.
+    const inside = place(120, 213);
+    if (inside.left !== '100px' || inside.top !== '200px') {
+      throw new Error(`a menu inside the app opened at ${inside.left},${inside.top} rather than under the pointer at 100px,200px`);
+    }
+    // Asked for above and left of the app entirely: the margin, never a negative offset that would put it under the shadow.
+    const before = place(0, 0);
+    if (before.left !== '8px' || before.top !== '8px') {
+      throw new Error(`a menu asked for outside the app opened at ${before.left},${before.top} rather than at the margin`);
+    }
+  } finally {
+    surface.getBoundingClientRect = was;
+  }
 });
 
 // ---- report -----------------------------------------------------------------

@@ -41,6 +41,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | `src/assets/reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
 | a new class, component, token or icon | no test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list. Run them and add the row |
 | a new `scripts/*.mjs` | its own `--check` mode, and a line in `just verify` |
+| a test that writes outside the repo | anywhere above, under a name carrying the run's own process id. Two runs at once share every fixed one, and `just check-scratch-names` refuses it |
 | `wix/`, `.github/workflows/` | **cannot be run here** — say so instead of pretending |
 
 The subject files today: `app_shell_chrome` `app_shell_library` `app_shell_reader` `app_shell_scripts` `code_intel` `data_xml` `doc_graph` `editing` `eml` `encoding` `folder_tree` `git` `glossary` `images` `indexer_pager` `markdown_code` `markdown_github` `markdown_rawhtml` `markdown_render` `minimap` `png` `reading_css` `settings_paths` `theme_registry` `updater` `vault_corpus`. Shared helpers are in `src/tests/mod.rs` — use them rather than writing a second `assert_contains`.

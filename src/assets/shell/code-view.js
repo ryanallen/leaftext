@@ -436,7 +436,7 @@ function leafResolveColor(value) {
   if (!value) return null;
   const probe = document.createElement('span');
   probe.style.color = value;
-  document.body.appendChild(probe);
+  appSurface.appendChild(probe);
   const resolved = getComputedStyle(probe).color;
   probe.remove();
   const parts = resolved.match(/[\d.]+/g);

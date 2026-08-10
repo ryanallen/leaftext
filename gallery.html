@@ -2438,12 +2438,77 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--lt-background);
   color: var(--lt-foreground);
   font-family: var(--reading-font);
 }
 body {
   overflow: hidden;
+  /* Nothing paints the whole window: past the app's own edge the window is where the shadow falls, and a page color there would be the app painting its own halo out to the frame. The app surface below carries the color. */
+  background: transparent;
+  /* How far the app is held off the window, which is how much room the shadow band has to fall in — the same spread every floating surface inside the app throws, so the app has one shadow size rather than two. Zero here: a window with no frame of its own has nothing outside it to cast onto, and a browser has no window at all. The two classes below turn it on. */
+  --app-shadow-top: 0px;
+  --app-shadow-side: 0px;
+  --app-shadow-bottom: 0px;
+}
+/* Where the app owns its own frame, so the shadow is the app's to draw. One class covers both platforms: a Mac carries this as well as `mac-frame`, because both kinds draw the app bar as the title bar. */
+body.frameless {
+  --app-shadow-top: 13px;
+  --app-shadow-side: 20px;
+  --app-shadow-bottom: 10px;
+}
+/* Nothing behind a window filling the screen for a shadow to fall on, and a band there would show the desktop through a frame inside the screen edge. Filling the screen means maximized on Windows and full screen on a Mac — never a Mac's maximized, which is a zoomed window that still floats over what is behind it and still casts a shadow. Hence `:not(.mac-frame)`: both platforms report maximized, and only one of them means this by it. */
+body.frameless:not(.mac-frame).is-maximized,
+body.mac-frame.is-fullscreen {
+  --app-shadow-top: 0px;
+  --app-shadow-side: 0px;
+  --app-shadow-bottom: 0px;
+}
+/* One box that means "the app", holding everything the page has. `contain: paint` is the whole point of it: it makes this element what a `position: fixed` child is measured from and what one is clipped to, so the fourteen rules below that place an overlay against the window place it against the app instead. The two are the same rectangle until the inset above turns on, and part company after it. Fixed rather than a block, so its height is definite for the two grids that fill it. */
+.app-surface {
+  position: fixed;
+  inset: var(--app-shadow-top) var(--app-shadow-side) var(--app-shadow-bottom);
+  contain: paint;
+  /* The page color and the app's own edge, both the app's to draw: with the client area running out to the window's own edge there is no frame left for the platform to draw a line in. */
+  background: var(--lt-background);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+}
+/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. */
+body:not(.frameless) .app-surface,
+body.frameless:not(.mac-frame).is-maximized .app-surface,
+body.mac-frame.is-fullscreen .app-surface {
+  border: 0;
+  border-radius: 0;
+}
+/* The window's own shadow, thrown by the app rather than by the platform: the same 2px dot lattice every floating surface inside the app throws, in shadow ink, over the strip of page the app is held off the window by. Four edge gradients intersected — alpha nothing at the window's edge, full where the app surface starts — so each corner is the product of two and falls off the way a corner should. No punch layer: this is a sibling of the app surface rather than a child of it, and the surface is opaque and paints over the middle. Zero-sized when the inset is zero, which is what takes it off a maximized window and out of a browser. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: var(--lt-z-below);
+  pointer-events: none;
+  --lt-grain-dot: var(--lt-grain-dot-strong);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  /* Anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. */
+  background-attachment: fixed;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-top)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-bottom));
+  -webkit-mask-composite: source-in, source-in, source-in;
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-top)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-bottom));
+  mask-composite: intersect;
+}
+/* No frame of its own, maximized, or in full screen: no band at all rather than one masked away to nothing. A browser carries neither frame class, so this is also what takes it off a published page. */
+body:not(.frameless)::before,
+body.frameless:not(.mac-frame).is-maximized::before,
+body.mac-frame.is-fullscreen::before {
+  content: none;
 }
 ::selection {
   background: var(--lt-focus-selection-background);
@@ -3270,7 +3335,8 @@ body:has(.document-minimap) {
   /* The first track spends the rail width the app bar's lead follows — 0px closed — so one var write moves pane and page together and the motion classes below transition this one property. Never an @property registration for the rail: animating a registered inherited length off :root crashed the whole app in this web view (library-sidebar-motion, phase 0). */
   grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
   grid-template-rows: minmax(0, 1fr) var(--reader-gutter);
-  height: 100vh;
+  /* The app surface's height, not the window's: the surface is the app, and past the inset the window has edge the app does not paint. */
+  height: 100%;
   /* Positioning context for the open-library button, pinned to the left edge so it stays reachable when the pane collapses to 0. */
   position: relative;
   /* The chrome shade and grain again, on the same window-anchored lattice as the bar and the rail. What shows here is the gutter the reader is held off the window frame by (see --reader-gutter), so the texture runs unbroken from the bar, down the rail, and around the page. */
@@ -3355,7 +3421,8 @@ body.is-library-settling .app-bar::after {
   position: relative;
   /* A grid item's min-width is its content, which would hold the shrinking track open; the pane itself still never clips — the corner arc on its right edge is real geometry. */
   min-width: 0;
-  height: 100vh;
+  /* The app surface's height, for the reason the shell's is. */
+  height: 100%;
   /* The app bar's shade and grain, so the pane continues the bar rather than sitting under it. The tree rows on top are transparent, so the whole pane carries the texture. */
   background-color: var(--lt-surface);
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
@@ -4545,7 +4612,7 @@ body:has(#readerToolbar:not([hidden])) {
   right: 18px;
   bottom: 18px;
   z-index: var(--lt-z-20);
-  max-width: min(520px, calc(100vw - 36px));
+  max-width: min(520px, calc(100% - 36px));
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-lg);
   background: var(--lt-surface-elevated);
@@ -6897,7 +6964,7 @@ body.is-home-row-dragging .home-list-scroll li {
   top: 44%;
   transform: translate(-50%, -50%);
   z-index: var(--lt-z-41);
-  width: min(360px, calc(100vw - 48px));
+  width: min(360px, calc(100% - 48px));
   box-sizing: border-box;
   padding: var(--lt-space-20);
   border: var(--lt-stroke-1) solid var(--lt-border);
@@ -7339,7 +7406,7 @@ body.is-home-row-dragging .home-list-scroll li {
 .link-hover-tip {
   position: fixed;
   z-index: var(--lt-z-60);
-  max-width: min(34rem, calc(100vw - 24px));
+  max-width: min(34rem, calc(100% - 24px));
   padding: var(--lt-space-8) var(--lt-space-10);
   border: var(--lt-stroke-1) solid var(--lt-border-strong);
   border-radius: var(--lt-radius-xl);
@@ -8333,7 +8400,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 58 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 59 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8355,7 +8422,7 @@ body.is-home-row-dragging .home-list-scroll li {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>155</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>60</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>58</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>59</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8714,7 +8781,11 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">58 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">59 parts, each drawn here exactly as the app draws it.</p>
+<section class="part">
+<header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
+<div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
+</section>
 <section class="part">
 <header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>
 <div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
@@ -8904,7 +8975,7 @@ body.is-home-row-dragging .home-list-scroll li {
 <div class="stage"><div class="reader-toolbar"><span class="reader-view-tools"><label class="reader-subselect"><span class="reader-subselect-label">Graph size</span><select><option>Focus</option></select></label></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div>
 </section>
 <section class="part">
-<header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, on Windows only — the Mac window keeps Apple's own three dots and insets them into the app bar instead</span></header>
+<header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, one set of markup for both platforms — squares at the bar's right end on Windows, the app's own three dots at its left end on a Mac, where Apple's are turned off</span></header>
 <div class="stage"><div class="window-controls"><button type="button" class="window-control"><span class="lt-icon lt-icon-window-minimize"></span></button><button type="button" class="window-control"><span class="lt-icon wc-maximize lt-icon-window-maximize"></span></button><button type="button" class="window-control window-control-close"><span class="lt-icon lt-icon-window-close"></span></button></div></div>
 </section>
 <section class="part">

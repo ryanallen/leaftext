@@ -71,6 +71,21 @@ fn assert_icon(html: &str, name: &str) {
     );
 }
 
+/// The same CSS with every `/* … */` taken out, so a rule's selector can be read off its head without a comment standing in the way — every rule in this stylesheet is introduced by one.
+fn strip_css_comments(css: &str) -> String {
+    let mut out = String::with_capacity(css.len());
+    let mut rest = css;
+    while let Some(at) = rest.find("/*") {
+        out.push_str(&rest[..at]);
+        rest = match rest[at..].find("*/") {
+            Some(end) => &rest[at + end + 2..],
+            None => "",
+        };
+    }
+    out.push_str(rest);
+    out
+}
+
 /// One rule's declarations, from its selector to the first closing brace. The compiled stylesheet has no nested rules, so the first `}` is always the end.
 fn rule_body<'a>(css: &'a str, selector: &str) -> &'a str {
     let start = css

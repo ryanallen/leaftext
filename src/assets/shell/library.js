@@ -440,7 +440,7 @@ const crumbMenu = document.createElement('div');
 crumbMenu.className = 'context-menu crumb-menu';
 crumbMenu.hidden = true;
 crumbMenu.setAttribute('role', 'menu');
-document.body.appendChild(crumbMenu);
+appSurface.appendChild(crumbMenu);
 let crumbMenuOwner = null;
 // Which vault's settings the menu is showing, so a git answer arriving a second later can redraw the panel it belongs to and no other.
 let crumbMenuVault = null;

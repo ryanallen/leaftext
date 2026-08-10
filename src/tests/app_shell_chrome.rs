@@ -1147,3 +1147,77 @@ fn a_marked_tab_is_the_width_of_an_unmarked_one() {
         "padding: 0 var(--lt-space-12) 0 var(--lt-space-4);",
     );
 }
+
+#[test]
+fn every_element_in_the_page_sits_inside_the_one_box_that_means_the_app() {
+    // The app surface is what a `position: fixed` overlay is measured from and clipped to, so anything added beside it belongs to the window instead — and once the app's edge is inset, a sheet or a scrim placed against the window runs 20px past the app's corner and paints over the shadow. Nothing in `<body>` may stand next to it.
+    const VOID: [&str; 8] = ["br", "hr", "img", "input", "link", "meta", "source", "wbr"];
+    let html = app_shell_html();
+    let body = html
+        .split_once("<body>")
+        .expect("the page has a body")
+        .1
+        .split_once("</body>")
+        .expect("the body closes")
+        .0;
+
+    let mut depth = 0usize;
+    let mut surfaces = 0usize;
+    let mut rest = body;
+    while let Some(at) = rest.find('<') {
+        rest = &rest[at..];
+        if let Some(after) = rest.strip_prefix("<!--") {
+            let end = after.find("-->").expect("a comment closes");
+            rest = &after[end + 3..];
+            continue;
+        }
+        let end = rest.find('>').expect("a tag closes");
+        let tag = &rest[..=end];
+        rest = &rest[end + 1..];
+        if tag.starts_with("</") {
+            depth = depth.saturating_sub(1);
+            continue;
+        }
+        if tag.contains("id=\"appSurface\"") {
+            assert_eq!(depth, 0, "the app surface is the body's own child: {tag}");
+            surfaces += 1;
+            depth += 1;
+            continue;
+        }
+        assert!(
+            depth >= 1,
+            "this stands beside the app surface rather than inside it, so it is placed against the window rather than against the app: {tag}"
+        );
+        let name = tag
+            .trim_start_matches('<')
+            .split([' ', '>', '/'])
+            .next()
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        if !tag.ends_with("/>") && !VOID.contains(&name.as_str()) {
+            depth += 1;
+        }
+    }
+    assert_eq!(surfaces, 1, "one box means the app, and only one");
+    assert_eq!(depth, 0, "every tag in the page closes");
+}
+
+#[test]
+fn nothing_in_the_front_end_adds_a_floating_thing_to_the_window() {
+    // The menus, the growl, the rename box, the link tip, the first-run bubble, the drag ghost and the breadcrumb menu are all built in script rather than declared in the page, so the markup test above cannot see them. Added to `<body>` they belong to the window: not clipped by the app, and placed against the window's own corner, which is 20px outside the app's once the app's edge is a shadow. There is one box they all go in.
+    let script = app_shell_script();
+    assert!(
+        !script.contains("document.body.appendChild"),
+        "something is added beside the app surface rather than inside it, so it is the window's rather than the app's"
+    );
+    assert_contains(
+        script,
+        "const appSurface = document.getElementById('appSurface')",
+    );
+    // And no divider color rides to the frame with it: the frame draws none.
+    assert!(
+        !script.contains("borderR:"),
+        "the page still works out a divider color for a frame that draws nothing with it"
+    );
+    assert_contains(script, "command: 'setWindowChrome',");
+}

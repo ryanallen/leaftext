@@ -1403,7 +1403,7 @@ function legacyCopy(text) {
   area.style.position = 'fixed';
   area.style.top = '-1000px';
   area.style.opacity = '0';
-  document.body.appendChild(area);
+  appSurface.appendChild(area);
   area.select();
   let copied = false;
   try {

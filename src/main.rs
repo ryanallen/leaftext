@@ -132,19 +132,9 @@ fn load_window_icon() -> Option<Icon> {
     Icon::from_rgba(buffer, info.width, info.height).ok()
 }
 
-/// Paint the native Windows title bar to the page background and the window border to the theme's divider color, all reported by the webview on theme change. Caption/border/text colors need Windows 11 (build 22000+); older builds ignore the error, so it's a no-op there (dark mode still applies).
+/// Paint the native Windows frame to the page background, reported by the webview on theme change. The border is told to draw nothing: the app carries its own edge now, and with the window's client area running out to its own edge a frame line would trace the outside of the shadow band rather than the app. Caption/border/text colors need Windows 11 (build 22000+); older builds ignore the error, so it's a no-op there (dark mode still applies).
 #[cfg(windows)]
-#[allow(clippy::too_many_arguments)]
-fn apply_window_chrome(
-    window: &tao::window::Window,
-    r: u8,
-    g: u8,
-    b: u8,
-    border_r: u8,
-    border_g: u8,
-    border_b: u8,
-    dark: bool,
-) {
+fn apply_window_chrome(window: &tao::window::Window, r: u8, g: u8, b: u8, dark: bool) {
     use std::ffi::c_void;
     use tao::platform::windows::WindowExtWindows;
 
@@ -153,6 +143,8 @@ fn apply_window_chrome(
     const DWMWA_BORDER_COLOR: u32 = 34;
     const DWMWA_CAPTION_COLOR: u32 = 35;
     const DWMWA_TEXT_COLOR: u32 = 36;
+    /// Draw no border at all, from dwmapi.h.
+    const DWMWA_COLOR_NONE: u32 = 0xFFFF_FFFE;
 
     #[link(name = "dwmapi")]
     extern "system" {
@@ -178,8 +170,7 @@ fn apply_window_chrome(
     } else {
         0x0020_2020
     };
-    // The window border takes the theme's divider color; the caption stays the page color.
-    let border = (border_r as u32) | ((border_g as u32) << 8) | ((border_b as u32) << 16);
+    let border = DWMWA_COLOR_NONE;
     let dark_flag: i32 = i32::from(dark);
 
     unsafe {
@@ -207,18 +198,7 @@ fn apply_window_chrome(
 
 /// Other platforms keep their native chrome; the system already follows the OS light/dark preference there.
 #[cfg(not(windows))]
-#[allow(clippy::too_many_arguments)]
-fn apply_window_chrome(
-    _window: &tao::window::Window,
-    _r: u8,
-    _g: u8,
-    _b: u8,
-    _border_r: u8,
-    _border_g: u8,
-    _border_b: u8,
-    _dark: bool,
-) {
-}
+fn apply_window_chrome(_window: &tao::window::Window, _r: u8, _g: u8, _b: u8, _dark: bool) {}
 
 /// A BMP in, the smallest PNG we can write out. BMP because the screenshot tool can save one without an encoder of its own, which keeps this the only encoder in the project.
 fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<dyn Error>> {
@@ -291,17 +271,23 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             settings.window_width as f64,
             settings.window_height as f64,
         ))
-        .with_min_inner_size(LogicalSize::new(380.0, 480.0))
+        // The smallest readable page, plus the strip the app is held off the window by so the shadow has room: the page inside stays the size it was pinned at rather than losing the band out of it.
+        .with_min_inner_size(LogicalSize::new(380.0 + 40.0, 480.0 + 23.0))
         .with_maximized(settings.window_maximized);
-    // On Windows we drop the native title bar (removing just its icon falls back to a placeholder) for a custom one: the app bar is the drag region and carries our own window controls (wired via IPC). undecorated_shadow keeps the shadow and edge resize; the taskbar leaf rides the exe icon. Others: native.
+    // On Windows we drop the native title bar (removing just its icon falls back to a placeholder) for a custom one: the app bar is the drag region and carries our own window controls (wired via IPC); the taskbar leaf rides the exe icon. Others: native.
+    //
+    // The platform shadow goes with it, because the app draws its own — the dot lattice every floating surface inside it throws, over the outer strip of the page, which is why the window and the web view are see-through. `false` rather than left out: tao's flag is on unless something says otherwise, so omitting the call keeps the smooth halo, keeps the frame insets that make the window bigger than the page, and keeps a hit test that only finds the top edge. Clearing it hands back all four resize edges and makes the window exactly the page it holds.
     #[cfg(windows)]
     {
         use tao::platform::windows::WindowBuilderExtWindows;
         window_builder = window_builder
             .with_decorations(false)
-            .with_undecorated_shadow(true);
+            .with_undecorated_shadow(false)
+            .with_transparent(true);
     }
     // On macOS the strip goes empty and see-through with the page running up underneath it, and the app bar is what fills it. Apple's three dots go off and the page draws its own in the same place: theirs are pinned to the window and cannot fold, so the bar had to reserve 86px for them whether it had the room or not, which cost the tab strip a quarter of its width on a narrow window. The price of drawing them is the green one's tiling menu, and Apple's own hover and disabled states.
+    //
+    // The window's own shadow goes here too, for the reason it goes on Windows: the app draws it. `false` rather than left out, because AppKit's is on unless something says otherwise. Dropping the decorations still stays out of this arm — tao overwrites every title-bar property when it is told to, and the see-through strip goes with them.
     #[cfg(target_os = "macos")]
     {
         use tao::platform::macos::WindowBuilderExtMacOS;
@@ -309,7 +295,13 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             .with_fullsize_content_view(true)
             .with_titlebar_transparent(true)
             .with_title_hidden(true)
-            .with_titlebar_buttons_hidden(true);
+            .with_titlebar_buttons_hidden(true)
+            .with_has_shadow(false);
+    }
+    // See-through on both platforms, so the strip of page the app is held off the window by shows what is behind the window rather than a page color.
+    #[cfg(target_os = "macos")]
+    {
+        window_builder = window_builder.with_transparent(true);
     }
     // The icon here is the dock's and the app switcher's, not the strip's, so macOS wants it as much as any other non-Windows build.
     #[cfg(not(windows))]
@@ -356,6 +348,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     let vault_state = VaultState::load(data_dir.as_deref());
 
     let builder = WebViewBuilder::new_with_web_context(&mut web_context)
+        // See-through, so the strip of page the app is held off the window by shows what is behind the window and the app's own shadow can fall on it. Both halves are needed: a transparent window over an opaque web view shows nothing.
+        .with_transparent(true)
         .with_html(app_shell_html())
         .with_initialization_script(initial_settings_script(&settings))
         .with_initialization_script(settings_unreadable_script(settings_unreadable))

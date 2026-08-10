@@ -3,7 +3,7 @@ const contextMenu = document.createElement('div');
 contextMenu.className = 'context-menu';
 contextMenu.hidden = true;
 contextMenu.setAttribute('role', 'menu');
-document.body.appendChild(contextMenu);
+appSurface.appendChild(contextMenu);
 let contextMenuPath = null;
 // What was right-clicked: 'file', 'folder', 'here' (the pane's empty space, standing for the folder being browsed), or 'link' (a link in the document, whose href sits in contextMenuPath). It picks which list of items to show.
 let contextMenuTargetKind = 'file';
@@ -243,7 +243,7 @@ renameInput.spellcheck = false;
 renameInput.setAttribute('autocomplete', 'off');
 renameInput.setAttribute('aria-label', 'Rename file');
 renameBox.appendChild(renameInput);
-document.body.appendChild(renameBox);
+appSurface.appendChild(renameBox);
 let renamePath = null;
 let renameSettled = false;
 function fileBaseName(path) {
@@ -284,8 +284,9 @@ function openRenameBox(path) {
   const rect = row ? row.getBoundingClientRect() : null;
   const left = rect ? rect.left : 16;
   const top = rect ? rect.top : 80;
-  renameBox.style.left = Math.max(8, Math.min(left, window.innerWidth - 248)) + 'px';
-  renameBox.style.top = Math.max(8, Math.min(top, window.innerHeight - 48)) + 'px';
+  const at = leafClampToApp(left, top, 240, 40, 8);
+  renameBox.style.left = at.left + 'px';
+  renameBox.style.top = at.top + 'px';
   renameInput.focus();
   // Preselect the name without its extension for a quick edit.
   const dot = name.lastIndexOf('.');

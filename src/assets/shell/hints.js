@@ -39,11 +39,12 @@ function hintTarget(hint) {
   const rect = element.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return null;
   if (rect.right <= 0 || rect.bottom <= 0) return null;
-  if (rect.left >= window.innerWidth || rect.top >= window.innerHeight) return null;
+  const app = leafAppRect();
+  if (rect.left >= app.right || rect.top >= app.bottom) return null;
   return { element, rect };
 }
 
-// The first side that fits the window whole. The cross axis centers on the target and is then clamped inside the margin, and the chevron follows the target rather than the box, so a clamped bubble still points at the control.
+// The first side that fits the app whole. Every number here is in the app's own coordinates, target included — see hintTargetInApp — so what comes back can go straight on a fixed child of the app surface. The cross axis centers on the target and is then clamped inside the margin, and the chevron follows the target rather than the box, so a clamped bubble still points at the control.
 function hintPlacement(target, size, view) {
   const room = {
     right: view.width - HINT_EDGE - (target.right + HINT_GAP) >= size.width,
@@ -51,7 +52,7 @@ function hintPlacement(target, size, view) {
     above: target.top - HINT_GAP - size.height >= HINT_EDGE,
     below: view.height - HINT_EDGE - (target.bottom + HINT_GAP) >= size.height,
   };
-  // Nothing fits in a window this small, so take the last side and let the clamp below hold the box on screen: covering the target beats drawing off it.
+  // Nothing fits in an app this small, so take the last side and let the clamp below hold the box on screen: covering the target beats drawing off it.
   const side = HINT_SIDES.find((name) => room[name]) || HINT_SIDES[HINT_SIDES.length - 1];
   const clamp = (value, extent, span) => Math.max(HINT_EDGE, Math.min(value, extent - HINT_EDGE - span));
   const sideways = side === 'right' || side === 'left';
@@ -70,6 +71,18 @@ function hintPlacement(target, size, view) {
   const inset = Math.min(HINT_TAIL_INSET, span / 2);
   const tail = Math.max(inset, Math.min(center - origin, span - inset));
   return { side, left: Math.round(left), top: Math.round(top), tail: Math.round(tail) };
+}
+
+// The control's rectangle, moved out of the window's coordinates and into the app's, which is the space the placement above and the bubble's own `left` are both written in.
+function hintTargetInApp(rect, app) {
+  return {
+    left: rect.left - app.left,
+    right: rect.right - app.left,
+    top: rect.top - app.top,
+    bottom: rect.bottom - app.top,
+    width: rect.width,
+    height: rect.height,
+  };
 }
 
 function hideHintBubble() {
@@ -109,9 +122,10 @@ function drawHintBubble(hint, target) {
   tail.className = 'hint-bubble-tail';
   bubble.appendChild(text);
   bubble.appendChild(tail);
-  document.body.appendChild(bubble);
+  appSurface.appendChild(bubble);
   const rect = bubble.getBoundingClientRect();
-  const placement = hintPlacement(targetRect, { width: rect.width, height: rect.height }, { width: window.innerWidth, height: window.innerHeight });
+  const app = leafAppRect();
+  const placement = hintPlacement(hintTargetInApp(targetRect, app), { width: rect.width, height: rect.height }, { width: app.width, height: app.height });
   bubble.classList.add('is-' + placement.side);
   bubble.style.left = placement.left + 'px';
   bubble.style.top = placement.top + 'px';
