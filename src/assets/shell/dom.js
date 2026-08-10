@@ -321,6 +321,36 @@ if (window.__leafFrameless || window.__leafMacFrame) {
   // The flowchart sheet covers the app bar, so its header is the drag bar while it is open — otherwise the window cannot be moved without closing the sheet.
   dragWindowFrom(document.getElementById('flowSheetHead'));
 }
+// The shadow band is the whole of the window's edge on Windows. With no platform frame left, the window is exactly the page it holds and the web view covers every pixel of it, so the window's own edge test is correct and never reached — the page has to take the press and hand the platform its resize loop, the way the app bar hands it a window move. The gate is the shell flag and not the `frameless` class, which a Mac carries too: that window keeps its platform frame and resizes itself, and a handler here would swallow the gesture.
+if (window.__leafFrameless) {
+  // Which of the eight compass points a press landed on, or null anywhere inside the app. Read off the app box rather than off the band's own sizes, so there is one copy of them; a window filling the screen has no band and no resize, and the platform refuses one anyway.
+  const resizeEdgeAt = (x, y) => {
+    if (document.body.classList.contains('is-maximized')) return null;
+    const box = leafAppRect();
+    const northSouth = y < box.top ? 'n' : y > box.bottom ? 's' : '';
+    const eastWest = x < box.left ? 'w' : x > box.right ? 'e' : '';
+    return northSouth + eastWest || null;
+  };
+  // Watched on the document rather than on the body: everything the page has is inside one fixed box, so the body has no flowed content and no height of its own — a press in the band lands on the page root above it and never reaches a body listener at all.
+  document.addEventListener('mousedown', (event) => {
+    if (event.button !== 0) return;
+    const direction = resizeEdgeAt(event.clientX, event.clientY);
+    if (!direction) return;
+    // Otherwise the drag sweeps a text selection across the page under the band.
+    event.preventDefault();
+    send({ command: 'windowResizeDrag', direction });
+  });
+  // What tells somebody the band can be grabbed at all: the same eight zones the press reads, as the eight pointer shapes named after them. Set here rather than declared in the stylesheet, which would be a second copy of the zone table — and written only when it changes, since this runs on every move.
+  let shape = '';
+  document.addEventListener('mousemove', (event) => {
+    const direction = resizeEdgeAt(event.clientX, event.clientY);
+    const wanted = direction ? `${direction}-resize` : '';
+    if (wanted === shape) return;
+    shape = wanted;
+    // On the page root, for the same reason the press is: the band is outside the body's own box.
+    document.documentElement.style.cursor = wanted;
+  });
+}
 // A full-screen Mac window shows no window buttons — the pointer at the top edge is how you get them — so ours go with them and the bar takes the room back. The Mac class itself stays on: it is what says which shell this is, and the dots' look and place are still the Mac's underneath. Defined unconditionally, like the maximize sync below, so the host's call is safe on every window.
 window.leafSetFullscreen = (fullscreen) => {
   document.body.classList.toggle('is-fullscreen', !!fullscreen);

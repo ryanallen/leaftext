@@ -1775,6 +1775,42 @@ fn the_window_asks_for_no_platform_shadow_and_shows_what_is_behind_it() {
         source.contains("LogicalSize::new(380.0 + 40.0, 480.0 + 23.0)"),
         "the smallest window lost the band out of its readable page"
     );
+    // Asking the web view to be see-through is a no-op on a Mac unless the manifest names the crate feature that compiles that call in — which is how the band shipped as a solid gray slab on every Mac while every assert above passed.
+    let manifest = include_str!("../../Cargo.toml");
+    assert!(
+        manifest.contains(r#"wry = { version = "0.55.1", optional = true, features = ["transparent"] }"#),
+        "the web view's see-through ask is compiled out on macOS, so the band is a solid slab there"
+    );
+}
+
+#[test]
+fn a_press_in_the_shadow_band_resizes_the_window() {
+    // With the platform shadow off, the window is exactly the page it holds and the web view covers every pixel of it, so the window's own edge test is correct and never reached. The page takes the press instead and this arm hands the window to the platform's own resize loop, beside the arm that answers the app bar's window move the same way.
+    use tao::window::ResizeDirection::*;
+    for (name, direction) in [
+        ("n", North),
+        ("ne", NorthEast),
+        ("e", East),
+        ("se", SouthEast),
+        ("s", South),
+        ("sw", SouthWest),
+        ("w", West),
+        ("nw", NorthWest),
+    ] {
+        assert_eq!(
+            resize_direction(name),
+            Some(direction),
+            "the band's {name} edge asks for a resize the window library does not recognize"
+        );
+    }
+    // Anything else is dropped rather than guessed at: a wrong guess resizes the wrong edge under the pointer.
+    assert_eq!(resize_direction("north"), None);
+    assert_eq!(resize_direction(""), None);
+    let source = include_str!("event_loop.rs");
+    assert!(
+        source.contains("reader.window.drag_resize_window(direction)"),
+        "the resize command reaches no window call, so the band takes the press and nothing moves"
+    );
 }
 
 #[test]

@@ -1,6 +1,6 @@
 [package]
 name = "leaftext"
-version = "0.92.12"
+version = "0.92.13"
 edition = "2021"
 
 # The window, the web view, the file dialog, the watcher and SQLite are the desktop's, and none of them builds for a browser. They are optional so the library alone — the renderer, the format table, the editor's maps and the host boundary — compiles for `wasm32`, which is what a browser core is. The binary asks for them by name, so a plain `cargo build` is unchanged.
@@ -92,7 +92,8 @@ time = { version = "0.3.47", default-features = false, features = [
 ] }
 two-face = { version = "0.5.1", default-features = false, optional = true }
 url = "2.5.8"
-wry = { version = "0.55.1", optional = true }
+# `transparent` is the only way a Mac web view stops painting its own background, so the shadow band shows what is behind the window rather than a gray slab. The code it gates is inside a macOS block; Windows transparency carries no gate.
+wry = { version = "0.55.1", optional = true, features = ["transparent"] }
 # The one YAML parser in the binary: reads the documents the app opens, and is
 # maintained and fuzzed, which the input it is pointed at requires. `encoding`
 # is off because files arrive as Rust strings already decoded.

@@ -214,8 +214,17 @@ function fakePage() {
       },
       collapse() {},
     }),
-    addEventListener() {},
-    removeEventListener() {},
+    // Kept rather than swallowed, so a check can raise a made-up event on the page and get the page's own handlers. Every fragment that watches the document is on this list, in the order they registered, which is the order the real page calls them in.
+    listeners: new Map(),
+    addEventListener(type, handler) {
+      if (!this.listeners.has(type)) this.listeners.set(type, []);
+      this.listeners.get(type).push(handler);
+    },
+    removeEventListener(type, handler) {
+      const held = this.listeners.get(type) || [];
+      const at = held.indexOf(handler);
+      if (at >= 0) held.splice(at, 1);
+    },
     fonts: { addEventListener() {}, removeEventListener() {}, ready: Promise.resolve() },
     visibilityState: 'visible',
     activeElement: null,
@@ -4594,6 +4603,109 @@ check('a menu opened hard against the edge lands inside the app, not inside the 
     }
   } finally {
     surface.getBoundingClientRect = was;
+  }
+});
+
+// ---- the shadow band is the window's edge -----------------------------------
+
+/** A Windows shell whose app box is inset from the window the way the band insets it, with every command it sends recorded. */
+function bandPress({ frameless = true, macFrame = false, maximized = false } = {}) {
+  const sent = [];
+  const context = runShell(source, {
+    __leafFrameless: frameless,
+    __leafMacFrame: macFrame,
+    ipc: { postMessage: (message) => sent.push(JSON.parse(message)) },
+  });
+  const surface = context.document.getElementById('appSurface');
+  // 20px at the sides, 13px above and 10px below a 1080x820 window — the band's own sizes.
+  surface.getBoundingClientRect = () => ({ left: 20, top: 13, right: 1060, bottom: 810, width: 1040, height: 797 });
+  if (maximized) context.document.body.classList.contains = (name) => name === 'is-maximized';
+  // Everything the page has is inside one fixed box, so the body has no height of its own and a press in the band lands on the page root above it. Raised on the document, which is where the page has to be listening for one at all.
+  const raise = (type, event) => {
+    const held = context.document.listeners.get(type) || [];
+    if (!held.length) throw new Error(`nothing on the page is watching the document for a ${type}`);
+    for (const handler of held) handler(event);
+  };
+  const press = (x, y) => {
+    sent.length = 0;
+    let prevented = false;
+    raise('mousedown', { button: 0, clientX: x, clientY: y, target: context.document.documentElement, preventDefault: () => (prevented = true) });
+    return { sent: [...sent], prevented };
+  };
+  const move = (x, y) => {
+    raise('mousemove', { clientX: x, clientY: y, target: context.document.documentElement });
+    return context.document.documentElement.style.cursor;
+  };
+  const watching = (type) => (context.document.listeners.get(type) || []).length;
+  return { context, press, move, watching };
+}
+
+/** Only the resize asks: other fragments watch the document for a press too, and a click anywhere is allowed to close a menu. */
+const resizeAsks = (sent) => sent.filter((message) => message.command === 'windowResizeDrag');
+
+check('a press in the shadow band asks for the resize its own edge means', () => {
+  const band = bandPress();
+  const direction = (x, y) => {
+    const { sent, prevented } = band.press(x, y);
+    const asks = resizeAsks(sent);
+    if (asks.length !== 1) throw new Error(`a press at ${x},${y} asked for ${asks.length} resizes`);
+    // Without this the drag sweeps a selection across the page under the band instead of resizing.
+    if (!prevented) throw new Error(`a press at ${x},${y} left the page free to start a selection`);
+    return asks[0].direction;
+  };
+  const cases = [
+    [540, 4, 'n'],
+    [1070, 4, 'ne'],
+    [1070, 400, 'e'],
+    [1070, 815, 'se'],
+    [540, 815, 's'],
+    [4, 815, 'sw'],
+    [4, 400, 'w'],
+    [4, 4, 'nw'],
+  ];
+  for (const [x, y, want] of cases) {
+    const got = direction(x, y);
+    if (got !== want) throw new Error(`a press at ${x},${y} asked for ${got} rather than ${want}`);
+  }
+  // Inside the app is the document, a control or a menu — never a resize.
+  const inside = band.press(540, 400);
+  if (resizeAsks(inside.sent).length !== 0) throw new Error('a press inside the app asked for a resize');
+  if (inside.prevented) throw new Error('a press inside the app was swallowed');
+});
+
+check('the pointer says the band can be grabbed before anyone presses it', () => {
+  const band = bandPress();
+  const shape = (x, y) => band.move(x, y) || '';
+  const cases = [
+    [540, 4, 'n-resize'],
+    [1070, 4, 'ne-resize'],
+    [1070, 400, 'e-resize'],
+    [1070, 815, 'se-resize'],
+    [540, 815, 's-resize'],
+    [4, 815, 'sw-resize'],
+    [4, 400, 'w-resize'],
+    [4, 4, 'nw-resize'],
+  ];
+  for (const [x, y, want] of cases) {
+    const got = shape(x, y);
+    if (got !== want) throw new Error(`the pointer at ${x},${y} read ${got || 'the arrow'} rather than ${want}`);
+  }
+  // Back inside the app it is the arrow again, or the band leaves a resize pointer over the whole document.
+  if (shape(540, 400) !== '') throw new Error('the resize pointer followed the pointer into the app');
+});
+
+check('a window filling the screen and a Mac window are left alone', () => {
+  // No band to grab, and the platform refuses the resize anyway.
+  const full = bandPress({ maximized: true });
+  if (resizeAsks(full.press(4, 4).sent).length !== 0) throw new Error('a maximized window still asked for a resize');
+  // The `frameless` class is on a Mac too, so a gate keyed on it would swallow a gesture that window's own frame already answers. Counted rather than pressed: the Mac page must not be watching for one at all.
+  const mac = bandPress({ frameless: false, macFrame: true });
+  const windows = bandPress();
+  if (mac.watching('mousedown') >= windows.watching('mousedown')) {
+    throw new Error('a Mac page is watching the band for a press its own window frame already answers');
+  }
+  if (mac.watching('mousemove') >= windows.watching('mousemove')) {
+    throw new Error('a Mac page is watching the band for the pointer');
   }
 });
 

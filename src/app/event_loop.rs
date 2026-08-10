@@ -19,6 +19,22 @@ pub(crate) struct AppCtx {
     pub(crate) last_fullscreen: bool,
 }
 
+/// The compass point the page grabbed, as the window library names it. Anything else is dropped rather than guessed at.
+pub(crate) fn resize_direction(direction: &str) -> Option<tao::window::ResizeDirection> {
+    use tao::window::ResizeDirection::*;
+    Some(match direction {
+        "n" => North,
+        "ne" => NorthEast,
+        "e" => East,
+        "se" => SouthEast,
+        "s" => South,
+        "sw" => SouthWest,
+        "w" => West,
+        "nw" => NorthWest,
+        _ => return None,
+    })
+}
+
 /// Apply a page command that records a setting; the one caller persists when this returns true. A new persisted toggle is its command plus an arm here.
 fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
     match command {
@@ -907,6 +923,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::WindowDrag => {
                     let _ = reader.window.drag_window();
+                }
+                IpcCommand::WindowResizeDrag { direction } => {
+                    if let Some(direction) = resize_direction(&direction) {
+                        let _ = reader.window.drag_resize_window(direction);
+                    }
                 }
                 IpcCommand::WindowMinimize => {
                     reader.window.set_minimized(true);
