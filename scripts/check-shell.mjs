@@ -2613,6 +2613,204 @@ if (booted) {
     }
   });
 
+  // Scrolling a page of diagrams jolted the words on every drawing that landed: a block grows above the reader, everything on screen shoves down by what it gained, and the app's own re-pin ran a painted frame later. The fix is arithmetic inside the batch loop, and the whole of it is which blocks count.
+  const readerStand = () => {
+    const appEl = booted.document.getElementById('app');
+    const wasRect = appEl.getBoundingClientRect;
+    // The reader's top edge at 100: the app bar's own strip is above it and everything the reader sees is below.
+    appEl.getBoundingClientRect = () => ({ left: 0, top: 100, right: 1080, bottom: 920, width: 1080, height: 820 });
+    appEl.scrollTop = 4000;
+    return {
+      appEl,
+      done: () => {
+        appEl.getBoundingClientRect = wasRect;
+        appEl.scrollTop = 0;
+      },
+    };
+  };
+  // A block whose bottom is at or above the top edge; `height` is read fresh, so raising it is the block growing.
+  const growingBlock = (bottom, start) => {
+    const block = {
+      isConnected: true,
+      height: start,
+      getBoundingClientRect: () => ({ top: bottom - block.height, bottom, height: block.height }),
+    };
+    return block;
+  };
+
+  check('a diagram drawn above the reader does not shove the page', () => {
+    const { mermaidBlocksAboveReader, mermaidRepayGrowthAbove } = booted;
+    const stand = readerStand();
+    try {
+      // The measured median and the measured worst: 114px to 306px, and 261px to 1051px.
+      const median = growingBlock(60, 114);
+      const worst = growingBlock(40, 261);
+      const above = mermaidBlocksAboveReader([median, worst]);
+      if (above.length !== 2) throw new Error(`${above.length} of the two blocks above the reader were counted`);
+      median.height = 306;
+      worst.height = 1051;
+      mermaidRepayGrowthAbove(above);
+      // 4000 + (306-114) + (1051-261).
+      if (Math.round(stand.appEl.scrollTop) !== 4982) {
+        throw new Error(`the reader was left at ${stand.appEl.scrollTop} rather than 4982`);
+      }
+
+      // 19 of the 60 drew shorter than the box that held them, which moves the page the other way and is owed just the same.
+      stand.appEl.scrollTop = 4000;
+      const shrinking = growingBlock(60, 192);
+      const shrank = mermaidBlocksAboveReader([shrinking]);
+      shrinking.height = 105;
+      mermaidRepayGrowthAbove(shrank);
+      if (Math.round(stand.appEl.scrollTop) !== 3913) {
+        throw new Error(`a drawing shorter than its box left the reader at ${stand.appEl.scrollTop} rather than 3913`);
+      }
+    } finally {
+      stand.done();
+    }
+  });
+
+  // A block grows downward, so one straddling the top edge grows into the room under the reader's eyes and nothing they can see moves. Paying for that would drag the diagram they are looking at up and off the window — the one case a reader would notice most.
+  check('a diagram drawn below the reader’s top edge, or straddling it, moves the reader not at all', () => {
+    const { mermaidBlocksAboveReader, mermaidRepayGrowthAbove } = booted;
+    const stand = readerStand();
+    try {
+      const below = { isConnected: true, getBoundingClientRect: () => ({ top: 300, bottom: 500, height: 200 }) };
+      const straddling = { isConnected: true, getBoundingClientRect: () => ({ top: 20, bottom: 300, height: 280 }) };
+      const above = mermaidBlocksAboveReader([below, straddling]);
+      if (above.length) throw new Error(`${above.length} block(s) were counted as above the reader`);
+      mermaidRepayGrowthAbove(above);
+      if (stand.appEl.scrollTop !== 4000) throw new Error(`the reader moved to ${stand.appEl.scrollTop}`);
+
+      // The edge itself belongs to the block above it: a bottom exactly on the top edge shoves the page.
+      const touching = growingBlock(100, 114);
+      if (mermaidBlocksAboveReader([touching]).length !== 1) throw new Error('a block ending exactly on the top edge was not counted');
+    } finally {
+      stand.done();
+    }
+  });
+
+  // `min-height` cannot make a block shorter than its own contents, and a waiting box's contents are the diagram's source text with the ink turned off. 19 of the 60 diagrams in the test document draw shorter than that text — worst 192px of source against a 105px drawing — so a remembered height held as a floor left those boxes 87px too tall and shoved the page anyway when the drawing landed.
+  check('a remembered height shorter than the box’s own source text is taken exactly, not as a floor', () => {
+    const { finishMermaidDiagram, markMermaidWait } = booted;
+    const styleStand = () => ({
+      removeProperty(name) {
+        delete this[name === 'min-height' ? 'minHeight' : name];
+      },
+    });
+    const block = (source, height) => ({
+      dataset: {},
+      style: styleStand(),
+      isConnected: true,
+      __mermaidSource: source,
+      querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ top: 0, bottom: height, width: 400, height }),
+    });
+
+    // Drawn at 105px: that is what the memo learns.
+    finishMermaidDiagram(block('flowchart TD\n  A --> B', 105));
+    const waiting = block('flowchart TD\n  A --> B', 192);
+    markMermaidWait(waiting, false);
+    if (waiting.style.height !== '105px') throw new Error(`the box was given a height of ${waiting.style.height || 'nothing'}`);
+    if (waiting.style.minHeight !== '0px') throw new Error('the stylesheet’s 88px floor was left on a box shorter than it');
+
+    // Nothing measured at this column width: the box keeps the stylesheet's floor and its source text's height rather than another drawing's.
+    const unknown = block('flowchart TD\n  C --> D', 192);
+    markMermaidWait(unknown, false);
+    if ('height' in unknown.style || 'minHeight' in unknown.style) {
+      throw new Error('a box with no remembered height was pinned to one anyway');
+    }
+
+    // And the drawing itself is never clamped to what it measured last time.
+    const drawn = block('flowchart TD\n  A --> B', 105);
+    drawn.style.height = '105px';
+    drawn.style.minHeight = '0px';
+    finishMermaidDiagram(drawn);
+    if ('height' in drawn.style || 'minHeight' in drawn.style) {
+      throw new Error('a drawn diagram was left holding the height its box was given');
+    }
+  });
+
+  // Every box in a document is drawn once while the window is quiet, so nothing in it resizes afterwards and a scroll to the bottom moves nothing. What decides that is one list: everything whose height has never been measured at this column width. A drawing already measured is skipped, which is what makes the pass idempotent, and a theme change or a change in the column's width re-keys the memo and so makes every diagram a candidate again without anything having to notice why.
+  check('the warm pass draws only what has never been measured at this column width', () => {
+    const { mermaidWarmCandidates, finishMermaidDiagram } = booted;
+    const appEl = booted.document.getElementById('app');
+    const wasQuery = appEl.querySelector;
+    const styleStand = () => ({
+      removeProperty(name) {
+        delete this[name === 'min-height' ? 'minHeight' : name];
+      },
+    });
+    const diagram = (source) => ({
+      dataset: {},
+      style: styleStand(),
+      isConnected: true,
+      __mermaidSource: source,
+      querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ top: 0, bottom: 220, width: 400, height: 220 }),
+    });
+    // The reading column at 640px, which is where these heights are measured.
+    const bodyOf = (held) => ({
+      getBoundingClientRect: () => ({ left: 0, top: 0, right: 640, bottom: 900, width: 640, height: 900 }),
+      querySelectorAll: (selector) => (String(selector).includes(':not(') ? held.filter((d) => d.dataset.processed !== 'true') : held),
+    });
+    const stand = (held) => {
+      const body = bodyOf(held);
+      appEl.querySelector = (selector) => (String(selector) === '.document-body' ? body : wasQuery.call(appEl, selector));
+    };
+
+    try {
+      const measured = diagram('flowchart TD\n  W1 --> W2');
+      const never = diagram('flowchart TD\n  W3 --> W4');
+      stand([measured, never]);
+      // One of the two has been drawn and measured at this width.
+      finishMermaidDiagram(measured);
+      const queue = mermaidWarmCandidates();
+      if (queue.length !== 1 || queue[0] !== never) {
+        throw new Error(`the warm pass queued ${queue.length} of the two, and not the unmeasured one`);
+      }
+
+      // Nothing left to learn: the pass has an empty queue and draws nothing, which is why it can be scheduled after every other pass without costing anything.
+      finishMermaidDiagram(never);
+      if (mermaidWarmCandidates().length) throw new Error('a document whose every height is known was warmed again');
+
+      // Past the memo's cap it empties wholesale rather than dropping the oldest, so warming a document this size is a redraw of it on every scroll. It is left exactly as it ships.
+      const crowd = Array.from({ length: 201 }, (unused, at) => diagram(`flowchart TD\n  C${at} --> D`));
+      stand(crowd);
+      if (mermaidWarmCandidates().length) throw new Error('a document with more diagrams than the memo holds was warmed anyway');
+      // One under the cap still is.
+      stand(crowd.slice(0, 200));
+      if (mermaidWarmCandidates().length !== 200) throw new Error('a document inside the cap was refused');
+    } finally {
+      appEl.querySelector = wasQuery;
+    }
+  });
+
+  // A warm pass a nearer one interrupted has to pick itself up, or it stalls until the reader happens to scroll. Two things start it: the settle after a gesture, and the end of every other pass. One at a time, because a document being warmed schedules one on every batch it finishes.
+  check('a settled scroll starts the warm pass again, one at a time', () => {
+    const { readerScrollSettled } = booted;
+    const wasTimeout = booted.setTimeout;
+    const queued = [];
+    booted.setTimeout = (fn, delay) => {
+      queued.push({ fn, delay });
+      return queued.length;
+    };
+    let first = 0;
+    try {
+      readerScrollSettled();
+      first = queued.length;
+      if (!first) throw new Error('a settled scroll queued no warm pass');
+      readerScrollSettled();
+      if (queued.length !== first) throw new Error('a second settle queued a second warm pass on top of the first');
+      // Let it run, so the page is not left holding a timer that never fires — the stand-in page has no diagrams, so it finds nothing to draw.
+      queued[0].fn();
+      readerScrollSettled();
+      if (queued.length !== first + 1) throw new Error('the pass that ran did not free the next one');
+    } finally {
+      queued.slice(first).forEach((held) => held.fn());
+      booted.setTimeout = wasTimeout;
+    }
+  });
+
   // v0.1.468: one line in a document took the whole interface away. Mermaid draws `click A "…"` as a real anchor even at its strict level, and writes only `xlink:href` — which `documentLinkFor` does not match, so the click belonged to the web view and the app page navigated to the site with no tabs, no bar and no way back.
   check('a box wired to a link is the app’s click, not the web view’s', () => {
     const { claimMermaidLinks, documentLinkHref } = booted;

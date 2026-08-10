@@ -532,7 +532,13 @@ function mermaidCacheKey(source) {
   const root = document.documentElement.dataset;
   return (root.themeFamily || '') + '\n' + (root.theme || '') + '\n' + source;
 }
-// Keyed like the picture memo, so a box refilled at the height its drawing had moves nothing above the reader.
+// A drawing wider than the reading column is scaled to fit it, so its height is only true at that width — measured at 640px and at 749px in two window sizes on the same day. The picture memo keeps the key above: an SVG scales, and throwing every drawing away on a resize would redraw the document.
+function mermaidHeightKey(source) {
+  const body = app.querySelector('.document-body');
+  const width = body ? Math.round(body.getBoundingClientRect().width) : 0;
+  return width + '\n' + mermaidCacheKey(source);
+}
+// Keyed like the picture memo plus the column's width, so a box refilled at the height its drawing had moves nothing above the reader.
 const mermaidDrawnHeights = new Map();
 // One window either way. Sixty drawn on open stalled the window for three and a half seconds.
 const MERMAID_NEAR_SCREENS = 1;
@@ -549,10 +555,15 @@ function mermaidIsNearReader(diagram) {
 // Waiting its turn, or too far away to be queued. Only the waiting one spins, so a page of boxes is not fifty-seven spinners.
 function markMermaidWait(diagram, near) {
   diagram.dataset.diagramWait = near ? 'near' : 'far';
-  const known = mermaidDrawnHeights.get(mermaidCacheKey(diagram.__mermaidSource || diagram.textContent));
-  // Cleared when unknown: a theme switch keys the memo afresh, and the old theme's height would hold the box open.
-  if (known) diagram.style.minHeight = `${known}px`;
-  else diagram.style.removeProperty('min-height');
+  const known = mermaidDrawnHeights.get(mermaidHeightKey(diagram.__mermaidSource || diagram.textContent));
+  // Exact, and the stylesheet's floor comes off with it: 19 of the 60 diagrams in the test document draw *shorter* than their own source text, and `min-height` cannot make a block shorter than its contents in either direction. Cleared when unknown: a theme or column-width change keys the memo afresh, and the old height would hold the box open.
+  if (known) {
+    diagram.style.height = `${known}px`;
+    diagram.style.minHeight = '0px';
+  } else {
+    diagram.style.removeProperty('height');
+    diagram.style.removeProperty('min-height');
+  }
 }
 function renderMermaidDiagrams() {
   // A render swaps in a fresh body, so the boxes the watcher held are detached. Identity catches that; re-observing does not.
@@ -576,10 +587,75 @@ function renderMermaidDiagrams() {
   });
   watchMermaidDiagrams(candidates);
   drawMermaidDiagrams(near);
+  mermaidNoteColumnWidth();
+  scheduleMermaidWarmPass();
 }
 
-// Restore what the memo has, queue the rest. Called with the diagrams near the reader, on open and on every scroll.
-function drawMermaidDiagrams(candidates) {
+// ---- warming the whole document ---------------------------------------------
+// A box that has never been drawn is as tall as its own source code, which has nothing to do with the drawing: measured over 60 of them, the median box moves 136px when it draws and the worst 790px. So every first draw in a document is a resize, and reading down a page of diagrams is a page that never stops settling. Draw them all once while nobody is scrolling and that stops: the scrollbar and the rail are honest from the first minute, and a scroll to the bottom moves nothing. It costs 6.8 seconds on a 67-diagram document, none of it on the path to the words.
+//
+// This pass hands nothing back itself. A finished drawing already asks to be watched for recycling, and the watcher already puts a far one back as a box at its drawn height — so warming is a queue and a yield, not a second copy of that path.
+const MERMAID_WARM_SETTLE_MS = 400;
+let mermaidWarmTimer = 0;
+// What is worth drawing: everything the document holds whose height has never been measured at this column width. A recycled box has one, so it is left alone; a theme change or a change in the column's width keys the memo afresh, which makes every diagram a candidate again and re-runs the pass without anything having to notice why.
+function mermaidWarmCandidates() {
+  const body = app.querySelector('.document-body');
+  if (!body) return [];
+  // Past the cap both memos empty wholesale rather than dropping the oldest, so a warm pass into them is a redraw of the document on every scroll — worse than the jolt it set out to fix. A document this size is left exactly as it ships.
+  if (body.querySelectorAll('pre.mermaid').length > MERMAID_CACHE_CAP) return [];
+  const waiting = Array.from(body.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-stage])'));
+  return waiting.filter((diagram) => diagram.__mermaidSource != null
+    && !mermaidDrawnHeights.has(mermaidHeightKey(diagram.__mermaidSource)));
+}
+function scheduleMermaidWarmPass() {
+  markMinimapWarming();
+  if (mermaidWarmTimer) return;
+  mermaidWarmTimer = window.setTimeout(() => {
+    mermaidWarmTimer = 0;
+    // Their gesture comes first; the settle after their last wheel click calls back.
+    if (readerScrolling) return;
+    const queue = mermaidWarmCandidates();
+    if (queue.length) drawMermaidDiagrams(queue, true);
+  }, MERMAID_WARM_SETTLE_MS);
+}
+// Until every diagram has been measured once, the little picture down the side is a picture of boxes: it is a clone of the page, and a diagram nothing has drawn yet has nothing in the memo for the clone to take. So the rail wears its own spinner for the whole warm and drops it when the last box is measured — one state for the wait rather than one per pass, which is what made the position box blink every few hundred milliseconds.
+function markMinimapWarming() {
+  const minimap = document.querySelector('.document-minimap');
+  if (!minimap) return;
+  if (mermaidWarmCandidates().length) minimap.classList.add('is-loading');
+  else minimap.classList.remove('is-loading');
+}
+// The rail is a clone of the page, so a box the page has handed back clones as a blank — a document read once left the picture mostly empty boxes. The drawing is still in the memo, so the clone takes it from there. Done on the detached copy before it goes on screen, so nothing on the page is touched, and the box keeps the exact height it has in the document, which is what holds the thumbnail lined up with the real thing.
+function fillMermaidClone(preview) {
+  for (const box of preview.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])')) {
+    const drawing = mermaidRenderCache.get(mermaidCacheKey(box.textContent));
+    if (!drawing) continue;
+    box.innerHTML = drawing;
+    box.dataset.processed = 'true';
+    delete box.dataset.diagramWait;
+  }
+}
+// The reading column's width is half the height key, so a change to it makes every remembered height a guess. Re-mark the waiting boxes, so none is left pinned to a height measured at another width, and warm again to learn the new ones.
+let mermaidColumnWidth = -1;
+function mermaidNoteColumnWidth() {
+  const body = app.querySelector('.document-body');
+  mermaidColumnWidth = body ? Math.round(body.getBoundingClientRect().width) : 0;
+}
+function mermaidColumnWidthChanged() {
+  const body = app.querySelector('.document-body');
+  const width = body ? Math.round(body.getBoundingClientRect().width) : 0;
+  if (width === mermaidColumnWidth) return;
+  mermaidColumnWidth = width;
+  if (!body) return;
+  for (const diagram of body.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])')) {
+    if (diagram.__mermaidSource != null) markMermaidWait(diagram, diagram.dataset.diagramWait !== 'far');
+  }
+  scheduleMermaidWarmPass();
+}
+window.addEventListener('resize', mermaidColumnWidthChanged);
+
+// Restore what the memo has, queue the rest. Called with the diagrams near the reader, on open and on every scroll — and with the whole document behind it when the page is being warmed, which is the only pass a reader's gesture is allowed to stop.
+function drawMermaidDiagrams(candidates, warming) {
   if (!candidates.length) {
     return;
   }
@@ -606,7 +682,7 @@ function drawMermaidDiagrams(candidates) {
   // Nearest the reader first, a few at a time. Sixty diagrams in one batch froze the window for five seconds, nothing painted until the last was done.
   diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));
   mermaidRenderGeneration += 1;
-  drawMermaidBatches(diagrams, mermaidRenderGeneration);
+  drawMermaidBatches(diagrams, mermaidRenderGeneration, warming);
 }
 
 // The height it drew to is worth keeping: a box refilled at that height moves nothing on the page. A `click A "…"` box is drawn as a real SVG anchor, and mermaid writes only `xlink:href` — which `documentLinkFor` does not match, so the click was the web view's and it navigated the whole app out of the app. Copying the target onto `href` hands the box to the reader's own link handlers.
@@ -622,13 +698,15 @@ function claimMermaidLinks(diagram) {
 function finishMermaidDiagram(diagram) {
   claimMermaidLinks(diagram);
   delete diagram.dataset.diagramWait;
+  // Both, and before the height is read: a drawing left holding the exact height its box was given would be clamped to what it measured last time for ever.
+  diagram.style.removeProperty('height');
   diagram.style.removeProperty('min-height');
   if (mermaidViewObserver) mermaidViewObserver.unobserve(diagram);
   if (diagram.__mermaidSource == null) return;
   const height = Math.round(diagram.getBoundingClientRect().height);
   if (!height) return;
   if (mermaidDrawnHeights.size >= MERMAID_CACHE_CAP) mermaidDrawnHeights.clear();
-  mermaidDrawnHeights.set(mermaidCacheKey(diagram.__mermaidSource), height);
+  mermaidDrawnHeights.set(mermaidHeightKey(diagram.__mermaidSource), height);
   watchMermaidForRecycling(diagram);
 }
 
@@ -658,9 +736,9 @@ function mermaidMayRecycle(diagram) {
   const overlay = diagramOverlayElement();
   if (overlay && overlay.__diagramBlock === diagram) return false;
   if (diagram.__mermaidSource == null) return false;
-  const key = mermaidCacheKey(diagram.__mermaidSource);
-  // Past its cap the memo empties wholesale, so a box refilled after that redraws from scratch — worse on every scroll than the stylesheet it carries. A height nothing measured would move the page.
-  return mermaidRenderCache.has(key) && mermaidDrawnHeights.has(key);
+  // Past its cap the memo empties wholesale, so a box refilled after that redraws from scratch — worse on every scroll than the stylesheet it carries. A height nothing measured at this column width would move the page.
+  return mermaidRenderCache.has(mermaidCacheKey(diagram.__mermaidSource))
+    && mermaidDrawnHeights.has(mermaidHeightKey(diagram.__mermaidSource));
 }
 // Back to a box, at exactly the height the drawing had, so nothing on the page moves.
 function recycleMermaidDiagram(diagram) {
@@ -727,6 +805,7 @@ function scheduleMermaidPass() {
 // The gesture stopped, so anything held for it can go now. Only when something is actually waiting: a settle with an empty queue has nothing to draw.
 function readerScrollSettled() {
   if (mermaidWaitingNearby.size || mermaidLeavingView.size) scheduleMermaidPass();
+  scheduleMermaidWarmPass();
 }
 // A render replaces the document, so every box the old one was watching is gone.
 function forgetMermaidWatch() {
@@ -744,6 +823,10 @@ function forgetMermaidWatch() {
     window.clearTimeout(mermaidDrainTimer);
     mermaidDrainTimer = 0;
   }
+  if (mermaidWarmTimer) {
+    window.clearTimeout(mermaidWarmTimer);
+    mermaidWarmTimer = 0;
+  }
 }
 
 // How far a diagram is from the middle of the window, for the order within a batch.
@@ -753,12 +836,37 @@ function mermaidReaderDistance(diagram) {
   return Math.abs(rect.top + rect.height / 2 - middle);
 }
 
+// A block grows downward, so only one whose bottom edge is already at or above the reader's top edge shoves what they can see. One straddling that edge grows into the room under their eyes, and paying for it would drag the diagram they are reading up off the top of the window.
+function mermaidBlocksAboveReader(batch) {
+  const topEdge = app.getBoundingClientRect().top;
+  const above = [];
+  for (const diagram of batch) {
+    const rect = diagram.getBoundingClientRect();
+    if (rect.bottom <= topEdge) above.push({ diagram, height: rect.height });
+  }
+  return above;
+}
+// Pay back what they gained, in the same task as the draw. Mermaid hands the page back nowhere inside one `mermaid.run` — a timer, a message task and an animation frame queued in front of it all fired after it resolved — so this lands before the browser's next chance to paint and the reader never sees the shove. Negative when a drawing came out shorter than the box that held it, which moves the page the other way and is owed just the same. Nothing is re-recorded afterwards: the reader's place is a block plus its offset from the top edge, and an exact repayment leaves that pair untouched, so the frame-based re-pin that follows has nothing left to correct.
+function mermaidRepayGrowthAbove(above) {
+  if (!above.length) return;
+  let gain = 0;
+  for (const entry of above) {
+    if (!entry.diagram.isConnected) continue;
+    gain += entry.diagram.getBoundingClientRect().height - entry.height;
+  }
+  if (Math.abs(gain) < 0.5) return;
+  setReaderScrollTop(app.scrollTop + gain);
+}
+
 // Small enough that one slow diagram cannot hold the window.
 const MERMAID_BATCH_SIZE = 3;
+// Warming is nobody's gesture, so it goes one at a time and rests between them. Three at a time took the window for 118 ms at the median and 293 ms at the worst, sixty-odd times over — which reads as the app stuttering, because it is. One diagram is a third of that, and the rest below is long enough for the window to answer a wheel or a click before the next one starts. It makes the whole warm slower, which costs nothing: the rail says it is working and no reader is waiting on it.
+const MERMAID_WARM_BATCH_SIZE = 1;
+const MERMAID_WARM_REST_MS = 50;
 // Which render pass is the current one. A theme switch mid-draw starts another, and the one it interrupted must stop rather than finish painting the old colors over the new.
 let mermaidRenderGeneration = 0;
 
-function drawMermaidBatches(diagrams, generation) {
+function drawMermaidBatches(diagrams, generation, warming) {
   loadMermaid()
     .then(async (mermaid) => {
       // A box is only as wide as mermaid measured its label, so measuring in the fallback face and painting in the theme's takes the last letter off every one of them. Wait for the faces the page has asked for before measuring.
@@ -770,10 +878,15 @@ function drawMermaidBatches(diagrams, generation) {
       // The rail mirrors the document, so every batch would rebuild it. One rebuild for the pass instead; the reader's own re-pin still runs per batch, which is what holds the reading position as diagrams grow.
       pauseMinimapPreview();
       try {
-        for (let at = 0; at < diagrams.length; at += MERMAID_BATCH_SIZE) {
+        const size = warming ? MERMAID_WARM_BATCH_SIZE : MERMAID_BATCH_SIZE;
+        for (let at = 0; at < diagrams.length; at += size) {
           if (generation !== mermaidRenderGeneration) return;
-          const batch = diagrams.slice(at, at + MERMAID_BATCH_SIZE).filter((diagram) => diagram.isConnected);
+          // The moment the reader touches the page a warm pass stops where it is; nothing is kept, because the queue is re-derived from what has no measured height and the settle after their last wheel click starts it again.
+          if (warming && readerScrolling) return;
+          const batch = diagrams.slice(at, at + size).filter((diagram) => diagram.isConnected);
           if (!batch.length) continue;
+          // Measured before mermaid touches them, repaid after the drawings and the inline heights have both landed.
+          const above = mermaidBlocksAboveReader(batch);
           // Before mermaid reads them, not after: a box it cannot draw takes the whole batch down from inside its own renderer.
           for (const diagram of batch) {
             const drawable = await mermaidDrawableSource(diagram.__mermaidSource);
@@ -803,14 +916,19 @@ function drawMermaidBatches(diagrams, generation) {
             finishMermaidDiagram(diagram);
             addMermaidControls(diagram);
           }
+          mermaidRepayGrowthAbove(above);
           // Each batch changed the block layout; drop the cached anchor list, and let whatever else watches the page catch up before the next one.
           readerAnchorBlocks = null;
-          await new Promise((resolve) => window.setTimeout(resolve, 0));
+          // A warm pass waits for the window to paint and then rests; a pass the reader is waiting on yields and goes straight on.
+          if (warming) await new Promise((resolve) => window.requestAnimationFrame(() => window.setTimeout(resolve, MERMAID_WARM_REST_MS)));
+          else await new Promise((resolve) => window.setTimeout(resolve, 0));
         }
       } finally {
         resumeMinimapPreview();
         // The words the search was pointing at inside these diagrams are gone now.
         mermaidPageTextChanged();
+        // Every pass ends by asking whether anything is still unmeasured, so a warm pass that a nearer one interrupted picks itself up rather than stalling until the reader scrolls. It settles: each attempt measures what it draws, so the queue only ever shrinks.
+        scheduleMermaidWarmPass();
       }
     })
     .catch((error) => {

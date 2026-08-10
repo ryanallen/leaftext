@@ -619,11 +619,7 @@ function measureDocumentMinimap(track) {
 let minimapPreviewHolds = 0;
 function pauseMinimapPreview() {
   minimapPreviewHolds += 1;
-  // Say it is working rather than hold up a thumbnail about to be replaced wholesale: diagrams land seconds after the words, and watching the old clone swap out is worse than watching the real one arrive.
-  if (minimapPreviewHolds === 1) {
-    const minimap = document.querySelector('.document-minimap');
-    if (minimap) minimap.classList.add('is-loading');
-  }
+  // The loading state is not this hold's to set. It hides the position box outright, which is right for a thumbnail about to be replaced wholesale — and that case never comes through here: it is the class a fresh render's own markup carries, off again when the thumbnail lands. A diagram pass changes three blocks a screen away, and on a wheel down a long document that is a settle every few hundred milliseconds, so the box blinked all the way down.
   if (minimapPreviewFrame) {
     window.cancelAnimationFrame(minimapPreviewFrame);
     minimapPreviewFrame = 0;
@@ -743,6 +739,8 @@ function stripMinimapClone(preview) {
     }
     link.removeAttribute('href');
   });
+  // A diagram the page has handed back is a blank box, and cloning it clones the blank. The memo still has the drawing.
+  fillMermaidClone(preview);
   preview.classList.add('document-minimap-preview');
   preview.setAttribute('aria-hidden', 'true');
 }

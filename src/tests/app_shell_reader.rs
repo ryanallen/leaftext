@@ -131,6 +131,27 @@ fn app_shell_renders_interactive_document_minimap() {
             assert_contains(&html, expected);
         }
 
+    // The hold a diagram pass takes must never name that state — a wheel down a page of diagrams is a settle and a pass every few hundred milliseconds, so the box blinked all the way down. The hold itself stays: one rebuild per pass rather than one per batch of three.
+    assert!(
+        !html.contains("minimapPreviewHolds += 1;\n  // Say it is working"),
+        "the hold a diagram pass takes must not turn the rail's loading state on"
+    );
+    assert_contains(
+        &html,
+        "function pauseMinimapPreview() {\n  minimapPreviewHolds += 1;",
+    );
+    // What owns it instead is the warm: until every diagram has been measured once the thumbnail is a picture of boxes, because it is a clone of the page and an undrawn diagram has nothing in the memo for the clone to take. So the rail says it is working for the whole wait and stops when the last box is measured — one state for the wait rather than one per pass.
+    for expected in [
+        "function markMinimapWarming() {",
+        "if (mermaidWarmCandidates().length) minimap.classList.add('is-loading');",
+        "else minimap.classList.remove('is-loading');",
+        // And a box the page has handed back is filled from the memo before the clone goes on screen, so the picture is of the document rather than of its blanks.
+        "function fillMermaidClone(preview) {",
+        "fillMermaidClone(preview);",
+    ] {
+        assert_contains(&html, expected);
+    }
+
     // The minimap is a real-text thumbnail: a shrunken clone of the rendered document, not an abstract canvas painting.
     assert!(
         html.contains("preview = source.cloneNode(true);"),
@@ -298,8 +319,8 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         // Nearest the reader first, a few at a time: a page of sixty diagrams must not freeze the window while they are drawn.
         "diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));",
         "const MERMAID_BATCH_SIZE = 3;",
-        // And only the ones the reader is near are queued at all — sixty drawn on open cost three and a half seconds of stalled window.
-        "function drawMermaidDiagrams(candidates) {",
+        // And only the ones the reader is near are queued on the way to the words — sixty drawn on open cost three and a half seconds of stalled window. The whole document follows once the page is quiet, which is the second argument.
+        "function drawMermaidDiagrams(candidates, warming) {",
         "watchMermaidDiagrams(candidates);",
         // The structural colors of a diagram are the page's tokens. Mermaid's own light/dark palette stays underneath, never `base`, which recomputes the categorical scale out of our reach — see decorate.js.
         "theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',",
@@ -341,9 +362,29 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
         "{ root: app, rootMargin:",
         // A box says which of the two it is, and the stylesheet spins only the one waiting its turn.
         "diagram.dataset.diagramWait = near ? 'near' : 'far';",
-        // The height it drew to, so a box refilled at that height moves nothing above the reader.
+        // The height it drew to, so a box refilled at that height moves nothing above the reader. Keyed on the reading column's width as well as the theme: a drawing wider than the column is scaled to fit it, so its height is only true at that width.
         "const mermaidDrawnHeights = new Map();",
-        "mermaidDrawnHeights.set(mermaidCacheKey(diagram.__mermaidSource), height);",
+        "mermaidDrawnHeights.set(mermaidHeightKey(diagram.__mermaidSource), height);",
+        "function mermaidHeightKey(source) {",
+        // Exact, and the stylesheet's floor off with it: 19 of the 60 diagrams in the test document draw shorter than their own source text, and `min-height` cannot make a block shorter.
+        "diagram.style.height = `${known}px`;",
+        "diagram.style.minHeight = '0px';",
+        // The whole document is drawn once the page is quiet, so nothing in it resizes afterwards. The pass hands nothing back itself — a finished drawing already asks to be watched, and the watcher puts a far one back at its drawn height.
+        "function mermaidWarmCandidates() {",
+        "function scheduleMermaidWarmPass() {",
+        "if (queue.length) drawMermaidDiagrams(queue, true);",
+        // A document past the memo's cap is left as it ships: past it both memos empty wholesale, so warming is a redraw of the document on every scroll.
+        "if (body.querySelectorAll('pre.mermaid').length > MERMAID_CACHE_CAP) return [];",
+        // Their gesture comes first, and the pass stops where it is rather than keeping a queue: the next attempt re-derives it from what has no measured height.
+        "if (warming && readerScrolling) return;",
+        // The column's width is half the key, so a change to it re-marks every waiting box and warms again rather than leaving one pinned to a height measured at another width.
+        "function mermaidColumnWidthChanged() {",
+        // No `requestIdleCallback` anywhere: the front end asks for idle time nowhere, and whether the Mac web view has it at all is not a thing this repo can answer offline.
+        "await new Promise((resolve) => window.setTimeout(resolve, 0));",
+        // The words stay where they are: a block whose bottom edge was already at or above the reader's top edge shoves what they can see, and what it gains is paid back in the same task as the draw.
+        "function mermaidBlocksAboveReader(batch) {",
+        "function mermaidRepayGrowthAbove(above) {",
+        "setReaderScrollTop(app.scrollTop + gain);",
         // Drawing swaps a diagram's source out for its labels, so a search pointing into it re-walks and re-lands.
         "function mermaidPageTextChanged() {",
         "  refreshFind();",
@@ -443,11 +484,16 @@ fn a_diagram_scrolled_well_past_goes_back_to_a_box() {
             "a diagram in this state must keep its drawing: {kept} — {may}"
         );
     }
-    // Past 200 distinct diagrams the picture memo empties wholesale (MERMAID_CACHE_CAP), so a box refilled after that draws from scratch. Recycling one whose picture is gone would turn every scroll into a full redraw, which is worse than the stylesheet the drawing carries.
-    assert!(
-        may.contains("mermaidRenderCache.has(key) && mermaidDrawnHeights.has(key)"),
-        "a diagram may only go back to a box when its picture and its height are both still known: {may}"
-    );
+    // Past 200 distinct diagrams the picture memo empties wholesale (MERMAID_CACHE_CAP), so a box refilled after that draws from scratch. Recycling one whose picture is gone would turn every scroll into a full redraw, which is worse than the stylesheet the drawing carries. The height has to be known at this column width, not just known: a box put back at a height measured in a narrower window is the jolt again with extra steps.
+    for known in [
+        "mermaidRenderCache.has(mermaidCacheKey(diagram.__mermaidSource))",
+        "mermaidDrawnHeights.has(mermaidHeightKey(diagram.__mermaidSource))",
+    ] {
+        assert!(
+            may.contains(known),
+            "a diagram may only go back to a box when its picture and its height are both still known: {known} — {may}"
+        );
+    }
 
     // Both halves run off one settle, boxes first: a recycled box holds its drawing's height, so the drawings the pass then makes are the only thing that can move the page.
     let pass = script
