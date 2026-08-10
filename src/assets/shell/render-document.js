@@ -100,27 +100,72 @@ function homeGroupMarkup(group) {
   const vault = group.vaultId == null ? '' : ` data-home-vault="${escapeAttr(String(group.vaultId))}"`;
   return `<li class="home-list-group"${vault}>${escapeText(group.name)}<span class="home-list-group-gone">folder missing</span></li>`;
 }
-// The favorites, split by the vault each was marked inside. In a vault that is the one you are in and nothing else; outside every vault it is all of them at once, since there is no current one to prefer.
-function homeFavoriteGroups(favorites) {
+// One spelling of a path, so two ways of writing the same folder compare equal — and the case rule the host's own has: ignored everywhere but a Mac, where two spellings really are two files.
+function vaultPathKey(path) {
+  const key = String(path == null ? '' : path).split('\\').join('/').replace(/\/+$/, '');
+  return isMacPlatform ? key : key.toLowerCase();
+}
+// Which vault a path sits inside: the innermost vault folder holding it, or nothing. The same rule `vault_containing` matches on in `src/store/vaults.rs`, so a prefix is not a parent — `C:\Notes` must not claim `C:\Notes-old`, so what follows the root has to be a separator or nothing at all. Worked out here rather than stored, because adding a folder as a vault today should put yesterday's files under it, which a mark written when the file was opened never would.
+function vaultForPath(path) {
+  const key = vaultPathKey(path);
+  if (!key) return null;
+  let best = null;
+  let deepest = 0;
+  for (const vault of leafVaults) {
+    const root = vaultPathKey(vault && vault.rootPath);
+    if (!root || root.length < deepest) continue;
+    if (key !== root && !key.startsWith(`${root}/`)) continue;
+    best = vault;
+    deepest = root.length;
+  }
+  return best;
+}
+// A recent is a bare path, so its vault is the folder holding it.
+function recentVaultId(path) {
+  const vault = vaultForPath(path);
+  return vault ? vault.id : null;
+}
+// Either list, split by vault. In a vault that is the one you are standing in and nothing else; outside every vault it is all of them at once, since there is no current one to prefer, with the files inside no vault last — they are the leftovers rather than a vault.
+function homeVaultGroups(entries, vaultIdOf) {
   if (activeVaultId) {
-    const mine = favorites.filter((favorite) => favorite && favorite.vaultId === activeVaultId);
+    const mine = entries.filter((entry) => entry != null && vaultIdOf(entry) === activeVaultId);
     return mine.length ? [{ name: libraryRootLabel(), vaultId: activeVaultId, entries: mine }] : [];
   }
   const groups = [];
   const byVault = new Map();
-  for (const favorite of favorites) {
-    if (!favorite) continue;
-    const id = favorite.vaultId == null ? null : favorite.vaultId;
+  for (const entry of entries) {
+    if (entry == null) continue;
+    const id = vaultIdOf(entry);
     if (!byVault.has(id)) {
       const vault = id == null ? null : leafVaults.find((one) => one && one.id === id);
-      // A file on the desktop belongs to no vault and is still a file you favorited.
+      // A file on the desktop belongs to no vault and is still a file you favorited, and still one you were reading.
       const group = { name: vault ? vault.name : 'Outside a vault', vaultId: id, entries: [] };
       byVault.set(id, group);
       groups.push(group);
     }
-    byVault.get(id).entries.push(favorite);
+    byVault.get(id).entries.push(entry);
   }
-  return groups;
+  const loose = byVault.get(null);
+  return loose ? groups.filter((group) => group !== loose).concat([loose]) : groups;
+}
+// The rows of a grouped list. A label is only ever there to tell one group from another, so a single group carries none — which is why, in a vault, the word over the headline names it instead.
+function homeGroupedRows(groups, rowMarkup) {
+  const labeled = groups.length > 1;
+  return groups
+    .map((group) => (labeled ? homeGroupMarkup(group) : '') + group.entries.map((entry) => `<li>${rowMarkup(entry)}</li>`).join(''))
+    .join('');
+}
+// The recents this screen is about: the current vault's own, or every vault's when you are standing outside them all.
+function homeRecentScoped(recent) {
+  return homeVaultGroups(recent, recentVaultId).flatMap((group) => group.entries);
+}
+// What would put something in an empty Recent list. A function, not a const: theme.js runs the first render as it loads, long before this fragment.
+function homeRecentHelp() {
+  return 'Files you open show up here, so you can pick up where you left off.';
+}
+// The small word over the headline: the vault you are standing in, or the app's own name outside every vault. Both lists on the screen are that vault's, so it belongs over the screen rather than on each box.
+function homeKicker() {
+  return activeVaultId ? libraryRootLabel() : 'Leaftext';
 }
 // The favorites as the screen draws them: what the store holds, plus every row that has been unfavorited and is still on its way out, back where it was.
 function homeFavoritesDrawn(favorites) {
@@ -134,9 +179,9 @@ function homeFavoritesDrawn(favorites) {
 // What one start-screen list is, said once: its name, how many it holds, how many it draws, its rows, and the line to draw instead when it has none. The column and the sheet both build from this, so a list is never a second list to learn.
 function homeList(which, state) {
   if (which === 'favorites') {
-    const groups = homeFavoriteGroups(homeFavoritesDrawn(state.favorites || []));
-    // A label is only ever there to tell one group from another, so a single group carries none.
-    const labeled = groups.length > 1;
+    const groups = homeVaultGroups(homeFavoritesDrawn(state.favorites || []), (favorite) =>
+      favorite.vaultId == null ? null : favorite.vaultId,
+    );
     return {
       title: 'Favorites',
       // What the list will be, not what is on screen: a row on its way out is not one of them any more, and the count must not jump back down when it goes.
@@ -145,24 +190,18 @@ function homeList(which, state) {
         0,
       ),
       drawn: groups.reduce((sum, group) => sum + group.entries.length, 0),
-      rows: groups
-        .map(
-          (group) =>
-            (labeled ? homeGroupMarkup(group) : '') +
-            group.entries
-              .map((favorite) => `<li>${homeRowMarkup(favorite.path, favorite.kind, favorite.vaultId)}</li>`)
-              .join(''),
-        )
-        .join(''),
+      rows: homeGroupedRows(groups, (favorite) => homeRowMarkup(favorite.path, favorite.kind, favorite.vaultId)),
     };
   }
-  const recent = state.recent || [];
+  // Scoped the way Favorites is, so the two boxes on this screen are about the same vault. A recent wears no vault of its own: the group it lands in is worked out from the folder holding it, every render.
+  const groups = homeVaultGroups(state.recent || [], recentVaultId);
+  const count = groups.reduce((sum, group) => sum + group.entries.length, 0);
   return {
     title: 'Recent',
-    count: recent.length,
-    drawn: recent.length,
-    rows: recent.map((path) => `<li>${homeRowMarkup(path)}</li>`).join(''),
-    help: 'Files you open show up here, so you can pick up where you left off.',
+    count,
+    drawn: count,
+    rows: homeGroupedRows(groups, (path) => homeRowMarkup(path)),
+    help: homeRecentHelp(),
   };
 }
 // The rows in a scroll box under a soft edge. The same box in the column and in the sheet — same bar, same fades — so what is read in one is what was read in the other.
@@ -202,10 +241,11 @@ function homeColumnMarkup(which, state) {
 // With no favorites there is no second column at all: a box saying how to favorite a file is an advertisement on the screen somebody sees most, and the heart is on every tab under the pointer. And one list is not half a pair — it is the plain Recent list this screen carried before there was a pair, whole paths on one line each, in the writing's own column under a rule.
 function homeListsMarkup(state) {
   if (!homeList('favorites', state).drawn) {
-    const recent = state.recent || [];
+    // Scoped too, or a vault with no favorites would be the one screen showing every other vault's files.
+    const recent = homeRecentScoped(state.recent || []);
     return recent.length
       ? `<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li><button type="button" title="Open ${escapeAttr(path)}" data-path="${escapeAttr(path)}" data-reveal-path="${escapeAttr(path)}">${escapeText(path)}</button></li>`).join('')}</ol></div>`
-      : `<p class="empty-help">Files you open show up here, so you can pick up where you left off.</p>`;
+      : `<p class="empty-help">${escapeText(homeRecentHelp())}</p>`;
   }
   return `<div class="home-list-grid">${homeColumnMarkup('recent', state)}${homeColumnMarkup('favorites', state)}</div>`;
 }
@@ -614,7 +654,7 @@ function renderState() {
   updateEditingChrome();
   app.innerHTML = `
     <section class="empty-state">
-      <p class="kicker">Leaftext</p>
+      <p class="kicker">${escapeText(homeKicker())}</p>
       <h1>Refine your mind.</h1>
       <p class="empty-subtitle">Your thoughts, secure and free.</p>
       <p class="empty-description">${escapeText(emptyDescription)}</p>

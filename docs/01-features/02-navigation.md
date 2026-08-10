@@ -15,7 +15,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it |
 | [Live reload](#reload) | Reload a changed file without losing your place |
-| [Recent files](#recent-files) | Reopen any of the last 50 files from the home screen |
+| [Recent files](#recent-files) | Reopen a recently opened file from the home screen, showing the vault you are standing in |
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
@@ -149,8 +149,9 @@ A re-pin reads your place at the moment it runs, never the moment it was queued.
 
 ![The Leaftext home screen with no document open: the Choose file and New document buttons above two boxes side by side, Recent on the left and Favorites on the right, each row a file name over the folder it sits in and each favorite carrying a heart](../../imgs/home.png)
 
-The no-file home screen shows the last 50 opened files, under the **Choose file** and **New document** buttons. Until you favorite something it is one list of paths; with any [favorites](#favorites) it becomes two boxes side by side, Recent on the left and Favorites on the right, and a row is then the file's name with the folder it sits in underneath, so you read the name rather than the path. The whole path is still the row's tooltip either way, and a right-click gives the same menu it always did.
+The no-file home screen lists the files you opened most recently, under the **Choose file** and **New document** buttons; the last 50 are kept. Until you favorite something it is one list of paths; with any [favorites](#favorites) it becomes two boxes side by side, Recent on the left and Favorites on the right, and a row is then the file's name with the folder it sits in underneath, so you read the name rather than the path. The whole path is still the row's tooltip either way, and a right-click gives the same menu it always did.
 
+- **The screen is about the [vault](03-library.md#vaults) you are standing in.** Recent shows that vault's files alone, the way [Favorites](#favorites) beside it does, and the small word over **Refine your mind.** is the vault's name where it otherwise reads **Leaftext**. Switching vaults from the [library](03-library.md#vaults) pane with the home screen up changes both lists and that word with them. Standing outside every vault, both lists show every vault at once, grouped under each vault's name with the files in no vault last.
 - Each box is eight rows deep and scrolls, with the app's own thin [bar](#scrollbars) and a soft edge wherever there is more list past it.
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.

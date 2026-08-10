@@ -3648,9 +3648,10 @@ if (booted) {
     }
   }
 
+  // The folder is part of a vault row wherever the host sends one, and the page needs it: a recent carries no vault of its own, so the only thing that says which vault it is in is the folder holding it.
   const VAULTS = [
-    { id: 1, name: 'Dharma' },
-    { id: 2, name: 'Work' },
+    { id: 1, name: 'Dharma', rootPath: 'C:\\Vaults\\Dharma' },
+    { id: 2, name: 'Work', rootPath: 'C:\\Vaults\\Work' },
   ];
   const KEPT = [
     { vaultId: 1, path: 'C:\\Vaults\\Dharma\\A sutta.md', kind: 'document' },
@@ -3698,6 +3699,131 @@ if (booted) {
       throw new Error('another vault leaked into the column');
     }
     if (!markup.includes('Favorites (1)')) throw new Error(`the count is not this vault's: ${markup}`);
+  });
+
+  const RECENT = [
+    'C:\\Vaults\\Work\\Standup.md',
+    'C:\\Vaults\\Dharma\\Journal\\Today.md',
+    'C:\\Users\\me\\Desktop\\Loose.md',
+    'C:\\Vaults\\Work\\Notes\\Roadmap.md',
+  ];
+
+  // The page's rule, held to the host's: the same four cases `a_file_is_owned_by_the_innermost_vault_that_holds_it` pins for `vault_containing` in `src/store/tests.rs`. A recent carries no vault, so this is the whole of how its column knows which one it is in.
+  check('a recent belongs to the innermost vault whose folder holds it', () => {
+    const nested = [
+      { id: 1, name: 'Dharma', rootPath: 'C:\\Vaults\\Dharma' },
+      { id: 2, name: 'Empty Guru', rootPath: 'C:\\Vaults\\Dharma\\Emptyguru' },
+      { id: 3, name: 'Elsewhere', rootPath: 'C:\\Vaults\\Elsewhere' },
+    ];
+    const owner = (path) =>
+      withVaults(nested, 0, () => {
+        const vault = booted.vaultForPath(path);
+        return vault ? vault.id : null;
+      });
+    // Nested: the innermost wins, which is the vault the file actually lives in.
+    if (owner('C:\\Vaults\\Dharma\\Emptyguru\\site\\index.md') !== 2) {
+      throw new Error('a file in a nested vault went to the vault around it');
+    }
+    // Above the inner one, still inside the outer.
+    if (owner('C:\\Vaults\\Dharma\\notes.md') !== 1) throw new Error('a file above the nested vault lost its own');
+    // A prefix is not a parent.
+    if (owner('C:\\Vaults\\Dharma-old\\stale.md') !== null) throw new Error('a lookalike sibling folder was claimed');
+    // Nothing owns a file outside every vault: that is the whole library.
+    if (owner('C:\\Vaults\\loose.md') !== null) throw new Error('a file outside every vault was claimed');
+    // And the same file under either spelling is the same file, off a Mac.
+    if (owner('c:/vaults/dharma/notes.md') !== 1) throw new Error('another spelling of the same folder missed');
+  });
+
+  check('inside a vault Recent is that vault too, so both boxes are about one vault', () => {
+    const markup = withVaults(VAULTS, 2, () => homeListsMarkup({ recent: RECENT, favorites: KEPT }));
+    if (!markup.includes('Recent (2)')) throw new Error(`the count is not this vault's: ${markup}`);
+    if (markup.includes('Today') || markup.includes('Loose')) {
+      throw new Error(`another vault leaked into Recent: ${markup}`);
+    }
+    if (!markup.includes('Roadmap')) throw new Error("this vault lost a file it holds deeper down");
+    // One group each, and a single group draws no label — which is what phase 2's heading answers.
+    if (markup.includes('home-list-group')) throw new Error('one group was labeled anyway');
+    if (!markup.includes('Favorites (1)')) throw new Error('the box beside it stopped agreeing');
+  });
+
+  check('outside a vault Recent groups by vault, with the files in none last', () => {
+    const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: RECENT, favorites: KEPT }));
+    const column = markup.slice(0, markup.indexOf('Favorites ('));
+    const groups = [...column.matchAll(/<li class="home-list-group"[^>]*>([^<]*)</g)].map((one) => one[1]);
+    // In the order the list already had, since a recent list is a record of what happened — and the leftovers after the vaults, because they are not one.
+    if (groups.join('|') !== 'Work|Dharma|Outside a vault') {
+      throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
+    }
+    if (!markup.includes('Recent (4)')) throw new Error(`nothing is hidden outside a vault: ${markup}`);
+    // The heading carries its vault, which is what the missing-folder answer is applied to.
+    if (!column.includes('data-home-vault="2"')) throw new Error(`a Recent heading lost its vault: ${column}`);
+  });
+
+  check('a vault whose folder has gone marks its Recent heading as well as its Favorites one', () => {
+    const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: RECENT, favorites: KEPT }));
+    const split = markup.indexOf('Favorites (');
+    const recent = drawnColumn(markup.slice(0, split));
+    const favorites = drawnColumn(markup.slice(split));
+    answerMissing(recent, [], [1]);
+    answerMissing(favorites, [], [1]);
+    if (!recent.group(1).classList.contains('is-missing')) {
+      throw new Error("the Recent heading said nothing while the box beside it said the folder had gone");
+    }
+    if (!favorites.group(1).classList.contains('is-missing')) throw new Error("the Favorites heading lost its mark");
+    if (recent.group(2).classList.contains('is-missing')) throw new Error('a vault that is there was marked too');
+  });
+
+  check('with no favorites in this vault the plain list is scoped too', () => {
+    const plain = withVaults(VAULTS, 2, () => homeListsMarkup({ recent: RECENT, favorites: [] }));
+    if (!plain.startsWith('<div class="recent"><h2>Recent (2)</h2><ol>')) {
+      throw new Error(`the lone list is not this vault's: ${plain}`);
+    }
+    if (plain.includes('Today') || plain.includes('Loose')) {
+      throw new Error(`the lone list showed another vault's files: ${plain}`);
+    }
+  });
+
+  check('standing in a vault the word over the headline is the vault, and the list headings are plain', () => {
+    const screen = (active) =>
+      withVaults(VAULTS, active, () => {
+        booted.window.leafSetState({ recent: RECENT, favorites: KEPT, tabs: [], active: null, document: null });
+        booted.__frames.drain();
+        const drawn = booted.document.getElementById('app').innerHTML;
+        booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+        booted.__frames.drain();
+        return drawn;
+      });
+    const inside = screen(1);
+    // The whole screen is that vault's, both lists included, so it is said once over everything — in the word that was already there.
+    if (!inside.includes('<p class="kicker">Dharma</p>')) {
+      throw new Error(`the word over the headline is not the vault: ${inside.slice(0, 400)}`);
+    }
+    // And nowhere else: the lists are headed what they have always been headed.
+    if (!inside.includes('<h2>Recent (1)</h2>') || !inside.includes('<h2>Favorites (2)</h2>')) {
+      throw new Error(`a list heading is not the plain one it was: ${inside}`);
+    }
+    if (inside.includes('home-list-vault')) throw new Error('the vault is named twice on one screen');
+    const outside = screen(0);
+    if (!outside.includes('<p class="kicker">Leaftext</p>')) {
+      throw new Error(`outside every vault the word over the headline is not the app's: ${outside.slice(0, 400)}`);
+    }
+  });
+
+  check('the sheet is headed the list it is, counted as the screen counted it', () => {
+    const title = (active) =>
+      withVaults(VAULTS, active, () => {
+        booted.window.leafSetState({ recent: RECENT, favorites: KEPT, tabs: [], active: null, document: null });
+        booted.__frames.drain();
+        booted.openHomeSheet('recent');
+        const said = booted.document.getElementById('homeSheetTitle').textContent;
+        booted.closeHomeSheet();
+        booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+        booted.__frames.drain();
+        return said;
+      });
+    // The list it opened over, counted the way the column behind it counted: this vault's own inside one, every vault's outside them all.
+    if (title(2) !== 'Recent (2)') throw new Error(`the sheet is not this vault's list: ${title(2)}`);
+    if (title(0) !== 'Recent (4)') throw new Error(`the sheet hid something outside every vault: ${title(0)}`);
   });
 
   // The start screen really drawn, read back off the element the page writes it into — not the markup helper, because what this is about is whether anything redraws at all.

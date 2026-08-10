@@ -38,7 +38,7 @@ flowchart LR
 | Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document) |
 
 > [!TIP]
-> Recent files keeps the last 50 opened files, so reopening a doc is usually one click. Keep the ones you come back to and they get a column of their own beside it — see [Favorites](01-features/02-navigation.md#favorites).
+> Recent files keeps the last 50 opened files, so reopening a doc is usually one click — and inside a [vault](01-features/03-library.md#vaults) the list is that vault's own. Keep the ones you come back to and they get a column of their own beside it — see [Favorites](01-features/02-navigation.md#favorites).
 
 ## 2. Know what you are looking at
 

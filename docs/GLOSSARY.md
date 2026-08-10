@@ -152,7 +152,7 @@ A force-directed map of how your documents link to each other. Each **node** is 
 
 ## Home screen
 
-What you see with no document open: **Choose file**, **New document**, and your [recent files](GLOSSARY.md#recent-files) — with your [favorites](01-features/02-navigation.md#favorites) in a column beside them once there are any. Closing the last tab returns you here, and so does clicking the [leaf mark](GLOSSARY.md#leaf-mark).
+What you see with no document open: **Choose file**, **New document**, and your [recent files](GLOSSARY.md#recent-files) — with your [favorites](01-features/02-navigation.md#favorites) in a column beside them once there are any. Standing in a [vault](01-features/03-library.md#vaults), the screen is that vault's: both lists are its own, and the small word above the headline is its name. Closing the last tab returns you here, and so does clicking the [leaf mark](GLOSSARY.md#leaf-mark).
 
 ## Image box
 
@@ -268,7 +268,7 @@ Your system's accessibility setting for cutting animation, which Leaftext follow
 
 ## Recent files
 
-The last 50 files you opened, listed on the [home screen](GLOSSARY.md#home-screen) beside your [favorites](01-features/02-navigation.md#favorites). Missing files drop off by themselves, and two spellings of one path collapse to a single entry.
+The files you opened most recently, listed on the [home screen](GLOSSARY.md#home-screen) beside your [favorites](01-features/02-navigation.md#favorites); the last 50 are kept. Inside a [vault](01-features/03-library.md#vaults) the list is that vault's own files, and outside every vault it is all of them grouped by vault. Missing files drop off by themselves, and two spellings of one path collapse to a single entry.
 
 ## Save
 
