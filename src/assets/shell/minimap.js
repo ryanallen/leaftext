@@ -801,7 +801,7 @@ function updateDocumentMinimapPreview() {
       content.querySelector('.document-minimap-preview') &&
       minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last)
     ) {
-      minimap.classList.remove('is-loading');
+      markMinimapWarming();
       placeMinimapViewport(minimap, metrics, null);
       return;
     }
@@ -858,8 +858,8 @@ function updateDocumentMinimapPreview() {
       }
     }
   }
-  // There is a thumbnail now, so the rail stops saying it is working on one.
-  minimap.classList.remove('is-loading');
+  // There is a thumbnail now, but it is a picture of boxes until every diagram has been measured, so the rail asks whether it is still warming rather than clearing outright.
+  markMinimapWarming();
   minimapBuiltVersion = minimapContentVersion;
   minimapBuiltSourceWidth = metrics.sourceWidth;
   minimapBuiltPreviewWidth = previewWidth;
