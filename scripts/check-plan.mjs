@@ -7,7 +7,7 @@
 //
 // Size is not a test: a band holding most of the rows is what a tree of mostly-features looks like, and no count makes a definition wrong. What makes one wrong is asking for two unrelated things at once, or asking for something no row can satisfy — read the words of a definition, never the count under it.
 //
-// So the only thing size buys here is a landmark. A band is ordered cheapest first, so its sub-bands say how expensive the run under each one is, counted in the `### Phase` headings of the ticket — or of the run the `Ticket` cell names, where it names one. A band over half the file whose rows are not all the same size carries them, and every row sits under the heading its own count names, or under its blocker's where that is dearer.
+// So the only thing size buys here is a landmark: a long band is cut on cost, counted in a ticket's `### Phase` headings or in the run its cell names, and every row sits under the heading its own count names — or its blocker's, where that is dearer.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -90,7 +90,7 @@ function count(text, label) {
   return found ? Number(found[1]) : null;
 }
 
-// `tree` is `{ live, retired, turnedDown }` — the live ticket paths and the two retired counts.
+// `tree` is `{ live, retired, turnedDown, phases }` — the live ticket paths, the two retired counts, and what each ticket costs.
 function shapeProblems(text, tree) {
   const problems = [];
   // `subject` is what the refusal is about — the self-test reads it, so a rule firing on the wrong row is caught rather than counted as a pass.
@@ -180,7 +180,7 @@ function shapeProblems(text, tree) {
     }
   }
 
-  // A band over half the file, holding rows of more than one size, is a run nobody can find a place in — so it carries the headings. A band of one size has nothing to cut.
+  // A band over half the file, in more than one size, is a run nobody can find a place in. A band of one size has nothing to cut.
   const bands = new Map();
   for (const row of rows) {
     if (!bands.has(row.tier)) bands.set(row.tier, []);
