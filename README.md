@@ -248,6 +248,8 @@ Your app data lives alongside it:
 
 Launch it from the Start Menu, or tap the Windows key and type **Leaftext**. One Start Menu entry, no desktop shortcut.
 
+If a small box says **the system administrator has set policies to prevent this installation**, that machine is set to refuse Windows Installer packages and no certificate would change it. Take the `.exe` from the release page instead — same install, same folder, same Start Menu entry, and updates keep arriving as that file. **[More detail →](docs/02-installation.md#windows-refuses-the-msi)**
+
 > **Upgrading from v0.1.364 or earlier?** Uninstall the old version first, from **Settings → Apps**. Those installed machine-wide into `C:\Program Files`, and a per-user package can't remove one, so you'd end up with two copies.
 
 ### Opening files with it
@@ -293,7 +295,7 @@ Other [`Justfile`](Justfile) tasks:
 |:--|:--|
 | Cut a release | `just release <version>` |
 
-`just release` commits the version bump, tags, and pushes — CI builds the Windows MSI and the macOS DMG.
+`just release` commits the version bump, tags, and pushes — CI builds the two Windows installers and the macOS DMG.
 
 ### Every written file in the repo
 

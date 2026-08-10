@@ -1,6 +1,6 @@
 [package]
 name = "leaftext"
-version = "0.92.10"
+version = "0.92.11"
 edition = "2021"
 
 # The window, the web view, the file dialog, the watcher and SQLite are the desktop's, and none of them builds for a browser. They are optional so the library alone — the renderer, the format table, the editor's maps and the host boundary — compiles for `wasm32`, which is what a browser core is. The binary asks for them by name, so a plain `cargo build` is unchanged.
@@ -26,9 +26,9 @@ name = "leaftext"
 path = "src/main.rs"
 required-features = ["desktop"]
 
-# The browser package. It is a member rather than a folder because a browser loads a module and the desktop links a library, and only one of the two can be a crate's output at a time.
+# The browser package. It is a member rather than a folder because a browser loads a module and the desktop links a library, and only one of the two can be a crate's output at a time. The Windows installer is a member for the same shape of reason: it is a second kind of output, and it must not link the app.
 [workspace]
-members = ["web"]
+members = ["web", "installer"]
 
 [profile.release]
 strip = true

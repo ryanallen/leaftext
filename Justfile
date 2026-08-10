@@ -11,6 +11,11 @@ check-web:
     cargo check -p leaftext-web
     cargo check -p leaftext-web --features shell
 
+# Type-check and test the Windows installer: `check` and `test` above never reach it, because the workspace's one default member is the app. It builds with no app inside it here — the release script is what hands it one — and everything it does is a plan before it is an act, so all of that is provable with nothing installed.
+check-installer:
+    cargo check -p leaftext-setup --all-targets
+    cargo test -p leaftext-setup
+
 test:
     cargo test
 
@@ -247,7 +252,7 @@ preview-web folder="":
 drive-web url *steps:
     node scripts/drive-web.mjs "{{ url }}" {{ steps }}
 
-verify: format-check check check-web check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

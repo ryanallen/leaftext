@@ -12,8 +12,9 @@ The one snag is the same one every small app hits: neither Apple nor Microsoft h
 | --- | --- | --- |
 | macOS | `.dmg` | Universal (Apple Silicon + Intel). First launch [needs unblocking](#mac-blocks-the-first-launch) |
 | Windows | `.msi` | Windows 10+ 64-bit. Installer [may warn once](#windows-warns-before-it-runs) |
+| Windows | `.exe` | The same install, for a machine [whose policy blocks `.msi`](#windows-refuses-the-msi) |
 
-A release is those two files and nothing else. The [in-app updater](#updates) installs the same `.dmg` or `.msi` you would download by hand, so there is never a file on the release page whose purpose has to be explained.
+Every file on the release page is an installer you can run — no checksums, nothing published for the updater alone. Take the `.msi` on Windows; the `.exe` is there for the machines that refuse it, and the two produce exactly the same install. The [in-app updater](#updates) then keeps taking whichever file put Leaftext on the machine, so there is nothing to choose twice.
 
 **[Download the latest release →](https://github.com/ryanallen/leaftext/releases/latest)** — then follow the steps for your platform below.
 
@@ -39,9 +40,9 @@ A release is those two files and nothing else. The [in-app updater](#updates) in
 
 **1. Download** the file ending in `.msi` from the [latest release](https://github.com/ryanallen/leaftext/releases/latest). It needs 64-bit Windows 10 or later.
 
-**2. Run the installer.** If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs).
+**2. Run the installer.** If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs). If instead a small box says **the system administrator has set policies to prevent this installation**, take the `.exe` instead — see [Windows refuses the MSI](#windows-refuses-the-msi).
 
-**3. Click Install.** The installer shows one screen: the install folder, with **Change...** to pick another. There is no elevation prompt and no confirmation screen — Leaftext installs for the current user, and the window closes once the install finishes.
+**3. Click Install.** The installer shows one screen: the install folder, with **Change...** to pick another. There is no elevation prompt and no confirmation screen — Leaftext installs for the current user, and the window closes once the install finishes. The `.exe` installer draws the same single screen, in the same place, with the same two buttons.
 
 **4. Launch Leaftext** from the Start Menu, or press the Windows key and type its name.
 
@@ -93,7 +94,15 @@ That removes the "downloaded from the internet" tag macOS attaches to the file. 
 
 ![The Windows protected your PC dialog with More info already expanded: the MSI file name beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](../imgs/install-windows.png)
 
-Windows may show a full-screen **Windows protected your PC** box the first time you run the installer, because the MSI is not signed with a paid certificate. Click **More info**, then **Run anyway**. Your browser may also make you keep the download — choose **Keep** if it asks.
+Windows may show a full-screen **Windows protected your PC** box the first time you run the installer, because neither Windows file is signed with a paid certificate. Click **More info**, then **Run anyway**. Your browser may also make you keep the download — choose **Keep** if it asks. Browsers press harder on an unsigned `.exe` than on an `.msi`, so expect one more click if you take that one; it is the same warning about the same missing certificate.
+
+### Windows refuses the MSI
+
+Some managed machines are set to refuse Windows Installer packages outright. The box is small, comes from **Windows Installer** rather than from Leaftext, and says **the system administrator has set policies to prevent this installation**. It appears before the installer's own screen, and no certificate would change it: the refusal is about the kind of file, not about who made it.
+
+**Download the file ending in `.exe` instead.** It installs Leaftext the same way into the same folder, with the same Start Menu entry and the same file associations, and it never touches Windows Installer. From there everything below is identical, updates included.
+
+If that file is refused too, the machine is enforcing a different rule again — one about unsigned programs — and only whoever manages it can allow it through.
 
 ## Where it goes
 
@@ -159,12 +168,14 @@ The new installer downloads in the background; a download that arrives short or 
 
 Each version is installed automatically once. If an install fails, that version then waits for a deliberate click instead of being retried forever. There is no setting for any of this: staying current is what the app does.
 
+**On Windows, updates arrive as whichever file you installed from.** A copy installed from the `.msi` keeps taking `.msi` updates, and a copy installed from the `.exe` keeps taking `.exe` ones — decided when it was installed, not by a preference. So a machine that refuses Windows Installer packages is never handed one.
+
 **The app only speaks when it can act.** A check that found nothing, could not reach GitHub, was rate-limited, or found a release carrying no installer for your platform says nothing at all — the bell stays away. There is nothing you could do about any of those, and a panel reporting them read as the app asking for work it should be doing itself. Startup is never blocked by any of this, and being offline changes nothing you can see. The version you are running is at the foot of the [home screen](03-quickstart.md).
 
 ## Uninstall
 
 - **macOS** — drag `leaftext.app` from Applications to the Trash. Your documents are untouched; the app's own data stays in `~/Library/Application Support/com.ryanallen.leaftext` until you delete that folder too.
-- **Windows** — **Settings** → **Apps** → **Leaftext** → **Uninstall**. Same story: your files and folders are yours, and only the app is removed.
+- **Windows** — **Settings** → **Apps** → **Leaftext** → **Uninstall**. Same story: your files and folders are yours, and only the app is removed. Both Windows installers put Leaftext in that list and both are removed from there.
 
 Nothing you wrote is inside Leaftext. Every document is the plain file you already had, in the folder you put it in.
 

@@ -718,7 +718,9 @@ fn every_listed_extension_maps_back_to_its_format() {
     assert_eq!(all_document_extensions(), listed);
 }
 
-/// The installers are the two places the extension list lives outside `format.rs`, and neither can read it at install time: the MSI claims each extension in the registry, the macOS bundle claims them in its Info.plist. This is what keeps a format the app opens from shipping without its double-click — .json, .yaml, .yml, .eml, .mht and .mhtml all did.
+/// The installers are the three places the extension list lives outside `format.rs`, and none of them can read it at install time: the MSI claims each extension in the registry, the EXE installer claims them from its own table, and the macOS bundle claims them in its Info.plist. This is what keeps a format the app opens from shipping without its double-click — .json, .yaml, .yml, .eml, .mht and .mhtml all did.
+///
+/// Windows has two installers because one of them is refused by policy on some machines, so the Windows half of this is asserted twice — differently, because the two are written differently. The MSI names every key it writes, so it is searched for them. The EXE installer builds its keys from one list, so that list is read out and compared whole: an extension it never mentions is exactly what a missing entry looks like there.
 #[test]
 fn installer_claims_every_readable_extension() {
     let wxs = include_str!("../../wix/main.wxs");
@@ -741,6 +743,29 @@ fn installer_claims_every_readable_extension() {
             "the macOS Info.plist in release-distributions.yml does not claim .{extension}"
         );
     }
+
+    assert_eq!(
+        exe_installer_extensions(),
+        all_document_extensions(),
+        "installer/src/plan.rs claims a different set of extensions from format.rs"
+    );
+}
+
+/// The `EXTENSIONS` list out of the EXE installer's plan. Read rather than searched: that installer builds every registry key it writes from this one list, so the list is the claim.
+fn exe_installer_extensions() -> Vec<&'static str> {
+    let plan = include_str!("../../installer/src/plan.rs");
+    let table = plan
+        .split_once("pub const EXTENSIONS: &[&str] = &[")
+        .expect("installer/src/plan.rs must hold one table of extensions")
+        .1
+        .split_once("];")
+        .expect("the extension table must close")
+        .0;
+    table
+        .split(',')
+        .map(|entry| entry.trim().trim_matches('"'))
+        .filter(|entry| !entry.is_empty())
+        .collect()
 }
 
 /// The `CFBundleDocumentTypes` entries out of the Info.plist the macOS workflow writes, one string per entry. Read as structure rather than searched as text: an extension in a comment is not a claim, and a key in one entry says nothing about the next.

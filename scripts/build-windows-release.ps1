@@ -1,16 +1,21 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-    Build the Windows release asset for leaftext: a single MSI installer.
+    Build the two Windows release assets for leaftext: an MSI and an EXE
+    installer.
 
 .DESCRIPTION
     This reproduces the Windows release lane locally and in CI without any
-    outside build service. It builds the release binary, then packages an MSI
-    from wix/main.wxs using cargo-wix (WiX Toolset v3). The MSI is the preferred
-    Windows artifact: it installs leaftext, registers the Markdown file
-    associations, and gives those files the leaftext icon.
+    outside build service. It builds the release binary, packages an MSI from
+    wix/main.wxs using cargo-wix (WiX Toolset v3), then builds the EXE installer
+    from installer/ with that same binary inside it.
 
-    The MSI is not code signed. Signing is a separate step that needs a
+    Both produce the same install: same folder, same HKCU values, same single
+    Start Menu entry, same file associations. The MSI is the download to take;
+    the EXE is for a machine whose policy blocks Windows Installer packages,
+    which refuses an MSI whoever signed it.
+
+    Neither is code signed. Signing is a separate step that needs a
     certificate. See the status notes in the private workspace.
 
 .PARAMETER Tag
@@ -77,15 +82,18 @@ if ($tagVersion -ne $version) {
 $arch = "x86_64"
 $dist = Join-Path $repoRoot $OutDir
 $msiName = "leaftext-$Tag-windows-$arch.msi"
+$setupName = "leaftext-$Tag-windows-$arch.exe"
 
 $exePath = Join-Path $repoRoot "target\release\leaftext.exe"
+$setupBuilt = Join-Path $repoRoot "target\release\leaftext-setup.exe"
 $msiPath = Join-Path $dist $msiName
+$setupPath = Join-Path $dist $setupName
 
 Write-Host "Repo:        $repoRoot"
 Write-Host "Version:     $version"
 Write-Host "Tag:         $Tag"
 Write-Host "Out folder:  $dist"
-Write-Host "Asset:       $msiName"
+Write-Host "Assets:      $msiName, $setupName"
 
 if ($DryRun) {
     Write-Host "Dry run: nothing built."
@@ -116,9 +124,23 @@ New-Item -ItemType Directory -Path $dist | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "cargo wix failed." }
 if (-not (Test-Path $msiPath)) { throw "MSI not produced: $msiPath" }
 
-# 3. Verification: report version and list the built file. No secrets printed.
+# 3. Build the EXE installer with that same binary inside it. LEAFTEXT_APP_EXE is
+#    what its build script reads; without it the installer builds with no app in
+#    it and refuses to install anything, so the size check below is what stops
+#    an empty one ever being published.
+$env:LEAFTEXT_APP_EXE = $exePath
+& cargo build --release --locked --package leaftext-setup
+if ($LASTEXITCODE -ne 0) { throw "cargo build of the EXE installer failed." }
+if (-not (Test-Path $setupBuilt)) { throw "EXE installer not produced: $setupBuilt" }
+Copy-Item $setupBuilt $setupPath -Force
+$appSize = (Get-Item $exePath).Length
+if ((Get-Item $setupPath).Length -lt ($appSize / 4)) {
+    throw "The EXE installer is too small to be carrying the app; it built without a payload."
+}
+
+# 4. Verification: report version and list the built files. No secrets printed.
 Write-Host ""
-Write-Host "Built leaftext $version ($Tag). Asset in $dist :"
+Write-Host "Built leaftext $version ($Tag). Assets in $dist :"
 Get-ChildItem $dist -File | ForEach-Object {
     "{0,12:N0}  {1}" -f $_.Length, $_.Name | Write-Host
 }

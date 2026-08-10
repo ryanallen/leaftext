@@ -366,7 +366,9 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_initialization_script(initial_state_script(&recent.files, &favorites))
         .with_initialization_script(initial_document_exts_script())
         .with_initialization_script(initial_version_script())
-        .with_initialization_script(initial_update_script())
+        .with_initialization_script(initial_update_script(
+            platform::platform_update_asset_suffix(),
+        ))
         // Whether we draw the window buttons ourselves (Windows), so the frontend shows its own title-bar chrome — drag region + minimize/maximize/close buttons.
         .with_initialization_script(format!("window.__leafFrameless = {};", cfg!(windows)))
         // The other kind of frameless: the app bar is the title bar, but Apple's own three dots are inset into it, so the page leaves room for them and draws no buttons of its own.

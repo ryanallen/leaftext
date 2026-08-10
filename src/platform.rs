@@ -224,17 +224,17 @@ fn bundle_root(executable: &Path) -> Option<PathBuf> {
         .map(Path::to_path_buf)
 }
 
-/// Windows: hand the MSI to the installer service. `wix/main.wxs` declares a `MajorUpgrade`, so this replaces the existing install rather than sitting beside it.
+/// Windows: run the staged installer, whichever of the two it is.
 ///
-/// No elevation, and none needed: the package installs per-user, which is the entire reason for that scope. `/qn` on a per-machine package would fail with 1925 instead of prompting, because quiet mode suppresses the UAC dialog too.
+/// An MSI goes to the installer service; `wix/main.wxs` declares a `MajorUpgrade`, so it replaces the existing install rather than sitting beside it. An EXE is the app's own installer and takes `--silent`. Which one is staged is decided when the update is found, by `platform_update_asset_suffix` below, so a copy keeps updating through the file that put it there and is never handed one its machine refuses.
+///
+/// No elevation on either, and none needed: both install per-user, which is the entire reason for that scope. `/qn` on a per-machine package would fail with 1925 instead of prompting, because quiet mode suppresses the UAC dialog too.
 #[cfg(windows)]
 fn install(installer: &Path, _relaunch: &Path) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
 
-    let status = Command::new("msiexec")
-        .arg("/i")
-        .arg(installer)
-        .args(["/qn", "/norestart"])
+    let mut command = installer_command(installer)?;
+    let status = command
         // CREATE_NO_WINDOW: no console flash while it runs.
         .creation_flags(0x0800_0000)
         .status()
@@ -242,8 +242,63 @@ fn install(installer: &Path, _relaunch: &Path) -> Result<(), String> {
     match status.code() {
         // 3010 is "installed, a reboot would be needed" — for a single executable it never actually is.
         Some(0) | Some(3010) => Ok(()),
-        Some(code) => Err(format!("the installer failed with code {code}")),
+        Some(code) => Err(installer_exit_code_meaning(installer, code)),
         None => Err("the installer was interrupted".to_string()),
+    }
+}
+
+/// The program that installs a staged file, chosen by its extension, so an MSI can never be handed to the EXE's command line or the reverse.
+#[cfg(windows)]
+pub(crate) fn installer_command(installer: &Path) -> Result<Command, String> {
+    let extension = installer
+        .extension()
+        .map(|value| value.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_default();
+    match extension.as_str() {
+        "msi" => {
+            let mut command = Command::new("msiexec");
+            command.arg("/i").arg(installer).args(["/qn", "/norestart"]);
+            Ok(command)
+        }
+        "exe" => {
+            let mut command = Command::new(installer);
+            command.arg("--silent");
+            Ok(command)
+        }
+        other => Err(format!("nothing installs a .{other} on Windows")),
+    }
+}
+
+/// What a non-zero exit means, in words.
+///
+/// `msiexec` has hundreds of codes and Windows already writes them to the event log, so it gets the number alone. The app's own installer has four, each a separate thing to tell somebody, and this is the only place that reads them back — the installer itself is silent by then, with no window and no console. `installer/src/exit.rs` is the list, and `the_installers_exit_codes_mean_what_the_installer_says_they_mean` holds this to it.
+#[cfg(windows)]
+pub(crate) fn installer_exit_code_meaning(installer: &Path, code: i32) -> String {
+    let ours = installer
+        .extension()
+        .is_some_and(|value| value.eq_ignore_ascii_case("exe"));
+    if !ours {
+        return format!("the installer failed with code {code}");
+    }
+    match code {
+        2 => "Leaftext was still open, so nothing was changed".to_string(),
+        3 => "that installer was built without the app inside it".to_string(),
+        4 => "the installer did not understand how it was run".to_string(),
+        other => format!("the installer failed with code {other}"),
+    }
+}
+
+/// Which release asset this copy updates through: on Windows, whichever installer put it here.
+///
+/// The marker sits beside the values the MSI already writes, and its absence means the MSI — that is what every copy on disk today looks like, so nothing had to be written for them. Nobody chooses this and no setting holds it: a reader on a machine that refuses MSI packages took the EXE, and that is the fact the value records.
+pub fn platform_update_asset_suffix() -> &'static str {
+    #[cfg(windows)]
+    {
+        leaftext::windows_asset_suffix(windows_impl::installed_by().as_deref())
+    }
+    #[cfg(not(windows))]
+    {
+        leaftext::platform_asset_suffix()
     }
 }
 
@@ -497,6 +552,35 @@ mod windows_impl {
             }
             sink(&buffer[..read as usize])?;
         }
+    }
+
+    /// Which installer put this copy on the machine, out of the key both installers write. `None` means nothing wrote one, which is an MSI install.
+    pub fn installed_by() -> Option<String> {
+        use windows_sys::Win32::Foundation::ERROR_SUCCESS;
+        use windows_sys::Win32::System::Registry::{
+            RegGetValueW, HKEY_CURRENT_USER, RRF_RT_REG_SZ,
+        };
+
+        let key = wide(r"Software\ryanallen\leaftext");
+        let name = wide("InstalledBy");
+        let mut buffer = [0u16; 64];
+        let mut bytes = std::mem::size_of_val(&buffer) as u32;
+        let read = unsafe {
+            RegGetValueW(
+                HKEY_CURRENT_USER,
+                key.as_ptr(),
+                name.as_ptr(),
+                RRF_RT_REG_SZ,
+                ptr::null_mut(),
+                buffer.as_mut_ptr().cast(),
+                &mut bytes,
+            )
+        };
+        if read != ERROR_SUCCESS {
+            return None;
+        }
+        let text: Vec<u16> = buffer.into_iter().take_while(|unit| *unit != 0).collect();
+        (!text.is_empty()).then(|| String::from_utf16_lossy(&text))
     }
 
     /// Clipboard format id for UTF-16 text, and the file-operation constants. Spelled out rather than imported so a windows-sys bump that reshuffles module paths can't break the build over a constant.

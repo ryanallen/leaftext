@@ -132,12 +132,11 @@ pub fn initial_version_script() -> String {
     )
 }
 
-/// Which release asset this build can install, as a file-name suffix, so the page can pick its own platform's installer out of the release. Empty on a build with no installable artifact, which the page reads as notify-only.
-pub fn initial_update_script() -> String {
-    format!(
-        "window.__leafUpdateAsset = {};",
-        serde_json::json!(crate::platform_asset_suffix())
-    )
+/// Which release asset this copy can install, as a file-name suffix, so the page can pick its own installer out of the release. Empty on a build with no installable artifact, which the page reads as notify-only.
+///
+/// Handed in rather than looked up: on Windows the answer is which installer put this copy on the machine, and that is a registry read this library must never do — it compiles for a browser too.
+pub fn initial_update_script(suffix: &str) -> String {
+    format!("window.__leafUpdateAsset = {};", serde_json::json!(suffix))
 }
 
 pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> String {

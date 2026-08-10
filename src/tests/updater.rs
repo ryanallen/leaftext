@@ -215,17 +215,100 @@ fn an_absurd_download_size_is_refused() {
 }
 
 #[test]
-fn a_release_publishes_one_installable_file_per_platform() {
-    // The release page is two downloads and nothing else: no checksum files, no archive published only for the updater. What the updater fetches is exactly what a person downloads by hand, which is why nobody has to be told what an extra file is for.
-    let suffix = platform_asset_suffix();
-    #[cfg(windows)]
-    assert_eq!(suffix, "-windows-x86_64.msi");
-    #[cfg(target_os = "macos")]
-    assert_eq!(suffix, "-macos-universal.dmg");
+fn every_published_file_is_an_installer_a_person_can_run() {
+    // No checksum files and no archive published only for the updater: what the updater fetches is exactly what somebody downloads by hand, which is why nobody has to be told what an extra file is for. Windows publishes two because one of them is refused by policy on some machines, and both are installers.
+    let windows = release_windows_workflow();
+    for suffix in [WINDOWS_MSI_SUFFIX, WINDOWS_EXE_SUFFIX] {
+        assert!(
+            windows.contains(&format!(
+                "windows-x86_64{}",
+                &suffix["-windows-x86_64".len()..]
+            )),
+            "release-windows.yml does not upload {suffix}"
+        );
+    }
     assert!(
-        !suffix.contains("blake3") && !suffix.contains(".app.zip"),
-        "the updater must install the file people download: {suffix}"
+        !windows.contains("blake3") && !windows.contains(".zip") && !windows.contains("sha256"),
+        "release-windows.yml publishes something that is not an installer"
     );
+
+    let macos = include_str!("../../.github/workflows/release-distributions.yml");
+    assert!(macos.contains(&MACOS_SUFFIX["-macos-".len()..]));
+    assert_eq!(platform_asset_suffix(), {
+        #[cfg(target_os = "macos")]
+        {
+            MACOS_SUFFIX
+        }
+        // Windows is not this function's to answer, and a browser has nothing to install.
+        #[cfg(not(target_os = "macos"))]
+        {
+            ""
+        }
+    });
+}
+
+/// The uploader's own list of assets, out of the Windows release workflow.
+fn release_windows_workflow() -> &'static str {
+    include_str!("../../.github/workflows/release-windows.yml")
+}
+
+#[test]
+fn the_installation_page_names_every_file_a_release_publishes() {
+    // A reader stopped by the policy box has to find the other download on the page they are already on, and a suffix the page never mentions is a download nobody knows exists.
+    let page = include_str!("../../docs/02-installation.md");
+    for suffix in [WINDOWS_MSI_SUFFIX, WINDOWS_EXE_SUFFIX, MACOS_SUFFIX] {
+        let extension = suffix
+            .rsplit_once('.')
+            .expect("a suffix names a file type")
+            .1;
+        assert!(
+            page.contains(&format!("`.{extension}`")),
+            "docs/02-installation.md never mentions a .{extension}"
+        );
+    }
+    assert!(
+        page.contains("policies to prevent this installation"),
+        "the page does not say what the box a reader is stopped by actually reads"
+    );
+}
+
+#[test]
+fn a_copy_updates_through_the_installer_that_put_it_there() {
+    // Nobody chooses this and no setting holds it. The EXE installer writes the marker; the MSI writes nothing, because a copy the MSI put there has nothing at that value and has to keep taking the MSI.
+    assert_eq!(windows_asset_suffix(Some("exe")), WINDOWS_EXE_SUFFIX);
+    assert_eq!(windows_asset_suffix(Some(" EXE ")), WINDOWS_EXE_SUFFIX);
+    assert_eq!(windows_asset_suffix(None), WINDOWS_MSI_SUFFIX);
+    assert_eq!(windows_asset_suffix(Some("")), WINDOWS_MSI_SUFFIX);
+    assert_eq!(windows_asset_suffix(Some("msi")), WINDOWS_MSI_SUFFIX);
+    // Anything else in that value is not a promise the release page can keep, so it reads as the file every copy could already take.
+    assert_eq!(
+        windows_asset_suffix(Some("something else")),
+        WINDOWS_MSI_SUFFIX
+    );
+
+    // The value the EXE installer actually writes has to be the one this reads.
+    let plan = include_str!("../../installer/src/plan.rs");
+    assert!(plan.contains(r#"INSTALLED_BY_VALUE: &str = "InstalledBy""#));
+    assert!(plan.contains(r#"INSTALLED_BY_EXE: &str = "exe""#));
+    assert!(plan.contains(r#"APP_KEY: &str = r"Software\ryanallen\leaftext""#));
+}
+
+#[test]
+fn the_installers_exit_codes_mean_what_the_installer_says_they_mean() {
+    // The app reads a number off a program that has already gone silent, so the two sides have to agree on the list. This is the list, read out of the installer rather than remembered.
+    let exits = include_str!("../../installer/src/exit.rs");
+    for (name, code) in [
+        ("OK", 0),
+        ("FAILED", 1),
+        ("IN_USE", 2),
+        ("NO_PAYLOAD", 3),
+        ("BAD_ARGUMENTS", 4),
+    ] {
+        assert!(
+            exits.contains(&format!("pub const {name}: i32 = {code};")),
+            "installer/src/exit.rs no longer says {name} is {code}"
+        );
+    }
 }
 
 #[test]
@@ -353,10 +436,13 @@ fn download_progress_reaches_the_page_as_a_percentage() {
 }
 
 #[test]
-fn the_page_is_told_which_installer_this_build_takes() {
-    let script = initial_update_script();
-    assert!(script.starts_with("window.__leafUpdateAsset = "));
-    assert!(script.contains(platform_asset_suffix()));
-
-    // The suffix has to match what the release workflow actually publishes; see `a_release_publishes_one_installable_file_per_platform`.
+fn the_page_is_told_which_installer_this_copy_takes() {
+    // Whichever the host chose, rather than a constant: on Windows that is which of the two installers put this copy on the machine. The suffix has to match what the release workflow actually publishes; see `every_published_file_is_an_installer_a_person_can_run`.
+    for suffix in [WINDOWS_MSI_SUFFIX, WINDOWS_EXE_SUFFIX, MACOS_SUFFIX] {
+        let script = initial_update_script(suffix);
+        assert!(script.starts_with("window.__leafUpdateAsset = "));
+        assert!(script.contains(suffix));
+    }
+    // A browser has no installer to offer, which the page reads as notify-only.
+    assert!(initial_update_script("").contains(r#"= """#));
 }

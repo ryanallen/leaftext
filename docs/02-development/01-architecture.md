@@ -24,7 +24,7 @@ The same renderer also builds for the browser. The window, the WebView, the file
 | `roxmltree`             | Read-only XML DOM parsing for TEI and other XML      |
 | `yaml-rust2`            | YAML parsing for the [data renderer](../01-features/01-rendering.md#data-files-json-and-yaml). JSON needs no crate — `src/data.rs` reads it directly, which is what keeps key order and exact byte ranges |
 | `mail-parser`           | MIME parsing for the [email renderer](../01-features/01-rendering.md#email-eml): multipart trees, base64/quoted-printable bodies, encoded-word headers, per-part charsets |
-| `windows-sys` (Windows) | Win32 calls: single-instance guard, clipboard, Recycle Bin, the WinHTTP update download, waiting for the app to exit before an update installs |
+| `windows-sys` (Windows) | Win32 calls: single-instance guard, clipboard, Recycle Bin, the WinHTTP update download, waiting for the app to exit before an update installs. The [EXE installer](#the-windows-exe-installer) takes it again with a shorter list of its own, plus COM for the Start Menu entry |
 
 The list is deliberately short. Clipboard, Recycle Bin, per-user data paths, update downloads, and [git](../01-features/03-library.md#github-sync) are all done against the platform rather than through a crate — see [Dependencies](../../AGENTS.md) for the standing policy, and `src/platform.rs` for where the native code lives.
 
@@ -268,6 +268,16 @@ A third build carries the app's own page and front end as well — `leaf_page`, 
 `just drive-web` presses things in it and reads the page back — the browser half of `just drive`, over the browser's own debugging port, no package added.
 
 `just export-web` writes a folder of documents out as one of those sites: page, front end, module, vendored runtimes, the document list and the documents. **Nothing serves it** — drop it on any static host. `just preview-web` exports and then serves that folder locally, only because a page cannot fetch its neighbors off `file://`; it serves nothing the export does not contain.
+
+## The Windows EXE installer
+
+`installer/` is the third package in the workspace, and it exists because a machine whose policy blocks Windows Installer packages refuses an `.msi` whoever signed it. It links nothing of the app: it carries the built `leaftext.exe` inside itself, deflated by its build script from the path `LEAFTEXT_APP_EXE` names, and unpacks it at install time. Without that variable it still builds and still runs its tests, and refuses to install anything — which is what the release script's size check catches.
+
+The install is data before it is an act. `plan.rs` is every file, every `HKCU` value, the one Start Menu entry and the Installed Apps record as a value a test can read on a machine that never runs it; `apply.rs` lays that plan down and takes it back up, adding order and refusal and nothing else. Both take an optional registry prefix, which is what lets a test drive a whole install and uninstall into a scratch key. The result is the same install `wix/main.wxs` produces — same folder, same values, same single entry, same associations — and `installer_claims_every_readable_extension` holds both installers to `format.rs`'s list, searching the MSI for the keys it names and reading the EXE installer's one table out whole.
+
+`registry.rs` and `shortcut.rs` are the two things that touch the machine. A `.lnk` is a COM object saved to a file and `windows-sys` ships COM functions but no interface definitions at all, so `IShellLinkW` and `IPersistFile` are hand-written vtables — a page of declarations against a crate that would bring its own macro tree, for two interfaces. `ui.rs` is the one screen, drawn at `wix/main.wxs`'s own dialog units in the same Tahoma, so both installers show a person the same thing.
+
+Which of the two Windows files a copy updates through is written at install time, not chosen by a reader: the EXE installer leaves a marker beside the values the MSI already writes, and its absence means the MSI, because that is what every copy on disk before this looks like. Reading it is `platform.rs`'s job — the library compiles for a browser and must not reach the machine — and the binary hands the answer to the page. `just check-installer` type-checks and tests this package, for the same reason `check-web` exists: the workspace's only default member is the desktop app.
 
 ## Bundled asset protocol
 

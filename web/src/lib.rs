@@ -145,7 +145,8 @@ pub extern "C" fn leaf_boot_script() -> *mut u8 {
         leaftext::initial_state_script(&[], &leaftext::Favorites::default()),
         leaftext::initial_document_exts_script(),
         leaftext::initial_version_script(),
-        leaftext::initial_update_script(),
+        // No installer to offer, which the page already reads as notify-only.
+        leaftext::initial_update_script(""),
     );
     into_length_prefixed(boot.into_bytes())
 }

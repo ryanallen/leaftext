@@ -54,6 +54,40 @@ fn a_landed_update_clears_the_one_attempt_guard() {
     assert!(should_auto_apply(&settings, true));
 }
 
+#[cfg(windows)]
+#[test]
+fn a_staged_files_extension_chooses_what_runs_it() {
+    // Windows publishes two installers and a copy takes whichever put it there, so the staged file decides the command. An MSI handed to the app's own installer, or the reverse, would fail in a way nobody could read.
+    let msi = crate::platform::installer_command(std::path::Path::new(r"C:\x\leaftext.msi"))
+        .expect("an MSI is installable");
+    assert_eq!(msi.get_program(), "msiexec");
+    assert!(msi.get_args().any(|argument| argument == "/qn"));
+
+    let exe = crate::platform::installer_command(std::path::Path::new(r"C:\x\leaftext.exe"))
+        .expect("the app's own installer is installable");
+    assert_eq!(exe.get_program(), r"C:\x\leaftext.exe");
+    assert!(exe.get_args().any(|argument| argument == "--silent"));
+
+    assert!(
+        crate::platform::installer_command(std::path::Path::new(r"C:\x\leaftext.zip")).is_err()
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn a_failed_install_is_reported_in_words_where_there_are_any() {
+    // Our own installer has four codes, each a separate thing to tell somebody; `msiexec` has hundreds and Windows already writes them to the event log, so it gets the number alone.
+    let ours = std::path::Path::new(r"C:\x\leaftext.exe");
+    assert!(crate::platform::installer_exit_code_meaning(ours, 2).contains("still open"));
+    assert!(crate::platform::installer_exit_code_meaning(ours, 3).contains("without the app"));
+    assert!(crate::platform::installer_exit_code_meaning(ours, 9).contains("code 9"));
+    assert!(crate::platform::installer_exit_code_meaning(
+        std::path::Path::new(r"C:\x\leaftext.msi"),
+        2
+    )
+    .contains("code 2"));
+}
+
 fn file_url_for_fixture(relative_path: &str) -> String {
     url::Url::from_file_path(fixture_source_path(relative_path))
         .expect("fixture path has a file URL")

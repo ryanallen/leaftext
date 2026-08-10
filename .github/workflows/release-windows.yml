@@ -59,13 +59,20 @@ jobs:
         shell: pwsh
         run: |
           $tag = $env:DIST_TAG
-          # One file: the MSI a person downloads, which is also what the in-app
-          # updater installs.
+          # Two files, both installers a person can run and both of which the
+          # in-app updater installs: the MSI, and the EXE for a machine whose
+          # policy blocks Windows Installer packages. Nothing here is published
+          # for the updater alone.
           $assets = @(
-            "dist/leaftext-$tag-windows-x86_64.msi"
+            "dist/leaftext-$tag-windows-x86_64.msi",
+            "dist/leaftext-$tag-windows-x86_64.exe"
           )
-          $existing = @($assets | Where-Object { Test-Path $_ })
-          if ($existing.Count -eq 0) { throw "No release assets were built." }
+          # Every one of them, not whichever turned up: a release missing the EXE
+          # looks exactly like a release that never had one, and the machine it
+          # is for is the machine nobody here can test on.
+          $missing = @($assets | Where-Object { -not (Test-Path $_) })
+          if ($missing.Count -gt 0) { throw "Not built: $($missing -join ', ')" }
+          $existing = $assets
 
           & gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {

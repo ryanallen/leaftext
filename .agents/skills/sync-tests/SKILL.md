@@ -36,6 +36,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | `src/**.rs` (library) | `src/tests/`, one file per subject — add the `mod` line in `src/tests/mod.rs` if the subject is new |
 | `src/app/**.rs` (binary) | `src/app/tests.rs` |
 | `src/store/**.rs` | `src/store/tests.rs` |
+| `installer/**.rs` — the Windows EXE installer | `installer/src/tests.rs`, run by `just check-installer`. It installs nothing: the plan is data, and the one test that writes drives a scratch folder and a scratch registry key and removes both |
 | `src/assets/shell/*.js` | `scripts/check-shell.mjs` |
 | `src/assets/reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
 | a new class, component, token or icon | no test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list. Run them and add the row |

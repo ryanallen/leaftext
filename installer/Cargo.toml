@@ -1,0 +1,40 @@
+[package]
+name = "leaftext-setup"
+# Never the app's version. What the installer writes into Installed Apps is read out of the app's own `Cargo.toml` by `build.rs`, so the two cannot drift apart by hand.
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "leaftext-setup"
+path = "src/main.rs"
+
+# The payload is the app binary, deflated: 17.7 MB of executable becomes 6.9 MB, which puts the finished installer beside the MSI rather than at three times its size. `flate2` is already a direct dependency of the app, so this costs the tree nothing.
+[dependencies]
+flate2 = "1"
+
+# The same crate on the other side of the same operation: `build.rs` packs the payload, the installer unpacks it.
+[build-dependencies]
+flate2 = "1"
+
+[target.'cfg(windows)'.build-dependencies]
+embed-resource = "2.5"
+
+# `Win32_System_Com` is here and not in the app's list: the Start Menu shortcut is COM, and nothing in the app needs it. windows-sys ships the COM functions and the ShellLink class id but no interface definitions at all, so `IShellLinkW` and `IPersistFile` are hand-written vtables in `shortcut.rs`.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Registry",
+    # RegCreateKeyExW's signature names SECURITY_ATTRIBUTES, so the function is only compiled in when both features are on.
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_UI_Shell",
+    # BROWSEINFOW carries an item id list, which windows-sys gates behind this.
+    "Win32_UI_Shell_Common",
+    "Win32_UI_WindowsAndMessaging",
+    # The one screen: its font, its measurements, and drawing it at the display's own resolution rather than scaled up from 96 dots per inch.
+    "Win32_Graphics_Gdi",
+    "Win32_UI_HiDpi",
+] }

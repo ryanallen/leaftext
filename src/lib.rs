@@ -84,8 +84,9 @@ mod updater;
 pub use updater::{
     hash_file, is_newer_version, now_unix, platform_asset_suffix, prune_staged, read_staged,
     record_apply_outcome, staging_dir, take_apply_outcome, update_check_is_due,
-    update_url_is_allowed, updates_dir, ApplyOutcome, StagedUpdate, UpdateDownload,
-    MAX_UPDATE_BYTES, UPDATE_CHECK_INTERVAL_SECS,
+    update_url_is_allowed, updates_dir, windows_asset_suffix, ApplyOutcome, StagedUpdate,
+    UpdateDownload, MACOS_SUFFIX, MAX_UPDATE_BYTES, UPDATE_CHECK_INTERVAL_SECS, WINDOWS_EXE_SUFFIX,
+    WINDOWS_MSI_SUFFIX,
 };
 
 use std::{

@@ -74,18 +74,33 @@ pub fn update_url_is_allowed(url: &str) -> bool {
     })
 }
 
-/// The release asset this build can install, as a file-name suffix: the same file a person downloads by hand. Nothing is published for the updater alone, which is what makes `install` in `platform.rs` mount a disk image on macOS.
-pub fn platform_asset_suffix() -> &'static str {
-    #[cfg(windows)]
-    {
-        "-windows-x86_64.msi"
+/// Windows publishes two installers, both of which a person can run. A machine whose policy blocks Windows Installer packages refuses the MSI whoever signed it, so the EXE is the way around that — and each installed copy keeps updating through whichever one put it there.
+pub const WINDOWS_MSI_SUFFIX: &str = "-windows-x86_64.msi";
+pub const WINDOWS_EXE_SUFFIX: &str = "-windows-x86_64.exe";
+
+/// macOS publishes one: the disk image a person double-clicks, which is why `install` in `platform.rs` mounts it.
+pub const MACOS_SUFFIX: &str = "-macos-universal.dmg";
+
+/// Which Windows installer a copy updates through, from the marker the EXE installer writes beside the values the MSI already writes.
+///
+/// Absent means the MSI, because that is what every copy on disk today looks like — so nothing had to be written for the copies that are already out there. Reading the marker is `platform.rs`'s job: this library compiles for a browser and must not reach the machine.
+pub fn windows_asset_suffix(installed_by: Option<&str>) -> &'static str {
+    match installed_by {
+        Some(marker) if marker.trim().eq_ignore_ascii_case("exe") => WINDOWS_EXE_SUFFIX,
+        _ => WINDOWS_MSI_SUFFIX,
     }
+}
+
+/// The release asset this build can install, as a file-name suffix: the same file a person downloads by hand.
+///
+/// Windows is not here. Which of its two files a copy takes is a registry read, so `platform.rs` answers it and the binary hands the answer to the page.
+pub fn platform_asset_suffix() -> &'static str {
     #[cfg(target_os = "macos")]
     {
-        "-macos-universal.dmg"
+        MACOS_SUFFIX
     }
     // A browser core has no installer to offer, which the page already reads as notify-only.
-    #[cfg(not(any(windows, target_os = "macos")))]
+    #[cfg(not(target_os = "macos"))]
     {
         ""
     }

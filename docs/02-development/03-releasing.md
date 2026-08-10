@@ -36,13 +36,16 @@ After the tag push, the CI pipeline produces release artifacts for all supported
 | Platform | Artifact             |
 | -------- | -------------------- |
 | Windows  | 64-bit MSI installer |
+| Windows  | 64-bit EXE installer, for a machine whose policy blocks Windows Installer packages |
 | macOS    | Universal DMG (Apple Silicon + Intel) |
 
-**One file per platform, and no more.** Each is both the hand-install download and what the [in-app updater](../01-features/05-settings.md#updates) installs. Nothing is published for the updater alone and no checksum files are published: a digest served from the same host as the download adds nothing over the advertised byte count and TLS, and every extra file on a release page is one a visitor has to ask about. If a release publishes no installer for a platform, that platform falls back to notify-only — the button opens the release page instead of downloading.
+**Every published file is an installer somebody can run.** Each is both the hand-install download and what the [in-app updater](../01-features/05-settings.md#updates) installs. Nothing is published for the updater alone and no checksum files are published: a digest served from the same host as the download adds nothing over the advertised byte count and TLS, and every extra file on a release page is one a visitor has to ask about. If a release publishes no installer for a platform, that platform falls back to notify-only — the button opens the release page instead of downloading.
+
+Windows has two of them because a managed machine can be set to refuse Windows Installer packages outright, and no certificate changes that — the refusal is about the kind of file. The EXE is built here from `installer/`, carries the same app binary the MSI carries, and produces the same install: same folder, same registry values, same single Start Menu entry, same file associations. Which one a copy updates through is written when it is installed rather than chosen by a reader, so nobody is handed a file their machine refuses. The Windows job publishes both or fails; a release missing one looks exactly like a release that never had it.
 
 Adding an artifact means someone will ask what it is. That is the bar it has to clear.
 
-Both artifacts are automatically attached to the GitHub Release at [github.com/ryanallen/leaftext/releases](https://github.com/ryanallen/leaftext/releases), alongside the source archives GitHub attaches itself and which cannot be turned off.
+Every artifact is automatically attached to the GitHub Release at [github.com/ryanallen/leaftext/releases](https://github.com/ryanallen/leaftext/releases), alongside the source archives GitHub attaches itself and which cannot be turned off.
 
 **Only the newest release is kept.** Each platform job deletes every older release and its tag once its own upload succeeds, so the releases page holds exactly one version — the current one. That cleanup runs after publishing and can never fail the build: both jobs race to do it, so whichever finishes second routinely finds the release, or its tag, already gone.
 
