@@ -13,7 +13,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Outline](#outline) | A collapsed table of contents, built from the document's headings, at the top of each page, labeled with the document's line count |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
-| [Scrollbars](#scrollbars) | Every bar appears while its box is being scrolled and fades out a moment after it stops |
+| [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it |
 | [Live reload](#reload) | Reload a changed file without losing your place |
 | [Recent files](#recent-files) | Reopen any of the last 50 files from the home screen |
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
@@ -187,7 +187,7 @@ Opening a document hands it to the Rust side to parse and render before the view
 
 ### Scrollbars
 
-Every scrollbar in the app appears while its box is moving and fades out a moment after it stops — the reading page, the [library](03-library.md#browsing) pane, the lists on the home screen, a table too wide for the page, and the shape picker in the [flowchart editor](07-editing.md#the-flowchart-editor). Resting the pointer on one does not bring it back; only scrolling does, including a scroll Leaftext makes itself when it restores your place or jumps to a find match. The space the bar takes is held whether or not it is drawn, so nothing on the page shifts when one arrives, and with the [minimap](04-minimap.md) rail up the reading page draws no bar at all because the rail is that indicator.
+Every scrollbar in the app fades in while its box is moving and fades out a moment after it stops — the reading page, the [library](03-library.md#browsing) pane, the lists on the home screen, a table too wide for the page, and the shape picker in the [flowchart editor](07-editing.md#the-flowchart-editor). A scroll Leaftext makes itself brings it up too, when it restores your place or jumps to a find match. Resting the pointer anywhere in the box does not bring it back — but resting it on the narrow strip the bar itself lives in does, and the bar thickens while it is pointed at, so it can be aimed at and dragged; moving away thins it and takes it off again. The space the bar takes is held whether or not it is drawn, so nothing on the page shifts when one arrives, and with the [minimap](04-minimap.md) rail up the reading page draws no bar at all because the rail is that indicator.
 
 ### Find in this document
 

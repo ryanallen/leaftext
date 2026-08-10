@@ -86,6 +86,13 @@ check-spelling:
 check-docs:
     node scripts/check-docs.mjs
 
+# Fail on a running order next door that has quietly stopped ranking every live ticket:
+# a ticket with no row, a position that skips or repeats, a count at its foot that
+# disagrees with the tree, or a row sitting above what it waits on. Nothing judges
+# whether a row is ranked well — that is the ranker's and no script's.
+check-plan:
+    node scripts/check-plan.mjs
+
 # Fail on a paragraph broken across lines — in Markdown, and in a comment in the code.
 # Everything that reads them reflows, so the newline inside a paragraph only costs: it
 # re-flows by hand on every edit after it, and a one-word change diffs as the whole
@@ -240,7 +247,7 @@ preview-web folder="":
 drive-web url *steps:
     node scripts/drive-web.mjs "{{ url }}" {{ steps }}
 
-verify: format-check check check-web check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
+verify: format-check check check-web check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

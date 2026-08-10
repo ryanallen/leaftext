@@ -3753,12 +3753,63 @@ if (booted) {
     }
   });
 
+  // The gutter sits outside the box's own width, so the pointer being on the bar is an offset past `clientWidth` — or past `clientHeight`, on a sideways bar. Both directions here, because the wide table wears the same rule with its bar along the bottom.
+  check('the pointer in a box’s own gutter raises that box’s bar, and neither reason cancels the other', () => {
+    const classes = new Set();
+    const box = Object.assign(fakeElement('gutter'), {
+      clientWidth: 286,
+      clientHeight: 400,
+      matches: () => true,
+      classList: {
+        add: (name) => classes.add(name),
+        remove: (name) => classes.delete(name),
+        contains: (name) => classes.has(name),
+      },
+    });
+    const at = (offsetX, offsetY) => booted.leafMarkPointing({ target: box, offsetX, offsetY });
+    at(290, 120);
+    if (!classes.has('is-pointing')) throw new Error('the pointer on the bar’s own gutter raises nothing');
+    at(120, 120);
+    if (classes.has('is-pointing')) throw new Error('the bar stays raised once the pointer is back over the content');
+    at(120, 404);
+    if (!classes.has('is-pointing')) throw new Error('a sideways bar’s gutter along the bottom is never seen');
+    // A box made after boot is covered the same way, and one it is not a wearer at all is never stamped.
+    const other = Object.assign(fakeElement('plain'), { matches: () => false, clientWidth: 0, clientHeight: 0 });
+    booted.leafMarkPointing({ target: other, offsetX: 40, offsetY: 40 });
+    if (classes.has('is-pointing')) throw new Error('moving off onto something else left the bar up');
+    // The two reasons are independent: a wheel while the pointer is already there, then the pointer leaving, must leave the bar up until the box has been still.
+    const wasTimeout = booted.setTimeout;
+    booted.setTimeout = () => 1;
+    try {
+      at(290, 120);
+      booted.leafMarkScrolling(box);
+      if (!classes.has('is-pointing') || !classes.has('is-scrolling')) {
+        throw new Error('one reason for the bar took the other one off');
+      }
+      at(120, 120);
+      if (classes.has('is-pointing')) throw new Error('the pointer leaving mid-scroll left the thickening behind');
+      if (!classes.has('is-scrolling')) throw new Error('the pointer leaving mid-scroll took the whole bar with it');
+    } finally {
+      booted.setTimeout = wasTimeout;
+      classes.clear();
+      booted.leafMarkPointing(null);
+    }
+  });
+
   // The stand-in page takes document listeners and drops them, so the registration cannot be reached through it. Read off the fragment instead, the way the canvas's own listeners are.
   check('one passive listener in the capture phase is what sees every scroller', () => {
     const fragment = readFileSync(join(root, 'src/assets/shell/dom.js'), 'utf8');
     const registered = /document\.addEventListener\(\s*'scroll',[^;]*\{[^}]*capture:\s*true[^}]*passive:\s*true[^}]*\}\s*\)/.test(fragment);
     if (!registered) {
       throw new Error('dom.js does not register the scroll listener on document in the capture phase, passively');
+    }
+    const pointing = /document\.addEventListener\(\s*'pointermove',\s*leafMarkPointing,\s*\{[^}]*capture:\s*true[^}]*passive:\s*true[^}]*\}\s*\)/.test(fragment);
+    if (!pointing) {
+      throw new Error('dom.js does not register the pointer watcher on document in the capture phase, passively');
+    }
+    // A rectangle read per mouse move is a forced layout on every move across the whole window.
+    if (/getBoundingClientRect/.test(fragment.slice(fragment.indexOf('function leafMarkPointing')))) {
+      throw new Error('the pointer watcher reads a rectangle on every move');
     }
     if (!/leafMarkScrolling\(event\.target\)/.test(fragment)) {
       throw new Error('the listener stamps something other than the box that scrolled');

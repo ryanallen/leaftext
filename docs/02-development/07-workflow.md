@@ -57,7 +57,7 @@ A test is named as a sentence about behavior — `a_staged_update_installs_itsel
 | `/sync-docs` | Makes these pages match the app, takes the screenshots they ask for, regenerates the crawler files |
 | `/code-comments` | A quality pass over comments only — why rather than what, and no drafting history |
 | `/git-release` | The only step that writes git: version bump, commit, tag, push |
-| `/done` | Retires a released plan on the owner's word |
+| `/done` | Retires a plan on the owner's word, at any stage |
 | `/design-tokens` | Changes a color, value, icon or component in `design/` and runs the bundlers |
 | `/shell-fragment` | Adds, splits or reorders a file in `src/assets/shell/`, where order is load-bearing |
 | `/add-format` | Teaches the app another readable file type from the one table of formats |

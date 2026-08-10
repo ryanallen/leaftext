@@ -7049,18 +7049,43 @@ body.is-home-row-dragging .home-list-scroll li {
   /* Transparent, not the surface color: an opaque track masks the grain and leaves an ungrained strip down the edge it sits on. */
   background: transparent;
 }
-/* The bar answers the scroll, not the pointer: gone at rest, there while that box is moving, and gone again a moment after it stops. Never on hover — pointing at a list on the way somewhere else is not asking to be told how long it is. `is-scrolling` is stamped on whatever scrolled by the one watcher in `dom.js`. */
+/* Registered so it can be animated at all: an unregistered custom property has no type to interpolate, and a transition written on the bar itself never runs in this engine — the fade shipped that way and only ever blinked. Inherited, because a scrollbar pseudo has no declarations of its own and reads this off its box. Registering is safe here and is not next door: the one that killed the app fed a grid track off :root, so every frame relaid the window out (see .library-shell). This drives paint on a bar inside a gutter that is reserved either way. */
+@property --lt-scroll-thumb {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+/* How far the thumb is held off each edge of its gutter, registered for the same reason and inherited down to the thumb the same way. Shrinking it thickens the grabber inside the gutter that is reserved either way, so nothing on the page reflows. Zero initially because the box rule below always supplies the resting value; the initial one is only what an element outside that rule would read. */
+@property --lt-scroll-thumb-inset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+/* The bar answers the scroll, not the pointer over the box: gone at rest, there while that box is moving, and gone again a moment after it stops. Never the whole box's hover — pointing at a list on the way somewhere else is not asking to be told how long it is. `is-scrolling` is stamped on whatever scrolled, and `is-pointing` on whatever has the pointer in its own gutter, both by the watchers in `dom.js`. The fade rides the box because it cannot ride the bar; the resting rule carries the exit and the raised ones the enter, which is what a direction per curve costs. */
 .leaf-scroll,
 .library-scroll,
 .reader-shell:not(.has-minimap),
 .table-lane > table {
   --lt-scroll-thumb: transparent;
+  --lt-scroll-thumb-inset: var(--lt-stroke-4);
+  transition: --lt-scroll-thumb var(--lt-duration-160) var(--lt-ease-accelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
 }
+/* Scrolling changes the color and nothing else: a bar that swells every time the page moves is a bar drawing attention to itself while somebody is reading. The inset still names its exit here, so a pointer leaving mid-scroll thins the thumb while the bar stays up. */
 .leaf-scroll.is-scrolling,
 .library-scroll.is-scrolling,
 .reader-shell:not(.has-minimap).is-scrolling,
 .table-lane > table.is-scrolling {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+/* Aiming at the bar is aiming at a control, so it comes back and thickens to be held: 6px of painted thumb becomes 10px inside the same gutter. Last of the three on purpose — a box that is both scrolling and pointed at takes this one, and the color it sets is the same, so the two reasons never fight. */
+.leaf-scroll.is-pointing,
+.library-scroll.is-pointing,
+.reader-shell:not(.has-minimap).is-pointing,
+.table-lane > table.is-pointing {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  --lt-scroll-thumb-inset: var(--lt-stroke-2);
+  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);
 }
 /* What fades is that property, not an opacity: a scrollbar pseudo has no box of its own to fade. It also means the bar's width is reserved whether or not the thumb is painted, so nothing on the page moves when one appears. */
 .leaf-scroll::-webkit-scrollbar-thumb,
@@ -7068,20 +7093,10 @@ body.is-home-row-dragging .home-list-scroll li {
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
 .table-lane > table::-webkit-scrollbar-thumb {
   /* A transparent border with the fill clipped inside it is the only way to inset a webkit thumb. */
-  border: var(--lt-stroke-4) solid transparent;
+  border: var(--lt-scroll-thumb-inset) solid transparent;
   background-clip: padding-box;
   border-radius: var(--lt-radius-md);
   background-color: var(--lt-scroll-thumb);
-  transition: background-color var(--lt-duration-200) var(--lt-ease-decelerate);
-}
-/* Named, because the stylesheet's one reduced-motion block matches `*`, `*::before` and `*::after` and a scrollbar pseudo is none of the three. With motion reduced the bar still arrives and still leaves; it just does it without a ramp. */
-@media (prefers-reduced-motion: reduce) {
-  .leaf-scroll::-webkit-scrollbar-thumb,
-  .library-scroll::-webkit-scrollbar-thumb,
-  .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
-  .table-lane > table::-webkit-scrollbar-thumb {
-    transition-duration: var(--lt-duration-0) !important;
-  }
 }
 /* Floor the grabber so a long page can't shrink it to a sliver. Per axis: a bare `min-height` on a sideways bar sets its thickness instead of its length, which swells the 14px bar into a 56px band. */
 .leaf-scroll::-webkit-scrollbar-thumb:vertical,

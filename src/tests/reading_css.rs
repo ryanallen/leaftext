@@ -859,14 +859,14 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         css,
         ".reader-shell.has-minimap {\n  scrollbar-width: none;\n}",
     );
-    // The thumb is inset by a transparent border with the fill clipped inside it; a bare width would put it flush against the card's border and corners.
+    // The thumb is inset by a transparent border with the fill clipped inside it; a bare width would put it flush against the card's border and corners. How deep the inset goes is a property the pointer shrinks, so the thumb thickens under an aim.
     assert_contains(
         css,
         ".reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb",
     );
     assert_contains(
         css,
-        "border: var(--lt-stroke-4) solid transparent;\n  background-clip: padding-box;",
+        "border: var(--lt-scroll-thumb-inset) solid transparent;\n  background-clip: padding-box;",
     );
     // Keyed off the renderer's class, never :has() — scrollbar styles do not re-resolve when a :has() match flips, so the bar outlives the rail.
     assert!(
@@ -1566,8 +1566,8 @@ fn the_normal_width_library_toggle_rides_the_motion_rail() {
     );
     assert!(!css.contains(".library-shell.library-closed {\n  grid-template-columns:"));
 
-    // Never @property: registering the rail as an inherited length and transitioning it off :root crashed the whole app in this web view — library-sidebar-motion's phase 0 measured it, twice. The stylesheet's one mention is the comment saying so.
-    assert!(!css.contains("@property --"));
+    // Never the rail: registering it as an inherited length and transitioning it off :root crashed the whole app in this web view — library-sidebar-motion's phase 0 measured it, twice. What killed it was a track relaying the window out on every frame, so the ban is on this property rather than on registration itself; the scrollbar's two are registered and drive paint only, measured in the same window (scrollbar-fade-and-hover, phase 0).
+    assert!(!css.contains("@property --library-rail-width"));
 
     // The reader divider's left end spends the bare rail value — the same number the grid track spends — so its left transition and the grid's interpolate the same span on the same curve and the line stays attached to the pane's corner arc on every frame. A gutter floor here changed the span and detached them near zero, right where the close's bounce lives.
     assert_contains(
@@ -1927,12 +1927,20 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
     assert_contains(resting, "--lt-scroll-thumb: transparent;");
     let moving = rule_body(&css, "\n.leaf-scroll.is-scrolling,");
     assert_contains(moving, "--lt-scroll-thumb: color-mix(");
+    let pointed = rule_body(&css, "\n.leaf-scroll.is-pointing,");
+    assert_contains(pointed, "--lt-scroll-thumb: color-mix(");
     for wearer in WEARERS {
         assert_contains(resting, wearer);
         assert!(
             css.contains(&format!("\n{wearer}.is-scrolling,"))
                 || css.contains(&format!("\n{wearer}.is-scrolling {{")),
             "{wearer} never gets the class the watcher stamps, so its bar can never come up"
+        );
+        // The second reason the bar is up: the pointer in that box's own gutter.
+        assert!(
+            css.contains(&format!("\n{wearer}.is-pointing,"))
+                || css.contains(&format!("\n{wearer}.is-pointing {{")),
+            "{wearer} never gets the class the pointer stamps, so aiming at its bar does nothing"
         );
         // Never the pointer. Asked for twice: a bar on hover is still a bar nobody asked for.
         assert!(
@@ -1960,23 +1968,67 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
 
     let thumb = rule_body(&css, "\n.leaf-scroll::-webkit-scrollbar-thumb,");
     assert_contains(thumb, "background-color: var(--lt-scroll-thumb);");
-    assert_contains(
-        thumb,
-        "transition: background-color var(--lt-duration-200) var(--lt-ease-decelerate);",
+    // A transition here is the bug this fixes, not the fix: measured in the app's own web view, nothing written on a scrollbar part animates, so the bar blinked for as long as the fade lived on this rule.
+    assert!(
+        !thumb.contains("transition"),
+        "the fade is back on the bar, where this engine will not run it"
     );
 
-    // The stylesheet's one reduced-motion block matches `*`, `*::before` and `*::after`; a scrollbar pseudo is none of the three, so the fade is named here or it survives the setting.
-    let reduced = css
-        .find("@media (prefers-reduced-motion: reduce) {\n  .leaf-scroll::-webkit-scrollbar-thumb,")
-        .map(|at| &css[at..])
-        .expect("the shared thumb has no reduced-motion block of its own");
-    let reduced = &reduced[..reduced.find("\n}").expect("the block should close")];
-    for wearer in WEARERS {
-        assert_contains(reduced, &format!("{wearer}::-webkit-scrollbar-thumb"));
-    }
+    // The thumb is inset by a property too, so the thickening rides the same fade rather than being a second mechanism painting the same bar.
     assert_contains(
-        reduced,
-        "transition-duration: var(--lt-duration-0) !important;",
+        thumb,
+        "border: var(--lt-scroll-thumb-inset) solid transparent;",
+    );
+
+    // Registered or they cannot be animated at all — an unregistered custom property has no type to interpolate. Inherited, because the thumb pseudo has no declarations of its own and reads the box's value; `inherits: false` would leave every bar painting the initial value.
+    assert_contains(
+        &css,
+        "@property --lt-scroll-thumb {\n  syntax: \"<color>\";\n  inherits: true;\n  initial-value: transparent;\n}",
+    );
+    assert_contains(
+        &css,
+        "@property --lt-scroll-thumb-inset {\n  syntax: \"<length>\";\n  inherits: true;\n  initial-value: 0px;\n}",
+    );
+
+    // A direction per curve is declared twice: the exit in the resting rule, the enter on the state class. Both on the box, which is the whole of the fix.
+    assert_contains(
+        resting,
+        "transition: --lt-scroll-thumb var(--lt-duration-160) var(--lt-ease-accelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);",
+    );
+    assert_contains(
+        moving,
+        "transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);",
+    );
+    assert_contains(
+        pointed,
+        "transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);",
+    );
+
+    // The thickening is the pointer's alone: a bar that swells every time the page moves draws attention to itself while somebody is reading. So only the pointing rule shortens the inset, and it does it inside the gutter that is reserved either way.
+    assert_contains(resting, "--lt-scroll-thumb-inset: var(--lt-stroke-4);");
+    assert_contains(pointed, "--lt-scroll-thumb-inset: var(--lt-stroke-2);");
+    assert!(
+        !moving.contains("--lt-scroll-thumb-inset:"),
+        "the bar swells on every scroll, not just under the pointer"
+    );
+    // The pointing rule comes last, so a box that is both scrolling and pointed at keeps the thicker thumb.
+    assert!(
+        css.find("\n.leaf-scroll.is-pointing,") > css.find("\n.leaf-scroll.is-scrolling,"),
+        "a box that is scrolling as well as pointed at loses the thickening it was aimed at"
+    );
+
+    // The pane's own fade declares a transition on the same element from a more specific rule, so it is pinned here: a later edit that drops it would take the pane's opacity ramp with it.
+    assert_contains(
+        rule_body(&css, "body.is-library-settling .library-scroll {"),
+        "transition: opacity var(--lt-duration-260) var(--lt-ease);",
+    );
+
+    // With the fade on the box, the stylesheet's one reduced-motion block reaches it — `*` matches an element where it never matched a scrollbar part. The named block that existed only for that is dead CSS.
+    assert!(
+        !css.contains(
+            "@media (prefers-reduced-motion: reduce) {\n  .leaf-scroll::-webkit-scrollbar-thumb,"
+        ),
+        "a reduced-motion block still names a scrollbar part, which the universal one now covers"
     );
 }
 
