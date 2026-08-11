@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// The gesture driver is what proves a change in the window — a real click, a real drag, a real wheel notch. Nothing in the suite can run one, so this runs the half that needs no app: reading the `-Do` list back.
+// The two drivers are what prove a change was pressed rather than assumed — the gesture driver against a real window, and `drive-web.mjs` against a published site in a headless browser. This checks the half of each that needs no app and no site.
 //
 //   node scripts/check-driver.mjs   (`just verify`)
 //
-// `-DryRun` returns before the script loads an assembly, launches anything or reaches user32, so this is the one thing about the driver that a machine with no app built and no window open can check: that every verb parses, that an unknown one is refused, and that an attached run refuses the flags that would rewrite the owner's profile rather than ignoring them.
+// `-DryRun` returns before the gesture driver loads an assembly, launches anything or reaches user32, so this is the one thing about it that a machine with no app built and no window open can check: that every verb parses, that an unknown one is refused, and that an attached run refuses the flags that would rewrite the owner's profile rather than ignoring them.
 //
-// It also reads the script itself for the half a dry run never reaches: that the throwaway profile is built from nothing on every run. That one is not a matter of taste — a profile carrying the last shot's vaults photographs them.
+// It also reads that script itself for the half a dry run never reaches: that the throwaway profile is built from nothing on every run. That one is not a matter of taste — a profile carrying the last shot's vaults photographs them.
+//
+// The browser driver is checked by driving it, because what this is afraid of is the browser changing under it and a source read can never see that. A headless page hides itself a few seconds in, which stops every animation frame and so every bit of the front end's placing, while each step still says it worked; one focus call holds it awake. `about:blank` hides just the same, so the probe needs no site, no export and no server.
 
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -15,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const script = join(root, 'scripts/capture-screenshot.ps1');
+const webDriver = join(root, 'scripts/drive-web.mjs');
 const out = join(tmpdir(), 'leaftext-driver-check.bmp');
 
 // One entry per verb the driver takes, with what a dry run says it would do. A verb with no row here is a verb nobody has read back.
@@ -36,6 +39,31 @@ function shell() {
     if (!found.error && found.status === 0) return exe;
   }
   return null;
+}
+
+// A real driven run of the browser driver: eight seconds on an empty page, which is past where one without the focus call goes hidden. A grep for that call would prove only that the string is in the file, which is the one thing nobody doubts.
+const probe = spawnSync(
+  process.execPath,
+  [webDriver, 'about:blank', 'wait:8000', 'eval:document.visibilityState'],
+  { encoding: 'utf8', timeout: 120000 }
+);
+const probeText = `${probe.stdout ?? ''}${probe.stderr ?? ''}`;
+let webSaid = 'the browser driver kept an empty page awake for eight seconds';
+if (probeText.includes('no Edge or Chrome on this machine')) {
+  // A skip, said out loud, for the same reason as the PowerShell one below.
+  webSaid = 'the browser driver was not driven — no Edge or Chrome on this machine';
+  console.log(`driver: skipped — ${webSaid}`);
+} else if (probe.status !== 0 || !probeText.includes('the page stayed awake for every step')) {
+  console.error('the browser driver no longer keeps its page awake, so every step it reports is a step that may not have happened:');
+  console.error(`  ${probeText.trim() || probe.error?.message || 'it printed nothing'}`);
+  process.exit(1);
+}
+
+// The branch that fails a run on a hidden page cannot be reached by a live probe without a back door in the shipped driver, so it is read instead.
+const webText = readFileSync(webDriver, 'utf8');
+if (!/document\.visibilityState/.test(webText) || !/no frame ran/.test(webText)) {
+  console.error('the browser driver no longer fails a run whose page went hidden, so a frozen one would pass in silence');
+  process.exit(1);
 }
 
 const exe = shell();
@@ -130,9 +158,9 @@ for (const [what, pattern] of PROFILE) {
 if (problems.length) {
   console.error('the gesture driver does not read its own -Do list:');
   for (const problem of problems) console.error(`  ${problem}`);
-  console.error('scripts/capture-screenshot.ps1 is the only driver; -DryRun is the half that runs with no app.');
+  console.error('scripts/capture-screenshot.ps1 drives the window; -DryRun is the half of it that runs with no app.');
   process.exit(1);
 }
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag, and the shot profile starts empty in ${PROFILE.length} ways`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag, the shot profile starts empty in ${PROFILE.length} ways, and ${webSaid}`
 );

@@ -102,10 +102,14 @@ async function evaluate(expression) {
   return answer.result.value;
 }
 
+// A headless page hides itself five to nine seconds in, and a hidden page runs no animation frame — which is where the front end does every bit of its placing, so a click lands, the address is written, and the reader never moves while every step says it worked. Focus emulation is the one call measured to hold it awake past twenty seconds; `Page.bringToFront` and the two occlusion flags were all tried and none of them does.
+await send('Emulation.setFocusEmulationEnabled', { enabled: true });
+
 // The page is already loading; give the front end and the module a moment before the first step.
 await new Promise((done) => setTimeout(done, 3000));
 
 let failed = false;
+let asleep = false;
 for (const step of steps) {
   const cut = step.indexOf(':');
   const verb = step.slice(0, cut);
@@ -135,7 +139,17 @@ for (const step of steps) {
     console.error(`${step}: ${error.message}`);
     failed = true;
   }
+  // Read after every step rather than once at the end: a step that ran on a frozen page reported a success it could not have earned, and the run has to name that step rather than the last one. It is not on the step's own line — `eval:` prints what the page returned and nothing else, because whatever reads this parses that line as JSON.
+  const visibility = await evaluate('document.visibilityState').catch(() => 'unreadable');
+  if (visibility !== 'visible') {
+    console.error(`${step}: the page was ${visibility}, so no frame ran and nothing this step reported can be trusted`);
+    asleep = true;
+    failed = true;
+    break;
+  }
 }
+
+if (steps.length && !asleep) console.log('the page stayed awake for every step');
 
 socket.close();
 child.kill();
