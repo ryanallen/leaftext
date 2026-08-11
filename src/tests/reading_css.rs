@@ -622,11 +622,26 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     // The wash behind the dot screen: one band per edge, opaque at each cut and gone by the far side. It sits here rather than on the bands because those are masked, and the mask would ramp it a second time. At :root, not on this element: a widened table dissolves its own sliced ends with the same depth and the same hold, so every edge in the app is one profile.
     assert_contains(css, "  --reader-edge-fade-depth: 36px;");
     assert_contains(css, "  --reader-edge-fade-hold: 2px;");
-    // The scrollbar belongs to the scroller, which paints it inside a box this overlay sits on top of — there is no z-index that puts it back on top, so the bands hold off its gutter instead. It closes with the minimap rail.
+    // The card's three hairlines are reserved with a transparent border, never a spacing value: a border width is snapped to whole device pixels and a margin is not, so a margin of the same width leaves half a device pixel of the last line un-faded at any scaling that is not a whole number.
+    assert_contains(rule, "border: 0 solid transparent;");
     assert_contains(
         rule,
-        "margin: 0 calc(var(--reader-scrollbar) + var(--lt-space-1)) var(--lt-space-1) var(--lt-space-1);",
+        "border-width: 0 var(--lt-stroke-1) var(--lt-stroke-1);",
     );
+    // Which leaves the margin holding only what is not a hairline. The scrollbar belongs to the scroller, which paints it inside a box this overlay sits on top of — there is no z-index that puts it back on top, so the bands hold off its gutter instead. It closes with the minimap rail.
+    assert_contains(rule, "margin-right: var(--reader-scrollbar);");
+    assert!(
+        !rule.contains("--lt-space-1"),
+        "the edge fade should reserve the card's hairlines with a border, not a spacing value"
+    );
+    // The inner corner is the outer one less the border, worked out from a border snapped the way the card's is — so no hand-written correction.
+    assert_contains(
+        rule,
+        "border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);",
+    );
+    // With no rail to sit against the card is held off the left frame, and that margin is the gutter alone for the same reason.
+    let closed = rule_body(css, ".library-shell.library-closed .reader-edge-fade {");
+    assert_contains(closed, "margin-left: var(--reader-gutter);");
     assert_contains(css, "  --reader-scrollbar: 14px;");
     let railed = rule_body(css, "body:has(.document-minimap) {");
     assert_contains(railed, "--reader-scrollbar: 0px;");
@@ -1084,11 +1099,11 @@ fn the_code_views_minimap_rail_shows_the_shells_grain() {
     let editor = rule_body(css, ".code-view-monaco .monaco-editor,");
     assert_contains(editor, ".monaco-editor .monaco-editor-background {");
     assert_contains(editor, "background-color: transparent;");
-    // And neither does the edge wash, which would otherwise put the page's color back under the top and bottom of the map.
+    // And neither does the edge wash, which would otherwise put the page's color back under the top and bottom of the map. The frame's own measure and nothing else: the border it is drawn with is reserved by the fade's own transparent one, which is snapped to device pixels where a spacing value is not.
     let fade = rule_body(css, ":root[data-code-view=\"true\"] .reader-edge-fade {");
     assert_contains(
         fade,
-        "margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + var(--lt-space-1));",
+        "margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));",
     );
     // Monaco's own scrolled-content shadow spans the editor's whole top edge, the map included; over the rail it read as a smudge on the chrome. The theme turns it off, and widget shadows with it.
     let html = app_shell_page();
