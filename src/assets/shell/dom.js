@@ -457,8 +457,8 @@ function leafMarkScrolling(box) {
 }
 // `scroll` does not bubble, but it does reach an ancestor in the capture phase — so one listener sees every scroller in the page. It has to be one: the reader is rebuilt on every render and a wide table comes out of Markdown with nothing to bind to, and a box a re-bind missed would be a box whose bar never comes back.
 document.addEventListener('scroll', (event) => leafMarkScrolling(event.target), { capture: true, passive: true });
-// Resting the pointer in the bar's own gutter is aiming at a control, which is not the same as passing over the list it belongs to — so this raises the bar and thickens it, where a hover on the whole box was refused twice. The same four wearers as the stylesheet, named here as well because the cheap match is what keeps the layout read below off every move in the window.
-const LEAF_SCROLL_WEARERS = '.leaf-scroll, .library-scroll, .reader-shell:not(.has-minimap), .table-lane > table';
+// Resting the pointer in the bar's own gutter is aiming at a control, which is not the same as passing over the list it belongs to — so this raises the bar and thickens it, where a hover on the whole box was refused twice. The same wearers as the stylesheet, named here as well because the cheap match is what keeps the layout read below off every move in the window. A box painted there and missing here has a bar that comes and goes with the scroll and cannot be aimed at, so a test holds the two lists to each other.
+const LEAF_SCROLL_WEARERS = '.leaf-scroll, .library-scroll, .reader-shell:not(.has-minimap), .table-lane > table, .document-body :is(pre, pre > code, .math-display, .frontmatter, table)';
 let leafPointedBox = null;
 // The gutter is real and sits outside the box's own width, so a move whose offset is past `clientWidth` — or past `clientHeight`, for a sideways bar — is on the bar and nothing else is. Never a rectangle: one per move is a forced layout on every move across the window.
 function leafMarkPointing(event) {

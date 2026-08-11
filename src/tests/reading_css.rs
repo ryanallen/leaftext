@@ -656,8 +656,8 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     assert_contains(css, "  --reader-scrollbar: 14px;");
     let railed = rule_body(css, "body:has(.document-minimap) {");
     assert_contains(railed, "--reader-scrollbar: 0px;");
-    // Same width the scrollbar itself is set to, which stays a literal there: Chromium won't re-resolve a scrollbar pseudo-element on a :has() flip.
-    let bar = rule_body(css, ".table-lane > table::-webkit-scrollbar {");
+    // Same width the scrollbar itself is set to, which stays a literal there: Chromium won't re-resolve a scrollbar pseudo-element on a :has() flip. The block is named by its first selector, not its last, because the wearer list grows at the end and a box joining it read as this rule having been deleted.
+    let bar = rule_body(css, "\n.leaf-scroll::-webkit-scrollbar,");
     assert_contains(bar, "width: 14px;");
     // Two cuts, two washes.
     assert_eq!(rule.matches("linear-gradient(").count(), 2);
@@ -1939,14 +1939,37 @@ fn a_home_lists_bar_and_edges_answer_the_scroll_not_the_pointer() {
 
 #[test]
 fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
-    // Four wearers, one answer: the library pane, a document with no picture down its side, a widened table's sideways bar, and any box marked .leaf-scroll — the shape picker and the start screen's lists among them.
+    // Five wearers, one answer: the library pane, a document with no picture down its side, a widened table's sideways bar, any box marked .leaf-scroll — the shape picker, the theme cards, a glossary entry and the flowchart's two panes among them — and the boxes a document brings, which have nowhere to carry a class.
     let css = reading_mode_css();
-    const WEARERS: [&str; 4] = [
+    const WEARERS: [&str; 5] = [
         ".leaf-scroll",
         ".library-scroll",
         ".reader-shell:not(.has-minimap)",
         ".table-lane > table",
+        ".document-body :is(pre, pre > code, .math-display, .frontmatter, table)",
     ];
+    // The block is nine rules and every wearer is in all of them, named here by the first selector of each. Six paint the bar; the three in the middle sit on the box and are the only place the thumb's color and inset come from, so a wearer in the pseudo rules alone reserves a 14px gutter and never draws anything in it — `--lt-scroll-thumb` is registered with an initial value of `transparent`, which looks exactly like the work not having been done.
+    const RULES: [&str; 9] = [
+        "\n.leaf-scroll::-webkit-scrollbar,",
+        "\n.leaf-scroll::-webkit-scrollbar-track,",
+        "\n.leaf-scroll,",
+        "\n.leaf-scroll.is-scrolling,",
+        "\n.leaf-scroll.is-pointing,",
+        "\n.leaf-scroll::-webkit-scrollbar-thumb,",
+        "\n.leaf-scroll::-webkit-scrollbar-thumb:vertical,",
+        "\n.leaf-scroll::-webkit-scrollbar-thumb:horizontal,",
+        "\n.leaf-scroll::-webkit-scrollbar-corner,",
+    ];
+    for rule in RULES {
+        let block = rule_body(&css, rule);
+        for wearer in WEARERS {
+            assert!(
+                block.contains(wearer),
+                "{wearer} is missing from the rule opening `{}`, so it wears part of the bar and not the rest",
+                rule.trim_start()
+            );
+        }
+    }
 
     // At rest the thumb is painted in nothing at all. A scrollbar pseudo has no box of its own to fade, so what moves is a property the thumb rule reads — which is also why the bar's width is reserved either way and nothing on the page reflows when one appears.
     let resting = rule_body(&css, "\n.leaf-scroll,\n.library-scroll,");

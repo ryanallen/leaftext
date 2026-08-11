@@ -211,7 +211,7 @@
 <aside id="glossarySheet" class="leaf-sheet glossary-sheet" role="dialog" aria-modal="true" aria-label="Glossary" hidden>
   <div class="leaf-sheet-grip"></div>
   <button type="button" id="glossarySheetClose" class="leaf-sheet-close" aria-label="Close glossary"><span class="lt-icon lt-icon-close"></span></button>
-  <div id="glossarySheetBody" class="glossary-sheet-body document-body"></div>
+  <div id="glossarySheetBody" class="glossary-sheet-body document-body leaf-scroll"></div>
   <div class="glossary-sheet-footer"><button type="button" id="glossaryFullLink" class="glossary-sheet-fulllink">Open the full glossary</button></div>
 </aside>
 <div id="themeBackdrop" class="lt-backdrop" hidden></div>
@@ -228,7 +228,7 @@
     <button type="button" class="theme-mode-btn" data-mode="daylight">Daylight</button>
   </div>
   <hr class="theme-sheet-divider" />
-  <ul class="theme-sheet-grid" id="themeSheetGrid">{{THEME_ITEMS}}</ul>
+  <ul class="theme-sheet-grid leaf-scroll" id="themeSheetGrid">{{THEME_ITEMS}}</ul>
   <div class="theme-sheet-footer">
     <a href="#" id="themeSheetBrowse" class="theme-sheet-browse">Add your own theme on GitHub →</a>
   </div>
@@ -277,7 +277,7 @@
   <div class="flow-sheet-panes">
     <section class="flow-pane flow-pane-canvas" aria-label="Diagram">
       <p class="flow-hint" id="flowHint"></p>
-      <div class="flow-canvas" id="flowCanvas" tabindex="0"></div>
+      <div class="flow-canvas leaf-scroll" id="flowCanvas" tabindex="0"></div>
       <p class="flow-notice" id="flowNotice" hidden></p>
     </section>
     <div class="flow-split" id="flowSplit" role="separator" aria-orientation="vertical" aria-label="Resize the text pane" tabindex="0"></div>
@@ -287,7 +287,7 @@
            and finding the whole block reflowed is a nasty surprise to have to
            work out for yourself. -->
       <p class="flow-code-note">Save rewrites the whole block: one box to a line, every label quoted.</p>
-      <textarea id="flowCode" class="flow-code" spellcheck="false" aria-label="Mermaid text"></textarea>
+      <textarea id="flowCode" class="flow-code leaf-scroll" spellcheck="false" aria-label="Mermaid text"></textarea>
     </section>
   </div>
   <!-- What a box or a line can be changed to, and the same sheet the shape

@@ -4729,11 +4729,12 @@ body.is-home-row-dragging .home-list-scroll li {
   right: 10px;
   z-index: 1;
 }
-/* The app's one scrollbar, worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and a widened table's sideways bar. Written as a selector list rather than a class on each element because the table is rendered from Markdown and has nowhere to carry a class. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
+/* The app's one scrollbar, worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and the five boxes a document brings. Those five are named as a selector rather than given a class because they come out of Markdown with nowhere to carry one; where the markup is ours the box takes .leaf-scroll. Every wearer is in all nine rules and not only the six that paint: the three on the box carry the thumb's color and inset, so a box in half of them reserves a gutter and never draws in it. `.table-lane > table` is redundant under the document selector and stays, named as a wearer by the test that walks this block. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
 .leaf-scroll::-webkit-scrollbar,
 .library-scroll::-webkit-scrollbar,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar,
-.table-lane > table::-webkit-scrollbar {
+.table-lane > table::-webkit-scrollbar,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar {
   /* 4px of inset each side plus the 6px the thumb actually shows. */
   width: 14px;
   height: 14px;
@@ -4741,7 +4742,8 @@ body.is-home-row-dragging .home-list-scroll li {
 .leaf-scroll::-webkit-scrollbar-track,
 .library-scroll::-webkit-scrollbar-track,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-track,
-.table-lane > table::-webkit-scrollbar-track {
+.table-lane > table::-webkit-scrollbar-track,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-track {
   /* Transparent, not the surface color: an opaque track masks the grain and leaves an ungrained strip down the edge it sits on. */
   background: transparent;
 }
@@ -4761,7 +4763,8 @@ body.is-home-row-dragging .home-list-scroll li {
 .leaf-scroll,
 .library-scroll,
 .reader-shell:not(.has-minimap),
-.table-lane > table {
+.table-lane > table,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
   --lt-scroll-thumb: transparent;
   --lt-scroll-thumb-inset: var(--lt-stroke-4);
   transition: --lt-scroll-thumb var(--lt-duration-160) var(--lt-ease-accelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
@@ -4770,7 +4773,8 @@ body.is-home-row-dragging .home-list-scroll li {
 .leaf-scroll.is-scrolling,
 .library-scroll.is-scrolling,
 .reader-shell:not(.has-minimap).is-scrolling,
-.table-lane > table.is-scrolling {
+.table-lane > table.is-scrolling,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-scrolling {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
   transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
 }
@@ -4778,7 +4782,8 @@ body.is-home-row-dragging .home-list-scroll li {
 .leaf-scroll.is-pointing,
 .library-scroll.is-pointing,
 .reader-shell:not(.has-minimap).is-pointing,
-.table-lane > table.is-pointing {
+.table-lane > table.is-pointing,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-pointing {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
   --lt-scroll-thumb-inset: var(--lt-stroke-2);
   transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);
@@ -4787,7 +4792,8 @@ body.is-home-row-dragging .home-list-scroll li {
 .leaf-scroll::-webkit-scrollbar-thumb,
 .library-scroll::-webkit-scrollbar-thumb,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
-.table-lane > table::-webkit-scrollbar-thumb {
+.table-lane > table::-webkit-scrollbar-thumb,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb {
   /* A transparent border with the fill clipped inside it is the only way to inset a webkit thumb. */
   border: var(--lt-scroll-thumb-inset) solid transparent;
   background-clip: padding-box;
@@ -4798,20 +4804,23 @@ body.is-home-row-dragging .home-list-scroll li {
 .leaf-scroll::-webkit-scrollbar-thumb:vertical,
 .library-scroll::-webkit-scrollbar-thumb:vertical,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:vertical,
-.table-lane > table::-webkit-scrollbar-thumb:vertical {
+.table-lane > table::-webkit-scrollbar-thumb:vertical,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:vertical {
   min-height: 56px;
 }
 .leaf-scroll::-webkit-scrollbar-thumb:horizontal,
 .library-scroll::-webkit-scrollbar-thumb:horizontal,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:horizontal,
-.table-lane > table::-webkit-scrollbar-thumb:horizontal {
+.table-lane > table::-webkit-scrollbar-thumb:horizontal,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:horizontal {
   min-width: 56px;
 }
 /* Where two bars meet, so the square between them is not the platform's gray. */
 .leaf-scroll::-webkit-scrollbar-corner,
 .library-scroll::-webkit-scrollbar-corner,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-corner,
-.table-lane > table::-webkit-scrollbar-corner {
+.table-lane > table::-webkit-scrollbar-corner,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-corner {
   background: transparent;
 }
 .glossary-sheet {
