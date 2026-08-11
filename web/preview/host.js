@@ -160,12 +160,18 @@ export async function startLeaftext({ documents, name = '', read }) {
   // The reading order the Previous/Next strip walks: the listing as served, shallowest first.
   const order = documents.map((entry) => entry.path);
 
-  /** Where a link written in one document points, resolved against the folder it sits in.
+  /** Where a link written in one document points, resolved against the folder it sits in — the document, and the heading inside it the link named.
    *
-   * The page resolves an href against the document's own address before it sends it, so most arrive absolute. One on this site names a document; one anywhere else is the web's, and this host does not follow it.
+   * The page sends the href as its author wrote it, so a relative one is resolved here — against the document being read, which is the only thing that knows where it sits. One on this site names a document; one anywhere else is the web's, and this host does not follow it.
    */
   function resolveFrom(from, rawHref) {
-    let href = rawHref;
+    // A written href carries a heading and a query where the address's path does not. The cut is at the first `#`, which is the desktop's rule and the opposite of the address's cut at the last one. Above the address branch, because there the heading would go the way of the path.
+    const written = String(rawHref);
+    const at = written.indexOf('#');
+    // Handed on exactly as the link had it: the address is built out of it and compared against the one the page is at as a string, so decoding first would add a second entry the moment a heading had a space in it.
+    const anchor = at === -1 ? '' : written.slice(at + 1).split('?')[0];
+    const found = (path) => (path ? { path, anchor } : null);
+    let href = (at === -1 ? written : written.slice(0, at)).split('?')[0];
     if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
       let address;
       try {
@@ -177,6 +183,9 @@ export async function startLeaftext({ documents, name = '', read }) {
       href = decodeURIComponent(address.pathname.replace(/^\//, ''));
       // Already a whole path from the top of the site, so nothing to resolve it against.
       from = '';
+    } else {
+      // The served listing holds names as they are, so a hand-encoded one has to come back to that before it can match.
+      href = decodeAddressPart(href);
     }
     const base = from.split('/').slice(0, -1);
     for (const part of href.split('/')) {
@@ -185,14 +194,14 @@ export async function startLeaftext({ documents, name = '', read }) {
       else base.push(part);
     }
     const path = base.join('/');
-    if (known.has(path)) return path;
+    if (known.has(path)) return found(path);
     // A link to a folder means that folder's own page, which is how the app reads one too. With no page of its own it means the first document under it, rather than reporting nothing.
     const asFolder = folderTarget(path);
-    if (asFolder) return asFolder;
+    if (asFolder) return found(asFolder);
     // The Previous/Next strip writes whole paths rather than relative ones, so an href that is already one is taken as it stands.
     const bare = href.replace(/^\.?\//, '');
-    if (known.has(bare)) return bare;
-    return folderTarget(bare);
+    if (known.has(bare)) return found(bare);
+    return found(folderTarget(bare));
   }
 
   /** What a link to a folder opens: its own page, or the first document the served listing has under it — in the order the listing carries, which is the order the Previous/Next strip walks, so the fallback and the strip cannot disagree. */
@@ -402,7 +411,8 @@ export async function startLeaftext({ documents, name = '', read }) {
         return undefined;
       }
       stampPlace(command);
-      return openDocument(target);
+      // The heading rides the open that already takes one, so the address becomes `#<path>#<anchor>` and the browser's own Back walks out of it the way it walks out of a jump inside one document.
+      return openDocument(target.path, { anchor: target.anchor });
     },
     openGlossary: ({ href }) => run(core.glossaryScript(href)),
     loadPager: ({ path }) => run(`window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`),

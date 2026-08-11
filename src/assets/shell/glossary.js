@@ -149,7 +149,7 @@ glossarySheetBody.addEventListener('click', (event) => {
     return;
   }
   dismissGlossary();
-  send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });
+  send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor() });
 });
 const linkHoverTip = document.createElement('div');
 linkHoverTip.className = 'link-hover-tip';
@@ -328,11 +328,6 @@ function documentLinkFor(target) {
   const link = target && target.closest ? target.closest('a[href]') : null;
   return link && app.contains(link) && link.closest('.document-body') ? link : null;
 }
-// An SVG anchor's `href` is an SVGAnimatedString rather than a string, so only an HTML one can be asked for the resolved form. A diagram's box is the SVG kind.
-function documentLinkHref(link) {
-  const raw = (link.getAttribute('href') || '').trim();
-  return typeof link.href === 'string' ? link.href || raw : raw;
-}
 // Hold this and the link opens as a page behind the one you are reading: Cmd on a Mac, where Ctrl is already the right-click, and Ctrl everywhere else.
 function newPageModifierHeld(event) {
   return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
@@ -395,5 +390,6 @@ function sendDocumentLink(link, newPage) {
     send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });
     return;
   }
-  send({ command: 'openLink', href: documentLinkHref(link), scroll_anchor: currentScrollAnchor(), newPage });
+  // As written, never the form the browser resolved: a site is one page, so a resolved href names a document at the top of it rather than one beside the document being read. Both hosts resolve a written href against the open document.
+  send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });
 }

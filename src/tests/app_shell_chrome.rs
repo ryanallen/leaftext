@@ -192,7 +192,7 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
             "code_scroll: codeViewActive ? viewScrollFraction() : null,",
             "send({ command: 'closeTab', index: Number(close.dataset.tabClose) });",
             "send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });",
-            "send({ command: 'openLink', href: documentLinkHref(link), scroll_anchor: currentScrollAnchor(), newPage });",
+            "send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
             "function bindDocumentLinks() {",
             "function documentLinkFor(target) {",
             "const link = target && target.closest ? target.closest('a[href]') : null;",

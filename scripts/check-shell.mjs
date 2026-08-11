@@ -107,8 +107,18 @@ function fakeElement(id = '') {
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     children: [],
     parentElement: null,
-    addEventListener() {},
-    removeEventListener() {},
+    // Kept rather than swallowed, the way the document's and the window's are: a check raises a made-up event on an element and gets the page's own handler. What a link click sends is the page's own choice, and a dropped listener leaves nothing but the source text to read it off.
+    listeners: new Map(),
+    addEventListener(type, handler) {
+      if (typeof handler !== 'function') return;
+      if (!this.listeners.has(type)) this.listeners.set(type, []);
+      this.listeners.get(type).push(handler);
+    },
+    removeEventListener(type, handler) {
+      const held = this.listeners.get(type) || [];
+      const at = held.indexOf(handler);
+      if (at >= 0) held.splice(at, 1);
+    },
     // Real moves, because moving a node is the whole of what the app-bar fold does: it takes buttons out of their containers and later puts each one back where it was standing. A stub that returns the child reads as "put back" while nothing moved.
     appendChild(child) {
       detachChild(child);
@@ -2905,7 +2915,7 @@ if (booted) {
 
   // v0.1.468: one line in a document took the whole interface away. Mermaid draws `click A "…"` as a real anchor even at its strict level, and writes only `xlink:href` — which `documentLinkFor` does not match, so the click belonged to the web view and the app page navigated to the site with no tabs, no bar and no way back.
   check('a box wired to a link is the app’s click, not the web view’s', () => {
-    const { claimMermaidLinks, documentLinkHref } = booted;
+    const { claimMermaidLinks } = booted;
     const anchor = (attributes) => ({
       attributes,
       hasAttribute: (name) => name in attributes,
@@ -2923,10 +2933,74 @@ if (booted) {
     if (linked.attributes.href !== 'https://example.com/x') throw new Error(`the anchor was not claimed: ${linked.attributes.href}`);
     if (already.attributes.href !== '/its/own') throw new Error('an anchor that had its own href was overwritten');
     if ('href' in plain.attributes) throw new Error('an anchor with nowhere to go was given an href');
+  });
 
-    // An SVG anchor's `href` property is an SVGAnimatedString, so reading it as a string sends the host "[object SVGAnimatedString]".
-    if (documentLinkHref({ ...linked, href: { baseVal: 'x' } }) !== 'https://example.com/x') {
-      throw new Error('the SVG anchor’s href was read off the property rather than the attribute');
+  // The half of a link click that lives in the page: what it chooses to put in the command. A site is one page, so a resolved href names a document at the top of it, and a link written one folder down points at nothing.
+  check('a click on a link sends the href its author wrote, not the one the browser resolved', () => {
+    const { bindDocumentLinks } = booted;
+    const app = booted.document.getElementById('app');
+    const wasContains = app.contains;
+    const wasIpc = booted.ipc;
+    const posted = [];
+    // The binding is once-per-page, so a run where a render already did it would leave nothing to raise. Reset the latch and take the handler this call adds, rather than the neighbors already watching the same element.
+    const wasBound = vm.runInContext('documentLinksBound', booted);
+    vm.runInContext('documentLinksBound = false;', booted);
+    const WATCHED = ['click', 'auxclick', 'mousedown'];
+    const before = new Map(WATCHED.map((type) => [type, (app.listeners.get(type) || []).length]));
+    // A stand-in link inside a document body, carrying both forms: the attribute as written, and the address the browser resolved it to.
+    const anchor = (written, resolved) => {
+      const link = {
+        getAttribute: (name) => (name === 'href' ? written : null),
+        href: resolved,
+        closest: (selector) => (selector === '.document-body' ? { id: 'body' } : link),
+      };
+      return link;
+    };
+    const clickOn = (link) => {
+      posted.length = 0;
+      for (const handler of (app.listeners.get('click') || []).slice(before.get('click'))) {
+        handler({ target: link, button: 0, defaultPrevented: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, preventDefault() {} });
+      }
+      return posted.find((one) => one.command === 'openLink');
+    };
+    try {
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+      app.contains = () => true;
+      bindDocumentLinks();
+      if ((app.listeners.get('click') || []).length === before.get('click')) throw new Error('no click listener was bound to the document');
+
+      const relative = clickOn(anchor('volume-3/README.md', 'https://leaf.test/volume-3/README.md'));
+      if (!relative) throw new Error('a click on a document link sent no command');
+      if (relative.href !== 'volume-3/README.md') throw new Error(`the click sent ${JSON.stringify(relative.href)} rather than the href as written`);
+
+      // A heading in another document rides along on the written href, so the host still has it to cut off.
+      const heading = clickOn(anchor('../two.md#how-it-ranks', 'https://leaf.test/two.md'));
+      if (!heading || heading.href !== '../two.md#how-it-ranks') throw new Error(`a link naming a heading sent ${JSON.stringify(heading && heading.href)}`);
+
+      // A diagram's box is an SVG anchor, whose `href` property is an SVGAnimatedString rather than a string, so the attribute is the only readable form.
+      const drawn = clickOn(anchor('notes/one.md', { baseVal: 'notes/one.md' }));
+      if (!drawn || drawn.href !== 'notes/one.md') throw new Error(`a link drawn in a diagram sent ${JSON.stringify(drawn && drawn.href)}`);
+
+      // A link out of the site is written with its own scheme, so it still reaches the host whole.
+      const away = clickOn(anchor('https://example.com/x', 'https://example.com/x'));
+      if (!away || away.href !== 'https://example.com/x') throw new Error(`a link off the site sent ${JSON.stringify(away && away.href)}`);
+
+      // A link inside a glossary entry is its own listener, and takes the same word for the same reason.
+      const sheet = booted.document.getElementById('glossarySheetBody');
+      const inSheet = anchor('volume-3/README.md', 'https://leaf.test/volume-3/README.md');
+      posted.length = 0;
+      for (const handler of sheet.listeners.get('click') || []) handler({ target: inSheet, preventDefault() {} });
+      const raised = posted.find((one) => one.command === 'openLink');
+      if (!raised || raised.href !== 'volume-3/README.md') throw new Error(`a link in a glossary entry sent ${JSON.stringify(raised && raised.href)}`);
+    } finally {
+      booted.ipc = wasIpc;
+      app.contains = wasContains;
+      // Put the page back where it was, so nothing after this is watched twice.
+      for (const type of WATCHED) {
+        const held = app.listeners.get(type);
+        if (held) held.length = before.get(type);
+      }
+      vm.runInContext(`documentLinksBound = ${wasBound ? 'true' : 'false'};`, booted);
     }
   });
 
@@ -5104,8 +5178,154 @@ checkSettled('the browser host follows a link inside the site and refuses one ou
   await settle();
   if (opened().length !== before) throw new Error('a link off the site was followed as if it were a document here');
 
-  // A folder link is that folder's own page, which is how the app reads one too.
-  if (leaf.resolveFrom('notes/one.md', '../README.md') !== 'README.md') throw new Error(`a link up to the top of the site resolved to ${leaf.resolveFrom('notes/one.md', '../README.md')}`);
+  // A folder link is that folder's own page, which is how the app reads one too. The resolver answers with the document and the heading the link named, so the document is read off the pair.
+  const up = leaf.resolveFrom('notes/one.md', '../README.md');
+  if (!up || up.path !== 'README.md') throw new Error(`a link up to the top of the site resolved to ${JSON.stringify(up)}`);
+  if (up.anchor !== '') throw new Error(`a link naming no heading came back carrying ${JSON.stringify(up.anchor)}`);
+});
+
+// The site published today is folders of folders, and its contents pages link down through them — so this is the shape of link a reader meets most, and the one an href resolved against the front door sends nowhere.
+checkSettled('a link written inside a folder opens the document beside it, not the one at the top of the site', async () => {
+  const { leaf, send, asked } = await bootWebHost({
+    documents: [
+      { path: 'README.md' },
+      // The same name at the top of the site: the wrong-but-listed match a resolved href opens instead.
+      { path: 'volume-3/README.md' },
+      { path: 'docs/collection-1/README.md' },
+      { path: 'docs/collection-1/volume-3/README.md' },
+      { path: 'docs/other/note.md' },
+    ],
+  });
+  await leaf.openAddress('README.md');
+  const at = () => {
+    const opened = asked.filter((one) => one.call === 'documentScript');
+    return opened.length ? opened[opened.length - 1].path : null;
+  };
+
+  send({ command: 'openLink', href: 'docs/collection-1/README.md' });
+  await settle();
+  if (at() !== 'docs/collection-1/README.md') throw new Error(`a link off the front page opened ${at()}`);
+
+  send({ command: 'openLink', href: 'volume-3/README.md' });
+  await settle();
+  if (at() !== 'docs/collection-1/volume-3/README.md') throw new Error(`a link written two folders down opened ${at()}`);
+
+  // Up two folders and across, from the document that is two folders down.
+  send({ command: 'openLink', href: '../../other/note.md' });
+  await settle();
+  if (at() !== 'docs/other/note.md') throw new Error(`a link written up and across opened ${at()}`);
+});
+
+// What a written href carries that the address's path had already dropped, and what it does not carry that the path already had.
+checkSettled('a written href keeps its heading off the file name, comes back from its encoding, and leaves a whole path alone', async () => {
+  const { leaf, send, asked } = await bootWebHost({
+    documents: [{ path: 'README.md' }, { path: 'notes/one.md' }, { path: 'notes/two.md' }, { path: 'notes/My File.md' }],
+  });
+  await leaf.openDocument('notes/one.md');
+  const at = () => {
+    const opened = asked.filter((one) => one.call === 'documentScript');
+    return opened.length ? opened[opened.length - 1].path : null;
+  };
+
+  // The cut is at the first `#`, so the heading is not read as part of the file name.
+  send({ command: 'openLink', href: 'two.md#how-it-ranks' });
+  await settle();
+  if (at() !== 'notes/two.md') throw new Error(`a link naming a heading opened ${at()}`);
+
+  send({ command: 'openLink', href: 'one.md?v=2' });
+  await settle();
+  if (at() !== 'notes/one.md') throw new Error(`a link carrying a query opened ${at()}`);
+
+  // Nothing decodes a relative href on the way here, and the served listing holds names as they are.
+  send({ command: 'openLink', href: 'My%20File.md' });
+  await settle();
+  if (at() !== 'notes/My File.md') throw new Error(`a hand-encoded name opened ${at()}`);
+
+  // The Previous/Next strip writes whole paths from the top of the site rather than relative ones, and this is the fallback that carries them.
+  send({ command: 'openLink', href: 'notes/two.md' });
+  await settle();
+  if (at() !== 'notes/two.md') throw new Error(`a Previous/Next link read from inside a folder opened ${at()}`);
+
+  // Still refused, because a link out of the site is written with its own scheme.
+  const before = at();
+  send({ command: 'openLink', href: 'https://example.com/notes/two.md#top' });
+  await settle();
+  if (at() !== before) throw new Error(`a link off the site opened ${at()}`);
+});
+
+// A great many of a site's cross-references name a heading, and the heading used to be thrown away one line before the document opened — so the reader arrived at the top of a document long enough to have headings worth linking. Both shapes a click arrives in are here: the address the browser worked out, where the heading would otherwise go the way of the path, and the href as written, which is what a diagram's box sends.
+checkSettled('a link naming a heading in another document lands on that heading rather than the top of the page', async () => {
+  const { leaf, send, seen, asked, address } = await bootWebHost();
+  await leaf.openAddress('notes/one.md');
+  const at = () => {
+    const opened = asked.filter((one) => one.call === 'documentScript');
+    return opened.length ? opened[opened.length - 1].path : null;
+  };
+  const scrolledTo = () => seen.fragment[seen.fragment.length - 1];
+
+  // An href written with the site's own origin: the address's path never carries a fragment, so this is where the heading was lost.
+  send({ command: 'openLink', href: 'https://leaf.test/notes/two.md#how-it-ranks' });
+  await settle();
+  if (at() !== 'notes/two.md') throw new Error(`a link naming a heading opened ${at()}`);
+  if (scrolledTo() !== 'how-it-ranks') throw new Error(`the heading never reached the page's own scroll: ${JSON.stringify(seen.fragment)}`);
+  if (address.location.hash !== '#notes/two.md#how-it-ranks') throw new Error(`landing on a heading wrote the address as ${address.location.hash}`);
+
+  // The href as written, which is the shape a link inside a diagram sends.
+  send({ command: 'openLink', href: '../README.md#the-top' });
+  await settle();
+  if (at() !== 'README.md') throw new Error(`a written href naming a heading opened ${at()}`);
+  if (scrolledTo() !== 'the-top') throw new Error(`a written href's heading never reached the page's own scroll: ${JSON.stringify(seen.fragment)}`);
+  if (address.location.hash !== '#README.md#the-top') throw new Error(`a written href's heading wrote the address as ${address.location.hash}`);
+
+  // The browser's own Back walks out of the landing, because it is an entry of its own.
+  if (!address.history.back()) throw new Error('Back out of a heading landing went nowhere');
+  await settle();
+  if (address.location.hash !== '#notes/two.md#how-it-ranks') throw new Error(`Back landed on ${address.location.hash}`);
+});
+
+checkSettled('a link naming no heading opens the same document, and a folder link carrying one still finds the folder’s page', async () => {
+  const { leaf, send, seen, asked, address } = await bootWebHost({
+    documents: [{ path: 'README.md' }, { path: 'notes/one.md' }, { path: 'notes/two.md' }, { path: 'guide/README.md' }],
+  });
+  await leaf.openAddress('notes/one.md');
+  const at = () => {
+    const opened = asked.filter((one) => one.call === 'documentScript');
+    return opened.length ? opened[opened.length - 1].path : null;
+  };
+
+  send({ command: 'openLink', href: 'two.md' });
+  await settle();
+  if (at() !== 'notes/two.md') throw new Error(`a link naming no heading opened ${at()}`);
+  if (address.location.hash !== '#notes/two.md') throw new Error(`a link naming no heading wrote the address as ${address.location.hash}`);
+  const scrolls = seen.fragment.length;
+
+  send({ command: 'openLink', href: 'https://leaf.test/README.md' });
+  await settle();
+  if (at() !== 'README.md') throw new Error(`an address naming no heading opened ${at()}`);
+  if (seen.fragment.length !== scrolls) throw new Error('a link naming no heading was still scrolled somewhere');
+
+  // The cut is above every fallback below it, so a folder link carrying a heading finds the folder's own page and lands on the heading.
+  send({ command: 'openLink', href: '../guide#what-it-is' });
+  await settle();
+  if (at() !== 'guide/README.md') throw new Error(`a folder link carrying a heading opened ${at()}`);
+  if (address.location.hash !== '#guide/README.md#what-it-is') throw new Error(`a folder link carrying a heading wrote the address as ${address.location.hash}`);
+});
+
+// The encoding decision, held where it would otherwise come apart. A browser writes a hash percent-encoded whatever it was handed, and the host compares the address it wrote against the one the page is at as strings — so a heading decoded on the way in disagrees with itself and the same landing is added twice, which the browser's own Back looks dead on.
+checkSettled('a heading with a space in it leaves one address entry rather than two', async () => {
+  const { leaf, send, seen, address } = await bootWebHost();
+  await leaf.openAddress('notes/one.md');
+
+  send({ command: 'openLink', href: 'two.md#how%20it%20ranks' });
+  await settle();
+  const entries = address.urls().length;
+  if (address.location.hash !== '#notes/two.md#how%20it%20ranks') throw new Error(`a heading with a space wrote the address as ${address.location.hash}`);
+  // Handed to the page exactly as the link had it; the page's own scroll tries it both ways.
+  if (seen.fragment[seen.fragment.length - 1] !== 'how%20it%20ranks') throw new Error(`the heading was decoded on the way to the page: ${JSON.stringify(seen.fragment)}`);
+
+  send({ command: 'openLink', href: 'two.md#how%20it%20ranks' });
+  await settle();
+  if (address.urls().length !== entries) throw new Error(`the same landing was added twice, leaving ${address.urls().length} entries rather than ${entries}`);
 });
 
 checkSettled('the commands sent while the host was still loading are drained, not dropped', async () => {
