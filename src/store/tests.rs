@@ -115,6 +115,61 @@ fn an_existing_index_has_the_crawl_dropped_out_of_it() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+#[test]
+fn a_vault_registered_before_the_kind_column_reads_as_a_folder() {
+    let dir = unique_dir("migrate-7");
+    // Stand in for an installed copy caught up to migration 6: the vaults are there, the crawl is gone, and nothing knows what kind anything is.
+    {
+        let conn = Connection::open(manifest_path(&dir)).expect("db created");
+        conn.execute_batch(
+            "CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);
+             CREATE TABLE vaults (id INTEGER PRIMARY KEY, name TEXT NOT NULL, root_path TEXT NOT NULL UNIQUE, added_at INTEGER NOT NULL);
+             CREATE TABLE app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             INSERT INTO vaults (name, root_path, added_at) VALUES ('Dharma', 'C:\\Dharma', 10), ('Work', 'C:\\Work', 20);
+             INSERT INTO schema_migrations (version, applied_at) VALUES (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0);",
+        )
+        .expect("migration 6 schema created");
+    }
+
+    let conn = open_db(&dir).expect("db opens and migrates");
+
+    // The rows an installed copy already had, all of them folders, which is exactly what they are — no backfill statement, just the column's default.
+    let vaults = list_vaults(&conn).expect("listed");
+    assert_eq!(vaults.len(), 2);
+    for vault in &vaults {
+        assert_eq!(
+            vault.kind,
+            VaultKind::Folder,
+            "{} is not a folder",
+            vault.name
+        );
+    }
+    // And the order they were added in survives the migration, since that is what the switcher lists them in.
+    assert_eq!(vaults[0].name, "Dharma");
+    assert_eq!(vaults[1].name, "Work");
+
+    // Somewhere to record what a mirror holds, cascading on the vault so forgetting one forgets what it copied down.
+    assert!(table_exists(&conn, "remote_files"));
+
+    // A kind written now comes back as itself rather than collapsing to the default.
+    let cloned = dir.join("cloned");
+    std::fs::create_dir_all(&cloned).expect("folder created");
+    let vault = add_vault(&conn, &cloned, "Cloned", VaultKind::Git).expect("added");
+    assert_eq!(vault.kind, VaultKind::Git);
+    assert_eq!(
+        find_vault(&conn, vault.id).expect("found").map(|v| v.kind),
+        Some(VaultKind::Git)
+    );
+
+    // Reopening applies nothing a second time, which is the check the version constant now makes for every migration after this one.
+    drop(conn);
+    let conn = open_db(&dir).expect("db reopens");
+    assert_eq!(list_vaults(&conn).expect("listed").len(), 3);
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 // ---------------------------------------------------------------------------
 // Vaults
 // ---------------------------------------------------------------------------
@@ -132,7 +187,8 @@ fn a_vault_is_a_row_and_writes_nothing_into_the_folder() {
         .collect();
     let conn = open_db(&dir).expect("db opens");
 
-    let vault = add_vault(&conn, &root, &default_vault_name(&root)).expect("vault added");
+    let vault = add_vault(&conn, &root, &default_vault_name(&root), VaultKind::Folder)
+        .expect("vault added");
     assert_eq!(vault.name, "dharma");
     assert_eq!(vault.root_path, path_to_string(&root));
     assert!(vault.id > 0);
@@ -146,7 +202,7 @@ fn a_vault_is_a_row_and_writes_nothing_into_the_folder() {
     assert_eq!(before, after);
 
     // Adding the same folder again is the same vault, not a second one.
-    let again = add_vault(&conn, &root, "Renamed").expect("vault re-added");
+    let again = add_vault(&conn, &root, "Renamed", VaultKind::Folder).expect("vault re-added");
     assert_eq!(again, vault);
     assert_eq!(list_vaults(&conn).expect("listed").len(), 1);
 
@@ -168,8 +224,8 @@ fn the_active_vault_survives_a_reopen_and_falls_back_to_the_whole_library() {
     assert!(find_vault(&conn, 0).expect("lookup").is_none());
 
     // Two vaults may share a name; they are told apart by id.
-    let first = add_vault(&conn, &one, "Library").expect("added");
-    let second = add_vault(&conn, &two, "Library").expect("added");
+    let first = add_vault(&conn, &one, "Library", VaultKind::Folder).expect("added");
+    let second = add_vault(&conn, &two, "Library", VaultKind::Folder).expect("added");
     assert_ne!(first.id, second.id);
     set_active_vault_id(&conn, second.id).expect("active saved");
     assert_eq!(active_vault_id(&conn), second.id);
@@ -203,7 +259,13 @@ fn a_vault_can_be_renamed_repointed_and_removed() {
     let conn = open_db(&dir).expect("db opens");
 
     // The wrong folder picked.
-    let vault = add_vault(&conn, &wrong, &default_vault_name(&wrong)).expect("added");
+    let vault = add_vault(
+        &conn,
+        &wrong,
+        &default_vault_name(&wrong),
+        VaultKind::Folder,
+    )
+    .expect("added");
     assert_eq!(vault.name, "site");
 
     // Relabeling touches nothing but the label, and a blank name is not a name.
@@ -227,7 +289,7 @@ fn a_vault_can_be_renamed_repointed_and_removed() {
     assert_eq!(list_vaults(&conn).expect("listed").len(), 1);
 
     // Two rows for one folder would be two names for the same place.
-    let second = add_vault(&conn, &other, "Elsewhere").expect("added");
+    let second = add_vault(&conn, &other, "Elsewhere", VaultKind::Folder).expect("added");
     assert!(set_vault_root(&conn, second.id, &right).is_err());
 
     // Removing drops the row and leaves the folder standing.
@@ -959,9 +1021,9 @@ fn a_file_is_owned_by_the_innermost_vault_that_holds_it() {
         std::fs::create_dir_all(folder).expect("folder created");
     }
     let conn = open_db(&dir).expect("db opens");
-    let outer_vault = add_vault(&conn, &outer, "Dharma").expect("added");
-    let inner_vault = add_vault(&conn, &inner, "Empty Guru").expect("added");
-    add_vault(&conn, &other, "Elsewhere").expect("added");
+    let outer_vault = add_vault(&conn, &outer, "Dharma", VaultKind::Folder).expect("added");
+    let inner_vault = add_vault(&conn, &inner, "Empty Guru", VaultKind::Folder).expect("added");
+    add_vault(&conn, &other, "Elsewhere", VaultKind::Folder).expect("added");
 
     // Nested: the innermost wins, which is the vault the file actually lives in.
     assert_eq!(

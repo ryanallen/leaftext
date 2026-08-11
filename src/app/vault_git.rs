@@ -108,7 +108,8 @@ pub(crate) fn deliver_vault_clone(
         report_file_action_failure(webview, &error);
         return;
     }
-    create_vault(&folder, state, proxy, webview);
+    // The one place a vault is anything but a folder somebody picked, and the only chance to record it: what git left behind is a folder like any other, so nothing read later could tell this apart.
+    create_vault(&folder, VaultKind::Git, state, proxy, webview);
 }
 
 /// Read only the folder's own state, for the button in the vault's header.

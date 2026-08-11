@@ -2,6 +2,8 @@
 
 use super::*;
 
+use crate::remote::vault_mirror_dir;
+
 #[test]
 fn opening_document_records_recent_file_and_persists_it() {
     let unique = SystemTime::now()
@@ -633,6 +635,19 @@ fn project_dirs_match_the_documented_layout() {
         assert_eq!(config, support);
         assert_eq!(data, support);
     }
+}
+
+/// A remote vault's files are copied to a folder the app owns, and the vault row points at it — so this path is a contract with every installed copy exactly as the two roots above it are. Moving it strands a mirror somewhere nothing will ever look, with no vault to explain it and nothing to clean it up.
+#[test]
+fn a_vault_mirror_sits_under_the_data_root_keyed_on_the_row_id() {
+    let data = project_data_local_dir().expect("data directory is available");
+    let mirror = vault_mirror_dir(&data, 42);
+
+    assert_eq!(mirror, data.join("remote").join("42"));
+    // Keyed on the id and never the name: a vault may be renamed, and two may be called the same thing.
+    assert_ne!(mirror, vault_mirror_dir(&data, 43));
+    // Under the app's own data root rather than beside somebody's documents, which is what makes removing it the app's business.
+    assert!(mirror.starts_with(&data));
 }
 
 #[test]

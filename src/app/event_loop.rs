@@ -158,6 +158,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
     // Only ever set on a platform the window library refuses `drag_resize_window`, where the host has to drive the resize itself.
     let mut resize_drag: Option<ResizeDrag> = None;
 
+    // What the refresh remembers between passes: the token to ask with, how many refusals in a row, and which mirrors are being written into right now.
+    let mut refresh_book = RefreshBook::default();
+    start_refresh_timer(&proxy);
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -233,7 +237,28 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 reader.window.set_minimized(false);
                 reader.window.set_focus();
             }
+            Event::UserEvent(UserEvent::RemoteRefreshDue) => {
+                refresh_due_vaults(&vault_state, &mut refresh_book, &proxy, reader.page());
+            }
+            Event::UserEvent(UserEvent::RemoteRefreshDone {
+                id,
+                ran_under,
+                state,
+            }) => {
+                deliver_refresh(
+                    id,
+                    ran_under,
+                    *state,
+                    &vault_state,
+                    &mut refresh_book,
+                    reader.page(),
+                );
+            }
             Event::UserEvent(UserEvent::FileChanged(changed)) => {
+                // A refresh writing its own mirror is not somebody editing. Measured at 2,020 events for a 2,000-file folder, and the very next line spends a thread on `git status` for each one — so the app's own writes are dropped while the pass that made them is still running.
+                if refresh_book.is_our_own_write(&changed) {
+                    return;
+                }
                 // The active document live-reloads; a sibling change instead refreshes the pane and the corpus so both stay in sync without a full rescan.
                 let is_active_document = reader
                     .workspace
@@ -840,6 +865,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                                 reader.webview.as_ref(),
                                 &mut reader.workspace,
                                 &mut file_watch,
+                                &vault_state,
+                                &mut refresh_book,
                             );
                             // The tab, the title and the image folder still say Untitled. A plain save changes none of them.
                             if matches!(ready, SaveReady::Named) {
@@ -1055,9 +1082,44 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::SyncVault { id } => {
                     sync_vault(&vault_state, &proxy, reader.page(), id);
                 }
+                IpcCommand::RefreshVault { id } => {
+                    // Pressing Refresh wakes a vault the timer had stopped asking: whoever pressed it knows something the app does not — that the network is back, or that the service is answering again.
+                    refresh_book.wake(id);
+                    if let Some(vault) = vault_state
+                        .conn
+                        .as_ref()
+                        .and_then(|conn| find_vault(conn, id).ok().flatten())
+                    {
+                        if !refresh_book.is_busy(id) {
+                            start_refresh(
+                                &vault,
+                                &vault_state,
+                                &mut refresh_book,
+                                &proxy,
+                                reader.page(),
+                            );
+                        }
+                    }
+                }
+                IpcCommand::SignInVault { id } => {
+                    sign_in_vault(&vault_state, reader.page(), id);
+                }
+                IpcCommand::SignOutVault { id } => {
+                    if let Err(error) = sign_out_vault(&vault_state, id) {
+                        report_file_action_failure(reader.page(), &error);
+                    }
+                    // The panel draws itself from the vault row, so it has to be handed the row again — the account on it is what just changed.
+                    push_vaults(reader.page(), &vault_state);
+                }
                 IpcCommand::CreateVault => {
                     if let Some(folder) = pick_vault_folder() {
-                        create_vault(&folder, &mut vault_state, &proxy, reader.page());
+                        create_vault(
+                            &folder,
+                            VaultKind::Folder,
+                            &mut vault_state,
+                            &proxy,
+                            reader.page(),
+                        );
                     }
                 }
                 IpcCommand::GetCloudFolders => {
@@ -1092,6 +1154,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     reader.forget_vault_favorites(id);
                     // The shorter list first, because the registry push below is what redraws the start screen. The other way round it is drawn from favorites naming a vault the registry no longer has.
                     reader.refresh_tab_strip();
+                    // Before the row goes, because the row is where the folder is written down — and before the folder goes, because a recursive watch reports every file in a folder being deleted and the whole point is that none of that is news. The sync at the end of this turn puts back whatever is still wanted.
+                    if let Some(root) = vault_root_path(&vault_state, id) {
+                        file_watch.release(&root);
+                    }
                     remove_vault_row(id, &mut vault_state, reader.page());
                     // Removing the vault on screen lands back at the top of the whole library.
                     vault_state.folder.clear();

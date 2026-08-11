@@ -6,13 +6,86 @@
 
 use super::*;
 
+/// Where a vault's files came from. `root_path` means the same thing for every one of them — where the files are on this machine — so the pane, search, the graph and the pager never ask this.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VaultKind {
+    /// A folder the user pointed at, which is every vault registered before this column existed.
+    Folder,
+    /// A repository the app cloned into a folder it made.
+    Git,
+}
+
+impl VaultKind {
+    /// Every kind, so a caller derives its list from this rather than restating one.
+    pub const ALL: [Self; 2] = [Self::Folder, Self::Git];
+
+    /// The word in the `kind` column. Stable: it is written into every installed copy's database.
+    pub fn as_stored(self) -> &'static str {
+        match self {
+            Self::Folder => "folder",
+            Self::Git => "git",
+        }
+    }
+
+    /// The kind a stored word names. Anything unrecognized reads as a folder, so a database written by a later version still opens and shows its vaults as at least what they are.
+    pub fn from_stored(value: &str) -> Self {
+        Self::ALL
+            .into_iter()
+            .find(|kind| kind.as_stored() == value)
+            .unwrap_or(Self::Folder)
+    }
+
+    // No word for the page to print: the switcher shows a vault's name and nothing else, so a kind reaches the page as the stored word and only where something acts on it.
+
+    /// Whether this kind of vault has anybody to sign in as.
+    ///
+    /// A folder on this machine has nobody, and a clone leans on a git that already knows the user — so neither draws a sign-in row rather than drawing one that cannot work. It is a match rather than a flag so that a kind added later cannot compile without answering.
+    pub fn signs_in(self) -> bool {
+        match self {
+            Self::Folder | Self::Git => false,
+        }
+    }
+}
+
 /// One registered vault. `id` is the row id and the only identity anything keys on — never the name, which the user may repeat.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vault {
     pub id: i64,
     pub name: String,
     pub root_path: String,
+    pub kind: VaultKind,
+    /// Who this vault is signed in as, when it is signed in as anybody. A name, not a secret — the token is in the machine's own credential store and never in this database or any other file the app writes. The panel shows this, which is why it is here rather than fetched.
+    pub account: Option<String>,
+}
+
+/// Written out by hand rather than derived, for one field: whether this kind signs in is answered here, so the page is told rather than holding its own list of kinds that would drift the moment one is added.
+impl Serialize for Vault {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let mut row = serializer.serialize_struct("Vault", 6)?;
+        row.serialize_field("id", &self.id)?;
+        row.serialize_field("name", &self.name)?;
+        row.serialize_field("rootPath", &self.root_path)?;
+        row.serialize_field("kind", self.kind.as_stored())?;
+        row.serialize_field("account", &self.account)?;
+        row.serialize_field("signsIn", &self.kind.signs_in())?;
+        row.end()
+    }
+}
+
+/// The columns every query here selects, in the order [`read_vault`] reads them. One string so the four cannot drift apart.
+#[cfg(feature = "desktop")]
+const VAULT_COLUMNS: &str = "id, name, root_path, kind, account";
+
+#[cfg(feature = "desktop")]
+fn read_vault(row: &rusqlite::Row) -> rusqlite::Result<Vault> {
+    Ok(Vault {
+        id: row.get(0)?,
+        name: row.get(1)?,
+        root_path: row.get(2)?,
+        kind: VaultKind::from_stored(&row.get::<_, String>(3)?),
+        account: row.get(4)?,
+    })
 }
 
 /// The `app_state` key holding the active vault's id.
@@ -23,17 +96,11 @@ const ACTIVE_VAULT_KEY: &str = "active_vault";
 #[cfg(feature = "desktop")]
 pub fn list_vaults(conn: &Connection) -> DbResult<Vec<Vault>> {
     let mut stmt = conn
-        .prepare("SELECT id, name, root_path FROM vaults ORDER BY added_at, id")
+        .prepare(&format!(
+            "SELECT {VAULT_COLUMNS} FROM vaults ORDER BY added_at, id"
+        ))
         .map_err(to_err)?;
-    let rows = stmt
-        .query_map([], |row| {
-            Ok(Vault {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                root_path: row.get(2)?,
-            })
-        })
-        .map_err(to_err)?;
+    let rows = stmt.query_map([], read_vault).map_err(to_err)?;
     let mut vaults = Vec::new();
     for row in rows {
         vaults.push(row.map_err(to_err)?);
@@ -41,25 +108,19 @@ pub fn list_vaults(conn: &Connection) -> DbResult<Vec<Vault>> {
     Ok(vaults)
 }
 
-/// Register `root` as a vault and return it. A folder that is already a vault is returned as it stands — picking it again opens it rather than doubling it.
+/// Register `root` as a vault and return it. A folder that is already a vault is returned as it stands — picking it again opens it rather than doubling it, and it keeps the kind it was registered under, since how a folder arrived is not changed by pointing at it a second time.
 #[cfg(feature = "desktop")]
-pub fn add_vault(conn: &Connection, root: &Path, name: &str) -> DbResult<Vault> {
+pub fn add_vault(conn: &Connection, root: &Path, name: &str, kind: VaultKind) -> DbResult<Vault> {
     let root_path = path_to_string(root);
     conn.execute(
-        "INSERT OR IGNORE INTO vaults (name, root_path, added_at) VALUES (?1, ?2, ?3)",
-        params![name, root_path, now_secs()],
+        "INSERT OR IGNORE INTO vaults (name, root_path, added_at, kind) VALUES (?1, ?2, ?3, ?4)",
+        params![name, root_path, now_secs(), kind.as_stored()],
     )
     .map_err(to_err)?;
     conn.query_row(
-        "SELECT id, name, root_path FROM vaults WHERE root_path = ?1",
+        &format!("SELECT {VAULT_COLUMNS} FROM vaults WHERE root_path = ?1"),
         params![root_path],
-        |row| {
-            Ok(Vault {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                root_path: row.get(2)?,
-            })
-        },
+        read_vault,
     )
     .map_err(to_err)
 }
@@ -96,6 +157,17 @@ pub fn set_vault_root(conn: &Connection, id: i64, root: &Path) -> DbResult<()> {
     conn.execute(
         "UPDATE vaults SET root_path = ?2 WHERE id = ?1",
         params![id, root_path],
+    )
+    .map_err(to_err)?;
+    Ok(())
+}
+
+/// Record who a vault is signed in as, or `None` for signed out. Only the name: the token that goes with it lives in the machine's own credential store, and nothing puts one in this database.
+#[cfg(feature = "desktop")]
+pub fn set_vault_account(conn: &Connection, id: i64, account: Option<&str>) -> DbResult<()> {
+    conn.execute(
+        "UPDATE vaults SET account = ?2 WHERE id = ?1",
+        params![id, account],
     )
     .map_err(to_err)?;
     Ok(())
@@ -152,15 +224,9 @@ pub fn find_vault(conn: &Connection, id: i64) -> DbResult<Option<Vault>> {
         return Ok(None);
     }
     conn.query_row(
-        "SELECT id, name, root_path FROM vaults WHERE id = ?1",
+        &format!("SELECT {VAULT_COLUMNS} FROM vaults WHERE id = ?1"),
         params![id],
-        |row| {
-            Ok(Vault {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                root_path: row.get(2)?,
-            })
-        },
+        read_vault,
     )
     .map(Some)
     .or_else(|error| match error {

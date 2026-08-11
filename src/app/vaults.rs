@@ -10,6 +10,8 @@ use super::*;
 pub(crate) struct VaultState {
     /// Read-write connection to `manifest.db`. `open_db` applies the migrations on the way in, so the tables are already there.
     pub(crate) conn: Option<Connection>,
+    /// The app's own data root, kept because a remote vault's files live in a folder under it that has to go when the vault does.
+    pub(crate) data_dir: Option<PathBuf>,
     pub(crate) active: i64,
     pub(crate) root: Option<PathBuf>,
     /// The folder the pane is showing, so a change on disk under it can be noticed and a stale read discarded.
@@ -52,6 +54,7 @@ impl VaultState {
         let active = if root.is_some() { active } else { 0 };
         Self {
             conn,
+            data_dir: data_dir.map(Path::to_path_buf),
             active,
             root,
             folder: String::new(),
@@ -86,8 +89,11 @@ impl VaultState {
 }
 
 /// Register the picked folder and switch to it. A folder that is already a vault is switched to rather than added twice.
+///
+/// `kind` is how the folder arrived: picked by the user, or made by a clone. It is the one thing about a vault that cannot be read back off the disk later, which is why it is recorded at the moment it is known.
 pub(crate) fn create_vault(
     folder: &Path,
+    kind: VaultKind,
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
     webview: Option<&WebView>,
@@ -96,7 +102,7 @@ pub(crate) fn create_vault(
         return;
     };
     let name = default_vault_name(folder);
-    let vault = match add_vault(conn, folder, &name) {
+    let vault = match add_vault(conn, folder, &name, kind) {
         Ok(vault) => vault,
         Err(error) => {
             eprintln!("Could not add {} as a vault: {error}", folder.display());
@@ -133,7 +139,8 @@ pub(crate) fn deliver_cloud_folders(
         let mut added = false;
         for folder in cloud_folders_to_register(folders, &roots) {
             let path = Path::new(&folder.path);
-            match add_vault(conn, path, &default_vault_name(path)) {
+            // A sync client's folder is a folder on this machine like any other: the client does the syncing, and the app is only pointed at what it left there.
+            match add_vault(conn, path, &default_vault_name(path), VaultKind::Folder) {
                 Ok(_) => added = true,
                 Err(error) => eprintln!("Could not add {} as a vault: {error}", folder.path),
             }
@@ -210,6 +217,12 @@ pub(crate) fn remove_vault_row(id: i64, state: &mut VaultState, webview: Option<
         eprintln!("Could not remove that vault: {error}");
         return;
     }
+    // A remote vault's files are the app's, not the user's, so forgetting the vault forgets them. A folder vault has no mirror and this finds nothing, which is why it runs for every removal rather than only the ones that do.
+    if let Some(data_dir) = state.data_dir.as_deref() {
+        if let Err(error) = remove_vault_mirror(data_dir, id) {
+            eprintln!("Could not remove that vault's copied files: {error}");
+        }
+    }
     if state.active == id {
         if let Err(error) = set_active_vault_id(conn, 0) {
             eprintln!("Could not clear the active vault: {error}");
@@ -219,6 +232,15 @@ pub(crate) fn remove_vault_row(id: i64, state: &mut VaultState, webview: Option<
         state.drop_corpus();
     }
     push_vaults(webview, state);
+}
+
+/// Where a vault's files are on this machine, while the row is still there to say so.
+pub(crate) fn vault_root_path(state: &VaultState, id: i64) -> Option<PathBuf> {
+    let conn = state.conn.as_ref()?;
+    find_vault(conn, id)
+        .ok()
+        .flatten()
+        .map(|vault| PathBuf::from(vault.root_path))
 }
 
 fn apply_active_vault(

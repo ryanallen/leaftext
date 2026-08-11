@@ -1,6 +1,6 @@
 [package]
 name = "leaftext"
-version = "0.93.5"
+version = "0.94.0"
 edition = "2021"
 
 # The window, the web view, the file dialog, the watcher and SQLite are the desktop's, and none of them builds for a browser. They are optional so the library alone — the renderer, the format table, the editor's maps and the host boundary — compiles for `wasm32`, which is what a browser core is. The binary asks for them by name, so a plain `cargo build` is unchanged.
@@ -128,6 +128,10 @@ windows-sys = { version = "0.59", features = [
     "Win32_System_Registry",
     "Win32_Storage_FileSystem",
     "Win32_Security",
+    # A remote vault's refresh token, kept in Credential Manager rather than in
+    # any file this app writes. One feature line on a crate already in the tree;
+    # the alternative measured was `keyring`, which brings a second windows-sys.
+    "Win32_Security_Credentials",
     "Win32_UI_Shell",
     # ShellExecuteW's signature names SHOW_WINDOW_CMD from this module, so the
     # function is only compiled in when both features are on.

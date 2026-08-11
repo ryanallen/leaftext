@@ -43,6 +43,9 @@ pub use known_folders::{
     cloud_folders, cloud_folders_to_register, path_is_in_cloud_folder, CloudFolder, CloudRoots,
 };
 
+/// Vaults whose files are not on this machine to begin with: what a source is, and the folder the app copies one into so every reader goes on reading paths.
+pub mod remote;
+
 /// Git, as much of it as a vault needs. Shells out to the machine's own git rather than shipping a second one that would not know the user, their identity, or how they log in to GitHub.
 mod git;
 pub use git::{

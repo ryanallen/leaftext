@@ -35,6 +35,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | --- | --- |
 | `src/**.rs` (library) | `src/tests/`, one file per subject — add the `mod` line in `src/tests/mod.rs` if the subject is new |
 | `src/app/**.rs` (binary) | `src/app/tests.rs` |
+| `src/platform.rs`, `journal.rs`, `pipe.rs`, `single_instance.rs` | `src/app/tests.rs` as well — these sit beside the library's files and belong to the binary, so nothing in `src/tests/` can see them. `main.rs`'s `mod` lines are what settle which crate a top-level file is in, not the folder it sits in |
 | `src/store/**.rs` | `src/store/tests.rs` |
 | `installer/**.rs` — the Windows EXE installer | `installer/src/tests.rs`, run by `just check-installer`. It installs nothing: the plan is data, and the one test that writes drives a scratch folder and a scratch registry key and removes both |
 | `src/assets/shell/*.js` | `scripts/check-shell.mjs` |
@@ -44,7 +45,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | a test that writes outside the repo | anywhere above, under a name carrying the run's own process id. Two runs at once share every fixed one, and `just check-scratch-names` refuses it |
 | `wix/`, `.github/workflows/` | **cannot be run here** — say so instead of pretending |
 
-The subject files today: `app_shell_chrome` `app_shell_library` `app_shell_reader` `app_shell_scripts` `code_intel` `data_xml` `doc_graph` `editing` `eml` `encoding` `folder_tree` `git` `glossary` `images` `indexer_pager` `markdown_code` `markdown_github` `markdown_rawhtml` `markdown_render` `minimap` `png` `reading_css` `settings_paths` `theme_registry` `updater` `vault_corpus`. Shared helpers are in `src/tests/mod.rs` — use them rather than writing a second `assert_contains`.
+The subject files today: `app_shell_chrome` `app_shell_library` `app_shell_reader` `app_shell_scripts` `code_intel` `data_xml` `doc_graph` `editing` `eml` `encoding` `folder_tree` `git` `glossary` `images` `indexer_pager` `markdown_code` `markdown_github` `markdown_rawhtml` `markdown_render` `minimap` `png` `reading_css` `remote` `settings_paths` `theme_registry` `updater` `vault_corpus`. Shared helpers are in `src/tests/mod.rs` — use them rather than writing a second `assert_contains`.
 
 ## Process
 

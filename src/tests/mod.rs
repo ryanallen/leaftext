@@ -28,6 +28,7 @@ mod minimap;
 mod png;
 mod query;
 mod reading_css;
+mod remote;
 mod settings_paths;
 mod theme_registry;
 mod updater;

@@ -35,6 +35,7 @@ Work here starts as a written plan and ends as a released version, and the same 
 |:--|:--|
 | `src/**.rs` — the library | `src/tests/`, one file per subject, with the shared helpers in `mod.rs` |
 | `src/app/**.rs` — the binary | `src/app/tests.rs` |
+| `src/platform.rs`, `journal.rs`, `pipe.rs`, `single_instance.rs` | `src/app/tests.rs` as well. These sit beside the library's files and belong to the binary, so nothing in `src/tests/` can see them — the file's folder does not tell you which crate it is in, `main.rs`'s own `mod` lines do |
 | `src/store/**.rs` | `src/store/tests.rs` |
 | `installer/**.rs` — the Windows EXE installer | `installer/src/tests.rs`, run by `just check-installer`. It installs nothing: the plan is data, and the one test that writes drives a scratch folder and a scratch registry key and removes both |
 | `src/assets/shell/*.js` — the page's script | `scripts/check-shell.mjs`, which boots the fragments in order against a stand-in page |

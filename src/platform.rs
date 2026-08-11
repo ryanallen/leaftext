@@ -10,12 +10,236 @@ use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[cfg(windows)]
-pub use windows_impl::{download_to, move_to_trash, restore_from_trash, set_clipboard_text};
+pub use windows_impl::{move_to_trash, restore_from_trash, set_clipboard_text};
 
 #[cfg(target_os = "macos")]
-pub use macos_impl::{download_to, move_to_trash, restore_from_trash, set_clipboard_text};
+pub use macos_impl::{move_to_trash, restore_from_trash, set_clipboard_text};
+
+/// Refuse a URL that is not HTTPS.
+///
+/// One function in this scope rather than a check inside each half: a check inside a platform half is one no test on the other machine can reach, and two halves guaranteeing the same thing by different mechanisms drift apart without anything noticing.
+pub fn require_https(url: &str) -> Result<(), String> {
+    let parsed = url::Url::parse(url).map_err(|error| format!("unusable URL: {error}"))?;
+    if parsed.scheme() != "https" {
+        return Err(format!(
+            "refusing a request that is not HTTPS: {}",
+            parsed.scheme()
+        ));
+    }
+    if parsed.host_str().is_none_or(str::is_empty) {
+        return Err("that URL names no host".to_string());
+    }
+    Ok(())
+}
+
+/// Stream an HTTPS GET to `sink`, one chunk at a time.
+pub fn download_to(
+    url: &str,
+    sink: &mut dyn FnMut(&[u8]) -> Result<(), String>,
+) -> Result<(), String> {
+    require_https(url)?;
+    #[cfg(windows)]
+    {
+        windows_impl::download_to(url, sink)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        macos_impl::download_to(url, sink)
+    }
+}
+
+/// Put a secret in the machine's own credential store, replacing whatever was there under the same name.
+///
+/// Windows Credential Manager and the macOS Keychain, each reached directly. **Never a file this app writes** — a refresh token in the config folder is one in every backup, every sync client and every crash report, and `src/git.rs` gets out of this problem entirely by leaning on a git that already knows the user. Nothing else does, so this is the first credential the app holds and the store is the OS's.
+#[allow(dead_code)]
+pub fn store_secret(service: &str, account: &str, secret: &str) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        windows_impl::store_secret(service, account, secret)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        macos_impl::store_secret(service, account, secret)
+    }
+}
+
+/// Read a secret back, or `None` when there is none under that name. Not being signed in is an answer, not a failure.
+#[allow(dead_code)]
+pub fn read_secret(service: &str, account: &str) -> Result<Option<String>, String> {
+    #[cfg(windows)]
+    {
+        windows_impl::read_secret(service, account)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        macos_impl::read_secret(service, account)
+    }
+}
+
+/// Forget a secret. Removing one that is not there is not a failure: signing out of a vault nobody signed into leaves the same state behind either way.
+#[allow(dead_code)]
+pub fn forget_secret(service: &str, account: &str) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        windows_impl::forget_secret(service, account)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        macos_impl::forget_secret(service, account)
+    }
+}
+
+/// What a request carries besides its address. A remote source needs all four: a method that is not GET, a bearer token in a header, a document going the other way, and the answer's own headers.
+#[allow(dead_code)]
+pub struct HttpRequest<'a> {
+    pub method: &'a str,
+    pub url: &'a str,
+    /// Name and value, in the order they should be sent. A token lives here and nowhere else — never in the URL, which is logged by every proxy between here and the service.
+    pub headers: &'a [(String, String)],
+    pub body: Option<HttpBody<'a>>,
+}
+
+/// What a request sends.
+///
+/// Two shapes rather than one because of how the Mac half talks to `curl`: its options go in over standard input so that a token never appears in a command line, where `ps` publishes it to every process on the machine. That spends standard input, so a document being pushed is named as a file — which costs nothing, since it is already a file in the mirror — and a small body is written into those options instead.
+#[allow(dead_code)]
+pub enum HttpBody<'a> {
+    Text(&'a str),
+    File(&'a Path),
+}
+
+/// What came back.
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct HttpResponse {
+    pub status: u16,
+    /// Lowercased names, so a caller looks one up without knowing how the service capitalized it.
+    pub headers: Vec<(String, String)>,
+    pub body: Vec<u8>,
+}
+
+#[allow(dead_code)]
+impl HttpResponse {
+    pub fn header(&self, name: &str) -> Option<&str> {
+        let name = name.to_ascii_lowercase();
+        self.headers
+            .iter()
+            .find(|(key, _)| *key == name)
+            .map(|(_, value)| value.as_str())
+    }
+}
+
+/// Make one request. No retry: [`http_request_with_retry`] is the one that waits.
+#[allow(dead_code)]
+pub fn http_request(request: &HttpRequest) -> Result<HttpResponse, String> {
+    require_https(request.url)?;
+    #[cfg(windows)]
+    {
+        windows_impl::http_request(request)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        macos_impl::http_request(request)
+    }
+}
+
+/// How many times a refused request is tried before it is reported as failed.
+#[allow(dead_code)]
+pub(crate) const HTTP_ATTEMPTS: u32 = 4;
+
+/// The longest this will ever wait between attempts, whatever the arithmetic or the service says. A source that asks for an hour must not be able to pin a thread for one.
+#[allow(dead_code)]
+pub(crate) const HTTP_BACKOFF_CEILING: Duration = Duration::from_secs(30);
+
+/// Make one request, waiting and trying again when the service says it is too busy.
+///
+/// In one place because every source needs it and none of them should carry its own: a rate limit answers in lockouts rather than in slow, so a source hammering through a 429 gets an account shut off rather than a slow morning. The wait doubles, is capped, and carries jitter — without it, every request refused in the same second comes back in the same second and the burst that caused the limit is rebuilt exactly.
+///
+/// `Retry-After` wins where the service sent one, because a service saying how long to wait and being ignored is the fastest way to the lockout. It is still held under the ceiling.
+#[allow(dead_code)]
+pub fn http_request_with_retry(request: &HttpRequest) -> Result<HttpResponse, String> {
+    let mut last = None;
+    for attempt in 0..HTTP_ATTEMPTS {
+        let response = http_request(request)?;
+        if !should_retry(response.status) {
+            return Ok(response);
+        }
+        if attempt + 1 == HTTP_ATTEMPTS {
+            last = Some(response);
+            break;
+        }
+        let wait = retry_after(&response).unwrap_or_else(|| backoff(attempt));
+        std::thread::sleep(wait.min(HTTP_BACKOFF_CEILING));
+        last = Some(response);
+    }
+    // Every attempt was refused. The last answer is the honest one to report: it says what the service is actually complaining about.
+    let response = last.ok_or_else(|| "the request was never attempted".to_string())?;
+    Err(format!(
+        "the service answered {} to {} attempts",
+        response.status, HTTP_ATTEMPTS
+    ))
+}
+
+/// Whether an answer is worth asking again for. Too many requests, or the service having a bad moment — never a 4xx that says the request itself is wrong, which would come back wrong every time.
+#[allow(dead_code)]
+pub(crate) fn should_retry(status: u16) -> bool {
+    status == 429 || (500..600).contains(&status)
+}
+
+/// The wait before attempt `n`, doubling and capped, with up to half of it shaved off at random so that a hundred requests refused together do not all come back together.
+#[allow(dead_code)]
+pub(crate) fn backoff(attempt: u32) -> Duration {
+    let doubled = Duration::from_secs(1).saturating_mul(1u32 << attempt.min(16));
+    let capped = doubled.min(HTTP_BACKOFF_CEILING);
+    // The clock is the only source of randomness here, which is plenty for spreading a burst: nothing is being made unguessable.
+    let spread = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|since| since.subsec_nanos() as u64)
+        .unwrap_or(0);
+    let half = capped.as_millis() as u64 / 2;
+    capped - Duration::from_millis(if half == 0 { 0 } else { spread % half })
+}
+
+/// How long the service asked for, when it asked in seconds. The date form of the header is not read: it needs a clock both ends agree on, and the backoff below it is a safe answer when this says nothing.
+#[allow(dead_code)]
+pub(crate) fn retry_after(response: &HttpResponse) -> Option<Duration> {
+    response
+        .header("retry-after")
+        .and_then(|value| value.trim().parse::<u64>().ok())
+        .map(Duration::from_secs)
+}
+
+/// The bytes a request sends, whichever shape it was given them in.
+#[allow(dead_code)]
+fn body_bytes(body: Option<&HttpBody>) -> Result<Vec<u8>, String> {
+    match body {
+        None => Ok(Vec::new()),
+        Some(HttpBody::Text(text)) => Ok(text.as_bytes().to_vec()),
+        Some(HttpBody::File(path)) => std::fs::read(path)
+            .map_err(|error| format!("could not read {}: {error}", path.display())),
+    }
+}
+
+/// A raw response header block — the status line, then one header a line — as pairs with lowercased names.
+///
+/// Both halves come by this block differently and neither should be parsing it twice. A header sent more than once is kept more than once: which of them wins is the caller's business, not this function's.
+#[allow(dead_code)]
+pub(crate) fn parse_header_block(raw: &str) -> Vec<(String, String)> {
+    raw.lines()
+        .skip_while(|line| line.starts_with("HTTP/"))
+        .filter_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            let name = name.trim();
+            if name.is_empty() {
+                return None;
+            }
+            Some((name.to_ascii_lowercase(), value.trim().to_string()))
+        })
+        .collect()
+}
 
 /// Point this process's stderr at an already-open file. The Windows build has no console, so without this everything the app prints is thrown away.
 ///
@@ -399,7 +623,7 @@ mod windows_impl {
         WinHttpCloseHandle, WinHttpConnect, WinHttpOpen, WinHttpOpenRequest, WinHttpQueryHeaders,
         WinHttpReadData, WinHttpReceiveResponse, WinHttpSendRequest, WinHttpSetTimeouts,
         INTERNET_DEFAULT_HTTPS_PORT, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_FLAG_SECURE,
-        WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_QUERY_STATUS_CODE,
+        WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_QUERY_RAW_HEADERS_CRLF, WINHTTP_QUERY_STATUS_CODE,
     };
     use windows_sys::Win32::System::DataExchange::{
         CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
@@ -431,20 +655,21 @@ mod windows_impl {
         Ok(WinHttpHandle(handle))
     }
 
-    /// Stream an HTTPS GET to `sink`, one chunk at a time.
+    /// A request sent and answered, with the handles still open so the body can be read off it.
     ///
     /// WinHTTP ships with Windows and uses the system certificate store, so this links no TLS stack in. It follows the redirect a release asset always makes, and its default policy refuses an HTTPS-to-HTTP downgrade on the way.
-    pub fn download_to(
+    ///
+    /// The caller has already refused a URL that is not HTTPS — that check is one function in the module above, so this half and the Mac's cannot drift apart on it.
+    fn send(
+        method: &str,
         url: &str,
-        sink: &mut dyn FnMut(&[u8]) -> Result<(), String>,
-    ) -> Result<(), String> {
-        let parsed = Url::parse(url).map_err(|error| format!("unusable download URL: {error}"))?;
-        if parsed.scheme() != "https" {
-            return Err("refusing a download that is not HTTPS".to_string());
-        }
+        headers: &[(String, String)],
+        body: &[u8],
+    ) -> Result<(WinHttpHandle, WinHttpHandle, WinHttpHandle, u32), String> {
+        let parsed = Url::parse(url).map_err(|error| format!("unusable URL: {error}"))?;
         let host = parsed
             .host_str()
-            .ok_or_else(|| "the download URL names no host".to_string())?;
+            .ok_or_else(|| "that URL names no host".to_string())?;
         let port = parsed.port().unwrap_or(INTERNET_DEFAULT_HTTPS_PORT);
         // WinHTTP wants the path and query as one "object name"; it takes no URL.
         let mut object = parsed.path().to_string();
@@ -453,7 +678,7 @@ mod windows_impl {
             object.push_str(query);
         }
 
-        let agent = wide("leaftext-updater");
+        let agent = wide("leaftext");
         let session = opened(
             unsafe {
                 WinHttpOpen(
@@ -467,16 +692,16 @@ mod windows_impl {
             "could not start an HTTPS session",
         )?;
 
-        // Finite, so a stalled server cannot pin the download thread forever. The receive timeout covers the wait for the next chunk, not the whole transfer, so a slow connection is not cut off part way through.
+        // Finite, so a stalled server cannot pin the thread forever. The receive timeout covers the wait for the next chunk, not the whole transfer, so a slow connection is not cut off part way through.
         unsafe { WinHttpSetTimeouts(session.0, 15_000, 15_000, 30_000, 60_000) };
 
         let host_wide = wide(host);
         let connection = opened(
             unsafe { WinHttpConnect(session.0, host_wide.as_ptr(), port, 0) },
-            "could not reach the download host",
+            "could not reach the host",
         )?;
 
-        let verb = wide("GET");
+        let verb = wide(method);
         let object_wide = wide(&object);
         let request = opened(
             unsafe {
@@ -490,18 +715,40 @@ mod windows_impl {
                     WINHTTP_FLAG_SECURE,
                 )
             },
-            "could not open the download request",
+            "could not open the request",
         )?;
 
-        if unsafe { WinHttpSendRequest(request.0, ptr::null(), 0, ptr::null(), 0, 0, 0) } == 0 {
+        // One CRLF-separated block, which is the shape WinHTTP takes. `u32::MAX` is its "measure the null-terminated block yourself" — the alternative is a character count of UTF-16 units, which is a second chance to be wrong.
+        let block: String = headers
+            .iter()
+            .map(|(name, value)| format!("{name}: {value}\r\n"))
+            .collect();
+        let block_wide = wide(&block);
+        let (block_ptr, block_len) = if block.is_empty() {
+            (ptr::null(), 0)
+        } else {
+            (block_wide.as_ptr(), u32::MAX)
+        };
+        let (body_ptr, body_len) = if body.is_empty() {
+            (ptr::null(), 0u32)
+        } else {
+            (body.as_ptr().cast::<c_void>(), body.len() as u32)
+        };
+
+        if unsafe {
+            WinHttpSendRequest(
+                request.0, block_ptr, block_len, body_ptr, body_len, body_len, 0,
+            )
+        } == 0
+        {
             return Err(format!(
-                "could not send the download request: {}",
+                "could not send the request: {}",
                 io::Error::last_os_error()
             ));
         }
         if unsafe { WinHttpReceiveResponse(request.0, ptr::null_mut()) } == 0 {
             return Err(format!(
-                "no answer to the download request: {}",
+                "no answer to the request: {}",
                 io::Error::last_os_error()
             ));
         }
@@ -521,30 +768,65 @@ mod windows_impl {
         } == 0
         {
             return Err(format!(
-                "could not read the download response: {}",
+                "could not read the response: {}",
                 io::Error::last_os_error()
             ));
         }
-        if !(200..300).contains(&status) {
-            return Err(format!("the download server answered {status}"));
-        }
+        Ok((session, connection, request, status))
+    }
 
+    /// Every response header, asked for twice: once for the size it needs, once for the bytes.
+    #[allow(dead_code)]
+    fn response_headers(request: *mut c_void) -> Vec<(String, String)> {
+        let mut size: u32 = 0;
+        unsafe {
+            WinHttpQueryHeaders(
+                request,
+                WINHTTP_QUERY_RAW_HEADERS_CRLF,
+                ptr::null(),
+                ptr::null_mut(),
+                &mut size,
+                ptr::null_mut(),
+            )
+        };
+        if size == 0 {
+            return Vec::new();
+        }
+        let mut buffer = vec![0u16; (size as usize / 2) + 1];
+        if unsafe {
+            WinHttpQueryHeaders(
+                request,
+                WINHTTP_QUERY_RAW_HEADERS_CRLF,
+                ptr::null(),
+                buffer.as_mut_ptr().cast(),
+                &mut size,
+                ptr::null_mut(),
+            )
+        } == 0
+        {
+            return Vec::new();
+        }
+        let raw = String::from_utf16_lossy(&buffer[..(size as usize / 2)]);
+        super::parse_header_block(&raw)
+    }
+
+    fn read_body(
+        request: *mut c_void,
+        sink: &mut dyn FnMut(&[u8]) -> Result<(), String>,
+    ) -> Result<(), String> {
         let mut buffer = vec![0u8; DOWNLOAD_CHUNK_BYTES];
         loop {
             let mut read: u32 = 0;
             if unsafe {
                 WinHttpReadData(
-                    request.0,
+                    request,
                     buffer.as_mut_ptr().cast(),
                     buffer.len() as u32,
                     &mut read,
                 )
             } == 0
             {
-                return Err(format!(
-                    "the download stopped: {}",
-                    io::Error::last_os_error()
-                ));
+                return Err(format!("the read stopped: {}", io::Error::last_os_error()));
             }
             // Zero bytes on a successful read is the end of the body.
             if read == 0 {
@@ -552,6 +834,114 @@ mod windows_impl {
             }
             sink(&buffer[..read as usize])?;
         }
+    }
+
+    /// Stream an HTTPS GET to `sink`, one chunk at a time.
+    pub fn download_to(
+        url: &str,
+        sink: &mut dyn FnMut(&[u8]) -> Result<(), String>,
+    ) -> Result<(), String> {
+        let (_session, _connection, request, status) = send("GET", url, &[], &[])?;
+        if !(200..300).contains(&status) {
+            return Err(format!("the download server answered {status}"));
+        }
+        read_body(request.0, sink)
+    }
+
+    /// One request, with its answer collected whole. Unlike the download above, the status is handed back rather than turned into a failure: a source needs to tell a 404 from a 429 from a 409, and only the caller knows which of those is news.
+    #[allow(dead_code)]
+    pub fn http_request(request: &super::HttpRequest) -> Result<super::HttpResponse, String> {
+        let body = super::body_bytes(request.body.as_ref())?;
+        let (_session, _connection, handle, status) =
+            send(request.method, request.url, request.headers, &body)?;
+        let headers = response_headers(handle.0);
+        let mut collected = Vec::new();
+        read_body(handle.0, &mut |chunk| {
+            collected.extend_from_slice(chunk);
+            Ok(())
+        })?;
+        Ok(super::HttpResponse {
+            status: status as u16,
+            headers,
+            body: collected,
+        })
+    }
+
+    /// A secret in Credential Manager, under `service` with `account` recorded beside it. `CRED_PERSIST_LOCAL_MACHINE` keeps it on this machine rather than following the user onto another one — a token minted for this install belongs to this install.
+    #[allow(dead_code)]
+    pub fn store_secret(service: &str, account: &str, secret: &str) -> Result<(), String> {
+        use windows_sys::Win32::Security::Credentials::{
+            CredWriteW, CREDENTIALW, CRED_PERSIST_LOCAL_MACHINE, CRED_TYPE_GENERIC,
+        };
+
+        let mut target = wide(service);
+        let mut user = wide(account);
+        let blob = secret.as_bytes();
+        let mut credential: CREDENTIALW = unsafe { std::mem::zeroed() };
+        credential.Type = CRED_TYPE_GENERIC;
+        credential.TargetName = target.as_mut_ptr();
+        credential.CredentialBlobSize = blob.len() as u32;
+        credential.CredentialBlob = blob.as_ptr() as *mut u8;
+        credential.Persist = CRED_PERSIST_LOCAL_MACHINE;
+        credential.UserName = user.as_mut_ptr();
+
+        // CredWrite replaces an existing credential under the same name, so signing in again does not leave the old token behind.
+        if unsafe { CredWriteW(&credential, 0) } == 0 {
+            return Err(format!(
+                "could not keep that sign-in: {}",
+                io::Error::last_os_error()
+            ));
+        }
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn read_secret(service: &str, _account: &str) -> Result<Option<String>, String> {
+        use windows_sys::Win32::Foundation::ERROR_NOT_FOUND;
+        use windows_sys::Win32::Security::Credentials::{
+            CredFree, CredReadW, CREDENTIALW, CRED_TYPE_GENERIC,
+        };
+
+        let target = wide(service);
+        let mut found: *mut CREDENTIALW = ptr::null_mut();
+        if unsafe { CredReadW(target.as_ptr(), CRED_TYPE_GENERIC, 0, &mut found) } == 0 {
+            let error = io::Error::last_os_error();
+            // Nothing stored is an answer rather than a failure: it is what not being signed in looks like.
+            if error.raw_os_error() == Some(ERROR_NOT_FOUND as i32) {
+                return Ok(None);
+            }
+            return Err(format!("could not read that sign-in: {error}"));
+        }
+        if found.is_null() {
+            return Ok(None);
+        }
+        let blob = unsafe {
+            std::slice::from_raw_parts(
+                (*found).CredentialBlob,
+                (*found).CredentialBlobSize as usize,
+            )
+        };
+        let secret = String::from_utf8(blob.to_vec()).ok();
+        unsafe { CredFree(found.cast()) };
+        secret
+            .map(Some)
+            .ok_or_else(|| "that sign-in is not readable".to_string())
+    }
+
+    #[allow(dead_code)]
+    pub fn forget_secret(service: &str, _account: &str) -> Result<(), String> {
+        use windows_sys::Win32::Foundation::ERROR_NOT_FOUND;
+        use windows_sys::Win32::Security::Credentials::{CredDeleteW, CRED_TYPE_GENERIC};
+
+        let target = wide(service);
+        if unsafe { CredDeleteW(target.as_ptr(), CRED_TYPE_GENERIC, 0) } == 0 {
+            let error = io::Error::last_os_error();
+            if error.raw_os_error() == Some(ERROR_NOT_FOUND as i32) {
+                return Ok(());
+            }
+            return Err(format!("could not forget that sign-in: {error}"));
+        }
+        Ok(())
     }
 
     /// Which installer put this copy on the machine, out of the key both installers write. `None` means nothing wrote one, which is an MSI install.
@@ -727,9 +1117,275 @@ mod windows_impl {
 
 #[cfg(target_os = "macos")]
 mod macos_impl {
-    use super::{failed, io, Path, PathBuf, DOWNLOAD_CHUNK_BYTES};
+    use super::{failed, io, HttpBody, Path, PathBuf, DOWNLOAD_CHUNK_BYTES};
     use std::io::{Read, Write};
     use std::process::{Command, Stdio};
+
+    /// The line that separates the response headers from what a caller asked for, written by the config below so the two can be told apart in one stream.
+    const HEADER_END: &str = "\r\n\r\n";
+
+    /// A value going into a `curl` config file. Its parser takes backslash escapes inside double quotes, and nothing else may reach it: an unescaped quote would end the value early and turn the rest of a document into options.
+    fn config_value(value: &str) -> String {
+        let mut escaped = String::with_capacity(value.len() + 2);
+        escaped.push('"');
+        for character in value.chars() {
+            match character {
+                '\\' => escaped.push_str("\\\\"),
+                '"' => escaped.push_str("\\\""),
+                '\n' => escaped.push_str("\\n"),
+                '\r' => escaped.push_str("\\r"),
+                '\t' => escaped.push_str("\\t"),
+                other => escaped.push(other),
+            }
+        }
+        escaped.push('"');
+        escaped
+    }
+
+    /// One request, through the `curl` that ships with macOS.
+    ///
+    /// **Every option goes in over standard input, and none on the command line.** `ps` on macOS shows any process's full arguments to every user on the machine, so a token passed as `-H "Authorization: Bearer …"` is a token published to anything running. `--config -` reads the same options from a pipe instead, where nothing else can read them. The one thing left on the command line is that flag.
+    ///
+    /// It spends standard input, which is why a document being pushed is named as a file rather than piped — it is already a file in the mirror — and a small body is written into the config itself.
+    pub fn http_request(request: &super::HttpRequest) -> Result<super::HttpResponse, String> {
+        let mut config = String::new();
+        config.push_str(&format!("url = {}\n", config_value(request.url)));
+        config.push_str(&format!("request = {}\n", config_value(request.method)));
+        for (name, value) in request.headers {
+            config.push_str(&format!(
+                "header = {}\n",
+                config_value(&format!("{name}: {value}"))
+            ));
+        }
+        match request.body.as_ref() {
+            None => {}
+            Some(HttpBody::Text(text)) => {
+                config.push_str(&format!("data-binary = {}\n", config_value(text)));
+            }
+            Some(HttpBody::File(path)) => {
+                let named = path
+                    .to_str()
+                    .ok_or_else(|| format!("{} is not a name curl can be given", path.display()))?;
+                config.push_str(&format!(
+                    "data-binary = {}\n",
+                    config_value(&format!("@{named}"))
+                ));
+            }
+        }
+        // The headers come back in the same stream as the body, which is the only way to have both without a second file. `--fail` is deliberately absent: unlike the download, a status is an answer here rather than an error, and a source has to tell a 404 from a 429 from a 409.
+        config.push_str(
+            "include\nsilent\nshow-error\nlocation\nproto = \"=https\"\nproto-redir = \"=https\"\nmax-redirs = 10\nconnect-timeout = 15\nspeed-limit = 1\nspeed-time = 60\n",
+        );
+
+        let mut child = Command::new("/usr/bin/curl")
+            .args(["--config", "-"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|error| format!("could not start the request: {error}"))?;
+        let mut stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| "the request took no options".to_string())?;
+        stdin
+            .write_all(config.as_bytes())
+            .map_err(|error| format!("could not hand over the request: {error}"))?;
+        // Closed before waiting, or curl sits reading a pipe nobody is writing to.
+        drop(stdin);
+
+        let finished = child
+            .wait_with_output()
+            .map_err(|error| format!("the request did not finish: {error}"))?;
+        if !finished.status.success() {
+            return Err(format!(
+                "the request failed: {}",
+                String::from_utf8_lossy(&finished.stderr).trim()
+            ));
+        }
+
+        // A redirect leaves one header block per hop in front of the body, and the last one is the answer.
+        let mut rest = finished.stdout.as_slice();
+        let mut raw = String::new();
+        while let Some(split) = find(rest, HEADER_END.as_bytes()) {
+            let (block, after) = rest.split_at(split);
+            let text = String::from_utf8_lossy(block).to_string();
+            if !text.starts_with("HTTP/") {
+                break;
+            }
+            raw = text;
+            rest = &after[HEADER_END.len()..];
+        }
+        let status = raw
+            .lines()
+            .next()
+            .and_then(|line| line.split_whitespace().nth(1))
+            .and_then(|code| code.parse::<u16>().ok())
+            .ok_or_else(|| "the answer carried no status".to_string())?;
+        Ok(super::HttpResponse {
+            status,
+            headers: super::parse_header_block(&raw),
+            body: rest.to_vec(),
+        })
+    }
+
+    /// Where `needle` starts in `haystack`.
+    fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+        haystack
+            .windows(needle.len())
+            .position(|window| window == needle)
+    }
+
+    /// The Keychain, through the calls that take plain strings and lengths.
+    ///
+    /// The dictionary-based `SecItemAdd` family is the modern spelling and needs CoreFoundation dictionaries, string constants and reference counting to say the same four things these say with a name, an account and some bytes. Fewer moving parts is the whole reason: this is the one place in the app holding somebody's credential, and it is not the place to be clever.
+    #[link(name = "Security", kind = "framework")]
+    extern "C" {
+        fn SecKeychainAddGenericPassword(
+            keychain: *mut std::ffi::c_void,
+            service_len: u32,
+            service: *const u8,
+            account_len: u32,
+            account: *const u8,
+            password_len: u32,
+            password: *const u8,
+            item: *mut *mut std::ffi::c_void,
+        ) -> i32;
+        fn SecKeychainFindGenericPassword(
+            keychain: *mut std::ffi::c_void,
+            service_len: u32,
+            service: *const u8,
+            account_len: u32,
+            account: *const u8,
+            password_len: *mut u32,
+            password: *mut *mut std::ffi::c_void,
+            item: *mut *mut std::ffi::c_void,
+        ) -> i32;
+        fn SecKeychainItemModifyAttributesAndData(
+            item: *mut std::ffi::c_void,
+            attributes: *const std::ffi::c_void,
+            length: u32,
+            data: *const u8,
+        ) -> i32;
+        fn SecKeychainItemDelete(item: *mut std::ffi::c_void) -> i32;
+        fn SecKeychainItemFreeContent(
+            attributes: *mut std::ffi::c_void,
+            data: *mut std::ffi::c_void,
+        ) -> i32;
+        fn CFRelease(reference: *mut std::ffi::c_void);
+    }
+
+    /// Nothing is stored under that name. An answer, not a failure — it is what not being signed in looks like.
+    const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+
+    pub fn store_secret(service: &str, account: &str, secret: &str) -> Result<(), String> {
+        // Adding over an existing item fails rather than replacing it, so an item already there is found and its bytes changed. Signing in again must not leave the old token behind.
+        let mut item: *mut std::ffi::c_void = std::ptr::null_mut();
+        let found = unsafe {
+            SecKeychainFindGenericPassword(
+                std::ptr::null_mut(),
+                service.len() as u32,
+                service.as_ptr(),
+                account.len() as u32,
+                account.as_ptr(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut item,
+            )
+        };
+        if found == 0 && !item.is_null() {
+            let status = unsafe {
+                SecKeychainItemModifyAttributesAndData(
+                    item,
+                    std::ptr::null(),
+                    secret.len() as u32,
+                    secret.as_ptr(),
+                )
+            };
+            unsafe { CFRelease(item) };
+            if status != 0 {
+                return Err(format!("could not keep that sign-in: keychain {status}"));
+            }
+            return Ok(());
+        }
+
+        let status = unsafe {
+            SecKeychainAddGenericPassword(
+                std::ptr::null_mut(),
+                service.len() as u32,
+                service.as_ptr(),
+                account.len() as u32,
+                account.as_ptr(),
+                secret.len() as u32,
+                secret.as_ptr(),
+                std::ptr::null_mut(),
+            )
+        };
+        if status != 0 {
+            return Err(format!("could not keep that sign-in: keychain {status}"));
+        }
+        Ok(())
+    }
+
+    pub fn read_secret(service: &str, account: &str) -> Result<Option<String>, String> {
+        let mut length: u32 = 0;
+        let mut data: *mut std::ffi::c_void = std::ptr::null_mut();
+        let status = unsafe {
+            SecKeychainFindGenericPassword(
+                std::ptr::null_mut(),
+                service.len() as u32,
+                service.as_ptr(),
+                account.len() as u32,
+                account.as_ptr(),
+                &mut length,
+                &mut data,
+                std::ptr::null_mut(),
+            )
+        };
+        if status == ERR_SEC_ITEM_NOT_FOUND {
+            return Ok(None);
+        }
+        if status != 0 {
+            return Err(format!("could not read that sign-in: keychain {status}"));
+        }
+        if data.is_null() {
+            return Ok(None);
+        }
+        let bytes =
+            unsafe { std::slice::from_raw_parts(data.cast::<u8>(), length as usize) }.to_vec();
+        unsafe { SecKeychainItemFreeContent(std::ptr::null_mut(), data) };
+        String::from_utf8(bytes)
+            .map(Some)
+            .map_err(|_| "that sign-in is not readable".to_string())
+    }
+
+    pub fn forget_secret(service: &str, account: &str) -> Result<(), String> {
+        let mut item: *mut std::ffi::c_void = std::ptr::null_mut();
+        let status = unsafe {
+            SecKeychainFindGenericPassword(
+                std::ptr::null_mut(),
+                service.len() as u32,
+                service.as_ptr(),
+                account.len() as u32,
+                account.as_ptr(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut item,
+            )
+        };
+        if status == ERR_SEC_ITEM_NOT_FOUND {
+            return Ok(());
+        }
+        if status != 0 || item.is_null() {
+            return Err(format!("could not forget that sign-in: keychain {status}"));
+        }
+        let deleted = unsafe { SecKeychainItemDelete(item) };
+        unsafe { CFRelease(item) };
+        if deleted != 0 {
+            return Err(format!("could not forget that sign-in: keychain {deleted}"));
+        }
+        Ok(())
+    }
 
     /// Stream an HTTPS GET to `sink`, one chunk at a time, through the `curl` that ships with macOS: it trusts the system keychain, so this links no TLS stack in. `--proto`/`--proto-redir` hold the transfer to HTTPS across the redirect a release asset always makes. The bytes come back over a pipe rather than being written by curl, because a file the app writes carries no `com.apple.quarantine`.
     pub fn download_to(

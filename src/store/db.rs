@@ -40,6 +40,28 @@ DROP TABLE IF EXISTS scan_runs;
 DROP TABLE IF EXISTS scan_roots;
 "#;
 
+/// Migration 7: a vault says where its files came from, and a remote vault gets somewhere to record what it copied down.
+///
+/// The `DEFAULT 'folder'` is what turns every row an installed copy already has into a folder vault, which is exactly what each one is — no backfill statement, and none possible to forget. `remote_id` and `account` stay null for a folder vault, because a folder has neither.
+///
+/// `remote_files` maps the source's own id to the file in the mirror and whatever version stamp that source gave it. The id is the identity, never the name, so a rename upstream moves this row rather than making a second one. It cascades on the vault, so forgetting a vault forgets what its mirror held — the connection turns `foreign_keys` on, so the cascade is real rather than decorative.
+#[cfg(feature = "desktop")]
+const MIGRATION_7_SQL: &str = r#"
+ALTER TABLE vaults ADD COLUMN kind TEXT NOT NULL DEFAULT 'folder';
+ALTER TABLE vaults ADD COLUMN remote_id TEXT;
+ALTER TABLE vaults ADD COLUMN account TEXT;
+
+CREATE TABLE remote_files (
+    vault_id   INTEGER NOT NULL REFERENCES vaults(id) ON DELETE CASCADE,
+    remote_id  TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    version    TEXT,
+    PRIMARY KEY (vault_id, remote_id)
+);
+
+CREATE INDEX remote_files_by_path ON remote_files (vault_id, local_path);
+"#;
+
 /// Open (creating if needed) the database, apply PRAGMAs, and migrate.
 #[cfg(feature = "desktop")]
 pub fn open_db(data_dir: &Path) -> DbResult<Connection> {
@@ -81,13 +103,7 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
     )
     .map_err(to_err)?;
 
-    let current: i64 = conn
-        .query_row(
-            "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
-            [],
-            |row| row.get(0),
-        )
-        .map_err(to_err)?;
+    let current = applied_version(conn)?;
 
     // 1–4 are never applied again. A database that has them gets them dropped by 6; a fresh one is simply recorded as past them, so the numbering stays honest and nothing tries to build a crawl that no longer exists.
     if current < 5 {
@@ -116,8 +132,35 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
         conn.execute_batch("VACUUM;").map_err(to_err)?;
     }
 
-    let _ = SCHEMA_VERSION;
+    if current < 7 {
+        let tx = conn.transaction().map_err(to_err)?;
+        tx.execute_batch(MIGRATION_7_SQL).map_err(to_err)?;
+        tx.execute(
+            "INSERT INTO schema_migrations (version, applied_at) VALUES (7, ?1)",
+            params![now_secs()],
+        )
+        .map_err(to_err)?;
+        tx.commit().map_err(to_err)?;
+    }
+
+    // The constant read 5 for as long as 6 had been shipping, because nothing ever compared it to anything. Comparing it here is what stops the next migration being written against a number that is two behind: it fires in every test run, and a database from a later version — where the constant is legitimately lower — is not something a shipped build should refuse to open over.
+    debug_assert_eq!(
+        applied_version(conn)?,
+        SCHEMA_VERSION,
+        "the migrations applied and SCHEMA_VERSION disagree"
+    );
     Ok(())
+}
+
+/// The highest migration this database has recorded.
+#[cfg(feature = "desktop")]
+fn applied_version(conn: &Connection) -> DbResult<i64> {
+    conn.query_row(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+        [],
+        |row| row.get(0),
+    )
+    .map_err(to_err)
 }
 
 /// Accessible drive roots: existing drives on Windows, else `/`. The top of the library pane when no vault is active.

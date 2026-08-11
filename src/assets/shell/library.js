@@ -826,6 +826,61 @@ window.leafVaultGitBusy = (id) => {
   renderVaultSyncButton();
   refreshVaultGitPanel(id);
 };
+// Where each remote vault's copy stands, by vault id. Filed as it arrives, so opening the panel has nothing to wait on.
+const vaultRemoteByVault = new Map();
+window.leafSetVaultRemote = (state) => {
+  if (!state || !state.id) return;
+  vaultRemoteByVault.set(state.id, state);
+  refreshVaultGitPanel(state.id);
+};
+// How long ago, in the words somebody would use. Minutes up to an hour, then hours, then days -- a timestamp is a thing to work out, and this line is read at a glance or not at all.
+function sinceInWords(seconds) {
+  const ago = Math.max(0, Math.floor(Date.now() / 1000) - Number(seconds || 0));
+  if (ago < 90) return 'just now';
+  const minutes = Math.round(ago / 60);
+  if (minutes < 60) return `${minutes} minutes ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return hours === 1 ? 'an hour ago' : `${hours} hours ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? 'yesterday' : `${days} days ago`;
+}
+// Who a vault whose files live somewhere else is signed in as, and the way out. Drawn where the GitHub rows are drawn, in the same note-then-button shape, and drawn at all only for a vault that has somebody to be signed in as -- a folder on this machine has nobody, so it gets no row rather than one that cannot work. The host decides which those are; nothing here holds a list of kinds.
+function vaultRemoteItems(vault) {
+  if (!vault || (!vault.signsIn && !vault.account)) return [];
+  const items = ['separator', { heading: 'Account' }];
+  if (vault.account) {
+    items.push({ note: `Signed in as ${vault.account}` });
+    const copy = vaultRemoteByVault.get(vault.id);
+    const busy = Boolean(copy && copy.busy);
+    if (copy && copy.refreshedAt) items.push({ note: `Last refreshed ${sinceInWords(copy.refreshedAt)}` });
+    // Being offline is a line and not a warning: the files were copied down, so it changes what is fresh rather than what you can read.
+    if (copy && copy.offline) items.push({ note: 'Offline — reading the copy on this machine. It will catch up when the network comes back.' });
+    if (copy && copy.resting) items.push({ note: 'Not asking for now, because the service kept refusing. Refresh to try again.' });
+    items.push({
+      label: busy ? 'Refreshing…' : 'Refresh',
+      icon: SYNC_ICON_SVG,
+      disabled: busy,
+      keepOpen: true,
+      run: () => send({ command: 'refreshVault', id: vault.id }),
+    });
+    if (copy && copy.message) items.push({ note: copy.message, danger: Boolean(copy.error) });
+    items.push({
+      label: 'Sign out',
+      title: 'Forgets the sign-in. The copied files stay, and go on reading.',
+      keepOpen: true,
+      run: () => send({ command: 'signOutVault', id: vault.id }),
+    });
+  } else {
+    items.push({ note: 'Not signed in, so this vault is not being kept up to date.' });
+    items.push({
+      label: 'Sign in ↗',
+      title: 'Opens the service in your browser. Nothing is typed into Leaftext.',
+      keepOpen: true,
+      run: () => send({ command: 'signInVault', id: vault.id }),
+    });
+  }
+  return items;
+}
 function editVaultMenuItems(vault) {
   return [
     {
@@ -852,6 +907,7 @@ function editVaultMenuItems(vault) {
       danger: true,
       run: () => send({ command: 'removeVault', id: vault.id }),
     },
+    ...vaultRemoteItems(vault),
     ...vaultGitItems(vault),
     'separator',
     {
@@ -1230,5 +1286,13 @@ window.leafSetVaults = (payload) => {
   renderLibrary();
   // The start screen's favorites are the vault you are in, so a registry that moved leaves them saying the vault you left. Any push means a change worth redrawing: switching, adding, renaming, repointing or removing all end here.
   if (homeScreenIsShowing()) renderState();
+  // A vault's own panel is drawn off its row, so a row that just moved -- signing out is the one that does -- leaves the panel saying what was true before it.
+  if (crumbMenuVault) {
+    const fresh = leafVaults.find((entry) => entry && entry.id === crumbMenuVault.id);
+    if (fresh) {
+      crumbMenuVault = fresh;
+      if (!crumbMenu.hidden) showCrumbMenu(crumbMenuOwner, editVaultMenuItems(fresh));
+    }
+  }
 };
 

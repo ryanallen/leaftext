@@ -21,6 +21,14 @@ pub(crate) enum UserEvent {
     VaultGitReady { json: String },
     /// Just the folder's own git state, for the header's sync button.
     VaultStatusReady { id: i64, json: String },
+    /// The clock says it is time to ask the remote vaults what has moved. The loop decides which, if any, are worth asking — it is the only place that knows what is busy and what is resting.
+    RemoteRefreshDue,
+    /// A refresh pass finished. `ran_under` is the mirror it ran against, so a pass that outlived its vault is thrown away rather than delivered.
+    RemoteRefreshDone {
+        id: i64,
+        ran_under: PathBuf,
+        state: Box<VaultRemoteState>,
+    },
     /// A folder finished being read off disk. `scope` is the vault root the read was made under, so a listing that lands after a vault switch is dropped.
     FolderLoaded {
         scope: Option<PathBuf>,
@@ -257,6 +265,15 @@ pub(crate) enum IpcCommand {
     LinkVaultRemote { id: i64, url: String },
     #[serde(rename = "syncVault")]
     SyncVault { id: i64 },
+    /// Ask a remote vault's source what has moved, now, rather than waiting for the clock. Also wakes a vault the timer had stopped asking: the person pressing it knows something the app does not.
+    #[serde(rename = "refreshVault")]
+    RefreshVault { id: i64 },
+    /// Sign a remote vault in. The consent page opens in the person's normal browser and the answer comes back to a listener on the loopback address; nothing is ever typed into Leaftext.
+    #[serde(rename = "signInVault")]
+    SignInVault { id: i64 },
+    /// Forget a remote vault's token. The copied files stay and go on reading offline.
+    #[serde(rename = "signOutVault")]
+    SignOutVault { id: i64 },
     /// Persist the library pane's open/closed state and last open width.
     #[serde(rename = "setLibraryLayout")]
     SetLibraryLayout { closed: bool, width: u32 },

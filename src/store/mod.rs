@@ -6,6 +6,7 @@ mod db;
 mod frontmatter;
 mod links;
 mod obsidian_types;
+mod remote_files;
 mod vaults;
 
 // Re-exported so `store::x` reaches every public item, wherever it lives.
@@ -13,6 +14,7 @@ pub use db::*;
 pub use frontmatter::*;
 pub use links::*;
 pub use obsidian_types::*;
+pub use remote_files::*;
 pub use vaults::*;
 
 use std::collections::HashSet;
@@ -26,9 +28,9 @@ use serde::Serialize;
 
 use crate::DocumentFormat;
 
-/// Latest applied schema migration. 1–4 were the crawl's: files, headings, chunks, full-text search, frontmatter and links, all of them a manifest of the whole computer. They are gone, and 5 — the vaults — is the whole schema.
+/// Latest applied schema migration, checked against what a freshly opened database actually recorded. 1–4 were the crawl's: files, headings, chunks, full-text search, frontmatter and links, all of them a manifest of the whole computer. They are gone; 5 is the vaults, 6 dropped the crawl, and 7 gave a vault a kind and a remote vault somewhere to record what it copied down.
 #[cfg(feature = "desktop")]
-pub(super) const SCHEMA_VERSION: i64 = 5;
+pub(super) const SCHEMA_VERSION: i64 = 7;
 
 // ---------------------------------------------------------------------------
 // Public data shapes

@@ -9,10 +9,11 @@ mod pipe;
 mod platform;
 mod single_instance;
 
+use leaftext::remote::remove_vault_mirror;
 use leaftext::store::{
     active_vault_id, add_vault, default_vault_name, find_vault, list_vaults, open_db, remove_vault,
-    rename_vault, set_active_vault_id, set_vault_root, vault_containing, vault_holds,
-    DocumentGraph, GraphRequest, SearchResults, Vault,
+    rename_vault, set_active_vault_id, set_vault_account, set_vault_root, vault_containing,
+    vault_holds, DocumentGraph, GraphRequest, SearchResults, Vault, VaultKind,
 };
 use leaftext::{
     all_document_extensions, app_data_dir, app_shell_html, blocks_resynced_script,

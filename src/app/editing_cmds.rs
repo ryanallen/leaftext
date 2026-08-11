@@ -217,6 +217,8 @@ pub(crate) fn save_active_document(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
+    vault_state: &VaultState,
+    refresh_book: &mut RefreshBook,
 ) {
     let Some(edit) = workspace.active_edit_mut() else {
         return;
@@ -236,6 +238,8 @@ pub(crate) fn save_active_document(
             edit.mark_saved();
             // Self-save suppression: reload_active_document skips when the hash matches, so our own write-back FileChanged won't clobber the buffer.
             file_watch.active_hash = Some(content_hash(&text));
+            // The bytes are on this machine now, which is the whole guarantee: a document whose vault keeps its files somewhere else is sent on from here, and a send that fails cannot take back what was typed.
+            push_saved_document(vault_state, refresh_book, webview, &path);
             save_result_script(&path_str, true, None)
         }
         Err(error) => {

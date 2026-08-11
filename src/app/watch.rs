@@ -84,6 +84,31 @@ impl FileWatch {
         }
         self.watched = desired;
     }
+
+    /// Drop the watch on a folder that is about to be deleted, and on anything under it.
+    ///
+    /// A recursive watch reports every file in a folder as it goes: 2,000 files measured as 2,020 events, and every one of them reaches the loop, where a vault being active spends a thread on `git status` before the active-document split. None of it is news — the folder is going — so the watch comes off first and [`Self::sync`] puts back whatever is still wanted at the end of the same turn.
+    pub(crate) fn release(&mut self, folder: &Path) {
+        // Watches are registered canonicalized, so the plain path a vault row carries has to be put in the same form before it can be compared with one.
+        let folder = fs::canonicalize(folder).unwrap_or_else(|_| folder.to_path_buf());
+        let leaving: Vec<PathBuf> = self
+            .watched
+            .keys()
+            .filter(|watched| watched.starts_with(&folder))
+            .cloned()
+            .collect();
+        if leaving.is_empty() {
+            return;
+        }
+        if let Some(debouncer) = self.debouncer.as_mut() {
+            for path in &leaving {
+                let _ = debouncer.watcher().unwatch(path);
+            }
+        }
+        for path in &leaving {
+            self.watched.remove(path);
+        }
+    }
 }
 
 /// An event's path in the plain form the rest of the app compares against.
