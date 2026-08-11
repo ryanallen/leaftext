@@ -46,6 +46,18 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
 }
 
 #[test]
+fn every_element_starts_as_a_border_box_and_no_comment_denies_it() {
+    let css = reading_mode_css();
+
+    // The second rule in the stylesheet, and the reason a width cap below it counts the border and the padding. No comment may deny it: one claiming the stylesheet had no global rule talked a plan into a declaration it already had.
+    assert_contains(rule_body(css, "\n* {"), "box-sizing: border-box;");
+    assert!(
+        !css.contains("no global"),
+        "no comment may tell a reader this stylesheet has no global box-sizing"
+    );
+}
+
+#[test]
 fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
     let css = reading_mode_css();
 
@@ -572,10 +584,9 @@ fn the_find_bar_gives_way_rather_than_running_off_a_narrow_page() {
     assert_contains(field, "min-width: 120px;");
     assert_contains(rule_body(css, ".find-row {"), "flex-wrap: wrap;");
 
-    // The cap needs the box-sizing beside it, or the bar's border and 10px inset fall outside the number.
+    // The cap holds the bar's border and 10px inset inside the number because the rule at the top of the stylesheet already gave it a border box.
     let bar = rule_body(css, ".find-bar {");
     assert_contains(bar, "max-width: calc(100% - var(--lt-space-16));");
-    assert_contains(bar, "box-sizing: border-box;");
 
     // The full-width block is the reader's own 600px, not a second number nobody can defend.
     let phone = css

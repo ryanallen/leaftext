@@ -5833,7 +5833,7 @@ body.is-home-row-dragging .home-list-scroll li {
   display: flex;
   flex-direction: column;
   gap: var(--lt-space-4);
-  /* Never wider than the page it floats over — the reading column can be 360px, and what a too-wide bar clips is the field you type into. Its own box-sizing, since this stylesheet has no global one. */
+  /* Never wider than the page it floats over — the reading column can be 360px, and what a too-wide bar clips is the field you type into. */
   box-sizing: border-box;
   max-width: calc(100% - var(--lt-space-16));
   /* Clear of the app bar the reader's own padding sits under. */
