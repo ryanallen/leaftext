@@ -341,11 +341,12 @@ A vault sitting *inside* someone else's repository is told so too. Creating a re
 The pane keeps up with changes on disk, so a file you just created shows up without a refresh.
 
 - The same file watcher that drives live reload watches the active vault **recursively**, plus the open document's folder when it sits outside the vault. With no vault, only the folder you are browsing is watched, and not recursively — browsing a drive root should not subscribe to the whole drive.
-- A file added, renamed or removed in the folder you are looking at refreshes the list.
+- A file added, renamed or removed in the folder you are looking at refreshes the list. A read that describes exactly what is already on screen leaves the rows where they are, so a row can never be replaced under your finger mid-click.
+- A change inside a `.git` folder is ignored outright. Nothing in there is a document to open or a row to draw, and reading a repository's state runs `git`, which writes there — so treating those writes as news is the app answering itself for ever.
 - Something *you* did — a [paste, rename or delete](#file-actions) — refreshes the list the moment it lands, rather than waiting on the watcher to notice.
 - The vault's in-memory text is patched for the one file that changed, so [search](#search) and the [graph](#graph) stay current without re-reading the vault. Only a document whose text actually moved counts: a vault is a folder you work in, and git writing to itself, a saved image or an editor's temp file are not changes to your documents.
 - A [graph of one document](#graph) rather than a vault holds nothing in memory to patch, so it is simply read again — a folder listing and a file per link, which is cheap enough not to cache. It cannot go stale, and a redraw that produces the same picture never reaches the screen.
-- The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault.
+- The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault — and again whenever the window is focused, which is what catches a commit you made in a terminal: that writes nothing but the repository's own bookkeeping, which the watcher ignores.
 
 ## Layout
 

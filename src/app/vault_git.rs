@@ -117,10 +117,18 @@ pub(crate) fn deliver_vault_clone(
 /// Deliberately not [`request_vault_git`]: that one also asks what is installed, and `gh auth status` goes to the network to validate its token. Fine once, when someone opens the panel; not fine every time a file is saved.
 ///
 /// Nothing here fetches either, so `behind` is as stale as the last sync. What the button is for is work of yours that has not left the machine, and git knows that without asking anyone.
-pub(crate) fn refresh_vault_status(state: &VaultState, proxy: &EventLoopProxy<UserEvent>, id: i64) {
+pub(crate) fn refresh_vault_status(
+    state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    id: i64,
+) {
     let Some((_name, root)) = vault_root(state, id) else {
         return;
     };
+    // One read per vault at a time — each is a thread and five git processes, so a burst of saves must not start one each.
+    if !state.may_read_status(id) {
+        return;
+    }
     off_loop(proxy, move || {
         let repo = inspect_vault_repo(&root);
         UserEvent::VaultStatusReady {
@@ -130,13 +138,24 @@ pub(crate) fn refresh_vault_status(state: &VaultState, proxy: &EventLoopProxy<Us
     });
 }
 
-/// Hand the header's button its vault's state.
-pub(crate) fn deliver_vault_status(webview: Option<&WebView>, id: i64, json: &str) {
+/// Hand the header's button its vault's state, then let the next read for that vault start.
+///
+/// Anything that asked while this one was running gets exactly one repeat, the way a corpus read serves whatever waited on it.
+pub(crate) fn deliver_vault_status(
+    webview: Option<&WebView>,
+    state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    id: i64,
+    json: &str,
+) {
     run_page_script(
         webview,
         &format!("window.leafSetVaultStatus({id}, {json});"),
         "Failed to update the vault status",
     );
+    if state.status_read_settled(id) {
+        refresh_vault_status(state, proxy, id);
+    }
 }
 
 /// Read the vault's situation without changing anything. Opening the panel.

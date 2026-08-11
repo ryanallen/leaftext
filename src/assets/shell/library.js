@@ -316,29 +316,35 @@ window.leafRefreshLibraryFolder = () => {
   send({ command: 'getFolder', path: libraryProjectPath });
 };
 function bindLibraryRows() {
-  libraryTree.querySelectorAll('[data-open-path]').forEach((button) => {
-    button.addEventListener('click', () => {
-      send({ command: 'openRecent', path: button.dataset.openPath });
-      // Picking a document is the sheet's whole purpose, so it gets out of the way — the page it just opened is behind it.
-      closeLibrarySheet();
-    });
-  });
+  libraryTree.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);
   libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);
 }
-// Enter on the mouse's press, not the full click: the watcher re-reads on any change under a recursively watched vault, every re-read rewrites these rows through innerHTML, and a rebuild landing between press and release replaces the button so the click never fires. Keyboard keeps click (it has no press), and so do touch and pen — a touch press that starts a scroll must not enter the folder under the finger.
-function bindFolderEntryRow(button) {
+// Act on the mouse's press, not the full click: the watcher re-reads on any change under a recursively watched vault, every re-read rewrites these rows through innerHTML, and a rebuild landing between press and release replaces the button so the click never fires. Keyboard keeps click (it has no press), and so do touch and pen — a touch press that starts a scroll must not act on the row under the finger.
+//
+// One helper for both kinds of row: they sit in one rebuilt list, so a file row bound on the click while its neighbors are bound on the press is exactly how this came back.
+function bindLibraryRowPress(button, act) {
   button.addEventListener('pointerdown', (event) => {
     if (event.pointerType !== 'mouse' || event.button !== 0) return;
-    // A slow host answer leaves this button in place, so the click completing this press still fires and would enter twice without the flag.
+    // A slow host answer leaves this button in place, so the click completing this press still fires and would act twice without the flag.
     button.leafPressEntered = true;
-    setLibraryFolder(button.dataset.navInto);
+    act();
   });
   button.addEventListener('click', () => {
     if (button.leafPressEntered) {
       button.leafPressEntered = false;
       return;
     }
-    setLibraryFolder(button.dataset.navInto);
+    act();
+  });
+}
+function bindFolderEntryRow(button) {
+  bindLibraryRowPress(button, () => setLibraryFolder(button.dataset.navInto));
+}
+function bindLibraryFileRow(button) {
+  bindLibraryRowPress(button, () => {
+    send({ command: 'openRecent', path: button.dataset.openPath });
+    // Picking a document is the sheet's whole purpose, so it gets out of the way — the page it just opened is behind it.
+    closeLibrarySheet();
   });
 }
 // The breadcrumb: the library root, then one crumb per folder entered, the last being where you are. How many crumbs show is measured against the band's real width, not a fixed count — widening the pane reveals more of the path. What doesn't fit collapses into a "…" button that opens a menu of the folders it swallowed, so a deep path is still one click from any ancestor. The leftmost crumb is the root — the whole library, or the vault you are in — and clicking it goes there, the way every other crumb goes to its folder. Changing *which* root that is belongs to the button beside the trail, not to a crumb that looks exactly like a place.
@@ -1228,23 +1234,29 @@ function renderLibrarySearchability() {
     runLibrarySearch('');
   }
 }
+// What the pane last drew, so a read that describes what is already on screen can leave it alone. Writing innerHTML destroys every row, and a row destroyed between a press and its release takes the click with it — the watcher re-reads this folder for any change under the vault, and most of those change nothing here.
+let libraryTreeHtml = null;
+// Draw the rows, and say whether anything actually moved.
+function setLibraryTreeHtml(html) {
+  if (html === libraryTreeHtml) return false;
+  libraryTreeHtml = html;
+  libraryTree.innerHTML = html;
+  return true;
+}
 function renderLibrary() {
   renderLibraryVaultSwitch();
   renderLibrarySearchability();
   renderLibraryCrumbs(libraryChain);
   if (libraryError) {
-    libraryTree.innerHTML = `<p class="library-empty">${escapeText(libraryError.message || '')}</p>`;
-    return;
+    return setLibraryTreeHtml(`<p class="library-empty">${escapeText(libraryError.message || '')}</p>`);
   }
-  if (!libraryEntries.length) {
-    // Still render the rows: an empty folder is exactly where the way back out matters most.
-    libraryTree.innerHTML = renderProject(libraryEntries)
-      + `<p class="library-empty">${escapeText('Nothing to read in this folder.')}</p>`;
-    bindLibraryRows();
-    return;
-  }
-  libraryTree.innerHTML = renderProject(libraryEntries);
+  // Still render the rows when the folder is empty: that is exactly where the way back out matters most.
+  const empty = libraryEntries.length
+    ? ''
+    : `<p class="library-empty">${escapeText('Nothing to read in this folder.')}</p>`;
+  if (!setLibraryTreeHtml(renderProject(libraryEntries) + empty)) return false;
   bindLibraryRows();
+  return true;
 }
 // One folder, read off the disk by the host: where it is, the trail down to it, and its contents. This is the only thing that fills the pane.
 window.leafSetLibraryFolder = (payload) => {
@@ -1256,8 +1268,8 @@ window.leafSetLibraryFolder = (payload) => {
   libraryRootName = typeof next.rootName === 'string' ? next.rootName : '';
   // The trail changed, so it has to be laid out again.
   libraryCrumbFitKey = null;
-  renderLibrary();
-  if (librarySelectedPath) scrollSelectedLibraryRowIntoView();
+  // A read that drew the same rows has nothing new to scroll to, and scrolling forces a layout.
+  if (renderLibrary() && librarySelectedPath) scrollSelectedLibraryRowIntoView();
   // Search covers the folder on screen, so moving changes the result set.
   if (librarySearchQuery) runLibrarySearch(librarySearch.value);
 };

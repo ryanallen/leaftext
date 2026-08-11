@@ -27,6 +27,11 @@ pub(crate) struct VaultState {
     /// What asked for the corpus while it was being read.
     pub(crate) pending_graph: Option<GraphRequest>,
     pub(crate) pending_search: Option<TypedQuery>,
+    /// Vaults whose git state is being read right now, and which of those were asked again while that read was running. A read is a thread and five git processes, so a burst of saves must not start one each.
+    ///
+    /// Keyed by id rather than a single flag: the page asks for every vault it knows at once, and a second vault must not be made to wait behind the first.
+    pub(crate) status_loading: HashSet<i64>,
+    pub(crate) status_pending: HashSet<i64>,
     /// The search thread and its query counter — see `vault_search.rs`.
     pub(crate) search: VaultSearch,
     /// The last graph asked for, so an edit on disk can redraw it.
@@ -63,10 +68,27 @@ impl VaultState {
             corpus_loading: false,
             pending_graph: None,
             pending_search: None,
+            status_loading: HashSet::new(),
+            status_pending: HashSet::new(),
             search: VaultSearch::default(),
             last_graph: None,
             graph_open: false,
         }
+    }
+
+    /// Whether a git-state read may start for this vault now. A no remembers that it was asked, so the read already running leaves exactly one repeat behind it — a request that arrived mid-read describes a folder the running read predates, so it cannot be served by that answer.
+    pub(crate) fn may_read_status(&mut self, id: i64) -> bool {
+        if self.status_loading.insert(id) {
+            return true;
+        }
+        self.status_pending.insert(id);
+        false
+    }
+
+    /// A read has landed: let the next one start, and say whether one was asked for while it ran.
+    pub(crate) fn status_read_settled(&mut self, id: i64) -> bool {
+        self.status_loading.remove(&id);
+        self.status_pending.remove(&id)
     }
 
     /// Forget the vault's text and anything waiting on it. Called whenever the root moves: what was read is about somewhere else now.

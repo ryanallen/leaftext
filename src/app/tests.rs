@@ -284,6 +284,162 @@ fn the_watcher_translates_at_its_own_boundary() {
 }
 
 #[test]
+fn a_write_inside_git_is_not_a_change_the_app_can_act_on() {
+    // Git's own bookkeeping is the one thing under a watched vault that is never news: no document to reload, no row to draw — and reading the vault's git state is what writes it.
+    assert!(is_git_bookkeeping(Path::new("/vault/.git/index")));
+    assert!(is_git_bookkeeping(Path::new("/vault/.git/refs/heads/main")));
+    // A submodule and a worktree keep a `.git` file rather than a folder.
+    assert!(is_git_bookkeeping(Path::new("/vault/module/.git")));
+    // The watcher reports in the form the watch was registered with, which on Windows is verbatim — the filter runs before the translation, so it has to read that form too.
+    #[cfg(windows)]
+    assert!(is_git_bookkeeping(Path::new(r"\\?\C:\vault\.git\index")));
+
+    // A prefix test would swallow these three, and the last two are files somebody edits in this app.
+    assert!(!is_git_bookkeeping(Path::new("/vault/notes/mail.md")));
+    assert!(!is_git_bookkeeping(Path::new("/vault/.gitignore")));
+    assert!(!is_git_bookkeeping(Path::new(
+        "/vault/.github/workflows/release-windows.yml"
+    )));
+}
+
+#[test]
+fn a_dot_folder_in_the_shown_folder_looks_exactly_like_a_document_to_the_pane_test() {
+    // Held as its own claim so the trap cannot come back. This is not the bug pinned: the pane's test compares a path against the folder on screen and cannot tell a dot folder from a document — which is the whole argument for refusing `.git` at the watcher instead of narrowing this.
+    let folder = PathBuf::from("/vault/notes");
+    let mut state = VaultState::load(None);
+    state.folder = folder.to_string_lossy().to_string();
+
+    assert!(change_affects_pane(&state, &folder.join(".git")));
+    assert!(change_affects_pane(&state, &folder.join("mail.md")));
+}
+
+#[test]
+fn reading_a_vaults_git_state_is_itself_a_change_the_watcher_would_report() {
+    // The loop's closing edge, as a claim rather than a paragraph: the app is its own event source. Never `git_tooling()` as the gate — that one runs `gh auth status`, which goes to the network.
+    let git_answers = std::process::Command::new("git")
+        .arg("--version")
+        .output()
+        .is_ok_and(|out| out.status.success());
+    if !git_answers {
+        println!("skipped: git is not on this machine, so there is no repository to read");
+        return;
+    }
+
+    let dir = std::env::temp_dir().join(format!("leaf-git-loop-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let git = |args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .args(args)
+            .current_dir(&dir)
+            .output()
+            .expect("git runs");
+        assert!(out.status.success(), "git {args:?} succeeds in the fixture");
+    };
+    git(&["init", "--quiet", "-b", "main"]);
+    fs::write(dir.join("note.md"), "# Note\n").expect("a document is written");
+    git(&["add", "note.md"]);
+    git(&[
+        "-c",
+        "user.email=leaf@example.com",
+        "-c",
+        "user.name=Leaf",
+        "commit",
+        "--quiet",
+        "-m",
+        "first",
+    ]);
+
+    let modified = || {
+        fs::metadata(dir.join(".git"))
+            .and_then(|meta| meta.modified())
+            .expect("the .git folder has a modified time")
+    };
+    let before = modified();
+    // Exactly what every filesystem event under an active vault used to run.
+    inspect_vault_repo(&dir);
+    assert!(
+        modified() > before,
+        "reading a vault's git state modifies its own .git folder, so a recursive watch reports it straight back"
+    );
+
+    make_writable(&dir);
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn coming_back_to_the_window_rereads_the_vault_you_are_in_and_does_it_once() {
+    // An arm that spawns a thread has no return value to assert on, so this is held as source the way the watcher's own boundary is.
+    let source = include_str!("event_loop.rs");
+    let at = source
+        .find("event: WindowEvent::Focused(true),")
+        .expect("the loop hears the window being focused again");
+    let arm = &source[at..source.len().min(at + 700)];
+
+    assert!(
+        arm.contains("if vault_state.active != 0 {"),
+        "with no vault there is nothing to read"
+    );
+    // Through phase 2's guard rather than around it: the `&mut` is what carries it, and a window flicked in and out of focus would otherwise spawn a thread and five git processes a time.
+    assert!(
+        arm.contains("refresh_vault_status(&mut vault_state, &proxy, active);"),
+        "the focus arm must read the vault's git state through the same call the watcher makes"
+    );
+    // Losing focus does nothing.
+    assert!(!source.contains("WindowEvent::Focused(false)"));
+}
+
+#[test]
+fn a_burst_of_saves_reads_a_vaults_git_state_once() {
+    let mut state = VaultState::load(None);
+
+    // The first save starts the read; the next ten find it running and leave one repeat between them, not ten.
+    assert!(state.may_read_status(7));
+    for _ in 0..10 {
+        assert!(!state.may_read_status(7));
+    }
+
+    // The answer lands: the repeat is owed, and it is the only one.
+    assert!(state.status_read_settled(7));
+    assert!(state.may_read_status(7));
+    assert!(!state.status_read_settled(7));
+
+    // And the guard is what the refresh actually asks, rather than a bookkeeping pair nothing consults.
+    assert!(include_str!("vault_git.rs").contains("if !state.may_read_status(id) {"));
+    assert!(include_str!("vault_git.rs").contains("if state.status_read_settled(id) {"));
+}
+
+#[test]
+fn a_second_vault_is_not_made_to_wait_behind_the_first() {
+    // The page asks for every vault it knows at once, so a single flag would answer one of them and drop the rest.
+    let mut state = VaultState::load(None);
+    assert!(state.may_read_status(1));
+    assert!(state.may_read_status(2));
+    assert!(!state.may_read_status(1));
+
+    assert!(state.status_read_settled(1));
+    assert!(!state.status_read_settled(2));
+}
+
+/// Take the read-only flag off everything under `dir`. Git marks every object file it writes read-only, and a removal on Windows is refused by one.
+fn make_writable(dir: &Path) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            make_writable(&path);
+        } else if let Ok(meta) = fs::metadata(&path) {
+            let mut permissions = meta.permissions();
+            #[allow(clippy::permissions_set_readonly_false)]
+            permissions.set_readonly(false);
+            let _ = fs::set_permissions(&path, permissions);
+        }
+    }
+}
+
+#[test]
 fn an_external_file_in_the_shown_folder_refreshes_the_pane_for_every_format() {
     let dir = std::env::temp_dir().join(format!(
         "leaf-pane-refresh-{}",

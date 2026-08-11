@@ -20,6 +20,9 @@ impl FileWatch {
             move |result: DebounceEventResult| {
                 if let Ok(events) = result {
                     for event in events {
+                        if is_git_bookkeeping(&event.path) {
+                            continue;
+                        }
                         let _ =
                             proxy.send_event(UserEvent::FileChanged(plain_event_path(event.path)));
                     }
@@ -109,6 +112,16 @@ impl FileWatch {
             self.watched.remove(path);
         }
     }
+}
+
+/// Whether a change is git's own bookkeeping: a `.git` folder, a `.git` file (a submodule or a worktree keeps one), or anything inside either.
+///
+/// Filtered here at the boundary rather than in one of the loop's arms, because both arms answer wrong for it and one of them is what wrote it. Reading a vault's git state runs `git status`, which modifies `.git`; a vault is watched recursively, so that write comes back as an event, which reads the vault's git state again — the app answering its own write for ever. The pane's arm is no better placed to refuse it: `.git` sits directly inside the folder on screen, so it looks exactly like a document to [`change_affects_pane`]. And nothing under `.git` is ever news for either — no document the reader can open, no row the pane can draw.
+///
+/// A component equal to `.git`, never a prefix: `.gitignore` is a file somebody edits, and `.github` is a folder full of them.
+pub(crate) fn is_git_bookkeeping(path: &Path) -> bool {
+    path.components()
+        .any(|component| component.as_os_str() == ".git")
 }
 
 /// An event's path in the plain form the rest of the app compares against.

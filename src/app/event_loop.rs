@@ -209,6 +209,16 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 last_windowed_size,
                 control_flow,
             ),
+            Event::WindowEvent {
+                event: WindowEvent::Focused(true),
+                ..
+            } => {
+                // A commit made in a terminal writes nothing but `.git`, which the watcher does not report, so nothing else would ever correct the header's count. Coming back to the window is the gesture that follows committing elsewhere. Losing focus does nothing.
+                if vault_state.active != 0 {
+                    let active = vault_state.active;
+                    refresh_vault_status(&mut vault_state, &proxy, active);
+                }
+            }
             // macOS delivers a double-clicked document as an Apple Event, not an argument, so file associations there are inert without this. Before the page is up the path waits with the command-line one.
             Event::Opened { urls } => {
                 for path in urls.iter().filter_map(|url| url.to_file_path().ok()) {
@@ -266,7 +276,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     .is_some_and(|current| paths_refer_to_same_document(&changed, current));
                 // Above the split, or it misses the commonest change of all — saving the document you are reading takes the other branch. Unfiltered on purpose: a containment check here compares the watcher's canonicalised path against the registry's plain one and so discards every event. One `git status`, off the loop, on an already-debounced event, is cheaper than being wrong.
                 if vault_state.active != 0 {
-                    refresh_vault_status(&vault_state, &proxy, vault_state.active);
+                    let active = vault_state.active;
+                    refresh_vault_status(&mut vault_state, &proxy, active);
                 }
                 if is_active_document {
                     reload_active_document(&mut reader, &mut file_watch);
@@ -293,7 +304,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 deliver_vault_git(reader.page(), &json);
             }
             Event::UserEvent(UserEvent::VaultStatusReady { id, json }) => {
-                deliver_vault_status(reader.page(), id, &json);
+                deliver_vault_status(reader.page(), &mut vault_state, &proxy, id, &json);
             }
             Event::UserEvent(UserEvent::CloudFoldersReady { folders }) => {
                 deliver_cloud_folders(&vault_state, reader.page(), &folders);
@@ -1083,7 +1094,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     request_vault_git(&vault_state, &proxy, reader.page(), id);
                 }
                 IpcCommand::GetVaultStatus { id } => {
-                    refresh_vault_status(&vault_state, &proxy, id);
+                    refresh_vault_status(&mut vault_state, &proxy, id);
                 }
                 IpcCommand::CreateVaultRepo { id } => {
                     create_vault_repo(&vault_state, &proxy, reader.page(), id);
@@ -1146,7 +1157,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::SetActiveVault { id } => {
                     set_active_vault(id, &mut vault_state, &proxy, reader.page());
                     // A different vault has a different repository, and its button should be right before anyone looks at it.
-                    refresh_vault_status(&vault_state, &proxy, id);
+                    refresh_vault_status(&mut vault_state, &proxy, id);
                     // Back to the whole library: its top is the drive roots, which `request_folder` returns without reading anything.
                     if vault_state.root.is_none() {
                         vault_state.folder.clear();

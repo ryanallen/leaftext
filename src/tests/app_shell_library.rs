@@ -516,7 +516,7 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
 
     // A change to the open document takes the live-reload branch; a change to anything else takes the other one. A status refresh in only the second leaves the commonest edit there is -- saving the file you are looking at -- with the header's count stale until something else happens to move.
     let refresh = source
-        .find("refresh_vault_status(&vault_state, &proxy, vault_state.active);")
+        .find("refresh_vault_status(&mut vault_state, &proxy, active);")
         .expect("the watcher refreshes the vault's status");
     let branch = source
         .find("if is_active_document {")
@@ -1021,16 +1021,21 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     // A fit that would draw the same crumbs at the same width leaves the DOM alone, or a watcher tick would rebuild the trail under an open "…" menu.
     assert!(html.contains("function crumbFitKey(segments)"));
     assert!(html.contains("if (key === libraryCrumbFitKey) return;"));
-    // Entering a folder acts on the mouse's press — a watcher rebuild between press and release replaces the button and swallows the click — while keyboard, touch and pen keep the click path.
+    // Entering a folder and opening a file both act on the mouse's press — a watcher rebuild between press and release replaces the button and swallows the click — while keyboard, touch and pen keep the click path. One helper serves both: the two kinds of row sit in one rebuilt list, and a file row left on the click while its neighbors moved to the press is exactly how this came back.
+    assert!(html
+        .contains("libraryTree.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);"));
     assert!(html
         .contains("libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);"));
-    assert!(html.contains("function bindFolderEntryRow(button)"));
+    assert!(html.contains("function bindLibraryRowPress(button, act) {"));
     assert!(html.contains("if (event.pointerType !== 'mouse' || event.button !== 0) return;"));
-    assert!(html.contains(
-        "button.leafPressEntered = true;\n    setLibraryFolder(button.dataset.navInto);"
-    ));
-    // The click that completes a press the helper already handled is the only one suppressed; a stable row must not open twice and a keyboard click must never be ignored.
-    assert!(html.contains("if (button.leafPressEntered) {\n      button.leafPressEntered = false;\n      return;\n    }\n    setLibraryFolder(button.dataset.navInto);"));
+    assert!(html.contains("button.leafPressEntered = true;\n    act();"));
+    // The click that completes a press the helper already handled is the only one suppressed; a stable row must not act twice and a keyboard click must never be ignored.
+    assert!(html.contains("if (button.leafPressEntered) {\n      button.leafPressEntered = false;\n      return;\n    }\n    act();"));
+    assert!(html
+        .contains("bindLibraryRowPress(button, () => setLibraryFolder(button.dataset.navInto));"));
+    assert!(html.contains("send({ command: 'openRecent', path: button.dataset.openPath });"));
+    // And a read describing what is already drawn leaves those rows standing, so an unchanged re-read cannot take one out from under a press in the first place.
+    assert!(html.contains("if (html === libraryTreeHtml) return false;"));
     // A folder that has gone missing falls back to the top level. The host decides that as it reads, so the page never holds a path it cannot show.
 
     // The two bands share one treatment (the pane's own surface and grain) and the list starts below both.

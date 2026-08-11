@@ -54,7 +54,7 @@ use rusqlite::Connection;
 use serde::Deserialize;
 use std::{
     borrow::Cow,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     env,
     error::Error,
     fs,

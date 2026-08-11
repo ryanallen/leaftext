@@ -5016,6 +5016,105 @@ check('the document extensions are in scope before the first render', () => {
   }
 });
 
+// ---- 5b. the library's rows outlive the pane being redrawn ------------------
+//
+// The pane is rewritten whole through innerHTML whenever the host re-reads the folder, and the watcher re-reads it for any change under a recursively watched vault. A row destroyed between a press and its release has nowhere to send the click, so opening a file by clicking its name failed about half the time. Two answers, both wanted: a read that draws the same rows leaves the elements standing, and a row acts on the press.
+
+if (booted) {
+  /** A row as the pane draws one, with its listeners kept where a check can fire them. */
+  const rowStandingIn = (dataset) => {
+    const listeners = {};
+    const button = Object.assign(fakeElement('row'), {
+      dataset,
+      addEventListener: (name, handler) => {
+        listeners[name] = handler;
+      },
+    });
+    return { button, listeners };
+  };
+  /** Everything the page sent while `run` was going. */
+  const sentDuring = (run) => {
+    const sent = [];
+    const was = booted.ipc.postMessage;
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      run();
+    } finally {
+      booted.ipc.postMessage = was;
+    }
+    return sent;
+  };
+
+  check('a file row opens on the press, so rebuilding the pane cannot swallow the click', () => {
+    const { button, listeners } = rowStandingIn({ openPath: 'C:\\Vaults\\Work\\GLOSSARY.md' });
+    booted.bindLibraryFileRow(button);
+    if (!listeners.pointerdown) throw new Error('a file row does not listen for a press at all');
+
+    // The press alone opens it: a rebuild landing before the mouse comes up leaves no button for the click to reach.
+    const sent = sentDuring(() => listeners.pointerdown({ pointerType: 'mouse', button: 0 }));
+    const opened = sent.filter((message) => message.command === 'openRecent');
+    if (opened.length !== 1) throw new Error(`the press sent ${opened.length} opens rather than one`);
+    if (opened[0].path !== 'C:\\Vaults\\Work\\GLOSSARY.md') throw new Error(`the press opened ${opened[0].path}`);
+
+    // Touch and pen keep the click: a press that starts a scroll must not open the file under the finger.
+    const rolling = rowStandingIn({ openPath: 'C:\\Vaults\\Work\\README.md' });
+    booted.bindLibraryFileRow(rolling.button);
+    const touched = sentDuring(() => rolling.listeners.pointerdown({ pointerType: 'touch', button: 0 }));
+    if (touched.some((message) => message.command === 'openRecent')) throw new Error('a touch press opened the file under the finger');
+  });
+
+  check('press then click on one row opens the file once, not twice', () => {
+    const { button, listeners } = rowStandingIn({ openPath: 'C:\\Vaults\\Work\\GLOSSARY.md' });
+    booted.bindLibraryFileRow(button);
+    // A row the host answered slowly is still standing when the mouse comes up, so its click fires too.
+    const sent = sentDuring(() => {
+      listeners.pointerdown({ pointerType: 'mouse', button: 0 });
+      listeners.click({});
+    });
+    const opened = sent.filter((message) => message.command === 'openRecent');
+    if (opened.length !== 1) throw new Error(`press and click together sent ${opened.length} opens`);
+
+    // And a click with no press before it — the keyboard's — still opens it.
+    const typed = sentDuring(() => listeners.click({}));
+    if (!typed.some((message) => message.command === 'openRecent')) throw new Error('a keyboard click no longer opens the file');
+  });
+
+  check('an unchanged folder read does not replace the rows', () => {
+    const tree = booted.document.getElementById('libraryTree');
+    let writes = 0;
+    let held = tree.innerHTML;
+    Object.defineProperty(tree, 'innerHTML', {
+      configurable: true,
+      get: () => held,
+      set: (value) => {
+        writes += 1;
+        held = value;
+      },
+    });
+    try {
+      const folder = (entries) => ({ path: 'C:\\Vaults\\Work', chain: [{ name: 'Work', path: 'C:\\Vaults\\Work' }], rootName: 'Work', entries });
+      const two = [
+        { kind: 'file', name: 'GLOSSARY.md', path: 'C:\\Vaults\\Work\\GLOSSARY.md' },
+        { kind: 'file', name: 'README.md', path: 'C:\\Vaults\\Work\\README.md' },
+      ];
+      booted.leafSetLibraryFolder(folder(two));
+      const drawn = writes;
+      if (!drawn) throw new Error('the first read of a folder drew no rows');
+
+      // What `git status` writing inside `.git` used to arrive as, 6.4 times a second: the same folder, the same files.
+      booted.leafSetLibraryFolder(folder(two.map((entry) => ({ ...entry }))));
+      if (writes !== drawn) throw new Error('a read describing what is already drawn rewrote the rows anyway');
+
+      // A real change still redraws, or the pane would go deaf to the thing it exists for.
+      booted.leafSetLibraryFolder(folder(two.concat([{ kind: 'file', name: 'PLAN.md', path: 'C:\\Vaults\\Work\\PLAN.md' }])));
+      if (writes === drawn) throw new Error('a file appearing in the folder on screen never reached the pane');
+    } finally {
+      delete tree.innerHTML;
+      tree.innerHTML = held;
+    }
+  });
+}
+
 // ---- 6. the page reports its own errors -------------------------------------
 
 // journal.js leads the list so that a fragment throwing as it loads is reported instead of vanishing. That claim is about load order, so it is checked by loading things in order — journal.js, then a fragment that throws — rather than by reading the list and trusting it.
