@@ -2099,9 +2099,6 @@ fn only_a_busy_service_is_asked_again_and_the_wait_is_capped() {
         }
         previous = wait;
     }
-    // Jitter takes something off, so a hundred requests refused in one second do not all come back in one second.
-    assert!(backoff(4) < std::time::Duration::from_secs(16));
-
     // A service that says how long to wait is believed, in the seconds form, and still held under the ceiling.
     let asked = HttpResponse {
         status: 429,
@@ -2121,6 +2118,18 @@ fn only_a_busy_service_is_asked_again_and_the_wait_is_capped() {
     assert_eq!(retry_after(&dated), None);
 
     assert_eq!(HTTP_ATTEMPTS, 4);
+}
+
+/// Jitter takes something off, so a hundred requests refused in one second do not all come back in one second. Without the floor the shave is zero whenever the clock's nanoseconds land on a multiple of the half, which returns the whole capped wait and fails this claim about one run in eighty.
+#[test]
+fn the_wait_before_a_retry_is_never_the_whole_ceiling() {
+    use crate::platform::{backoff, HTTP_BACKOFF_CEILING};
+
+    for attempt in 0..=12u32 {
+        let capped = std::time::Duration::from_secs(1u64 << attempt).min(HTTP_BACKOFF_CEILING);
+        let wait = backoff(attempt);
+        assert!(wait < capped, "attempt {attempt}: {wait:?} of {capped:?}");
+    }
 }
 
 /// Both halves get their response headers a different way and neither should be reading them twice.

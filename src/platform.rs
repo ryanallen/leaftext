@@ -189,7 +189,7 @@ pub(crate) fn should_retry(status: u16) -> bool {
     status == 429 || (500..600).contains(&status)
 }
 
-/// The wait before attempt `n`, doubling and capped, with up to half of it shaved off at random so that a hundred requests refused together do not all come back together.
+/// The wait before attempt `n`, doubling and capped, with between one millisecond and half of it shaved off at random so that a hundred requests refused together do not all come back together. The floor keeps the wait off its own ceiling: without it the shave is zero whenever the clock's nanoseconds land on a multiple of the half, which is one first wait in five.
 #[allow(dead_code)]
 pub(crate) fn backoff(attempt: u32) -> Duration {
     let doubled = Duration::from_secs(1).saturating_mul(1u32 << attempt.min(16));
@@ -200,7 +200,8 @@ pub(crate) fn backoff(attempt: u32) -> Duration {
         .map(|since| since.subsec_nanos() as u64)
         .unwrap_or(0);
     let half = capped.as_millis() as u64 / 2;
-    capped - Duration::from_millis(if half == 0 { 0 } else { spread % half })
+    // The guard is not decoration: no attempt caps under two milliseconds today, but taking a millisecond off one that did would panic rather than clamp.
+    capped - Duration::from_millis(if half == 0 { 0 } else { (spread % half).max(1) })
 }
 
 /// How long the service asked for, when it asked in seconds. The date form of the header is not read: it needs a clock both ends agree on, and the backoff below it is a safe answer when this says nothing.
