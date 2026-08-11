@@ -6450,16 +6450,14 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 /* Lives in the shell's own column, outside the page — so no sticky, no bleed, and nothing to out-stack: it never overlaps the bar or the card. */
 .document-minimap {
-  --minimap-viewport-top: 0%;
-  --minimap-viewport-height: 100%;
-  --minimap-track-height: 100%;
   width: var(--minimap-width);
 }
+/* The height here is the frames before the first measurement; JS writes the real one onto this element. Never a custom property on the rail above: it would inherit down into the clone, and re-resolving style across a couple of thousand cloned elements is 91ms where writing here is a fraction of one. */
 .document-minimap-track {
   box-sizing: border-box;
   position: relative;
   width: 100%;
-  height: var(--minimap-track-height);
+  height: 100%;
   cursor: default;
   opacity: var(--lt-opacity-92);
   overflow: hidden;
@@ -6485,11 +6483,11 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-minimap.is-loading .document-minimap-viewport {
   opacity: 0;
 }
-/* Holds the scaled document clone; slides within the clipped track (JS sets --minimap-preview-top) when the document is taller than the rail. A transform, not `top`: this moves every frame, and as a layout property `top` made the browser re-lay-out the page to do it — 128ms worst frame against 44ms. */
+/* Holds the scaled document clone; slides within the clipped track (JS writes the translate onto this element) when the document is taller than the rail. A transform, not `top`: this moves every frame, and as a layout property `top` made the browser re-lay-out the page to do it — 128ms worst frame against 44ms. The value is written here rather than inherited from the rail, which costs 78ms a write because a custom property re-resolves style across the whole clone. */
 .document-minimap-content {
   position: absolute;
   top: 0;
-  transform: translateY(var(--minimap-preview-top, 0px));
+  transform: translateY(0px);
   right: var(--minimap-padding-inline);
   left: var(--minimap-padding-inline);
   overflow: visible;
@@ -6521,12 +6519,13 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-minimap-preview pre.mermaid::after {
   content: none;
 }
+/* Place and size are written onto this element by JS; these two are the frames before the first write. Not a custom property on the rail above, which inherits into the clone and costs 78ms a write to re-resolve. */
 .document-minimap-viewport {
   position: absolute;
   inset-inline: 0;
-  top: var(--minimap-viewport-top);
+  top: 0%;
   z-index: 1;
-  height: var(--minimap-viewport-height);
+  height: 100%;
   min-height: 22px;
   border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);
   /* All four corners at the page card's rounding. */

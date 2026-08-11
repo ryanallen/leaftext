@@ -283,9 +283,9 @@ fn app_shell_maps_minimap_geometry_proportionally() {
             "const dragMinimapViewportToPointer = (event, pointerOffsetY) => {",
             "const viewportTopPerScrollPixel = metrics.previewScale - previewTravel / metrics.scrollable;",
             "const clickedDocumentY = (event.clientY - contentRect.top) / metrics.previewScale;",
-            "minimap.style.setProperty('--minimap-viewport-top', `${viewportTop}px`);",
-            "minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);",
-            "minimap.style.setProperty('--minimap-preview-top', `${previewTop}px`);",
+            "content.style.transform = `translateY(${previewTop}px)`;",
+            "viewport.style.top = `${viewportTop}px`;",
+            "viewport.style.height = `${boundedViewportHeight}px`;",
         ] {
             assert_contains(&html, expected);
         }
@@ -748,8 +748,8 @@ fn app_shell_preserves_focus_and_updates_minimap_viewport_indicator() {
         "const active = document.activeElement;",
         "active.focus({ preventScroll: true });",
         "event.preventDefault();",
-        "minimap.style.setProperty('--minimap-viewport-top'",
-        "minimap.style.setProperty('--minimap-viewport-height'",
+        "viewport.style.top = ",
+        "viewport.style.height = ",
         "updateMinimapViewport();",
     ] {
         assert_contains(&html, expected);
@@ -798,7 +798,7 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
         "const scaledDocumentHeight = Math.max(1, scrollHeight * previewScale);",
         "const availableHeight = minimap ? minimapAvailableHeight(minimap) : viewportHeight;",
         "const trackHeight = Math.max(1, Math.min(availableHeight, scaledDocumentHeight));",
-        "minimap.style.setProperty('--minimap-track-height', `${trackHeight}px`);",
+        "track.style.height = `${trackHeight}px`;",
     ] {
         assert_contains(&html, expected);
     }

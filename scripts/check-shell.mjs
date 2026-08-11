@@ -3346,6 +3346,62 @@ if (booted) {
       );
     }
   });
+
+  // The rail's thumbnail is a clone of the page, and inserting a clone that holds an open <details> makes the browser fire `toggle` on it. The listener is on the document, so the rail heard its own thumbnail land, called that a change to the document and rebuilt — 29 rebuilds in 30 frames with nothing scrolling, and the wheel had no free frame to answer in.
+  check('a section opening inside the rail is not the document changing', () => {
+    const version = () => vm.runInContext('minimapContentVersion', booted);
+    const raise = (target) => {
+      const before = version();
+      for (const handler of booted.document.listeners.get('toggle') || []) handler({ target });
+      return version() - before;
+    };
+    // The cloned outline is inside the rail and inside a cloned .document-body, which is the whole difficulty: only the first of those tells it apart from the page.
+    const inRail = { closest: (selector) => (selector === '.document-minimap' || selector === '.document-body' ? {} : null) };
+    const inPage = { closest: (selector) => (selector === '.document-body' ? {} : null) };
+    try {
+      if (raise(inRail) !== 0) throw new Error('the rail rebuilt its thumbnail because its own clone landed');
+      if (raise(inPage) === 0) throw new Error('a reader opening a section in the page no longer restates the thumbnail');
+    } finally {
+      // The page-side toggle asked for a rebuild, which is the point of it; drop that request rather than running it against a stand-in page with no document in it.
+      vm.runInContext('minimapContentVersion = 0; if (minimapPreviewFrame) { window.cancelAnimationFrame(minimapPreviewFrame); minimapPreviewFrame = 0; }', booted);
+    }
+  });
+
+  // Why that guard cannot be keyed on the reading body: the clone is made with cloneNode, so it carries the class it was cloned from, and stripping takes ids, textareas and links off it and never a class.
+  check('the thumbnail carries the reading body class, so that class cannot tell it from the page', () => {
+    const body = node('div', { className: 'document-body', children: [node('details', { className: 'document-outline' })] });
+    const clone = body.cloneNode();
+    booted.stripMinimapClone(clone);
+    if (!clone.classList.contains('document-body')) throw new Error('the clone lost the reading body class, so this proves nothing');
+    if (!clone.classList.contains('document-minimap-preview')) throw new Error('the clone is not marked as the rail’s own');
+  });
+
+  // The other listener that hears the document change watches the reading view's own body, and the clone lands in the rail beside it — so a landing clone was never something that watcher could see, and the toggle guard above is the only thing standing between the rail and its own thumbnail. Both halves are where the markup puts them, which is what this holds.
+  check('the rail sits outside the body the thumbnail watches', () => {
+    const page = pageMarkup();
+    const opened = page.indexOf('<main id="app"');
+    const closed = page.indexOf('</main>', opened);
+    if (opened < 0 || closed < 0) throw new Error('the reading view is not a <main id="app"> any more');
+    if (page.slice(opened, closed).includes('readerMinimap')) throw new Error('the rail moved inside the reading view, so its clone lands where the watcher can see it');
+    const fragment = readFileSync(join(root, 'src/assets/shell/minimap.js'), 'utf8');
+    if (!/function minimapSourceElement\(\) \{\s*return app\.querySelector\('\.document-body'\);/.test(fragment)) throw new Error('the thumbnail no longer clones the reading view’s own body');
+    if (!/minimapBodyObserver = new MutationObserver\(invalidateMinimapPreview\);\s*minimapBodyObserver\.observe\(source, \{/.test(fragment)) throw new Error('the watcher is no longer bound to the element the thumbnail is cloned from');
+  });
+
+  // Placing the box runs every frame of every scroll, and a custom property inherits — so writing one on the rail re-resolves style across the whole clone hanging under it, which measured 78ms a write against 0.13ms for writing onto the element that draws. Neither `transform` nor `top` inherits, so neither reaches the clone at all.
+  check('the box and the thumbnail are placed by writing to themselves', () => {
+    const styled = () => ({ style: { setProperty() { throw new Error('a custom property was written on the rail'); } } });
+    const content = styled();
+    const viewport = styled();
+    const rail = Object.assign(styled(), {
+      querySelector: (selector) => (selector === '.document-minimap-content' ? content : selector === '.document-minimap-viewport' ? viewport : null),
+    });
+    const metrics = { scaledDocumentHeight: 2000, trackHeight: 700, scrollable: 12322, scrollTop: 0, viewportHeight: 800, previewScale: 0.05 };
+    booted.placeMinimapViewport(rail, metrics, 6161);
+    if (!/^translateY\(-?\d/.test(content.style.transform || '')) throw new Error(`the thumbnail lane was not slid by its own transform: ${content.style.transform}`);
+    if (!/px$/.test(viewport.style.top || '') || !/px$/.test(viewport.style.height || '')) throw new Error('the box was not placed and sized on itself');
+  });
+
   // Nothing in the page may put itself straight back on the frame queue: a job that does keeps the window drawing for as long as its condition holds, and the condition here is a 600ms pane motion. Draining has to reach a fixed point, and the pane finishing is what asks again.
   check('the rail waits for the library pane instead of asking every frame', () => {
     const frames = booted.__frames;

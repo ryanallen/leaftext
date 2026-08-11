@@ -772,8 +772,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             "--minimap-preview-width: 68px;",
             "--minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));",
             "width: var(--minimap-width);",
-            "--minimap-track-height: 100%;",
-            "height: var(--minimap-track-height);",
+            ".document-minimap-track {",
             ".document-minimap-content",
             ".document-minimap-preview",
             "left: var(--minimap-padding-inline);",
@@ -839,7 +838,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         "minimap viewport must span the full rail width"
     );
     assert!(
-            css.contains(".document-minimap-content {\n  position: absolute;\n  top: 0;\n  transform: translateY(var(--minimap-preview-top, 0px));\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
+            css.contains(".document-minimap-content {\n  position: absolute;\n  top: 0;\n  transform: translateY(0px);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
     // The clone is laid out inside a frame carrying the same container query the reading layout carries, so a wide table in the thumbnail measures the room the page gives it instead of the whole window — which is what left the thumbnail a fifth short of the bottom.

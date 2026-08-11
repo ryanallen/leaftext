@@ -609,10 +609,8 @@ function measureDocumentMinimap(track) {
   // Size the rail to the thumbnail, capped at the space below its top: a short document gets a short rail, a long one fills the screen and slides inside.
   const availableHeight = minimap ? minimapAvailableHeight(minimap) : viewportHeight;
   const trackHeight = Math.max(1, Math.min(availableHeight, scaledDocumentHeight));
-  // Only write when it moves: an identical inline write still dirties the element, and the re-layout that provokes is the whole cost on the scroll path.
-  if (minimap && minimap.style.getPropertyValue('--minimap-track-height') !== `${trackHeight}px`) {
-    minimap.style.setProperty('--minimap-track-height', `${trackHeight}px`);
-  }
+  // Straight onto the track, never a custom property on the rail's root: a custom property inherits, so one write there re-resolves style across every element of the clone under it — 91.73ms measured against 0.13ms for this.
+  track.style.height = `${trackHeight}px`;
   return { source, sourceWidth, contentWidth, sourceTop, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, scrollTop, previewScale, scaledDocumentHeight };
 }
 // A diagram pass rebuilds the document a batch at a time, and each batch would otherwise rebuild the clone — cloning every SVG in the rail's window, over and over. Hold the rail for the pass and build it once at the end: a moment stale, never wrong. Counted, so one pass finishing cannot release another's hold.
@@ -650,7 +648,16 @@ function invalidateMinimapPreview() {
   scheduleMinimapPreviewUpdate();
 }
 // Any <details> open/close (outline, settings, library folders) changes document height, so the minimap clone goes stale. The body MutationObserver misses the bare `open` flip; `toggle` catches both — in capture phase, since it doesn't bubble.
-document.addEventListener('toggle', invalidateMinimapPreview, true);
+//
+// Never the rail's own clone. Inserting a clone holding an open <details> fires `toggle` on it, and this listener is on the document — so answering it is the rail calling its own thumbnail a change to the page: 234 rebuilds in 29 frames at 48ms with nothing scrolling. The test must be `.document-minimap`; the clone is a cloned `.document-body`, so that class is true of both. Not inside invalidateMinimapPreview, which is also the body watcher's callback and both image callbacks, none of them handed an event.
+function invalidateMinimapPreviewForToggle(event) {
+  const target = event && event.target;
+  if (target && typeof target.closest === 'function' && target.closest('.document-minimap')) {
+    return;
+  }
+  invalidateMinimapPreview();
+}
+document.addEventListener('toggle', invalidateMinimapPreviewForToggle, true);
 // Where the rail's top and bottom edges fall in the document, in document pixels. Mirrors placeMinimapViewport's previewTop, which is what actually slides the thumbnail — the two must agree or the clone would be built for the wrong slice.
 function minimapVisibleDocumentRange(metrics, scrollTop) {
   const ratio = metrics.scrollable === 0
@@ -911,8 +918,9 @@ function updateMinimapViewportFromScroll() {
 // Place the viewport box and, on tall documents, slide the thumbnail inside the rail. Position is driven by the exact reader scroll and the box height is the viewport at thumbnail scale, so it tracks the visible region at any length. scrollTopOverride pins to a specific offset (a drag); null reads live scrollTop. Mirrors site/minimap.js's updateViewport().
 function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   const content = minimap.querySelector('.document-minimap-content');
+  const viewport = minimap.querySelector('.document-minimap-viewport');
   const scaledDocumentHeight = metrics.scaledDocumentHeight;
-  // Guarded for the same reason as --minimap-track-height: an identical inline write still dirties the element, and this runs on the scroll path.
+  // Guarded because an identical inline write still dirties the element, and this runs on the scroll path.
   if (content && content.style.height !== `${scaledDocumentHeight}px`) {
     content.style.height = `${scaledDocumentHeight}px`;
   }
@@ -923,9 +931,14 @@ function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);
   const viewportDocumentTop = scrollTop * metrics.previewScale;
   const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));
-  minimap.style.setProperty('--minimap-viewport-top', `${viewportTop}px`);
-  minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);
-  minimap.style.setProperty('--minimap-preview-top', `${previewTop}px`);
+  // Onto the two elements that draw, never a custom property on the rail's root. Neither `transform` nor `top` inherits, so neither reaches the clone; a custom property does, and one write on the rail re-resolves style across every element of the thumbnail — 78ms a write against 0.13ms for these.
+  if (content) {
+    content.style.transform = `translateY(${previewTop}px)`;
+  }
+  if (viewport) {
+    viewport.style.top = `${viewportTop}px`;
+    viewport.style.height = `${boundedViewportHeight}px`;
+  }
 }
 // The scroll listener must stay cheap. clampReaderScrollPosition() and captureReaderScrollAnchor() each force a layout — ~400ms on a 4MB glossary, which is the wheel taking two seconds to answer — and once a frame is still too often. Nothing reads either mid-gesture (the anchor serves the reflow re-pin and tab switches; the clamp only has to hold at rest), so they settle after the wheel stops and the handler itself reads no geometry at all.
 function settleReaderScroll() {
