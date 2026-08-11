@@ -159,9 +159,9 @@ function homeGroupedRows(groups, rowMarkup) {
 function homeRecentScoped(recent) {
   return homeVaultGroups(recent, recentVaultId).flatMap((group) => group.entries);
 }
-// What would put something in an empty Recent list. A function, not a const: theme.js runs the first render as it loads, long before this fragment.
+// What would put something in an empty Recent list. Kept short: the box has no inset on its right and the pair is as wide as its widest thing, so a long line touches the border and drags both boxes out past the writing. A function, not a const: theme.js runs the first render as it loads, long before this fragment.
 function homeRecentHelp() {
-  return 'Files you open show up here, so you can pick up where you left off.';
+  return 'Files you open show up here.';
 }
 // The small word over the headline: the vault you are standing in, or the app's own name outside every vault. Both lists on the screen are that vault's, so it belongs over the screen rather than on each box.
 function homeKicker() {

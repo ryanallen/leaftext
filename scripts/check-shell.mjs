@@ -4878,7 +4878,7 @@ if (booted) {
   check('with no favorites the screen is the one this ticket found', () => {
     // A box saying how to favorite a file is an advertisement on the screen somebody sees most, and the heart is on every tab under the pointer. So with no favorites there is no pair at all — the screen is the plain recent list it already had, whole paths one to a line, and none of this ticket's markup is on it.
     const empty = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: [] }));
-    if (empty !== '<p class="empty-help">Files you open show up here, so you can pick up where you left off.</p>') {
+    if (empty !== '<p class="empty-help">Files you open show up here.</p>') {
       throw new Error(`nothing open and nothing kept is not the line it was: ${empty}`);
     }
 
@@ -4901,6 +4901,29 @@ if (booted) {
     if (!both.includes('home-list-grid')) throw new Error('a pair was drawn as a lone list');
     if (both.indexOf('Recent') > both.indexOf('Favorites')) {
       throw new Error('Favorites was drawn above Recent');
+    }
+  });
+
+  /** The empty Recent column of a pair, which is the box a first launch into a vault draws. */
+  function emptyRecentColumn() {
+    const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT }));
+    if (!markup.includes('home-list-grid')) throw new Error(`nothing open beside a kept file is not a pair: ${markup}`);
+    return markup.slice(markup.indexOf('<section'), markup.indexOf('</section>') + '</section>'.length);
+  }
+
+  check('an empty Recent beside a kept file is a box with a short line in it', () => {
+    const column = emptyRecentColumn();
+    if (column !== '<section class="home-list"><h2>Recent</h2><p class="empty-help">Files you open show up here.</p></section>') {
+      throw new Error(`the empty Recent column is not the box it was: ${column}`);
+    }
+  });
+
+  check('the empty Recent line stays short enough to keep off the border', () => {
+    // The box has no inset on its right, and the pair is as wide as its widest thing. At the narrowest window that still draws two boxes the line has 263px, and 30 characters is 221px — so a longer wording is one that jams against the border again and drags both boxes out past the writing.
+    const line = /<p class="empty-help">([^<]*)<\/p>/.exec(emptyRecentColumn());
+    if (!line) throw new Error('the empty Recent column drew no line at all');
+    if (line[1].length > 30) {
+      throw new Error(`the empty Recent line is ${line[1].length} characters: ${line[1]}`);
     }
   });
 

@@ -801,7 +801,7 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
         "<p class=\"empty-subtitle\">Your thoughts, secure and free.</p>",
         ">Choose file</button>",
         "Open a file and read it in peace. It stays on your device, in plain text you own.",
-        "Files you open show up here, so you can pick up where you left off.",
+        "Files you open show up here.",
         r#"aria-label="Themes" title="Themes""#,
         r#"<span class="reader-subselect-label">Graph size</span>"#,
     ] {
