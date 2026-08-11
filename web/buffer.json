@@ -1,0 +1,102 @@
+{
+  "why": "The module's document buffer and the desktop's are the same EditableDocument, and the one thing that could quietly differ is the dispatch on top of it: which call an edit reaches, in what order, with which offsets. So every kind of edit is walked through one buffer here and the text after each is pinned. Both sides walk this file: the Rust test in src/tests/web_core.rs against the desktop's own buffer, and scripts/build-web.mjs against the built module. A step names its block by something the block's source contains and a splice by the text it lands after, so neither side carries a byte offset that a step above it would shift.",
+  "path": "notes.md",
+  "source": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [ ] wash the café ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n",
+  "steps": [
+    {
+      "what": "a code-view splice over a range counted in UTF-16 units, landing after an accent and before an emoji",
+      "kind": "splice",
+      "after": "wash the ",
+      "removed": 4,
+      "inserted": "tea",
+      "changed": true,
+      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [ ] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n"
+    },
+    {
+      "what": "one task marker flipped, one ASCII byte for another, so nothing after it shifts",
+      "kind": "task",
+      "index": 0,
+      "changed": true,
+      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n"
+    },
+    {
+      "what": "an inline edit over one block's whole source range",
+      "kind": "block",
+      "block": "The last paragraph.",
+      "text_in": "The last line.",
+      "changed": true,
+      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last line.\n"
+    },
+    {
+      "what": "one table cell written on its own, so the rest of the table keeps the spacing somebody gave it",
+      "kind": "cell",
+      "block": "| a | b |",
+      "row": 1,
+      "column": 0,
+      "columns": 2,
+      "cell_text": "ONE",
+      "text_in": "| a | b |\n| --- | --- |\n| ONE | two |",
+      "changed": true,
+      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| ONE | two |\n\nThe last line.\n"
+    },
+    {
+      "what": "two sibling blocks reordered, with the blank line between them left where it was",
+      "kind": "move",
+      "blocks": [
+        "| a | b |",
+        "The last line."
+      ],
+      "from": 1,
+      "to": 0,
+      "changed": true,
+      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "one frontmatter field set, by the parser's own splice",
+      "kind": "field",
+      "key": "title",
+      "set": "Renamed",
+      "changed": true,
+      "text": "---\ntitle: Renamed\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "every item of a list field at once, written the way the file already writes one",
+      "kind": "field",
+      "key": "tags",
+      "items": [
+        "three",
+        "four"
+      ],
+      "changed": true,
+      "text": "---\ntitle: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "a field's key renamed, keeping its value and its place in the block",
+      "kind": "field",
+      "key": "title",
+      "rename": "heading",
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "a field removed",
+      "kind": "field",
+      "key": "heading",
+      "remove": true,
+      "changed": true,
+      "text": "---\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "the last undoable edit taken back, which is the removal above and not the two edits that record nothing",
+      "kind": "undo",
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "an edit naming nothing this buffer knows moves nothing at all",
+      "kind": "unknown",
+      "changed": false,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    }
+  ]
+}

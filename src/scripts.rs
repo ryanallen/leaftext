@@ -132,6 +132,11 @@ pub fn initial_version_script() -> String {
     )
 }
 
+/// Whether this page is a document inside somebody else's product, as `window.__leafEmbedded`. The front end reads it before it draws: an embed shows the document and nothing around it, because the product owns the bar, the buttons and the save. The same pattern as the frameless-window flag and the published-site one, and for the same reason — the alternative is drawing the chrome and taking it down again.
+pub fn initial_embedded_script(embedded: bool) -> String {
+    format!("window.__leafEmbedded = {embedded};")
+}
+
 /// Which release asset this copy can install, as a file-name suffix, so the page can pick its own installer out of the release. Empty on a build with no installable artifact, which the page reads as notify-only.
 ///
 /// Handed in rather than looked up: on Windows the answer is which installer put this copy on the machine, and that is a registry read this library must never do — it compiles for a browser too.

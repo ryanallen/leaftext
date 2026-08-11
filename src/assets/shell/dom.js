@@ -12,6 +12,8 @@ if (window.__leafSite) {
   const pane = document.getElementById('libraryPane');
   if (pane) pane.style.setProperty('--library-crumbs-height', '0px');
 }
+// A document inside somebody else's product: the product draws its own frame, its own buttons and its own save, so the bar carrying the tabs and the theme switch, the library pane, the handle between them and the floating toolbar all go. Marked on the body rather than removed a node at a time, which is the opposite of the site block above and for a reason — that one takes down four nodes, this one takes down the bar and the pane, and 34 fragments hold references to those. A removed node is a null reference in a fragment that never asked about embedding; a class the stylesheet reads leaves every one of them finding what it looked for. It is display, not the hidden attribute: an element nothing renders is an element nothing can tab to either.
+if (window.__leafEmbedded) document.body.classList.add('is-embedded');
 const app = document.getElementById('app');
 const appBar = document.getElementById('appBar');
 const appTrailing = document.querySelector('.app-trailing');

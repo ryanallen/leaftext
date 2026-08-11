@@ -3340,6 +3340,20 @@ body:has(.document-minimap) {
   /* The rail is the scroll affordance while it's up, so the native bar is hidden and its gutter closes with it. */
   --reader-scrollbar: 0px;
 }
+/* A document inside somebody else's product. Everything around the document belongs to the product — its bar, its buttons, its save — so the app is only the reader, and the bar height every other rule offsets against goes to zero. */
+body.is-embedded {
+  --app-bar-height: 0px;
+}
+body.is-embedded .app-bar,
+body.is-embedded .library-pane,
+body.is-embedded .library-divider,
+body.is-embedded .reader-toolbar {
+  display: none;
+}
+/* Not a grid any more, so the rail track cannot hold a column open beside the page: the pane's width is written onto the root element by the front end, and an inline property there wins over any rule here. With the pane and the handle gone the reader is the only child left, so a block gives it the whole frame. */
+body.is-embedded .library-shell {
+  display: block;
+}
 .library-shell {
   display: grid;
   /* A trailing column and a bottom row hold the reader off the window frame; the rail spans both so only the page is inset. */

@@ -524,3 +524,128 @@ fn the_desktop_renders_every_fixture_exactly_as_it_did_before_the_boundary() {
         );
     }
 }
+
+/// The browser module holds a document buffer an edit splices into, and the arithmetic under it is this same [`EditableDocument`]. What could quietly differ is the dispatch on top: which call an edit reaches, with which offsets, in what order. So every kind of edit is walked through one buffer and the text after each is pinned in `web/buffer.json`.
+///
+/// This is the desktop's half — the same methods the binary's own editing arms call, in the same order. `scripts/build-web.mjs` walks the same file through the built module, so a dispatch that reached another call comes back with different text there rather than agreeing by luck.
+#[test]
+fn a_buffer_edit_lands_on_the_bytes_both_sides_have_to_agree_on() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!("../../web/buffer.json"))
+        .expect("the buffer fixture reads");
+    let source = fixture["source"].as_str().expect("a document to edit");
+    let path = PathBuf::from(fixture["path"].as_str().unwrap_or("notes.md"));
+    let steps = fixture["steps"].as_array().expect("steps to walk");
+
+    let mut edit = EditableDocument::new(path, SourceText::utf8(source.to_string()));
+    let mut wrong = Vec::new();
+
+    for (at, step) in steps.iter().enumerate() {
+        let what = step["what"].as_str().unwrap_or("");
+        let before = edit.text().to_string();
+        apply_pinned_buffer_edit(&mut edit, step);
+        let changed = edit.text() != before;
+
+        let expected_change = step["changed"].as_bool().unwrap_or(true);
+        if changed != expected_change {
+            wrong.push(format!(
+                "  step {at} ({what}) says changed: {expected_change} and the buffer {}",
+                if changed { "moved" } else { "did not move" }
+            ));
+        }
+        match step["text"].as_str() {
+            Some(expected) if expected == edit.text() => {}
+            _ => wrong.push(format!(
+                "  step {at} ({what}) is pinned as {} and the buffer now holds {}",
+                step["text"],
+                serde_json::Value::String(edit.text().to_string())
+            )),
+        }
+    }
+
+    assert!(
+        wrong.is_empty(),
+        "web/buffer.json no longer describes what a buffer edit does:\n{}",
+        wrong.join("\n")
+    );
+}
+
+/// One pinned step, applied the way the desktop's own editing arms apply it. A step names its block by something that block's source contains and a splice by the text it lands after, so nothing here carries an offset a step above it would have shifted.
+#[cfg(test)]
+fn apply_pinned_buffer_edit(edit: &mut EditableDocument, step: &serde_json::Value) {
+    let number = |name: &str| step[name].as_u64().unwrap_or_default() as usize;
+    let text = |name: &str| step[name].as_str().unwrap_or_default();
+    let range = |edit: &EditableDocument, marker: &str| {
+        edit.block_source_map()
+            .into_iter()
+            .find(|span| {
+                edit.text()
+                    .get(span.start..span.end)
+                    .is_some_and(|source| source.contains(marker))
+            })
+            .map(|span| (span.start, span.end))
+            .unwrap_or_else(|| panic!("no block in the buffer holds {marker:?}"))
+    };
+
+    match step["kind"].as_str() {
+        Some("splice") => {
+            let marker = text("after");
+            let at = edit
+                .text()
+                .find(marker)
+                .map(|byte| byte + marker.len())
+                .unwrap_or_else(|| panic!("the buffer does not hold {marker:?}"));
+            let start = edit.text()[..at].chars().map(char::len_utf16).sum();
+            edit.splice_utf16_without_undo(start, number("removed"), text("inserted"));
+        }
+        Some("task") => {
+            edit.toggle_task_without_undo(number("index"));
+        }
+        Some("block") => {
+            let (start, end) = range(edit, text("block"));
+            edit.replace_range(start, end, text("text_in"));
+        }
+        Some("cell") => {
+            let (start, end) = range(edit, text("block"));
+            if !edit.replace_table_cell(
+                start,
+                number("row"),
+                number("column"),
+                number("columns"),
+                text("cell_text"),
+                true,
+            ) {
+                edit.replace_range(start, end, text("text_in"));
+            }
+        }
+        Some("move") => {
+            let ranges: Vec<(usize, usize)> = step["blocks"]
+                .as_array()
+                .expect("blocks to move")
+                .iter()
+                .map(|marker| range(edit, marker.as_str().unwrap_or_default()))
+                .collect();
+            edit.move_blocks(&ranges, number("from"), number("to"));
+        }
+        Some("field") => {
+            let key = text("key");
+            let splice = if let Some(value) = step["set"].as_str() {
+                crate::store::set_field(edit.text(), key, value)
+            } else if let Some(items) = step["items"].as_array() {
+                let items: Vec<&str> = items.iter().filter_map(|item| item.as_str()).collect();
+                crate::store::set_list_field(edit.text(), key, &items)
+            } else if let Some(to) = step["rename"].as_str() {
+                crate::store::rename_field(edit.text(), key, to)
+            } else {
+                crate::store::remove_field(edit.text(), key)
+            };
+            if let Some(splice) = splice {
+                edit.replace_range(splice.range.start, splice.range.end, &splice.text);
+            }
+        }
+        Some("undo") => {
+            edit.undo();
+        }
+        // A step the buffer knows nothing about, which has to move nothing rather than doing something near it.
+        _ => {}
+    }
+}

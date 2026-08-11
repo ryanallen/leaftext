@@ -6,10 +6,11 @@ default:
 check:
     cargo check --all-targets
 
-# Type-check the browser package: `check` above never reaches it, because the workspace's one default member is the app. Both feature ends, since the shell's exports sit behind a feature the core does not have — so a library signature the browser crate no longer matches fails here instead of staying green. No wasm target and no network.
+# Type-check the browser package: `check` above never reaches it, because the workspace's one default member is the app. Every feature end, since the shell's exports sit behind a feature the core does not have and the colors are their own — so a library signature the browser crate no longer matches fails here instead of staying green. No wasm target and no network.
 check-web:
     cargo check -p leaftext-web
     cargo check -p leaftext-web --features shell
+    cargo check -p leaftext-web --features shell,highlight
 
 # Type-check and test the Windows installer: `check` and `test` above never reach it, because the workspace's one default member is the app. It builds with no app inside it here — the release script is what hands it one — and everything it does is a plan before it is an act, so all of that is provable with nothing installed.
 check-installer:

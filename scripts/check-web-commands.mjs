@@ -11,11 +11,13 @@
 //                          about it. The line is the point of this check — it is the only thing
 //                          here that acts on work nobody has written yet.
 //   a row with no arm      a stale row, which is how a list stops being read.
-//   a sent name with no arm  a command the front end sends that neither host has. The scan runs
+//   a sent name with no arm  a command the front end sends that no host has. The scan runs
 //                          in the safe direction only — a literal `send({ command: 'x' })` — where
 //                          a name found is provably a name sent.
 //
-// Each of the three is proved on made-up input before either real file is opened, so a matcher that quietly stops matching fails the build instead of passing everything.
+// **There is more than one browser host, and every one of them owes a line about every command.** A published static site and a document embedded in somebody else's product answer different halves of the app: a site cannot save and an embed can, an embed has no library and a site is one. So a command answered in one table while the other says nothing about it is a control that waits for ever in half the app, and a check that stopped at the first complete table would pass it.
+//
+// Each refusal is proved on made-up input before any real file is opened, so a matcher that quietly stops matching fails the build instead of passing everything.
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -42,13 +44,14 @@ function enumCommands(rust) {
   return [...body.matchAll(/^ {4}#\[serde\(rename = "([A-Za-z][A-Za-z0-9]*)"\)\]/gm)].map((m) => m[1]);
 }
 
-/** The host's own table: the command, which of the three answers it carries, and the reason or the ticket. */
-function hostRows(js) {
-  const body = block(js, 'export const COMMANDS = {', /^\};/m, 'web/preview/host.js');
+/** One host's own table: the command, which of the three answers it carries, and the reason or the ticket. */
+function hostRows(js, where) {
+  const body = block(js, 'export const COMMANDS = {', /^\};/m, where);
   return [...body.matchAll(/^ {2}([A-Za-z][A-Za-z0-9]*): \[(ANSWERED|REFUSED|LATER)(?:, '([^']*)')?\]/gm)].map((m) => ({
     command: m[1],
     kind: m[2],
     why: m[3] || '',
+    where,
   }));
 }
 
@@ -62,30 +65,35 @@ function sentCommands(sources) {
   return [...found];
 }
 
-/** What is wrong with a given enum, table and set of sent names. Pure, so the three refusals can be proved on input nobody has to keep in step. */
-function problems(commands, rows, sent) {
+/** What is wrong with a given enum, set of host tables and set of sent names. Pure, so the refusals can be proved on input nobody has to keep in step.
+ *
+ * `hosts` is every browser host, each `{ where, rows }`. Every one of them owes a line about every command: a site and an embed answer different halves of the app, and a command answered in one while the other says nothing about it is exactly the gap this check exists to close.
+ */
+function problems(commands, hosts, sent) {
   const found = [];
-  const listed = new Map(rows.map((row) => [row.command, row]));
 
-  for (const command of commands) {
-    if (!listed.has(command)) {
-      found.push(`${command} has no line in web/preview/host.js — say whether the browser answers it, will not (and why), or not yet (and which ticket owns it)`);
+  for (const host of hosts) {
+    const listed = new Map(host.rows.map((row) => [row.command, row]));
+    for (const command of commands) {
+      if (!listed.has(command)) {
+        found.push(`${command} has no line in ${host.where} — say whether that host answers it, will not (and why), or not yet (and which ticket owns it)`);
+      }
     }
-  }
-  for (const row of rows) {
-    if (!commands.includes(row.command)) {
-      found.push(`web/preview/host.js has a line for ${row.command}, which IpcCommand has no arm for — a stale row is how a list stops being read`);
-    }
-    if (row.kind !== 'ANSWERED' && !row.why) {
-      found.push(`${row.command} is ${row.kind} with nothing after it — a refusal owes its reason, and a not-yet owes its ticket`);
-    }
-    if (row.kind === 'ANSWERED' && row.why) {
-      found.push(`${row.command} is ANSWERED and carries a reason; an arm answers for itself`);
+    for (const row of host.rows) {
+      if (!commands.includes(row.command)) {
+        found.push(`${host.where} has a line for ${row.command}, which IpcCommand has no arm for — a stale row is how a list stops being read`);
+      }
+      if (row.kind !== 'ANSWERED' && !row.why) {
+        found.push(`${row.command} is ${row.kind} in ${host.where} with nothing after it — a refusal owes its reason, and a not-yet owes its ticket`);
+      }
+      if (row.kind === 'ANSWERED' && row.why) {
+        found.push(`${row.command} is ANSWERED in ${host.where} and carries a reason; an arm answers for itself`);
+      }
     }
   }
   for (const command of sent) {
     if (!commands.includes(command)) {
-      found.push(`the front end sends ${command}, which IpcCommand has no arm for — nothing answers it on either host`);
+      found.push(`the front end sends ${command}, which IpcCommand has no arm for — nothing answers it on any host`);
     }
   }
   return found;
@@ -116,30 +124,43 @@ function selfTest() {
 
   const commands = enumCommands(rust);
   if (commands.join(',') !== 'alpha,beta') broken.push(`the enum reader found ${JSON.stringify(commands)} instead of the two variants — a field rename is not a command`);
-  const rows = hostRows(table);
+  const rows = hostRows(table, 'a made-up host');
   if (rows.length !== 2 || rows[1].why !== 'no disk here') broken.push(`the table reader lost a row or its reason: ${JSON.stringify(rows)}`);
   if (sentCommands(["send({ command: 'alpha', x: 1 });", "postMessage(JSON.stringify({ command: 'beta' }))"]).sort().join(',') !== 'alpha,beta') {
     broken.push('the front-end scan stopped finding a literal command');
   }
+  const one = (rows) => [{ where: 'a made-up host', rows }];
+  const two = (first, second) => [
+    { where: 'the first made-up host', rows: first },
+    { where: 'the second made-up host', rows: second },
+  ];
 
-  const clean = problems(commands, rows, ['alpha']);
+  const clean = problems(commands, one(rows), ['alpha']);
   if (clean.length) broken.push(`a pair that agrees was called wrong: ${clean.join('; ')}`);
 
   // 1. an arm with no row.
-  if (!problems(commands, rows.slice(0, 1), []).some((one) => one.startsWith('beta has no line'))) {
+  if (!problems(commands, one(rows.slice(0, 1)), []).some((one) => one.startsWith('beta has no line'))) {
     broken.push('a command with no line in the host passed');
   }
   // 2. a row naming no arm.
-  if (!problems(commands, [...rows, { command: 'gamma', kind: 'ANSWERED', why: '' }], []).some((one) => one.includes('stale row'))) {
+  if (!problems(commands, one([...rows, { command: 'gamma', kind: 'ANSWERED', why: '' }]), []).some((one) => one.includes('stale row'))) {
     broken.push('a stale row naming no arm passed');
   }
   // 3. a sent command the enum has no arm for.
-  if (!problems(commands, rows, ['gamma']).some((one) => one.includes('sends gamma'))) {
+  if (!problems(commands, one(rows), ['gamma']).some((one) => one.includes('sends gamma'))) {
     broken.push('a sent command nothing answers passed');
   }
   // A refusal with nothing after it is a line that says nothing.
-  if (!problems(commands, [rows[0], { command: 'beta', kind: 'REFUSED', why: '' }], []).some((one) => one.includes('owes its reason'))) {
+  if (!problems(commands, one([rows[0], { command: 'beta', kind: 'REFUSED', why: '' }]), []).some((one) => one.includes('owes its reason'))) {
     broken.push('a refusal with no reason passed');
+  }
+  // 4. one host complete and the other missing a line. The reason this check reads more than one table: a command answered by a site while an embed says nothing about it is a control that waits for ever in half the app, and a check that stopped at the first complete table would pass it.
+  const gap = problems(commands, two(rows, rows.slice(0, 1)), []);
+  if (!gap.some((one) => one.startsWith('beta has no line in the second made-up host'))) {
+    broken.push('a command with a line in one host and none in the other passed');
+  }
+  if (gap.some((one) => one.includes('the first made-up host'))) {
+    broken.push('the host that was complete was reported anyway');
   }
   return broken;
 }
@@ -160,7 +181,9 @@ if (commands.length < FEWEST) {
   process.exit(1);
 }
 
-const rows = hostRows(readFileSync(join(root, 'web/preview/host.js'), 'utf8'));
+// Every browser host, because there is more than one: a published static site, and a document embedded in somebody else's product. They answer different halves of the app, and each owes a line about every command.
+const HOSTS = ['web/preview/host.js', 'web/embed/host.js'];
+const hosts = HOSTS.map((where) => ({ where, rows: hostRows(readFileSync(join(root, where), 'utf8'), where) }));
 const fragments = readdirSync(join(root, 'src/assets/shell'))
   .filter((name) => name.endsWith('.js'))
   .map((name) => readFileSync(join(root, 'src/assets/shell', name), 'utf8'));
@@ -168,17 +191,22 @@ const fragments = readdirSync(join(root, 'src/assets/shell'))
 fragments.push(readFileSync(join(root, 'src/assets/theme-bootstrap.js'), 'utf8'));
 const sent = sentCommands(fragments);
 
-const found = problems(commands, rows, sent);
+const found = problems(commands, hosts, sent);
 if (found.length) {
-  console.error(`${found.length} command(s) the browser half cannot account for:`);
+  console.error(`${found.length} command(s) a browser host cannot account for:`);
   for (const one of found) console.error(`  ${one}`);
-  console.error('The table is in web/preview/host.js, beside the arms. One front end, two hosts: a command with no browser line does not ship.');
+  console.error(`Each table sits beside its own arms, in ${HOSTS.join(' and ')}. One front end, one table per host: a command with no browser line does not ship.`);
   process.exit(1);
 }
 
-const answered = rows.filter((row) => row.kind === 'ANSWERED').length;
-const later = rows.filter((row) => row.kind === 'LATER').length;
+const counted = hosts
+  .map((host) => {
+    const answered = host.rows.filter((row) => row.kind === 'ANSWERED').length;
+    const later = host.rows.filter((row) => row.kind === 'LATER').length;
+    return `${host.where} answers ${answered}, refuses ${host.rows.length - answered - later} on purpose and owes ${later}`;
+  })
+  .join('; ');
 console.log(
-  `web commands: ${commands.length} arms, every one with a line — ${answered} answered, ` +
-    `${rows.length - answered - later} refused on purpose, ${later} not yet; ${sent.length} sent by name, all of them arms`
+  `web commands: ${commands.length} arms, every one with a line in all ${hosts.length} hosts — ${counted}; ` +
+    `${sent.length} sent by name, all of them arms`
 );
