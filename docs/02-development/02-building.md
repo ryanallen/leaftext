@@ -121,11 +121,14 @@ just ask '{"ask":"state","reader":true}'
 just ask '{"ask":"idle"}'
 just ask '{"ask":"log","lines":40}'
 just ask '{"ask":"eval","script":"document.title"}'
+just ask '{"ask":"quit"}'
 ```
 
 `state` answers out of the app's own workspace — the tabs, their paths, which have unsaved edits, the active vault. With `reader` it asks the page as well, for the things only the page holds: where the document is scrolled to and the block it is anchored to, which panels are up, the selected text, and whether a render is still in flight. That half is opt-in because the plain ask has to keep working on an app that is stuck, and a page too stuck to reply would otherwise take the tab list down with it — when it cannot answer, `reader` carries the reason and everything else still comes back.
 
 `idle` waits for that render to finish and then answers the same reader fields, so a driven pass reads the result instead of sleeping and hoping. It gives up inside the two seconds the pipe allows and says which of the two it hit.
+
+`quit` closes the copy that answered, out through the same path the close button takes — the window's size, place and maximized state are saved first. This is how a copy launched to prove a change should be ended: killing the process is the one way out that skips that save, and the process name is shared with any other copy on the machine, where an ask reaches exactly the copy whose pipe it went down. The reply says it is closing and arrives before the app goes: the loop answers, and only once the asker has taken that answer is the app told to close, because a reply still in the pipe when the process ends is thrown away. An app too stuck to answer refuses it like any other ask, which is the one case a kill is still for.
 
 `just mcp` runs the same program as an MCP server on stdin/stdout, so an AI gets one tool per ask. `.mcp.json` at the repo root declares it and `.agents/settings.json` approves it, so a session in this folder has the tools without being told to shell out. It is **not a shipped artifact**: one MSI and one DMG is the rule, and every extra file in a release is one somebody has to ask about. Neither release workflow builds it, and `just verify` cannot run it because it needs the app running — `check-mcp` covers what can be checked offline, which is that the tools, the registration and the app's asks still agree.
 

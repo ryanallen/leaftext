@@ -326,7 +326,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    // Answers questions about this running app on a local channel. Nothing it does can change the app; see src/pipe.rs.
+    // Answers questions about this running app on a local channel, and takes two orders — run a line of JavaScript in the page, and close. See src/pipe.rs.
     pipe::serve(proxy.clone());
 
     let handler = ipc_handler(proxy.clone());

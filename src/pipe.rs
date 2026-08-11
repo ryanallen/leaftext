@@ -56,21 +56,47 @@ pub(crate) enum Ask {
     /// The running build.
     #[serde(rename = "version")]
     Version,
+    /// Close the app, through its own close rather than beside it: the window's size, place and maximized state are saved, the page is dropped, and the loop stops. A kill from the shell is the one exit that skips all of that.
+    ///
+    /// The loop only answers here. Closing is a second event, sent by the pipe thread once the asker has taken the reply — see [`AfterReply`].
+    #[serde(rename = "quit")]
+    Quit,
 }
 
-fn answered(value: Value) -> String {
-    json!({ "ok": true, "answer": value }).to_string()
+/// One reply, and whatever has to happen once its bytes are out of the pipe.
+pub(crate) struct Reply {
+    pub(crate) text: String,
+    pub(crate) after: Option<AfterReply>,
+}
+
+/// What the transport does once the asker has taken the reply. A name rather than a closure: the transport must not learn how to reach the event loop, and `serve` is the only place that knows what closing means.
+///
+/// It exists because stopping the loop ends the process and every thread with it, so a reply still in the pipe at that moment is thrown away — the same lost answer the Windows half waits for the asker to avoid.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum AfterReply {
+    /// Close the app.
+    Close,
+}
+
+fn answered(value: Value) -> Reply {
+    Reply {
+        text: json!({ "ok": true, "answer": value }).to_string(),
+        after: None,
+    }
 }
 
 /// An ask that is not in the enum comes back saying so. Deliberately unlike the page's IPC, which drops what it cannot parse: a page typo is a bug in our own code, while a typo here is a person or a tool waiting for an answer.
-fn refused(reason: impl std::fmt::Display) -> String {
-    json!({ "ok": false, "error": reason.to_string() }).to_string()
+fn refused(reason: impl std::fmt::Display) -> Reply {
+    Reply {
+        text: json!({ "ok": false, "error": reason.to_string() }).to_string(),
+        after: None,
+    }
 }
 
 /// One ask in, one reply out. The transport sits above this and the app below it, so the vocabulary can be tested without either.
 ///
 /// `from_window` is asked only for what the window alone knows. The journal and the version are answered right here, because a hung app is exactly when they are wanted and going through the window would lose them.
-pub(crate) fn answer<F>(request: &str, from_window: F) -> String
+pub(crate) fn answer<F>(request: &str, from_window: F) -> Reply
 where
     F: Fn(Ask) -> Option<Result<Value, String>>,
 {
@@ -82,7 +108,7 @@ where
                  {{\"ask\":\"log\"}}, {{\"ask\":\"log\",\"lines\":50}}, \
                  {{\"ask\":\"state\"}}, {{\"ask\":\"state\",\"reader\":true}}, \
                  {{\"ask\":\"eval\",\"script\":\"1+1\"}}, {{\"ask\":\"idle\"}}, \
-                 {{\"ask\":\"version\"}}"
+                 {{\"ask\":\"version\"}}, {{\"ask\":\"quit\"}}"
             ))
         }
     };
@@ -107,6 +133,15 @@ where
             None => refused(NO_REPLY),
         },
         Ask::Idle => idle(from_window),
+        // Answered and no more: the reply is still in the pipe, and stopping the loop now would throw it away. The transport closes the app once the asker has taken it.
+        Ask::Quit => match from_window(Ask::Quit) {
+            Some(Ok(value)) => Reply {
+                after: Some(AfterReply::Close),
+                ..answered(value)
+            },
+            Some(Err(reason)) => refused(reason),
+            None => refused(NO_REPLY),
+        },
         window_ask => match from_window(window_ask) {
             Some(Ok(value)) => answered(value),
             Some(Err(reason)) => refused(reason),
@@ -125,7 +160,7 @@ fn reader_half(seen: Option<Result<Value, String>>) -> Value {
 }
 
 /// Ask the page whether it is still rendering until it says it is not, or until the budget runs out. Answers which of the two it hit, so a driven pass never reads a timeout as a settled page.
-fn idle<F>(from_window: F) -> String
+fn idle<F>(from_window: F) -> Reply
 where
     F: Fn(Ask) -> Option<Result<Value, String>>,
 {
@@ -169,6 +204,8 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
         // The reader flag is answered above this, by a second ask through the page: the loop only ever builds the workspace half.
         Ask::State { .. } => UserEvent::PipeState { reply },
         Ask::Eval { script } => UserEvent::PipeEval { script, reply },
+        // Whether the loop heard, and nothing else: the closing itself is [`UserEvent::PipeCloseNow`], sent after the reply is out.
+        Ask::Quit => UserEvent::PipeQuit { reply },
         // Answered before this is reached.
         _ => return None,
     };
@@ -179,9 +216,17 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
 /// Start answering. Silent on failure: the app opens whether or not anything can ask it questions.
 pub(crate) fn serve(proxy: EventLoopProxy<UserEvent>) {
     let Some(address) = address() else { return };
-    listen(address, move |request| {
-        answer(request, |ask| from_window(&proxy, ask))
-    });
+    let closer = proxy.clone();
+    listen(
+        address,
+        move |request| answer(request, |ask| from_window(&proxy, ask)),
+        // The only place that knows what an after-reply action means. Sent from the pipe thread, which is the one thing that can see the answer was delivered.
+        move |after| match after {
+            AfterReply::Close => {
+                let _ = closer.send_event(UserEvent::PipeCloseNow);
+            }
+        },
+    );
 }
 
 #[cfg(windows)]
@@ -273,9 +318,10 @@ mod transport {
         }
     }
 
-    pub(crate) fn listen<F>(address: String, reply: F)
+    pub(crate) fn listen<F, A>(address: String, reply: F, then: A)
     where
-        F: Fn(&str) -> String + Send + 'static,
+        F: Fn(&str) -> super::Reply + Send + 'static,
+        A: Fn(super::AfterReply) + Send + 'static,
     {
         std::thread::Builder::new()
             .name("leaf-ask-pipe".into())
@@ -301,15 +347,23 @@ mod transport {
 
                     let connected = unsafe { ConnectNamedPipe(pipe, ptr::null_mut()) } != 0
                         || unsafe { GetLastError() } == ERROR_PIPE_CONNECTED;
+                    let mut after = None;
                     if connected {
                         let request = read_message(pipe);
-                        write_message(pipe, &reply(&request));
+                        let answer = reply(&request);
+                        write_message(pipe, &answer.text);
                         // Wait for the asker to take the reply: closing throws away whatever is still in the pipe.
                         unsafe { FlushFileBuffers(pipe) };
+                        after = answer.after;
                     }
 
                     // Closed, not disconnected: a disconnect tells the asker the pipe was taken away, which node reports as a failure after a perfectly good reply. Each turn makes its own pipe, so there is nothing to disconnect for.
                     unsafe { CloseHandle(pipe) };
+
+                    // Only now, with the bytes taken and the handle closed: nothing this does can take the answer back.
+                    if let Some(after) = after {
+                        then(after);
+                    }
                 }
             })
             .ok();
@@ -397,9 +451,10 @@ mod transport {
     use std::io::{Read, Write};
     use std::os::unix::net::{UnixListener, UnixStream};
 
-    pub(crate) fn listen<F>(address: String, reply: F)
+    pub(crate) fn listen<F, A>(address: String, reply: F, then: A)
     where
-        F: Fn(&str) -> String + Send + 'static,
+        F: Fn(&str) -> super::Reply + Send + 'static,
+        A: Fn(super::AfterReply) + Send + 'static,
     {
         // A socket file left by a crash would refuse the bind, and it names nothing but this app's own pipe.
         let _ = std::fs::remove_file(&address);
@@ -412,9 +467,18 @@ mod transport {
                 for stream in listener.incoming().flatten() {
                     let mut stream = stream;
                     let mut request = String::new();
+                    let mut after = None;
                     // The asker closes its writing half, which ends the read.
                     if stream.read_to_string(&mut request).is_ok() {
-                        let _ = stream.write_all(reply(&request).as_bytes());
+                        let answer = reply(&request);
+                        let _ = stream.write_all(answer.text.as_bytes());
+                        after = answer.after;
+                    }
+
+                    // The asker reads until the stream ends, so the reply is only theirs once this is dropped — and only then is there anything safe to do about it.
+                    drop(stream);
+                    if let Some(after) = after {
+                        then(after);
                     }
                 }
             })

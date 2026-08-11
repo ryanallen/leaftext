@@ -29,6 +29,39 @@ for (const ask of wrapped) {
   if (!asks.includes(ask)) problems.push(`a tool offers "${ask}", which src/pipe.rs does not answer`);
 }
 
+// ---- the refusal names every ask ---------------------------------------------
+
+// What a stranger who mistypes an ask is shown is a hand-written list, and nothing but this holds it to the enum beside it. A list one short is an ask the app answers and nobody is told about.
+function listedProblems(named, refusalText) {
+  const listed = [...refusalText.matchAll(/ask\\":\\"([a-z]+)/g)].map((m) => m[1]);
+  if (!listed.length) return ['the refusal in src/pipe.rs names no ask at all, so this check is out of date too'];
+  const found = [];
+  for (const ask of named) {
+    if (!listed.includes(ask)) found.push(`src/pipe.rs answers "${ask}" and the refusal does not offer it`);
+  }
+  for (const ask of listed) {
+    if (!named.includes(ask)) found.push(`the refusal offers "${ask}", which src/pipe.rs does not answer`);
+  }
+  return found;
+}
+
+// A stand-in enum and refusal per way the two can disagree, because the live pair is right and a check that only ever sees a right answer proves nothing.
+const LISTED_CASES = [
+  ['a refusal one ask short', ['log', 'quit'], '{{\\"ask\\":\\"log\\"}}', true],
+  ['a refusal offering an ask nobody answers', ['log'], '{{\\"ask\\":\\"log\\"}}, {{\\"ask\\":\\"sudo\\"}}', true],
+  ['a refusal naming nothing', ['log'], 'it answers nothing at all', true],
+  ['the pair that agrees', ['log', 'quit'], '{{\\"ask\\":\\"log\\"}}, {{\\"ask\\":\\"quit\\"}}', false],
+];
+for (const [name, named, refusalText, shouldFail] of LISTED_CASES) {
+  const found = listedProblems(named, refusalText);
+  if (shouldFail && !found.length) problems.push(`this check misses ${name}`);
+  if (!shouldFail && found.length) problems.push(`this check fails ${name}: ${found[0]}`);
+}
+
+const refusal = pipe.match(/not an ask this app knows[\s\S]*?"\s*\)\)/);
+if (!refusal) throw new Error('could not find the refusal for an unknown ask in src/pipe.rs');
+problems.push(...listedProblems(asks, refusal[0]));
+
 // ---- both ends agree where the pipe is --------------------------------------
 
 const PIPE_NAME = 'leaftext-journal-';

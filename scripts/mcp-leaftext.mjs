@@ -101,6 +101,13 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
     ask: () => ({ ask: 'version' }),
   },
+  {
+    name: 'leaftext_quit',
+    description:
+      "Close the running app the way its close button does, saving the window's size and place first. Answers that it is closing before it goes. Use this instead of killing the process — a kill is the one way out that skips the save, and the process name is shared with any other copy on the machine.",
+    inputSchema: { type: 'object', properties: {} },
+    ask: () => ({ ask: 'quit' }),
+  },
 ];
 
 async function callTool(name, args) {

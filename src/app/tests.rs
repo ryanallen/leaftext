@@ -1350,12 +1350,16 @@ fn test_pipe_address(name: &str) -> String {
 fn the_pipe_answers_and_refuses_out_loud() {
     // The transport itself: a real listener, a real client, and a round trip through both. Everything above it is the same code the app serves with.
     let address = test_pipe_address("round-trip");
-    pipe::listen(address.clone(), |request| {
-        pipe::answer(request, |ask| match ask {
-            pipe::Ask::Eval { script } => Some(Ok(serde_json::json!(format!("ran {script}")))),
-            _ => Some(Ok(serde_json::json!({ "tabs": [] }))),
-        })
-    });
+    pipe::listen(
+        address.clone(),
+        |request| {
+            pipe::answer(request, |ask| match ask {
+                pipe::Ask::Eval { script } => Some(Ok(serde_json::json!(format!("ran {script}")))),
+                _ => Some(Ok(serde_json::json!({ "tabs": [] }))),
+            })
+        },
+        |_| panic!("nothing here asks for anything after its reply"),
+    );
 
     let reply = pipe::ask(&address, r#"{"ask":"version"}"#).expect("the pipe answered");
     let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
@@ -1385,6 +1389,83 @@ fn the_pipe_answers_and_refuses_out_loud() {
     let reply = pipe::ask(&address, r#"{"ask":"eval","script":"1+1"}"#).expect("the pipe answered");
     let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
     assert_eq!(reply["answer"], "ran 1+1");
+}
+
+#[test]
+fn the_quit_ask_answers_that_it_is_closing_and_refuses_when_the_window_is_silent() {
+    // The trap this ask is built around: a variant with no arm of its own falls through to the mapping that knows only `state` and `eval`, so it would compile, ship, close nothing, and report the failure the pipe reserves for a wedged app.
+    let asked = std::sync::atomic::AtomicUsize::new(0);
+    let reply = pipe::answer(r#"{"ask":"quit"}"#, |ask| {
+        assert!(matches!(ask, pipe::Ask::Quit), "the loop is asked to close");
+        asked.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Some(Ok(serde_json::json!({ "closing": true })))
+    });
+    assert_eq!(asked.load(std::sync::atomic::Ordering::SeqCst), 1);
+    assert_eq!(
+        reply.after,
+        Some(pipe::AfterReply::Close),
+        "the closing waits on the reply being out, and this is what carries it"
+    );
+    let text: serde_json::Value = serde_json::from_str(&reply.text).expect("a JSON reply");
+    assert_eq!(text["ok"], true);
+    assert_eq!(text["answer"]["closing"], true);
+
+    // A loop that never answers is refused in the same words every other ask uses — and nothing is told to close, because nothing knows whether the app is even alive.
+    let reply = pipe::answer(r#"{"ask":"quit"}"#, |_| None);
+    assert_eq!(
+        reply.after, None,
+        "a window that cannot answer must not be closed anyway"
+    );
+    let text: serde_json::Value = serde_json::from_str(&reply.text).expect("a JSON reply");
+    assert_eq!(text["ok"], false);
+    assert!(text["error"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("did not answer in time"));
+}
+
+#[test]
+fn the_app_is_told_to_close_only_after_the_reply_has_been_taken() {
+    // Replying and then closing inside one arm is the bug this ordering exists to refuse: stopping the loop ends every thread, and a reply still in the pipe is thrown away — which every client reads as the question failing. So the after-reply action here blocks until this test lets it go, and the asker must have its whole answer while it is still blocked. An ordering that closed first would leave the asker with nothing.
+    let address = test_pipe_address("quit-order");
+    let (running, runs) = std::sync::mpsc::channel::<()>();
+    let (gate, held) = std::sync::mpsc::channel::<()>();
+    let held = std::sync::Mutex::new(held);
+    pipe::listen(
+        address.clone(),
+        |request| {
+            pipe::answer(request, |_| {
+                Some(Ok(serde_json::json!({ "closing": true })))
+            })
+        },
+        move |after| {
+            assert_eq!(after, pipe::AfterReply::Close);
+            let _ = running.send(());
+            let _ = held
+                .lock()
+                .expect("the gate")
+                .recv_timeout(std::time::Duration::from_secs(5));
+        },
+    );
+
+    // Asked from a thread of its own: were the ordering wrong, the reply would never be written and this would wait for ever rather than fail.
+    let asking = address.clone();
+    let (answered, answers) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = answered.send(pipe::ask(&asking, r#"{"ask":"quit"}"#));
+    });
+    let reply = answers
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .expect("the reply must arrive while the closing is still held")
+        .expect("the pipe answered");
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(reply["ok"], true);
+    assert_eq!(reply["answer"]["closing"], true);
+
+    // And the closing did start — an ask that answered and closed nothing is the other half of the failure.
+    runs.recv_timeout(std::time::Duration::from_secs(5))
+        .expect("the app is told to close once the asker has the answer");
+    let _ = gate.send(());
 }
 
 #[test]
@@ -1426,7 +1507,7 @@ fn a_page_that_cannot_answer_costs_the_reader_half_and_nothing_else() {
         }
         _ => None,
     });
-    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    let reply: serde_json::Value = serde_json::from_str(&reply.text).expect("a JSON reply");
     assert_eq!(
         reply["ok"], true,
         "a silent page must not refuse the answer"
@@ -1446,7 +1527,7 @@ fn a_page_that_cannot_answer_costs_the_reader_half_and_nothing_else() {
         pipe::Ask::State { .. } => Some(Ok(serde_json::json!({ "tabs": [] }))),
         _ => Some(Ok(serde_json::json!({ "scrollTop": 4000 }))),
     });
-    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    let reply: serde_json::Value = serde_json::from_str(&reply.text).expect("a JSON reply");
     assert_eq!(reply["answer"]["reader"]["scrollTop"], 4000);
 
     // Without the flag the page is never asked, which is what makes the plain ask safe on an app that is hanging.
@@ -1457,11 +1538,12 @@ fn a_page_that_cannot_answer_costs_the_reader_half_and_nothing_else() {
         }
         Some(Ok(serde_json::json!({ "tabs": [] })))
     });
-    assert!(reply.contains("\"ok\":true"), "{reply}");
+    assert!(reply.text.contains("\"ok\":true"), "{}", reply.text);
     assert_eq!(asked.load(std::sync::atomic::Ordering::SeqCst), 0);
     assert!(
-        !reply.contains("reader"),
-        "the plain ask answers what it always answered: {reply}"
+        !reply.text.contains("reader"),
+        "the plain ask answers what it always answered: {}",
+        reply.text
     );
 }
 
@@ -1473,7 +1555,7 @@ fn the_idle_ask_says_it_gave_up_rather_than_waiting_for_ever() {
             serde_json::json!({ "renderInFlight": false, "scrollTop": 0 }),
         ))
     });
-    let settled: serde_json::Value = serde_json::from_str(&settled).expect("a JSON reply");
+    let settled: serde_json::Value = serde_json::from_str(&settled.text).expect("a JSON reply");
     assert_eq!(settled["answer"]["idle"], true);
     assert_eq!(settled["answer"]["reader"]["scrollTop"], 0);
 
@@ -1482,7 +1564,7 @@ fn the_idle_ask_says_it_gave_up_rather_than_waiting_for_ever() {
         Some(Ok(serde_json::json!({ "renderInFlight": true })))
     });
     let waited = started.elapsed();
-    let busy: serde_json::Value = serde_json::from_str(&busy).expect("a JSON reply");
+    let busy: serde_json::Value = serde_json::from_str(&busy.text).expect("a JSON reply");
     assert_eq!(busy["ok"], true);
     assert_eq!(busy["answer"]["idle"], false);
     assert!(
@@ -1505,7 +1587,7 @@ fn a_window_that_cannot_run_it_says_so_rather_than_timing_out() {
     let reply = pipe::answer(r#"{"ask":"eval","script":"1+1"}"#, |_| {
         Some(Err("there is no window to run it in".to_string()))
     });
-    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    let reply: serde_json::Value = serde_json::from_str(&reply.text).expect("a JSON reply");
     assert_eq!(reply["ok"], false);
     assert_eq!(reply["error"], "there is no window to run it in");
 }
@@ -1522,7 +1604,7 @@ fn a_blocked_event_loop_answers_no_reply_rather_than_hanging() {
 
     // And that is the refusal the asker gets.
     let text = pipe::answer(r#"{"ask":"eval","script":"while(true){}"}"#, |_| None);
-    let text: serde_json::Value = serde_json::from_str(&text).expect("a JSON reply");
+    let text: serde_json::Value = serde_json::from_str(&text.text).expect("a JSON reply");
     assert_eq!(text["ok"], false);
     assert!(text["error"]
         .as_str()
@@ -1536,9 +1618,11 @@ fn an_asker_is_told_the_pipe_ended_not_that_it_was_taken_away() {
     // The bug that made every question fail while the tests stayed green: `DisconnectNamedPipe` hands the asker "the pipe is being closed" (232) *after* a perfectly good reply, and node reports that as a failure. Closing the handle instead gives "the pipe ended" (109), which every client reads as the end of the answer. The round trip alone missed it because it stops reading once it has the reply.
     const ERROR_BROKEN_PIPE: u32 = 109;
     let address = test_pipe_address("ending");
-    pipe::listen(address.clone(), |request| {
-        pipe::answer(request, |_| Some(Ok(serde_json::json!(null))))
-    });
+    pipe::listen(
+        address.clone(),
+        |request| pipe::answer(request, |_| Some(Ok(serde_json::json!(null)))),
+        |_| panic!("nothing here asks for anything after its reply"),
+    );
 
     let (reply, ending) =
         pipe::ask_then_ending(&address, r#"{"ask":"version"}"#).expect("the pipe answered");
@@ -1588,7 +1672,7 @@ fn the_journal_hands_back_the_last_lines_asked_for() {
 fn a_window_that_never_answers_is_reported_not_waited_on() {
     // Asking a hung app what it is doing is the point of the pipe, so the one thing it must never do is hang with it.
     let reply = pipe::answer(r#"{"ask":"state"}"#, |_| None);
-    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    let reply: serde_json::Value = serde_json::from_str(&reply.text).expect("a JSON reply");
     assert_eq!(reply["ok"], false);
     assert!(reply["error"]
         .as_str()

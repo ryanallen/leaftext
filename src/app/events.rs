@@ -73,6 +73,10 @@ pub(crate) enum UserEvent {
     PipeState { reply: PipeReply },
     /// Somebody on the ask pipe wants a line of JavaScript run in the page. `evaluate_script_with_callback` must be called from this thread and answers later, so the reply channel is filled by the callback rather than by the arm that starts it.
     PipeEval { script: String, reply: PipeReply },
+    /// Somebody on the ask pipe wants the app closed. This one only answers that the loop heard: closing here would end the process with the reply still in the pipe, where it is thrown away.
+    PipeQuit { reply: PipeReply },
+    /// Close now — the pipe thread saying the asker has taken its answer. The second half of `PipeQuit`, and the only thing that closes the app on its behalf.
+    PipeCloseNow,
 }
 
 /// Where an ask-pipe answer goes back to. `Err` is a refusal with a reason, so a window that cannot answer says why instead of running the asker's clock out.

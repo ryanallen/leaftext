@@ -376,6 +376,18 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 // try_send, not send: the asker may already have given up and gone, and the window thread must not block on a dead channel.
                 let _ = reply.try_send(Ok(pipe_state(&reader.workspace, &vault_state)));
             }
+            Event::UserEvent(UserEvent::PipeQuit { reply }) => {
+                // Answer only. The asker still has nothing in hand, and a loop that stopped here would take the reply with it.
+                let _ = reply.try_send(Ok(serde_json::json!({ "closing": true })));
+            }
+            // The pipe thread, once that reply has been taken. Out the same door as the close button, so the geometry is saved.
+            Event::UserEvent(UserEvent::PipeCloseNow) => shut_down(
+                &mut reader,
+                &mut settings,
+                settings_path.as_ref(),
+                last_windowed_size,
+                control_flow,
+            ),
             Event::UserEvent(UserEvent::PipeEval { script, reply }) => {
                 // The one script the app runs for an answer rather than an effect. It arrives later and on whatever thread the web view calls back on, so the reply channel travels into the callback.
                 match reader.page() {
