@@ -909,25 +909,151 @@ fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
         css,
         ".tab-modified:hover .tab-dirty-dot,\n.tab-modified:focus-within .tab-dirty-dot {\n  display: none;\n}",
     );
-    assert_contains(
-        css,
-        ".tab-modified:not(:hover):not(:focus-within) .tab-close {\n  opacity: 0;\n}",
-    );
-    // A rule keyed on the active tab's hover resizes the tab, and covers only that one tab.
+    // Hiding the cross at rest is every tab's rule now, held by `the_close_cross_waits_until_you_reach_the_tab`. A rule keyed on the active tab's hover resizes the tab, and covers only that one tab.
     assert!(
         !css.contains(".tab-active:hover .tab-dirty-dot"),
         "the hover rule that resized the tab is gone"
     );
 
-    // And the tab reserves that corner, since an absolute button buys no room.
+    // Swapping one for the other costs no layout either way, both being out of flow — and the tab's inset is even, since neither corner is bought from the row.
     let tab = css
         .split("\n.tab {")
         .nth(1)
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines a tab");
     assert!(
-        tab.contains("padding: 0 var(--lt-space-12) 0 var(--lt-space-4);"),
-        "a short name would otherwise end under the close button: {tab}"
+        tab.contains("padding: 0 var(--lt-space-4);"),
+        "the tab reserves nothing for either corner button: {tab}"
+    );
+}
+
+#[test]
+fn the_close_cross_waits_until_you_reach_the_tab() {
+    // The cross was reserving a corner on every tab whether anyone was offering it or not. Hidden at rest it costs nothing, so the name gets the room back.
+    let css = reading_mode_css();
+
+    // Markup still builds one on every tab: hiding it is the stylesheet's job, never the renderer's, or the keyboard would have nothing to reach.
+    assert_contains(
+        &app_shell_page(),
+        r#"<span class="lt-icon lt-icon-tab-close"></span>"#,
+    );
+
+    let close = css
+        .split(".tab-close {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines the close button");
+    // A wash behind it, since it now lands on the last letters of the name rather than in cleared space.
+    assert!(
+        close.contains("background: var(--lt-surface);"),
+        "the cross needs a wash to read over the name: {close}"
+    );
+    // In decelerating, out accelerating after a hold — the heart's timing in the opposite corner, every value a token.
+    assert_contains(
+        &close.to_string(),
+        "transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);",
+    );
+    assert_contains(
+        css,
+        ".tab:not(:hover):not(:focus-within) .tab-close {\n  opacity: 0;\n  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);\n}",
+    );
+    // Keyed on the tab, not on the modified tab: the narrow rule this generalizes must not survive beside it.
+    assert!(
+        !css.contains(".tab-modified:not(:hover):not(:focus-within) .tab-close"),
+        "the modified-only hide rule is gone; one rule covers every tab"
+    );
+}
+
+#[test]
+fn the_gap_after_a_tabs_name_is_the_same_as_the_gap_before_it() {
+    // Two ways of getting this wrong were shipped and turned down: running the fade out to the label's edge, which leaves 4px on the right against 19 on the left and reads as a clipped name, and answering that with the whole of the old close-button inset, which leaves 27 against 19 the other way. The rule is that the two sides are mirror images.
+    let css = reading_mode_css();
+    let rule = |head: &str| {
+        css.split(head)
+            .nth(1)
+            .and_then(|rest| rest.split('}').next())
+            .unwrap_or_else(|| panic!("stylesheet defines {head}"))
+            .to_string()
+    };
+    let px = |token: &str| -> f32 {
+        css.split(&format!("{token}: "))
+            .nth(1)
+            .and_then(|rest| rest.split("px;").next())
+            .and_then(|value| value.trim().parse().ok())
+            .unwrap_or_else(|| panic!("the stylesheet declares {token}"))
+    };
+
+    let tab = rule("\n.tab {");
+    let label = rule("\n.tab-label {");
+    assert!(tab.contains("max-width: 132px;"), "{tab}");
+    assert!(tab.contains("padding: 0 var(--lt-space-4);"), "{tab}");
+    assert!(
+        label.contains("padding: var(--lt-space-6) var(--lt-space-14);"),
+        "{label}"
+    );
+    // The first letter sits behind the tab's inset, the label's stroke and the label's padding.
+    let before = px("--lt-space-4") + px("--lt-stroke-1") + px("--lt-space-14");
+
+    // The last letter is gone by the same three in the other order — which is what the mask's 15px is, and why it stops at the content edge rather than at the label's border. Overflow clips at the padding box, so without the mask the name would run into that padding and there would be no gap at all.
+    assert!(
+        label.contains("mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));"),
+        "the fade must finish at the content edge: {label}"
+    );
+    let after = 15.0 + px("--lt-space-4");
+    assert_eq!(
+        before, after,
+        "a name is inset {before}px at its start and {after}px at its end; the two have to match"
+    );
+
+    // The active tab drops the mask and its cap entirely: it grows to its whole name, so there is nothing to fade.
+    let active = rule("\n.tab-active .tab-label {");
+    assert!(
+        active.contains("mask-image: none;") && active.contains("max-width: none;"),
+        "{active}"
+    );
+}
+
+#[test]
+fn both_corner_buttons_sit_above_the_name_they_cover() {
+    // An inactive tab's label wears the fade mask, and a mask paints its element in the same layer as a positioned sibling instead of under it. So the corner buttons and the label were ordered by the markup: the cross is written after the label and took its click, the heart is written before it and did not — one click activated the tab and only the next reached the heart. A layer on each, so neither depends on where it sits in the markup.
+    let css = reading_mode_css();
+    let script = app_shell_script();
+
+    for corner in [".tab-favorite {", ".tab-close {"] {
+        let rule = css
+            .split(corner)
+            .nth(1)
+            .and_then(|rest| rest.split('}').next())
+            .unwrap_or_else(|| panic!("stylesheet defines {corner}"));
+        assert!(
+            rule.contains("z-index: 1;"),
+            "{corner} must outrank the masked label or its click goes to the tab: {rule}"
+        );
+    }
+    // The mask is the whole reason, so a label that stops carrying one takes this test's premise with it.
+    let label = css
+        .split("\n.tab-label {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines the tab label");
+    assert!(
+        label.contains("mask-image: linear-gradient(to right,"),
+        "{label}"
+    );
+
+    // And the strip's one listener answers both corners before it answers the label, so a click that lands on either never falls through to switching tabs.
+    let close_at = script
+        .find("event.target.closest('[data-tab-close]')")
+        .expect("the strip answers the close button");
+    let mark_at = script
+        .find("event.target.closest('[data-tab-favorite]')")
+        .expect("the strip answers the heart");
+    let label_at = script
+        .find("event.target.closest('[data-tab-index]')")
+        .expect("the strip answers the label");
+    assert!(
+        close_at < label_at && mark_at < label_at,
+        "a corner button must be answered before the tab it sits on"
     );
 }
 
@@ -1141,16 +1267,13 @@ fn a_marked_tab_is_the_width_of_an_unmarked_one() {
         css,
         ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite {\n  opacity: 1;\n  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);\n}",
     );
-    // The tab's own padding is untouched: the right inset still reserves the close button's corner, and the left is what it always was.
+    // A mark adds nothing to the tab's own padding, which is even: it is out of flow, and so is the cross in the opposite corner.
     let tab = css
         .split("\n.tab {")
         .nth(1)
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines a tab");
-    assert_contains(
-        &tab.to_string(),
-        "padding: 0 var(--lt-space-12) 0 var(--lt-space-4);",
-    );
+    assert_contains(&tab.to_string(), "padding: 0 var(--lt-space-4);");
 }
 
 #[test]

@@ -263,8 +263,8 @@ body.mac-frame.is-fullscreen::before {
   gap: var(--lt-space-1);
   flex: 0 0 auto;
   max-width: 132px;
-  /* The extra on the right reserves the close button's corner, which is out of flow and so buys no room of its own. Without it a short name ends underneath the button. */
-  padding: 0 var(--lt-space-12) 0 var(--lt-space-4);
+  /* Even, so the gap after the name mirrors the gap before it. Neither corner button is in flow, so neither buys room of its own; what the name trails off into is the label's own padding and this. */
+  padding: 0 var(--lt-space-4);
   /* A cell hanging off the reader divider (z-index 1) so the active tab can cover it, top corners rounded to the page's radius. The transparent strokes reserve the space the active tab's frame paints in, keeping every tab the same size. */
   position: relative;
   z-index: 1;
@@ -347,7 +347,7 @@ body.mac-frame.is-fullscreen::before {
   font: 600 13px var(--app-font);
   padding: var(--lt-space-6) var(--lt-space-14);
   text-align: left;
-  /* Long names fade out instead of showing an ellipsis. The fade ends at the content edge, not the border box: overflow clips at the padding box, so only the mask can keep text out of the right inset. */
+  /* Long names fade out instead of showing an ellipsis. The fade ends at the content edge, not the border box: overflow clips at the padding box, so only the mask can keep text out of the padding. Gone by the padding, then the padding, then the stroke, then the tab's own inset — the same three the first letter sits behind, in the other order. */
   -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
   mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
 }
@@ -367,8 +367,10 @@ body.mac-frame.is-fullscreen::before {
   color: var(--lt-foreground);
 }
 .tab-close {
-  /* Tucked into the tab's top-right corner, out of the label's flow, close enough that its hover chip clears both strokes by about 2px and no more. */
+  /* Tucked into the tab's top-right corner, out of the label's flow, close enough that its hover chip clears both strokes by about 2px and no more. It covers the last letters of the name on purpose; the wash is what keeps it readable over them. */
   position: absolute;
+  /* Above the label. An inactive tab's label carries the fade mask, which paints it in this layer rather than under it, so without this a corner button written before the label in the markup is covered by it and eats no click. That is what happened to the heart while the cross went on working. */
+  z-index: 1;
   top: 2px;
   right: 2px;
   display: grid;
@@ -379,13 +381,19 @@ body.mac-frame.is-fullscreen::before {
   padding: 0;
   border: var(--lt-stroke-1) solid transparent;
   border-radius: var(--lt-radius-sm);
-  background: transparent;
+  background: var(--lt-surface);
   color: var(--lt-muted-foreground);
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
 }
 .tab-close .lt-icon {
   width: 12px;
   height: 12px;
   pointer-events: none;
+}
+/* Never there at rest, so a strip of tabs is a row of names and the cross costs the tab no room. Focus counts as reaching, so the keyboard still gets to it. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival — the heart opposite goes the same way. */
+.tab:not(:hover):not(:focus-within) .tab-close {
+  opacity: 0;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
 }
 .tab-close:hover {
   background: var(--lt-navigation-button-hover-background);
@@ -396,6 +404,8 @@ body.mac-frame.is-fullscreen::before {
 /* The heart, in the corner opposite the close button and out of the label's flow the same way, so the tab keeps its width and its padding. It covers the first letters of the name on purpose; the wash is what keeps it readable over them. */
 .tab-favorite {
   position: absolute;
+  /* Above the label, for the reason written on the close button. */
+  z-index: 1;
   top: 2px;
   left: 2px;
   display: grid;
@@ -896,13 +906,10 @@ button {
 .tab-modified .tab-dirty-dot {
   display: block;
 }
-/* One corner, one occupant: the dot says "unsaved", and reaching for the tab hands the corner back to the button. Focus counts as reaching, so the close button is still there for the keyboard. */
+/* One corner, one occupant: the dot says "unsaved", and reaching for the tab hands the corner back to the button — which every tab, modified or not, hides until then. */
 .tab-modified:hover .tab-dirty-dot,
 .tab-modified:focus-within .tab-dirty-dot {
   display: none;
-}
-.tab-modified:not(:hover):not(:focus-within) .tab-close {
-  opacity: 0;
 }
 button:hover {
   background: var(--lt-navigation-button-hover-background);

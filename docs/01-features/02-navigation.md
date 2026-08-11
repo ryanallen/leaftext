@@ -99,7 +99,9 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 - Each tab keeps its own document history, and every step in it remembers where you were reading on that document.
 - Each tab also keeps its own scroll history.
 - Switching away from a tab and back returns you to where you left it — the same reading position, or, for a tab in the [code view](07-editing.md#code-view), the same spot in the source.
+- A tab shows no close cross until you point at it or the keyboard reaches it, so a strip of tabs is a row of names. The cross fades in over the end of the name with a wash behind it, and neither it nor the [favorite](#favorites) heart in the opposite corner takes any of the tab's room, since neither is drawn at rest.
 - A tab with [unsaved edits](07-editing.md#save) shows a dot in the corner where its close button sits, until they are saved; pointing at the tab hands that corner back to the button. The two share one spot rather than each taking their own, so a tab never changes size as the pointer crosses it.
+- Both corner buttons take their own click on a tab you are not reading: the cross closes it and the heart marks it, without switching to it first.
 - Tabs can be dragged to reorder them.
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.
 - Closing the last tab returns to the home screen. So does clicking the leaf mark at the left of the app bar, which brightens on hover to show it is a control.
