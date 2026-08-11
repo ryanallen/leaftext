@@ -346,6 +346,21 @@ function crumbSegments(chain) {
   return [{ path: '', name: libraryRootLabel() }]
     .concat(chain.map((node) => ({ path: node.path, name: node.name || node.path })));
 }
+// On a site the trail stands in the bar and names the document being read, not the folder the pane is showing. Nothing on a site reveals an opened file in the pane, so following a link moves the page and leaves the pane where it was — a trail built from the pane's chain would name a folder the reader is not in. The document's own path is always right and needs no host answer: its folders are the links, and the document itself is the last crumb, which like every other current crumb is not one.
+function siteCrumbChain() {
+  const path = activeDocumentPath();
+  if (!path) return [];
+  const chain = [];
+  let walked = '';
+  for (const part of path.split('/')) {
+    walked = walked ? `${walked}/${part}` : part;
+    chain.push({ name: part, path: walked });
+  }
+  // The document's crumb reads the way its tab label did, without the extension.
+  const last = chain[chain.length - 1];
+  last.name = stripDocumentExt(last.name) || last.name;
+  return chain;
+}
 // The chain the trail is currently drawing, kept so a resize can refit without re-walking the tree.
 let libraryCrumbChain = [];
 const CRUMB_SEP_HTML = '<span class="library-crumb-sep" aria-hidden="true">›</span>';
@@ -432,7 +447,7 @@ function bindCrumbTrailButtons(hidden) {
 }
 function renderLibraryCrumbs(chain) {
   if (!libraryCrumbTrail) return;
-  libraryCrumbChain = chain;
+  libraryCrumbChain = window.__leafSite ? siteCrumbChain() : chain;
   fitLibraryCrumbs();
 }
 // One menu for the two buttons on the trail: the folders the "…" swallowed, and the vault switcher under the leftmost crumb. Same chrome as the file right-click menu.

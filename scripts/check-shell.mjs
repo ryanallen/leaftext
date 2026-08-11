@@ -91,7 +91,19 @@ function fakeElement(id = '') {
     offsetHeight: 0,
     isConnected: true,
     dataset: {},
-    style: { setProperty() {}, removeProperty() {}, getPropertyValue: () => '' },
+    // A real record, because a custom property set on an element is how the page changes a layout without a class: the published site closes the pane's breadcrumb band by taking its height to zero, and a stub that answered '' would let a test watching for it pass with nothing set.
+    style: (() => {
+      const held = new Map();
+      return {
+        setProperty(name, value) {
+          held.set(name, value);
+        },
+        removeProperty(name) {
+          held.delete(name);
+        },
+        getPropertyValue: (name) => held.get(name) ?? '',
+      };
+    })(),
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     children: [],
     parentElement: null,
@@ -3737,6 +3749,74 @@ check("a site cancels no mouse back gesture, and the fold and the disabled pass 
   if (!press(desktop.context, 3)) throw new Error("the desktop stopped taking the mouse's own back button");
   if (!desktop.sent.some((message) => message.command === 'goBack')) {
     throw new Error("the desktop's mouse back button sent nothing");
+  }
+});
+
+/** A site or desktop boot standing on one document, so the trail and the strip can both be read. `document: null` keeps the home screen's cheap render — what is being proved is the bar, and the trail's chain comes off the active tab either way. */
+function bootedWithDocument(site, path) {
+  const booted = siteBoot(site);
+  booted.context.leafSetLibraryFolder({ path: 'docs/guide', chain: [{ name: 'docs', path: 'docs' }, { name: 'guide', path: 'docs/guide' }], rootName: 'Emptyguru', entries: [] });
+  booted.context.leafSetState({ recent: [], favorites: [], tabs: [{ path, title: path }], active: 0, document: null });
+  return booted;
+}
+
+check('a published site draws the folder trail in the bar and no tab', () => {
+  const site = bootedWithDocument(true, 'docs/guide/README.md');
+  const strip = site.context.document.getElementById('tabBar');
+  const trail = site.context.document.getElementById('libraryCrumbTrail');
+  if (!strip.children.includes(trail)) throw new Error("a site's trail is not standing in the room the tab strip holds");
+  if (strip.innerHTML.includes('class="tab')) throw new Error(`a site wrote a tab into the bar: ${strip.innerHTML}`);
+
+  // The chain is the open document's own path, not the folder the pane is showing: they part company the moment a link is followed, and the trail at the top must say where the page is.
+  const chain = site.context.siteCrumbChain();
+  if (chain.map((one) => one.name).join('/') !== 'docs/guide/README') {
+    throw new Error(`the trail names ${chain.map((one) => one.name).join('/')} rather than the document's own path`);
+  }
+  if (chain[1].path !== 'docs/guide') throw new Error(`a folder crumb carries ${chain[1].path}, which is not the folder it opens`);
+  // Every folder is a link back to that folder; the document itself is not one.
+  const drawn = trail.innerHTML;
+  for (const folder of ['docs', 'guide']) {
+    if (!drawn.includes(`data-crumb-path="${folder === 'docs' ? 'docs' : 'docs/guide'}"`)) {
+      throw new Error(`${folder} is not a crumb that opens its own folder: ${drawn}`);
+    }
+  }
+  if (!/<span class="library-crumb is-current"[^>]*>README<\/span>/.test(drawn)) {
+    throw new Error(`the last crumb is not the document, drawn as a place rather than a link: ${drawn}`);
+  }
+  if (drawn.includes('>README.md<')) throw new Error('the document crumb kept its extension, which no tab label ever showed');
+
+  // Following a link is the case the pane's own chain would get wrong: nothing on a site reveals an opened file in the pane, so the pane stays on docs/guide while the page moves. The trail has to follow the page.
+  site.context.leafSetState({ recent: [], favorites: [], tabs: [{ path: 'notes/deep/two.md' }], active: 0, document: null });
+  const moved = trail.innerHTML;
+  if (!/is-current"[^>]*>two</.test(moved) || !moved.includes('data-crumb-path="notes/deep"')) {
+    throw new Error(`the trail did not follow the document into another folder: ${moved}`);
+  }
+
+  // The desktop is untouched: a tab in the strip, and the trail still in the pane's own band on the pane's own folder.
+  const desktop = bootedWithDocument(false, 'docs/guide/README.md');
+  const desktopStrip = desktop.context.document.getElementById('tabBar');
+  const desktopTrail = desktop.context.document.getElementById('libraryCrumbTrail');
+  if (!desktopStrip.innerHTML.includes('class="tab')) throw new Error('the desktop stopped drawing its tab');
+  if (desktopStrip.children.includes(desktopTrail)) throw new Error("the desktop's trail moved into the tab strip");
+  if (desktopTrail.parentElement.id !== 'libraryCrumbs') throw new Error(`the desktop's trail left the pane's band for ${desktopTrail.parentElement.id}`);
+  if (!/is-current"[^>]*>guide</.test(desktopTrail.innerHTML)) {
+    throw new Error(`the desktop's trail stopped ending at the folder the pane is showing: ${desktopTrail.innerHTML}`);
+  }
+});
+
+check('a published site draws no vault switcher, no pane trail row and no Sync button', () => {
+  const site = bootedWithDocument(true, 'README.md');
+  for (const id of ['libraryCrumbs', 'libraryVaultSwitch', 'librarySyncButton']) {
+    if (site.context.document.getElementById(id)) throw new Error(`a site still has ${id} standing in the pane`);
+  }
+  // The band leaves no gap: everything under it is placed off its height, so the search row and the list come up by that one value going to zero.
+  if (site.context.document.getElementById('libraryPane').style.getPropertyValue('--library-crumbs-height') !== '0px') {
+    throw new Error("the pane still holds a band's worth of room open with no band in it");
+  }
+  // And the desktop keeps all three.
+  const desktop = bootedWithDocument(false, 'README.md');
+  for (const id of ['libraryCrumbs', 'libraryVaultSwitch', 'librarySyncButton']) {
+    if (!desktop.context.document.getElementById(id)) throw new Error(`the desktop lost ${id}`);
   }
 });
 

@@ -221,6 +221,12 @@ function toggleFavorite(path, kind) {
   send({ command: 'toggleFavorite', path, kind: kind || 'document' });
 }
 function renderTabs(state) {
+  // A site's bar carries the folder trail in this box instead of a strip of tabs, so nothing here may write into it. The trail is what says which document is open, and the document changing is this call — so it is redrawn from here, where a tab label would have been.
+  if (window.__leafSite) {
+    renderLibraryCrumbs(libraryChain);
+    refitAppBar();
+    return;
+  }
   const tabs = state.tabs || [];
   const active = state.active;
   // A pure HTML write; the strip's listeners live on the bar itself (below).

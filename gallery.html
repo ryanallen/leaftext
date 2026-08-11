@@ -2638,6 +2638,10 @@ body.mac-frame.is-fullscreen::before {
 .tab-bar::-webkit-scrollbar {
   height: 0;
 }
+/* A published site carries the folder trail in this box rather than a strip of tabs. A tab hangs off the bar's bottom edge so its top corners have room to round; a trail is a line of text, so it sits in the middle of the band instead, and it takes the whole box because it shrinks itself to whatever room it is given. */
+.tab-bar > .library-crumb-trail {
+  align-self: center;
+}
 .tab {
   display: inline-flex;
   align-items: center;

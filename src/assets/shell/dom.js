@@ -2,6 +2,15 @@
 if (window.__leafSite) {
   const historyActions = document.querySelector('.history-actions');
   if (historyActions) historyActions.remove();
+  // The trail moves into the room the tab strip holds: a site opens one document, so the widest box in the bar was spent on a tab whose close cross no site host answers. The same element, not a second one — the fitting pass, the refit on a width change and a crumb's click all measure and bind against whatever box the trail is standing in, so moving the node carries all three. It has to happen here, above the references below and above the refit that runs as the bar loads.
+  const crumbTrail = document.getElementById('libraryCrumbTrail');
+  const strip = document.getElementById('tabBar');
+  if (crumbTrail && strip) strip.appendChild(crumbTrail);
+  // Then the band the trail came out of, whole: two rows saying where you are is one too many, the vault switcher offers to change between vaults a site has not got, and Sync is a vault control on a folder that is not one. After the move, so the trail is already out of it. Everything below the band is placed off its height, so the search row and the list come up into the room by that one value going to zero — no second layout.
+  const crumbRow = document.getElementById('libraryCrumbs');
+  if (crumbRow) crumbRow.remove();
+  const pane = document.getElementById('libraryPane');
+  if (pane) pane.style.setProperty('--library-crumbs-height', '0px');
 }
 const app = document.getElementById('app');
 const appBar = document.getElementById('appBar');
