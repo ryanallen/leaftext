@@ -18,7 +18,7 @@
 # flowchart export uses, so there is only ever one of them — which is the format
 # that can be read back.
 #
-# Six things here each cost a wrong screenshot before they were known:
+# Seven things here each cost a wrong screenshot before they were known:
 #
 #  1. PrintWindow needs PW_RENDERFULLCONTENT (flag 2). Without it the webview
 #     area comes out blank, because it composites outside the window's DC.
@@ -32,15 +32,27 @@
 #  5. PrintWindow does not draw the pointer, but it does draw what the pointer is
 #     over. So a hover state photographs; the cursor arrow never appears in the
 #     shot, and an alt text that promises one is promising a thing this cannot do.
+#     Which is why the pointer is parked off the window before the -Do steps run:
+#     otherwise a picture with no steps of its own photographs whatever the pointer
+#     was left resting on, as a control that is simply there. A deliberate hover is
+#     a `move:` step and is untouched by the park.
 #  6. The picture is the client rectangle, which is not GetWindowRect. That spans
 #     the invisible resize border — 11 px down the left, right and bottom at this
 #     machine's scaling — and PrintWindow renders nothing into it, so 24 of the 43
 #     published pictures shipped with a black strip. DWMWA_EXTENDED_FRAME_BOUNDS
 #     is not it either: measured against this window it stops 2 px short on each of
-#     those sides and photographs 2 px of the same black. The client rectangle is
-#     what the app draws, and it comes out at exactly the -Width and -Height asked
-#     for. Pointer steps are offset by it too, so a coordinate goes on meaning a
-#     pixel in the picture.
+#     those sides and photographs 2 px of the same black. The client rectangle comes
+#     out at exactly the -Width and -Height asked for.
+#  7. The app is smaller than the client rectangle: it holds itself off the window
+#     on all four sides so its own shadow has room, and PrintWindow renders nothing
+#     into that band either — so the picture arrives with a second black frame
+#     inside the first, about 30 px down the sides at this machine's scaling. Whole
+#     rows and columns of pure #000000 are cut off here, which is the same signature
+#     scripts/check-shot-edges.mjs refuses a published picture for; the app draws no
+#     pure black anywhere. A throwaway shot goes first purely to measure that band,
+#     because pointer steps are offset by it as well as by note 6's border — so a
+#     coordinate goes on meaning a pixel in the picture, and -Crop is measured off
+#     the app rather than off the window around it.
 #
 # The app resolves its config and data roots from %APPDATA% and %LOCALAPPDATA%
 # (`project_config_dir`), so an unattached shot runs against a throwaway profile
@@ -265,6 +277,14 @@ else {
     window_width         = $Width
     window_height        = $Height
     window_maximized     = $false
+    # The first-run bubble, off. The profile is new every run, so without this every
+    # picture with the library open carries one floating over the control it points
+    # at — a thing the app shows once per install and no picture here is of. These
+    # two numbers say a bubble showed on the last launch, which is the app's own
+    # rule for a quiet one; a list of hint names would be a second copy of the list
+    # in src/assets/shell/hints.js and would drift from it.
+    hint_launches        = 1
+    hint_last_launch     = 1
   }
   ($shot | ConvertTo-Json -Depth 5) | Out-File -FilePath (Join-Path $config 'settings.json') -Encoding utf8
 
@@ -325,6 +345,99 @@ if (-not $Attach -and $Vault.Count) {
     if (-not (Test-Path $manifest)) { throw 'the app never wrote a manifest.db' }
   }
   node (Join-Path $root 'scripts\shot-add-vault.mjs') $manifest @Vault | Out-Null
+}
+
+# Off the window, before any step runs. See note 5. Tried in order and the first
+# one on screen wins; a window filling the whole screen has nowhere off it, and the
+# virtual screen's bottom-left corner is the nearest thing to outside there.
+function Park-Pointer($rect) {
+  $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+  $midY = [int](($rect.Top + $rect.Bottom) / 2)
+  $midX = [int](($rect.Left + $rect.Right) / 2)
+  # Each pair parenthesized: a comma binds tighter than the arithmetic around it here, so `$rect.Left - 24, $midY` is read as one subtraction against a two-element list.
+  $spots = @(
+    @(($rect.Left - 24), $midY),
+    @(($rect.Right + 24), $midY),
+    @($midX, ($rect.Top - 24)),
+    @($midX, ($rect.Bottom + 24)),
+    @(($screen.Left + 1), ($screen.Bottom - 1))
+  )
+  foreach ($spot in $spots) {
+    $x = $spot[0]
+    $y = $spot[1]
+    if ($x -lt $screen.Left -or $x -ge $screen.Right -or $y -lt $screen.Top -or $y -ge $screen.Bottom) { continue }
+    [void][LeafShot]::SetCursorPos($x, $y)
+    return
+  }
+}
+
+# One PrintWindow into a bitmap of the whole window rectangle, with the resize
+# border cut back off. See notes 1 and 6.
+function Capture-Window([IntPtr]$hwnd, $rect, $vis) {
+  $ww = $rect.Right - $rect.Left
+  $wh = $rect.Bottom - $rect.Top
+  $offX = $vis.Left - $rect.Left
+  $offY = $vis.Top - $rect.Top
+  $w = $vis.Right - $vis.Left
+  $h = $vis.Bottom - $vis.Top
+  $bmp = New-Object System.Drawing.Bitmap $ww, $wh
+  $gfx = [System.Drawing.Graphics]::FromImage($bmp)
+  $hdc = $gfx.GetHdc()
+  $drawn = [LeafShot]::PrintWindow($hwnd, $hdc, 2) # PW_RENDERFULLCONTENT, note 1
+  $gfx.ReleaseHdc($hdc)
+  # A transparent middle pixel means the webview never rendered into the DC, and
+  # the screen is the fallback. It copies the visible frame into the same place
+  # the crop below takes it from, so it takes no strip of the desktop with it.
+  if (-not $drawn -or $bmp.GetPixel([int]($ww / 2), [int]($wh / 2)).A -eq 0) {
+    Write-Output 'PrintWindow came back empty; copying from the screen instead'
+    $gfx.CopyFromScreen($vis.Left, $vis.Top, $offX, $offY, (New-Object System.Drawing.Size $w, $h))
+  }
+  $gfx.Dispose()
+  if ($w -eq $ww -and $h -eq $wh) { return $bmp }
+  $frame = $bmp.Clone((New-Object System.Drawing.Rectangle $offX, $offY, $w, $h), $bmp.PixelFormat)
+  $bmp.Dispose()
+  return $frame
+}
+
+# Where the app is inside the picture. See note 7.
+function Measure-AppBox([System.Drawing.Bitmap]$bmp) {
+  $w = $bmp.Width
+  $h = $bmp.Height
+  $box = New-Object System.Drawing.Rectangle 0, 0, $w, $h
+  $data = $bmp.LockBits($box, [System.Drawing.Imaging.ImageLockMode]::ReadOnly, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+  $bytes = New-Object byte[] ($data.Stride * $h)
+  [System.Runtime.InteropServices.Marshal]::Copy($data.Scan0, $bytes, 0, $bytes.Length)
+  $stride = $data.Stride
+  $bmp.UnlockBits($data)
+  # Blue, green and red all zero. Alpha is not looked at: PrintWindow leaves it zero where it drew nothing and the app's own pixels arrive opaque, but a screen copy carries neither.
+  $rowIsBlack = {
+    param($y)
+    $at = $y * $stride
+    for ($x = 0; $x -lt $w; $x++) {
+      if ($bytes[$at] -ne 0 -or $bytes[$at + 1] -ne 0 -or $bytes[$at + 2] -ne 0) { return $false }
+      $at += 4
+    }
+    return $true
+  }
+  $columnIsBlack = {
+    param($x)
+    $at = $x * 4
+    for ($y = 0; $y -lt $h; $y++) {
+      if ($bytes[$at] -ne 0 -or $bytes[$at + 1] -ne 0 -or $bytes[$at + 2] -ne 0) { return $false }
+      $at += $stride
+    }
+    return $true
+  }
+  $top = 0
+  while ($top -lt $h -and (& $rowIsBlack $top)) { $top++ }
+  if ($top -eq $h) { return $box }
+  $bottom = $h - 1
+  while ($bottom -gt $top -and (& $rowIsBlack $bottom)) { $bottom-- }
+  $left = 0
+  while ($left -lt $w -and (& $columnIsBlack $left)) { $left++ }
+  $right = $w - 1
+  while ($right -gt $left -and (& $columnIsBlack $right)) { $right-- }
+  return New-Object System.Drawing.Rectangle $left, $top, ($right - $left + 1), ($bottom - $top + 1)
 }
 
 function Step-Pointer($step, [int]$left, [int]$top) {
@@ -419,45 +532,43 @@ try {
     [void][LeafShot]::SetWindowPos($hwnd, [IntPtr]::Zero, 40, 40, 0, 0, 0x0041)
     [void][LeafShot]::SetForegroundWindow($hwnd)
   }
+
+  # Before the settle rather than after it, so whatever the pointer was over has
+  # the same time to drop its hover as the page has to draw.
+  $parked = New-Object LeafShot+RECT
+  [void][LeafShot]::GetWindowRect($hwnd, [ref]$parked)
+  Park-Pointer $parked
+
   Start-Sleep -Milliseconds $SettleMs
 
   $rect = New-Object LeafShot+RECT
   [void][LeafShot]::GetWindowRect($hwnd, [ref]$rect)
-  $ww = $rect.Right - $rect.Left
-  $wh = $rect.Bottom - $rect.Top
   # See note 6. PrintWindow renders at the window rectangle whatever is asked of it, so the picture is taken whole and the resize border cut off afterwards.
   $vis = Get-VisibleRect $hwnd $rect
-  $offX = $vis.Left - $rect.Left
-  $offY = $vis.Top - $rect.Top
-  $w = $vis.Right - $vis.Left
-  $h = $vis.Bottom - $vis.Top
+
+  # One throwaway shot before the steps, only to find where the app sits inside the
+  # client rectangle. See note 7: the steps are offset by it, so a coordinate
+  # measured off the last picture is still the pixel it looks like.
+  $probe = Capture-Window $hwnd $rect $vis
+  $app = Measure-AppBox $probe
+  $probe.Dispose()
 
   foreach ($step in $plan) {
-    Step-Pointer $step $vis.Left $vis.Top
+    Step-Pointer $step ($vis.Left + $app.X) ($vis.Top + $app.Y)
     Start-Sleep -Milliseconds $StepMs
   }
 
-  $bmp = New-Object System.Drawing.Bitmap $ww, $wh
-  $gfx = [System.Drawing.Graphics]::FromImage($bmp)
-  $hdc = $gfx.GetHdc()
-  $drawn = [LeafShot]::PrintWindow($hwnd, $hdc, 2) # PW_RENDERFULLCONTENT, note 1
-  $gfx.ReleaseHdc($hdc)
-  # A transparent middle pixel means the webview never rendered into the DC, and
-  # the screen is the fallback. It copies the visible frame into the same place
-  # the crop below takes it from, so it takes no strip of the desktop with it.
-  if (-not $drawn -or $bmp.GetPixel([int]($ww / 2), [int]($wh / 2)).A -eq 0) {
-    Write-Output 'PrintWindow came back empty; copying from the screen instead'
-    $gfx.CopyFromScreen($vis.Left, $vis.Top, $offX, $offY, (New-Object System.Drawing.Size $w, $h))
-  }
-  $gfx.Dispose()
+  $bmp = Capture-Window $hwnd $rect $vis
 
-  # The resize border off, so the picture is what somebody sees.
-  if ($w -ne $ww -or $h -ne $wh) {
-    $box = New-Object System.Drawing.Rectangle $offX, $offY, $w, $h
-    $frame = $bmp.Clone($box, $bmp.PixelFormat)
+  # The band the app holds itself off the window by, off. See note 7.
+  $app = Measure-AppBox $bmp
+  if ($app.Width -ne $bmp.Width -or $app.Height -ne $bmp.Height) {
+    $frame = $bmp.Clone($app, $bmp.PixelFormat)
     $bmp.Dispose()
     $bmp = $frame
   }
+  $w = $bmp.Width
+  $h = $bmp.Height
 
   if ($Crop) {
     $c = $Crop -split ',' | ForEach-Object { [int]$_ }

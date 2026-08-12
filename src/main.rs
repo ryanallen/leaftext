@@ -95,7 +95,7 @@ fn main() {
     if argv.len() >= 4 && argv[1] == "--squeeze-png" {
         // Cuts to 256 colors first — half the file on a screenshot, and the one step that moves a pixel, so no export asks for it.
         let palette = argv.iter().any(|arg| arg == "--palette");
-        match squeeze_png(&argv[2], &argv[3], palette) {
+        match squeeze_png(unquote_path(&argv[2]), unquote_path(&argv[3]), palette) {
             Ok(report) => println!("{report}"),
             Err(error) => {
                 eprintln!("squeeze-png failed: {error}");
@@ -203,6 +203,13 @@ fn apply_window_chrome(window: &tao::window::Window, r: u8, g: u8, b: u8, dark: 
 /// Other platforms keep their native chrome; the system already follows the OS light/dark preference there.
 #[cfg(not(windows))]
 fn apply_window_chrome(_window: &tao::window::Window, _r: u8, _g: u8, _b: u8, _dark: bool) {}
+
+/// `just` runs a recipe through cmd.exe, which hands the quotes around an argument through rather than stripping them — so a path quoted in a recipe arrives wrapped in them, and Windows refuses every path with a quote in it. `scripts/drive.mjs` does the same for the driver. The quotes protect nothing on the way in: a value with a space is split at it whatever they do.
+pub(crate) fn unquote_path(path: &str) -> &str {
+    path.strip_prefix('"')
+        .and_then(|inner| inner.strip_suffix('"'))
+        .unwrap_or(path)
+}
 
 /// A BMP in, the smallest PNG we can write out. BMP because the screenshot tool can save one without an encoder of its own, which keeps this the only encoder in the project.
 fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<dyn Error>> {

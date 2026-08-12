@@ -2631,3 +2631,24 @@ fn a_source_that_keeps_refusing_is_left_alone_until_someone_asks() {
     assert!(book.is_resting(5));
     assert!(!book.is_resting(4));
 }
+
+/// The documentation shot's own recipe quotes both paths, and cmd.exe hands the quotes through, so the encoder was asked for a path Windows refuses — os error 123 before a byte was read.
+#[test]
+fn a_path_wrapped_in_quotes_reaches_the_encoder_without_them() {
+    assert_eq!(
+        crate::unquote_path(r#""C:\Users\me\My Docs\shot.bmp""#),
+        r"C:\Users\me\My Docs\shot.bmp"
+    );
+
+    // A plain path is what every other caller hands in, and it must arrive unchanged.
+    assert_eq!(
+        crate::unquote_path("docs/imgs/navigation.png"),
+        "docs/imgs/navigation.png"
+    );
+
+    // Only a surrounding pair. One quote inside a name is part of the name, and one on its own is not a wrapper.
+    assert_eq!(crate::unquote_path("odd\"name.bmp"), "odd\"name.bmp");
+    assert_eq!(crate::unquote_path("\"leading.bmp"), "\"leading.bmp");
+    assert_eq!(crate::unquote_path("trailing.bmp\""), "trailing.bmp\"");
+    assert_eq!(crate::unquote_path("\""), "\"");
+}
