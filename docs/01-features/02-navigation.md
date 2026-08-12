@@ -96,6 +96,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 ### Tabs
 
 - Opening another file creates another tab, and so does starting a [new document](07-editing.md#new-document).
+- Reopening Leaftext puts its saved file tabs back in the same order and opens the tab that was in front, at its last reading or source position; the other documents wait to load until you select them. New documents that were never saved and files that are no longer there do not return.
 - Each tab keeps its own document history, and every step in it remembers where you were reading on that document.
 - Each tab also keeps its own scroll history.
 - Switching away from a tab and back returns you to where you left it — the same reading position, or, for a tab in the [code view](07-editing.md#code-view), the same spot in the source.

@@ -414,6 +414,20 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
     let missing_path = dir.join("missing.json");
 
     let settings = Settings {
+        session: Session {
+            tabs: vec![SessionTab {
+                path: PathBuf::from("C:\\Users\\rwall\\Notes\\guide.md"),
+                title: "Guide".to_string(),
+                code_view: true,
+                anchor: Some(ScrollAnchor {
+                    section: Some("tasks".to_string()),
+                    block: 2,
+                    offset_y: -18.0,
+                }),
+                saved_code_scroll: Some(0.42),
+            }],
+            active: Some(0),
+        },
         speed_reader_enabled: true,
         code_intel_enabled: false,
         reading_unlocked: true,
@@ -441,6 +455,11 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
     assert_eq!(loaded.settings, settings);
     // Read back cleanly, so there is nothing to tell the page about.
     assert!(!loaded.unreadable);
+    fs::write(&settings_path, r#"{"library_width": 312}"#)
+        .expect("pre-session settings fixture is written");
+    let legacy = load_settings(&settings_path);
+    assert_eq!(legacy.settings.session, Session::default());
+    assert!(!legacy.unreadable);
     // A missing file restores defaults, not the all-false zero value — and is an ordinary first launch, not something to report.
     let missing = load_settings(&missing_path);
     assert_eq!(missing.settings, Settings::default());

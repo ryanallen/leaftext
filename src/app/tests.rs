@@ -1,7 +1,10 @@
 //! Tests for the binary: tabs, history, file watching, link routing, file actions.
 
 use super::*;
-use std::io;
+use std::{
+    io,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 /// A query as the page would send one, with no date of its own.
 fn typed(query: &str) -> TypedQuery {
@@ -12,6 +15,136 @@ fn fixture_source_path(relative_path: &str) -> PathBuf {
     std::env::temp_dir()
         .join("leaf-link-fixtures")
         .join(relative_path)
+}
+
+fn session_fixture_dir() -> PathBuf {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    std::env::temp_dir().join(format!("leaf-session-fixtures-{unique}"))
+}
+
+#[test]
+fn a_workspace_restores_saved_regular_files_in_order_and_nearest_tab() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let first = dir.join("first.md");
+    let second = dir.join("second.md");
+    fs::write(&first, "# First").expect("first session file is written");
+    fs::write(&second, "# Second").expect("second session file is written");
+    let session = Session {
+        tabs: vec![
+            SessionTab {
+                path: first.clone(),
+                title: "First title".to_string(),
+                code_view: false,
+                ..SessionTab::default()
+            },
+            SessionTab {
+                path: dir.join("gone.md"),
+                title: "Gone".to_string(),
+                code_view: false,
+                ..SessionTab::default()
+            },
+            SessionTab {
+                path: second.clone(),
+                title: "Second title".to_string(),
+                code_view: true,
+                ..SessionTab::default()
+            },
+        ],
+        active: Some(1),
+    };
+
+    let workspace = Workspace::from_session(&session);
+
+    assert_eq!(
+        workspace.tab_summaries(),
+        vec![
+            ("First title".to_string(), first.display().to_string()),
+            ("Second title".to_string(), second.display().to_string()),
+        ]
+    );
+    assert_eq!(workspace.active, Some(1));
+    assert!(workspace.tabs[1].code_view);
+    assert!(workspace.tabs.iter().all(|tab| tab.rendered.is_none()));
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn an_untitled_tab_is_not_saved_in_the_session() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("guide.md"));
+    workspace.open_untitled();
+
+    let session = workspace.session();
+
+    assert_eq!(session.tabs.len(), 1);
+    assert_eq!(session.tabs[0].path, PathBuf::from("guide.md"));
+    assert_eq!(session.active, None);
+}
+
+#[test]
+fn startup_restores_the_saved_front_tab_unless_a_path_was_given() {
+    let anchor = ScrollAnchor {
+        section: Some("reading".to_string()),
+        block: 3,
+        offset_y: -24.0,
+    };
+    let mut tab = Tab {
+        saved_code_scroll: Some(0.42),
+        ..Tab::default()
+    };
+    tab.history.record(PathBuf::from("guide.md"));
+    tab.history.stamp_current(anchor.clone());
+    let workspace = Workspace {
+        tabs: vec![tab],
+        active: Some(0),
+    };
+
+    match startup_restore_intent(&workspace, false) {
+        Some(ScrollIntent::Restore {
+            anchor: Some(saved),
+            code: Some(code),
+        }) => {
+            assert_eq!(saved, anchor);
+            assert_eq!(code, 0.42);
+        }
+        _ => panic!("saved tab must restore its saved place"),
+    }
+    assert!(startup_restore_intent(&workspace, true).is_none());
+
+    let fresh = Workspace {
+        tabs: vec![Tab::default()],
+        active: Some(0),
+    };
+    assert!(matches!(
+        startup_restore_intent(&fresh, false),
+        Some(ScrollIntent::Restore {
+            anchor: None,
+            code: None,
+        })
+    ));
+}
+
+#[test]
+fn saving_a_session_place_updates_only_the_active_tab() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("first.md"));
+    workspace.open_path(PathBuf::from("second.md"));
+    let anchor = ScrollAnchor {
+        section: None,
+        block: 4,
+        offset_y: 12.0,
+    };
+
+    workspace.save_active_position(Some(anchor.clone()), Some(0.25));
+
+    assert_eq!(workspace.tabs[0].history.current_anchor(), None);
+    assert_eq!(workspace.tabs[0].saved_code_scroll, None);
+    assert_eq!(workspace.tabs[1].history.current_anchor(), Some(anchor));
+    assert_eq!(workspace.tabs[1].saved_code_scroll, Some(0.25));
 }
 
 #[test]

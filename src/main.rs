@@ -42,8 +42,8 @@ use leaftext::{
     workspace_reload_script, workspace_state_script, workspace_switch_script, CloudFolder,
     CloudRoots, CorpusDocument, DesktopHost, DocumentFormat, EditableDocument, Favorite,
     FavoriteKind, Favorites, FilterHints, FolderListing, GitTooling, GraphScope, LeafHost,
-    OpenedDocument, Query, RecentFiles, ScrollAnchor, Settings, SettingsLoad, SourceText,
-    UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    OpenedDocument, Query, RecentFiles, ScrollAnchor, Session, SessionTab, Settings, SettingsLoad,
+    SourceText, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -354,6 +354,14 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // The kept paths ride in the same file, so one read answers both.
     let favorites = config_path.as_ref().map(load_favorites).unwrap_or_default();
 
+    // The strip can paint from this without reading a document. The front document waits for WebviewReady below, just like a file passed on the command line.
+    let workspace = Workspace::from_session(&settings.session);
+    if workspace.session() != settings.session {
+        settings.session = workspace.session();
+        persist_settings(&settings, settings_path.as_ref());
+    }
+    let tabs = workspace.tab_summaries();
+
     // The vault registry, so the leftmost crumb reads the active vault's name on the first paint. Opening the manifest here is also what applies its migrations, before anything else reads it.
     let data_dir = app_data_dir();
     let vault_state = VaultState::load(data_dir.as_deref());
@@ -368,7 +376,12 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             &vault_state.vaults(),
             vault_state.active,
         ))
-        .with_initialization_script(initial_state_script(&recent.files, &favorites))
+        .with_initialization_script(initial_state_script(
+            &recent.files,
+            &favorites,
+            &tabs,
+            workspace.active,
+        ))
         .with_initialization_script(initial_document_exts_script())
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script(
@@ -428,8 +441,6 @@ fn run_app() -> Result<(), Box<dyn Error>> {
 
     // Windows and macOS both host the web view in the window directly, so this builds against the window itself rather than a container widget.
     let webview = builder.build(&window)?;
-
-    let workspace = Workspace::default();
 
     update_active_navigation(Some(&webview), &workspace);
 

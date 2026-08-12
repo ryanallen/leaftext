@@ -165,7 +165,7 @@ fn boot_lines(settings: leaftext::Settings, embedded: bool) -> String {
         "{}\n{}\n{}\n{}\n{}\n{}",
         leaftext::initial_settings_script(&settings),
         // No recents and no favorites: a page has neither, and an empty pair is what the start screen already draws from.
-        leaftext::initial_state_script(&[], &leaftext::Favorites::default()),
+        leaftext::initial_state_script(&[], &leaftext::Favorites::default(), &[], None),
         leaftext::initial_document_exts_script(),
         leaftext::initial_version_script(),
         // No installer to offer, which the page already reads as notify-only.

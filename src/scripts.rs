@@ -9,13 +9,20 @@ fn call_with_json(function: &str, value: &serde_json::Value) -> String {
 }
 
 /// Initial workspace state as `window.__leafInitialState`. Run as an init script (before any page script) so the boot bootstrap applies it on the first render. Both lists, because the start screen draws both and a cold launch is the one render nothing else answers for.
-pub fn initial_state_script(recent: &[PathBuf], favorites: &Favorites) -> String {
-    let state = workspace_payload(recent, favorites, &[], None, None);
+pub fn initial_state_script(
+    recent: &[PathBuf],
+    favorites: &Favorites,
+    tabs: &[(String, String)],
+    active: Option<usize>,
+) -> String {
+    let state = workspace_payload(recent, favorites, tabs, active, None);
     format!(
         "window.__leafInitialState = {};",
         serde_json::json!({
             "recent": state["recent"],
             "favorites": state["favorites"],
+            "tabs": state["tabs"],
+            "active": state["active"],
             "document": serde_json::Value::Null,
         })
     )

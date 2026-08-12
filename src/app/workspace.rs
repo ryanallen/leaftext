@@ -68,6 +68,81 @@ pub(crate) struct Workspace {
 }
 
 impl Workspace {
+    /// Rebuild the tab strip from the last saved session without reading any documents. Missing paths are left out, and a missing front tab falls forward to the nearest remaining one.
+    pub(crate) fn from_session(session: &Session) -> Self {
+        let mut saved_indices = Vec::new();
+        let mut tabs = Vec::new();
+        for (saved_index, saved) in session.tabs.iter().enumerate() {
+            if !saved.path.is_file() {
+                continue;
+            }
+            let mut tab = Tab {
+                title: saved.title.clone(),
+                code_view: saved.code_view,
+                ..Tab::default()
+            };
+            tab.history.record(saved.path.clone());
+            if let Some(anchor) = saved.anchor.clone() {
+                tab.history.stamp_current(anchor);
+            }
+            tab.saved_code_scroll = saved.saved_code_scroll;
+            saved_indices.push(saved_index);
+            tabs.push(tab);
+        }
+        let active = session.active.and_then(|saved_active| {
+            saved_indices
+                .iter()
+                .position(|&index| index == saved_active)
+                .or_else(|| {
+                    saved_indices
+                        .iter()
+                        .position(|&index| index >= saved_active)
+                })
+                .or_else(|| (!tabs.is_empty()).then_some(tabs.len() - 1))
+        });
+        Self { tabs, active }
+    }
+
+    /// The session worth saving: one current document per tab, with its strip label and view. Untitled buffers have no file to reopen, so they are left out.
+    pub(crate) fn session(&self) -> Session {
+        let mut active = None;
+        let mut tabs = Vec::new();
+        for (index, tab) in self.tabs.iter().enumerate() {
+            if tab.edit.as_ref().is_some_and(|edit| edit.untitled) {
+                continue;
+            }
+            let Some(path) = tab.history.current().cloned() else {
+                continue;
+            };
+            if self.active == Some(index) {
+                active = Some(tabs.len());
+            }
+            tabs.push(SessionTab {
+                path,
+                title: tab.title.clone(),
+                code_view: tab.code_view,
+                anchor: tab.history.current_anchor(),
+                saved_code_scroll: tab.saved_code_scroll,
+            });
+        }
+        Session { tabs, active }
+    }
+
+    /// Remember the settled active view so a native close never has to ask the page for its place.
+    pub(crate) fn save_active_position(
+        &mut self,
+        anchor: Option<ScrollAnchor>,
+        code_scroll: Option<f64>,
+    ) {
+        let Some(tab) = self.active.and_then(|index| self.tabs.get_mut(index)) else {
+            return;
+        };
+        if let Some(anchor) = anchor {
+            tab.history.stamp_current(anchor);
+        }
+        tab.saved_code_scroll = code_scroll;
+    }
+
     /// The document on screen, or `None` on the home screen. Asked by everything that has to know what the reader is actually looking at — the watcher, and what a graph is a map of — so it is answered in one place rather than by each of them walking `active` into `tabs` into `history` again.
     pub(crate) fn active_path(&self) -> Option<&Path> {
         self.active
@@ -237,7 +312,6 @@ impl Workspace {
 /// What a never-saved document is called until someone saves it somewhere.
 pub(crate) const UNTITLED_STEM: &str = "Untitled";
 
-/// Fallback tab label (file stem) used until the document title is known.
 /// How the reader's scroll position should behave when a render replaces the document view.
 #[derive(Clone)]
 pub(crate) enum ScrollIntent {

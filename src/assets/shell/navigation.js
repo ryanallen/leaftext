@@ -5,6 +5,13 @@ function currentScrollAnchor() {
 function sendNavigationCommand(command) {
   send({ command, scroll_anchor: currentScrollAnchor() });
 }
+// A native close cannot ask the page where it was, so a quiet reader scroll tells the host before it matters.
+if (app) {
+  app.addEventListener('scroll', () => {
+    if (codeViewActive) return;
+    scheduleSessionPlace();
+  }, { passive: true });
+}
 function isEditableMouseTarget(target) {
   const element = target instanceof Element ? target : target?.parentElement;
   return Boolean(element?.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]'));

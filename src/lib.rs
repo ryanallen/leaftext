@@ -1275,10 +1275,31 @@ pub fn save_favorites(config_path: impl AsRef<Path>, favorites: &Favorites) -> i
     write_config_lists(config_path, &lists)
 }
 
+/// One tab the app puts back after a restart. It is deliberately only the document now showing, not the tab's Back list.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SessionTab {
+    pub path: PathBuf,
+    pub title: String,
+    pub code_view: bool,
+    pub anchor: Option<ScrollAnchor>,
+    pub saved_code_scroll: Option<f64>,
+}
+
+/// The open workspace remembered in the app config. `active` is `None` when the home screen was showing.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Session {
+    pub tabs: Vec<SessionTab>,
+    pub active: Option<usize>,
+}
+
 /// UI toggles that survive a restart. The app shell's opaque origin can't use localStorage, so the host owns these: injected on boot via [`initial_settings_script`] and saved whenever the frontend reports a change.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
+    /// The open tabs and front tab from the last session.
+    pub session: Session,
     /// Quiet prose and add bold lead anchors at word starts. Off by default.
     pub speed_reader_enabled: bool,
     /// The code view's typing help: note and heading suggestions, and the underline on links that lead nowhere. On by default.
@@ -1323,6 +1344,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            session: Session::default(),
             speed_reader_enabled: false,
             code_intel_enabled: true,
             reading_unlocked: false,
@@ -1386,7 +1408,7 @@ pub fn settings_file_path() -> Option<PathBuf> {
 }
 
 /// What [`load_settings`] found. An unreadable file and no file at all both end in [`Settings::default()`], so without this flag the app opens factory-fresh with nothing to say that someone's saved choices were skipped.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct SettingsLoad {
     pub settings: Settings,
     /// A file was there and did not parse — false for the ordinary first launch.

@@ -36,7 +36,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 
 | File | Purpose |
 | --- | --- |
-| `{config_dir}/settings.json` | Preferences |
+| `{config_dir}/settings.json` | Preferences and the tabs to reopen |
 | `{config_dir}/recent-files.json` | Last 8 opened files |
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/webview2` | WebView2 data |
@@ -52,6 +52,12 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
 
 ```json
 {
+  "session": {
+    "tabs": [
+      { "path": "/Users/alice/notes/daily.md", "title": "Daily notes", "code_view": false, "anchor": { "section": "tasks", "block": 1, "offsetY": -18.0 }, "saved_code_scroll": null }
+    ],
+    "active": 0
+  },
   "speed_reader_enabled": false,
   "code_intel_enabled": true,
   "reading_unlocked": false,

@@ -128,12 +128,40 @@ fn shut_down(
     windowed_size: LogicalSize<f64>,
     control_flow: &mut ControlFlow,
 ) {
+    settings.session = reader.workspace.session();
     settings.window_width = windowed_size.width.round() as u32;
     settings.window_height = windowed_size.height.round() as u32;
     settings.window_maximized = reader.window.is_maximized();
     persist_settings(settings, settings_path);
     let _ = reader.webview.take();
     *control_flow = ControlFlow::Exit;
+}
+
+/// Keep the saved session in step with the workspace without rewriting settings for events that did not change it.
+fn persist_workspace_session(
+    workspace: &Workspace,
+    settings: &mut Settings,
+    settings_path: Option<&PathBuf>,
+) {
+    let session = workspace.session();
+    if settings.session != session {
+        settings.session = session;
+        persist_settings(settings, settings_path);
+    }
+}
+
+/// A command-line document replaces the saved front tab; otherwise the saved front tab loads through the ordinary restore path.
+pub(crate) fn startup_restore_intent(
+    workspace: &Workspace,
+    has_pending_path: bool,
+) -> Option<ScrollIntent> {
+    (!has_pending_path)
+        .then(|| workspace.active.and_then(|index| workspace.tabs.get(index)))
+        .flatten()
+        .map(|tab| ScrollIntent::Restore {
+            anchor: tab.history.current_anchor(),
+            code: tab.saved_code_scroll,
+        })
 }
 
 /// Runs until the window closes, which ends the process — hence the `!`.
@@ -232,6 +260,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::WebviewReady) => {
                 if let Some(path) = pending_open_path.take() {
                     let _ = proxy.send_event(UserEvent::OpenPath(path));
+                } else if let Some(scroll) = startup_restore_intent(&reader.workspace, false) {
+                    reader.render(scroll);
                 }
                 // Once there is a page to tell: any cloud folder on this machine becomes a vault, and the page learns which folders they are. Off the loop, so a slow disk never delays the first paint.
                 request_cloud_folders(&proxy);
@@ -1098,6 +1128,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     last_windowed_size,
                     control_flow,
                 ),
+                IpcCommand::SaveSessionPlace {
+                    scroll_anchor,
+                    code_scroll,
+                } => reader
+                    .workspace
+                    .save_active_position(scroll_anchor, code_scroll),
                 IpcCommand::SetWindowChrome { r, g, b, dark } => {
                     apply_window_chrome(&reader.window, r, g, b, dark);
                 }
@@ -1314,6 +1350,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             },
             _ => {}
         }
+
+        persist_workspace_session(&reader.workspace, &mut settings, settings_path.as_ref());
 
         // Keep the watcher on the active document and on the pane's root, so both live-update. A no-op unless one changed since last sync.
         let active_path = reader.workspace.active_path();

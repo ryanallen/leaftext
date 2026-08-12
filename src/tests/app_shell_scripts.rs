@@ -20,12 +20,22 @@ fn initial_state_script_returns_reader_to_no_file_state_with_both_lists() {
             kind: FavoriteKind::Document,
         }],
     };
-    let script = initial_state_script(&[PathBuf::from("README.md")], &favorites);
+    let script = initial_state_script(&[PathBuf::from("README.md")], &favorites, &[], None);
 
     assert_eq!(
         script,
-        r#"window.__leafInitialState = {"document":null,"favorites":[{"kind":"document","path":"NOTES.md","vaultId":3}],"recent":["README.md"]};"#
+        r#"window.__leafInitialState = {"active":null,"document":null,"favorites":[{"kind":"document","path":"NOTES.md","vaultId":3}],"recent":["README.md"],"tabs":[]};"#
     );
+}
+
+#[test]
+fn initial_state_script_carries_restored_tab_labels_without_a_document() {
+    let tabs = [("Guide".to_string(), "guide.md".to_string())];
+    let script = initial_state_script(&[], &Favorites::default(), &tabs, Some(0));
+
+    assert_contains(&script, r#""tabs":[{"path":"guide.md","title":"Guide"}]"#);
+    assert_contains(&script, r#""active":0"#);
+    assert_contains(&script, r#""document":null"#);
 }
 
 #[test]
@@ -160,6 +170,7 @@ fn fragment_scroll_script_escapes_fragment_for_webview_handoff() {
 #[test]
 fn initial_settings_script_defines_camelcase_global() {
     let script = initial_settings_script(&Settings {
+        session: Session::default(),
         speed_reader_enabled: true,
         code_intel_enabled: false,
         reading_unlocked: true,

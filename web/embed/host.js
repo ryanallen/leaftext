@@ -55,6 +55,7 @@ export const COMMANDS = {
   windowMinimize: [REFUSED, 'a frame inside a page has no window to minimize'],
   windowToggleMaximize: [REFUSED, 'a frame inside a page has no window to maximize'],
   windowClose: [REFUSED, 'the product closes the frame it mounted, and the page inside it never asks to go'],
+  saveSessionPlace: [REFUSED, 'the product owns the mounted document and its saved session'],
   windowResizeDrag: [REFUSED, 'a frame inside a page has no window frame to resize, and an embed draws no shadow band to grab, so no phase of the drag is ever sent'],
   setWindowChrome: [REFUSED, 'there is no native title bar to paint, and the frame color belongs to the product'],
   setLibraryState: [REFUSED, 'it remembers which folder the pane was inside, and an embed draws no pane'],

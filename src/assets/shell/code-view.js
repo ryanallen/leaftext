@@ -147,6 +147,20 @@ function viewScrollFraction() {
   return Math.min(1, Math.max(0, app.scrollTop / scrollable));
 }
 
+let sessionPlaceTimer = 0;
+function scheduleSessionPlace() {
+  clearTimeout(sessionPlaceTimer);
+  sessionPlaceTimer = setTimeout(() => saveSessionPlace(), 240);
+}
+function saveSessionPlace() {
+  if (!activeDocumentPath()) return;
+  send({
+    command: 'saveSessionPlace',
+    scroll_anchor: codeViewActive ? null : currentScrollAnchor(),
+    code_scroll: codeViewActive ? viewScrollFraction() : null,
+  });
+}
+
 // Whether the active view sits at its very top. Same split as above: asking the shell in the code view always says yes, which sends every toggle back to the top.
 function viewAtTop() {
   if (codeViewActive && monacoEditor) return monacoEditor.getScrollTop() <= 1;
@@ -684,6 +698,7 @@ function createMonacoEditor(monaco, container, state, text) {
     scheduleSourceUpdate();
   });
   monacoReadOnlySub = monacoEditor.onDidAttemptReadOnlyEdit(growlLockedForReading);
+  monacoEditor.onDidScrollChange(() => scheduleSessionPlace());
   // Keep the wrap gap in step with the width: set it now, then on every relayout.
   monacoLayoutSub = monacoEditor.onDidLayoutChange(() => {
     applyCodeViewWrapColumn();
@@ -833,4 +848,3 @@ window.leafSaved = (path, ok, error) => {
     window.leafShowOpenError(path, error);
   }
 };
-

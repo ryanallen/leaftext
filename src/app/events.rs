@@ -241,6 +241,14 @@ pub(crate) enum IpcCommand {
     WindowToggleMaximize,
     #[serde(rename = "windowClose")]
     WindowClose,
+    /// The active view stopped moving, so its position can survive a native close.
+    #[serde(rename = "saveSessionPlace")]
+    SaveSessionPlace {
+        #[serde(default)]
+        scroll_anchor: Option<ScrollAnchor>,
+        #[serde(default)]
+        code_scroll: Option<f64>,
+    },
     /// A drag in the shadow band, which is the only edge the window has left: the web view covers every pixel of it, so the page is the only thing that sees the press. `direction` is the compass point grabbed (`n`, `ne`, `e`, `se`, `s`, `sw`, `w`, `nw`); `phase` is `start`, `move` or `end`; `x` and `y` are the pointer on the screen. Windows acts on the press alone and hands the window to the platform's own resize loop; macOS is refused that call, so the host holds the window's rectangle from the press and sets it on every move.
     #[serde(rename = "windowResizeDrag")]
     WindowResizeDrag {
