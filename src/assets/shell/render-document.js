@@ -162,9 +162,15 @@ function homeRecentScoped(recent) {
 function homeRecentHelp() {
   return 'Files you open show up here.';
 }
-// The small word over the headline: the vault you are standing in, or the app's own name outside every vault. Both lists on the screen are that vault's, so it belongs over the screen rather than on each box.
+// The small name over the headline: a vault, Library when vaults exist, or the app with none. Both lists follow that scope, so it belongs over the screen rather than on each box.
 function homeKicker() {
-  return activeVaultId ? libraryRootLabel() : 'Leaftext';
+  return activeVaultId || leafVaults.length ? libraryRootLabel() : 'Leaftext';
+}
+function homeKickerMarkup() {
+  const label = homeKicker();
+  if (!leafVaults.length) return `<p class="kicker">${escapeText(label)}</p>`;
+  const switchLabel = `Switch vault (in ${label})`;
+  return `<button type="button" class="kicker library-vault-switch home-vault-switch" aria-haspopup="menu" aria-expanded="false" title="${escapeAttr(switchLabel)}" aria-label="${escapeAttr(switchLabel)}"><span class="library-crumb-caret" aria-hidden="true">▾</span>${vaultGlyph(true, activeVaultId)}${escapeText(label)}</button>`;
 }
 // The favorites as the screen draws them: what the store holds, plus every row that has been unfavorited and is still on its way out, back where it was.
 function homeFavoritesDrawn(favorites) {
@@ -653,7 +659,7 @@ function renderState() {
   updateEditingChrome();
   app.innerHTML = `
     <section class="empty-state">
-      <p class="kicker">${escapeText(homeKicker())}</p>
+      ${homeKickerMarkup()}
       <h1>Refine your mind.</h1>
       <p class="empty-subtitle">Your thoughts, secure and free.</p>
       <p class="empty-description">${escapeText(emptyDescription)}</p>
@@ -668,6 +674,8 @@ function renderState() {
     </section>`;
   app.querySelector('.primary-open').addEventListener('click', () => send({ command: 'open' }));
   app.querySelector('.primary-new').addEventListener('click', () => send({ command: 'newDocument' }));
+  const homeVaultSwitch = app.querySelector('.home-vault-switch');
+  if (homeVaultSwitch) bindVaultSwitch(homeVaultSwitch, false);
   bindHomeRows(app);
   watchHomeLists(app);
   // The last answer, back on the fresh rows, so a heart press does not unmark the column for as long as the next answer takes — then ask again, because the disk is the answer and only the binary can read it.

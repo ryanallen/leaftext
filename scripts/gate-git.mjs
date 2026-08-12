@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse hook on the shell tools. Refuses a git write unless the message being answered said `/git-release`. This is the one rule reading cannot hold, so a script holds it: scripts/gate-rules.mjs writes a license on every turn, because a PreToolUse hook never sees the prompt.
+// PreToolUse hook on the shell tools. Refuses a git write unless the message being answered said `$git-release`. This is the one rule reading cannot hold, so a script holds it: scripts/gate-rules.mjs writes a license on every turn, because a PreToolUse hook never sees the prompt.
 //
 // One license file per session, because two agents can work this checkout at once and a license keyed on the machine is a license the other agent can spend.
 //
@@ -61,7 +61,7 @@ export function gitWrite(command) {
   return '';
 }
 
-// True only when the message being answered right now, in this session, said `/git-release`. Two agents can share this checkout, and a license keyed on the machine authorizes whichever of them asks first, for four hours — which is the rule the whole repo's git safety rests on. No session id at all refuses everything: an environment that changed shape must not turn the gate off.
+// True only when the message being answered right now, in this session, said `$git-release`. Two agents can share this checkout, and a license keyed on the machine authorizes whichever of them asks first, for four hours — which is the rule the whole repo's git safety rests on. No session id at all refuses everything: an environment that changed shape must not turn the gate off.
 export function licensed(raw, session, now = Date.now()) {
   if (!session || !raw) return false;
   try {
@@ -92,9 +92,9 @@ function deny(write, session) {
       permissionDecision: 'deny',
       permissionDecisionReason: [
         session
-          ? `Refused: ${write} is a git write and this message does not say \`/git-release\`.`
+          ? `Refused: ${write} is a git write and this message does not say \`$git-release\`.`
           : `Refused: ${write} is a git write and nothing here can tell which session asked, so no license can be found.`,
-        'AGENTS.md: only a `/git-release` in the message being answered right now authorizes one, and only in the session it was said in.',
+        'AGENTS.md: only a `$git-release` in the message being answered right now authorizes one, and only in the session it was said in.',
         'A dirty tree is the correct end state — say what changed and stop. Do not offer to push.',
       ].join(' '),
     },

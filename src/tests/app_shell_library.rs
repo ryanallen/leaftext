@@ -645,10 +645,11 @@ fn a_vault_that_reaches_github_wears_a_cloud() {
 
     // And the switcher button wears the mark of the vault it stands for; only the glyph is replaced, the caret beside it is ours.
     assert!(html.contains("setVaultGlyph(libraryVaultSwitch, vaultGlyph(true, activeVaultId));"));
+    assert!(html.contains("setVaultGlyph(homeVaultSwitch, vaultGlyph(true, activeVaultId));"));
 
     // An icon is a name on a masked span, never a drawing. Both swaps went looking for an `svg`, found nothing, and left every vault wearing a box however far its repository reached -- so both go through one helper now, and that helper looks for the span.
     assert!(html.contains("const glyph = host && host.querySelector('.lt-icon');"));
-    assert_eq!(html.matches("setVaultGlyph(").count(), 3);
+    assert_eq!(html.matches("setVaultGlyph(").count(), 4);
 }
 
 #[test]
@@ -661,7 +662,7 @@ fn rebuilding_the_breadcrumb_leaves_the_vault_switcher_open() {
     ));
     // The switcher is not in the trail, which is what makes the guard hold.
     assert!(html.contains("id=\"libraryVaultSwitch\""));
-    assert!(html.contains("toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());"));
+    assert!(html.contains("bindVaultSwitch(libraryVaultSwitch, true);"));
 }
 
 #[test]
@@ -1069,7 +1070,8 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     // Its own control, left of the breadcrumb — not the first crumb. A crumb is a place, and clicking a place has to go there.
     assert!(html
         .contains(r#"<button type="button" id="libraryVaultSwitch" class="library-vault-switch""#));
-    assert!(html.contains("toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());"));
+    assert!(html.contains("bindVaultSwitch(libraryVaultSwitch, true);"));
+    assert!(html.contains("toggleCrumbMenu(button, vaultMenuItems());"));
     assert!(css.contains(".library-vault-switch {"));
     // It wears the same glyph its menu rows do — one file, stamped in by the host and inlined into the page, so the two cannot drift. A package, not a folder: a vault is a whole collection, and it has to read as different from the plain directories listed below it.
     for icon in ["package-open", "package"] {
@@ -1156,7 +1158,8 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     assert!(!html.contains("crumbMenu.addEventListener('contextmenu'"));
     // Only the crumb-trail buttons toggle the menu shut on a second click. A click inside it that swaps the rows must not close it — that is the bug where a row's own button looks like it did nothing.
     assert!(html.contains("function toggleCrumbMenu(button, items)"));
-    assert!(html.contains("toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());"));
+    assert!(html.contains("bindVaultSwitch(libraryVaultSwitch, true);"));
+    assert!(html.contains("toggleCrumbMenu(button, vaultMenuItems());"));
     assert!(html.contains("toggleCrumbMenu(more, folderMenuItems(hidden));"));
     let show = html
         .split("function showCrumbMenu(button, items) {")

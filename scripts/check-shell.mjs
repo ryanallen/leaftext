@@ -4282,7 +4282,39 @@ if (booted) {
     }
   });
 
-  check('standing in a vault the word over the headline is the vault, and the list headings are plain', () => {
+  check('the home vault switcher opens the pane list and closes before a vault redraw', () => {
+    const button = fakeElement('homeVaultSwitch');
+    button.classList.add('library-vault-switch', 'home-vault-switch');
+    booted.bindVaultSwitch(button, false);
+    const press = button.listeners.get('pointerdown')[0];
+    const event = { button: 0, stopPropagation() {}, preventDefault() {} };
+    booted.leafSetVaults({ vaults: VAULTS, active: 1 });
+    press(event);
+    if (vm.runInContext('crumbMenu.hidden', booted) || vm.runInContext('crumbMenuOwner', booted) !== button) {
+      throw new Error('the home word did not open the vault list under itself');
+    }
+    press(event);
+    if (!vm.runInContext('crumbMenu.hidden', booted)) throw new Error('the home word did not close its open list');
+    press(event);
+    booted.leafSetVaults({ vaults: VAULTS, active: 2 });
+    if (!vm.runInContext('crumbMenu.hidden', booted) || vm.runInContext('crumbMenuOwner', booted) !== null) {
+      throw new Error('a vault redraw left a list anchored on the home word that is gone');
+    }
+    booted.leafSetVaults({ vaults: [], active: 0 });
+  });
+
+  check('the home vault switcher keeps the regular marks and leaves room before its name', () => {
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const home = css.split('.home-vault-switch {')[1];
+    if (!home || !home.startsWith('\n  margin-left: calc(-1 * var(--lt-space-8));\n  gap: var(--lt-space-4);')) {
+      throw new Error('the home switcher does not leave room between its icon and name');
+    }
+    if (css.includes('.home-vault-switch .lt-icon-')) {
+      throw new Error('the home switcher still replaces its regular vault marks with heavier ones');
+    }
+  });
+
+  check('the start screen switcher names a vault or Library, and no vaults leave the app name plain', () => {
     const screen = (active) =>
       withVaults(VAULTS, active, () => {
         booted.window.leafSetState({ recent: RECENT, favorites: KEPT, tabs: [], active: null, document: null });
@@ -4294,17 +4326,25 @@ if (booted) {
       });
     const inside = screen(1);
     // The whole screen is that vault's, both lists included, so it is said once over everything — in the word that was already there.
-    if (!inside.includes('<p class="kicker">Dharma</p>')) {
-      throw new Error(`the word over the headline is not the vault: ${inside.slice(0, 400)}`);
+    if (!inside.includes('<button type="button" class="kicker library-vault-switch home-vault-switch"') || !inside.includes('lt-icon-package-open') || !inside.includes('>Dharma</button>')) {
+      throw new Error(`the word over the headline is not the vault switcher: ${inside.slice(0, 400)}`);
     }
     // And nowhere else: the lists are headed what they have always been headed.
     if (!inside.includes('<h2>Recent (1)</h2>') || !inside.includes('<h2>Favorites (2)</h2>')) {
       throw new Error(`a list heading is not the plain one it was: ${inside}`);
     }
     if (inside.includes('home-list-vault')) throw new Error('the vault is named twice on one screen');
-    const outside = screen(0);
-    if (!outside.includes('<p class="kicker">Leaftext</p>')) {
-      throw new Error(`outside every vault the word over the headline is not the app's: ${outside.slice(0, 400)}`);
+    const library = screen(0);
+    if (!library.includes('<button type="button" class="kicker library-vault-switch home-vault-switch"') || !library.includes('lt-icon-computer') || !library.includes('>Library</button>')) {
+      throw new Error(`the Library start screen cannot open the vault switcher: ${library.slice(0, 400)}`);
+    }
+    const plain = withVaults([], 0, () => {
+      booted.window.leafSetState({ recent: RECENT, favorites: KEPT, tabs: [], active: null, document: null });
+      booted.__frames.drain();
+      return booted.document.getElementById('app').innerHTML;
+    });
+    if (!plain.includes('<p class="kicker">Leaftext</p>')) {
+      throw new Error(`a start screen with no vaults is not the app's plain word: ${plain.slice(0, 400)}`);
     }
   });
 

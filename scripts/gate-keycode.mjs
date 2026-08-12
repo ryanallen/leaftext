@@ -30,7 +30,7 @@ export function recordPath(session) {
 /// The rule file, required on every message that is not a host command.
 export const ALWAYS = 'AGENTS.md';
 
-/// Every file that carries a keycode. A skill is required when the message names it with a slash, which is how a skill gets invoked.
+/// Every file that carries a keycode. A skill is required when the message names it with a dollar sign; slash aliases stay readable for older transcripts.
 export function keyedFiles() {
   const skills = [
     'add-dependency', 'add-format', 'check', 'code-comments', 'dev',
@@ -59,7 +59,7 @@ export function requiredFor(prompt) {
   const required = [ALWAYS];
   for (const file of keyedFiles()) {
     const name = file.match(/skills\/(.*?)\//)?.[1];
-    if (name && new RegExp(`(^|\\s)/${name}\\b`, 'i').test(prompt)) required.push(file);
+    if (name && new RegExp(`(^|\\s)[$/]${name}\\b`, 'i').test(prompt)) required.push(file);
   }
   return required;
 }
@@ -132,7 +132,7 @@ function selfTest() {
   }
 
   if (!requiredFor('hello').includes(ALWAYS)) fails.push('the rule file is not always required');
-  if (requiredFor('/check it').length !== 2) fails.push('/check did not require the check skill');
+  if (requiredFor('$check it').length !== 2) fails.push('$check did not require the check skill');
   if (requiredFor('run the checker').length !== 1) fails.push('prose required a skill file');
   if (codeIn('<!-- keycode: LEAF-0001 -->') !== 'LEAF-0001') fails.push('codeIn: missed a code');
   if (codeIn('no code here') !== null) fails.push('codeIn: invented a code');

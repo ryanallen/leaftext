@@ -3,7 +3,7 @@
 //
 //   1. Print Rule 1 out of AGENTS.md, so the tone rule is read again rather than
 //      remembered. The file is the copy; this script holds none of its own.
-//   2. Record whether this message says `/git-release`, in `.tmp/git-license`.
+//   2. Record whether this message says `$git-release`, in `.tmp/git-license`.
 //      A PreToolUse hook never sees the prompt, so scripts/gate-git.mjs reads
 //      what this wrote.
 //
@@ -61,9 +61,9 @@ export function isMeta(prompt) {
   return META.some((m) => first === m || first.startsWith(m + ':'));
 }
 
-// `/git-release` typed as this message's command, and nothing else, authorizes a git write. Anchored to the start because that is where a slash command is: a match anywhere let a message that merely *quoted* the string grant one, and pasting a transcript back is exactly how that happened.
+// `$git-release` typed as this message's command, and nothing else, authorizes a git write. Anchored to the start because a mention anywhere would let a quoted transcript grant one.
 export function hasReleaseLicense(prompt) {
-  return /^\/git-release\b/i.test(prompt.trim());
+  return /^[$\/]git-release\b/i.test(prompt.trim());
 }
 
 // The `# Rule 1` section of AGENTS.md, up to the rule after it.
@@ -90,8 +90,8 @@ export function context(prompt, rule) {
   if (hints.length) out.push('', ...hints.map((h) => `- ${h}`));
   out.push('', `- Read these before you finish, and report each one's keycode with \`node scripts/gate-keycode.mjs <file> <code>\`: ${requiredFor(prompt).join(', ')}. The keycode is an HTML comment at the end of the file. The turn cannot end until every one is in.`);
   out.push('', hasReleaseLicense(prompt)
-    ? '- `/git-release` is in this message: one git write is authorized, for this turn only.'
-    : '- No `/git-release` in this message. Git writes are refused by scripts/gate-git.mjs. Do not offer or hint at one; a dirty tree is the correct end state.');
+    ? '- `$git-release` is in this message: one git write is authorized, for this turn only.'
+    : '- No `$git-release` in this message. Git writes are refused by scripts/gate-git.mjs. Do not offer or hint at one; a dirty tree is the correct end state.');
   out.push('- Before handing work back: `just verify`. Say what changed in plain words. Never mention that the Mac build or the installer cannot be built here — it is true every time, it is already known, and saying it is the padding Rule 1 refuses.');
   return out.join('\n');
 }
@@ -118,13 +118,13 @@ function writeLicense(granted, prompt, session) {
 function selfTest() {
   const cases = [
     ['plain message', false],
-    ['/git-release', true],
-    ['/git-release 0.1.441', true],
-    ['  /git-release  ', true],
+    ['$git-release', true],
+    ['$git-release 0.1.441', true],
+    ['  $git-release  ', true],
     // v0.1.442: the release ran off a message that only quoted the transcript. A mention is not an instruction, wherever in the message it sits.
-    ['ship it with /git-release please', false],
-    ['i ran /git-release and you refused, why', false],
-    ['> /git-release\n\n● Running the pre-steps', false],
+    ['ship it with $git-release please', false],
+    ['i ran $git-release and you refused, why', false],
+    ['> $git-release\n\n● Running the pre-steps', false],
     ['read .agents/skills/git-release/SKILL.md', false],
     ['tell me about git-release', false],
   ];
@@ -145,7 +145,7 @@ function selfTest() {
   if (!reminders('editing src/assets/reading.css').length) fails.push('reminders: reading.css matched nothing');
   if (reminders('hello').length) fails.push('reminders: fired on a message that touches nothing');
   if (!context('hello', rule).includes('refused')) fails.push('context: missing the git refusal');
-  if (!context('/git-release', rule).includes('authorized')) fails.push('context: missing the license note');
+  if (!context('$git-release', rule).includes('authorized')) fails.push('context: missing the license note');
 
   // The ring, which all three hooks write to now. Per hook, because the tool gate fires on every command and would otherwise push the one prompt of the turn out before anyone read it back.
   const line = (hook, n) => JSON.stringify({ hook, n });

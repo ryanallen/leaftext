@@ -31,7 +31,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 
 A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
-The button at the left of the breadcrumb opens the vault switcher. What it wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder).
+The button at the left of the breadcrumb opens the vault switcher. The same button appears over the start screen whenever a vault exists, so switching to Library never leaves you there. What it wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder). Its mark stays the regular weight and sits apart from its name.
 
 While the list is open, the button and the vault's name beside it light as one shape, because what you pick changes the whole pane — the name, the path, the file tree and what search reads — rather than the icon you pressed. Vaults read A to Z, ignoring capitals. The name is still a place: clicking it goes to the vault's top folder.
 

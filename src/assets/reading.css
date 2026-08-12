@@ -1492,6 +1492,10 @@ body.library-resizing {
   display: flex;
   align-items: center;
 }
+.home-vault-switch {
+  margin-left: calc(-1 * var(--lt-space-8));
+  gap: var(--lt-space-4);
+}
 .library-crumb-caret {
   flex: none;
   font-size: var(--lt-text-9);

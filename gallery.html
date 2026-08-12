@@ -3877,6 +3877,10 @@ body.library-resizing {
   display: flex;
   align-items: center;
 }
+.home-vault-switch {
+  margin-left: calc(-1 * var(--lt-space-8));
+  gap: var(--lt-space-4);
+}
 .library-crumb-caret {
   flex: none;
   font-size: var(--lt-text-9);
@@ -8486,7 +8490,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 60 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 61 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8508,7 +8512,7 @@ body.is-home-row-dragging .home-list-scroll li {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>155</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>60</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>60</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>61</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8867,7 +8871,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">60 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">61 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -9071,6 +9075,10 @@ body.is-home-row-dragging .home-list-scroll li {
 <section class="part">
 <header><h3>Empty state</h3><code class="built">.empty-state</code><span class="built">render-document.js</span></header>
 <div class="stage"><div class="empty-state" style="padding:8px 0"><div class="empty-subtitle">Nothing open</div><div class="empty-description">Open a document to start.</div></div></div>
+</section>
+<section class="part">
+<header><h3>Start screen vault switcher</h3><code class="built">.home-vault-switch</code><span class="built">render-document.js, library.js</span></header>
+<div class="stage"><button type="button" class="kicker library-vault-switch home-vault-switch" aria-haspopup="menu" aria-expanded="false"><span class="library-crumb-caret" aria-hidden="true">▾</span><span class="lt-icon lt-icon-package-open"></span>Vault</button></div>
 </section>
 <section class="part">
 <header><h3>Home list row</h3><code class="built">.home-row</code><span class="built">render-document.js</span></header>

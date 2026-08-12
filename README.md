@@ -119,7 +119,7 @@ Type `[[` and your notes are listed, by file name and by any [other name](docs/0
 
 ![The library pane open beside a document, showing the vault switcher, the folder breadcrumb, the search box, and a file list of one folder](imgs/library.png)
 
-A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md)**
+A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over; the same switcher over the start screen takes you back from Library. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md#vaults)**
 
 The button that changes where the list is rooted is a caret and a mark, which says nothing on its own — so the first time you open the pane, one small bubble points at it and then never appears again. **[The first-launch bubble →](docs/01-features/03-library.md#the-bubble-on-your-first-launch)**
 

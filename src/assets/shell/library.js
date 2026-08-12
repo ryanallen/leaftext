@@ -730,7 +730,7 @@ function refreshVaultGitPanel(id) {
 }
 // A status answer only changes a row's glyph (box vs cloud). Rebuilding the whole menu for that tears down every row, so a click landing mid-rebuild hits a node already gone: the button that "only works sometimes". Swap just the glyph in place instead. Skipped while the settings panel owns the menu (crumbMenuVault set), which has no such rows.
 function refreshSwitcherGlyphs() {
-  if (crumbMenu.hidden || crumbMenuOwner !== libraryVaultSwitch || crumbMenuVault) return;
+  if (crumbMenu.hidden || !crumbMenuOwner || !crumbMenuOwner.classList.contains('library-vault-switch') || crumbMenuVault) return;
   for (const item of crumbMenu.querySelectorAll('.crumb-menu-item[data-vault-id]')) {
     const id = Number(item.dataset.vaultId);
     setVaultGlyph(item, vaultGlyph(id === 0 ? !activeVaultId : id === activeVaultId, id));
@@ -1204,20 +1204,29 @@ function renderLibraryVaultSwitch() {
   libraryVaultSwitch.title = label;
   libraryVaultSwitch.setAttribute('aria-label', label);
 }
+function renderHomeVaultSwitch() {
+  const homeVaultSwitch = app.querySelector('.home-vault-switch');
+  if (!homeVaultSwitch) return;
+  setVaultGlyph(homeVaultSwitch, vaultGlyph(true, activeVaultId));
+  const label = `Switch vault (in ${libraryRootLabel()})`;
+  homeVaultSwitch.title = label;
+  homeVaultSwitch.setAttribute('aria-label', label);
+}
+function bindVaultSwitch(button, retire) {
+  button.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    if (retire) retireHint('libraryVault');
+    crumbMenuVault = null;
+    toggleCrumbMenu(button, vaultMenuItems());
+  });
+}
 if (libraryVaultSwitch) {
   // Nothing on screen says a caret and a mark is how you get somewhere else, so the first launch with the pane open points at it once. The words say what pressing it does, not what is behind it: the drives, the cloud folders and the word "vault" are all things to meet after the press. First registered, and so the first hint anybody meets.
   registerHint('libraryVault', () => libraryVaultSwitch, 'Pick which folder the list below shows.');
   // On the press, and stopping it there: the menu's own close-on-outside-press listens for the same event, so a click-based toggle here would let that listener close the menu on the way down and this reopen it on the way up.
-  libraryVaultSwitch.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0) return;
-    event.stopPropagation();
-    event.preventDefault();
-    // Whoever opened this has found it, so the hint has done its work.
-    retireHint('libraryVault');
-    // Opening (or reopening) the switcher shows the list, not a settings panel.
-    crumbMenuVault = null;
-    toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());
-  });
+  bindVaultSwitch(libraryVaultSwitch, true);
 }
 // Search reads the vault's text, so without a vault there is nothing for it to read. The field is hidden rather than left to return nothing — a box that looks like it works and does not is worse than no box.
 function renderLibrarySearchability() {
@@ -1292,7 +1301,11 @@ window.leafSetVaults = (payload) => {
   libraryCrumbFitKey = null;
   renderLibrary();
   // The start screen's favorites are the vault you are in, so a registry that moved leaves them saying the vault you left. Any push means a change worth redrawing: switching, adding, renaming, repointing or removing all end here.
-  if (homeScreenIsShowing()) renderState();
+  if (homeScreenIsShowing()) {
+    if (crumbMenuOwner && crumbMenuOwner.classList.contains('home-vault-switch')) hideCrumbMenu();
+    renderState();
+  }
+  renderHomeVaultSwitch();
   // A vault's own panel is drawn off its row, so a row that just moved -- signing out is the one that does -- leaves the panel saying what was true before it.
   if (crumbMenuVault) {
     const fresh = leafVaults.find((entry) => entry && entry.id === crumbMenuVault.id);
