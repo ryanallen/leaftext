@@ -1,11 +1,11 @@
-// Right-click menu for the library pane, the tab bar, and a link in the document, acting on whatever the pointer is over: a file, a folder, a link, or the folder you are browsing when it is over none of them. Groups: open, clipboard, rename, locate, and destructive delete last.
+// Right-click menu for files, folders, links, and the reading page.
 const contextMenu = document.createElement('div');
 contextMenu.className = 'context-menu';
 contextMenu.hidden = true;
 contextMenu.setAttribute('role', 'menu');
 appSurface.appendChild(contextMenu);
 let contextMenuPath = null;
-// What was right-clicked: 'file', 'folder', 'here' (the pane's empty space, standing for the folder being browsed), or 'link' (a link in the document, whose href sits in contextMenuPath). It picks which list of items to show.
+// What was right-clicked: a file or folder in the pane, its empty space, a document link, or the document itself. It picks which list of items to show.
 let contextMenuTargetKind = 'file';
 // The link element itself when the menu is a link's, so Open runs the same path a plain click on it does rather than a second reading of the href.
 let contextMenuLink = null;
@@ -46,6 +46,15 @@ const LINK_MENU_ITEMS = [
   // The host resolves the href into a real path for these two; the page cannot.
   { action: 'revealLink', label: 'Reveal file', pageOnly: true },
   { action: 'copyLinkPath', label: 'Copy path', pageOnly: true },
+];
+const PAGE_MENU_ITEMS = [
+  { action: 'favorite', label: 'Favorite' },
+  'separator',
+  { action: 'copyPath', label: 'Copy path' },
+  { action: 'reveal', label: 'Reveal file' },
+  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
+  'separator',
+  { action: 'delete', label: 'Delete', danger: true },
 ];
 function hideContextMenu() {
   if (contextMenu.hidden) {
@@ -111,8 +120,11 @@ function contextMenuEntries() {
       ).map(labelForLinkEntry)
     );
   }
-  const entries =
-    contextMenuTargetKind === 'file' ? CONTEXT_MENU_ITEMS : FOLDER_MENU_ITEMS;
+  const entries = contextMenuTargetKind === 'file'
+    ? CONTEXT_MENU_ITEMS
+    : contextMenuTargetKind === 'page'
+      ? PAGE_MENU_ITEMS
+      : FOLDER_MENU_ITEMS;
   return tidySeparators(
     entries
       .filter((entry) => {
@@ -211,8 +223,13 @@ document.addEventListener('contextmenu', (event) => {
     showContextMenu(event.clientX, event.clientY, row.getAttribute('data-reveal-path'), kind);
     return;
   }
-  // Anywhere else in the pane's scrolling area means the folder being browsed. It is the scroll box and not the row list because the list is only as tall as its rows, and the space below them is most of the pane in a small folder. It is the scroll box and not the whole pane so the search field keeps its own menu, which is the one with Paste for text in it.
   const editable = event.target.closest('input, textarea, [contenteditable="true"]');
+  if (!editable && event.target.closest('.reader-layout')) {
+    event.preventDefault();
+    showContextMenu(event.clientX, event.clientY, activeDocumentPath(), 'page');
+    return;
+  }
+  // Anywhere else in the pane's scrolling area means the folder being browsed. It is the scroll box and not the row list because the list is only as tall as its rows, and the space below them is most of the pane in a small folder. It is the scroll box and not the whole pane so the search field keeps its own menu, which is the one with Paste for text in it.
   if (!editable && event.target.closest('.library-scroll')) {
     event.preventDefault();
     showContextMenu(event.clientX, event.clientY, libraryFolderHere(), 'here');

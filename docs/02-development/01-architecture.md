@@ -218,15 +218,15 @@ Key `IpcCommand` variants include:
 | `logError`             | Anything the page threw: `window.onerror`, a rejected promise, or a `console.error`, on its way to the log file. Carries how many times that same text has been seen, because `journal.js` collapses a repeat rather than sending every one |
 | `revealLink`           | [Link context menu](../01-features/02-navigation.md#opening-a-link-in-a-new-page): resolve the href against the open document, then reveal that file |
 | `copyLinkPath`         | Link context menu: the same resolution, then the path to the clipboard. The page cannot do either itself — only the host knows where the open document sits |
-| `revealFile`           | File row context menu: reveal in file manager |
+| `revealFile`           | File row or page context menu: reveal in file manager |
 | `copyFile`             | File row context menu: cut/copy the file to the clipboard |
-| `copyPath`             | File row context menu: copy the file path as text |
+| `copyPath`             | File row or page context menu: copy the file path as text |
 | `renameFile`           | File row context menu: inline rename |
-| `deleteFile`           | File row context menu: move to Recycle Bin / Trash, once the confirmation is answered |
+| `deleteFile`           | File row or page context menu: move to Recycle Bin / Trash, once the confirmation is answered |
 | `undoDelete`           | Put the last deleted file back where it came from. Carries the path, so a stale offer cannot restore something else |
-| `showProperties`       | File or folder context menu: OS properties view |
+| `showProperties`       | File, folder, or page context menu: OS properties view |
 | `pasteFile`            | Folder context menu: [move or copy](../01-features/03-library.md#cut-copy-paste) what was cut or copied into that folder |
-| `toggleFavorite`       | The heart on a tab, and the right-click item for anything not open. Which vault the path belongs to is worked out here, since the page never knows it |
+| `toggleFavorite`       | The heart on a tab, and the right-click item for a file, folder, or page. Which vault the path belongs to is worked out here, since the page never knows it |
 | `checkFavorites`       | Asked as the start screen draws its favorites: which of them are no longer on the disk. The answer marks the rows already on screen |
 | `repointFavorite`      | Point a favorite at the file it has become, through the same picker Open uses. Never automatic — silent and wrong is worse than visible and broken |
 | `moveFavorite`         | Drag a favorite into a new position, sent as the path it should sit before |

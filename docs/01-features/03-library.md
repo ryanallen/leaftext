@@ -20,7 +20,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
 | [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, with a sync button in its own header — and a repository can be [cloned](#clone-a-repository) into a new vault |
-| [File actions](#file-actions) | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
+| [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
@@ -112,7 +112,7 @@ Right-click a file row for a context menu of file actions:
 | Properties | Opens the OS file-properties view |
 | Delete | Asks first, then moves the file to the Recycle Bin / Trash — and offers it back |
 
-A link inside a document you are reading has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), which shares Reveal file and Copy path with this one.
+Right-click anywhere on the rendered page, including the blank space around its text, for the actions about the document you are reading: **Favorite** or **Unfavorite**, **Copy path**, **Reveal file**, **Properties**, and **Delete**. **Open**, **Cut**, **Copy**, and **Rename** stay on a file row because they act on a row in a folder. A link inside a document has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), and a block being typed in keeps its text menu.
 
 Reveal and Properties map to each OS:
 

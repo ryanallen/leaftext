@@ -1243,6 +1243,68 @@ fn app_shell_gives_a_document_link_its_own_right_click_menu() {
 }
 
 #[test]
+fn app_shell_gives_the_reading_page_its_file_actions_right_click_menu() {
+    let html = app_shell_page();
+
+    for expected in [
+        "const PAGE_MENU_ITEMS = [",
+        "{ action: 'favorite', label: 'Favorite' },",
+        "{ action: 'copyPath', label: 'Copy path' },",
+        "{ action: 'reveal', label: 'Reveal file' },",
+        "{ action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },",
+        "{ action: 'delete', label: 'Delete', danger: true },",
+        "showContextMenu(event.clientX, event.clientY, activeDocumentPath(), 'page');",
+        "contextMenuTargetKind === 'page'",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    let link_branch = html
+        .find("const documentLink = documentLinkFor(event.target);")
+        .expect("the contextmenu handler tests for a document link");
+    let row_branch = html
+        .find("const row = event.target.closest('[data-reveal-path]');")
+        .expect("the contextmenu handler tests for a pane row");
+    let page_branch = html
+        .find("event.target.closest('.reader-layout')")
+        .expect("the contextmenu handler tests for the reading page");
+    assert!(
+        link_branch < row_branch && row_branch < page_branch,
+        "a link and a pane row must keep their own right-click menus before the page menu"
+    );
+
+    assert!(html.contains("if (!editable && event.target.closest('.reader-layout'))"));
+    assert!(
+        !html.contains("if (!editable && event.target.closest('.document-body'))"),
+        "the reader layout includes the page gutter beyond the document body"
+    );
+    assert!(
+        html.contains("if (!path) {\n    return;\n  }"),
+        "a start screen with no active document must not open a menu"
+    );
+
+    let page_items = html
+        .find("const PAGE_MENU_ITEMS = [")
+        .expect("the page has its own menu items");
+    let delete = html[page_items..]
+        .find("{ action: 'delete', label: 'Delete', danger: true },")
+        .expect("the page menu ends in delete");
+    let close = html[page_items..]
+        .find("];\nfunction hideContextMenu")
+        .expect("the page menu closes after its entries");
+    assert!(
+        delete < close,
+        "Delete is the last action in the page menu behind its separator"
+    );
+    let page_menu = &html[page_items..page_items + close];
+    assert!(
+        page_menu
+            .ends_with("  'separator',\n  { action: 'delete', label: 'Delete', danger: true },\n"),
+        "Delete is separated from the other page actions and comes last"
+    );
+}
+
+#[test]
 fn app_shell_routes_in_page_history_through_app_navigation() {
     let html = app_shell_page();
 

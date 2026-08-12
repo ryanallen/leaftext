@@ -166,7 +166,7 @@ Where the window is too narrow for two columns, each list shows its first five r
 Recent is a record of where you have been, and anything that fails to open drops off it. A favorite is a choice you made, so it stays until you say otherwise, and it has its own column on the home screen beside Recent.
 
 - **From the tab you are reading.** Point at the tab and a heart appears in its top-left corner: click it to favorite the file, click it again to stop. It is filled when the file is already a favorite, and it fades out a beat after the pointer leaves — a strip of tabs at rest carries no marks, so the list is where you see them all.
-- **From a right-click, for anything else.** **Favorite** in the menu, reading **Unfavorite** on one that is already a favorite. It works on a row in the [library](03-library.md) pane, on a tab, and on a row in the recent list — and on a folder as well as a file.
+- **From a right-click, for anything else.** **Favorite** in the menu, reading **Unfavorite** on one that is already a favorite. It works on a row in the [library](03-library.md) pane, on the page you are reading, on a tab, and on a row in the recent list — and on a folder as well as a file.
 - **From the home screen.** Every row in the Favorites column carries a filled heart: click it and the file is unfavorited. The row stays for half a minute, dimmed, and clicking the heart again puts it back — so unfavoriting one is never a click you cannot take back.
 - Marking shows straight away and is saved beside the recent list, in the same file.
 - A favorite belongs to the [vault](03-library.md#vaults) it was marked inside. Something opened from outside every vault can still be favorited; removing a vault takes its own favorites with it.
