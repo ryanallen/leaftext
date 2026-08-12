@@ -960,6 +960,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   }
   // The gutter and the selection bar read the format and the unlock, so they bind after both are set.
   bindBlockControls();
+  bindTableSheet();
   bindSelectionToolbar();
   if (!deferCaret) placePendingCaret(body);
 }
@@ -974,4 +975,3 @@ window.leafBlocksResynced = (state) => {
     setDirtyState(path, !!state.dirty);
   }
 };
-

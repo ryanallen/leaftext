@@ -3324,6 +3324,30 @@ if (booted) {
     }
   });
 
+  // This sheet is a reader before it becomes an editor: it copies only a safe rendered table, and no route from opening or closing it reaches the document buffer.
+  check('a full-window table is safe to open and cannot write in its first phase', () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/table-sheet.js'), 'utf8');
+    for (const part of ['function bindTableSheet()', 'tableWysiwygSafe(table)', 'function openTableSheet(table, opener)', 'function closeTableSheet()', 'table.cloneNode(true)', 'function scrollTableSheetHorizontally(event)', 'event.metaKey', 'dragWindowFrom(head)', "event.key !== 'Escape'"]) {
+      if (!fragment.includes(part)) throw new Error(`the table sheet lost: ${part}`);
+    }
+    if (/\b(?:send|sendEditCommand|ipc\.postMessage)\b/.test(fragment)) {
+      throw new Error('opening or closing the table sheet can still reach the document buffer');
+    }
+    const lib = readFileSync(join(root, 'src/lib.rs'), 'utf8');
+    const decorate = lib.indexOf('assets/shell/decorate.js');
+    const tableSheet = lib.indexOf('assets/shell/table-sheet.js');
+    const minimap = lib.indexOf('assets/shell/minimap.js');
+    if (tableSheet < decorate || tableSheet > minimap) throw new Error('the table sheet is outside the fragment range its table needs');
+    const dom = readFileSync(join(root, 'src/assets/shell/dom.js'), 'utf8');
+    if (!dom.includes('function dragWindowFrom(bar) {')) {
+      throw new Error('the full-window table header no longer borrows the app bar drag rule');
+    }
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    for (const rule of ['.table-sheet-grid th,', 'border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);', 'background: var(--lt-markdown-table-header-background);', '.table-sheet-grid tr:nth-child(2n) td']) {
+      if (!css.includes(rule)) throw new Error(`the table sheet no longer carries the page table treatment: ${rule}`);
+    }
+  });
+
   // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.
   const tableLaneRule = () => {
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');

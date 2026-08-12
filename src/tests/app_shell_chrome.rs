@@ -1203,6 +1203,7 @@ fn the_app_bar_maximizes_from_the_second_press_not_from_a_dblclick() {
         &html,
         "dragWindowFrom(document.getElementById('flowSheetHead'));",
     );
+    assert_contains(&html, "function dragWindowFrom(bar) {");
     assert!(
         handler.contains("windowToggleMaximize") && handler.contains("event.detail === 2"),
         "the second press is what maximizes: {handler}"

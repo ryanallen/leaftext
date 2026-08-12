@@ -293,6 +293,24 @@ const send = (message) => {
   window.ipc.postMessage(JSON.stringify(message));
 };
 
+// The app bar and a full-window sheet are both title bars when the native one is gone, so they share the press that hands a drag to the host.
+let windowDragPressedAtX = null;
+let windowDragPressedAtY = null;
+function dragWindowFrom(bar) {
+  if (!bar) return;
+  bar.addEventListener('mousedown', (event) => {
+    const wasX = windowDragPressedAtX;
+    const wasY = windowDragPressedAtY;
+    windowDragPressedAtX = null;
+    windowDragPressedAtY = null;
+    if (event.button !== 0 || !event.target || event.target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .update-menu')) return;
+    windowDragPressedAtX = window.screenX;
+    windowDragPressedAtY = window.screenY;
+    const windowStayedPut = window.screenX === wasX && window.screenY === wasY;
+    send({ command: event.detail === 2 && windowStayedPut ? 'windowToggleMaximize' : 'windowDrag' });
+  });
+}
+
 // Custom title-bar chrome, in two kinds. Neither platform gives us a native title bar to keep: on Windows there is none, and on a Mac Apple's own three dots are turned off so ours can fold into the chevron menu the way every other control does. So both draw the same three buttons, from the same markup, wired to the same three commands — the Mac styles them as dots and stands them at the bar's left end. Both kinds get the drag region.
 if (window.__leafFrameless || window.__leafMacFrame) {
   document.body.classList.add('frameless');
@@ -313,27 +331,7 @@ if (window.__leafFrameless || window.__leafMacFrame) {
   winButton('winMinimize', 'windowMinimize');
   winButton('winMaximize', 'windowToggleMaximize');
   winButton('winClose', 'windowClose');
-  // Drag from empty app-bar space only — never from a control, tab, or field.
-  const isDragTarget = (target) =>
-    target &&
-    !target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .update-menu');
   // The three window buttons are ours on both platforms now, so the one exclusion above covers a press on a Mac dot as well as on a Windows one. Maximize is decided on the way down: a drag hands the window to the platform's own move loop, which swallows every later mouse event, so an app-bar dblclick can never fire. event.detail is the click count, but it counts in page coordinates and a dragged window carries the page under the cursor — so a press just after a quick drag also arrives as 2. An unmoved window.screenX is what tells the second click apart from the tail of a drag.
-  let pressedAtX = null;
-  let pressedAtY = null;
-  const dragWindowFrom = (bar) => {
-    if (!bar) return;
-    bar.addEventListener('mousedown', (event) => {
-      const wasX = pressedAtX;
-      const wasY = pressedAtY;
-      pressedAtX = null;
-      pressedAtY = null;
-      if (event.button !== 0 || !isDragTarget(event.target)) return;
-      pressedAtX = window.screenX;
-      pressedAtY = window.screenY;
-      const windowStayedPut = window.screenX === wasX && window.screenY === wasY;
-      send({ command: event.detail === 2 && windowStayedPut ? 'windowToggleMaximize' : 'windowDrag' });
-    });
-  };
   dragWindowFrom(appBar);
   // The flowchart sheet covers the app bar, so its header is the drag bar while it is open — otherwise the window cannot be moved without closing the sheet.
   dragWindowFrom(document.getElementById('flowSheetHead'));

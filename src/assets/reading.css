@@ -3833,6 +3833,40 @@ body.is-block-dragging .document-body [data-src-start] {
 .table-lane > table {
   scroll-timeline: --lt-table-scroll inline;
 }
+/* The table's reading control is a second corner action beside the content, so it appears only when the table is being aimed at and leaves the page quiet otherwise. */
+.table-sheet-open {
+  position: absolute;
+  top: var(--lt-space-6);
+  right: var(--lt-space-6);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--lt-duration-120) var(--lt-ease);
+}
+.table-sheet-open .lt-icon {
+  width: 16px;
+  height: 16px;
+}
+.table-lane:hover .table-sheet-open,
+.table-sheet-open:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.table-sheet-open:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
 /* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The lattice anchors to the wrapper rather than to the window: a transformed element is the containing block for its own fixed background. */
 .table-lane::before,
 .table-lane::after {
@@ -5946,6 +5980,79 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 .diagram-overlay.open {
   opacity: 1;
+}
+/* A table copied from the page at the window's size. The copy is a reader until phase 2 gives it tools, so its scroll box is the only interaction it owns. */
+.table-sheet-overlay {
+  position: fixed;
+  inset: var(--lt-space-16);
+  z-index: var(--lt-z-41);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--lt-surface-elevated);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-xl);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--lt-duration-220) var(--lt-ease-decelerate);
+}
+.table-sheet-overlay.open {
+  opacity: 1;
+}
+.table-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: var(--lt-space-8) var(--lt-space-10) var(--lt-space-8) var(--lt-space-16);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+}
+.table-sheet-title {
+  margin: 0;
+  color: var(--lt-foreground);
+  font: var(--lt-weight-700) var(--lt-text-15) var(--heading-font);
+}
+.table-sheet-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--lt-space-16);
+  overflow: auto;
+}
+.table-sheet-grid > table {
+  border-collapse: collapse;
+  display: block;
+  width: max-content;
+  max-width: none;
+  font-family: var(--app-font);
+  line-height: var(--lt-leading-1-45);
+}
+.table-sheet-grid th,
+.table-sheet-grid td {
+  border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+  padding: 0.375em 0.8125em;
+}
+.table-sheet-grid th {
+  background: var(--lt-markdown-table-header-background);
+  color: var(--lt-markdown-heading);
+  font-weight: var(--lt-weight-600);
+}
+.table-sheet-grid tr:nth-child(2n) td {
+  background: var(--lt-tint-row);
+}
+.table-sheet-grid th,
+.table-sheet-grid tr:nth-child(2n) td {
+  --lt-grain-dot: var(--reader-surface-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+.table-sheet-grid tr:nth-child(2n + 1) td {
+  --lt-grain-dot: var(--reader-row-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
 }
 /* A `pre.mermaid` like the block in the page, and deliberately outside any .document-body: what it is for is the room the reading column does not have. */
 .diagram-stage {

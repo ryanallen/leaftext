@@ -160,6 +160,7 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     // Generated from design/icons.md, and data only: the icon set the next fragment hands to mermaid so `A@{ icon: "leaf:back" }` draws the app's own drawing rather than mermaid's off-theme blue square.
     include_str!("assets/mermaid-icons.js"),
     include_str!("assets/shell/decorate.js"),
+    include_str!("assets/shell/table-sheet.js"),
     // After decorate.js: the full-window diagram borrows its zoom group builder and its delegated pan, wheel and click.
     include_str!("assets/shell/diagram-view.js"),
     include_str!("assets/shell/minimap.js"),
