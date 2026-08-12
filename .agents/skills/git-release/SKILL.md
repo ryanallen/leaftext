@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: Commit and push releases, the only skill allowed to write git. Ships built tickets for testing, sets their stage to Released for test, and tells the owner to run $done afterward. Use only when the user explicitly requests a release or git operation.
+description: Commit and push releases, the only skill allowed to write git. Ships built tickets for testing, sets their stage to Released for test, and tells the owner to run the done skill afterward. Use only when the user explicitly requests a release or git operation.
 disable-model-invocation: true
 argument-hint: "[version] [message]"
 user-invocable: true
@@ -8,7 +8,7 @@ user-invocable: true
 
 # Git Release
 
-This is the only skill that commits, tags, pushes, or changes the version. Run `$sync-docs`, `$code-comments`, and `$check` before committing. App changes bump the version and tag the release; site-only changes push without a version bump. Never add assistant identity to a commit.
+This is the only skill that commits, tags, pushes, or changes the version. Run `/sync-docs`, `/code-comments`, and `/check` before committing. App changes bump the version and tag the release; site-only changes push without a version bump. Never add assistant identity to a commit.
 
 An app change is one that touches `src/`, `Cargo.toml`, `Cargo.lock`, `build.rs`, `wix/`, `leaf.rc`, `scripts/` or a `release-` workflow. Everything else — the README, the site, `docs/`, `design/`, `themes/`, the skills, the plan tree — is site-only: commit and push `main`, make no tag, and leave the version alone. Read that off the diff against the remote rather than off memory of what was edited.
 
@@ -38,6 +38,6 @@ The push is the last write, but it is not the end. Read the workflow list once a
 
 If none exists, start the two release workflows by hand against that tag rather than pushing the tag again. Never re-push a tag.
 
-After the release, tell the owner to test it and run `$done`. If any ticket is already `Released for test`, stop and tell the owner to run `$done` before another release.
+After the release, tell the owner to test it and run the done skill, named with your host's own sign — `/done` in Claude, `$done` in Codex. If any ticket is already `Released for test`, stop and tell the owner to run it before another release.
 
 <!-- keycode: LEAF-4409 -->

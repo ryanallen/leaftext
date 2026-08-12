@@ -202,6 +202,9 @@ pub(crate) enum IpcCommand {
     /// A hover tooltip wants a linked document's line count. `href` resolves against the active doc; `token` correlates the answer with the hover.
     #[serde(rename = "countLines")]
     CountLines { href: String, token: u64 },
+    /// A hovered local link wants its rendered opening. `token` keeps an old hover answer from changing the current tooltip.
+    #[serde(rename = "previewLink")]
+    PreviewLink { href: String, token: u64 },
     #[serde(rename = "goBack")]
     GoBack { scroll_anchor: ScrollAnchor },
     #[serde(rename = "goForward")]

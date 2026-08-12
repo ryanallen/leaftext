@@ -693,6 +693,50 @@ fn only_a_link_with_a_file_behind_it_resolves_to_a_path() {
 }
 
 #[test]
+fn a_local_link_preview_is_bounded_cached_and_refreshed_after_an_edit() {
+    let dir = std::env::temp_dir().join(format!("leaf-link-preview-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let current = dir.join("current.md");
+    let target = dir.join("target.md");
+    fs::write(&current, "# Current").expect("current document is written");
+    fs::write(
+        &target,
+        format!(
+            "# Preview\n\nOpening text.\n\n{}hidden tail",
+            "word ".repeat(16_000)
+        ),
+    )
+    .expect("target document is written");
+
+    let first = link_preview_html("target.md", &current).expect("local document previews");
+    assert!(
+        first.contains("Opening text."),
+        "the opening renders: {first}"
+    );
+    assert!(
+        !first.contains("hidden tail"),
+        "the render stops at the bounded head"
+    );
+    assert_eq!(
+        link_preview_html("target.md", &current),
+        Some(first),
+        "an unchanged target reuses its preview"
+    );
+    assert_eq!(link_preview_html("https://example.com", &current), None);
+    assert_eq!(link_preview_html("missing.md", &current), None);
+
+    fs::write(&target, "# Changed\n\nNew opening.").expect("target document is changed");
+    let refreshed = link_preview_html("target.md", &current).expect("changed target previews");
+    assert!(
+        refreshed.contains("New opening."),
+        "an edit refreshes the cached render"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
 fn resolves_local_markdown_links_against_current_document() {
     let current = fixture_source_path("guide/chapter/README.md");
 
@@ -1198,6 +1242,19 @@ fn the_link_menus_two_host_items_arrive_under_the_names_the_page_sends() {
     match serde_json::from_str::<IpcCommand>(r#"{"command":"copyLinkPath","href":"./b.md"}"#) {
         Ok(IpcCommand::CopyLinkPath { href }) => assert_eq!(href, "./b.md"),
         other => panic!("Copy path on a link did not arrive: {other:?}"),
+    }
+}
+
+#[test]
+fn a_link_preview_request_arrives_with_its_hover_token() {
+    match serde_json::from_str::<IpcCommand>(
+        r#"{"command":"previewLink","href":"./b.md","token":7}"#,
+    ) {
+        Ok(IpcCommand::PreviewLink { href, token }) => {
+            assert_eq!(href, "./b.md");
+            assert_eq!(token, 7);
+        }
+        other => panic!("Link preview did not arrive: {other:?}"),
     }
 }
 

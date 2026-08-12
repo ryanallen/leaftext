@@ -19,7 +19,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
-| [Link hints](#link-hints) | Hover a link to see what kind it is and where it points |
+| [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, and the opening of a linked note |
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the page's own dot texture under the pointer |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
@@ -240,7 +240,7 @@ The pager is always there; it is not a [setting](05-settings.md#pager).
 
 ![A link in a paragraph being hovered, with a small tooltip beside the cursor naming it as another page, showing the href it was written with and the length of the document it leads to](../../imgs/link-hint.png)
 
-Hovering a link shows a small tooltip that names what kind of link it is and shows the exact href it was written with, so you can tell a [glossary](#glossary) term from an in-page jump from an outside site before you click. When the link opens another document, the tooltip also shows how long that document is, in lines, so you know whether you are about to open a short note or a long one.
+Hovering a link shows a small tooltip that names what kind of link it is and shows the exact href it was written with, so you can tell a [glossary](#glossary) term from an in-page jump from an outside site before you click. When the link opens another document, the tooltip shows that document's opening above the same detail rows, along with its length in lines. It opens with a dot-textured loading space and keeps one size while the opening arrives; website links keep the text-only tooltip, so a hover never contacts a site.
 
 | Hint | When you see it |
 | --- | --- |

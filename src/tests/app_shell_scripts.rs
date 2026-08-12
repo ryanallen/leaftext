@@ -207,6 +207,14 @@ fn glossary_failed_script_gives_the_page_a_reason_to_show() {
 }
 
 #[test]
+fn link_preview_script_keeps_document_markup_out_of_javascript_syntax() {
+    assert_eq!(
+        link_preview_script(7, "<p>\"quoted\"</p>"),
+        r#"window.leafLinkPreview(7, "<p>\"quoted\"</p>");"#
+    );
+}
+
+#[test]
 fn a_taken_code_view_edit_reports_only_the_dirty_state() {
     // The editor owns what is on screen, so the acknowledgment says nothing about the text: no colored markup, and no copy of the buffer coming back down the channel the edit just went out on.
     let taken = source_updated_script(true);

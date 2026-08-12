@@ -3215,6 +3215,21 @@ body.mac-frame.is-fullscreen .window-controls {
   mask-repeat: no-repeat;
   mask-composite: subtract;
 }
+/* The fade above runs across the whole box, so a surface as small as the link card lands its entire visible ring in the last, nearly transparent stretch and shows nothing; these stops put the fade in the ring itself. */
+.link-hover-tip::before {
+  -webkit-mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) calc(100% - 34px),
+      transparent 100%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) calc(100% - 34px),
+      transparent 100%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+}
 /* Every spinner in the app: a ring with one lit edge, turning. The shape and the turn are here; a site keeps only its own size and colors, because those are what differ — a 12px ring in a settings row, a 34px one on an empty reader. */
 .lt-spinner {
   box-sizing: border-box;
@@ -7500,6 +7515,69 @@ body.is-home-row-dragging .home-list-scroll li {
   background: color-mix(in srgb, var(--lt-background) 92%, black);
   color: var(--lt-foreground);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--lt-duration-300) var(--lt-ease-accelerate);
+}
+.link-hover-tip.shown {
+  opacity: 1;
+  transition-duration: var(--lt-duration-100);
+  transition-timing-function: var(--lt-ease-decelerate);
+}
+/* One width for every card with a picture: sized by its own words, a short address made a narrow card whose scaled note wrapped its heading into a tall column. */
+.link-hover-tip.has-preview {
+  width: 22rem;
+}
+.link-hover-tip-preview {
+  position: relative;
+  contain: inline-size;
+  width: 100%;
+  height: 11rem;
+  max-height: 11rem;
+  margin-bottom: var(--lt-space-8);
+  padding-bottom: var(--lt-space-8);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  overflow: hidden;
+  transition: height var(--lt-duration-100) var(--lt-ease-emphasized);
+}
+.link-hover-tip-preview-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  opacity: 1;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-decelerate);
+}
+.link-hover-tip-preview-spinner {
+  width: var(--lt-space-24);
+  height: var(--lt-space-24);
+  border-width: var(--lt-stroke-2);
+}
+/* A card on its way out is not loading anything; its spinner stops with it. */
+.link-hover-tip:not(.shown) .link-hover-tip-preview-spinner {
+  visibility: hidden;
+}
+.link-hover-tip-preview-scale {
+  width: calc(100% / 0.36);
+  opacity: 0;
+  transform: scale(0.36);
+  transform-origin: top left;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-decelerate);
+}
+.link-hover-tip-preview.is-loaded .link-hover-tip-preview-placeholder {
+  opacity: 0;
+}
+.link-hover-tip-preview.is-loaded .link-hover-tip-preview-scale {
+  opacity: 1;
+}
+.link-hover-tip-preview-document {
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 .link-hover-tip-kind {
   font-size: 0.78rem;
@@ -9019,7 +9097,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </section>
 <section class="part">
 <header><h3>Link preview</h3><code class="built">.link-hover</code><span class="built">glossary.js</span></header>
-<div class="stage"><div class="link-hover-tip" style="position:static"><div class="link-hover-tip-kind">Note</div><div class="link-hover-tip-detail">A linked note — its opening line.</div></div></div>
+<div class="stage"><div class="link-hover-tip shown has-preview" style="position:static"><div class="link-hover-tip-preview"><div class="link-hover-tip-preview-placeholder"><span class="lt-spinner link-hover-tip-preview-spinner"></span></div><div class="link-hover-tip-preview-scale"><div class="document-body link-hover-tip-preview-document"><h2>A linked note</h2><p>Its opening line.</p></div></div></div><div class="link-hover-tip-kind">Note</div><div class="link-hover-tip-detail">A linked note — its opening line.</div></div></div>
 </section>
 <section class="part">
 <header><h3>Document alerts</h3><code class="built">.markdown-alert</code><span class="built">decorate.js, dom-to-markdown.js</span></header>

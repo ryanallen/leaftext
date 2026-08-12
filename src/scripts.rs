@@ -420,6 +420,11 @@ pub fn line_count_script(token: u64, lines: i64) -> String {
     format!("window.leafLineCount({token}, {lines});")
 }
 
+/// Answer a hover tooltip's delayed `previewLink` request with already-sanitized document HTML.
+pub fn link_preview_script(token: u64, html: &str) -> String {
+    format!("window.leafLinkPreview({token}, {html:?});")
+}
+
 /// One answer channel for every code-view IntelliSense ask: the page matches the echoed `token` to the popup, hover or lint pass that asked.
 fn code_intel_answer(token: u64, mut payload: serde_json::Value) -> String {
     payload["token"] = serde_json::json!(token);

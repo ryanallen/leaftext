@@ -765,6 +765,20 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         "Failed to send line count to the webview",
                     );
                 }
+                IpcCommand::PreviewLink { href, token } => {
+                    let Some(html) = reader
+                        .workspace
+                        .active_path()
+                        .and_then(|current| link_preview_html(&href, current))
+                    else {
+                        return;
+                    };
+                    run_page_script(
+                        reader.page(),
+                        &link_preview_script(token, &html),
+                        "Failed to send link preview to the webview",
+                    );
+                }
                 IpcCommand::GoBack { scroll_anchor } => {
                     let Some(active) = reader.workspace.active else {
                         return;

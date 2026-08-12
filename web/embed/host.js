@@ -40,6 +40,7 @@ export const COMMANDS = {
   revealLink: [REFUSED, 'there is no file manager to show it in'],
   copyLinkPath: [REFUSED, 'a link in an embedded document names nothing on the machine reading it'],
   countLines: [REFUSED, 'it counts the lines of a linked document, and an embed holds one document rather than the folder around it'],
+  previewLink: [REFUSED, 'an embed holds one document rather than the linked-document collection this preview reads'],
   goBack: [REFUSED, 'an embed draws no history pair, and where a reader has been is for the product to remember'],
   goForward: [REFUSED, 'an embed draws no history pair, and where a reader has been is for the product to remember'],
   setSpeedReaderEnabled: [ANSWERED],

@@ -86,6 +86,7 @@ export const COMMANDS = {
   revealLink: [REFUSED, 'there is no file manager to show it in'],
   copyLinkPath: [REFUSED, 'a served document has no path on this machine'],
   countLines: [LATER, 'web-app-commands'],
+  previewLink: [LATER, 'web-app-commands'],
   goBack: [REFUSED, 'the browser draws its own Back one row above, so a site draws no pair of its own and never sends this'],
   goForward: [REFUSED, 'the browser draws its own Forward one row above, so a site draws no pair of its own and never sends this'],
   setSpeedReaderEnabled: [ANSWERED],

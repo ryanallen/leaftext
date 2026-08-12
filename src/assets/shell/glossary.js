@@ -155,10 +155,13 @@ const linkHoverTip = document.createElement('div');
 linkHoverTip.className = 'link-hover-tip';
 linkHoverTip.hidden = true;
 linkHoverTip.innerHTML =
+  '<div class="link-hover-tip-preview" hidden><div class="link-hover-tip-preview-placeholder"><span class="lt-spinner link-hover-tip-preview-spinner"></span></div><div class="link-hover-tip-preview-scale"><div class="document-body link-hover-tip-preview-document"></div></div></div>' +
   '<div class="link-hover-tip-kind"></div>' +
   '<div class="link-hover-tip-detail"></div>' +
   '<div class="link-hover-tip-lines" hidden></div>';
 appSurface.appendChild(linkHoverTip);
+const linkHoverTipPreview = linkHoverTip.querySelector('.link-hover-tip-preview');
+const linkHoverTipPreviewDocument = linkHoverTip.querySelector('.link-hover-tip-preview-document');
 const linkHoverTipKind = linkHoverTip.querySelector('.link-hover-tip-kind');
 const linkHoverTipDetail = linkHoverTip.querySelector('.link-hover-tip-detail');
 const linkHoverTipLines = linkHoverTip.querySelector('.link-hover-tip-lines');
@@ -167,6 +170,22 @@ const canHoverLinks = window.matchMedia('(hover: hover) and (pointer: fine)').ma
 let activeHoverToken = 0;
 const lineCountCache = new Map();
 const pendingLineTokens = new Map();
+const linkPreviewCache = new Map();
+const pendingPreviewTokens = new Map();
+let linkHoverPreviewTimer = 0;
+let linkHoverHideTimer = 0;
+let linkHoverShowFrame = 0;
+let linkHoverEndFade = null;
+let linkHoverPointer = null;
+let linkHoverLeaveFrame = 0;
+// The pointer's latest place. A leave settles here, not at the stale point its own event carried.
+let linkHoverClientX = -1;
+let linkHoverClientY = -1;
+function recordLinkHoverPoint(event) {
+  if (typeof event.clientX !== 'number') return;
+  linkHoverClientX = event.clientX;
+  linkHoverClientY = event.clientY;
+}
 function formatLineCount(n) {
   return formatCount(n) + ' ' + (n === 1 ? 'line' : 'lines');
 }
@@ -185,10 +204,87 @@ window.leafLineCount = (token, lines) => {
     setLinkHoverLines(lines);
   }
 };
+// The desktop command and page function land together; phase two gives this answer its delayed preview behavior.
+function durationTokenMilliseconds(token) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  const amount = Number.parseFloat(value);
+  if (!Number.isFinite(amount)) return 0;
+  return value.endsWith('ms') ? amount : amount * 1000;
+}
+function setLinkHoverPreview(html) {
+  const present = typeof html === 'string' && html !== '';
+  linkHoverTipPreviewDocument.innerHTML = present ? html : '';
+  linkHoverTipPreview.classList.toggle('is-loaded', present);
+  if (!present) linkHoverTipPreview.style.removeProperty('height');
+  if (present) requestAnimationFrame(sizeLinkHoverPreview);
+}
+function sizeLinkHoverPreview() {
+  if (!linkHoverTipPreview.classList.contains('is-loaded')) return;
+  const article = linkHoverTipPreviewDocument.querySelector('article');
+  const source = article && article.children.length ? article : linkHoverTipPreviewDocument;
+  // The whole opening, not its first blocks: the height cap lands most notes at one size, and only a note shorter than the cap hugs its content.
+  const blocks = [...source.children].filter((block) => block.offsetHeight > 0);
+  const last = blocks[blocks.length - 1];
+  const height = last ? last.offsetTop + last.offsetHeight : source.scrollHeight;
+  linkHoverTipPreview.style.height = Math.ceil(height * 0.36) + 'px';
+  if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
+}
+linkHoverTipPreviewDocument.addEventListener('load', () => requestAnimationFrame(sizeLinkHoverPreview), true);
+function showLinkHoverPreviewPlaceholder() {
+  linkHoverTipPreview.hidden = false;
+  linkHoverTip.classList.add('has-preview');
+  setLinkHoverPreview(null);
+}
+function hideLinkHoverPreview() {
+  linkHoverTipPreview.hidden = true;
+  linkHoverTip.classList.remove('has-preview');
+  setLinkHoverPreview(null);
+}
+function endLinkHoverFade() {
+  if (linkHoverHideTimer) window.clearTimeout(linkHoverHideTimer);
+  linkHoverHideTimer = 0;
+  if (linkHoverEndFade) linkHoverTip.removeEventListener('transitionend', linkHoverEndFade);
+  linkHoverEndFade = null;
+}
+function showLinkHoverTip(event) {
+  if (linkHoverLeaveFrame) window.cancelAnimationFrame(linkHoverLeaveFrame);
+  linkHoverLeaveFrame = 0;
+  endLinkHoverFade();
+  linkHoverTip.hidden = false;
+  positionLinkHoverTip(event);
+  if (linkHoverShowFrame) window.cancelAnimationFrame(linkHoverShowFrame);
+  linkHoverShowFrame = requestAnimationFrame(() => {
+    linkHoverShowFrame = 0;
+    if (!linkHoverTip.hidden) linkHoverTip.classList.add('shown');
+  });
+}
 let activeHoverLink = null;
 function hideLinkHoverTip() {
+  if (linkHoverPreviewTimer) window.clearTimeout(linkHoverPreviewTimer);
+  linkHoverPreviewTimer = 0;
+  if (linkHoverShowFrame) window.cancelAnimationFrame(linkHoverShowFrame);
+  linkHoverShowFrame = 0;
+  if (linkHoverLeaveFrame) window.cancelAnimationFrame(linkHoverLeaveFrame);
+  linkHoverLeaveFrame = 0;
   activeHoverLink = null;
-  linkHoverTip.hidden = true;
+  linkHoverPointer = null;
+  activeHoverToken += 1;
+  if (linkHoverTip.hidden) {
+    hideLinkHoverPreview();
+    return;
+  }
+  // Already fading: a second exit would stack another listener and timer on the same card.
+  if (linkHoverEndFade) return;
+  linkHoverTip.classList.remove('shown');
+  const hide = (event) => {
+    if (event && event.target !== linkHoverTip) return;
+    endLinkHoverFade();
+    linkHoverTip.hidden = true;
+    hideLinkHoverPreview();
+  };
+  linkHoverEndFade = hide;
+  linkHoverTip.addEventListener('transitionend', hide);
+  linkHoverHideTimer = window.setTimeout(hide, durationTokenMilliseconds('--lt-duration-300'));
 }
 // Worked out in the window's coordinates, which is what the pointer and the button's rectangle are given in, and written out in the app's — the tip is a fixed child of the app surface, so its `left` is measured from there.
 function positionLinkHoverTip(event) {
@@ -220,6 +316,29 @@ function hoverDetail(rawHref) {
 function pagerHoverTitle(link) {
   return link && link.getAttribute ? (link.getAttribute('data-pager-title') || '').trim() : '';
 }
+function requestLinkPreview(key, token) {
+  linkHoverPreviewTimer = window.setTimeout(() => {
+    linkHoverPreviewTimer = 0;
+    if (token !== activeHoverToken || linkHoverTip.hidden) return;
+    if (linkPreviewCache.has(key)) {
+      setLinkHoverPreview(linkPreviewCache.get(key));
+      if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
+      return;
+    }
+    pendingPreviewTokens.set(token, key);
+    send({ command: 'previewLink', href: key, token });
+  }, durationTokenMilliseconds('--lt-duration-300'));
+}
+window.leafLinkPreview = (token, html) => {
+  const key = pendingPreviewTokens.get(token);
+  if (key !== undefined) {
+    pendingPreviewTokens.delete(token);
+    if (typeof html === 'string') linkPreviewCache.set(key, html);
+  }
+  if (token !== activeHoverToken || linkHoverTip.hidden || typeof html !== 'string') return;
+  setLinkHoverPreview(html);
+  if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
+};
 // The href alone, so the card, the middle click and the menu cannot answer differently about one link.
 function linkHoverInfo(rawHref) {
   if (!rawHref) return null;
@@ -254,44 +373,89 @@ function linkHoverInfo(rawHref) {
   }
   return { kind: 'Link', detail: hoverDetail(rawHref) };
 }
-if (canHoverLinks) {
-  document.addEventListener('pointerover', (event) => {
-    const link = event.target.closest('a[href]');
-    if (!link) return;
-    const rawHref = (link.getAttribute('href') || '').trim();
-    const info = linkHoverInfo(rawHref);
-    if (!info) {
-      hideLinkHoverTip();
+function startLinkHover(event) {
+  const link = event.target.closest('a[href]');
+  if (!link) return;
+  recordLinkHoverPoint(event);
+  if (link === activeHoverLink) {
+    linkHoverPointer = event;
+    positionLinkHoverTip(event);
+    return;
+  }
+  const rawHref = (link.getAttribute('href') || '').trim();
+  const info = linkHoverInfo(rawHref);
+  if (!info) {
+    hideLinkHoverTip();
+    return;
+  }
+  if (linkHoverPreviewTimer) window.clearTimeout(linkHoverPreviewTimer);
+  linkHoverPreviewTimer = 0;
+  activeHoverLink = link;
+  linkHoverPointer = event;
+  linkHoverTipKind.textContent = info.kind;
+  linkHoverTipDetail.textContent = info.detail;
+  const token = ++activeHoverToken;
+  setLinkHoverLines(null);
+  // Only in-app page links carry a line count; nothing else does.
+  if (info.kind === 'Another page') {
+    const key = link.href || rawHref;
+    if (linkPreviewCache.has(key)) {
+      // Seen already: straight back up rendered, so a return to a link never blinks its spinner.
+      linkHoverTipPreview.hidden = false;
+      linkHoverTip.classList.add('has-preview');
+      setLinkHoverPreview(linkPreviewCache.get(key));
+    } else {
+      showLinkHoverPreviewPlaceholder();
+      requestLinkPreview(key, token);
+    }
+    if (lineCountCache.has(key)) {
+      setLinkHoverLines(lineCountCache.get(key));
+    } else {
+      pendingLineTokens.set(token, key);
+      send({ command: 'countLines', href: key, token });
+    }
+  } else {
+    hideLinkHoverPreview();
+  }
+  showLinkHoverTip(event);
+}
+// A leave never hides on its own word: one frame later the link under the pointer decides — the active one stays, another takes the card over, none at all hides it.
+function endLinkHover(event) {
+  if (!activeHoverLink) return;
+  const leaving = event.target.closest && event.target.closest('a[href]');
+  if (leaving !== activeHoverLink) return;
+  recordLinkHoverPoint(event);
+  // No destination at all: the pointer left the window, or the link left the page.
+  if (!event.relatedTarget) {
+    hideLinkHoverTip();
+    return;
+  }
+  const wasActive = activeHoverLink;
+  if (linkHoverLeaveFrame) window.cancelAnimationFrame(linkHoverLeaveFrame);
+  linkHoverLeaveFrame = requestAnimationFrame(() => {
+    linkHoverLeaveFrame = 0;
+    // A newer hover owns the card now; its own leave will settle it.
+    if (activeHoverLink !== wasActive) return;
+    const target = document.elementFromPoint && document.elementFromPoint(linkHoverClientX, linkHoverClientY);
+    const link = target && target.closest && target.closest('a[href]');
+    if (link === activeHoverLink) return;
+    if (link) {
+      // A plain object, not a copied event: a pointer event's coordinates do not survive a copy.
+      startLinkHover({ target: link, clientX: linkHoverClientX, clientY: linkHoverClientY });
       return;
     }
-    activeHoverLink = link;
-    linkHoverTipKind.textContent = info.kind;
-    linkHoverTipDetail.textContent = info.detail;
-    const token = ++activeHoverToken;
-    setLinkHoverLines(null);
-    // Only in-app page links carry a line count; nothing else does.
-    if (info.kind === 'Another page') {
-      const key = link.href || rawHref;
-      if (lineCountCache.has(key)) {
-        setLinkHoverLines(lineCountCache.get(key));
-      } else {
-        pendingLineTokens.set(token, key);
-        send({ command: 'countLines', href: key, token });
-      }
-    }
-    linkHoverTip.hidden = false;
-    positionLinkHoverTip(event);
-  });
-  document.addEventListener('pointermove', (event) => {
-    if (!activeHoverLink) return;
-    positionLinkHoverTip(event);
-  });
-  document.addEventListener('pointerout', (event) => {
-    if (!activeHoverLink) return;
-    const next = event.relatedTarget;
-    if (next && next.closest && next.closest('a[href]') === activeHoverLink) return;
     hideLinkHoverTip();
   });
+}
+if (canHoverLinks) {
+  document.addEventListener('pointerover', startLinkHover);
+  document.addEventListener('pointermove', (event) => {
+    recordLinkHoverPoint(event);
+    if (!activeHoverLink) return;
+    linkHoverPointer = event;
+    positionLinkHoverTip(event);
+  });
+  document.addEventListener('pointerout', endLinkHover);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) hideLinkHoverTip();
   });

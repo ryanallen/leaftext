@@ -915,12 +915,12 @@ if (booted) {
     if (linkHoverInfo('file:///docs/logo.png').kind !== 'App link') throw new Error('a file the app cannot read became a page');
   });
 
-  // The card follows the pointer at a fixed offset, which lands inside a target this size — so it covered the very page name it had just been given. Pure arithmetic over two rectangles, and the one part of this nothing else can see.
-  check('the card over a pager button stands clear of it', () => {
+  // The card follows the pointer at a fixed offset, which lands inside a target this size — so it covered the very page name it had just been given. The preview makes the card taller, but the page name still stays clear.
+  check('the taller card over a pager button stands clear of it', () => {
     const { positionLinkHoverTip } = booted;
     const tip = vm.runInContext('linkHoverTip', booted);
     const wasRect = tip.getBoundingClientRect;
-    tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 300, bottom: 70, width: 300, height: 70 });
+    tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 300, bottom: 200, width: 300, height: 200 });
     const target = (title, top) => ({
       getAttribute: (name) => (name === 'data-pager-title' ? title : null),
       getBoundingClientRect: () => ({ top, bottom: top + 70, left: 100, right: 775, width: 675, height: 70 }),
@@ -933,15 +933,209 @@ if (booted) {
     };
     try {
       // Pointer in the middle of a button two thirds down the window: the card goes above the whole button, not to the pointer.
-      if (place(target('The Rains Retreat', 600), 620) !== '520px') throw new Error(`the card landed at ${tip.style.top} instead of above the button`);
+      if (place(target('The Rains Retreat', 600), 620) !== '390px') throw new Error(`the card landed at ${tip.style.top} instead of above the button`);
       // A button at the top of the window has no room above it, so the card goes under it rather than off screen.
       if (place(target('The Rains Retreat', 20), 40) !== '100px') throw new Error(`with no room above, the card landed at ${tip.style.top}`);
-      // An ordinary link is not a big target, and its card still follows the pointer.
-      if (place(target(null, 600), 620) !== '638px') throw new Error(`an ordinary link's card moved to ${tip.style.top}`);
+      // An ordinary link is not a big target, and its card follows the pointer until the window edge keeps it on screen.
+      if (place(target(null, 600), 620) !== '402px') throw new Error(`an ordinary link's card moved to ${tip.style.top}`);
     } finally {
       tip.getBoundingClientRect = wasRect;
       vm.runInContext('activeHoverLink = null;', booted);
       delete booted.__hovered;
+    }
+  });
+
+  check('a linked-note preview waits for a rest, ignores old answers and fades without blinking', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const wasTimeout = booted.setTimeout;
+    const wasClear = booted.clearTimeout;
+    const wasStyle = booted.getComputedStyle;
+    const wasSend = booted.ipc.postMessage;
+    const waiting = [];
+    const cleared = [];
+    const sent = [];
+    booted.setTimeout = (fn, delay) => {
+      waiting.push({ fn, delay });
+      return waiting.length;
+    };
+    booted.clearTimeout = (id) => cleared.push(id);
+    booted.getComputedStyle = () => ({ getPropertyValue: () => '300ms' });
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      vm.runInContext('activeHoverToken = 30; activeHoverLink = {}; linkHoverPointer = { clientX: 300, clientY: 300 }; linkHoverTip.hidden = false; showLinkHoverPreviewPlaceholder(); requestLinkPreview("notes/linked.md", 30);', booted);
+      if (preview.hidden || preview.classList.contains('is-loaded')) throw new Error('the full card did not keep its placeholder while the preview waited');
+      if (waiting.length !== 1 || waiting[0].delay !== 300) throw new Error('the preview did not wait for the deliberate-reveal token');
+      if (sent.length !== 0) throw new Error('the preview asked before the pointer rested');
+      waiting.shift().fn();
+      if (sent.length !== 1 || sent[0].command !== 'previewLink') throw new Error('the rested pointer did not send one preview ask');
+      previewDocument.scrollHeight = 200;
+      booted.window.leafLinkPreview(30, '<p>Opening.</p>');
+      booted.__frames.drain();
+      if (!preview.classList.contains('is-loaded') || previewDocument.innerHTML !== '<p>Opening.</p>') throw new Error('the host answer did not fade into the placeholder');
+      if (preview.style.height !== '72px') throw new Error(`the preview did not shrink to its opening: ${preview.style.height}`);
+      if (tip.innerHTML.indexOf('link-hover-tip-preview') > tip.innerHTML.indexOf('link-hover-tip-kind')) throw new Error('the preview is not above the existing rows');
+      const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+      if (!css.includes('.link-hover-tip-preview-placeholder') || !css.includes('var(--lt-grain-dot)')) throw new Error('the preview placeholder has no dot grain');
+      if (!css.includes('border-bottom: var(--lt-stroke-1) solid var(--lt-border)')) throw new Error('the preview has no divider above its words');
+      if (!css.includes('width: calc(100% / 0.36)') || !css.includes('.link-hover-tip-preview-document {\n  width: 100%')) throw new Error('the rendered opening does not fill the preview card');
+      if (!css.includes('contain: inline-size') || !css.includes('.link-hover-tip-preview {\n  position: relative;\n  contain: inline-size;\n  width: 100%')) throw new Error('the rendered opening can still widen its tooltip');
+      vm.runInContext('hideLinkHoverTip();', booted);
+      booted.window.leafLinkPreview(30, '<p>Old.</p>');
+      if (!preview.classList.contains('is-loaded') || previewDocument.innerHTML !== '<p>Opening.</p>') throw new Error('the exit fade replaced the opening with a spinner');
+      if (tip.hidden || tip.classList.contains('shown')) throw new Error('hiding skipped the slow fade');
+      vm.runInContext('showLinkHoverTip({ clientX: 300, clientY: 300 });', booted);
+      booted.__frames.drain();
+      if (!tip.classList.contains('shown') || cleared.length === 0) throw new Error('a re-hover did not cancel the pending hide');
+      vm.runInContext('hideLinkHoverTip();', booted);
+      waiting.at(-1).fn();
+      if (!tip.hidden) throw new Error('the fade fallback did not hide the card');
+    } finally {
+      booted.setTimeout = wasTimeout;
+      booted.clearTimeout = wasClear;
+      booted.getComputedStyle = wasStyle;
+      booted.ipc.postMessage = wasSend;
+      vm.runInContext('activeHoverLink = null; linkHoverPointer = null; linkHoverTip.hidden = true; linkHoverTip.classList.remove("shown"); hideLinkHoverPreview();', booted);
+    }
+  });
+
+  check('a new link keeps its hover when an old link finishes leaving', () => {
+    const { positionLinkHoverTip } = booted;
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const link = (href) => {
+      const item = {
+        href,
+        getAttribute: (name) => (name === 'href' ? href : null),
+        getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }),
+      };
+      item.closest = () => item;
+      return item;
+    };
+    const first = link('https://example.com/first');
+    const second = link('https://example.com/second');
+    const event = (target, relatedTarget = { body: true }) => ({ target, relatedTarget, clientX: 240, clientY: 210 });
+    const hover = (name, value) => {
+      booted.__hoverEvent = value;
+      vm.runInContext(`${name}(__hoverEvent);`, booted);
+    };
+    const wasRect = tip.getBoundingClientRect;
+    tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 240, bottom: 120, width: 240, height: 120 });
+    try {
+      hover('startLinkHover', event(first));
+      hover('endLinkHover', event(first));
+      hover('startLinkHover', event(second));
+      hover('endLinkHover', event(first));
+      if (vm.runInContext('activeHoverLink', booted) !== second || tip.hidden) throw new Error('an old exit closed the re-entered link');
+      hover('startLinkHover', event(second));
+      if (vm.runInContext('activeHoverLink', booted) !== second) throw new Error('moving within one link restarted its hover');
+      positionLinkHoverTip(event(second));
+    } finally {
+      tip.getBoundingClientRect = wasRect;
+      vm.runInContext('hideLinkHoverTip();', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
+  check('a rapid link handoff settles on the link under the pointer', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const link = (href) => {
+      const item = { href, getAttribute: (name) => (name === 'href' ? href : null), getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }) };
+      item.closest = () => item;
+      return item;
+    };
+    const first = link('notes/first.md');
+    const second = link('notes/second.md');
+    const event = (target) => ({ target, relatedTarget: { body: true }, clientX: 240, clientY: 210 });
+    const hover = (name, value) => {
+      booted.__hoverEvent = value;
+      vm.runInContext(`${name}(__hoverEvent);`, booted);
+    };
+    const wasElementFromPoint = booted.document.elementFromPoint;
+    booted.document.elementFromPoint = () => second;
+    try {
+      hover('startLinkHover', event(first));
+      hover('endLinkHover', event(first));
+      booted.__frames.drain();
+      if (vm.runInContext('activeHoverLink', booted) !== second || tip.hidden) throw new Error('the link under the pointer did not keep its card');
+      // The handoff builds a plain position: a copied pointer event loses its coordinates in the web view.
+      if (vm.runInContext('linkHoverPointer.clientX', booted) !== 240) throw new Error('the handed-off card lost its place');
+    } finally {
+      booted.document.elementFromPoint = wasElementFromPoint;
+      vm.runInContext('hideLinkHoverTip();', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
+  check('a leave settles at the pointer and never clears a newer hover', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const link = (href) => {
+      const item = { href, getAttribute: (name) => (name === 'href' ? href : null), getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }) };
+      item.closest = () => item;
+      return item;
+    };
+    const first = link('notes/first.md');
+    const second = link('notes/second.md');
+    const event = (target) => ({ target, relatedTarget: { body: true }, clientX: 240, clientY: 210 });
+    const hover = (name, value) => {
+      booted.__hoverEvent = value;
+      vm.runInContext(`${name}(__hoverEvent);`, booted);
+    };
+    const reset = () => vm.runInContext('endLinkHoverFade(); activeHoverLink = null; linkHoverPointer = null; linkHoverTip.hidden = true; linkHoverTip.classList.remove("shown"); hideLinkHoverPreview(); activeHoverToken += 1;', booted);
+    const wasElementFromPoint = booted.document.elementFromPoint;
+    try {
+      // A hover that began after the leave was scheduled is not the settle's to touch, even with nothing under the pointer.
+      booted.document.elementFromPoint = () => null;
+      hover('startLinkHover', event(first));
+      booted.__frames.drain();
+      hover('endLinkHover', event(first));
+      booted.__newLink = second;
+      vm.runInContext('activeHoverLink = __newLink;', booted);
+      booted.__frames.drain();
+      if (vm.runInContext('activeHoverLink', booted) !== second || !tip.classList.contains('shown')) throw new Error('an old leave cleared the newer hover');
+      // The settle looks where the pointer is now, not where the leave event said it was, and hands that place to the next card.
+      reset();
+      const seen = [];
+      booted.document.elementFromPoint = (x, y) => { seen.push(String([x, y])); return second; };
+      hover('startLinkHover', event(first));
+      hover('endLinkHover', event(first));
+      hover('recordLinkHoverPoint', { clientX: 500, clientY: 400 });
+      booted.__frames.drain();
+      if (seen.at(-1) !== '500,400') throw new Error(`the settle looked where the pointer used to be: ${seen.at(-1)}`);
+      if (vm.runInContext('activeHoverLink', booted) !== second) throw new Error('the link under the pointer lost the handoff');
+      if (vm.runInContext('linkHoverPointer.clientY', booted) !== 400) throw new Error('the handed-off card lost the pointer’s newest place');
+      // A leave with no destination is a pointer gone from the window: hide at once, no settle to wait on.
+      reset();
+      hover('startLinkHover', event(first));
+      booted.__frames.drain();
+      hover('endLinkHover', { target: first, relatedTarget: null, clientX: 240, clientY: 210 });
+      if (vm.runInContext('activeHoverLink', booted) !== null || tip.classList.contains('shown')) throw new Error('a pointer that left the window kept its card');
+      if (booted.__frames.waiting() !== 0) throw new Error('a window leave still waited for a settle');
+      // A preview the reader has already seen returns rendered, never as a spinner.
+      reset();
+      previewDocument.scrollHeight = 100;
+      vm.runInContext('linkPreviewCache.set("notes/first.md", "<p>Seen.</p>")', booted);
+      hover('startLinkHover', event(first));
+      if (preview.hidden || !preview.classList.contains('is-loaded') || previewDocument.innerHTML !== '<p>Seen.</p>') throw new Error('a seen preview came back as a spinner');
+      // The card carries the fixed-width mark while its preview is open, so every preview card is one width.
+      if (!tip.classList.contains('has-preview')) throw new Error('a card with a preview is still sized by its own words');
+      booted.__frames.drain();
+      vm.runInContext('hideLinkHoverPreview();', booted);
+      if (tip.classList.contains('has-preview')) throw new Error('a card without a preview kept the fixed width');
+      // An exiting card stops its spinner with it.
+      const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+      if (!css.includes('.link-hover-tip:not(.shown) .link-hover-tip-preview-spinner')) throw new Error('an exiting card still spins its spinner');
+      if (!css.includes('.link-hover-tip.has-preview {\n  width: 22rem;\n}')) throw new Error('a preview card has no fixed width of its own');
+      // The shared halftone fades across a fraction of the box; a card this small needs the fade inside its own band or it shows nothing.
+      if (!css.includes('.link-hover-tip::before {') || !css.includes('var(--lt-mask-opaque) calc(100% - 34px)')) throw new Error('the card has no fade stops of its own for the halftone shadow');
+    } finally {
+      booted.document.elementFromPoint = wasElementFromPoint;
+      vm.runInContext('linkPreviewCache.delete("notes/first.md"); hideLinkHoverTip(); endLinkHoverFade();', booted);
+      reset();
+      delete booted.__hoverEvent;
+      delete booted.__newLink;
     }
   });
 
