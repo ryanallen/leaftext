@@ -254,7 +254,7 @@ Hovering a link shows a small tooltip that names what kind of link it is and sho
 | App link | Any other URL scheme |
 | Local path | A root-relative `/path` link |
 
-This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll or when the window loses focus. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the document name printed on it.
+This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll, when the window loses focus, or the moment a new page renders — clicking the link it describes included. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the document name printed on it.
 
 The hint also tells you where a click will land. A link to a document Leaftext reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet) is handed to your operating system to open in whatever owns that type.
 

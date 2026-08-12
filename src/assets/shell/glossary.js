@@ -286,6 +286,16 @@ function hideLinkHoverTip() {
   linkHoverTip.addEventListener('transitionend', hide);
   linkHoverHideTimer = window.setTimeout(hide, durationTokenMilliseconds('--lt-duration-300'));
 }
+// A render destroys the link the card was raised on, so the card goes outright in the same frame — the leave's fade exists for a slide to a neighboring link, and a fresh page has none. The `var` is the guard for the render theme.js runs while this fragment's own state is still in its dead zone: no card exists yet, so there is nothing to hide.
+var linkHoverCardReady = false;
+function dismissLinkHoverTip() {
+  if (!linkHoverCardReady) return;
+  hideLinkHoverTip();
+  endLinkHoverFade();
+  linkHoverTip.classList.remove('shown');
+  linkHoverTip.hidden = true;
+  hideLinkHoverPreview();
+}
 // Worked out in the window's coordinates, which is what the pointer and the button's rectangle are given in, and written out in the app's — the tip is a fixed child of the app surface, so its `left` is measured from there.
 function positionLinkHoverTip(event) {
   const margin = 14;
@@ -447,6 +457,7 @@ function endLinkHover(event) {
     hideLinkHoverTip();
   });
 }
+linkHoverCardReady = true;
 if (canHoverLinks) {
   document.addEventListener('pointerover', startLinkHover);
   document.addEventListener('pointermove', (event) => {

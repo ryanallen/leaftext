@@ -552,6 +552,8 @@ function renderState() {
   cancelReaderScrollSettle();
   // The full-window diagram lives inside `app`, so the render below would take it away with nothing knowing — including the Escape handler still listening.
   closeDiagramOverlay();
+  // The hover card floats beside `app`, so the render below would strand it over a page it does not describe.
+  dismissLinkHoverTip();
   readerAnchorBlocks = null;
   // Any full render shows the reading view, so we're no longer in the code view.
   codeViewActive = false;

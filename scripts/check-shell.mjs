@@ -1067,6 +1067,43 @@ if (booted) {
     }
   });
 
+  // The card floats beside the page, so replacing the page cannot take it along — the render hides it itself, outright, because the leave's fade exists for a slide to a neighboring link and a fresh page has none.
+  check('a fresh render hides the hover card and clears the hovered link', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const link = (href) => {
+      const item = { href, getAttribute: (name) => (name === 'href' ? href : null), getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }) };
+      item.closest = () => item;
+      return item;
+    };
+    const spot = link('notes/first.md');
+    const hover = () => {
+      booted.__hoverEvent = { target: spot, relatedTarget: { body: true }, clientX: 240, clientY: 210 };
+      vm.runInContext('startLinkHover(__hoverEvent);', booted);
+      booted.__frames.drain();
+    };
+    try {
+      hover();
+      if (tip.hidden || !tip.classList.contains('shown')) throw new Error('the card never came up to be rendered over');
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+      if (!tip.hidden || tip.classList.contains('shown')) throw new Error('the render left the card floating over the fresh page');
+      if (vm.runInContext('activeHoverLink', booted) !== null) throw new Error('the render left a link hovered, so the same spot could never raise a new card');
+      if (vm.runInContext('linkHoverEndFade', booted) !== null) throw new Error('the render left a fade running instead of hiding outright');
+      // The same spot raises a new card on the next pointer move.
+      hover();
+      if (tip.hidden || vm.runInContext('activeHoverLink', booted) !== spot) throw new Error('the spot the card was on could not raise a new one');
+      // A render landing mid-fade ends the fade and hides in the same frame, not at the fade's own pace.
+      vm.runInContext('hideLinkHoverTip();', booted);
+      if (tip.hidden) throw new Error('the leave hid outright, so the mid-fade case went untested');
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+      if (!tip.hidden || vm.runInContext('linkHoverEndFade', booted) !== null) throw new Error('a render mid-fade did not cut the fade short');
+    } finally {
+      vm.runInContext('endLinkHoverFade(); activeHoverLink = null; linkHoverPointer = null; linkHoverTip.hidden = true; linkHoverTip.classList.remove("shown"); hideLinkHoverPreview(); activeHoverToken += 1;', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
   check('a leave settles at the pointer and never clears a newer hover', () => {
     const tip = vm.runInContext('linkHoverTip', booted);
     const preview = vm.runInContext('linkHoverTipPreview', booted);
