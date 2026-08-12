@@ -181,13 +181,13 @@ bundle-monaco:
 # export uses (src/png.rs), so documentation images and diagrams cannot drift
 # onto two implementations. Used by scripts/capture-screenshot.ps1.
 squeeze-png source target *flags:
-    cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}" {{ flags }}
+    cargo run --quiet -- --squeeze-png {{ source }} {{ target }} {{ flags }}
 
 # Ask a running copy of the app something over its pipe. A developer tool, never
 # shipped: one MSI and one DMG is the rule. `just mcp` is the same program
 # speaking MCP on stdin/stdout, which is how an AI gets at it.
 ask request:
-    node scripts/mcp-leaftext.mjs --ask '{{ request }}'
+    node scripts/mcp-leaftext.mjs --ask {{ request }}
 
 mcp:
     node scripts/mcp-leaftext.mjs
@@ -198,7 +198,7 @@ mcp:
 # An out ending .png goes through the app's own encoder, so it can be read back.
 # `just ask` is the other half, for anything the page handles itself.
 drive out *steps:
-    node scripts/drive.mjs "{{ out }}" {{ steps }}
+    node scripts/drive.mjs {{ out }} {{ steps }}
 
 # Fail if the gesture driver cannot read its own -Do list: a verb that no longer
 # parses, an unknown one accepted, or an attached run accepting a flag that would
@@ -238,7 +238,7 @@ check-shot-edges:
 # Join same-sized PNG screenshot sources with a vertical or diagonal seam, or tile
 # previews into a grid. The checked helper is the source of every composed picture.
 compose-shots mode out *args:
-    node scripts/compose-shots.mjs {{ mode }} "{{ out }}" {{ args }}
+    node scripts/compose-shots.mjs {{ mode }} {{ out }} {{ args }}
 
 check-compose-shots:
     node scripts/check-compose-shots.mjs
@@ -265,11 +265,15 @@ preview-web folder="":
 # `just drive`. A check that passes is not a button that works.
 #   just drive-web http://localhost:8123/#README.md click:.docs-pager-next shot:out.png
 drive-web url *steps:
-    node scripts/drive-web.mjs "{{ url }}" {{ steps }}
+    node scripts/drive-web.mjs {{ url }} {{ steps }}
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-scratch-names check-verify check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges check-compose-shots
+# Fail on quoted interpolations: cmd.exe passes quotes through as argument characters.
+check-justfile-quotes:
+    node scripts/check-justfile-quotes.mjs
+
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
-    node --experimental-strip-types scripts/prepare-release.mts "{{ version }}" --no-sign-commit
+    node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit
     git push origin HEAD --follow-tags
