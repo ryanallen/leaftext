@@ -53,6 +53,7 @@ const codeIntelButton = document.getElementById('codeIntelButton');
 const libraryCrumbTrail = document.getElementById('libraryCrumbTrail');
 const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');
 const librarySearch = document.getElementById('librarySearch');
+const librarySearchClear = document.getElementById('librarySearchClear');
 const librarySyncButton = document.getElementById('librarySyncButton');
 const librarySearchResults = document.getElementById('librarySearchResults');
 const filterMenu = document.getElementById('filterMenu');
@@ -478,4 +479,3 @@ document.addEventListener('pointermove', leafMarkPointing, { capture: true, pass
 // The pointer leaving the window fires no move, so without this the last box keeps its bar up for as long as the window is unattended.
 document.addEventListener('pointerleave', () => leafMarkPointing(null), { capture: true, passive: true });
 window.leafSetWindowMaximized(window.__leafMaximized);
-

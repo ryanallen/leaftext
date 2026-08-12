@@ -1328,6 +1328,26 @@ body.library-resizing {
 .library-search:focus {
   outline: none;
 }
+.library-search-clear {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+}
+.library-search-clear:hover {
+  background: var(--lt-wash-hover);
+}
+.library-search-clear .lt-icon {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: auto;
+}
 /* The platform's own clear button, in the platform's own blue. Escape already clears the field, and nothing else in the app wears a color nobody chose. */
 .library-search::-webkit-search-cancel-button {
   display: none;

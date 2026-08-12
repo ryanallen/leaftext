@@ -161,6 +161,8 @@ Copying a whole folder is not supported; a folder can be pasted only as a move (
 
 Search covers the active vault. With no vault the field is hidden rather than left to return nothing — a box that looks like it works and does not is worse than no box.
 
+Once you have typed, a cross at the field's right end clears the search and brings the file tree back. Escape does the same after you have opened a result; if [Find in this document](02-navigation.md#find-in-this-document) is open, its first Escape closes that bar instead.
+
 | Search type | Behavior |
 | --- | --- |
 | Name matches | Ranked first, and by how much of the name you typed: the whole name, then the start of it, then the start of a word in it, then buried inside one |

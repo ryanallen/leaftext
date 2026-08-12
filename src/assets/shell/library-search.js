@@ -78,6 +78,7 @@ function searchNoteHtml() {
 function runLibrarySearch(value) {
   const query = (value || '').trim();
   librarySearchQuery = query;
+  updateLibrarySearchClear();
   if (!query) {
     librarySearchHits = null;
     librarySearchError = null;
@@ -92,6 +93,18 @@ function runLibrarySearch(value) {
   renderLibrarySearch();
   send({ command: 'search', query, today: localDateStamp() });
 }
+function updateLibrarySearchClear() {
+  librarySearchClear.hidden = !librarySearch.value;
+}
+function clearLibrarySearch() {
+  if (librarySearchTimer) clearTimeout(librarySearchTimer);
+  librarySearchTimer = 0;
+  closeFilterMenu();
+  librarySearch.value = '';
+  updateLibrarySearchClear();
+  runLibrarySearch('');
+  librarySearch.focus();
+}
 // The reader's own date, so `due:<friday` means their Friday. The host cannot ask the machine this without another crate, and the page has it for free.
 function localDateStamp() {
   const now = new Date();
@@ -100,18 +113,23 @@ function localDateStamp() {
 }
 librarySearch.addEventListener('input', () => {
   const value = librarySearch.value;
+  updateLibrarySearchClear();
   if (librarySearchTimer) clearTimeout(librarySearchTimer);
   librarySearchTimer = window.setTimeout(() => runLibrarySearch(value), SEARCH_DEBOUNCE_MS);
 });
+librarySearchClear.addEventListener('click', clearLibrarySearch);
 // The completion menu takes the arrows, Enter and the first Escape; only then does Escape clear the field and return to the tree.
 librarySearch.addEventListener('keydown', (event) => {
   if (filterMenuKeydown(event)) return;
   if (event.key === 'Escape' && librarySearch.value) {
     event.stopPropagation();
-    librarySearch.value = '';
-    if (librarySearchTimer) clearTimeout(librarySearchTimer);
-    runLibrarySearch('');
+    clearLibrarySearch();
   }
+});
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || findOpen || !librarySearchQuery) return;
+  event.preventDefault();
+  clearLibrarySearch();
 });
 window.leafSetSearchResults = (payload) => {
   const data = payload || {};

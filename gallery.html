@@ -3713,6 +3713,26 @@ body.library-resizing {
 .library-search:focus {
   outline: none;
 }
+.library-search-clear {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+}
+.library-search-clear:hover {
+  background: var(--lt-wash-hover);
+}
+.library-search-clear .lt-icon {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: auto;
+}
 /* The platform's own clear button, in the platform's own blue. Escape already clears the field, and nothing else in the app wears a color nobody chose. */
 .library-search::-webkit-search-cancel-button {
   display: none;
@@ -8565,7 +8585,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 61 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 62 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8587,7 +8607,7 @@ body.is-home-row-dragging .home-list-scroll li {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>155</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>60</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>61</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>62</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8946,7 +8966,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">61 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">62 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -9022,6 +9042,10 @@ body.is-home-row-dragging .home-list-scroll li {
 <section class="part">
 <header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js</span></header>
 <div class="stage"><div class="library-pane" style="position:static;width:240px;height:132px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Library search</h3><code class="built">.library-search-clear</code><span class="built">app-shell.html, driven by library-search.js</span></header>
+<div class="stage"><div class="library-search-wrap" style="width:180px"><input class="library-search" type="search" value="notes"><button type="button" class="library-search-clear" aria-label="Clear search"><span class="lt-icon lt-icon-close"></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js</span></header>

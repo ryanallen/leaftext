@@ -5371,6 +5371,119 @@ check('the document extensions are in scope before the first render', () => {
 // The pane is rewritten whole through innerHTML whenever the host re-reads the folder, and the watcher re-reads it for any change under a recursively watched vault. A row destroyed between a press and its release has nowhere to send the click, so opening a file by clicking its name failed about half the time. Two answers, both wanted: a read that draws the same rows leaves the elements standing, and a row acts on the press.
 
 if (booted) {
+  const librarySearchField = booted.document.getElementById('librarySearch');
+  const librarySearchClear = booted.document.getElementById('librarySearchClear');
+  const inputHandlers = () => librarySearchField.listeners.get('input') || [];
+
+  check('the library search cross follows the field and leaves with its vault', () => {
+    librarySearchField.value = 'draft';
+    for (const handler of inputHandlers()) handler({});
+    if (librarySearchClear.hidden) throw new Error('the first search character left the clear cross hidden');
+
+    librarySearchField.value = '';
+    for (const handler of inputHandlers()) handler({});
+    if (!librarySearchClear.hidden) throw new Error('the last search character left the clear cross showing');
+
+    librarySearchField.value = 'draft';
+    for (const handler of inputHandlers()) handler({});
+    vm.runInContext("runLibrarySearch('draft')", booted);
+    booted.leafSetVaults({ vaults: [], active: 0 });
+    if (!librarySearchClear.hidden) throw new Error('leaving a vault left the clear cross behind');
+  });
+
+  check('the library search cross clears a pending filter and leaves the field ready', () => {
+    const wasClearTimeout = booted.clearTimeout;
+    const wasSetTimeout = booted.setTimeout;
+    const wasFocus = librarySearchField.focus;
+    const cleared = [];
+    booted.clearTimeout = (timer) => cleared.push(timer);
+    booted.setTimeout = () => 41;
+    librarySearchField.focus = () => {
+      booted.document.activeElement = librarySearchField;
+    };
+    try {
+      librarySearchField.value = 'draft';
+      for (const handler of inputHandlers()) handler({});
+      const pending = vm.runInContext('librarySearchTimer', booted);
+      const click = (librarySearchClear.listeners.get('click') || [])[0];
+      if (!click) throw new Error('the clear cross has no click action');
+      click({});
+      if (librarySearchField.value) throw new Error('the clear cross left its query in the field');
+      if (!librarySearchClear.hidden) throw new Error('the clear cross stayed visible after clearing');
+      if (cleared[0] !== pending) throw new Error('the clear cross did not cancel the pending search');
+      if (!booted.document.getElementById('librarySearchResults').hidden) throw new Error('the clear cross did not restore the file tree');
+      if (booted.document.activeElement !== librarySearchField) throw new Error('the clear cross did not return typing to the field');
+    } finally {
+      booted.clearTimeout = wasClearTimeout;
+      booted.setTimeout = wasSetTimeout;
+      librarySearchField.focus = wasFocus;
+    }
+  });
+
+  const libraryEscape = () => {
+    const handler = (booted.__windowListeners.get('keydown') || []).find((one) => one.toString().includes('librarySearchQuery'));
+    if (!handler) throw new Error('the library has no window Escape listener');
+    return handler;
+  };
+  const showingLibrarySearch = () => {
+    librarySearchField.value = 'draft';
+    vm.runInContext("runLibrarySearch('draft')", booted);
+  };
+  const escapeEvent = () => {
+    let prevented = false;
+    let stopped = false;
+    return {
+      event: { key: 'Escape', preventDefault: () => { prevented = true; }, stopPropagation: () => { stopped = true; } },
+      prevented: () => prevented,
+      stopped: () => stopped,
+    };
+  };
+
+  check('Escape outside the search clears a showing library filter', () => {
+    showingLibrarySearch();
+    const key = escapeEvent();
+    libraryEscape()(key.event);
+    if (!key.prevented()) throw new Error('Escape left the library filter to the browser');
+    if (vm.runInContext('librarySearchQuery', booted)) throw new Error('Escape outside the search left the filter showing');
+    if (!booted.document.getElementById('librarySearchResults').hidden) throw new Error('Escape outside the search did not restore the file tree');
+  });
+
+  check('Escape closes the find bar before the library filter', () => {
+    showingLibrarySearch();
+    vm.runInContext('findOpen = true; findBar.hidden = false;', booted);
+    const first = escapeEvent();
+    libraryEscape()(first.event);
+    if (first.prevented()) throw new Error('the library took Escape from the find bar');
+    if (!vm.runInContext('librarySearchQuery', booted)) throw new Error('the library filter cleared before the find bar could close');
+
+    const findEscape = (booted.__windowListeners.get('keydown') || []).find((one) => one.toString().includes('closeFindBar()'));
+    if (!findEscape) throw new Error('the find bar has no window Escape listener');
+    findEscape(first.event);
+    if (vm.runInContext('findOpen', booted)) throw new Error('the find bar did not close on its Escape');
+
+    const second = escapeEvent();
+    libraryEscape()(second.event);
+    if (!second.prevented() || vm.runInContext('librarySearchQuery', booted)) throw new Error('the next Escape did not clear the library filter');
+  });
+
+  check('the library completion menu gets Escape before the library filter', () => {
+    showingLibrarySearch();
+    vm.runInContext("filterMenuItems = [{ label: 'draft' }]", booted);
+    const handler = (librarySearchField.listeners.get('keydown') || [])[0];
+    if (!handler) throw new Error('the library field has no key handler');
+    const key = escapeEvent();
+    handler(key.event);
+    if (!key.stopped()) throw new Error('the completion menu did not hold Escape in the field');
+    if (!vm.runInContext('librarySearchQuery', booted)) throw new Error('the completion menu Escape cleared the library filter');
+  });
+
+  check('Escape without a library filter stays available', () => {
+    vm.runInContext("runLibrarySearch('')", booted);
+    const key = escapeEvent();
+    libraryEscape()(key.event);
+    if (key.prevented() || key.stopped()) throw new Error('an empty library search took Escape from another control');
+  });
+
   /** A row as the pane draws one, with its listeners kept where a check can fire them. */
   const rowStandingIn = (dataset) => {
     const listeners = {};
