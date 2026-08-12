@@ -2722,25 +2722,23 @@ body.mac-frame.is-fullscreen::before {
 }
 .tab-label {
   flex: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--lt-space-4);
   min-width: 0;
   max-width: 124px;
+  overflow: hidden;
   white-space: nowrap;
   border: var(--lt-stroke-1) solid transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
   font: 600 13px var(--app-font);
-  padding: var(--lt-space-6) var(--lt-space-24) var(--lt-space-6) var(--lt-space-14);
+  padding: var(--lt-space-6) var(--lt-space-14);
   text-align: left;
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
 }
 .tab-active .tab-label {
   /* Full-strength foreground so the active tab's name stays legible in every theme (a hardcoded white vanished on the light page-colored tab). */
   color: var(--lt-foreground);
   max-width: none;
-}
-.tab-active .file-name-stem {
   -webkit-mask-image: none;
   mask-image: none;
 }
@@ -2755,7 +2753,7 @@ body.mac-frame.is-fullscreen::before {
 .tab-close {
   /* Tucked into the tab's top-right corner, out of the label's flow, close enough that its hover chip clears both strokes by about 2px and no more. It covers the last letters of the name on purpose; the wash is what keeps it readable over them. */
   position: absolute;
-  /* Above the label. An inactive tab's label carries the fade mask, which paints it in this layer rather than under it, so without this a corner button written before the label in the markup is covered by it and eats no click. That is what happened to the heart while the cross went on working. */
+  /* Above the masked label, so the corner control remains clickable. */
   z-index: 1;
   top: 2px;
   right: 2px;
@@ -4081,7 +4079,6 @@ body.library-resizing {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tab-label .file-name-stem,
 .library-file .file-name-stem {
   /* Long names fade before the badge, keeping the type visible at the trailing edge. */
   -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
@@ -8882,7 +8879,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </section>
 <section class="part">
 <header><h3>Tab strip</h3><code class="built">.tab</code><span class="built">dom.js, render-state.js</span></header>
-<div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-label">A note.md</button><span class="tab-dirty-dot"></span><button type="button" class="tab-close" style="opacity:1"><span class="lt-icon lt-icon-tab-close"></span></button></span><span class="tab"><button type="button" class="tab-label">Another note.md</button></span></div></div>
+<div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-label">A note.md</button><span class="tab-dirty-dot"></span><button type="button" class="tab-close" style="opacity:1"><span class="lt-icon lt-icon-tab-close"></span></button></span><span class="tab"><button type="button" class="tab-label">Another note.json</button></span></div></div>
 </section>
 <section class="part">
 <header><h3>Tab favorite heart</h3><code class="built">.tab-favorite</code><span class="built">render-state.js</span></header>
@@ -8954,7 +8951,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </section>
 <section class="part">
 <header><h3>File type badge</h3><code class="built">.file-type-badge</code><span class="built">render-state.js</span></header>
-<div class="stage"><button class="tab-label"><span class="file-name-stem">A note</span><span class="file-type-badge">MD</span></button><button class="library-file"><span class="library-file-label"><span class="file-name-stem">A note</span><span class="file-type-badge">JSON</span></span></button><button class="library-hit"><span class="library-hit-title"><span class="file-name-stem">A note<span class="library-hit-alias">Its other name</span></span><span class="file-type-badge">YML</span></span></button><button class="home-row-open"><span class="home-row-name"><span class="file-name-stem">A note</span><span class="file-type-badge">MHTML</span></span></button></div>
+<div class="stage"><button class="library-file"><span class="library-file-label"><span class="file-name-stem">A note</span><span class="file-type-badge">JSON</span></span></button><button class="library-hit"><span class="library-hit-title"><span class="file-name-stem">A note<span class="library-hit-alias">Its other name</span></span><span class="file-type-badge">YML</span></span></button><button class="home-row-open"><span class="home-row-name"><span class="file-name-stem">A note</span><span class="file-type-badge">MHTML</span></span></button></div>
 </section>
 <section class="part">
 <header><h3>Filter completion</h3><code class="built">.filter-menu</code><span class="built">library-search.js, off the vault's own field names</span></header>

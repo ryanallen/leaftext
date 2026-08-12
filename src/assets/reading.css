@@ -337,25 +337,23 @@ body.mac-frame.is-fullscreen::before {
 }
 .tab-label {
   flex: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--lt-space-4);
   min-width: 0;
   max-width: 124px;
+  overflow: hidden;
   white-space: nowrap;
   border: var(--lt-stroke-1) solid transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
   font: 600 13px var(--app-font);
-  padding: var(--lt-space-6) var(--lt-space-24) var(--lt-space-6) var(--lt-space-14);
+  padding: var(--lt-space-6) var(--lt-space-14);
   text-align: left;
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
 }
 .tab-active .tab-label {
   /* Full-strength foreground so the active tab's name stays legible in every theme (a hardcoded white vanished on the light page-colored tab). */
   color: var(--lt-foreground);
   max-width: none;
-}
-.tab-active .file-name-stem {
   -webkit-mask-image: none;
   mask-image: none;
 }
@@ -370,7 +368,7 @@ body.mac-frame.is-fullscreen::before {
 .tab-close {
   /* Tucked into the tab's top-right corner, out of the label's flow, close enough that its hover chip clears both strokes by about 2px and no more. It covers the last letters of the name on purpose; the wash is what keeps it readable over them. */
   position: absolute;
-  /* Above the label. An inactive tab's label carries the fade mask, which paints it in this layer rather than under it, so without this a corner button written before the label in the markup is covered by it and eats no click. That is what happened to the heart while the cross went on working. */
+  /* Above the masked label, so the corner control remains clickable. */
   z-index: 1;
   top: 2px;
   right: 2px;
@@ -1696,7 +1694,6 @@ body.library-resizing {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tab-label .file-name-stem,
 .library-file .file-name-stem {
   /* Long names fade before the badge, keeping the type visible at the trailing edge. */
   -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);

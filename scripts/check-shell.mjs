@@ -4060,8 +4060,8 @@ if (booted) {
   check('tabs, library, search and both Recent lists share filename markup', () => {
     booted.leafSetState({ tabs: [{ path: 'C:\\Notes\\tab.md' }], active: 0, recent: [], favorites: [], document: null });
     const tab = booted.document.getElementById('tabBar').innerHTML;
-    if (!tab.includes('<span class="file-name-stem">tab</span><span class="file-type-badge">MD</span>')) {
-      throw new Error(`the tab did not use the filename markup: ${tab}`);
+    if (!/class="tab-label"[^>]*>tab\.md<\/button>/.test(tab) || tab.includes('file-type-badge')) {
+      throw new Error(`the tab did not keep its full filename without a type badge: ${tab}`);
     }
     const file = fileRowHtml({ name: 'library.yaml', path: 'C:\\Notes\\library.yaml' });
     if (!file.includes('<span class="file-name-stem">library</span><span class="file-type-badge">YAML</span>')) {

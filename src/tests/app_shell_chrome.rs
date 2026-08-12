@@ -1042,7 +1042,7 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
 }
 
 #[test]
-fn a_tab_keeps_its_type_visible_when_its_name_clips() {
+fn tabs_keep_full_filenames_and_balanced_padding() {
     let css = reading_mode_css();
     let rule = |head: &str| {
         css.split(head)
@@ -1056,32 +1056,35 @@ fn a_tab_keeps_its_type_visible_when_its_name_clips() {
     assert!(tab.contains("max-width: 132px;"), "{tab}");
     assert!(tab.contains("padding: 0 var(--lt-space-4);"), "{tab}");
     assert!(
-        label.contains(
-            "padding: var(--lt-space-6) var(--lt-space-24) var(--lt-space-6) var(--lt-space-14);"
-        ),
+        label.contains("padding: var(--lt-space-6) var(--lt-space-14);"),
         "{label}"
     );
     assert!(
-        label.contains("display: flex;") && label.contains("gap: var(--lt-space-4);"),
-        "{label}"
+        label.contains("overflow: hidden;"),
+        "an inactive tab must clip its label: {label}"
+    );
+    assert!(
+        label.contains("mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));"),
+        "an inactive tab must fade to the same right inset as its left inset: {label}"
     );
     let name = rule("\n.file-name-stem {");
     assert!(
         name.contains("flex: 1;") && name.contains("overflow: hidden;"),
-        "only the name may clip before the badge: {name}"
+        "only a library filename may clip before its badge: {name}"
     );
-    let stem = rule("\n.tab-label .file-name-stem,\n.library-file .file-name-stem {");
+    let stem = rule("\n.library-file .file-name-stem {");
     assert!(
         stem.contains("mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);"),
-        "the name must fade before the badge: {stem}"
+        "a library filename must fade before its badge: {stem}"
     );
-    let active = rule("\n.tab-active .file-name-stem {");
+    let active = rule("\n.tab-active .tab-label {");
+    assert!(active.contains("max-width: none;"), "{active}");
     assert!(active.contains("mask-image: none;"), "{active}");
 }
 
 #[test]
 fn both_corner_buttons_sit_above_the_name_they_cover() {
-    // The name fades under the corner controls.
+    // The whole label fades under the corner controls.
     let css = reading_mode_css();
     let script = app_shell_script();
 
@@ -1096,17 +1099,15 @@ fn both_corner_buttons_sit_above_the_name_they_cover() {
             "{corner} must outrank the masked label or its click goes to the tab: {rule}"
         );
     }
-    // The filename stem carries the fade, so a corner control stays above it.
-    let stem = css
-        .split("\n.tab-label .file-name-stem,\n.library-file .file-name-stem {")
+    let label = css
+        .split("\n.tab-label {")
         .nth(1)
         .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines the tab filename stem");
+        .expect("stylesheet defines the tab label");
     assert!(
-        stem.contains("mask-image: linear-gradient(to right,"),
-        "{stem}"
+        label.contains("mask-image: linear-gradient(to right,"),
+        "{label}"
     );
-
     // And the strip's one listener answers both corners before it answers the label, so a click that lands on either never falls through to switching tabs.
     let close_at = script
         .find("event.target.closest('[data-tab-close]')")
