@@ -1042,8 +1042,7 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
 }
 
 #[test]
-fn the_gap_after_a_tabs_name_is_the_same_as_the_gap_before_it() {
-    // Two ways of getting this wrong were shipped and turned down: running the fade out to the label's edge, which leaves 4px on the right against 19 on the left and reads as a clipped name, and answering that with the whole of the old close-button inset, which leaves 27 against 19 the other way. The rule is that the two sides are mirror images.
+fn a_tab_keeps_its_type_visible_when_its_name_clips() {
     let css = reading_mode_css();
     let rule = |head: &str| {
         css.split(head)
@@ -1052,47 +1051,37 @@ fn the_gap_after_a_tabs_name_is_the_same_as_the_gap_before_it() {
             .unwrap_or_else(|| panic!("stylesheet defines {head}"))
             .to_string()
     };
-    let px = |token: &str| -> f32 {
-        css.split(&format!("{token}: "))
-            .nth(1)
-            .and_then(|rest| rest.split("px;").next())
-            .and_then(|value| value.trim().parse().ok())
-            .unwrap_or_else(|| panic!("the stylesheet declares {token}"))
-    };
-
     let tab = rule("\n.tab {");
     let label = rule("\n.tab-label {");
     assert!(tab.contains("max-width: 132px;"), "{tab}");
     assert!(tab.contains("padding: 0 var(--lt-space-4);"), "{tab}");
     assert!(
-        label.contains("padding: var(--lt-space-6) var(--lt-space-14);"),
+        label.contains(
+            "padding: var(--lt-space-6) var(--lt-space-24) var(--lt-space-6) var(--lt-space-14);"
+        ),
         "{label}"
     );
-    // The first letter sits behind the tab's inset, the label's stroke and the label's padding.
-    let before = px("--lt-space-4") + px("--lt-stroke-1") + px("--lt-space-14");
-
-    // The last letter is gone by the same three in the other order — which is what the mask's 15px is, and why it stops at the content edge rather than at the label's border. Overflow clips at the padding box, so without the mask the name would run into that padding and there would be no gap at all.
     assert!(
-        label.contains("mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));"),
-        "the fade must finish at the content edge: {label}"
+        label.contains("display: flex;") && label.contains("gap: var(--lt-space-4);"),
+        "{label}"
     );
-    let after = 15.0 + px("--lt-space-4");
-    assert_eq!(
-        before, after,
-        "a name is inset {before}px at its start and {after}px at its end; the two have to match"
-    );
-
-    // The active tab drops the mask and its cap entirely: it grows to its whole name, so there is nothing to fade.
-    let active = rule("\n.tab-active .tab-label {");
+    let name = rule("\n.file-name-stem {");
     assert!(
-        active.contains("mask-image: none;") && active.contains("max-width: none;"),
-        "{active}"
+        name.contains("flex: 1;") && name.contains("overflow: hidden;"),
+        "only the name may clip before the badge: {name}"
     );
+    let stem = rule("\n.tab-label .file-name-stem,\n.library-file .file-name-stem {");
+    assert!(
+        stem.contains("mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);"),
+        "the name must fade before the badge: {stem}"
+    );
+    let active = rule("\n.tab-active .file-name-stem {");
+    assert!(active.contains("mask-image: none;"), "{active}");
 }
 
 #[test]
 fn both_corner_buttons_sit_above_the_name_they_cover() {
-    // An inactive tab's label wears the fade mask, and a mask paints its element in the same layer as a positioned sibling instead of under it. So the corner buttons and the label were ordered by the markup: the cross is written after the label and took its click, the heart is written before it and did not — one click activated the tab and only the next reached the heart. A layer on each, so neither depends on where it sits in the markup.
+    // The name fades under the corner controls.
     let css = reading_mode_css();
     let script = app_shell_script();
 
@@ -1107,15 +1096,15 @@ fn both_corner_buttons_sit_above_the_name_they_cover() {
             "{corner} must outrank the masked label or its click goes to the tab: {rule}"
         );
     }
-    // The mask is the whole reason, so a label that stops carrying one takes this test's premise with it.
-    let label = css
-        .split("\n.tab-label {")
+    // The filename stem carries the fade, so a corner control stays above it.
+    let stem = css
+        .split("\n.tab-label .file-name-stem,\n.library-file .file-name-stem {")
         .nth(1)
         .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines the tab label");
+        .expect("stylesheet defines the tab filename stem");
     assert!(
-        label.contains("mask-image: linear-gradient(to right,"),
-        "{label}"
+        stem.contains("mask-image: linear-gradient(to right,"),
+        "{stem}"
     );
 
     // And the strip's one listener answers both corners before it answers the label, so a click that lands on either never falls through to switching tabs.

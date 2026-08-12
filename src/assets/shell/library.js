@@ -258,17 +258,12 @@ function followFileInLibrary(path, focus, forceRefresh) {
   if (graphViewOpen) graphSetActive(librarySelectedPath, focus, forceRefresh);
   renderLibrary();
 }
-// A library row's display name: a file shows its file name (basename minus a .md-style extension), matching the tabs; a folder shows its folder name.
-function fileDisplayName(node) {
-  return stripDocumentExt(node && node.name) || (node && (node.title || node.path)) || '';
-}
-// A Markdown file row: the leaf mark, then the file name, truncated.
 function fileRowHtml(node) {
-  const label = fileDisplayName(node);
+  const label = (node && (node.name || node.title || node.path)) || '';
   const isSelected = librarySelectedPath && node.path === librarySelectedPath;
   const selected = isSelected ? ' is-selected' : '';
   const current = isSelected ? ' aria-current="true"' : '';
-  return `<button type="button" class="library-file${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}">${LEAF_FILE_ICON}<span class="library-file-label">${escapeText(label)}</span></button>`;
+  return `<button type="button" class="library-file${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}">${LEAF_FILE_ICON}<span class="library-file-label">${documentNameMarkup(label)}</span></button>`;
 }
 // Where "up" goes: the folder above this one, or the root when this is the first level in. Null at the top, where there is nothing above — a vault's own folder, or the drive roots. Leaving a vault is the switcher's job, not this row's.
 function libraryParentCrumb() {
@@ -364,7 +359,7 @@ function siteCrumbChain() {
   }
   // The document's crumb reads the way its tab label did, without the extension.
   const last = chain[chain.length - 1];
-  last.name = stripDocumentExt(last.name) || last.name;
+  last.name = documentNameParts(last.name).stem || last.name;
   return chain;
 }
 // The chain the trail is currently drawing, kept so a resize can refit without re-walking the tree.
@@ -1307,4 +1302,3 @@ window.leafSetVaults = (payload) => {
     }
   }
 };
-

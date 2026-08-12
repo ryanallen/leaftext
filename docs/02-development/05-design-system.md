@@ -10,7 +10,7 @@ Four files under `design/` are the source. Each is plain Markdown, so Leaftext o
 | `design/colors.md` | 82 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
 | `design/tokens.md` | 155 values that do not change with the theme | `src/assets/tokens.css` |
 | `design/icons.md` | 60 icons | `src/assets/icons.css`, one mask class each |
-| `design/components.md` | 59 components, and the markup each is drawn with | `src/assets/gallery.html` |
+| `design/components.md` | 60 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
 ## Colors
 
@@ -60,7 +60,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 
 ## Components
 
-59 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
+60 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
 
 | Component | Class family |
 | --- | --- |
@@ -84,6 +84,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 | Breadcrumb menu | `.crumb-menu` |
 | Library pane | `.library` |
 | Search results | `.library-hit` |
+| File type badge | `.file-type-badge` |
 | Filter completion | `.filter-menu` |
 | Understood filter | `.library-search-note` |
 | Breadcrumbs | `.library-crumb` |

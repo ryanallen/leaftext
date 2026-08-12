@@ -337,24 +337,25 @@ body.mac-frame.is-fullscreen::before {
 }
 .tab-label {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
   min-width: 0;
   max-width: 124px;
-  overflow: hidden;
   white-space: nowrap;
   border: var(--lt-stroke-1) solid transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
   font: 600 13px var(--app-font);
-  padding: var(--lt-space-6) var(--lt-space-14);
+  padding: var(--lt-space-6) var(--lt-space-24) var(--lt-space-6) var(--lt-space-14);
   text-align: left;
-  /* Long names fade out instead of showing an ellipsis. The fade ends at the content edge, not the border box: overflow clips at the padding box, so only the mask can keep text out of the padding. Gone by the padding, then the padding, then the stroke, then the tab's own inset — the same three the first letter sits behind, in the other order. */
-  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
-  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
 }
 .tab-active .tab-label {
   /* Full-strength foreground so the active tab's name stays legible in every theme (a hardcoded white vanished on the light page-colored tab). */
   color: var(--lt-foreground);
   max-width: none;
+}
+.tab-active .file-name-stem {
   -webkit-mask-image: none;
   mask-image: none;
 }
@@ -1670,6 +1671,47 @@ body.library-resizing {
   /* Long names fade out at the right edge instead of showing an ellipsis, matching the tab labels. */
   -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
   mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+}
+.library-file .library-file-label,
+.library-hit-title,
+.home-row-name {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+}
+.library-file .library-file-label,
+.library-hit-title {
+  overflow: visible;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.file-name-stem {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tab-label .file-name-stem,
+.library-file .file-name-stem {
+  /* Long names fade before the badge, keeping the type visible at the trailing edge. */
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+}
+.file-type-badge {
+  flex: none;
+  padding: 0 var(--lt-space-4);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10);
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+}
+.library-file .file-type-badge,
+.library-hit-title .file-type-badge {
+  margin-left: auto;
 }
 /* Folder rows: name left, a muted chevron pinned to the right edge marking the row as something you can enter. */
 .library-nav-chevron {
@@ -4414,7 +4456,9 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 16px;
 }
 .home-row-name {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
   color: var(--lt-navigation-recent-item-foreground);
   font-size: var(--lt-text-14);
   line-height: var(--lt-leading-1-4);

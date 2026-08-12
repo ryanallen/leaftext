@@ -6,14 +6,13 @@ function highlightSnippet(snippet) {
 }
 function searchHitHtml(hit) {
   const path = (hit && hit.absPath) || '';
-  const title = (hit && hit.title) || path;
   const anchor = (hit && hit.anchor) || '';
   // The line carries the row to the match itself; the anchor is the fallback.
   const line = (hit && hit.startLine) || 0;
   // Matched by one of the note's other names: the row still says the file, so the name that actually matched has to be on it or the row reads as a mystery.
   const alias = (hit && hit.alias) || '';
   const also = alias ? `<span class="library-hit-alias">${escapeText(alias)}</span>` : '';
-  return `<button type="button" class="library-hit" data-open-path="${escapeAttr(path)}" data-anchor="${escapeAttr(anchor)}" data-line="${escapeAttr(String(line))}" title="${escapeAttr(path)}"><span class="library-hit-title">${escapeText(stripDocumentExt(title) || title)}${also}</span><span class="library-hit-snippet">${highlightSnippet(hit && hit.snippet)}</span></button>`;
+  return `<button type="button" class="library-hit" data-open-path="${escapeAttr(path)}" data-anchor="${escapeAttr(anchor)}" data-line="${escapeAttr(String(line))}" title="${escapeAttr(path)}"><span class="library-hit-title">${documentNameMarkup(path, also)}</span><span class="library-hit-snippet">${highlightSnippet(hit && hit.snippet)}</span></button>`;
 }
 function bindSearchHits() {
   librarySearchResults.querySelectorAll('[data-open-path]').forEach((button) => {

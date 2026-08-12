@@ -2722,24 +2722,25 @@ body.mac-frame.is-fullscreen::before {
 }
 .tab-label {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
   min-width: 0;
   max-width: 124px;
-  overflow: hidden;
   white-space: nowrap;
   border: var(--lt-stroke-1) solid transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
   font: 600 13px var(--app-font);
-  padding: var(--lt-space-6) var(--lt-space-14);
+  padding: var(--lt-space-6) var(--lt-space-24) var(--lt-space-6) var(--lt-space-14);
   text-align: left;
-  /* Long names fade out instead of showing an ellipsis. The fade ends at the content edge, not the border box: overflow clips at the padding box, so only the mask can keep text out of the padding. Gone by the padding, then the padding, then the stroke, then the tab's own inset — the same three the first letter sits behind, in the other order. */
-  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
-  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
 }
 .tab-active .tab-label {
   /* Full-strength foreground so the active tab's name stays legible in every theme (a hardcoded white vanished on the light page-colored tab). */
   color: var(--lt-foreground);
   max-width: none;
+}
+.tab-active .file-name-stem {
   -webkit-mask-image: none;
   mask-image: none;
 }
@@ -4055,6 +4056,47 @@ body.library-resizing {
   /* Long names fade out at the right edge instead of showing an ellipsis, matching the tab labels. */
   -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
   mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+}
+.library-file .library-file-label,
+.library-hit-title,
+.home-row-name {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+}
+.library-file .library-file-label,
+.library-hit-title {
+  overflow: visible;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.file-name-stem {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tab-label .file-name-stem,
+.library-file .file-name-stem {
+  /* Long names fade before the badge, keeping the type visible at the trailing edge. */
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+}
+.file-type-badge {
+  flex: none;
+  padding: 0 var(--lt-space-4);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10);
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+}
+.library-file .file-type-badge,
+.library-hit-title .file-type-badge {
+  margin-left: auto;
 }
 /* Folder rows: name left, a muted chevron pinned to the right edge marking the row as something you can enter. */
 .library-nav-chevron {
@@ -6799,7 +6841,9 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 16px;
 }
 .home-row-name {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
   color: var(--lt-navigation-recent-item-foreground);
   font-size: var(--lt-text-14);
   line-height: var(--lt-leading-1-4);
@@ -8442,7 +8486,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 59 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 60 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8464,7 +8508,7 @@ body.is-home-row-dragging .home-list-scroll li {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>155</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>60</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>59</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>60</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8823,7 +8867,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">59 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">60 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -8903,6 +8947,10 @@ body.is-home-row-dragging .home-list-scroll li {
 <section class="part">
 <header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js</span></header>
 <div class="stage"><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div>
+</section>
+<section class="part">
+<header><h3>File type badge</h3><code class="built">.file-type-badge</code><span class="built">render-state.js</span></header>
+<div class="stage"><button class="tab-label"><span class="file-name-stem">A note</span><span class="file-type-badge">MD</span></button><button class="library-file"><span class="library-file-label"><span class="file-name-stem">A note</span><span class="file-type-badge">JSON</span></span></button><button class="library-hit"><span class="library-hit-title"><span class="file-name-stem">A note<span class="library-hit-alias">Its other name</span></span><span class="file-type-badge">YML</span></span></button><button class="home-row-open"><span class="home-row-name"><span class="file-name-stem">A note</span><span class="file-type-badge">MHTML</span></span></button></div>
 </section>
 <section class="part">
 <header><h3>Filter completion</h3><code class="built">.filter-menu</code><span class="built">library-search.js, off the vault's own field names</span></header>

@@ -435,7 +435,7 @@ function runShell(source, extras = {}) {
     __leafVaults: { vaults: [], active: 0 },
     __leafVersion: '0.0.0',
     __leafUpdateAsset: '',
-    __leafDocumentExts: ['md', 'markdown', 'mdown', 'xml', 'json', 'yaml', 'yml'],
+    __leafDocumentExts: ['md', 'markdown', 'mdown', 'xml', 'json', 'yaml', 'yml', 'eml', 'mht', 'mhtml'],
     __leafSettingsUnreadable: false,
   };
   sandbox.window = sandbox;
@@ -4031,13 +4031,63 @@ check('a published site draws no vault switcher, no pane trail row and no Sync b
 // A row on the start screen is one button carrying the path twice: `data-path` opens it, and `data-reveal-path` is the only thing the right-click menu finds a start-screen row by — so a rewritten row that dropped it would take Favorite and Reveal off the screen with nothing failing.
 
 if (booted) {
-  const { homeRowMarkup } = booted;
+  const { documentNameMarkup, documentNameParts, fileRowHtml, homeListsMarkup, homeRowMarkup, renderProject, searchHitHtml } = booted;
+
+  check('document filename markup keeps a readable type badge in every row', () => {
+    for (const [name, stem, extension] of [
+      ['chapter.md', 'chapter', 'MD'],
+      ['chapter.markdown', 'chapter', 'MARKDOWN'],
+      ['data.json', 'data', 'JSON'],
+      ['settings.yml', 'settings', 'YML'],
+      ['message.mhtml', 'message', 'MHTML'],
+      ['UPPER.MD', 'UPPER', 'MD'],
+    ]) {
+      const parts = documentNameParts(name);
+      if (parts.stem !== stem || parts.extension !== extension) {
+        throw new Error(`${name} became ${JSON.stringify(parts)} instead of ${stem} [${extension}]`);
+      }
+      const markup = documentNameMarkup(name);
+      if (!markup.includes(`<span class="file-name-stem">${stem}</span><span class="file-type-badge">${extension}</span>`)) {
+        throw new Error(`${name} did not draw its name and type together: ${markup}`);
+      }
+    }
+    const unknown = documentNameMarkup('archive.tar.gz');
+    if (unknown !== '<span class="file-name-stem">archive.tar.gz</span>') {
+      throw new Error(`an unreadable extension gained a badge or lost its name: ${unknown}`);
+    }
+  });
+
+  check('tabs, library, search and both Recent lists share filename markup', () => {
+    booted.leafSetState({ tabs: [{ path: 'C:\\Notes\\tab.md' }], active: 0, recent: [], favorites: [], document: null });
+    const tab = booted.document.getElementById('tabBar').innerHTML;
+    if (!tab.includes('<span class="file-name-stem">tab</span><span class="file-type-badge">MD</span>')) {
+      throw new Error(`the tab did not use the filename markup: ${tab}`);
+    }
+    const file = fileRowHtml({ name: 'library.yaml', path: 'C:\\Notes\\library.yaml' });
+    if (!file.includes('<span class="file-name-stem">library</span><span class="file-type-badge">YAML</span>')) {
+      throw new Error(`the library file did not use the filename markup: ${file}`);
+    }
+    const hit = searchHitHtml({ absPath: 'C:\\Notes\\search.json', title: 'search', alias: 'Other name' });
+    if (!hit.includes('<span class="file-name-stem">search<span class="library-hit-alias">Other name</span></span><span class="file-type-badge">JSON</span>')) {
+      throw new Error(`the search hit did not take its name and type from its path: ${hit}`);
+    }
+    const plain = homeListsMarkup({ recent: ['C:\\Notes\\plain.mdown'], favorites: [] });
+    const paired = homeListsMarkup({ recent: ['C:\\Notes\\paired.xml'], favorites: [{ path: 'C:\\Notes\\kept.md', kind: 'document' }] });
+    for (const [markup, extension] of [[plain, 'MDOWN'], [paired, 'XML']]) {
+      if (!markup.includes(`<span class="file-type-badge">${extension}</span>`)) {
+        throw new Error(`a Recent path did not use the filename markup: ${markup}`);
+      }
+      if (!markup.includes('data-reveal-path=')) throw new Error(`a Recent row dropped its full path: ${markup}`);
+    }
+    const folder = renderProject([{ kind: 'folder', name: 'Notes', path: 'C:\\Notes' }]);
+    if (folder.includes('file-type-badge')) throw new Error(`a folder gained a file type badge: ${folder}`);
+  });
 
   check('a home row reads as a name over its folder', () => {
     const path = 'C:\\Users\\me\\Vault\\Journal\\A note.md';
     const row = homeRowMarkup(path);
-    if (!/<span class="home-row-name">A note<\/span>/.test(row)) {
-      throw new Error(`the first line is not the name without its extension: ${row}`);
+    if (!/<span class="home-row-name"><span class="file-name-stem">A note<\/span><span class="file-type-badge">MD<\/span><\/span>/.test(row)) {
+      throw new Error(`the first line is not the name and type: ${row}`);
     }
     if (!/<span class="home-row-folder">C:\\Users\\me\\Vault\\Journal<\/span>/.test(row)) {
       throw new Error(`the second line is not the folder holding it: ${row}`);
@@ -4065,12 +4115,12 @@ if (booted) {
     if (bare.includes('home-row-folder')) {
       throw new Error(`a path with no folder above it drew a second line: ${bare}`);
     }
-    if (!/<span class="home-row-name">notes<\/span>/.test(bare)) {
+    if (!/<span class="home-row-name"><span class="file-name-stem">notes<\/span><span class="file-type-badge">MD<\/span><\/span>/.test(bare)) {
       throw new Error(`a bare name lost its name: ${bare}`);
     }
     // Only a document extension comes off. A name the app cannot open keeps every character it has, or the row says a file is called something it is not.
     const kept = homeRowMarkup('/home/me/archive.tar.gz');
-    if (!/<span class="home-row-name">archive\.tar\.gz<\/span>/.test(kept)) {
+    if (!/<span class="home-row-name"><span class="file-name-stem">archive\.tar\.gz<\/span><\/span>/.test(kept)) {
       throw new Error(`a name with no document extension was trimmed anyway: ${kept}`);
     }
     if (!/<span class="home-row-folder">\/home\/me<\/span>/.test(kept)) {
@@ -5015,16 +5065,15 @@ if (booted) {
     }
 
     const plain = withVaults(VAULTS, 0, () =>
-      homeListsMarkup({ recent: ['C:\Notes\Journal\A note.md'], favorites: [] }),
+      homeListsMarkup({ recent: ['C:\\Notes\\Journal\\A note.md'], favorites: [] }),
     );
     if (!plain.startsWith('<div class="recent"><h2>Recent (1)</h2><ol>')) {
       throw new Error(`a lone list is not the block it was: ${plain}`);
     }
-    // The whole path on one line, in one button.
-    if (!plain.includes('>C:\Notes\Journal\A note.md</button>')) {
-      throw new Error(`a lone list drew the two-line row: ${plain}`);
+    if (!plain.includes('<span class="home-row-name"><span class="file-name-stem">A note</span><span class="file-type-badge">MD</span></span>')) {
+      throw new Error(`a lone list did not draw the shared file name row: ${plain}`);
     }
-    for (const paired of ['home-list-grid', 'home-list-box', 'home-row', 'Favorites']) {
+    for (const paired of ['home-list-grid', 'home-list-box', 'Favorites']) {
       if (plain.includes(paired)) throw new Error(`a lone list is still drawn as half a pair: ${paired}`);
     }
 

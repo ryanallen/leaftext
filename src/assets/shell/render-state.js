@@ -195,13 +195,16 @@ window.leafRestoreScrollAnchor = (anchor) => {
     updateMinimapViewport();
   });
 };
-// Tabs and the library both show the file name (basename, minus the document extension), not the document's heading title. Falls back to the title, then the raw path. Every format loses its extension, so tabs read alike.
-function stripDocumentExt(name) {
-  return (name || '').replace(DOCUMENT_NAME_RE, '');
+// All filename rows use this rule, so their visible label cannot drift from the format table the host publishes.
+function documentNameParts(path) {
+  const name = String(path == null ? '' : path).split(/[\\/]/).pop() || '';
+  const match = name.match(DOCUMENT_NAME_RE);
+  return match ? { stem: name.slice(0, -match[0].length), extension: match[1].toUpperCase() } : { stem: name, extension: '' };
 }
-function tabDisplayName(tab) {
-  const base = (tab.path || '').split(/[\\/]/).pop() || '';
-  return stripDocumentExt(base) || tab.title || tab.path || '';
+function documentNameMarkup(path, stemTail) {
+  const { stem, extension } = documentNameParts(path);
+  const badge = extension ? `<span class="file-type-badge">${escapeText(extension)}</span>` : '';
+  return `<span class="file-name-stem">${escapeText(stem)}${stemTail || ''}</span>${badge}`;
 }
 // The favorites the host last sent, and whether one of them is this file.
 function currentFavorites() {
@@ -233,7 +236,8 @@ function renderTabs(state) {
   tabBar.innerHTML = tabs.map((tab, index) => {
     const favorite = isFavoritePath(tab.path);
     const mark = favorite ? 'Unfavorite' : 'Favorite';
-    return `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`;
+    const label = tab.path || tab.title || '';
+    return `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${documentNameMarkup(label)}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`;
   }).join('');
   // A tab opening, closing, or changing title changes what the strip needs — refold so a longer title takes a button rather than getting clipped.
   refitAppBar();

@@ -58,20 +58,19 @@ function fadeDocumentIn(layout) {
 function newIconSvg() {
   return `<span class="lt-icon lt-icon-new"></span>`;
 }
-// Split a path into what a row shows: the file's name without its extension, and the folder holding it. A path that is only a name has no folder line.
 function homeRowParts(path) {
   const raw = String(path == null ? '' : path);
   const base = raw.split(/[\\/]/).pop() || raw;
   const above = raw.slice(0, raw.length - base.length);
   // A trailing separator belongs to the split, not the folder — unless it is the whole of it, which is a file sitting at a root.
   const folder = above.replace(/[\\/]+$/, '') || above;
-  return { name: stripDocumentExt(base) || base, folder };
+  return { base, folder };
 }
 // One row for either home list, so both draw the same thing. The row carries the path twice: `data-path` opens it and `data-reveal-path` is what the right-click menu finds a start-screen row by. `kind` is a favorite's own — a recent is always a document, so it wears no heart and passes none.
 //
 // A favorite row is a wrapper holding two buttons rather than one button holding a button, which is not markup: the same shape a tab already uses for its own heart.
 function homeRowMarkup(path, kind, vaultId) {
-  const { name, folder } = homeRowParts(path);
+  const { base, folder } = homeRowParts(path);
   const attr = escapeAttr(String(path == null ? '' : path));
   const under = folder ? `<span class="home-row-folder">${escapeText(folder)}</span>` : '';
   // The menu reads this attribute to tell a folder's items from a file's, and the click below reads it to open the pane rather than a document.
@@ -81,7 +80,7 @@ function homeRowMarkup(path, kind, vaultId) {
   const mark = going ? 'Favorite it again' : 'Unfavorite';
   // A row on its way out says so where it usually says its path: what is about to happen matters more than where the file is, and the sentence names the way back.
   const said = going ? 'Unfavorited. This goes in a moment — press the heart to put it back.' : `Open ${attr}`;
-  const open = `<button type="button" class="home-row-open" title="${going ? escapeAttr(said) : said}" data-path="${attr}"><span class="home-row-name">${escapeText(name)}</span>${under}</button>`;
+  const open = `<button type="button" class="home-row-open" title="${going ? escapeAttr(said) : said}" data-path="${attr}"><span class="home-row-name">${documentNameMarkup(base)}</span>${under}</button>`;
   const heart = kind
     ? `<button type="button" class="home-row-heart" data-home-unfavorite="${attr}" data-home-kind="${escapeAttr(kind)}" aria-label="${mark}" title="${going ? escapeAttr(said) : mark}"><span class="lt-icon lt-icon-favorite-${going ? 'off' : 'on'}"></span></button>`
     : '';
@@ -241,10 +240,10 @@ function homeColumnMarkup(which, state) {
 // With no favorites there is no second column at all: a box saying how to favorite a file is an advertisement on the screen somebody sees most, and the heart is on every tab under the pointer. And one list is not half a pair — it is the plain Recent list this screen carried before there was a pair, whole paths on one line each, in the writing's own column under a rule.
 function homeListsMarkup(state) {
   if (!homeList('favorites', state).drawn) {
-    // Scoped too, or a vault with no favorites would be the one screen showing every other vault's files.
-    const recent = homeRecentScoped(state.recent || []);
-    return recent.length
-      ? `<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li><button type="button" title="Open ${escapeAttr(path)}" data-path="${escapeAttr(path)}" data-reveal-path="${escapeAttr(path)}">${escapeText(path)}</button></li>`).join('')}</ol></div>`
+  // Scoped too, or a vault with no favorites would be the one screen showing every other vault's files.
+  const recent = homeRecentScoped(state.recent || []);
+  return recent.length
+      ? `<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li>${homeRowMarkup(path)}</li>`).join('')}</ol></div>`
       : `<p class="empty-help">${escapeText(homeRecentHelp())}</p>`;
   }
   return `<div class="home-list-grid">${homeColumnMarkup('recent', state)}${homeColumnMarkup('favorites', state)}</div>`;
