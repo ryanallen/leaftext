@@ -9,6 +9,8 @@ pwsh scripts/capture-screenshot.ps1 -Doc <file> -Out shot.bmp [flags]
 just squeeze-png shot.bmp imgs/<name>.png --palette
 ```
 
+Pictures made from two shots stay PNGs from the capture through the published file. `just compose-shots vertical <out.png> <left.png> <right.png>` keeps each half; `diagonal` puts the first shot at the upper left and the second at the lower right; `grid <out.png> <columns> <shots...>` fills a preview sheet left to right.
+
 Seven things about it are worth knowing before a retake:
 
 - **The picture is the app's own rectangle.** Two frames are cut off it: the window's invisible resize border, and the band the app holds itself off the window by so its shadow has room. Both photograph as pure black, which the app draws nowhere, and a shot at the pinned `-Width 1000 -Height 799` comes back 1440x1166 on a 1.5-scaling display. Pointer steps are offset the same way, so a coordinate is a pixel in the picture — measure the next click off the last shot, and measure a `-Crop` off it too.
@@ -32,7 +34,7 @@ Only the marked rows have been run as written. The rest are reconstructed from t
 | `data.png` | A GitHub Actions workflow rendered as headed sections | **Run 11 August 2026.** `-Doc .github/workflows/release-windows.yml` |
 | `delete-confirm.png` | The confirmation over a file the reader asked to delete | reconstructed: a vault of throwaway documents, `rclick:` a file row, then Delete. The vault it was taken against is not in the repo |
 | `delete-undo.png` | The toast offering to undo a delete, cropped to it | reconstructed: the same run as `delete-confirm.png`, one step further on |
-| `editing.png` | The same document twice, rendered mid-edit and as source | Two shots composed side by side at 1000x799 |
+| `editing.png` | The same small document twice, rendered mid-edit and as source | **Run 11 August 2026.** `-Doc ../docs/tests/editing-screenshot.md -Unlocked -Steps 'click:500,370 type:now'` and `-Doc ../docs/tests/editing-screenshot.md -Unlocked -Steps 'click:700,1112 wait:3000'`, then `just compose-shots vertical imgs/editing.png <inline.png> <source.png>` |
 | `email.png` | An `.eml` message: subject as heading, fields, body, attachments | **Run 11 August 2026.** `-Doc ../docs/tests/message.eml` |
 | `file-actions.png` | The right-click menu on a file row in the library pane | **Run 11 August 2026.** `-Doc <vault>\docs\openmind.md -Vault <vault> -LibraryOpen -Steps 'rclick:127,309'` |
 | `flowchart-editor.png` | The flowchart editor as a full-window sheet, canvas and text | **Run 11 August 2026.** `-Doc ../docs/tests/flowcharts.md -Unlocked -Steps 'move:660,430 click:1084,554 wait:4000'` — the move brings up the diagram's own toolbar, whose second button opens the editor |
@@ -59,7 +61,7 @@ Only the marked rows have been run as written. The rest are reconstructed from t
 | `search.png` | Search results in the library pane | **Run 11 August 2026.** `-Doc <vault>\docs\openmind.md -Vault <vault> -LibraryOpen -Steps 'click:180,133 type:thought wait:20000'` — the wait is for a vault of this size to answer |
 | `settings.png` | The settings panel | click the settings button, cropped to 470x625 |
 | `speedreader.png` | A paragraph with Speed Reader on | **Run 11 August 2026.** `-Doc docs/01-features/01-rendering.md -Steps 'click:603,1111 wait:3000'` |
-| `theme-diagrams.png` | One page of diagrams under two themes | two shots at different `-ThemeFamily`, composed side by side |
+| `theme-diagrams.png` | One page of diagrams under Fern light and dark | **Run 11 August 2026.** `-Doc ../docs/tests/flowcharts.md -ThemeFamily fern -ThemeMode light` and `-Doc ../docs/tests/flowcharts.md -ThemeFamily fern -ThemeMode dark`, then `just compose-shots vertical imgs/theme-diagrams.png <light.png> <dark.png>` |
 | `theme-picker.png` | The theme picker as a bottom sheet | **Run 11 August 2026.** `-Doc <vault>\docs\openmind.md -Vault <vault> -LibraryOpen -Steps 'click:1094,31'` |
 | `typing-help.png` | The completion popup after `[[`, and a broken link underlined | `-Vault <folder> -Unlocked`, the code view, `type:[[` |
 | `ui-tour.png` | The whole window with every part in view | **Run 11 August 2026.** the same shot as `leaftext.png` |
@@ -68,4 +70,4 @@ Only the marked rows have been run as written. The rest are reconstructed from t
 | `xml-feed.png` | An RSS feed rendered as a heading and one section per item | **Run 11 August 2026.** `-Doc ../docs/tests/feed.xml` |
 | `xml-tei.png` | An 84000 TEI translation | **Run 11 August 2026.** `-Doc ../docs/tests/tei.xml` |
 
-`install-mac.png`, `install-mac-open-anyway.png`, `install-mac-open-confirm.png`, `install-mac-password.png`, `install-windows.png` and `install-windows-msi.png` are of the operating system, not the app, and are taken by hand on each platform. `imgs/themes/` holds one preview per theme family, listed in [Theming](04-theming.md).
+`install-mac.png`, `install-mac-open-anyway.png`, `install-mac-open-confirm.png`, `install-mac-password.png`, `install-windows.png` and `install-windows-msi.png` are of the operating system, not the app, and are taken by hand on each platform. `imgs/themes/` holds one preview per theme family, listed in [Theming](04-theming.md). `pwsh scripts/capture-theme-preview.ps1 -Family <id> -Out imgs/themes/<id>.png` captures the reference document in that family’s light and dark appearances and composes its diagonal preview; `just compose-shots grid imgs/themes/themes.png 2 imgs/themes/<families>.png` rebuilds the contact sheet.

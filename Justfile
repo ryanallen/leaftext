@@ -235,6 +235,14 @@ doc-images:
 check-shot-edges:
     node scripts/check-shot-edges.mjs --check
 
+# Join same-sized PNG screenshot sources with a vertical or diagonal seam, or tile
+# previews into a grid. The checked helper is the source of every composed picture.
+compose-shots mode out *args:
+    node scripts/compose-shots.mjs {{ mode }} "{{ out }}" {{ args }}
+
+check-compose-shots:
+    node scripts/check-compose-shots.mjs
+
 # The two browser modules, and what a page pays for each. Not in `verify`: it needs
 # the wasm32 target installed, and a machine without one would go red having done
 # nothing wrong. It asserts the core's own ceiling, which is the whole reason the
@@ -259,7 +267,7 @@ preview-web folder="":
 drive-web url *steps:
     node scripts/drive-web.mjs "{{ url }}" {{ steps }}
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-scratch-names check-verify check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-scratch-names check-verify check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
