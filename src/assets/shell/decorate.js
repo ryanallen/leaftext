@@ -1147,6 +1147,20 @@ if (app) {
     },
     { passive: false },
   );
+  app.addEventListener(
+    'wheel',
+    (event) => {
+      if ((!event.ctrlKey && !event.metaKey) || event.altKey || event.shiftKey || !event.deltaY) return;
+      if (mermaidDiagramFor(event.target)) return;
+      const lane = event.target && event.target.closest ? event.target.closest('.table-lane') : null;
+      const table = lane && lane.querySelector(':scope > table');
+      if (!table || table.scrollWidth <= table.clientWidth) return;
+      const end = table.scrollWidth - table.clientWidth;
+      table.scrollLeft = Math.max(0, Math.min(end, table.scrollLeft + event.deltaY));
+      event.preventDefault();
+    },
+    { passive: false },
+  );
   app.addEventListener('click', (event) => {
     if (!event.target || !event.target.closest) return;
     const zoomButton = event.target.closest('.mermaid-zoom button');

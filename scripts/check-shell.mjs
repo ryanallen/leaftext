@@ -3138,6 +3138,73 @@ if (booted) {
     return { css, rule: css.slice(opened, css.indexOf('}', opened)) };
   };
 
+  check('Control or Command wheel scrolls only an overflowing table lane sideways', () => {
+    const handlers = booted.document.getElementById('app').listeners.get('wheel') || [];
+    const handler = handlers.at(-1);
+    if (!handler || handlers.length < 2) throw new Error('the table or Mermaid wheel listener was not bound');
+    const table = { scrollLeft: 20, scrollWidth: 400, clientWidth: 100 };
+    const lane = { querySelector: (selector) => (selector === ':scope > table' ? table : null) };
+    const target = {
+      closest: (selector) => (selector === '.table-lane' ? lane : null),
+    };
+    const wheel = (changes = {}) => {
+      let prevented = false;
+      return {
+        target,
+        ctrlKey: true,
+        metaKey: false,
+        altKey: false,
+        shiftKey: false,
+        deltaX: 0,
+        deltaY: 45,
+        preventDefault() {
+          prevented = true;
+        },
+        prevented: () => prevented,
+        ...changes,
+      };
+    };
+
+    const claimed = wheel();
+    handler(claimed);
+    if (table.scrollLeft !== 65 || !claimed.prevented()) throw new Error('a Control wheel did not move the table and claim the notch');
+
+    for (const changes of [{ ctrlKey: false }, { altKey: true }, { shiftKey: true }, { deltaY: 0, deltaX: 45 }]) {
+      table.scrollLeft = 20;
+      const ignored = wheel(changes);
+      handler(ignored);
+      if (table.scrollLeft !== 20 || ignored.prevented()) throw new Error('an unclaimed wheel moved the table or stopped the browser');
+    }
+
+    table.scrollLeft = 300;
+    const atEnd = wheel();
+    handler(atEnd);
+    if (table.scrollLeft !== 300 || !atEnd.prevented()) throw new Error('a table end let a claimed wheel escape');
+
+    table.scrollWidth = 100;
+    table.scrollLeft = 20;
+    const narrow = wheel();
+    handler(narrow);
+    if (table.scrollLeft !== 20 || narrow.prevented()) throw new Error('a table without sideways overflow claimed the wheel');
+
+    table.scrollWidth = 400;
+    table.scrollLeft = 20;
+    const diagram = fakeElement('diagram');
+    diagram.dataset = {};
+    diagram.querySelector = () => fakeElement('svg');
+    const diagramTarget = {
+      closest: (selector) => {
+        if (selector === 'pre.mermaid[data-processed="true"]') return diagram;
+        return selector === '.table-lane' ? lane : null;
+      },
+    };
+    const mermaid = wheel({ target: diagramTarget, deltaY: -45 });
+    handlers.forEach((bound) => bound(mermaid));
+    if (table.scrollLeft !== 20 || !mermaid.prevented() || diagram.__mermaidView?.zoom <= 1) {
+      throw new Error('a Mermaid wheel did not stay with Mermaid');
+    }
+  });
+
   // The inset is the room the drag handle and plus occupy, written once in the stylesheet and once in the script that places them.
   check('the table lane leaves exactly the block controls their margin', () => {
     const { css, rule } = tableLaneRule();
