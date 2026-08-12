@@ -92,12 +92,12 @@ fn read_vault(row: &rusqlite::Row) -> rusqlite::Result<Vault> {
 #[cfg(feature = "desktop")]
 const ACTIVE_VAULT_KEY: &str = "active_vault";
 
-/// Every vault, oldest first, so the switcher's order is the order they were added rather than something that reshuffles as folders are renamed.
+/// Every vault by name, ignoring capitals, so a reader can find one without scanning the order they were added.
 #[cfg(feature = "desktop")]
 pub fn list_vaults(conn: &Connection) -> DbResult<Vec<Vault>> {
     let mut stmt = conn
         .prepare(&format!(
-            "SELECT {VAULT_COLUMNS} FROM vaults ORDER BY added_at, id"
+            "SELECT {VAULT_COLUMNS} FROM vaults ORDER BY name COLLATE NOCASE, id"
         ))
         .map_err(to_err)?;
     let rows = stmt.query_map([], read_vault).map_err(to_err)?;

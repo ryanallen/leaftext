@@ -1507,7 +1507,7 @@ body.library-resizing {
   margin-left: auto;
   color: var(--lt-accent);
 }
-/* A vault's row: the row itself switches to it, and the button at its end opens everything else you can do to it. One visible button, so nothing about the vault is hidden behind a right-click. */
+/* A vault row switches to it; its button opens that vault's settings. */
 .crumb-menu-row {
   display: flex;
   align-items: center;
@@ -1528,13 +1528,19 @@ body.library-resizing {
   border: 0;
   border-radius: var(--lt-radius-sm);
   background: transparent;
-  /* Dimmer than the label until pointed at: it is the second thing on the row, not a rival to the name. */
+  opacity: 0;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
   color: color-mix(in srgb, var(--lt-muted-foreground) 75%, transparent);
   cursor: pointer;
 }
 .crumb-menu-edit .lt-icon {
   width: 14px;
   height: 14px;
+}
+.crumb-menu-row:hover .crumb-menu-edit,
+.crumb-menu-row:focus-within .crumb-menu-edit {
+  opacity: 1;
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
 }
 .crumb-menu-row:hover .crumb-menu-edit {
   color: var(--lt-muted-foreground);

@@ -211,6 +211,51 @@ fn a_vault_is_a_row_and_writes_nothing_into_the_folder() {
 }
 
 #[test]
+fn vaults_are_listed_a_to_z_ignoring_capitals() {
+    let dir = unique_dir("vault-order");
+    let conn = open_db(&dir).expect("db opens");
+
+    for name in ["Zulu", "alpha", "Gamma", "Beta"] {
+        let root = dir.join(name);
+        std::fs::create_dir_all(&root).expect("folder created");
+        add_vault(&conn, &root, name, VaultKind::Folder).expect("vault added");
+    }
+
+    let names: Vec<String> = list_vaults(&conn)
+        .expect("listed")
+        .into_iter()
+        .map(|vault| vault.name)
+        .collect();
+    assert_eq!(names, ["alpha", "Beta", "Gamma", "Zulu"]);
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn vaults_with_the_same_name_are_listed_by_row_id() {
+    let dir = unique_dir("vault-order-ties");
+    let first_root = dir.join("first");
+    let second_root = dir.join("second");
+    std::fs::create_dir_all(&first_root).expect("first folder created");
+    std::fs::create_dir_all(&second_root).expect("second folder created");
+    let conn = open_db(&dir).expect("db opens");
+
+    let first = add_vault(&conn, &first_root, "Library", VaultKind::Folder).expect("first added");
+    let second =
+        add_vault(&conn, &second_root, "Library", VaultKind::Folder).expect("second added");
+    let ids: Vec<i64> = list_vaults(&conn)
+        .expect("listed")
+        .into_iter()
+        .map(|vault| vault.id)
+        .collect();
+    assert_eq!(ids, [first.id, second.id]);
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn the_active_vault_survives_a_reopen_and_falls_back_to_the_whole_library() {
     let dir = unique_dir("vault-active");
     let one = dir.join("one");

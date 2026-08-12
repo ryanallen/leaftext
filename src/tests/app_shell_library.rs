@@ -1126,12 +1126,29 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // A visible button on the row, not a right-click: rename, re-point and remove all live behind it.
+    // A row button, not a right-click: rename, re-point and remove all live behind it.
     assert!(html.contains("showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));"));
     // Opening the panel asks about the folder's repository straight away, so the answer is there by the time anyone has read down to it.
     assert!(html.contains("send({ command: 'getVaultGit', id: vault.id });"));
     assert!(html.contains(r#"edit.className = 'crumb-menu-edit';"#));
     assert!(css.contains(".crumb-menu-edit {"));
+    let edit_style = css
+        .split(".crumb-menu-edit {")
+        .nth(1)
+        .and_then(|rest| rest.split("\n}").next())
+        .expect("the settings button has a style rule");
+    assert!(edit_style.contains("opacity: 0;"));
+    assert!(edit_style.contains(
+        "transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);"
+    ));
+    let reveal_style = css
+        .split(".crumb-menu-row:hover .crumb-menu-edit,\n.crumb-menu-row:focus-within .crumb-menu-edit {")
+        .nth(1)
+        .and_then(|rest| rest.split("\n}").next())
+        .expect("the settings button is revealed for pointer and keyboard use");
+    assert!(reveal_style.contains("opacity: 1;"));
+    assert!(reveal_style
+        .contains("transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);"));
     // Pressing it opens that vault's panel rather than switching to the vault -- on the press, so a redraw mid-click cannot swallow it.
     assert!(html.contains("edit.addEventListener('pointerdown', (event) => {"));
     assert!(html.contains("entry.edit();"));
