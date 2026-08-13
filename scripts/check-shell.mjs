@@ -3127,6 +3127,208 @@ if (booted) {
     }
   });
 
+  // Mermaid writes a whole stylesheet into every drawing it makes, scoped by that drawing's own svg id — so a document of 67 diagrams carries 67 sheets, 44 of them byte-identical, and that is what makes a settled page of drawings scroll badly. One copy per distinct sheet in the page's head, scoped by a class the drawing wears instead.
+  const sheetHolder = () => (booted.document.head.children || []).find((child) => child.id === 'leaf-mermaid-sheets');
+  const standInDrawing = (id, css) => {
+    const worn = new Set();
+    const style = {
+      textContent: css,
+      taken: false,
+      remove() {
+        this.taken = true;
+      },
+    };
+    const svg = {
+      id,
+      classList: { add: (name) => worn.add(name) },
+      getAttribute: (name) => (name === 'class' ? Array.from(worn).join(' ') : null),
+      querySelector: (selector) => (String(selector) === 'style' && !style.taken ? style : null),
+    };
+    return {
+      style,
+      svg,
+      worn: () => Array.from(worn),
+      querySelector: (selector) => (String(selector) === 'svg' ? svg : null),
+    };
+  };
+  const flowchartSheet = (id) => `#${id}{font-size:16px;}@keyframes dash{to{stroke-dashoffset:0;}}#${id} .node rect{fill:#eef;}`;
+
+  check('two drawings of the same kind share one sheet', () => {
+    const { shareMermaidSheet, forgetMermaidSheets } = booted;
+    forgetMermaidSheets();
+    const first = standInDrawing('mermaid-1', flowchartSheet('mermaid-1'));
+    const second = standInDrawing('mermaid-2', flowchartSheet('mermaid-2'));
+    shareMermaidSheet(first);
+    shareMermaidSheet(second);
+    const cls = first.worn().find((name) => name.startsWith('lt-mmd-'));
+    if (!cls) throw new Error('the drawing wears no class naming its sheet');
+    if (!second.worn().includes(cls)) throw new Error('two byte-identical sheets were given two classes');
+    if (!first.style.taken || !second.style.taken) throw new Error('a drawing kept its own style element after its rules were hoisted');
+    const sheet = sheetHolder();
+    if (!sheet) throw new Error('nothing was written into the page');
+    const scoped = sheet.textContent.split(`.${cls} .node rect`).length - 1;
+    if (scoped !== 1) throw new Error(`the shared rule was written ${scoped} times`);
+    if (sheet.textContent.includes('#mermaid-1')) throw new Error('the drawing’s own id was left in the shared sheet');
+  });
+
+  // A rule that names no id — an animation, and anything mermaid's themeCSS appends — has nothing to normalize out, so it would otherwise be written once per distinct sheet rather than once for the page. Kept when the theme changes, too: it carries no color.
+  check('an animation a drawing shares is written once, not once per drawing', () => {
+    const { shareMermaidSheet, forgetMermaidSheets } = booted;
+    forgetMermaidSheets();
+    shareMermaidSheet(standInDrawing('mermaid-3', flowchartSheet('mermaid-3')));
+    // A different kind of diagram: its own sheet, the same animation inside it.
+    shareMermaidSheet(standInDrawing('mermaid-4', `#mermaid-4 .pieCircle{stroke:#333;}@keyframes dash{to{stroke-dashoffset:0;}}`));
+    const sheet = sheetHolder();
+    const written = sheet.textContent.split('@keyframes dash').length - 1;
+    if (written !== 1) throw new Error(`the animation was written ${written} times`);
+    if (sheet.textContent.includes('@keyframes dash{to{stroke-dashoffset:0;}}#')) {
+      throw new Error('the animation was left inside a sheet rather than lifted out of it');
+    }
+  });
+
+  // Every rule in there paints the theme it was drawn in, so a reader trying six themes would otherwise end with six sets of rules in the page and five of them dead. The animations stay — they carry no color — and a drawing restored out of the picture memo can still put its own sheet back, which is what a theme left and come back to needs.
+  check('the page-level sheet is emptied when the theme changes', () => {
+    const { shareMermaidSheet, forgetMermaidSheets, ensureMermaidSheets } = booted;
+    forgetMermaidSheets();
+    const drawing = standInDrawing('mermaid-5', flowchartSheet('mermaid-5'));
+    shareMermaidSheet(drawing);
+    const cls = drawing.worn().find((name) => name.startsWith('lt-mmd-'));
+    const sheet = sheetHolder();
+    forgetMermaidSheets();
+    if (sheet.textContent.includes(`.${cls} .node rect`)) throw new Error('the sheets written for the theme being left were kept');
+    if (!sheet.textContent.includes('@keyframes dash')) throw new Error('the animations went with them');
+    // Restored from the picture memo: the drawing carries the class and no sheet of its own, so the page has to be handed its rules back.
+    ensureMermaidSheets({ querySelector: (selector) => (String(selector) === 'svg' ? drawing.svg : null) });
+    if (!sheet.textContent.includes(`.${cls} .node rect`)) throw new Error('a restored drawing was left with nothing painting it');
+    const twice = sheet.textContent.split(`.${cls} .node rect`).length - 1;
+    if (twice !== 1) throw new Error(`putting the sheet back wrote it ${twice} times`);
+  });
+
+  // A drawing off screen stops painting, and the browser is handed the exact height it drew to so the block holds its place while it is away. That exact height is the whole reason this can be done at all: it was tried once across the document, when nothing knew how tall a block was, and it flashed blanks and jumped the rail's position box.
+  check('a drawn diagram carries its own measured height as its intrinsic size', () => {
+    const { finishMermaidDiagram, markMermaidWait } = booted;
+    const styleStand = () => ({
+      removeProperty(name) {
+        delete this[String(name).replace(/-([a-z])/g, (whole, letter) => letter.toUpperCase())];
+      },
+    });
+    const block = (source, height) => ({
+      dataset: {},
+      style: styleStand(),
+      isConnected: true,
+      __mermaidSource: source,
+      querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ top: 0, bottom: height, width: 400, height }),
+    });
+
+    const drawn = block('flowchart TD\n  S1 --> S2', 214);
+    finishMermaidDiagram(drawn);
+    if (drawn.style.contentVisibility !== 'auto') throw new Error('a drawn diagram goes on painting off screen');
+    if (drawn.style.containIntrinsicSize !== 'auto 214px') {
+      throw new Error(`the block stands in at ${drawn.style.containIntrinsicSize || 'nothing'} rather than the height it drew to`);
+    }
+
+    // A box has no drawing to skip, and its own remembered height is what holds the page still.
+    markMermaidWait(drawn, false);
+    if ('contentVisibility' in drawn.style || 'containIntrinsicSize' in drawn.style) {
+      throw new Error('a box handed back was left skipping its own paint');
+    }
+
+    // Measured at nothing: there is no height to stand in with, so nothing is skipped either.
+    const unmeasured = block('flowchart TD\n  S3 --> S4', 0);
+    finishMermaidDiagram(unmeasured);
+    if ('contentVisibility' in unmeasured.style) throw new Error('a drawing nothing could measure was skipped anyway');
+
+    // The stand-in size is the box's contents and the height measured is the whole block, so the padding around a diagram comes off it. Left on, every skipped block stands 25px taller than the drawing it is holding a place for, and a document of 67 grows by 1,655px as the reader scrolls away from them.
+    const wasStyle = booted.getComputedStyle;
+    try {
+      booted.getComputedStyle = () => ({
+        getPropertyValue: (name) => (String(name).startsWith('padding') ? '12.5px' : '0px'),
+      });
+      const padded = block('flowchart TD\n  S5 --> S6', 231);
+      finishMermaidDiagram(padded);
+      if (padded.style.containIntrinsicSize !== 'auto 206px') {
+        throw new Error(`the padding was left in the stand-in size: ${padded.style.containIntrinsicSize}`);
+      }
+    } finally {
+      booted.getComputedStyle = wasStyle;
+    }
+  });
+
+  // Named after the fault this reopens: skipping off-screen blocks across the whole document jumped the page, because nothing knew how tall a block was and the browser re-estimated as it went. Two things keep it still now — the stand-in size is the drawing's own measured height rather than an estimate, and the rail's clone cancels the skip so the thumbnail is not a column of blanks.
+  check('a diagram off screen keeps its place in the document', () => {
+    const { finishMermaidDiagram, markMermaidWait } = booted;
+    const styleStand = () => ({
+      removeProperty(name) {
+        delete this[String(name).replace(/-([a-z])/g, (whole, letter) => letter.toUpperCase())];
+      },
+    });
+    const block = (source, height) => ({
+      dataset: {},
+      style: styleStand(),
+      isConnected: true,
+      __mermaidSource: source,
+      querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ top: 0, bottom: height, width: 400, height }),
+    });
+
+    // What the block holds open while it is skipped, and what a box put back in its place is given, are the same number.
+    const drawn = block('flowchart TD\n  P1 --> P2', 137);
+    finishMermaidDiagram(drawn);
+    const standIn = drawn.style.containIntrinsicSize;
+    const waiting = block('flowchart TD\n  P1 --> P2', 402);
+    markMermaidWait(waiting, false);
+    if (standIn !== `auto ${waiting.style.height}`) {
+      throw new Error(`the skipped block stands in at ${standIn} and a box put back at ${waiting.style.height}`);
+    }
+
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const clone = css.slice(css.indexOf('.document-minimap-preview pre.mermaid {'));
+    if (!clone.startsWith('.document-minimap-preview pre.mermaid {')) throw new Error('nothing cancels the skip inside the rail’s clone');
+    if (!clone.slice(0, 120).includes('content-visibility: visible !important;')) {
+      throw new Error('the rail’s clone inherits the skip, which blanks every drawing in the thumbnail');
+    }
+  });
+
+  // The complaint this whole subject exists to answer: a diagram scrolled three screens past used to go back to an empty box, so a document of diagrams read twice was a document of blanks. It stays drawn now — everywhere the memos can remember it, which is at or under their cap. Past that they empty wholesale, a box put back would be redrawn from scratch, and a page holding every drawing gives up a whole second in one frame; there, and only there, the old behavior stands.
+  check('a diagram scrolled well past is still drawn when you come back', () => {
+    const { mermaidMayRecycle } = booted;
+    const appEl = booted.document.getElementById('app');
+    const wasQuery = appEl.querySelector;
+    const drawing = {
+      dataset: { processed: 'true' },
+      isConnected: true,
+      __mermaidSource: 'flowchart TD\n  R1 --> R2',
+      classList: { contains: () => false },
+      style: { removeProperty() {} },
+      querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ top: 0, bottom: 180, width: 400, height: 180 }),
+    };
+    // The page holds `held` diagrams, and this one has been drawn and measured, so both memos know it.
+    const stand = (held) => {
+      const body = {
+        getBoundingClientRect: () => ({ left: 0, top: 0, right: 640, bottom: 900, width: 640, height: 900 }),
+        querySelectorAll: () => Array.from({ length: held }, () => drawing),
+      };
+      appEl.querySelector = (selector) => (String(selector) === '.document-body' ? body : wasQuery.call(appEl, selector));
+    };
+
+    try {
+      stand(60);
+      booted.finishMermaidDiagram(drawing);
+      drawing.dataset.processed = 'true';
+      if (mermaidMayRecycle(drawing)) throw new Error('a diagram on a document the memos can hold was handed back as a box');
+      // And nothing is even watching for it to go: a document that keeps every drawing has nothing to watch for.
+      if (booted.mermaidDocumentPastMemory()) throw new Error('a 60-diagram document was called too big to remember');
+
+      // Past the cap both memos empty wholesale, so the page behaves as it always did. What the guard then asks is whether this drawing is still in the picture memo, which is the check that was there before this and is unchanged.
+      stand(201);
+      if (!booted.mermaidDocumentPastMemory()) throw new Error('a 201-diagram document was called small enough to remember');
+    } finally {
+      appEl.querySelector = wasQuery;
+    }
+  });
+
   // A warm pass a nearer one interrupted has to pick itself up, or it stalls until the reader happens to scroll. Two things start it: the settle after a gesture, and the end of every other pass. One at a time, because a document being warmed schedules one on every batch it finishes.
   check('a settled scroll starts the warm pass again, one at a time', () => {
     const { readerScrollSettled } = booted;
@@ -3321,6 +3523,9 @@ if (booted) {
     const mermaidsOwn = new Set([
       "const svg = stage && stage.querySelector('svg');",
       "if (diagram.querySelector('.error-icon') || !diagram.querySelector('svg')) diagram.dataset.mermaidRender = 'failed';",
+      // The drawing whose sheet is being hoisted into the page, and the one being handed back its sheet after a restore. Both are mermaid's own SVG and neither can be anything else.
+      "const svg = diagram.querySelector('svg');",
+      "const svg = node && typeof node.querySelector === 'function' ? node.querySelector('svg') : null;",
     ]);
     const offenders = [];
     for (const name of names) {

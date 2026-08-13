@@ -2444,7 +2444,7 @@ body:has(#readerToolbar:not([hidden])) {
   word-wrap: break-word;
   word-break: normal;
 }
-/* The reader lays the whole document out up front (like the web reader), which keeps scrolling smooth: content-visibility skipping made off-screen blocks flash blank and the minimap box jump as heights re-estimated. */
+/* The reader lays the whole document out up front (like the web reader), which keeps scrolling smooth: content-visibility skipping makes off-screen blocks flash blank and the minimap box jump as heights re-estimate. A drawn diagram is the one exception, and only because its height is measured and remembered rather than estimated. */
 .docs-pager {
   display: flex;
   justify-content: space-between;
@@ -4251,6 +4251,10 @@ body.is-block-dragging .document-body [data-src-start] {
 /* The clone is a .document-body, so an undrawn diagram in it matches the spinner rule too, and a page of boxes would spin dozens down a 68px rail. A pseudo-element survives any stripping of nodes, so only a rule the clone's own class reaches can cancel it. The block stays: its invisible source text is what holds the right height. */
 .document-minimap-preview pre.mermaid::after {
   content: none;
+}
+/* A drawn diagram lets the browser skip its own paint while it is off screen, and the clone is cloned with that on it — but the whole rail is one shrunken slice, so every cloned block is a few pixels tall and every drawing in the thumbnail went blank. Measured: 54 of them. Important, because the skip is written on the block itself. */
+.document-minimap-preview pre.mermaid {
+  content-visibility: visible !important;
 }
 /* Place and size are written onto this element by JS; these two are the frames before the first write. Not a custom property on the rail above, which inherits into the clone and costs 78ms a write to re-resolve. */
 .document-minimap-viewport {

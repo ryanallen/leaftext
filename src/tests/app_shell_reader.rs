@@ -374,7 +374,7 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
         "function scheduleMermaidWarmPass() {",
         "if (queue.length) drawMermaidDiagrams(queue, true);",
         // A document past the memo's cap is left as it ships: past it both memos empty wholesale, so warming is a redraw of the document on every scroll.
-        "if (body.querySelectorAll('pre.mermaid').length > MERMAID_CACHE_CAP) return [];",
+        "if (mermaidDocumentPastMemory()) return [];",
         // Their gesture comes first, and the pass stops where it is rather than keeping a queue: the next attempt re-derives it from what has no measured height.
         "if (warming && readerScrolling) return;",
         // The column's width is half the key, so a change to it re-marks every waiting box and warms again rather than leaving one pinned to a height measured at another width.
@@ -390,12 +390,36 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
         "  refreshFind();",
         // A render swaps in a fresh body, so the boxes the watcher held are detached.
         "function forgetMermaidWatch() {",
+        // A drawing off screen stops painting, and is handed the exact height it drew to so the block keeps its place while it is away. Both are written only after that height has been measured — the skip is what would otherwise make the measurement the placeholder's own size.
+        "function skipMermaidPaintOffScreen(diagram, height) {",
+        "diagram.style.containIntrinsicSize = `auto ${Math.max(0, Math.round(height - edges))}px`;",
+        "diagram.style.contentVisibility = 'auto';",
+        "skipMermaidPaintOffScreen(diagram, height);",
+        // A box has no drawing to skip, so it goes back to painting like anything else.
+        "function drawMermaidPaintAlways(diagram) {",
     ] {
         assert!(
             script.contains(expected),
             "the front-end should contain {expected}"
         );
     }
+
+    // The height is measured before the skip is written, or a drawing off screen measures the size it was standing in for and remembers that instead.
+    let finish = script
+        .split("function finishMermaidDiagram(diagram) {")
+        .nth(1)
+        .expect("the front-end finishes a drawing");
+    let finish = &finish[..finish.find("\n}\n").expect("that function closes")];
+    let measured = finish
+        .find("const height = Math.round(diagram.getBoundingClientRect().height);")
+        .expect("the drawing is measured");
+    let skipped = finish
+        .find("skipMermaidPaintOffScreen(diagram, height);")
+        .expect("the drawing then stops painting off screen");
+    assert!(
+        measured < skipped,
+        "the height must be read before the paint is skipped: {finish}"
+    );
 
     // The drain waits for the gesture to stop: a diagram growing above the reader mid-scroll shifts the page under their thumb, and the re-pin that would put it back stands aside while they scroll.
     let drain = script
@@ -436,6 +460,9 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
     );
 
     let css = reading_mode_css();
+    // The rail is one shrunken slice of the page, so every cloned block is a few pixels tall — and a clone cloned with the skip on it skips its own contents outright, which blanked all 54 drawings in the thumbnail.
+    assert_contains(css, ".document-minimap-preview pre.mermaid {");
+    assert_contains(css, "content-visibility: visible !important;");
     // A box too far away to be queued does not spin, in both motion settings.
     assert_contains(
         css,
@@ -448,7 +475,7 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
 }
 
 #[test]
-fn a_diagram_scrolled_well_past_goes_back_to_a_box() {
+fn a_diagram_scrolled_well_past_goes_back_to_a_box_only_past_the_memo_cap() {
     let script = app_shell_script();
 
     for expected in [
@@ -459,6 +486,10 @@ fn a_diagram_scrolled_well_past_goes_back_to_a_box() {
         // The box goes back at exactly the height its drawing had, so recycling moves nothing on the page.
         "diagram.textContent = diagram.__mermaidSource;",
         "markMermaidWait(diagram, false);",
+        // One reading of "more diagrams than the memos hold", spent by the warm pass and by the hand-back alike.
+        "function mermaidDocumentPastMemory() {",
+        "return !!body && body.querySelectorAll('pre.mermaid').length > MERMAID_CACHE_CAP;",
+        "  if (mermaidDocumentPastMemory()) return [];",
     ] {
         assert!(
             script.contains(expected),
@@ -471,6 +502,11 @@ fn a_diagram_scrolled_well_past_goes_back_to_a_box() {
         .nth(1)
         .expect("the front-end decides what may be taken back");
     let may = &may[..may.find("\n}\n").expect("the guard closes")];
+    // A diagram you have already read stays on the page: nothing is handed back on a document the memos can hold, which is what answers the empty box. Past their cap they empty wholesale — a box put back there is a redraw from scratch, and a 250-diagram page holding every drawing gives up a whole second in one frame.
+    assert!(
+        may.contains("if (!mermaidDocumentPastMemory()) return false;"),
+        "a document the memos can hold must keep every drawing it makes: {may}"
+    );
     // Editing it, or holding it anywhere other than where the page put it, is work of the reader's that a recycle would throw away.
     for kept in [
         "diagram.dataset.editingSource === 'true'",

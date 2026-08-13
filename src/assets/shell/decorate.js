@@ -540,6 +540,11 @@ function mermaidHeightKey(source) {
 }
 // Keyed like the picture memo plus the column's width, so a box refilled at the height its drawing had moves nothing above the reader.
 const mermaidDrawnHeights = new Map();
+// More diagrams than either memo holds. Both empty wholesale at their cap rather than dropping the oldest, so past it the page has no reliable memory of anything it drew — which is the one boundary that decides both what is warmed and what is handed back. Measured: a 250-diagram document keeping every drawing costs 8.9 times the same document as boxes and gives up a whole second in one frame, where a 67-diagram one costs 1.6 times its own.
+function mermaidDocumentPastMemory() {
+  const body = app.querySelector('.document-body');
+  return !!body && body.querySelectorAll('pre.mermaid').length > MERMAID_CACHE_CAP;
+}
 // One window either way. Sixty drawn on open stalled the window for three and a half seconds.
 const MERMAID_NEAR_SCREENS = 1;
 function mermaidViewHeight() {
@@ -555,6 +560,8 @@ function mermaidIsNearReader(diagram) {
 // Waiting its turn, or too far away to be queued. Only the waiting one spins, so a page of boxes is not fifty-seven spinners.
 function markMermaidWait(diagram, near) {
   diagram.dataset.diagramWait = near ? 'near' : 'far';
+  // A box has no drawing to skip, and its own height is what holds the page still.
+  drawMermaidPaintAlways(diagram);
   const known = mermaidDrawnHeights.get(mermaidHeightKey(diagram.__mermaidSource || diagram.textContent));
   // Exact, and the stylesheet's floor comes off with it: 19 of the 60 diagrams in the test document draw *shorter* than their own source text, and `min-height` cannot make a block shorter than its contents in either direction. Cleared when unknown: a theme or column-width change keys the memo afresh, and the old height would hold the box open.
   if (known) {
@@ -602,7 +609,7 @@ function mermaidWarmCandidates() {
   const body = app.querySelector('.document-body');
   if (!body) return [];
   // Past the cap both memos empty wholesale rather than dropping the oldest, so a warm pass into them is a redraw of the document on every scroll — worse than the jolt it set out to fix. A document this size is left exactly as it ships.
-  if (body.querySelectorAll('pre.mermaid').length > MERMAID_CACHE_CAP) return [];
+  if (mermaidDocumentPastMemory()) return [];
   const waiting = Array.from(body.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-stage])'));
   return waiting.filter((diagram) => diagram.__mermaidSource != null
     && !mermaidDrawnHeights.has(mermaidHeightKey(diagram.__mermaidSource)));
@@ -631,6 +638,7 @@ function fillMermaidClone(preview) {
     const drawing = mermaidRenderCache.get(mermaidCacheKey(box.textContent));
     if (!drawing) continue;
     box.innerHTML = drawing;
+    ensureMermaidSheets(box);
     box.dataset.processed = 'true';
     delete box.dataset.diagramWait;
   }
@@ -665,6 +673,8 @@ function drawMermaidDiagrams(candidates, warming) {
     const cached = mermaidRenderCache.get(mermaidCacheKey(diagram.__mermaidSource));
     if (cached) {
       diagram.innerHTML = cached;
+      // The drawing's rules are the page's now, and a theme the reader left and came back to dropped them on the way out.
+      ensureMermaidSheets(diagram);
       diagram.dataset.processed = 'true';
       finishMermaidDiagram(diagram);
       addMermaidControls(diagram);
@@ -695,27 +705,141 @@ function claimMermaidLinks(diagram) {
   }
 }
 
+// ---- one sheet for every drawing that draws the same ------------------------
+// Mermaid writes a whole stylesheet into each drawing it makes, every rule scoped by that drawing's own svg id — so 67 diagrams carry 67 sheets and 44 of them are byte-identical. Hoist them: normalize the id out, keep one copy of each distinct sheet in the page's head, and give the drawing a class where its rules had the id. Measured on the test document, that alone is 1.8x the scroll.
+const MERMAID_SHEET_ID = 'leaf-mermaid-sheets';
+const MERMAID_SHEET_CLASS = 'lt-mmd-';
+// The id stands out of the text while it is being matched, so a sheet is keyed on what it says rather than on which drawing said it. Not a character CSS can hold.
+const MERMAID_SHEET_MARK = String.fromCharCode(0);
+// What each distinct sheet is called, and what it says. Both are kept for the life of the page even when the rules are dropped: the picture memo still holds drawings from a theme that has been left, and restoring one has to be able to put its sheet back.
+const mermaidSheetClasses = new Map();
+const mermaidSheetTexts = new Map();
+// What is written into the page right now, and every animation any sheet has asked for.
+const mermaidLiveSheets = new Set();
+const mermaidSheetFrames = new Set();
+let mermaidSheetHolder = null;
+function mermaidSheetElement() {
+  if (!mermaidSheetHolder) {
+    mermaidSheetHolder = document.createElement('style');
+    mermaidSheetHolder.id = MERMAID_SHEET_ID;
+    document.head.appendChild(mermaidSheetHolder);
+  }
+  return mermaidSheetHolder;
+}
+// A sheet's `@keyframes` blocks, taken out of it. They carry no id to normalize and no color to re-theme, so they are the one part written once for the whole page rather than once per distinct sheet — and they stay when a theme change drops the rest.
+function splitMermaidFrames(text) {
+  let rules = '';
+  const frames = [];
+  let at = 0;
+  for (;;) {
+    const start = text.indexOf('@keyframes', at);
+    if (start < 0) {
+      rules += text.slice(at);
+      return { rules, frames };
+    }
+    rules += text.slice(at, start);
+    let cut = text.indexOf('{', start);
+    if (cut < 0) {
+      rules += text.slice(start);
+      return { rules, frames };
+    }
+    let depth = 0;
+    for (; cut < text.length; cut += 1) {
+      if (text[cut] === '{') depth += 1;
+      else if (text[cut] === '}') {
+        depth -= 1;
+        if (!depth) {
+          cut += 1;
+          break;
+        }
+      }
+    }
+    frames.push(text.slice(start, cut));
+    at = cut;
+  }
+}
+// Written into the page, once. Appended rather than rebuilt: the browser re-reads the whole sheet either way, and there are 23 of them on a document of 67 drawings.
+function keepMermaidSheet(cls) {
+  if (mermaidLiveSheets.has(cls)) return;
+  mermaidLiveSheets.add(cls);
+  mermaidSheetElement().textContent += mermaidSheetTexts.get(cls) || '';
+}
+// A drawing restored from the picture memo carries its class and no sheet of its own, so whatever it names has to be in the page before it is put back — a theme the reader has been away from and come back to dropped its rules on the way out.
+function ensureMermaidSheets(node) {
+  const svg = node && typeof node.querySelector === 'function' ? node.querySelector('svg') : null;
+  const names = svg && svg.getAttribute ? String(svg.getAttribute('class') || '').split(/\s+/) : [];
+  for (const name of names) if (mermaidSheetTexts.has(name)) keepMermaidSheet(name);
+}
+// The drawing's own sheet, hoisted. Called before the picture memo is written, so what is remembered — and what the rail clones out of it — carries the class rather than a second copy of the sheet.
+function shareMermaidSheet(diagram) {
+  const svg = diagram.querySelector('svg');
+  const style = svg ? svg.querySelector('style') : null;
+  if (!svg || !style) return;
+  const split = splitMermaidFrames(style.textContent || '');
+  for (const frame of split.frames) {
+    if (mermaidSheetFrames.has(frame)) continue;
+    mermaidSheetFrames.add(frame);
+    mermaidSheetElement().textContent += frame;
+  }
+  const id = svg.id;
+  const normalized = id ? split.rules.split('#' + id).join(MERMAID_SHEET_MARK) : split.rules;
+  let cls = mermaidSheetClasses.get(normalized);
+  if (!cls) {
+    // Numbered by how many distinct sheets have ever been seen, and never reused: a drawing left in the picture memo from an earlier theme still names the class it was given.
+    cls = MERMAID_SHEET_CLASS + mermaidSheetClasses.size;
+    mermaidSheetClasses.set(normalized, cls);
+    mermaidSheetTexts.set(cls, normalized.split(MERMAID_SHEET_MARK).join('.' + cls));
+  }
+  keepMermaidSheet(cls);
+  svg.classList.add(cls);
+  style.remove();
+}
+// The theme changed, so every rule in there paints the theme being left. Dropped rather than left to grow one set per theme a reader tries; the animations stay, and the text of each sheet is kept so a drawing restored from the memo can put its own back.
+function forgetMermaidSheets() {
+  if (!mermaidLiveSheets.size) return;
+  mermaidLiveSheets.clear();
+  mermaidSheetElement().textContent = Array.from(mermaidSheetFrames).join('');
+}
+
+// A drawing off screen stops paying for itself: the browser skips painting inside the block while it is away, and is told the exact height to hold the place open with. Only ever after the height has been measured — the skip is what would otherwise make that measurement the placeholder's own size. `auto` in front of it means the browser prefers what it last drew and falls back to ours, so a drawing that has been on screen once never guesses.
+function skipMermaidPaintOffScreen(diagram, height) {
+  // The stand-in size is the box's contents, and the height measured is the whole block — so the padding around a diagram has to come off, or every skipped block stands 25px taller than the drawing it is holding a place for and the document grows by that much per diagram.
+  const around = window.getComputedStyle(diagram);
+  const edges = ['padding-top', 'padding-bottom', 'border-top-width', 'border-bottom-width']
+    .reduce((sum, name) => sum + (Number.parseFloat(around.getPropertyValue(name)) || 0), 0);
+  diagram.style.containIntrinsicSize = `auto ${Math.max(0, Math.round(height - edges))}px`;
+  diagram.style.contentVisibility = 'auto';
+}
+function drawMermaidPaintAlways(diagram) {
+  diagram.style.removeProperty('content-visibility');
+  diagram.style.removeProperty('contain-intrinsic-size');
+}
+
 function finishMermaidDiagram(diagram) {
   claimMermaidLinks(diagram);
   delete diagram.dataset.diagramWait;
-  // Both, and before the height is read: a drawing left holding the exact height its box was given would be clamped to what it measured last time for ever.
+  // All three, and before the height is read: a drawing left holding the exact height its box was given would be clamped to what it measured last time for ever, and one still skipping its own paint would measure the size it was standing in for.
   diagram.style.removeProperty('height');
   diagram.style.removeProperty('min-height');
+  drawMermaidPaintAlways(diagram);
   if (mermaidViewObserver) mermaidViewObserver.unobserve(diagram);
   if (diagram.__mermaidSource == null) return;
   const height = Math.round(diagram.getBoundingClientRect().height);
   if (!height) return;
   if (mermaidDrawnHeights.size >= MERMAID_CACHE_CAP) mermaidDrawnHeights.clear();
   mermaidDrawnHeights.set(mermaidHeightKey(diagram.__mermaidSource), height);
+  skipMermaidPaintOffScreen(diagram, height);
   watchMermaidForRecycling(diagram);
 }
 
-// A drawing off screen still pays for its own stylesheet — sixty of those are 354 KB in sixty id-scoped sheets, which is what makes a settled page scroll badly.
+// A drawing you have already read stays on the page: it costs one shared sheet and no paint at all while it is away, and taking it back is what made a document read twice a document of blanks. Only a document neither memo can remember still hands them back — there the drawing is gone from the memo anyway, so a box put back has to be redrawn from scratch, and a page holding all of them gives up a second in one frame.
 const MERMAID_FAR_SCREENS = 3;
 let mermaidRecycleObserver = null;
 const mermaidLeavingView = new Set();
 function watchMermaidForRecycling(diagram) {
   if (typeof IntersectionObserver === 'undefined') return;
+  // Nothing to watch for on a document that keeps every drawing it makes.
+  if (!mermaidDocumentPastMemory()) return;
   if (!mermaidRecycleObserver) {
     mermaidRecycleObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
@@ -729,6 +853,8 @@ function watchMermaidForRecycling(diagram) {
 }
 // What must keep its drawing however far away it is.
 function mermaidMayRecycle(diagram) {
+  // A document the memos can hold keeps every drawing it makes, which is the whole of this: the empty box was the app's second-most-named fault and nothing on a page this size is worth it.
+  if (!mermaidDocumentPastMemory()) return false;
   if (!diagram.isConnected || diagram.dataset.processed !== 'true') return false;
   // Being edited, or held somewhere other than where the page put it: taking one back throws away what the reader did to it.
   if (diagram.dataset.editingSource === 'true') return false;
@@ -911,7 +1037,8 @@ function drawMermaidBatches(diagrams, generation, warming) {
             }
             if (diagram.__mermaidSource == null) continue;
             if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
-            // Memo first, button second: the cache holds innerHTML, and a button baked into it would come back on every restore and stack up.
+            // Sheet first, memo second, button third: the cache holds innerHTML, so hoisting after it would remember a sheet the page had already taken away, and a button baked into it would come back on every restore and stack up.
+            shareMermaidSheet(diagram);
             mermaidRenderCache.set(mermaidCacheKey(diagram.__mermaidSource), diagram.innerHTML);
             finishMermaidDiagram(diagram);
             addMermaidControls(diagram);
@@ -1197,6 +1324,8 @@ if (app) {
 // Draw the diagrams again in the theme that just arrived: an SVG holds its colors as literal values, so recoloring one means drawing it again. One that failed before gets another go — this may be a theme it can be drawn in.
 function repaintMermaidDiagrams() {
   const diagrams = Array.from(app.querySelectorAll('pre.mermaid:not([data-diagram-stage])'));
+  // Every shared sheet in the page paints the theme being left, and the drawings about to be made will write their own.
+  forgetMermaidSheets();
   let any = false;
   for (const diagram of diagrams) {
     if (diagram.__mermaidSource == null) continue;

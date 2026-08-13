@@ -28,6 +28,8 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 **No background tasks and no subagents.** Every command runs in the foreground, in this session, and every step is done by you. Nothing is handed to another agent and nothing is left running past the reply.
 
+**Never use the host's task list.** The ticket already holds every piece of work as a box, so a second list is the same work written twice and drifts from the ticket the moment anything changes. Work the ticket's boxes and tick them there.
+
 **US spellings, never British.** In a reply, in a comment, in a ticket, in a commit message — "favorite", "color", "canceled". `just check-spelling` fails on one and names the line; it reads this repo and the plan tree next door — the index, the running order, the glossary and every live ticket.
 
 **Never invent a reason.** A cost, a limit, a risk — say it only if it is real and it actually applies here. Dressing an option up as expensive to steer the answer is lying, even when every word is separately true. Check the constraint against this repo before you spend it: the ~2MB ceiling is on the inline page script, so a vendored file does not pay it. If you don't know the cost, say you don't know.
