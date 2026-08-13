@@ -7595,11 +7595,13 @@ body.is-home-row-dragging .home-list-scroll li {
   transition-duration: var(--lt-duration-100);
   transition-timing-function: var(--lt-ease-decelerate);
 }
-/* One width for every card with a picture: sized by its own words, a short address made a narrow card whose scaled note wrapped its heading into a tall column. */
+/* One width for every card with a picture, so a short address cannot make a narrow card whose scaled note wraps its heading into a tall column. It is the width of the note: the picture box lands at 250px, which is what 75 characters draw at. */
 .link-hover-tip.has-preview {
-  width: 22rem;
+  width: 17rem;
 }
 .link-hover-tip-preview {
+  /* The one shrink: a starting value here, written over by the measurement, read back for the layer's width, its scale and the box's height. */
+  --link-preview-shrink: 0.36;
   position: relative;
   contain: inline-size;
   width: 100%;
@@ -7634,9 +7636,9 @@ body.is-home-row-dragging .home-list-scroll li {
   visibility: hidden;
 }
 .link-hover-tip-preview-scale {
-  width: calc(100% / 0.36);
+  width: calc(100% / var(--link-preview-shrink));
   opacity: 0;
-  transform: scale(0.36);
+  transform: scale(var(--link-preview-shrink));
   transform-origin: top left;
   transition: opacity var(--lt-duration-100) var(--lt-ease-decelerate);
 }

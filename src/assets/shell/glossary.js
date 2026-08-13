@@ -161,6 +161,7 @@ linkHoverTip.innerHTML =
   '<div class="link-hover-tip-lines" hidden></div>';
 appSurface.appendChild(linkHoverTip);
 const linkHoverTipPreview = linkHoverTip.querySelector('.link-hover-tip-preview');
+const linkHoverTipPreviewScale = linkHoverTip.querySelector('.link-hover-tip-preview-scale');
 const linkHoverTipPreviewDocument = linkHoverTip.querySelector('.link-hover-tip-preview-document');
 const linkHoverTipKind = linkHoverTip.querySelector('.link-hover-tip-kind');
 const linkHoverTipDetail = linkHoverTip.querySelector('.link-hover-tip-detail');
@@ -215,18 +216,42 @@ function setLinkHoverPreview(html) {
   const present = typeof html === 'string' && html !== '';
   linkHoverTipPreviewDocument.innerHTML = present ? html : '';
   linkHoverTipPreview.classList.toggle('is-loaded', present);
+  // Every answer is measured on its own. A shrink and a layer width left over from the last card would cap this note at that card's width and hold it there.
+  linkHoverTipPreview.style.removeProperty('--link-preview-shrink');
+  linkHoverTipPreviewScale.style.width = '';
   if (!present) linkHoverTipPreview.style.removeProperty('height');
   if (present) requestAnimationFrame(sizeLinkHoverPreview);
+}
+// The shrink the box is carrying, never a second copy of the number.
+function linkPreviewShrink() {
+  const value = Number.parseFloat(getComputedStyle(linkHoverTipPreview).getPropertyValue('--link-preview-shrink'));
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}
+// The note is held to the page's reading measure, so 75 characters is not a width until something asks. The layer is widened past anything the page can reach, the note is read at its own cap, and the layer is then laid out at exactly that — so the picture is the note, with no background beside it. The widening comes first because a layer at any narrower width caps the note at it and holds every later card there.
+function measureLinkPreviewShrink(note) {
+  linkHoverTipPreviewScale.style.width = '100vw';
+  const box = linkHoverTipPreview.clientWidth;
+  const measured = note ? note.offsetWidth : 0;
+  // Nothing to measure: the stylesheet's own shrink rather than none at all, so a host answering with bare blocks still draws a card.
+  if (!(box > 0) || !(measured > 0)) {
+    linkHoverTipPreviewScale.style.width = '';
+    return linkPreviewShrink();
+  }
+  linkHoverTipPreview.style.setProperty('--link-preview-shrink', String(box / measured));
+  linkHoverTipPreviewScale.style.width = measured + 'px';
+  return box / measured;
 }
 function sizeLinkHoverPreview() {
   if (!linkHoverTipPreview.classList.contains('is-loaded')) return;
   const article = linkHoverTipPreviewDocument.querySelector('article');
-  const source = article && article.children.length ? article : linkHoverTipPreviewDocument;
+  const note = article && article.children.length ? article : null;
+  const source = note || linkHoverTipPreviewDocument;
+  const shrink = measureLinkPreviewShrink(note);
   // The whole opening, not its first blocks: the height cap lands most notes at one size, and only a note shorter than the cap hugs its content.
   const blocks = [...source.children].filter((block) => block.offsetHeight > 0);
   const last = blocks[blocks.length - 1];
   const height = last ? last.offsetTop + last.offsetHeight : source.scrollHeight;
-  linkHoverTipPreview.style.height = Math.ceil(height * 0.36) + 'px';
+  linkHoverTipPreview.style.height = Math.ceil(height * shrink) + 'px';
   if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
 }
 linkHoverTipPreviewDocument.addEventListener('load', () => requestAnimationFrame(sizeLinkHoverPreview), true);

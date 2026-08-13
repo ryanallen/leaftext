@@ -417,7 +417,8 @@ function runShell(source, extras = {}) {
     Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 },
     NodeFilter: { SHOW_ELEMENT: 1, SHOW_TEXT: 4 },
     Element: FakeElement,
-    getComputedStyle: () => ({ getPropertyValue: () => '', color: 'rgb(0, 0, 0)' }),
+    // No cascade here, but a custom property set on the element itself does come back out of a real browser's computed style, and the page reads its own writes that way.
+    getComputedStyle: (element) => ({ getPropertyValue: (name) => (element && element.style && typeof element.style.getPropertyValue === 'function' ? element.style.getPropertyValue(name) : ''), color: 'rgb(0, 0, 0)' }),
     matchMedia: () => ({
       matches: false,
       addEventListener() {},
@@ -961,9 +962,18 @@ if (booted) {
       return waiting.length;
     };
     booted.clearTimeout = (id) => cleared.push(id);
-    booted.getComputedStyle = () => ({ getPropertyValue: () => '300ms' });
+    // Only the root answers the duration token; the preview box keeps answering with the shrink it is carrying.
+    booted.getComputedStyle = (element) => (element === booted.document.documentElement ? { getPropertyValue: () => '300ms' } : wasStyle(element));
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    // The host wraps every answer in the note it rendered, and the card is the width of that note: 692px of note inside a 250px picture box.
+    const note = fakeElement('article');
+    note.offsetWidth = 692;
+    note.children = [Object.assign(fakeElement('p'), { offsetTop: 0, offsetHeight: 200 })];
+    const wasQuery = previewDocument.querySelector;
+    const wasBoxWidth = preview.clientWidth;
     try {
+      preview.clientWidth = 250;
+      previewDocument.querySelector = (selector) => (selector === 'article' ? note : wasQuery(selector));
       vm.runInContext('activeHoverToken = 30; activeHoverLink = {}; linkHoverPointer = { clientX: 300, clientY: 300 }; linkHoverTip.hidden = false; showLinkHoverPreviewPlaceholder(); requestLinkPreview("notes/linked.md", 30);', booted);
       if (preview.hidden || preview.classList.contains('is-loaded')) throw new Error('the full card did not keep its placeholder while the preview waited');
       if (waiting.length !== 1 || waiting[0].delay !== 300) throw new Error('the preview did not wait for the deliberate-reveal token');
@@ -974,13 +984,13 @@ if (booted) {
       booted.window.leafLinkPreview(30, '<p>Opening.</p>');
       booted.__frames.drain();
       if (!preview.classList.contains('is-loaded') || previewDocument.innerHTML !== '<p>Opening.</p>') throw new Error('the host answer did not fade into the placeholder');
-      if (preview.style.height !== '72px') throw new Error(`the preview did not shrink to its opening: ${preview.style.height}`);
+      if (preview.style.height !== '73px') throw new Error(`the preview did not shrink to its opening: ${preview.style.height}`);
       if (tip.innerHTML.indexOf('link-hover-tip-preview') > tip.innerHTML.indexOf('link-hover-tip-kind')) throw new Error('the preview is not above the existing rows');
       const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
       if (!css.includes('.link-hover-tip-preview-placeholder') || !css.includes('var(--lt-grain-dot)')) throw new Error('the preview placeholder has no dot grain');
       if (!css.includes('border-bottom: var(--lt-stroke-1) solid var(--lt-border)')) throw new Error('the preview has no divider above its words');
-      if (!css.includes('width: calc(100% / 0.36)') || !css.includes('.link-hover-tip-preview-document {\n  width: 100%')) throw new Error('the rendered opening does not fill the preview card');
-      if (!css.includes('contain: inline-size') || !css.includes('.link-hover-tip-preview {\n  position: relative;\n  contain: inline-size;\n  width: 100%')) throw new Error('the rendered opening can still widen its tooltip');
+      if (!css.includes('width: calc(100% / var(--link-preview-shrink))') || !css.includes('.link-hover-tip-preview-document {\n  width: 100%')) throw new Error('the rendered opening does not fill the preview card');
+      if (!css.includes('contain: inline-size') || !css.includes('  --link-preview-shrink: 0.36;\n  position: relative;\n  contain: inline-size;\n  width: 100%')) throw new Error('the rendered opening can still widen its tooltip');
       vm.runInContext('hideLinkHoverTip();', booted);
       booted.window.leafLinkPreview(30, '<p>Old.</p>');
       if (!preview.classList.contains('is-loaded') || previewDocument.innerHTML !== '<p>Opening.</p>') throw new Error('the exit fade replaced the opening with a spinner');
@@ -996,7 +1006,106 @@ if (booted) {
       booted.clearTimeout = wasClear;
       booted.getComputedStyle = wasStyle;
       booted.ipc.postMessage = wasSend;
+      previewDocument.querySelector = wasQuery;
+      preview.clientWidth = wasBoxWidth;
       vm.runInContext('activeHoverLink = null; linkHoverPointer = null; linkHoverTip.hidden = true; linkHoverTip.classList.remove("shown"); hideLinkHoverPreview();', booted);
+    }
+  });
+
+  check('the preview shrink is written once and read off the box that carries it', () => {
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const fragment = readFileSync(join(root, 'src/assets/shell/glossary.js'), 'utf8');
+    const written = (text) => (text.match(/0\.36(?!\d)/g) || []).length;
+    if (!css.includes('--link-preview-shrink: 0.36;')) throw new Error('the shrink is not a property of the picture box');
+    if (written(css) !== 1) throw new Error(`the stylesheet writes the shrink ${written(css)} times instead of once`);
+    if (written(fragment) !== 0) throw new Error('the fragment still writes the shrink down rather than reading it off the box');
+    try {
+      // The height follows whatever the box is carrying, so a measured card shrinks by what it measured rather than by a number in the script.
+      preview.classList.add('is-loaded');
+      previewDocument.scrollHeight = 200;
+      preview.style.setProperty('--link-preview-shrink', '0.5');
+      vm.runInContext('sizeLinkHoverPreview();', booted);
+      if (preview.style.height !== '100px') throw new Error(`the height ignored the box's own shrink: ${preview.style.height}`);
+      preview.style.setProperty('--link-preview-shrink', '0.36');
+      vm.runInContext('sizeLinkHoverPreview();', booted);
+      if (preview.style.height !== '72px') throw new Error(`the stylesheet's own shrink did not size the box: ${preview.style.height}`);
+    } finally {
+      preview.classList.remove('is-loaded');
+      preview.style.removeProperty('height');
+      previewDocument.scrollHeight = 0;
+    }
+  });
+
+  check('a card is the width of the note in it, with no background left over down its side', () => {
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const scale = vm.runInContext('linkHoverTipPreviewScale', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const wasQuery = previewDocument.querySelector;
+    const wasWidth = preview.clientWidth;
+    // A note held to 75 characters draws 692px at the window the card was measured in, inside a 250px picture box.
+    const note = fakeElement('article');
+    note.offsetWidth = 692;
+    note.children = [Object.assign(fakeElement('p'), { offsetTop: 0, offsetHeight: 200 })];
+    try {
+      preview.clientWidth = 250;
+      preview.classList.add('is-loaded');
+      previewDocument.querySelector = (selector) => (selector === 'article' ? note : wasQuery(selector));
+      vm.runInContext('sizeLinkHoverPreview();', booted);
+      if (scale.style.width !== '692px') throw new Error(`the note was laid out at ${scale.style.width} rather than at its own width`);
+      const shrink = Number.parseFloat(preview.style.getPropertyValue('--link-preview-shrink'));
+      if (shrink.toFixed(3) !== '0.361') throw new Error(`the shrink came out ${shrink} rather than the box over the note`);
+      if (Math.abs(692 * shrink - 250) > 0.001) throw new Error('the drawn note does not reach both edges of its box');
+      if (preview.style.height !== '73px') throw new Error(`the height did not follow the new shrink: ${preview.style.height}`);
+      // A fresh answer is measured on its own: the card it replaces takes its shrink and its layer width with it.
+      vm.runInContext('setLinkHoverPreview("<p>Next.</p>");', booted);
+      if (scale.style.width !== '' || preview.style.getPropertyValue('--link-preview-shrink') !== '') throw new Error('a new answer would be measured inside the width of the card before it');
+      // An answer with no note in it keeps the stylesheet's own shrink rather than none at all, which the harness has no cascade to hand it.
+      previewDocument.querySelector = wasQuery;
+      previewDocument.scrollHeight = 100;
+      preview.style.setProperty('--link-preview-shrink', '0.36');
+      vm.runInContext('sizeLinkHoverPreview();', booted);
+      if (scale.style.width !== '') throw new Error('a card with no note to measure still pinned its layer to a width');
+      if (preview.style.height !== '36px') throw new Error(`a card with no note to measure did not fall back to the stylesheet's shrink: ${preview.style.height}`);
+    } finally {
+      previewDocument.querySelector = wasQuery;
+      previewDocument.scrollHeight = 0;
+      previewDocument.innerHTML = '';
+      preview.clientWidth = wasWidth;
+      preview.classList.remove('is-loaded');
+      preview.style.removeProperty('height');
+      preview.style.removeProperty('--link-preview-shrink');
+      scale.style.width = '';
+      booted.__frames.drain();
+    }
+  });
+
+  check('a note is measured with room to spread, so a card is never held to the last one’s width', () => {
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const scale = vm.runInContext('linkHoverTipPreviewScale', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const wasQuery = previewDocument.querySelector;
+    const wasWidth = preview.clientWidth;
+    // The note answers with whatever room it was given, the way a 75-character cap inside a narrow layer would.
+    const note = fakeElement('article');
+    note.children = [Object.assign(fakeElement('p'), { offsetTop: 0, offsetHeight: 100 })];
+    Object.defineProperty(note, 'offsetWidth', { get: () => (scale.style.width === '100vw' ? 900 : 400) });
+    try {
+      preview.clientWidth = 250;
+      preview.classList.add('is-loaded');
+      previewDocument.querySelector = (selector) => (selector === 'article' ? note : wasQuery(selector));
+      // A wider window after a narrower card: the layer is still carrying the last measurement.
+      scale.style.width = '400px';
+      vm.runInContext('sizeLinkHoverPreview();', booted);
+      if (scale.style.width !== '900px') throw new Error(`the note was capped at the last card's width and measured ${scale.style.width}`);
+    } finally {
+      previewDocument.querySelector = wasQuery;
+      preview.clientWidth = wasWidth;
+      preview.classList.remove('is-loaded');
+      preview.style.removeProperty('height');
+      preview.style.removeProperty('--link-preview-shrink');
+      scale.style.width = '';
     }
   });
 
@@ -1164,7 +1273,9 @@ if (booted) {
       // An exiting card stops its spinner with it.
       const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
       if (!css.includes('.link-hover-tip:not(.shown) .link-hover-tip-preview-spinner')) throw new Error('an exiting card still spins its spinner');
-      if (!css.includes('.link-hover-tip.has-preview {\n  width: 22rem;\n}')) throw new Error('a preview card has no fixed width of its own');
+      if (!css.includes('.link-hover-tip.has-preview {\n  width: 17rem;\n}')) throw new Error('a preview card has no fixed width of its own');
+      // The card is the width of its picture, so the address under it has to break mid-path rather than push the card wider.
+      if (!css.slice(css.indexOf('.link-hover-tip-detail {'), css.indexOf('.link-hover-tip-lines {')).includes('overflow-wrap: anywhere;')) throw new Error('a long address would widen the card rather than wrapping inside it');
       // The shared halftone fades across a fraction of the box; a card this small needs the fade inside its own band or it shows nothing.
       if (!css.includes('.link-hover-tip::before {') || !css.includes('var(--lt-mask-opaque) calc(100% - 34px)')) throw new Error('the card has no fade stops of its own for the halftone shadow');
     } finally {
