@@ -224,6 +224,11 @@ check-release-package:
 check-mcp:
     node scripts/check-mcp.mjs
 
+# Fail if .agents/settings.json has stopped enabling a plugin every agent opening
+# this checkout needs — today the Rust analyzer. Reads one file.
+check-agent-settings:
+    node scripts/check-agent-settings.mjs
+
 # Download the published conformance suites into target/conformance. On demand, not
 # in `verify`: the corpora are 15 MB and fetching them needs the network. Without
 # them every conformance test prints one line and returns.
@@ -277,7 +282,7 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
