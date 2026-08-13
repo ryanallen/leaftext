@@ -144,6 +144,12 @@ check-classes:
 check-literals:
     node scripts/check-literals.mjs
 
+# Fail on a rule painting a background behind a note's field values under the pointer.
+# A document being edited is still a document, so the caret is the cue and a band is
+# the app drawing a form over somebody's words.
+check-hover-fills:
+    node scripts/check-hover-fills.mjs
+
 # Fail on an assistant or third-party identity anywhere in the repo or its history:
 # a co-author trailer, a generated-by credit, an assistant as a commit author.
 check-identity:
@@ -271,7 +277,7 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

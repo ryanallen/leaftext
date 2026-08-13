@@ -4049,13 +4049,9 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0;
   padding: 0;
 }
-/* A field block whose values can be typed into. The wash says which row the click will land on -- the table carries no chrome of its own, so without it there is nothing telling a reader the value is a control. A locked document never gets the class, and reads exactly as it did before. */
+/* A field block whose values can be typed into. The caret is the whole cue, exactly as it is for a paragraph lower down the page: nothing paints behind a value the pointer is over, because a page being edited is still a page and not a form. The cross appearing at the end of the row is what says the row itself answers the pointer. A locked document never gets the class. */
 .document-body .frontmatter.is-editable td[data-leaf-field] {
-  border-radius: var(--lt-radius-sm);
   cursor: text;
-}
-.document-body .frontmatter.is-editable td[data-leaf-field]:hover {
-  background: var(--lt-wash-hover);
 }
 /* The box sits in the row it replaced, at the row's own size, so opening one moves no other line of the table. */
 .document-body .frontmatter td.is-editing {
@@ -4116,14 +4112,18 @@ body.is-block-dragging .document-body [data-src-start] {
   display: flex;
   align-items: center;
   gap: var(--lt-space-4);
-  padding: 0;
+  /* Room each side, so what the pointer paints is a chip around the words rather than a band the words are pressed against. The left edge stays on the key column and the label sits inside it; nothing is pulled back out to the margin. */
+  padding: var(--lt-space-4) var(--lt-space-8);
   border: 0;
+  border-radius: var(--lt-radius-md);
   background: none;
   color: var(--lt-muted-foreground);
   font: inherit;
   cursor: pointer;
 }
+/* The fill has to be named here, not merely cleared above: `button:hover` is a pseudo-class and an element, so it outranks one class on its own and paints this the app's primary purple with the quiet label left unreadable on it. */
 .frontmatter-add-button:hover {
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 .frontmatter-add-button .lt-icon {
@@ -4155,8 +4155,15 @@ body.is-block-dragging .document-body [data-src-start] {
   color: var(--lt-muted-foreground);
   cursor: pointer;
 }
+/* The one that is not inside a chip stands on the page beside them, so it carries its own room the way the add button does. */
+.frontmatter-chip-add {
+  align-items: center;
+  padding: var(--lt-space-2) var(--lt-space-4);
+}
+/* Named for the same reason as the add button above. Over a chip's own pill the wash deepens what is already there rather than replacing it, which is how it reads as a target at this size. */
 .frontmatter-chip-remove:hover,
 .frontmatter-chip-add:hover {
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 .frontmatter-chip-remove .lt-icon,

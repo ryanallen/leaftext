@@ -86,7 +86,7 @@ An [email](01-rendering.md#email-eml) edits where you read it too, wherever the 
 
 A note's [field block](01-rendering.md#frontmatter) — the `title`, `status`, `due` and `tags` between the two `---` lines — is edited where you read it, with the reading padlock open. There is no save button of its own: a change raises the same green **Save** as any other edit in the page, and `Ctrl+Z` steps back through them.
 
-![A note's field block with the pointer on one row: the row lightens and shows a small cross at its end, a checkbox is a real tick box, the tags are chips each with a cross and a plus after them, and an Add a field row sits under the last field](../../imgs/frontmatter-fields.png)
+![A note's field block with the pointer on one row: nothing is painted behind the value and a small cross has appeared at the row's end, a checkbox is a real tick box, the tags are chips each with a cross and a plus after them, and an Add a field row sits under the last field](../../imgs/frontmatter-fields.png)
 
 - **Click a value and type.** `Enter` keeps it, `Escape` abandons it, and clicking away keeps it.
 - **The control matches the field.** A date opens a calendar. A checkbox is a real box you tick. A list draws one chip per item, each with a cross, and a `+` for the next one. Everything else is a plain box. The app never guesses a control for a value it cannot read — a field pinned as a date but holding `sometime` keeps its plain box rather than opening a picker that would blank it.
