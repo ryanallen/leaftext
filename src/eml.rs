@@ -5,7 +5,43 @@
 use crate::*;
 use mail_parser::{Address, Message, MessageParser, MimeHeaders, PartType};
 
-/// Render a MIME message to `(title, html, blocks)`: subject heading, header fields, the body (HTML preferred, plain text otherwise), then attachments. Bodies are transfer-encoded in the source, so no block maps to a provable range and inline editing stays off; the code view edits the raw message.
+/// The ranges this message proved, and the ids that go with them. One rule decides every stamp: the file has to say the same words the page is drawing, so a packed body is drawn and not stamped, and the code view edits it whole.
+struct EmlBlocks {
+    blocks: Vec<BlockSpan>,
+    next_id: usize,
+}
+
+impl EmlBlocks {
+    fn new() -> Self {
+        Self {
+            blocks: Vec::new(),
+            next_id: 0,
+        }
+    }
+
+    /// Record a proved range and return the `data-*` attributes that open it where it is read. An end offset off by a byte corrupts the file, so nothing that was not measured against the source reaches this.
+    fn attrs(&mut self, kind: &'static str, start: usize, end: usize) -> String {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.blocks.push(BlockSpan::new(id, kind, start, end));
+        format!(
+            " data-block-id=\"{id}\" data-src-start=\"{start}\" data-src-end=\"{end}\" data-block-kind=\"{kind}\""
+        )
+    }
+}
+
+/// The body slice of `part` when the file says exactly what the reader decoded from it. One comparison separates a part holding its own words from one that does not, so nothing here reads `Content-Transfer-Encoding` or a charset: a quoted-printable body, a base64 body and a body the declared charset made the reader transcode all fail it.
+fn verbatim_part_body<'a>(
+    source: &'a str,
+    part: &mail_parser::MessagePart,
+    decoded: &str,
+) -> Option<(usize, &'a str)> {
+    let start = part.offset_body as usize;
+    let raw = source.get(start..part.offset_end as usize)?;
+    (raw == decoded).then_some((start, raw))
+}
+
+/// Render a MIME message to `(title, html, blocks)`: subject heading, header fields, the body (HTML preferred, plain text otherwise), then attachments. A part whose words are written in the file as they are drawn carries its own source range and opens where it is read; a packed one is drawn without one, and the code view edits the raw message.
 pub(crate) fn render_eml_document(
     source: &str,
     fallback_title: Option<&str>,
@@ -20,19 +56,28 @@ pub(crate) fn render_eml_document(
 
     let title = message.subject().and_then(plain_document_title);
     let mut out = String::new();
+    let mut blocks = EmlBlocks::new();
 
     let heading = title
         .clone()
         .or_else(|| fallback_title.and_then(plain_document_title));
     if let Some(heading) = &heading {
+        // Only where the heading is the message's own subject: a file name standing in for a missing one is not a line of the file.
+        let attrs = match title
+            .as_ref()
+            .and_then(|_| plain_header_span(&message, source, "Subject"))
+        {
+            Some((start, end)) => blocks.attrs("email_header", start, end),
+            None => String::new(),
+        };
         out.push_str(&format!(
-            "<h1 id=\"{}\">{}</h1>\n",
+            "<h1 id=\"{}\"{attrs}>{}</h1>\n",
             encode_double_quoted_attribute(&tei_slugify(heading)),
             encode_text(heading)
         ));
     }
 
-    out.push_str(&header_fields_html(&message));
+    out.push_str(&header_fields_html(&message, source, &mut blocks));
 
     // Inline images referenced by the HTML body don't repeat as attachments.
     let mut embedded_ids = HashSet::new();
@@ -45,46 +90,88 @@ pub(crate) fn render_eml_document(
     if wrote_html {
         let body = message.body_html(0).unwrap_or_default();
         let sanitized = sanitize_email_html(&body);
-        out.push_str("<section class=\"email-body\">\n");
+        // The whole body, in one range on the section around it: what a reader types there is markup, and it goes back through the sanitizer above on the next render, the same way the body it replaced did. Nothing inside is stamped, or one click would carry two ranges.
+        let attrs = match message
+            .html_part(0)
+            .and_then(|part| verbatim_part_body(source, part, &body))
+        {
+            Some((start, raw)) => blocks.attrs("email_body", start, start + raw.len()),
+            None => String::new(),
+        };
+        out.push_str(&format!("<section class=\"email-body\"{attrs}>\n"));
         out.push_str(&embed_cid_images(&sanitized, &message, &mut embedded_ids));
         out.push_str("\n</section>\n");
     } else if let Some(text) = message.body_text(0) {
+        // The words themselves, or a decoded copy of them: the first opens where it is read, the second is drawn and edited in the source view.
+        let verbatim = message
+            .text_part(0)
+            .and_then(|part| verbatim_part_body(source, part, &text));
         out.push_str("<section class=\"email-body\">\n");
-        out.push_str(&plain_text_body_html(&text));
+        match verbatim {
+            Some((offset, raw)) => {
+                out.push_str(&plain_text_body_html(raw, Some((offset, &mut blocks))))
+            }
+            None => out.push_str(&plain_text_body_html(&text, None)),
+        }
         out.push_str("</section>\n");
     }
 
     out.push_str(&attachments_html(&message, &embedded_ids));
 
-    (title, out, Vec::new())
+    (title, out, blocks.blocks)
 }
 
-/// The header card: who wrote, who received, when. Fields the message lacks leave no row.
-fn header_fields_html(message: &Message) -> String {
-    let mut rows = String::new();
-    let mut push = |label: &str, value: String| {
-        if !value.is_empty() {
-            rows.push_str(&format!("<dt>{label}</dt><dd>{value}</dd>\n"));
-        }
-    };
-
+/// The header card: who wrote, who received, when. Fields the message lacks leave no row, and a row whose value is written plainly in the file opens where it is read.
+fn header_fields_html(message: &Message, source: &str, blocks: &mut EmlBlocks) -> String {
+    let mut fields: Vec<(&'static str, String)> = Vec::new();
     if let Some(from) = message.from() {
-        push("From", address_html(from));
+        fields.push(("From", address_html(from)));
     }
     if let Some(to) = message.to() {
-        push("To", address_html(to));
+        fields.push(("To", address_html(to)));
     }
     if let Some(cc) = message.cc() {
-        push("Cc", address_html(cc));
+        fields.push(("Cc", address_html(cc)));
     }
     if let Some(date) = message.date() {
-        push("Date", encode_text(&date.to_rfc822()).into_owned());
+        fields.push(("Date", encode_text(&date.to_rfc822()).into_owned()));
+    }
+
+    let mut rows = String::new();
+    for (label, value) in fields {
+        if value.is_empty() {
+            continue;
+        }
+        // The row is drawn from the parsed value — a name beside a mailto link, a date spelled out — and opens on the line the file actually holds, which is the same trade every XML block already makes.
+        let attrs = match plain_header_span(message, source, label) {
+            Some((start, end)) => blocks.attrs("email_header", start, end),
+            None => String::new(),
+        };
+        rows.push_str(&format!("<dt>{label}</dt><dd{attrs}>{value}</dd>\n"));
     }
 
     if rows.is_empty() {
         return String::new();
     }
     format!("<dl class=\"data-fields email-headers\">\n{rows}</dl>\n")
+}
+
+/// The byte range of `name`'s value where the file says it plainly: one line, no folding, no encoded word — so what opens is what is written down. The leading space and the trailing line break stay outside the range.
+fn plain_header_span(message: &Message, source: &str, name: &str) -> Option<(usize, usize)> {
+    let header = message
+        .headers()
+        .iter()
+        .find(|header| header.name.as_str().eq_ignore_ascii_case(name))?;
+    let start = header.offset_start as usize;
+    let raw = source.get(start..header.offset_end as usize)?;
+    // An encoded word is packed, and a value carrying a line ending inside it is folded over more than one line of the file.
+    let value = raw.trim_end_matches(['\r', '\n']);
+    if value.contains("=?") || value.contains('\n') || value.contains('\r') {
+        return None;
+    }
+    let from = start + (value.len() - value.trim_start_matches([' ', '\t']).len());
+    let trimmed = value.trim_start_matches([' ', '\t']).trim_end();
+    (!trimmed.is_empty()).then(|| (from, from + trimmed.len()))
 }
 
 /// `Name <address>`, the address a mailto link, senders joined by commas.
@@ -214,22 +301,85 @@ fn image_mime_type(content_type: &mail_parser::ContentType) -> Option<String> {
     plain.then(|| format!("image/{subtype}"))
 }
 
-/// A plain-text body as paragraphs: blank lines split, single newlines break, bare URLs link — the same courtesy the reading view pays Markdown text.
-fn plain_text_body_html(text: &str) -> String {
-    let text = text.replace("\r\n", "\n");
+/// A plain-text body as paragraphs: blank lines split, single newlines break, bare URLs link — the same courtesy the reading view pays Markdown text. `stamped` carries the body's own offset in the file when these are the file's own words, and every paragraph then opens where it is read.
+fn plain_text_body_html(text: &str, mut stamped: Option<(usize, &mut EmlBlocks)>) -> String {
     let mut out = String::new();
-    for paragraph in text.split("\n\n") {
+    for (at, paragraph) in plain_text_paragraph_spans(text) {
         let lines: Vec<String> = paragraph
             .lines()
             .map(linkify_plain_line)
             .filter(|line| !line.is_empty())
             .collect();
+        // Nothing drawn, so nothing to open: a chunk of blank lines contributes no stamp.
         if lines.is_empty() {
             continue;
         }
-        out.push_str(&format!("<p>{}</p>\n", lines.join("<br>\n")));
+        let attrs = match &mut stamped {
+            Some((offset, blocks)) => blocks.attrs(
+                "email_paragraph",
+                *offset + at,
+                *offset + at + paragraph.len(),
+            ),
+            None => String::new(),
+        };
+        // The break carries no newline of its own: a stamped paragraph's text has to be the message's bytes and nothing else, or the page cannot write it back.
+        out.push_str(&format!("<p{attrs}>{}</p>\n", lines.join("<br>")));
     }
     out
+}
+
+/// Every paragraph of a plain-text body and where it starts, walked with the line endings intact so an offset is the file's own. A blank line ends a paragraph however either line was ended, and a run of them is one break; the ending that closes the last paragraph stays outside its range.
+fn plain_text_paragraph_spans(text: &str) -> Vec<(usize, &str)> {
+    let bytes = text.as_bytes();
+    let mut out = Vec::new();
+    let mut start = 0usize;
+    let mut at = 0usize;
+    while at < bytes.len() {
+        let Some(first) = line_ending_len(bytes, at) else {
+            at += 1;
+            continue;
+        };
+        let Some(second) = line_ending_len(bytes, at + first) else {
+            at += first;
+            continue;
+        };
+        out.push(paragraph_span(text, start, at));
+        at += first + second;
+        while let Some(more) = line_ending_len(bytes, at) {
+            at += more;
+        }
+        start = at;
+    }
+    out.push(paragraph_span(text, start, text.len()));
+    out
+}
+
+/// One chunk with its blank edges cut away, so a range holds the paragraph's own bytes and no line ending on either side of it.
+fn paragraph_span(text: &str, from: usize, to: usize) -> (usize, &str) {
+    let (mut from, mut to) = (from, to);
+    while let Some(len) = line_ending_len(text.as_bytes(), from).filter(|len| from + len <= to) {
+        from += len;
+    }
+    loop {
+        let slice = &text[from..to];
+        if slice.ends_with("\r\n") {
+            to -= 2;
+        } else if slice.ends_with('\n') {
+            to -= 1;
+        } else {
+            break;
+        }
+    }
+    (from, &text[from..to])
+}
+
+/// The length of the line ending at `at`, or `None` where the line runs on.
+fn line_ending_len(bytes: &[u8], at: usize) -> Option<usize> {
+    match bytes.get(at)? {
+        b'\n' => Some(1),
+        b'\r' if bytes.get(at + 1) == Some(&b'\n') => Some(2),
+        _ => None,
+    }
 }
 
 /// Escape one line of plain text, turning each bare `http(s)` URL into a link.

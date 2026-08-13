@@ -61,7 +61,16 @@ function xmlBlockTagName(el) {
 
 // Reordering is exact only where a block's range is the whole block. See the header: Markdown and XML qualify, the data formats do not.
 function blockGutterFormatAllowed() {
-  return currentDocumentFormat === 'markdown' || currentDocumentFormat === 'xml';
+  return (
+    currentDocumentFormat === 'markdown' ||
+    currentDocumentFormat === 'xml' ||
+    currentDocumentFormat === 'eml'
+  );
+}
+
+// A message qualifies for the paragraphs of one plain-text body and nothing else. A header value's range is a value inside a labeled line — JSON's case exactly — so moving one would leave `Subject: ` behind; a heading, an HTML body and an attachment list are not a run of anything.
+function blockGutterTargetAllowed(el) {
+  return currentDocumentFormat !== 'eml' || (!!el && el.dataset.blockKind === 'email_paragraph');
 }
 
 // A line with nothing on it. This is the only place the plus is offered: beside a line that already says something it would be offering to write over it, and the empty line below is what Enter is for. Text is not the only content — a rule, an image or a table says something without a word in it.
@@ -77,9 +86,14 @@ function blockAcceptsInsert(el) {
   return el.dataset.holdsFootnote !== 'true' && blockIsEmpty(el);
 }
 
+// One entry for a message: a body has paragraphs in it and nothing else a reader could add without rewriting the envelope.
+const EMAIL_INSERTS = [
+  { id: 'text', label: 'Text', icon: `<span class="lt-icon lt-icon-text"></span>`, blank: 'text' },
+];
 function blockInsertOptions(target) {
   if (currentDocumentFormat === 'markdown') return MARKDOWN_INSERTS;
   if (currentDocumentFormat === 'xml') return xmlInserts(target);
+  if (currentDocumentFormat === 'eml') return EMAIL_INSERTS;
   return [];
 }
 
@@ -275,10 +289,17 @@ function blockGutterOccupants() {
   if (!body) return [];
   return Array.from(body.children)
     .map(unwrapTableLane)
+    .flatMap(unwrapEmailBody)
     .filter((el) => {
       const rect = el.getBoundingClientRect();
       return rect.bottom > rect.top;
     });
+}
+
+// A message is the one document whose blocks are not all children of the body: its paragraphs stand inside the body section. Where that section holds no range of its own there is nothing to offer beside it and everything to offer beside what is in it — without this the margin finds the section, which has nothing, and the last paragraph has no space under it.
+function unwrapEmailBody(el) {
+  const wraps = el.classList && el.classList.contains('email-body') && !blockHasRange(el);
+  return wraps ? Array.from(el.children) : [el];
 }
 
 // The lane a wide table sits in belongs to the reader, not the document — the block is the table inside it, and everything here works on blocks.
@@ -342,6 +363,19 @@ function aimBlockGutterAtGap(clientY, fromMargin) {
 
 // The space below the line being typed in: the plus waits there, so pressing it saves this line and starts the next in one go.
 function aimBlockGutterBelow(el) {
+  // Off the same list the gutter works over rather than off the page: a message's paragraphs stand inside its body section, so the element beside the last one is outside the body altogether.
+  const occupants = blockGutterOccupants();
+  const at = occupants.indexOf(el);
+  if (at >= 0) {
+    aimBlockGutterAtSpace({
+      above: el,
+      below: occupants[at + 1] || null,
+      after: el,
+      before: nearestSourceBlock(occupants, at + 1, 1),
+    });
+    return;
+  }
+  // A line that is not in that list yet — a blank one waiting for its first keystroke — is still on the page, so it is walked there.
   let below = el.nextElementSibling;
   while (below && below.getBoundingClientRect().bottom <= below.getBoundingClientRect().top) {
     below = below.nextElementSibling;
@@ -525,7 +559,8 @@ function runGapInsert(gap, option) {
   const { after, before } = gap;
   collapseBlockInsertRow();
   hideBlockGutter();
-  const separator = currentDocumentFormat === 'markdown' ? '\n\n' : '\n';
+  // A blank line between two blocks in a note and in a message; one line between two elements in a tree.
+  const separator = currentDocumentFormat === 'xml' ? '\n' : documentLineEnding().repeat(2);
   // A block to type in rather than source to write: open one on the line below.
   if (option.blank) {
     if (after) openLineBelow(after, option.blank);
@@ -579,7 +614,7 @@ function runBlockInsert(target, option) {
 
 // The run of siblings a block can move within: the blocks sharing its parent, in document order. The ranges come back from the shared test (`blockRunRanges`), which refuses a run the host would refuse.
 function blockSiblingRun(target) {
-  if (!blockGutterFormatAllowed()) return null;
+  if (!blockGutterFormatAllowed() || !blockGutterTargetAllowed(target)) return null;
   // A laned table's siblings are the body's, not the lane's one child.
   const lane = target.parentElement;
   const parent = lane && lane.classList.contains('table-lane') ? lane.parentElement : lane;

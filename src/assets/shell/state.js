@@ -95,6 +95,8 @@ let viewHandoff = null;
 // The source buffer stays authoritative in Rust; the reading view anchors each edit to a source byte range and asks the host to splice it. These hold what the frontend needs between renders.
 let currentDocumentFormat = 'markdown';
 let currentDocumentSource = '';
+// Whether this document has anything the reading view can open: a block that proved a source range, or Markdown, whose empty note has no blocks and is exactly the page somebody unlocks to start typing in. reading-edits.js sets it as a document binds and graph.js reads it to decide whether the padlock belongs in the tray, because a padlock over a page nothing can be typed into answers a press with nothing.
+let currentDocumentBindsAnything = true;
 // Where the caret should land after the next render, carrying it across the re-render a structural edit (Enter/Backspace) triggers so typing flows on. `srcStart` names the block by its post-splice source offset, `textOffset` the position inside it; `insertBelow` opens a fresh empty paragraph after it.
 let pendingCaret = null;
 // A reader anchor the next leafReloadDocument should restore instead of its own top-visible capture. Set when committing a source-edited block (e.g. an image) whose own height swings across the re-render: it points at the stable block ABOVE the edit, so the reader holds its place rather than snapping to the top.

@@ -308,8 +308,54 @@ function selectAllTargetFor(block) {
 
 // The baseline a commit measures `el` against: its Markdown, plus each table cell's own, so the one cell somebody typed in can be found in what comes back.
 function setEditBaseline(el) {
-  el.__editBaseline = blockDomToMarkdown(el);
+  el.__editBaseline = blockDomToSource(el);
   el.__editCells = tableCellTexts(el);
+}
+
+// A block back to the bytes of its own source range. Two kinds of document edit in place now and they write back differently: a note's block is Markdown, a message's is the words themselves.
+function blockDomToSource(el) {
+  return currentDocumentFormat === 'eml' ? emailBlockDomToText(el) : blockDomToMarkdown(el);
+}
+
+// An email block as the file spells it: text as it stands, a break as the ending its own slice uses, a link as the text it shows. Never the Markdown serializer, which would write asterisks and bracket forms into a message that never had them.
+function emailBlockDomToText(el, ending) {
+  if (ending === undefined) {
+    const src = sliceSourceBytes(currentDocumentSource, Number(el.dataset.srcStart), Number(el.dataset.srcEnd));
+    ending = src.includes('\r\n') ? '\r\n' : '\n';
+  }
+  let out = '';
+  el.childNodes.forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      out += node.nodeValue;
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    out += node.tagName.toLowerCase() === 'br' ? ending : emailBlockDomToText(node, ending);
+  });
+  return out;
+}
+
+// The line ending the open document is written with. A message keeps its own — splicing a `\n` into a `\r\n` message would mix the two — and everything else is `\n`, which is what the separators here have always been.
+function documentLineEnding() {
+  return currentDocumentFormat === 'eml' && String(currentDocumentSource).includes('\r\n')
+    ? '\r\n'
+    : '\n';
+}
+
+// What was typed into a blank line, as the open document spells it.
+function typedBlockText(block) {
+  return currentDocumentFormat === 'eml'
+    ? emailBlockDomToText(block, documentLineEnding()).trim()
+    : inlineDomToMarkdown(block).trim();
+}
+
+// Whether the page can write this block's own bytes back out of what is on screen — the ticket's stamping rule one level up. Equal, and typing on the words is exact; not equal (a date the reader re-spelled, an address list rejoined, markup drawn from its source) and the block keeps the raw-slice editor.
+function emailBlockTypeableInPlace(el) {
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  return emailBlockDomToText(el, src.includes('\r\n') ? '\r\n' : '\n') === src;
 }
 
 // Send an edit for `el`'s source range, only if `text` differs from the baseline captured when editing began (so a no-edit focus costs nothing). If the caret already moved into another block, carry it across this commit's re-render (adjusting for the splice's offset shift) so it isn't dumped out.
@@ -350,7 +396,7 @@ function commitActiveEditingBlock() {
   const active = document.activeElement;
   if (!active || !active.__editingActive) return;
   active.__editingActive = false;
-  commitBlockEdit(active, blockDomToMarkdown(active));
+  commitBlockEdit(active, blockDomToSource(active));
 }
 
 // Splice `text` over `[start, end)` for a STRUCTURAL edit (split/merge/insert). Unlike commitBlockEdit this always sends, and it neutralizes the block's blur baseline afterwards: the DOM still shows the pre-splice content, and letting the blur commit fire would replay a stale range against the new buffer.
@@ -380,17 +426,26 @@ function splitBlockAtCaret(el) {
   const afterRange = document.createRange();
   afterRange.selectNodeContents(el);
   afterRange.setStart(caret.startContainer, caret.startOffset);
-  const part1Inline = inlineDomToMarkdown(beforeRange.cloneContents()).trim();
-  const part2Inline = inlineDomToMarkdown(afterRange.cloneContents()).trim();
+  // A message's halves are its own words, and its blank line is written in the ending that message uses.
+  const separator = documentLineEnding().repeat(2);
+  const half = (range) =>
+    currentDocumentFormat === 'eml'
+      ? emailBlockDomToText(range.cloneContents(), documentLineEnding()).trim()
+      : inlineDomToMarkdown(range.cloneContents()).trim();
+  const part1Inline = half(beforeRange);
+  const part2Inline = half(afterRange);
   if (!part1Inline) return;
   const prefix = blockMarkerOf(el);
   const part1 = prefix + part1Inline;
   if (part2Inline) {
     // Both halves keep the block's own kind — splitting a heading yields two headings at the same level, splitting a paragraph two paragraphs.
     const part2 = prefix + part2Inline;
-    sendBlockSplice(el, start, end, part1 + '\n\n' + part2);
-    setPendingCaret({ srcStart: start + utf8ByteLength(part1) + 2, textOffset: 0 });
-  } else if (blockDomToMarkdown(el) !== el.__editBaseline) {
+    sendBlockSplice(el, start, end, part1 + separator + part2);
+    setPendingCaret({
+      srcStart: start + utf8ByteLength(part1) + utf8ByteLength(separator),
+      textOffset: 0,
+    });
+  } else if (blockDomToSource(el) !== el.__editBaseline) {
     // Enter at the end with unsaved text edits: commit them, then reopen the empty insert paragraph on the far side of the re-render.
     sendBlockSplice(el, start, end, part1);
     setPendingCaret({ srcStart: start, insertBelow: true });
@@ -463,14 +518,21 @@ function makeBlankHost(spec, insertAt) {
 // + the spec's marker + the typed text in at `insertAt`. Enter commits and chains another below (continuous writing flow); Backspace on the empty block dissolves it back into `previous`; clicking away commits, or dissolves it if nothing was typed -- unless `keepEmpty`, since an empty document has no other block to click into and removing this one would leave nowhere to type.
 function openInsertBlock(
   insertAt,
-  { spec = PLAIN_LINE_SPEC, separator = '\n\n', suffix = '', place, previous = null, keepEmpty = false },
+  {
+    spec = PLAIN_LINE_SPEC,
+    separator = documentLineEnding().repeat(2),
+    suffix = '',
+    place,
+    previous = null,
+    keepEmpty = false,
+  },
 ) {
   const { host, block } = makeBlankHost(spec, insertAt);
   const prefix = separator + spec.marker;
   place(host);
   const commit = (chainBelow, chainSpec) => {
     if (block.__committed) return true;
-    const text = inlineDomToMarkdown(block).trim();
+    const text = typedBlockText(block);
     if (!text) return false;
     block.__committed = true;
     sendEditCommand({
@@ -492,8 +554,8 @@ function openInsertBlock(
   block.__insertBlockWith = (option) => {
     if (block.__committed) return;
     block.__committed = true;
-    const typed = inlineDomToMarkdown(block).trim();
-    const lead = (typed ? prefix + typed + '\n\n' : separator);
+    const typed = typedBlockText(block);
+    const lead = typed ? prefix + typed + separator : separator;
     sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: lead + option.text + suffix });
     if (option.caret) {
       setPendingCaret({ srcStart: insertAt + utf8ByteLength(lead) });
@@ -502,7 +564,7 @@ function openInsertBlock(
   // What the format bar does here. This line is not in the buffer, so its own commit carries the marker — a splice from outside lands beside the words, and the blur commit then writes them again.
   block.__commitAs = (marker) => {
     if (block.__committed) return;
-    const typed = inlineDomToMarkdown(block).trim();
+    const typed = typedBlockText(block);
     if (!typed) return;
     block.__committed = true;
     sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: separator + marker + typed + suffix });
@@ -672,6 +734,16 @@ function handleWysiwygKeydown(el, event) {
     el.blur();
     return;
   }
+  if (currentDocumentFormat === 'eml') {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    // A header value is one line of the file, so it takes neither a break nor a split.
+    if (el.dataset.blockKind !== 'email_paragraph') return;
+    // Shift+Enter is one more line of the same paragraph; Enter ends it and starts another, which is a blank line in the message.
+    if (event.shiftKey) document.execCommand('insertLineBreak');
+    else splitBlockAtCaret(el);
+    return;
+  }
   const kind = el.dataset.blockKind;
   if (kind === 'table') {
     if (event.key === 'Enter') event.preventDefault();
@@ -775,7 +847,7 @@ function wireMarkdownEditable(el) {
     if (selectionToolbarHoldsFocus(event.relatedTarget)) return;
     if (blockGutterHoldsFocus(event.relatedTarget)) return;
     el.__editingActive = false;
-    commitBlockEdit(el, blockDomToMarkdown(el));
+    commitBlockEdit(el, blockDomToSource(el));
     // Back to being page rather than editor, so the next drag can leave it.
     closeWysiwygBlock(el);
   });
@@ -881,13 +953,16 @@ function bindEditableBlocks(format) {
     if (el.dataset.srcStart == null || el.dataset.srcEnd == null) return;
     const kind = el.dataset.blockKind;
     if (kind === 'rule') return;
+    // A message's words are typed on where they are drawn wherever the page can write the file's bytes back out of them; everything else there keeps the raw-slice editor.
     const wysiwyg =
-      format === 'markdown' &&
-      (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
-        (kind === 'list' && listWysiwygSafe(el)) ||
-        (kind === 'table' && tableWysiwygSafe(el)) ||
-        (kind === 'blockquote' && blockquoteWysiwygSafe(el)) ||
-        (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el)));
+      format === 'eml'
+        ? emailBlockTypeableInPlace(el)
+        : format === 'markdown' &&
+          (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
+            (kind === 'list' && listWysiwygSafe(el)) ||
+            (kind === 'table' && tableWysiwygSafe(el)) ||
+            (kind === 'blockquote' && blockquoteWysiwygSafe(el)) ||
+            (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el)));
     if (wysiwyg) {
       wysiwygBlocks.push(el);
     } else if (Number.isFinite(Number(el.dataset.srcStart)) && Number.isFinite(Number(el.dataset.srcEnd))) {
@@ -900,6 +975,23 @@ function bindEditableBlocks(format) {
   sourceBlocks.forEach((el) => el.classList.add('leaf-editable'));
   wysiwygBlocks.forEach(wireMarkdownEditable);
   sourceBlocks.forEach(wireSourceEditable);
+}
+
+// A message is part open and part shut, and nothing on the page says which. Pressing a part that proved no range says why, in the same strip a locked source growls a refused edit with — because a control that answers a press with nothing is the fault this whole ticket started from. Only the two parts a reader would try to type in: an attachment is a file, not words on the page.
+function wireEmailClosedParts(body) {
+  body.addEventListener('pointerdown', (event) => {
+    const target = event.target;
+    if (!target || !target.closest) return;
+    // Something with a range under the pointer is a part that opens; it answers for itself.
+    if (target.closest('[data-src-start]')) return;
+    if (target.closest('.email-body')) {
+      leafToast('These words are packed into the message. Edit them in the source view.');
+      return;
+    }
+    if (target.closest('.email-headers')) {
+      leafToast('This line is folded or coded in the message. Edit it in the source view.');
+    }
+  });
 }
 
 // Land the caret carried across a structural edit's re-render: focus the destination block (by its post-splice offset) and restore the position, or open the chained empty insert paragraph. A missing target degrades to nothing.
@@ -942,6 +1034,9 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (!body) return;
   currentDocumentFormat = doc.format || 'markdown';
   currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
+  // Markdown is the named exception: an empty note has no blocks and is the one page a reader unlocks precisely to start typing in.
+  currentDocumentBindsAnything =
+    currentDocumentFormat === 'markdown' || (Array.isArray(doc.blocks) && doc.blocks.length > 0);
   // Checkboxes stay interactive on a locked page: a task toggle is a quick action that auto-saves and records no undo, not text editing. Only the click-to-type editable blocks are behind the padlock.
   if (currentDocumentFormat === 'markdown') {
     attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : [], currentDocumentSource);
@@ -949,6 +1044,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   }
   if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
+    if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
     // An unlocked document with no blocks in it -- a new one -- has nothing to click into. Open its first line, or the page is unlocked and untypable.
     if (currentDocumentFormat === 'markdown' && !pendingCaret && !body.querySelector('[data-src-start]')) {
       setPendingCaret({ emptyDocument: true });

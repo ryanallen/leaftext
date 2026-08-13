@@ -524,8 +524,10 @@ On disk such a file is wild: delivery and signature headers on top, then every p
 
 The delivery, routing, and anti-spam headers are not shown — they are machine plumbing, and the [code view](07-editing.md#code-view) has all of them when you want the raw message. The body passes the same sanitizer every other rendered page does, and nothing in the message can reach the network: inline images come from the file itself, never from a remote server.
 
+A message is also [edited where you read it](07-editing.md#editing-an-email), wherever the file says the same words the page draws.
+
 > [!NOTE]
-> Installing Leaftext [registers it for](../02-installation.md#file-associations) `.eml`, `.mht`, and `.mhtml`, though a mail app that already owns `.eml` keeps it. The message body is transfer-coded in the source, so nothing in the reading view is click-to-edit; the code view edits the raw file.
+> Installing Leaftext [registers it for](../02-installation.md#file-associations) `.eml`, `.mht`, and `.mhtml`, though a mail app that already owns `.eml` keeps it.
 
 ## File encodings
 

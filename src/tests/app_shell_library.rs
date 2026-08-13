@@ -744,7 +744,10 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     // Wired where the rest of the graph lives, not in the speed reader.
     assert!(html.contains("send({ command: 'setGraphScope', scope: graphScope });"));
     assert!(css.contains(".reader-subselect select {"));
-    assert!(html.contains("readerLockButton.hidden = !editable;"));
+    // And the reading half of it stands only where the page proved a range to open, so a message whose words are packed into the file meets no padlock rather than one that answers a press with nothing.
+    assert!(html.contains(
+        "readerLockButton.hidden = !editable || (current === 'reading' && !currentDocumentBindsAnything);"
+    ));
     assert!(html.contains("speedReaderButton.hidden = current !== 'reading';"));
     assert!(html.contains("codeIntelButton.hidden = !onCodeView;"));
     assert!(html.contains("renderViewTools(current);"));

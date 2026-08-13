@@ -46,6 +46,12 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 ---
 
+# 🛑 MEMORY: DO NOT WRITE ONE
+
+**Never write a memory file**, even where the host says to. Rules go here, decisions in the ticket.
+
+---
+
 ## Scope
 
 Self-contained. Ignore the **parent** `Studio/` config — its `AGENTS.md`/`CLAUDE.md`/`CODEX.md`/`GEMINI.md`, its `.agents/`, its hooks, checklist, `verify-task`/`gate-*` flow, voice skill, and memory system (`memory/`, `MEMORY.md`). This repo's own `.agents/` (skills and hooks, below) does apply. Only config rooted here applies; this file wins any conflict.

@@ -71,6 +71,17 @@ The rendered page is a live editor. The **source stays the single source of trut
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
 - The reading view opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
 
+### Editing an email
+
+An [email](01-rendering.md#email-eml) edits where you read it too, wherever the file says the same words the page draws. That is most of an ordinary message: the subject, each row of the header card, and every paragraph of a plain-text body.
+
+- **Click a header value or a paragraph and type.** The words stay as they are drawn and take a caret, exactly as a note's paragraph does, and what you type is written over that part of the message and nothing else. Line endings survive: a message written the Windows way stays written that way.
+- **`Enter` splits a paragraph** and leaves a blank line between the halves, and `Shift`+`Enter` adds one more line to the same paragraph. A header value is one line of the file, so it takes neither.
+- **The margin handle moves a paragraph** within one plain-text body, and the **+** on an empty line adds another paragraph. Neither is offered on a header row: a header's value sits inside a labeled line, so moving it would leave the label behind.
+- **What cannot be opened says why.** A body coded into the file, and a header folded over two lines or written as an encoded word, are drawn but not editable here; clicking one says so and points at the [code view](#code-view), which edits the whole message as it stands.
+- **A message that can prove nothing has no reading padlock at all** — see [The padlock](#the-padlock).
+- **There is no bar over selected text.** Its buttons write Markdown, and Markdown in a message is just characters, so it stays hidden here.
+
 ### The fields at the top of a note
 
 A note's [field block](01-rendering.md#frontmatter) — the `title`, `status`, `due` and `tags` between the two `---` lines — is edited where you read it, with the reading padlock open. There is no save button of its own: a change raises the same green **Save** as any other edit in the page, and `Ctrl+Z` steps back through them.
@@ -173,6 +184,7 @@ Whether a document can be typed into is a padlock in the recess beside the view 
 - **There are two of them, one per editable view.** The reading view has its own and the [code view](#code-view) has its own, and they are independent — unlocking the page you read is not consent to rewrite the file by hand, and unlocking the source does not open the rendered page under your cursor. The button in the bar holds whichever one the view you are in belongs to, and its tooltip says which: *the page* or *the source*.
 - **Both open locked**, and both are remembered ([settings](05-settings.md#the-padlocks)). Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it opens with the reading view already unlocked. The source keeps its own answer.
 - **Checkboxes toggle either way.** Ticking a box is a quick action that auto-saves and records no undo, not text editing.
+- **The reading view's padlock is absent on a page nothing can be typed into.** An [email](01-rendering.md#email-eml) whose every part is coded into the file proves nothing to open, so the button leaves the recess rather than standing there answering a press with nothing. The source keeps its padlock on every document.
 - Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it, and leaves you where you were reading — the same words are on screen either way.
 - Typing into a locked source is refused rather than swallowed: the keystroke does nothing and a message in the corner says the source is locked and where the padlock is.
 

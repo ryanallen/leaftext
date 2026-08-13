@@ -497,7 +497,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "eml",
-        "fa659c1a9224d4e31a72e1ceafa96481beb0a6d7b3bb6af3cb03f63be94f2921",
+        "508de6aae4b4b251f66c1de14e102a04780c64af1ec4b442294f1adb2bca1936",
     ),
 ];
 

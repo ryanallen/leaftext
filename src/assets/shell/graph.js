@@ -106,7 +106,8 @@ function renderViewTools(current) {
   if (readerViewTools) readerViewTools.hidden = !editable && !onGraph;
   if (graphScopeTool) graphScopeTool.hidden = !onGraph;
   if (readerLockButton) {
-    readerLockButton.hidden = !editable;
+    // The reading padlock stands only where it is true: a document that proved no range has nothing to click into, so the button would answer a press with a re-render and no visible change. The source view's padlock is a different switch and stands on everything.
+    readerLockButton.hidden = !editable || (current === 'reading' && !currentDocumentBindsAnything);
     const onCodeView = current === 'code';
     setSubtoolState(
       readerLockButton,

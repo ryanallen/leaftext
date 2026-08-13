@@ -1771,6 +1771,288 @@ if (booted) {
     }
   });
 
+  // The padlock is the one control whose whole job is to say this document can be changed, so it stands only where that is true. A page that proved no source range has nothing to click into, and pressing it there costs a whole re-render and shows nothing — which reads as a broken button. The tray's other tools do not go with it, and the source view's padlock is a different switch on the same document.
+  check('the reading padlock leaves the tray on a document that proved nothing', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    try {
+      read('currentDocumentBindsAnything = true;');
+      booted.renderViewTools('reading');
+      if (read('readerLockButton.hidden')) throw new Error('a document that proved a range lost its padlock');
+      if (read('speedReaderButton.hidden')) throw new Error('the speed reader left the tray with the padlock');
+
+      read('currentDocumentBindsAnything = false;');
+      booted.renderViewTools('reading');
+      if (!read('readerLockButton.hidden')) throw new Error('a document that proved nothing kept its padlock');
+      if (read('speedReaderButton.hidden')) throw new Error('the speed reader went with the padlock');
+
+      // The source view edits the whole file whatever the page proved, so its own padlock stands on the very same document.
+      booted.renderViewTools('code');
+      if (read('readerLockButton.hidden')) throw new Error('the source view lost its padlock');
+    } finally {
+      read('currentDocumentBindsAnything = true;');
+      booted.renderViewTools('reading');
+    }
+  });
+
+  // The answer comes off the payload the host already sends, and it is read as a document binds — so an email that proved nothing and an empty note, which has no blocks either, must not come out the same.
+  check('a document binds something when it is Markdown or a block proved a range', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const bind = (doc) => {
+      booted.bindReadingEditor(doc, { deferCaret: true });
+      return read('currentDocumentBindsAnything');
+    };
+    try {
+      if (!bind({ format: 'markdown', blocks: [], source: '' })) {
+        throw new Error('an empty note lost the padlock it is unlocked to type into');
+      }
+      if (bind({ format: 'eml', blocks: [], source: 'Subject: packed\r\n' })) {
+        throw new Error('a document with no proved range still claimed one');
+      }
+      if (!bind({ format: 'eml', blocks: [{ id: 0, kind: 'email_header', start: 9, end: 15 }], source: 'Subject: packed\r\n' })) {
+        throw new Error('a proved range did not put the padlock back');
+      }
+    } finally {
+      read("currentDocumentFormat = 'markdown'; currentDocumentSource = ''; currentDocumentBindsAnything = true;");
+    }
+  });
+
+  // A message's words are typed on where they are drawn, and the one thing that may never happen is Markdown syntax landing in somebody's mail. So the serializer writes text and nothing else, and a block only opens for typing when what it writes equals the bytes its range cuts.
+  check('an email block serializes back to the file’s own bytes', () => {
+    const { emailBlockDomToText } = booted;
+    // A drawn paragraph: two lines joined by a break, with a bare address linkified the way the renderer draws one.
+    const text = (value) => ({ nodeType: 3, nodeValue: value });
+    const element = (tag, children) => ({
+      nodeType: 1,
+      tagName: tag.toUpperCase(),
+      childNodes: children,
+      dataset: {},
+    });
+    const paragraph = element('p', [
+      text('Read '),
+      element('a', [text('https://example.com/page')]),
+      element('br', []),
+      text('before Friday.'),
+    ]);
+    const written = emailBlockDomToText(paragraph, '\r\n');
+    if (written !== 'Read https://example.com/page\r\nbefore Friday.') {
+      throw new Error(`the serializer did not write the file’s bytes: ${JSON.stringify(written)}`);
+    }
+    // The ending is the one the block's own slice uses, never the browser's.
+    if (emailBlockDomToText(paragraph, '\n') !== 'Read https://example.com/page\nbefore Friday.') {
+      throw new Error('the serializer ignored the line ending it was given');
+    }
+    // Nothing a Markdown serializer would add: no asterisks, no bracket form for the link.
+    if (/[*[\]`]/.test(written)) throw new Error(`Markdown syntax reached a message: ${written}`);
+  });
+
+  // The gate over that serializer: a block opens for typing only where its output is the slice. A row the reader re-spelled -- a date, an address list the parser rejoined -- has to keep the raw-slice editor, or typing on it would rewrite bytes nobody touched.
+  check('an email block opens for typing only where the page can write its bytes back', () => {
+    const { emailBlockTypeableInPlace } = booted;
+    const source = 'From: a@example.com\r\nDate: 3 Aug 2026 09:00 +0000\r\n\r\nOne line.\r\n';
+    const read = (expression) => vm.runInContext(expression, booted);
+    const block = (start, end, drawn) => ({
+      dataset: { srcStart: String(start), srcEnd: String(end) },
+      nodeType: 1,
+      tagName: 'P',
+      childNodes: [{ nodeType: 3, nodeValue: drawn }],
+    });
+    const wasSource = read('currentDocumentSource');
+    try {
+      read(`currentDocumentSource = ${JSON.stringify(source)};`);
+      // The paragraph, drawn exactly as the file spells it.
+      if (!emailBlockTypeableInPlace(block(source.indexOf('One line.'), source.indexOf('One line.') + 9, 'One line.'))) {
+        throw new Error('a paragraph drawn as the file spells it did not open for typing');
+      }
+      // The date row. Drawn as the file spells it, it opens; re-spelled by the reader into a fuller form, it must not.
+      const value = '3 Aug 2026 09:00 +0000';
+      const dateStart = source.indexOf(value);
+      const dateEnd = dateStart + value.length;
+      if (!emailBlockTypeableInPlace(block(dateStart, dateEnd, value))) {
+        throw new Error('a row drawn as the file spells it did not open for typing');
+      }
+      if (emailBlockTypeableInPlace(block(dateStart, dateEnd, 'Mon, 3 Aug 2026 09:00:00 +0000'))) {
+        throw new Error('a row the reader re-spelled opened for typing over bytes it does not match');
+      }
+      // A paragraph running over two lines, drawn the way the renderer draws one: two runs of text with a break between them and no character of the page's own.
+      const over = 'One line.\r\nAnd another.';
+      const twoLines = {
+        dataset: { srcStart: '0', srcEnd: String(over.length) },
+        nodeType: 1,
+        tagName: 'P',
+        childNodes: [
+          { nodeType: 3, nodeValue: 'One line.' },
+          { nodeType: 1, tagName: 'BR', childNodes: [] },
+          { nodeType: 3, nodeValue: 'And another.' },
+        ],
+      };
+      read(`currentDocumentSource = ${JSON.stringify(over)};`);
+      if (!emailBlockTypeableInPlace(twoLines)) {
+        throw new Error('a paragraph over two lines fell back to the raw editor');
+      }
+      // The fault it had: one newline of the page's own after the break, and the paragraph can never be written back.
+      twoLines.childNodes[2] = { nodeType: 3, nodeValue: '\nAnd another.' };
+      if (emailBlockTypeableInPlace(twoLines)) {
+        throw new Error('a paragraph carrying a character the message has not got opened for typing');
+      }
+
+      read(`currentDocumentSource = ${JSON.stringify(source)};`);
+      // A block with no usable range is nobody's to type on.
+      if (emailBlockTypeableInPlace({ dataset: {}, childNodes: [] })) {
+        throw new Error('a block with no range opened for typing');
+      }
+    } finally {
+      read(`currentDocumentSource = ${JSON.stringify(wasSource)};`);
+    }
+  });
+
+  // The grab bar is offered where a block's range is the whole block. In a message that is a body paragraph and nothing else: a header value's range is the value inside a labeled line, so dragging one would leave its label behind — the same reason JSON and YAML have no gutter at all.
+  check('only a message’s body paragraphs are offered the grab bar', () => {
+    const { blockGutterTargetAllowed } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const block = (kind) => ({ dataset: { blockKind: kind } });
+    const wasFormat = read('currentDocumentFormat');
+    try {
+      read("currentDocumentFormat = 'eml';");
+      if (!blockGutterTargetAllowed(block('email_paragraph'))) {
+        throw new Error('a body paragraph was refused the grab bar');
+      }
+      for (const kind of ['email_header', 'email_body']) {
+        if (blockGutterTargetAllowed(block(kind))) {
+          throw new Error(`${kind} was offered a grab bar it cannot be dragged by`);
+        }
+      }
+      if (blockGutterTargetAllowed(null)) throw new Error('nothing at all was offered a grab bar');
+
+      // Every block of a note still qualifies — the rule above is the message's alone.
+      read("currentDocumentFormat = 'markdown';");
+      if (!blockGutterTargetAllowed(block('paragraph')) || !blockGutterTargetAllowed(block('table'))) {
+        throw new Error('a note lost the gutter it already had');
+      }
+    } finally {
+      read(`currentDocumentFormat = ${JSON.stringify(wasFormat)};`);
+    }
+  });
+
+  // The plus writes a block into a file that is a list of blocks. A message is an envelope with parts in it, so the only thing a reader can add without rewriting it is another paragraph of a body — and the blank line that separates two of them has to be written in that message's own ending, not the browser's.
+  check('a message is offered one thing to add, and its blank line is its own', () => {
+    const { blockInsertOptions, documentLineEnding } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const wasFormat = read('currentDocumentFormat');
+    const wasSource = read('currentDocumentSource');
+    try {
+      read("currentDocumentFormat = 'eml'; currentDocumentSource = 'Subject: a\\r\\n\\r\\nOne.\\r\\n';");
+      const offered = blockInsertOptions(null);
+      if (offered.length !== 1 || offered[0].blank !== 'text') {
+        throw new Error(`a message was offered ${JSON.stringify(offered.map((one) => one.id))}`);
+      }
+      if (documentLineEnding() !== '\r\n') throw new Error('a message written with \\r\\n was given \\n');
+
+      // The same message written the other way keeps that.
+      read("currentDocumentSource = 'Subject: a\\n\\nOne.\\n';");
+      if (documentLineEnding() !== '\n') throw new Error('a message written with \\n was given \\r\\n');
+
+      // A note is unaffected: it gets its whole menu, and its separator was always \n.
+      read("currentDocumentFormat = 'markdown';");
+      if (blockInsertOptions(null).length < 5) throw new Error('a note lost entries from its plus');
+      if (documentLineEnding() !== '\n') throw new Error('a note stopped being written with \\n');
+    } finally {
+      read(`currentDocumentFormat = ${JSON.stringify(wasFormat)}; currentDocumentSource = ${JSON.stringify(wasSource)};`);
+    }
+  });
+
+  // Half a message opens and half of it does not, and nothing on the page said which — the same fault the padlock had. A press on a shut part says why; a press on one that opens says nothing, because it is about to open.
+  check('a part of a message that cannot open says why when it is pressed', () => {
+    const { wireEmailClosedParts } = booted;
+    const said = [];
+    const wasToast = booted.leafToast;
+    // A stand-in body that records the one listener, so a press can be raised at it.
+    let press = null;
+    const body = {
+      addEventListener: (type, handler) => {
+        if (type === 'pointerdown') press = handler;
+      },
+    };
+    // `closest` answers for whichever ancestors this element is said to have.
+    const at = (...held) => ({ closest: (selector) => (held.includes(selector) ? {} : null) });
+    try {
+      booted.leafToast = (message) => said.push(message);
+      wireEmailClosedParts(body);
+      if (!press) throw new Error('nothing listens for a press on the page');
+
+      press({ target: at('.email-body') });
+      if (said.length !== 1 || !said[0].includes('source view')) {
+        throw new Error(`a packed body did not say where to edit it: ${JSON.stringify(said)}`);
+      }
+      press({ target: at('.email-headers') });
+      if (said.length !== 2 || !said[1].includes('source view')) {
+        throw new Error(`a coded header did not say where to edit it: ${JSON.stringify(said)}`);
+      }
+      // A part that opens answers for itself, and the attachment list is files rather than words.
+      press({ target: at('[data-src-start]', '.email-body') });
+      press({ target: at('.email-attachments') });
+      if (said.length !== 2) throw new Error(`a part that opens was growled at: ${JSON.stringify(said)}`);
+    } finally {
+      booted.leafToast = wasToast;
+    }
+  });
+
+  // The gutter works over the blocks standing in the page, and a message is the first document whose blocks are not all children of it — its paragraphs stand inside the body section. Two symptoms fell out of the one line: the gutter vanished the moment the pointer left the words for the margin, and the last paragraph never had a space under it for the plus.
+  check('the gutter sees a message’s paragraphs, not the section around them', () => {
+    const { blockGutterOccupants, aimBlockGutterBelow } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const wasSpace = booted.aimBlockGutterAtSpace;
+    // A block with height, so the occupant filter keeps it.
+    const block = (name, held = [], classes = [], range = true) => ({
+      name,
+      children: held,
+      dataset: range ? { srcStart: '0', srcEnd: '4' } : {},
+      classList: { contains: (one) => classes.includes(one) },
+      getBoundingClientRect: () => ({ top: 0, bottom: 10 }),
+    });
+    const stand = (children) => {
+      inApp.querySelector = (selector) =>
+        selector === '.document-body' ? { children } : wasQuery.call(inApp, selector);
+    };
+    try {
+      const first = block('first');
+      const last = block('last');
+      const after = block('after');
+      // A plain-text body: the section holds no range of its own, and the paragraphs inside it are the blocks.
+      stand([block('heading'), block('section', [first, last], ['email-body'], false), after]);
+      const held = blockGutterOccupants().map((el) => el.name);
+      if (held.join() !== 'heading,first,last,after') {
+        throw new Error(`the gutter saw ${JSON.stringify(held)}`);
+      }
+
+      // The last paragraph of a body now has something under it, which is where the plus waits.
+      let space = null;
+      booted.aimBlockGutterAtSpace = (given) => {
+        space = given;
+      };
+      aimBlockGutterBelow(last);
+      if (!space || space.above !== last || space.below !== after) {
+        throw new Error('the last paragraph of a body was offered no space below it');
+      }
+
+      // An HTML body carries its own range, so it stays one block and nothing inside it is offered anything.
+      stand([block('section', [block('inside')], ['email-body'])]);
+      if (blockGutterOccupants().map((el) => el.name).join() !== 'section') {
+        throw new Error('a body that is one editable block was taken apart');
+      }
+
+      // A note is untouched: nothing in it claims that class, so every block is its own.
+      stand([block('one'), block('two')]);
+      if (blockGutterOccupants().map((el) => el.name).join() !== 'one,two') {
+        throw new Error('a note’s own blocks changed');
+      }
+    } finally {
+      inApp.querySelector = wasQuery;
+      booted.aimBlockGutterAtSpace = wasSpace;
+    }
+  });
+
   // A table is written back by re-serializing the whole thing, and the dashes line under the header is what carries each column's alignment. Deleting across two cells can take a whole cell out, and a changed column count is when that line is rebuilt instead of copied — a wrong rebuild un-centers a column with nothing on screen to show for it.
   check('a rebuilt dashes line keeps each column aligned', () => {
     const { tableDelimiterCells, tableDelimiterRow } = booted;
