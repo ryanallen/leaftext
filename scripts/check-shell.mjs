@@ -2418,6 +2418,67 @@ if (booted) {
     }
   });
 
+  // The source view's color squares. Monaco draws them; what it is missing is anything saying where the colors are, and that is leafColorRanges — a plain function over a string, so it is driven here with no editor and no page, the way the grammar above is. The spellings are src/tests/colors.json, which the reading view's own recognizer joins when css-documents ships: one list, so the two views cannot disagree about what a color is.
+  check('every color spelling in the fixture is recognized, and every non-color is not', () => {
+    const { leafColorRanges } = booted;
+    const fixture = JSON.parse(readFileSync(join(root, 'src/tests/colors.json'), 'utf8'));
+    if (fixture.colors.length < 20) throw new Error('the color fixture has gone thin');
+    const byte = (n) => Math.round(n * 255).toString(16).padStart(2, '0');
+    for (const entry of fixture.colors) {
+      const found = leafColorRanges(entry.value);
+      // Only "anywhere" draws in the source view: a color name has no place of its own in prose, which is what "value" records for the reading view.
+      if (entry.where !== 'anywhere') {
+        if (found.length) throw new Error(`${JSON.stringify(entry.value)} drew ${found.length} square(s)`);
+        continue;
+      }
+      if (found.length !== 1) throw new Error(`${JSON.stringify(entry.value)} drew ${found.length} squares`);
+      const one = found[0];
+      if (one.start !== 0 || one.end !== entry.value.length) {
+        throw new Error(`${JSON.stringify(entry.value)} was found at ${one.start}..${one.end}`);
+      }
+      const rgba = byte(one.red) + byte(one.green) + byte(one.blue) + byte(one.alpha);
+      if (rgba !== entry.rgba) throw new Error(`${JSON.stringify(entry.value)} is ${rgba}, wanted ${entry.rgba}`);
+    }
+    // And in a line rather than alone: one of this repo's own theme rows, where the value sits in a table cell inside backticks.
+    const row = '| surface-muted                | `#f6f6f6` |';
+    const inRow = leafColorRanges(row);
+    if (inRow.length !== 1 || row.slice(inRow[0].start, inRow[0].end) !== '#f6f6f6') {
+      throw new Error(`a theme table row gave ${JSON.stringify(inRow)}`);
+    }
+    // Two on a line, each at its own place, and the count is what the fixture cases cannot show.
+    const pair = leafColorRanges('from #000000 to rgb(255 255 255)');
+    if (pair.length !== 2 || pair[0].start !== 5 || pair[1].start !== 16) {
+      throw new Error(`two colors on one line gave ${JSON.stringify(pair)}`);
+    }
+    // A gradient is not a color, but the hex values inside one are.
+    if (leafColorRanges('linear-gradient(#fff, #000000)').length !== 2) {
+      throw new Error('the colors inside a gradient are not drawn');
+    }
+  });
+
+  // The square is a mark, not a control, and it is one for free: the color picker's hover participant is built into Monaco and never registered, so a click on the square does nothing. That decision has to survive the next regeneration of the bundle, which is by hand — hence the guard on the import list rather than on the 2.8MB output.
+  check('the vendored editor bundle asks for no color picker', () => {
+    const bundler = readFileSync(join(root, 'scripts/bundle-monaco.mjs'), 'utf8');
+    const entry = bundler.match(/const ENTRY = `([\s\S]*?)`;/);
+    if (!entry) throw new Error("could not find the bundler's import list");
+    for (const line of entry[1].split('\n')) {
+      if (/^import\b/.test(line) && /colorPicker|colorContribution/i.test(line)) {
+        throw new Error(`the bundle asks for the color picker: ${line.trim()}`);
+      }
+    }
+    // And nothing may offer a presentation, which is the other half: a presentation is what the editor writes back through.
+    const codeView = readFileSync(join(root, 'src/assets/shell/code-view.js'), 'utf8');
+    if (!/provideColorPresentations\(\)\s*\{\s*return \[\];/.test(codeView)) {
+      throw new Error('the color provider offers a way to rewrite a value');
+    }
+    // Every language the code view can put in front of somebody: a registration lost here is a format that silently stops drawing squares.
+    const registered = codeView.match(/\[([^\]]*)\]\.forEach\(\(id\) =>\s*\n?\s*monaco\.languages\.registerColorProvider/);
+    if (!registered) throw new Error('nothing registers the color provider');
+    for (const id of ['markdown', 'xml', 'yaml', 'json', 'plaintext']) {
+      if (!registered[1].includes(`'${id}'`)) throw new Error(`${id} gets no color squares`);
+    }
+  });
+
   check('byte offsets and line numbers agree in both directions', () => {
     // The reader's place is a byte offset on the Rust side and a line number in the editor; multi-byte characters are where the two disagree.
     const text = 'ascii\ncafé and ünicode\n😀 wide\nlast';

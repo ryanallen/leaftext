@@ -425,6 +425,122 @@ function registerJsonColoringOnce(monaco) {
   monaco.languages.setMonarchTokensProvider('json', jsonMonarchLanguage());
 }
 
+// ---- Colors: a square of itself before every color in the source --------------
+// Monaco already draws the square and already has it switched on; what it has no answer for is where the colors are, because its own scanner sits inside the language service, which wants a worker. So the scan is written here, for the same reason the JSON grammar above is.
+
+// Hue units, as a fraction of the circle.
+const LEAF_HUE_UNITS = { deg: 360, grad: 400, rad: 2 * Math.PI, turn: 1 };
+
+const leafClamp01 = (n) => Math.min(1, Math.max(0, n));
+
+// One argument as a number and its unit, or null when it is not a number at all — a var(), a keyword, an empty slot.
+function leafColorNumber(part) {
+  const hit = /^([-+]?(?:\d+\.?\d*|\.\d+))(%|deg|grad|rad|turn)?$/.exec(part);
+  return hit ? { value: Number.parseFloat(hit[1]), unit: hit[2] || '' } : null;
+}
+
+// A hex run without its '#', as an RGBA in 0..1. Null unless it is one of the four lengths — and null for a short run of digits alone, because `#123` is an issue reference in this app's own reading of a document. Every short form with a letter in it is unaffected.
+function leafHexColor(digits) {
+  const len = digits.length;
+  if (len !== 3 && len !== 4 && len !== 6 && len !== 8) return null;
+  if (len <= 4 && !/[a-f]/i.test(digits)) return null;
+  const wide = len <= 4 ? digits.replace(/./g, (d) => d + d) : digits;
+  const at = (i) => Number.parseInt(wide.slice(i * 2, i * 2 + 2), 16) / 255;
+  return { red: at(0), green: at(1), blue: at(2), alpha: wide.length === 8 ? at(3) : 1 };
+}
+
+// Hue in turns, saturation and lightness in 0..1, to RGB in 0..1.
+function leafHslToRgb(hue, sat, light) {
+  const chan = (n) => {
+    const k = (n + hue * 12) % 12;
+    return light - sat * Math.min(light, 1 - light) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+  };
+  return { red: leafClamp01(chan(0)), green: leafClamp01(chan(8)), blue: leafClamp01(chan(4)) };
+}
+
+// What is inside an rgb()/rgba()/hsl()/hsla() call, as an RGBA in 0..1. Commas, spaces, or a slash before the alpha — modern CSS writes it either way. Null unless it is three or four numbers carrying units that belong there.
+function leafFunctionColor(name, body) {
+  const parts = body
+    .trim()
+    .split(/\s*[,/]\s*|\s+/)
+    .filter(Boolean)
+    .map(leafColorNumber);
+  if (parts.length < 3 || parts.length > 4 || parts.some((part) => !part)) return null;
+  const alphaPart = parts[3];
+  if (alphaPart && alphaPart.unit && alphaPart.unit !== '%') return null;
+  const alpha = alphaPart
+    ? leafClamp01(alphaPart.unit === '%' ? alphaPart.value / 100 : alphaPart.value)
+    : 1;
+  const percentOrBare = (part) => !part.unit || part.unit === '%';
+  if (name === 'rgb' || name === 'rgba') {
+    if (!parts.slice(0, 3).every(percentOrBare)) return null;
+    const chan = (part) => leafClamp01(part.unit === '%' ? part.value / 100 : part.value / 255);
+    return { red: chan(parts[0]), green: chan(parts[1]), blue: chan(parts[2]), alpha };
+  }
+  const circle = LEAF_HUE_UNITS[parts[0].unit || 'deg'];
+  if (!circle || !percentOrBare(parts[1]) || !percentOrBare(parts[2])) return null;
+  // A hue is a bearing, so it wraps rather than clamping — and stays positive through the wrap.
+  const hue = (((parts[0].value / circle) % 1) + 1) % 1;
+  const rgb = leafHslToRgb(hue, leafClamp01(parts[1].value / 100), leafClamp01(parts[2].value / 100));
+  return { ...rgb, alpha };
+}
+
+// Every color in `text`, each as a half-open offset range and an RGBA in 0..1. A plain function over a string, so it can be proved with no editor in front of it; the provider below is the thin wrapper that turns the offsets into the editor's own positions.
+//
+// A word that is a color name draws nothing. Markdown is this app's main format, and "red", "gold", "tan" and "orange" are ordinary English — a square beside every one of them in prose is noise nobody can turn off. The editor's own scanner draws the same line.
+function leafColorRanges(text) {
+  const found = [];
+  const pattern = /#[0-9a-fA-F]+|\b(rgba?|hsla?)\(([^()]*)\)/g;
+  let hit;
+  while ((hit = pattern.exec(text))) {
+    const start = hit.index;
+    const end = start + hit[0].length;
+    const before = start > 0 ? text[start - 1] : '';
+    const isHex = hit[0][0] === '#';
+    // A run another word runs into belongs to that word: an address ending #abcdef, a second '#', a longer run of digits, `my-rgb(1,2,3)`.
+    if (isHex && (/[\w#]/.test(before) || /\w/.test(text[end] || ''))) continue;
+    if (!isHex && /[-\w]/.test(before)) continue;
+    const color = isHex
+      ? leafHexColor(hit[0].slice(1))
+      : leafFunctionColor(hit[1].toLowerCase(), hit[2]);
+    if (color) found.push({ start, end, ...color });
+  }
+  return found;
+}
+
+// Monaco keeps providers globally, not per editor, so re-entering the code view must not hand it a second one.
+let colorProvidersRegistered = false;
+
+// Registered for every language the code view uses, not just one: a hex in a Markdown note, a YAML theme file, a JSON settings file or an XML attribute is a color the same way it is anywhere else — and the eleven theme families this repo edits are Markdown tables of hex.
+function registerColorProvidersOnce(monaco) {
+  if (colorProvidersRegistered) return;
+  colorProvidersRegistered = true;
+  const provider = {
+    provideDocumentColors(model) {
+      return leafColorRanges(model.getValue()).map((found) => {
+        const from = model.getPositionAt(found.start);
+        const to = model.getPositionAt(found.end);
+        return {
+          range: {
+            startLineNumber: from.lineNumber,
+            startColumn: from.column,
+            endLineNumber: to.lineNumber,
+            endColumn: to.column,
+          },
+          color: { red: found.red, green: found.green, blue: found.blue, alpha: found.alpha },
+        };
+      });
+    },
+    // The square is a mark, not a control: an empty list is nothing for the editor to write a value back through, in a view that stands behind a padlock. A reader who wants to change a color types it.
+    provideColorPresentations() {
+      return [];
+    },
+  };
+  ['markdown', 'xml', 'yaml', 'json', 'plaintext'].forEach((id) =>
+    monaco.languages.registerColorProvider(id, provider)
+  );
+}
+
 // The Monaco language id for a code-view payload. Markdown, XML and YAML are bundled colorizers and JSON is the grammar above; anything else falls back to plain text, which still edits and minimaps.
 function monacoLanguageFor(state) {
   const lang = (state.language || '').toLowerCase();
@@ -795,6 +911,7 @@ function renderCodeView(state) {
         return;
       }
       registerJsonColoringOnce(monaco);
+      registerColorProvidersOnce(monaco);
       createMonacoEditor(monaco, container, state, text);
       clearReaderLoading();
     })

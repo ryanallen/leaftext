@@ -1,0 +1,72 @@
+{
+  "about": "The color spellings this app recognizes, and what each one means. Two recognizers walk it: the source view's, in src/assets/shell/code-view.js, driven by scripts/check-shell.mjs; and the reading view's, when css-documents ships. They cannot share code — one is JavaScript and one is Rust — so they share this list instead. 'where' is anywhere (a color in prose as much as in a value), value (only where a stylesheet puts one, which is why the source view draws nothing for it), or never. 'rgba' is eight hex digits, the alpha last.",
+  "colors": [
+    { "value": "#ffffff", "rgba": "ffffffff", "where": "anywhere" },
+    { "value": "#222222", "rgba": "222222ff", "where": "anywhere" },
+    { "value": "#FFAA33", "rgba": "ffaa33ff", "where": "anywhere" },
+    { "value": "#fff", "rgba": "ffffffff", "where": "anywhere" },
+    { "value": "#f0a", "rgba": "ff00aaff", "where": "anywhere" },
+    { "value": "#fffa", "rgba": "ffffffaa", "where": "anywhere" },
+    { "value": "#00000080", "rgba": "00000080", "where": "anywhere" },
+    { "value": "rgb(31, 37, 40)", "rgba": "1f2528ff", "where": "anywhere" },
+    { "value": "rgb(31 37 40)", "rgba": "1f2528ff", "where": "anywhere" },
+    { "value": "rgb(100%, 0%, 0%)", "rgba": "ff0000ff", "where": "anywhere" },
+    { "value": "rgba(255, 0, 0, 0.5)", "rgba": "ff000080", "where": "anywhere" },
+    { "value": "rgb(255 0 0 / 50%)", "rgba": "ff000080", "where": "anywhere" },
+    {
+      "value": "rgb(300, -5, 0)",
+      "rgba": "ff0000ff",
+      "where": "anywhere",
+      "note": "Out of range clamps rather than refusing: the swatch is what the browser would paint."
+    },
+    { "value": "hsl(120, 100%, 50%)", "rgba": "00ff00ff", "where": "anywhere" },
+    { "value": "hsl(210 60% 45%)", "rgba": "2e73b8ff", "where": "anywhere" },
+    { "value": "hsla(0, 100%, 50%, 0.25)", "rgba": "ff000040", "where": "anywhere" },
+    { "value": "hsl(0.5turn 100% 50%)", "rgba": "00ffffff", "where": "anywhere" },
+
+    {
+      "value": "red",
+      "rgba": "ff0000ff",
+      "where": "value",
+      "note": "A color name is ordinary English, and this app's main format is prose."
+    },
+    { "value": "gold", "rgba": "ffd700ff", "where": "value" },
+    { "value": "tan", "rgba": "d2b48cff", "where": "value" },
+    { "value": "orange", "rgba": "ffa500ff", "where": "value" },
+    { "value": "transparent", "rgba": "00000000", "where": "value" },
+
+    {
+      "value": "#123",
+      "rgba": null,
+      "where": "never",
+      "note": "A short hex of digits alone is an issue reference in this app's own reading of a document."
+    },
+    { "value": "#1234", "rgba": null, "where": "never" },
+    { "value": "#12345", "rgba": null, "where": "never", "note": "Not one of the four lengths." },
+    { "value": "#fffabcd", "rgba": null, "where": "never" },
+    { "value": "##fff", "rgba": null, "where": "never" },
+    {
+      "value": "deadbeef",
+      "rgba": null,
+      "where": "never",
+      "note": "Hex is too ordinary to claim without the '#'."
+    },
+    {
+      "value": "https://example.com/page#abcdef",
+      "rgba": null,
+      "where": "never",
+      "note": "A run another word runs into belongs to that word."
+    },
+    { "value": "var(--lt-page-background)", "rgba": null, "where": "never" },
+    {
+      "value": "linear-gradient(to right, red, blue)",
+      "rgba": null,
+      "where": "never",
+      "note": "A gradient is not one color. The hex values inside one still are, and are drawn."
+    },
+    { "value": "rgb(var(--channels))", "rgba": null, "where": "never" },
+    { "value": "rgb(1, 2)", "rgba": null, "where": "never" },
+    { "value": "hsl(120, 100%, 50%, 0.5, 2)", "rgba": null, "where": "never" },
+    { "value": "my-rgb(1, 2, 3)", "rgba": null, "where": "never" }
+  ]
+}

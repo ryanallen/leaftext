@@ -1114,6 +1114,23 @@ fn the_code_views_line_numbers_stand_off_the_page_frame() {
     );
 }
 
+// The square drawn before a color in the source is a mark, not a control: the color picker's hover participant is not in the vendored bundle, so a click on it does nothing. Monaco's own style promises otherwise with a pointer, and a hand over something that will not respond is the app lying — in a view that stands behind a padlock at that.
+#[test]
+fn the_code_views_color_squares_do_not_promise_a_picker() {
+    let css = reading_mode_css();
+
+    let square = rule_body(
+        css,
+        ".code-view-monaco .monaco-editor .colorpicker-color-decoration {",
+    );
+    assert_contains(square, "cursor: text;");
+    // The hairline around it is the editor's and stays: it is what keeps a white or a black swatch visible against the editor's own background, on every theme.
+    assert!(
+        !square.contains("border"),
+        "the square's hairline is the editor's, not ours: {square}"
+    );
+}
+
 // The minimap rail is chrome, not page: the shell's grain runs behind it. Monaco's minimap canvas paints only the pixels its glyphs land in — it fills no background of its own — so anything opaque behind the rail is something of ours, and a page fill crossing into it is what makes the rail read as page-colored. Every layer carrying that color has to stop at the page frame's right border.
 #[test]
 fn the_code_views_minimap_rail_shows_the_shells_grain() {

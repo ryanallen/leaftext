@@ -6093,6 +6093,10 @@ body.is-block-dragging .document-body [data-src-start] {
 .code-view-monaco .monaco-editor .margin-view-overlays .line-numbers {
   transform: translateX(var(--cv-line-number-pad));
 }
+/* The square Monaco draws before a color in the source. It is a mark, not a control — the picker's hover participant is not in the vendored bundle, so a click on it does nothing — and the editor's own style sets cursor:pointer, which is the app promising something that will not happen. Its black-in-light, near-white-in-dark hairline is the editor's too, and stays: it is what keeps a white or black swatch visible. */
+.code-view-monaco .monaco-editor .colorpicker-color-decoration {
+  cursor: text;
+}
 /* The minimap's floating viewport box (the draggable "where am I" window), styled to echo the reader rail's viewport box: our minimap-viewport colors, a border, and rounded corners. Nothing else about the minimap is touched. */
 .code-view-monaco .monaco-editor .minimap-slider {
   background: var(--lt-minimap-viewport-background) !important;

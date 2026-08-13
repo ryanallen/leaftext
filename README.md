@@ -105,7 +105,7 @@ A canvas beside the Mermaid text, each following the other. Double-click to add 
 
 ![Editing in code view, with save and undo button](imgs/code-view.png)
 
-Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, XML and YAML come colored in your theme's own syntax colors. **[Code view →](docs/01-features/07-editing.md#code-view)**
+Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, XML, YAML and JSON come colored in your theme's own syntax colors, and a color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 
