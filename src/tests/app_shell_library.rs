@@ -363,9 +363,10 @@ fn app_shell_includes_library_pane_settings_and_wording() {
         "title=\"Resize library\"",
         "placeholder=\"Search files...\"",
         ">No matches.</p>",
-        // A cut list says what it was cut to — files, since one file can hold three rows — rather than printing a count that reads like a whole one.
-        "results in the first ${formatCount(files)} files`",
-        "} results`",
+        // A cut list says what it was cut to — files, since one file can hold three rows — rather than printing a count that reads like a whole one. Both counts say "so far" while the vault is still being read: the cap is over what has been read, not over the vault.
+        "results in the first ${formatCount(files)} files${read}`",
+        "} results${librarySearchPartial ? ' so far' : ''}`",
+        "' read so far'",
         "Searching…",
         "'Search failed.'",
     ] {

@@ -16,7 +16,8 @@ function searchHitHtml(hit) {
 }
 function bindSearchHits() {
   librarySearchResults.querySelectorAll('[data-open-path]').forEach((button) => {
-    button.addEventListener('click', () => {
+    // On the press, through the same helper the file rows use, and for the same reason: a vault still being read answers this query about three times a second, every answer rewrites these rows, and a rebuild landing between press and release replaces the button so the click never fires.
+    bindLibraryRowPress(button, () => {
       const path = button.dataset.openPath;
       const anchor = button.dataset.anchor || '';
       const line = Number(button.dataset.line) || 0;
@@ -42,24 +43,38 @@ function renderLibrarySearch() {
     librarySearchResults.innerHTML = `<p class="library-empty">${escapeText(message)}</p>`;
     return;
   }
-  if (librarySearchLoading && !librarySearchHits) {
-    librarySearchResults.innerHTML = `<p class="library-empty">Searching…</p>`;
+  const hits = librarySearchHits || [];
+  // Nothing drawn yet: the count line is the whole answer, and the ring in it is the only thing saying a vault is being read.
+  if (librarySearchLoading && !hits.length) {
+    librarySearchResults.innerHTML = searchCountHtml(hits);
     return;
   }
   const note = searchNoteHtml();
-  const hits = librarySearchHits || [];
   if (!hits.length) {
     librarySearchResults.innerHTML = note + `<p class="library-empty">No matches.</p>`;
     return;
   }
-  // A row is a match and one file can hold three, so a cut list says what it was cut to in files, counted off the rows rather than kept as a second copy of the host's cap.
-  const files = new Set(hits.map((hit) => (hit && hit.absPath) || '')).size;
-  const count = librarySearchTruncated
-    ? `${formatCount(hits.length)} results in the first ${formatCount(files)} files`
-    : `${formatCount(hits.length)} results`;
-  const countLine = `<p class="library-results-count">${escapeText(count)}</p>`;
-  librarySearchResults.innerHTML = note + countLine + hits.map(searchHitHtml).join('');
+  librarySearchResults.innerHTML = note + searchCountHtml(hits) + hits.map(searchHitHtml).join('');
   bindSearchHits();
+}
+// The line above the rows: what is drawn, and whether more is coming. One waiting mark for the whole pane — rows from a query the field has moved on from sit under a turning ring rather than under nothing.
+function searchCountHtml(hits) {
+  const ring = librarySearchLoading
+    ? `<span class="lt-spinner library-results-spinner" aria-hidden="true"></span>`
+    : '';
+  // Rows are counted only where they answer the query in the box. While one is still being read for, what is drawn otherwise belongs to the query before it.
+  const answering = librarySearchHitsQuery === librarySearchQuery && hits.length;
+  const count = librarySearchLoading && !answering ? 'Searching…' : searchCountText(hits);
+  return `<p class="library-results-count">${ring}${escapeText(count)}</p>`;
+}
+// A row is a match and one file can hold three, so a cut list says what it was cut to in files, counted off the rows rather than kept as a second copy of the host's cap. While the vault is still being read, both counts say so: the cap is over what has been read, not over the vault.
+function searchCountText(hits) {
+  if (!librarySearchTruncated) {
+    return `${formatCount(hits.length)} results${librarySearchPartial ? ' so far' : ''}`;
+  }
+  const files = new Set(hits.map((hit) => (hit && hit.absPath) || '')).size;
+  const read = librarySearchPartial ? ' read so far' : '';
+  return `${formatCount(hits.length)} results in the first ${formatCount(files)} files${read}`;
 }
 // What the box made of what was typed. A plain word query says nothing — it would only repeat the field back — so this appears the moment there is syntax in it, and names a field the vault has never set rather than leaving an empty list to be read as "nothing matches".
 function searchNoteHtml() {
@@ -81,14 +96,18 @@ function runLibrarySearch(value) {
   updateLibrarySearchClear();
   if (!query) {
     librarySearchHits = null;
+    librarySearchHitsQuery = '';
     librarySearchError = null;
     librarySearchLoading = false;
+    librarySearchPartial = false;
     librarySearchUnderstood = '';
     librarySearchUnknownFields = [];
     renderLibrarySearch();
     return;
   }
   librarySearchLoading = true;
+  // Nothing has answered this one yet, so nothing on screen is part of its answer.
+  librarySearchPartial = false;
   librarySearchError = null;
   renderLibrarySearch();
   send({ command: 'search', query, today: localDateStamp() });
@@ -131,19 +150,39 @@ window.addEventListener('keydown', (event) => {
   event.preventDefault();
   clearLibrarySearch();
 });
+// Where in the vault a row points, which is what makes two answers to the same query agree about a row they both found.
+function searchHitKey(hit) {
+  return `${(hit && hit.absPath) || ''}:${(hit && hit.startLine) || 0}:${(hit && hit.snippet) || ''}`;
+}
+// A vault still being read answers the same query several times, each ranking everything it has read so far. Rows already drawn keep their place and their click target — a list that re-sorted under a reaching hand would be a worse fault than the silence this replaces — so a partial answer only adds what is new underneath. The one re-sort is the final answer, which is also when the ring goes.
+function mergeSearchHits(arriving, sameQuery) {
+  const drawn = sameQuery ? librarySearchHits || [] : [];
+  if (!drawn.length) return arriving;
+  const seen = new Set(drawn.map(searchHitKey));
+  return drawn.concat(arriving.filter((hit) => !seen.has(searchHitKey(hit))));
+}
 window.leafSetSearchResults = (payload) => {
   const data = payload || {};
   const query = typeof data.query === 'string' ? data.query : '';
   // Drop stale responses: the input has moved on since this query was sent.
   if (query !== librarySearchQuery) return;
-  librarySearchLoading = false;
+  // A payload that says nothing about it is a finished one: a host that never streams must never leave a ring turning.
+  librarySearchPartial = !!data.partial;
+  librarySearchLoading = librarySearchPartial;
   if (data.error) {
     librarySearchError = data.error;
     librarySearchHits = null;
     librarySearchTruncated = false;
+    librarySearchPartial = false;
+    librarySearchLoading = false;
+    librarySearchHitsQuery = '';
   } else {
+    const arriving = Array.isArray(data.hits) ? data.hits : [];
     librarySearchError = null;
-    librarySearchHits = Array.isArray(data.hits) ? data.hits : [];
+    librarySearchHits = librarySearchPartial
+      ? mergeSearchHits(arriving, librarySearchHitsQuery === query)
+      : arriving;
+    librarySearchHitsQuery = query;
     librarySearchTruncated = !!data.truncated;
     librarySearchUnderstood = typeof data.understood === 'string' ? data.understood : '';
     librarySearchUnknownFields = Array.isArray(data.unknownFields) ? data.unknownFields : [];

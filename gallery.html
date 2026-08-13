@@ -3608,10 +3608,23 @@ body.library-resizing {
 .library-results {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
 }
+/* The one line above the rows, and the one place search says it is working: it counts what is drawn, and it carries the ring while an answer is still coming. Drawn whether or not there are hits, so a search run over an older query's rows marks them instead of leaving them looking like the answer. */
 .library-results-count {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
   margin: var(--lt-space-2) var(--lt-space-6) var(--lt-space-6);
   font-size: var(--lt-text-11);
   color: var(--lt-muted-foreground);
+}
+/* Sized to the line it sits in and painted in the same gray, so it reads as part of the sentence rather than as a control. */
+.library-results-spinner {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-width: var(--lt-stroke-1);
+  border-color: color-mix(in srgb, var(--lt-muted-foreground) 30%, transparent);
+  border-top-color: var(--lt-muted-foreground);
 }
 /* What the box made of a filter, above the results. Only ever shown for a query with syntax in it — a plain word would just be read back to the person who typed it. */
 .library-search-note {
@@ -9160,7 +9173,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </section>
 <section class="part">
 <header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js</span></header>
-<div class="stage"><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div>
+<div class="stage"><p class="library-results-count"><span class="lt-spinner library-results-spinner"></span>Searching…</p><p class="library-results-count">14 results</p><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div>
 </section>
 <section class="part">
 <header><h3>File type badge</h3><code class="built">.file-type-badge</code><span class="built">render-state.js</span></header>

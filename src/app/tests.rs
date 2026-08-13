@@ -642,6 +642,209 @@ fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
     assert!(!state.search.generation.is_current(second));
 }
 
+/// One document, as a slice of a read carries it.
+fn slice_document(name: &str) -> CorpusDocument {
+    CorpusDocument {
+        path: format!("/vault/{name}.md"),
+        label: name.to_string(),
+        aliases: Vec::new(),
+        text: format!("# {name}\n\na talk on dharma\n"),
+    }
+}
+
+#[test]
+fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus_loading = true;
+    // Somebody typed before the vault had been read, so the query is waiting on it.
+    state.pending_search = Some(typed("dharma"));
+    let started = state.corpus_generation;
+
+    let first = absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("one")],
+        false,
+        true,
+        false,
+    )
+    .expect("the first slice is for the vault on screen");
+    assert_eq!(first.corpus.documents.len(), 1);
+    // Answered over what has landed, and still parked: taken here, the read would go quiet for every slice after this one.
+    assert!(
+        first.parked.is_some(),
+        "the first slice did not answer the parked query"
+    );
+    assert!(
+        state.pending_search.is_some(),
+        "the first slice took the parked query out of its slot"
+    );
+    assert!(
+        state.corpus_partial,
+        "a vault still being read was called whole"
+    );
+    assert!(
+        first.hints.is_none(),
+        "the completion menu was filled from part of a vault"
+    );
+    assert_eq!(state.corpus_generation, started + 1);
+
+    let middle = absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("two")],
+        false,
+        false,
+        false,
+    )
+    .expect("a later slice is kept");
+    // Grown, not replaced.
+    assert_eq!(middle.corpus.documents.len(), 2);
+    assert!(middle.parked.is_some());
+    // Every slice moves the number both the kept answer and the narrowing shortcut turn on, so neither can hand back an answer that saw half the vault.
+    assert_eq!(state.corpus_generation, started + 2);
+
+    let last = absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("three")],
+        false,
+        false,
+        true,
+    )
+    .expect("the last slice is kept");
+    assert_eq!(last.corpus.documents.len(), 3);
+    assert!(
+        last.parked.is_some(),
+        "the last slice did not answer the parked query"
+    );
+    assert!(
+        state.pending_search.is_none(),
+        "the finished read left its query parked for ever"
+    );
+    assert!(
+        !state.corpus_partial,
+        "a finished read still called its text partial"
+    );
+    assert!(
+        !state.corpus_loading,
+        "a finished read left the vault looking unread"
+    );
+    assert!(last.hints.is_some(), "the completion menu was never filled");
+    assert_eq!(state.corpus_generation, started + 3);
+}
+
+#[test]
+fn a_read_of_a_vault_nobody_is_in_any_more_is_thrown_away() {
+    let mut state = VaultState::load(None);
+    state.root = Some(PathBuf::from("/vault"));
+    let elsewhere = PathBuf::from("/somewhere-else");
+    assert!(
+        absorb_corpus_slice(
+            &mut state,
+            &elsewhere,
+            vec![slice_document("one")],
+            false,
+            true,
+            false
+        )
+        .is_none(),
+        "a slice read under a vault we have left was taken as this one's text"
+    );
+    assert!(state.corpus.is_none());
+}
+
+#[test]
+fn a_fresh_read_replaces_the_text_it_finds_rather_than_growing_it() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("one")],
+        false,
+        true,
+        true,
+    );
+    // A second read of the same vault — its files changed underneath, or it was left and came back to.
+    let fresh = absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("two")],
+        false,
+        true,
+        true,
+    )
+    .expect("the fresh read is kept");
+    assert_eq!(
+        fresh.corpus.documents.len(),
+        1,
+        "a fresh read was added to the last one's text"
+    );
+    assert_eq!(fresh.corpus.documents[0].label, "two");
+}
+
+/// One hit, which is all a memo test needs: what is kept matters here, not what it holds.
+fn one_search_answer() -> SearchResults {
+    SearchResults {
+        hits: vec![leaftext::store::SearchHit {
+            abs_path: "/vault/note.md".to_string(),
+            title: "note".to_string(),
+            alias: None,
+            start_line: 3,
+            end_line: 3,
+            anchor: None,
+            snippet: "a talk on dharma".to_string(),
+            score: 1.0,
+        }],
+        truncated: false,
+        understood: String::new(),
+        unknown_fields: Vec::new(),
+        matched: vec!["/vault/note.md".to_string()],
+    }
+}
+
+#[test]
+fn an_answer_scanned_over_part_of_a_vault_is_never_kept() {
+    let mut state = VaultState::load(None);
+    let scanned = state.corpus_generation;
+    // Two more slices landed while this scan was running, so the vault's text has moved on since it started.
+    state.corpus_generation += 2;
+
+    deliver_search(
+        &mut state,
+        None,
+        None,
+        "dharma",
+        one_search_answer(),
+        scanned,
+        true,
+    );
+    assert!(
+        state.search.remembered(&typed("dharma"), scanned).is_none(),
+        "an answer that had seen half a vault was kept as the answer to that query"
+    );
+
+    deliver_search(
+        &mut state,
+        None,
+        None,
+        "dharma",
+        one_search_answer(),
+        scanned,
+        false,
+    );
+    // Kept under the text it actually scanned, never under whatever the number had reached by the time it landed.
+    assert!(state.search.remembered(&typed("dharma"), scanned).is_some());
+    assert!(state
+        .search
+        .remembered(&typed("dharma"), state.corpus_generation)
+        .is_none());
+}
+
 #[test]
 fn the_same_query_over_unchanged_text_is_answered_from_the_last_one() {
     let mut state = VaultState::load(None);

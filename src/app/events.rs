@@ -41,11 +41,16 @@ pub(crate) enum UserEvent {
         folder: PathBuf,
         error: Option<String>,
     },
-    /// The active vault's text finished being read. Whatever was waiting on it — a graph, a search — runs when it lands.
+    /// A slice of the active vault's text, as the read hands it over. Several of these land per read: a query parked on the read is answered by each one, so somebody is reading matches while the rest of the vault is still being opened, and only the last one lets an answer be kept.
     CorpusLoaded {
-        corpus: Box<VaultCorpus>,
-        /// The field names and values the search box completes from, read on the same worker.
-        hints: Box<FilterHints>,
+        root: PathBuf,
+        documents: Box<Vec<CorpusDocument>>,
+        /// The read hit a cap, so the vault holds more than this will.
+        truncated: bool,
+        /// The first slice of a fresh read: what this vault held is replaced rather than grown.
+        first: bool,
+        /// The last slice. Until it lands the vault's text is partial.
+        last: bool,
     },
     /// A graph finished building. Both this and the search below are computed on a worker thread: they read documents off the disk, which is far too much to do on the thread that answers the window.
     ///
@@ -58,6 +63,10 @@ pub(crate) enum UserEvent {
         scope: Option<PathBuf>,
         query: String,
         results: SearchResults,
+        /// Which version of the vault's text this was scanned over, so an answer that landed after a file changed under it is not kept as the answer to that query.
+        corpus: u64,
+        /// The text it scanned was part of a vault still being read. The pane keeps its ring, and nothing keeps the answer.
+        partial: bool,
     },
     /// The background pager scan completed for a document path.
     PagerLoaded { path: PathBuf, html: String },

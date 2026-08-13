@@ -24,6 +24,8 @@ pub(crate) struct VaultState {
     pub(crate) corpus_generation: u64,
     /// A read is in flight, so a second request waits rather than starting one.
     pub(crate) corpus_loading: bool,
+    /// The text above is part of a vault, not all of it: the read has handed over some slices and not the last. An answer scanned over it is true of what has been read and no more, so it is never kept, and the pane keeps its ring.
+    pub(crate) corpus_partial: bool,
     /// What asked for the corpus while it was being read.
     pub(crate) pending_graph: Option<GraphRequest>,
     pub(crate) pending_search: Option<TypedQuery>,
@@ -66,6 +68,7 @@ impl VaultState {
             corpus: None,
             corpus_generation: 0,
             corpus_loading: false,
+            corpus_partial: false,
             pending_graph: None,
             pending_search: None,
             status_loading: HashSet::new(),
@@ -470,38 +473,103 @@ pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEve
         return;
     };
     state.corpus_loading = true;
-    off_loop(proxy, move || {
-        let corpus = VaultCorpus::read(&root);
-        // Read here, on the worker that has the text open anyway, rather than on the thread that answers the window: it is a frontmatter parse per document.
-        let hints = corpus.filter_hints();
-        UserEvent::CorpusLoaded {
-            corpus: Box::new(corpus),
-            hints: Box::new(hints),
-        }
+    // Its own thread rather than `off_loop`, because this worker answers many times: a slice of the vault every fifty documents, so the pane fills while the disk is still being read instead of after it.
+    let proxy = proxy.clone();
+    thread::spawn(move || {
+        let mut first = true;
+        VaultCorpus::read_in_slices(&root, CORPUS_SLICE_DOCUMENTS, |slice| {
+            let sent = proxy.send_event(UserEvent::CorpusLoaded {
+                root: root.clone(),
+                documents: Box::new(slice.documents),
+                truncated: slice.truncated,
+                first,
+                last: slice.last,
+            });
+            first = false;
+            let _ = sent;
+        });
     });
 }
 
-/// The read landed. Anything that was waiting on it starts now — on a worker, not here.
+/// What one slice of a read leaves to be done, once the vault's held text has grown by it.
+pub(crate) struct AbsorbedSlice {
+    pub(crate) corpus: Arc<VaultCorpus>,
+    /// The query parked on the read, to answer again over what has landed now.
+    pub(crate) parked: Option<TypedQuery>,
+    /// A map somebody asked for while the read was running. Answered once, on the last slice: a picture redrawn every third of a second while the disk is read is a map nobody can look at.
+    pub(crate) graph: Option<GraphRequest>,
+    /// The completion menu's field names, on the last slice only — they are the whole vault's, and a menu that grew as the disk was read would offer a different list each time. A frontmatter parse per document, under a millisecond over eight thousand of them, so it costs the window nothing here.
+    pub(crate) hints: Option<FilterHints>,
+}
+
+/// Grow the vault's text by one slice of the read, and say what that leaves to do. Split from [`deliver_corpus`] because everything here is a decision about state and nothing here touches a worker, which is the half worth testing.
+///
+/// `None` when the slice is for a vault we have since left: it is thrown away rather than answered with somebody else's text.
+pub(crate) fn absorb_corpus_slice(
+    state: &mut VaultState,
+    root: &Path,
+    documents: Vec<CorpusDocument>,
+    truncated: bool,
+    first: bool,
+    last: bool,
+) -> Option<AbsorbedSlice> {
+    if last {
+        state.corpus_loading = false;
+    }
+    if state.root.as_deref() != Some(root) {
+        return None;
+    }
+    match state.corpus.as_mut().filter(|_| !first) {
+        // Cheap unless a worker is mid-scan against this exact text, in which case it clones rather than grow it out from under one.
+        Some(held) => {
+            let held = Arc::make_mut(held);
+            held.documents.extend(documents);
+            held.truncated |= truncated;
+        }
+        None => {
+            state.corpus = Some(Arc::new(VaultCorpus {
+                root: root.to_path_buf(),
+                documents,
+                truncated,
+            }))
+        }
+    }
+    state.corpus_partial = !last;
+    // Every slice is a change to the text, which is what makes a kept answer and the narrowing shortcut refuse themselves: both turn on this number, so neither can hand back a whole vault's answer that saw half of it.
+    state.corpus_generation += 1;
+    let corpus = Arc::clone(state.corpus.as_ref()?);
+    Some(AbsorbedSlice {
+        hints: last.then(|| corpus.filter_hints()),
+        graph: last.then(|| state.pending_graph.take()).flatten(),
+        // The parked query stays in its slot until the last slice, so every one of them answers it. Taken on the first, it would answer once and go quiet for the rest of the read — the silence this is here to end.
+        parked: if last {
+            state.pending_search.take()
+        } else {
+            state.pending_search.clone()
+        },
+        corpus,
+    })
+}
+
+/// A slice of the read landed. The vault's text grows by it, and anything parked on the read is answered again — so a search fills in while the rest of the vault is still being opened. Whatever it starts runs on a worker, not here.
 pub(crate) fn deliver_corpus(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
-    corpus: VaultCorpus,
-) {
-    state.corpus_loading = false;
-    // Read under a root we have since left: throw it away rather than answer with someone else's vault.
-    if state.root.as_deref() != Some(corpus.root.as_path()) {
-        return;
+    root: PathBuf,
+    documents: Vec<CorpusDocument>,
+    truncated: bool,
+    first: bool,
+    last: bool,
+) -> Option<FilterHints> {
+    let absorbed = absorb_corpus_slice(state, &root, documents, truncated, first, last)?;
+    if let Some(request) = absorbed.graph {
+        build_vault_graph_off_thread(proxy, root, Arc::clone(&absorbed.corpus), request);
     }
-    let corpus = Arc::new(corpus);
-    state.corpus = Some(Arc::clone(&corpus));
-    state.corpus_generation += 1;
-    if let Some(request) = state.pending_graph.take() {
-        build_vault_graph_off_thread(proxy, corpus.root.clone(), Arc::clone(&corpus), request);
+    if let Some(query) = absorbed.parked {
+        // Every slice grows the text, so there is nothing a shorter query's matches could narrow this to.
+        run_search(state, proxy, absorbed.corpus, query, None);
     }
-    if let Some(query) = state.pending_search.take() {
-        // The parked query is the first one over this text, so there is nothing to narrow to.
-        run_search(state, proxy, corpus, query, None);
-    }
+    absorbed.hints
 }
 
 /// A file changed on disk: patch the vault's text if the vault holds it, and redraw the map if one is on screen.

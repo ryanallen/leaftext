@@ -89,16 +89,46 @@ pub struct VaultCorpus {
     pub truncated: bool,
 }
 
+/// One slice of a read, as it lands. `documents` are the new ones only, so whoever is collecting them grows what it holds rather than replacing it.
+pub struct CorpusSlice {
+    pub documents: Vec<CorpusDocument>,
+    /// Whether either cap has been hit so far. The last slice carries the final answer.
+    pub truncated: bool,
+    /// Nothing more is coming. Always sent, even for a vault of nothing: it is what says the read is over.
+    pub last: bool,
+}
+
+/// How many documents one slice carries. A file nobody has opened since the machine started costs about 6 ms whatever is in it, so this is roughly a third of a second of reading — long enough that the answers behind it do not crowd each other, short enough that somebody is reading matches while the rest of the vault is still being opened.
+pub const CORPUS_SLICE_DOCUMENTS: usize = 50;
+
 impl VaultCorpus {
-    /// Read the whole vault. The expensive call, made once per vault per session, on a background thread.
+    /// Read the whole vault and hand it back in one piece. The expensive call, made once per vault per session, on a background thread.
     pub fn read(root: &Path) -> Self {
+        let mut documents = Vec::new();
+        let mut truncated = false;
+        Self::read_in_slices(root, usize::MAX, |slice| {
+            documents.extend(slice.documents);
+            truncated |= slice.truncated;
+        });
+        Self {
+            root: root.to_path_buf(),
+            documents,
+            truncated,
+        }
+    }
+
+    /// The same read, handing over what it has as it goes, so a search can answer over part of a vault while the rest is still being opened.
+    ///
+    /// The walk runs whole before anything is opened, and that order is load-bearing: the byte budget is spent smallest-first, which is what buys the whole of a vault of notes rather than as much as fits of a folder of generated ones. So a slice is a prefix of the sorted list, and nothing can be handed over until every path under the vault has been listed.
+    pub fn read_in_slices(root: &Path, size: usize, mut deliver: impl FnMut(CorpusSlice)) {
         let mut found = Vec::new();
         collect_documents(root, 0, &mut found);
-        // Smallest first, so the byte budget buys as many documents as it can: the whole of a vault of notes, and as much as fits of a folder of generated ones. The sizes came back off the same directory entries the walk had already read, so this costs no second look at the disk.
+        // Smallest first, so the byte budget buys as many documents as it can. The sizes came back off the same directory entries the walk had already read, so this costs no second look at the disk.
         found.sort_by_key(|(size, _)| *size);
         let mut truncated = found.len() > MAX_CORPUS_DOCUMENTS;
         found.truncate(MAX_CORPUS_DOCUMENTS);
 
+        let size = size.max(1);
         let mut held = 0;
         let mut documents = Vec::new();
         for (_, path) in found {
@@ -111,12 +141,19 @@ impl VaultCorpus {
             };
             held += document.text.len();
             documents.push(document);
+            if documents.len() >= size {
+                deliver(CorpusSlice {
+                    documents: std::mem::take(&mut documents),
+                    truncated,
+                    last: false,
+                });
+            }
         }
-        Self {
-            root: root.to_path_buf(),
+        deliver(CorpusSlice {
             documents,
             truncated,
-        }
+            last: true,
+        });
     }
 
     /// How much text is held. A read of a length per document, so it costs nothing next to what it guards.
@@ -556,7 +593,7 @@ fn scan_term(text: &str, term: &Needle) -> TermScan {
 }
 
 /// Every document under one folder, each with its size. No folder is skipped for its name: a vault whose notes live under a dotted folder otherwise reads as empty.
-fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<(u64, PathBuf)>) {
+pub(crate) fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<(u64, PathBuf)>) {
     if depth >= MAX_DEPTH || out.len() > MAX_CORPUS_DOCUMENTS {
         return;
     }

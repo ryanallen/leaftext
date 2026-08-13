@@ -345,11 +345,24 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::FolderLoaded { scope, listing }) => {
                 deliver_folder(&mut vault_state, reader.page(), scope, listing);
             }
-            Event::UserEvent(UserEvent::CorpusLoaded { corpus, hints }) => {
-                let root = corpus.root.clone();
-                deliver_corpus(&mut vault_state, &proxy, *corpus);
-                // Only for the vault still on screen: the hints name that vault's fields, and `deliver_corpus` has already thrown the read away if it is not.
-                if vault_state.root.as_deref() == Some(root.as_path()) {
+            Event::UserEvent(UserEvent::CorpusLoaded {
+                root,
+                documents,
+                truncated,
+                first,
+                last,
+            }) => {
+                // Answered only by the last slice, and only for the vault still on screen — `deliver_corpus` has already thrown the read away if it is not.
+                let hints = deliver_corpus(
+                    &mut vault_state,
+                    &proxy,
+                    root,
+                    *documents,
+                    truncated,
+                    first,
+                    last,
+                );
+                if let Some(hints) = hints {
                     run_page_script(
                         reader.page(),
                         &filter_hints_script(&hints),
@@ -370,8 +383,18 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 scope,
                 query,
                 results,
+                corpus,
+                partial,
             }) => {
-                deliver_search(&mut vault_state, reader.page(), scope, &query, results);
+                deliver_search(
+                    &mut vault_state,
+                    reader.page(),
+                    scope,
+                    &query,
+                    results,
+                    corpus,
+                    partial,
+                );
             }
             Event::UserEvent(UserEvent::PagerLoaded { path, html }) => {
                 let is_active_document = reader

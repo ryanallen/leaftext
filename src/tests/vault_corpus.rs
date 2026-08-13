@@ -66,6 +66,76 @@ fn synthetic_corpus(count: usize) -> VaultCorpus {
     }
 }
 
+/// Phase 0 of `../docs/fixes/library/search-waiting.md`: which part of the one read the reader is waiting on. Ignored because it is a measurement against a real folder — run it with `cargo test --release -- --ignored --nocapture reading_a_vault_is_timed`, and point it somewhere else with `LEAF_VAULT_ROOT`.
+///
+/// The parts are timed apart because the plan rests on the split: the walk cannot be batched — every path is listed and sorted smallest-first before a file is opened — so whatever the walk costs is a wait no amount of streaming shortens. **The first batch is read before the whole vault is**, and in that order for a reason: read afterwards it would come back off the file cache and report a tenth of what a reader waiting on a cold folder actually pays.
+///
+/// A folder this machine has read before answers in a second; the same folder untouched since boot takes a minute. Point it at somewhere nothing has opened this session, or it measures the cache.
+#[test]
+#[ignore]
+fn reading_a_vault_is_timed_in_its_parts() {
+    let root = std::env::var("LEAF_VAULT_ROOT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .expect("the checkout above this crate")
+                .to_path_buf()
+        });
+    println!("vault: {}", root.display());
+
+    let started = std::time::Instant::now();
+    let mut found = Vec::new();
+    crate::vault_corpus::collect_documents(&root, 0, &mut found);
+    found.sort_by_key(|(size, _)| *size);
+    let walk = started.elapsed();
+    println!(
+        "  walk and sort: {:>9.1} ms, {} documents",
+        walk.as_secs_f64() * 1000.0,
+        found.len()
+    );
+
+    // The gap the reader watches: the walk, which cannot be split, plus the smallest documents a first batch would carry. Everything before the first line here is silence no batching can fill, and the lines after it say what a batch size costs.
+    const BATCH: usize = 50;
+    let started = std::time::Instant::now();
+    for chunk in found.chunks(BATCH).take(10) {
+        let read = chunk
+            .iter()
+            .filter_map(|(_, path)| crate::vault_corpus::read_document(path))
+            .count();
+        if read == 0 {
+            break;
+        }
+        println!(
+            "  batch of {BATCH}:  {:>9.1} ms to the rows",
+            (walk + started.elapsed()).as_secs_f64() * 1000.0
+        );
+    }
+
+    let started = std::time::Instant::now();
+    let corpus = VaultCorpus::read(&root);
+    let whole = started.elapsed();
+    let bytes: usize = corpus.documents.iter().map(|d| d.text.len()).sum();
+    println!(
+        "  whole read:    {:>9.1} ms, {} documents, {:.1} MB",
+        whole.as_secs_f64() * 1000.0,
+        corpus.documents.len(),
+        bytes as f64 / (1024.0 * 1024.0)
+    );
+    println!(
+        "  files only:    {:>9.1} ms",
+        whole.saturating_sub(walk).as_secs_f64() * 1000.0
+    );
+
+    let started = std::time::Instant::now();
+    let hints = corpus.filter_hints();
+    println!(
+        "  field hints:   {:>9.1} ms, {} field names",
+        started.elapsed().as_secs_f64() * 1000.0,
+        hints.fields.len()
+    );
+}
+
 /// Phase 0 of `../docs/refactor/search.md`: what one keystroke costs. Ignored because it is a measurement and machines differ — run it with `cargo test --release -- --ignored --nocapture search_over_a_full_vault`.
 ///
 /// Run it **twice and take the second**: the run straight after a build reads more than twice the time for the same code, and no amount of warm-up inside the test changes that.
@@ -125,6 +195,65 @@ fn search_over_a_full_vault_is_timed_not_guessed() {
         "non-ASCII query: {:.1} ms",
         best("é", None).0.as_secs_f64() * 1000.0
     );
+}
+
+#[test]
+fn a_vault_read_in_slices_ends_up_holding_what_one_read_holds() {
+    let dir = corpus_dir("slices");
+    let root = dir.join("vault");
+    for index in 0..7 {
+        // Different lengths, because the read spends its byte budget smallest first and a slice is a prefix of that order.
+        let body = "dharma ".repeat(index + 1);
+        write(
+            &root.join(format!("note-{index}.md")),
+            &format!("# Note {index}\n\n{body}\n"),
+        );
+    }
+
+    let mut slices = 0;
+    let mut lasts = 0;
+    let mut documents = Vec::new();
+    VaultCorpus::read_in_slices(&root, 2, |slice| {
+        slices += 1;
+        if slice.last {
+            lasts += 1;
+        } else {
+            // Only the final slice may be short: anything else means the read handed over a part-filled one and the answers behind it would crowd each other.
+            assert_eq!(
+                slice.documents.len(),
+                2,
+                "a slice before the last was short"
+            );
+        }
+        documents.extend(slice.documents);
+    });
+    assert!(slices > 1, "seven documents in twos came back as one slice");
+    assert_eq!(lasts, 1, "a read must say it is over exactly once");
+
+    // The whole point: what the slices add up to is what one read gives, in the same order, so a search over the last one is the search over the vault.
+    let whole = VaultCorpus::read(&root);
+    assert_eq!(documents, whole.documents);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_read_of_nothing_still_says_it_is_over() {
+    let dir = corpus_dir("empty");
+    let root = dir.join("vault");
+    fs::create_dir_all(&root).expect("vault created");
+
+    // A vault with no documents in it must still send the slice that says the read has finished, or the pane waits on a ring for ever.
+    let mut ends = 0;
+    VaultCorpus::read_in_slices(&root, 2, |slice| {
+        assert!(slice.documents.is_empty());
+        if slice.last {
+            ends += 1;
+        }
+    });
+    assert_eq!(ends, 1);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
 }
 
 #[test]

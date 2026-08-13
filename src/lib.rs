@@ -60,7 +60,8 @@ pub use query::{
 };
 mod vault_corpus;
 pub use vault_corpus::{
-    CorpusDocument, FilterHintField, FilterHints, VaultCorpus, MAX_CORPUS_DOCUMENTS,
+    CorpusDocument, CorpusSlice, FilterHintField, FilterHints, VaultCorpus, CORPUS_SLICE_DOCUMENTS,
+    MAX_CORPUS_DOCUMENTS,
 };
 mod doc_graph;
 pub use doc_graph::document_graph;

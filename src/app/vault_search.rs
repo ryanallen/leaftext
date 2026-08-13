@@ -27,6 +27,9 @@ struct SearchMemo {
 }
 
 /// One typed query, ready to run: the text the page sent, and what it parsed to. The text is kept because the page matches an answer against what is in the field, character for character.
+///
+/// Clonable because a query parked on a vault read is answered by every slice of it, and the parse holds the reader's own date — re-parsing it later would answer a different Friday.
+#[derive(Clone)]
 pub(crate) struct TypedQuery {
     pub(crate) text: String,
     pub(crate) parsed: Query,
@@ -66,6 +69,10 @@ struct SearchJob {
     /// The vault this was asked of, so an answer whose vault moved is dropped.
     scope: Option<PathBuf>,
     generation: u64,
+    /// Which version of the vault's text this is scanning, carried back with the answer: a file can change under a scan, and an answer kept under the number it landed at would describe text nobody has.
+    corpus_generation: u64,
+    /// That text was part of a vault still being read.
+    partial: bool,
     /// The paths a shorter version of this query matched, when there is one to narrow to — see [`VaultSearch::narrowing`].
     within: Option<Arc<Vec<String>>>,
 }
@@ -126,11 +133,18 @@ pub(crate) fn request_vault_search(
             scope: state.root.clone(),
             query: query.text,
             results,
+            corpus: state.corpus_generation,
+            // Only a whole answer is ever kept, so one handed back can never be partial.
+            partial: false,
         });
         return;
     }
     match state.corpus.clone() {
         Some(corpus) => {
+            // Answered now over what has been read, and parked as well while the rest is still coming: each slice re-runs whatever the field last asked for, so the rows keep filling in instead of stopping at whatever had landed when the key was pressed.
+            if state.corpus_partial {
+                state.pending_search = Some(query.clone());
+            }
             let within = state.search.narrowing(&query, state.corpus_generation);
             run_search(state, proxy, corpus, query, within)
         }
@@ -154,6 +168,8 @@ pub(crate) fn run_search(
         query,
         scope: state.root.clone(),
         generation: state.search.generation.claim(),
+        corpus_generation: state.corpus_generation,
+        partial: state.corpus_partial,
         within,
     };
     let counter = state.search.generation.clone();
@@ -198,6 +214,8 @@ fn spawn_search_worker(
                     scope: job.scope,
                     query: job.query.text,
                     results,
+                    corpus: job.corpus_generation,
+                    partial: job.partial,
                 })
                 .is_err()
             {
@@ -222,6 +240,8 @@ fn search_ready(job: SearchJob) -> UserEvent {
         scope: job.scope,
         query: job.query.text,
         results,
+        corpus: job.corpus_generation,
+        partial: job.partial,
     }
 }
 
@@ -232,16 +252,20 @@ pub(crate) fn deliver_search(
     scope: Option<PathBuf>,
     query: &str,
     results: SearchResults,
+    corpus: u64,
+    partial: bool,
 ) {
     if scope != state.root {
         return;
     }
     run_page_script(
         webview,
-        &search_results_script(query, &results),
+        &search_results_script(query, &results, partial),
         "Failed to show search results",
     );
-    state
-        .search
-        .remember(query, state.corpus_generation, results);
+    // An answer over part of a vault is true of what had been read and of nothing else, so it is never kept: handed back to the same query later it would be a whole vault's answer that had missed most of the vault.
+    if partial {
+        return;
+    }
+    state.search.remember(query, corpus, results);
 }

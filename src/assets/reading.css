@@ -1223,10 +1223,23 @@ body.library-resizing {
 .library-results {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
 }
+/* The one line above the rows, and the one place search says it is working: it counts what is drawn, and it carries the ring while an answer is still coming. Drawn whether or not there are hits, so a search run over an older query's rows marks them instead of leaving them looking like the answer. */
 .library-results-count {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
   margin: var(--lt-space-2) var(--lt-space-6) var(--lt-space-6);
   font-size: var(--lt-text-11);
   color: var(--lt-muted-foreground);
+}
+/* Sized to the line it sits in and painted in the same gray, so it reads as part of the sentence rather than as a control. */
+.library-results-spinner {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-width: var(--lt-stroke-1);
+  border-color: color-mix(in srgb, var(--lt-muted-foreground) 30%, transparent);
+  border-top-color: var(--lt-muted-foreground);
 }
 /* What the box made of a filter, above the results. Only ever shown for a query with syntax in it — a plain word would just be read back to the person who typed it. */
 .library-search-note {

@@ -174,6 +174,7 @@ Once you have typed, a cross at the field's right end clears the search and brin
 | More than words | The box takes a [filter](#filtering) — `#work status:open due:<friday -draft` |
 | Rows per file | Up to three, one per place the word is |
 | Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
+| While the vault is still being read | Rows arrive in batches, a turning ring sits in the count line, and the count says what it has so far |
 
 Opening a result lands on the line the match is on. Documents whose source the pane cannot place a line in — anything but Markdown — fall back to the nearest heading above the match.
 
@@ -182,6 +183,8 @@ Asking the same thing twice costs nothing: the last answer is kept and handed st
 To search **inside** the document you are reading rather than across the vault, see [Find in this document](02-navigation.md#find-in-this-document).
 
 The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you switch vaults or quit. There is no index on disk, so nothing can go stale relative to your files.
+
+The first search after you open a vault is the one that pays for that pass, and how long it takes is your disk rather than the matching — a vault read once already answers in milliseconds, and the same vault untouched since the machine started can take a minute. So the first one answers as it reads. A line above the results carries a turning ring while the vault is still being read, matches appear underneath as batches of documents land, and the count says what it has so far. Rows already on screen keep their place and stay clickable while more arrive; the ranking is settled once, on the last answer, which is when the ring goes. A search you run while an older query's results are still up is marked the same way, so the pane never shows you an answer to a question you have moved on from. The [map](#graph) still waits for the whole read, because a picture redrawn three times a second is not one anybody can look at.
 
 ## Filtering
 

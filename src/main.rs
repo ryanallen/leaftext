@@ -43,7 +43,8 @@ use leaftext::{
     CloudRoots, CorpusDocument, DesktopHost, DocumentFormat, EditableDocument, Favorite,
     FavoriteKind, Favorites, FilterHints, FolderListing, GitTooling, GraphScope, LeafHost,
     OpenedDocument, Query, RecentFiles, ScrollAnchor, Session, SessionTab, Settings, SettingsLoad,
-    SourceText, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    SourceText, UpdateDownload, VaultCorpus, VaultRepo, CORPUS_SLICE_DOCUMENTS,
+    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,

@@ -5750,6 +5750,89 @@ if (booted) {
     if (key.prevented() || key.stopped()) throw new Error('an empty library search took Escape from another control');
   });
 
+  // ---- the pane says a search is running, exactly once ----------------------
+  //
+  // A first search over a vault nobody has read this session waits on the disk. The waiting mark lives in the line that counts the rows, which is drawn whether or not there are any: a mark that only appeared when the pane was empty left an older query's rows sitting there unmarked, so the pane showed the answer to a question the field had moved on from.
+  const searchPane = () => booted.document.getElementById('librarySearchResults');
+  const waitingMarks = () => (searchPane().innerHTML.match(/library-results-spinner/g) || []).length;
+  const searchHit = (title) => ({
+    absPath: `/vault/${title}.md`,
+    title,
+    snippet: 'the matched words',
+    startLine: 1,
+    anchor: '',
+  });
+
+  check('a search waiting on the vault says so once, and stops saying it once', () => {
+    showingLibrarySearch();
+    if (waitingMarks() !== 1) throw new Error(`a search with nothing drawn showed ${waitingMarks()} waiting marks`);
+    if (!searchPane().innerHTML.includes('Searching…')) throw new Error('a search with nothing drawn did not say it was searching');
+
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
+    if (waitingMarks() !== 0) throw new Error('the answer left the waiting mark turning');
+    if (!searchPane().innerHTML.includes('1 results')) throw new Error('the answer did not count its rows');
+  });
+
+  check('a search run over an older query’s rows marks them instead of leaving them silent', () => {
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
+
+    librarySearchField.value = 'drafts';
+    vm.runInContext("runLibrarySearch('drafts')", booted);
+    if (waitingMarks() !== 1) throw new Error(`a re-search over drawn rows showed ${waitingMarks()} waiting marks`);
+    if (!searchPane().innerHTML.includes('library-hit')) throw new Error('a re-search threw away the rows it had');
+    if (searchPane().innerHTML.includes('1 results')) throw new Error('a re-search counted the last query’s rows as this one’s answer');
+
+    booted.leafSetSearchResults({ query: 'drafts', hits: [], truncated: false });
+    if (waitingMarks() !== 0) throw new Error('an empty answer left the waiting mark turning');
+    if (!searchPane().innerHTML.includes('No matches.')) throw new Error('an empty answer did not say so');
+  });
+
+  check('rows that arrive while the vault is being read keep their place under the ones before them', () => {
+    showingLibrarySearch();
+    // A vault read in slices answers the same query several times, each ranking everything it has read so far — so the second answer can put a better match above a row somebody is already reaching for.
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('First')], truncated: false, partial: true });
+    if (waitingMarks() !== 1) throw new Error('rows still arriving cleared the waiting mark');
+    if (!searchPane().innerHTML.includes('1 results so far')) throw new Error('a part-read vault counted its rows as the whole answer');
+
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('Better'), searchHit('First')],
+      truncated: false,
+      partial: true,
+    });
+    const order = vm.runInContext('librarySearchHits.map((hit) => hit.title)', booted);
+    if (order.join() !== 'First,Better') throw new Error(`a later slice re-sorted the rows above it: ${order.join()}`);
+    if (waitingMarks() !== 1) throw new Error(`a second slice showed ${waitingMarks()} waiting marks`);
+
+    // The last answer is the whole vault's, ranked over all of it, and it is the one re-sort.
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('Better'), searchHit('First')],
+      truncated: false,
+    });
+    const finished = vm.runInContext('librarySearchHits.map((hit) => hit.title)', booted);
+    if (finished.join() !== 'Better,First') throw new Error(`the final answer did not rank the vault: ${finished.join()}`);
+    if (waitingMarks() !== 0) throw new Error('the final answer left the waiting mark turning');
+    if (searchPane().innerHTML.includes('so far')) throw new Error('a finished search still said its count was partial');
+  });
+
+  check('a payload that says nothing about a part-read vault is taken as finished', () => {
+    showingLibrarySearch();
+    // A published site and an embedded document answer this command without ever streaming, so silence has to mean the answer is whole — a waiting state is a promise.
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
+    if (waitingMarks() !== 0) throw new Error('a host that never streams left the ring turning for ever');
+    if (vm.runInContext('librarySearchPartial', booted)) throw new Error('an answer with no word on it was taken as part of one');
+  });
+
+  check('a search that fails clears the waiting mark with its message', () => {
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', error: { message: 'Search failed.' } });
+    if (waitingMarks() !== 0) throw new Error('a failed search left the waiting mark turning');
+    if (!searchPane().innerHTML.includes('Search failed.')) throw new Error('a failed search did not say what went wrong');
+    vm.runInContext("runLibrarySearch('')", booted);
+  });
+
   /** A row as the pane draws one, with its listeners kept where a check can fire them. */
   const rowStandingIn = (dataset) => {
     const listeners = {};
@@ -5806,6 +5889,26 @@ if (booted) {
     // And a click with no press before it — the keyboard's — still opens it.
     const typed = sentDuring(() => listeners.click({}));
     if (!typed.some((message) => message.command === 'openRecent')) throw new Error('a keyboard click no longer opens the file');
+  });
+
+  check('a search row opens on the press too, because a vault being read rewrites them as fast as the tree', () => {
+    const pane = booted.document.getElementById('librarySearchResults');
+    const { button, listeners } = rowStandingIn({ openPath: 'C:\\Vaults\\Work\\GLOSSARY.md', anchor: '', line: '3' });
+    const wasQuery = pane.querySelectorAll;
+    pane.querySelectorAll = () => [button];
+    try {
+      vm.runInContext('bindSearchHits()', booted);
+    } finally {
+      pane.querySelectorAll = wasQuery;
+    }
+    if (!listeners.pointerdown) throw new Error('a search row does not listen for a press at all');
+    const sent = sentDuring(() => {
+      listeners.pointerdown({ pointerType: 'mouse', button: 0 });
+      listeners.click({});
+    });
+    const opened = sent.filter((message) => message.command === 'openRecent');
+    if (opened.length !== 1) throw new Error(`a pressed search row sent ${opened.length} opens rather than one`);
+    if (opened[0].path !== 'C:\\Vaults\\Work\\GLOSSARY.md') throw new Error(`a search row opened ${opened[0].path}`);
   });
 
   check('an unchanged folder read does not replace the rows', () => {
