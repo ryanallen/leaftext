@@ -317,7 +317,13 @@ A vault can be a git repository that pushes to GitHub. Open a vault's settings f
 
 On Windows, Git for Windows installs Git Credential Manager and sets it as the default, so the first push opens a browser once and never asks again. On macOS the bundled credential helper cannot sign in to GitHub any more, so `gh` or Git Credential Manager has to be installed; the panel says so rather than letting a push fail.
 
-The panel also warns before the fact about the two things git needs and often lacks: an identity (`user.name` and `user.email`) and a way to authenticate.
+The panel also warns before the fact about the two things git needs and often lacks, and each warning carries its own way out rather than stopping at the diagnosis.
+
+**No identity.** Two fields and a **Set who I am** button under the warning. What you type is written to git's settings for the whole machine — the same place the warning is read from, so a press that works is a press that clears it, and somebody with no identity at all sets it once rather than once per vault. An empty field, or one starting with a dash, is refused before git is run.
+
+**No way to sign in.** A sentence naming what fixes it — install [`gh`](https://cli.github.com) and run `gh auth login`, or a credential manager — and **How to sign in ↗**, which opens GitHub's own page on it. It is a link and never a button: every git Leaftext runs has its prompts shut off and no console to hold a conversation in, so signing in is something you do, never something the app does for you.
+
+**And a failed sync says which of them to press.** Where git's own words name the cause — nothing signed in, or nobody to commit as — the panel says so and points at the fix above it, instead of handing over git's first printed line untranslated. Where they name neither, git's line stands as it is: a network that is down has no button here, and pointing at one would send you to press the wrong thing.
 
 ### Clone a repository
 

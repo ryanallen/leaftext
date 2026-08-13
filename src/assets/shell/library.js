@@ -661,14 +661,60 @@ function vaultGitItems(vault) {
   }
   // Two things git needs that only bite at the moment of committing or pushing, which is too late to be told about them.
   if (!state.tooling.identity) {
-    items.push({ note: 'git does not know who you are yet. Set user.name and user.email.', danger: true });
+    items.push({ note: 'git does not know who you are yet. Put your name and email here and it will — git keeps them for this machine.', danger: true });
+    pushIdentityFields(items, vault, busy);
   }
   if (!state.tooling.credentialHelper) {
-    items.push({ note: 'git has no way to sign in to GitHub, so a push will fail.', danger: true });
+    // A sentence and a door, never a button: every git this app spawns has its prompts shut off and no console to hold a conversation in, and `gh auth login` is a conversation.
+    items.push({ note: 'git has no way to sign in to GitHub. Install GitHub CLI and run gh auth login, or a credential manager.', danger: true });
+  }
+  // The door stands for a sign-in that was refused too, not only for a missing helper: a helper holding a token GitHub no longer accepts fails exactly like no helper at all, and the outcome line below says "sign in above", which has to be true.
+  if (!state.tooling.credentialHelper || state.message === 'failed:signin') {
+    items.push({
+      label: 'How to sign in ↗',
+      title: 'Opens GitHub’s own page on letting git remember your sign-in.',
+      run: () => send({
+        command: 'openExternal',
+        url: 'https://docs.github.com/get-started/git-basics/caching-your-github-credentials-in-git',
+      }),
+    });
   }
   const outcome = syncOutcomeText(state);
   if (outcome) items.push({ note: outcome, danger: Boolean(state.error) });
   return items;
+}
+// The one dead end the app can fix itself. Two fields and a button, writing git's settings for this whole machine -- which is where the warning above is read from, so a press that works is a press that clears it. Neither field commits on its own: nothing is set until Set is pressed, and an empty one is refused by the host rather than here, so pressing it always says something.
+function pushIdentityFields(items, vault, busy) {
+  const setIdentity = () => {
+    const name = crumbMenu.querySelector('.git-name-field');
+    const email = crumbMenu.querySelector('.git-email-field');
+    send({
+      command: 'setGitIdentity',
+      id: vault.id,
+      name: name ? name.value.trim() : '',
+      email: email ? email.value.trim() : '',
+    });
+    // Redraw now rather than waiting to be told to. The panel refuses to rebuild while one of its own fields has focus -- the guard that saves a half-typed name -- and the press leaves focus in a field, so both the busy mark and the answer would be skipped and the note would sit there after a press that worked.
+    showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
+  };
+  items.push({
+    input: '',
+    fieldClass: 'git-name-field',
+    onEnter: setIdentity,
+    placeholder: 'Your name',
+  });
+  items.push({
+    input: '',
+    fieldClass: 'git-email-field',
+    onEnter: setIdentity,
+    placeholder: 'you@example.com',
+  });
+  items.push({
+    label: busy ? SYNC_WORKING : 'Set who I am',
+    disabled: busy,
+    keepOpen: true,
+    run: setIdentity,
+  });
 }
 // The two ways to get a repository onto GitHub. `gh` is one click because it already holds a token; without it the browser does the authenticated part and hands back a URL, which needs no token here at all.
 function pushCreateRoutes(items, vault, state, busy) {
@@ -712,7 +758,13 @@ function repoSummary(repo) {
 function syncOutcomeText(state) {
   const message = state.message;
   if (!message) return '';
-  if (state.error) return message;
+  // A failure git's own words named a cause for arrives as a tag like any other outcome, and the words go here. Untagged is git's own line, handed over as it stands: a network that is down or a remote that has moved ahead has no button in this panel, and pointing at one would send you to press the wrong thing.
+  if (state.error) {
+    if (message === 'failed:signin') return 'GitHub refused the push because nothing is signed in. Sign in above, then Sync again.';
+    if (message === 'failed:identity') return 'git had nothing to commit as, because it does not know who you are. Fill in your name and email above, press Set, then Sync again.';
+    return message;
+  }
+  if (message === 'identity-set') return 'git knows who you are now.';
   if (message === 'created') return 'Created on GitHub and pushed.';
   if (message === 'linked') return 'Repository set. Choose Sync to send your files to it.';
   if (message === 'local-only') return 'This folder is a repository now. Make one on GitHub and paste its address.';

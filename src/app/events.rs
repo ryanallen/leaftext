@@ -289,6 +289,13 @@ pub(crate) enum IpcCommand {
     LinkVaultRemote { id: i64, url: String },
     #[serde(rename = "syncVault")]
     SyncVault { id: i64 },
+    /// Set `user.name` and `user.email` for this machine, from the panel that said git does not know who you are. The id names the panel to redraw, not whose settings are written — the note is read machine-wide, so the write has to be.
+    #[serde(rename = "setGitIdentity")]
+    SetGitIdentity {
+        id: i64,
+        name: String,
+        email: String,
+    },
     /// Ask a remote vault's source what has moved, now, rather than waiting for the clock. Also wakes a vault the timer had stopped asking: the person pressing it knows something the app does not.
     #[serde(rename = "refreshVault")]
     RefreshVault { id: i64 },

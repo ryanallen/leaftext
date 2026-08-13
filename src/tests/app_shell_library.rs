@@ -710,11 +710,77 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
         "'Syncing needs git, which is not installed.'",
         "'Create a private repo'",
         "'Paste the repository address'",
-        "'git has no way to sign in to GitHub, so a push will fail.'",
         "`Pushed ${committed} changed.`",
     ] {
         assert!(html.contains(wording), "missing wording: {wording}");
     }
+}
+
+#[test]
+fn a_vault_that_cannot_sign_in_is_told_how_to() {
+    let html = app_shell_page();
+
+    // The note used to stop at the diagnosis. It names the fix now, and the fix is two named things rather than "authenticate".
+    assert!(html.contains(
+        "'git has no way to sign in to GitHub. Install GitHub CLI and run gh auth login, or a credential manager.'"
+    ));
+    // And the way out is the shape missing git already ships: one row that opens somebody else's page.
+    assert!(html.contains("label: 'How to sign in ↗',"));
+    assert!(html.contains(
+        "url: 'https://docs.github.com/get-started/git-basics/caching-your-github-credentials-in-git',"
+    ));
+    // Never a button that runs the sign-in: every git spawned here has its prompts shut off and no console, so `gh auth login` is a thing the reader runs.
+    assert!(!html.contains("'gh', 'auth', 'login'"));
+    assert!(!html.contains("command: 'signInGit'"));
+}
+
+#[test]
+fn a_vault_with_no_git_identity_can_set_one_from_the_panel() {
+    let html = app_shell_page();
+
+    // The note names what the fields under it do, rather than naming two settings and stopping.
+    assert!(html.contains(
+        "'git does not know who you are yet. Put your name and email here and it will — git keeps them for this machine.'"
+    ));
+    // Two fields and one button, and they are only drawn where that note is.
+    assert!(html.contains("if (!state.tooling.identity) {"));
+    assert!(html.contains("pushIdentityFields(items, vault, busy);"));
+    assert_eq!(html.matches("pushIdentityFields(").count(), 2);
+    assert!(html.contains("fieldClass: 'git-name-field',"));
+    assert!(html.contains("fieldClass: 'git-email-field',"));
+    assert!(html.contains("placeholder: 'Your name',"));
+    assert!(html.contains("placeholder: 'you@example.com',"));
+    assert!(html.contains("label: busy ? SYNC_WORKING : 'Set who I am',"));
+
+    // Nothing is set until Set is pressed: neither field carries a commit, so leaving one cannot write a half-typed name.
+    assert!(html.contains("command: 'setGitIdentity',"));
+    // And the press redraws the panel itself, because the guard that saves a half-typed name would otherwise skip both the busy mark and the answer.
+    assert!(html.contains(
+        "showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));\n  };\n  items.push({\n    input: '',\n    fieldClass: 'git-name-field',"
+    ));
+    assert!(html.contains(
+        "if (active && active.classList.contains('crumb-menu-input') && crumbMenu.contains(active)) return;"
+    ));
+
+    // The write landing is reported, so the press says something even where the note going is the real proof.
+    assert!(html.contains("if (message === 'identity-set') return 'git knows who you are now.';"));
+}
+
+#[test]
+fn a_failed_sync_says_which_fix_above_it_to_press() {
+    let html = app_shell_page();
+
+    // A cause the host could name arrives as a tag, and the words are chosen here beside the rest of the panel's words.
+    assert!(html.contains(
+        "if (message === 'failed:signin') return 'GitHub refused the push because nothing is signed in. Sign in above, then Sync again.';"
+    ));
+    assert!(html.contains("if (message === 'failed:identity') return 'git had nothing to commit as, because it does not know who you are. Fill in your name and email above, press Set, then Sync again.';"));
+    // Anything git's words named no cause for is still git's own line, untouched.
+    assert!(html.contains("    return message;\n  }\n  if (message === 'identity-set')"));
+
+    // "Sign in above" has to be true: a helper holding a token GitHub no longer accepts fails like no helper at all, and draws no note of its own, so the door stands on the failure as well.
+    assert!(html
+        .contains("if (!state.tooling.credentialHelper || state.message === 'failed:signin') {"));
 }
 
 #[test]

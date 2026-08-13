@@ -179,7 +179,7 @@ pub(crate) fn create_vault_repo(
         let existing = inspect_vault_repo(root);
         if !existing.at_root {
             if let Err(error) = init_vault_repo(root, &existing.nested) {
-                return (Some(error.to_string()), true);
+                return (Some(failure_message(&error)), true);
             }
         }
         if !git_tooling().gh {
@@ -187,7 +187,7 @@ pub(crate) fn create_vault_repo(
         }
         match create_repo_on_github(root, &repo_name_for_vault(name)) {
             Ok(()) => (Some(String::from("created")), false),
-            Err(error) => (Some(error.to_string()), true),
+            Err(error) => (Some(failure_message(&error)), true),
         }
     });
 }
@@ -204,14 +204,37 @@ pub(crate) fn link_vault_repo(
         let existing = inspect_vault_repo(root);
         if !existing.at_root {
             if let Err(error) = init_vault_repo(root, &existing.nested) {
-                return (Some(error.to_string()), true);
+                return (Some(failure_message(&error)), true);
             }
         }
         match link_vault_remote(root, &url) {
             Ok(()) => (Some(String::from("linked")), false),
-            Err(error) => (Some(error.to_string()), true),
+            Err(error) => (Some(failure_message(&error)), true),
         }
     });
+}
+
+/// Tell git who is committing. Rides the same helper as the other four -- the panel goes busy, the write happens off the loop, and the whole state is read back -- so the red note going is the proof it landed, with nothing else to wire up.
+///
+/// The write is not the vault's: the id only says which panel to redraw. `set_git_identity` writes for the machine, because that is where the note is read from.
+pub(crate) fn set_vault_git_identity(
+    state: &VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    webview: Option<&WebView>,
+    id: i64,
+    name: String,
+    email: String,
+) {
+    off_thread(
+        state,
+        proxy,
+        webview,
+        id,
+        move |_root, _vault| match set_git_identity(&name, &email) {
+            Ok(()) => (Some(String::from("identity-set")), false),
+            Err(error) => (Some(failure_message(&error)), true),
+        },
+    );
 }
 
 /// Commit, pull, push.
@@ -235,7 +258,7 @@ pub(crate) fn sync_vault(
                 )),
                 false,
             ),
-            Err(error) => (Some(error.to_string()), true),
+            Err(error) => (Some(failure_message(&error)), true),
         },
     );
 }

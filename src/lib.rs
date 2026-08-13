@@ -49,9 +49,9 @@ pub mod remote;
 /// Git, as much of it as a vault needs. Shells out to the machine's own git rather than shipping a second one that would not know the user, their identity, or how they log in to GitHub.
 mod git;
 pub use git::{
-    clone_into_vault, create_repo_on_github, git_tooling, init_vault_repo, inspect_vault_repo,
-    link_vault_remote, repo_name_for_vault, sync_vault_repo, GitError, GitTooling, SyncReport,
-    VaultRepo,
+    clone_into_vault, create_repo_on_github, failure_message, git_tooling, init_vault_repo,
+    inspect_vault_repo, link_vault_remote, repo_name_for_vault, set_git_identity, sync_vault_repo,
+    GitError, GitTooling, SyncReport, VaultRepo,
 };
 mod query;
 pub use query::{

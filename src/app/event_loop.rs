@@ -1178,6 +1178,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::SyncVault { id } => {
                     sync_vault(&vault_state, &proxy, reader.page(), id);
                 }
+                IpcCommand::SetGitIdentity { id, name, email } => {
+                    set_vault_git_identity(&vault_state, &proxy, reader.page(), id, name, email);
+                }
                 IpcCommand::RefreshVault { id } => {
                     // Pressing Refresh wakes a vault the timer had stopped asking: whoever pressed it knows something the app does not — that the network is back, or that the service is answering again.
                     refresh_book.wake(id);

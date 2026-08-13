@@ -3,8 +3,8 @@
 //! Only the parts that take a string and give one back. Whether `git push` works is git's business and the machine's, and a test that shelled out to find out would be testing the machine.
 
 use crate::git::{
-    commit_message, count_changes, gitignore_addition, parse_ahead_behind, remote_label,
-    repo_folder_name_for_url,
+    commit_message, count_changes, failure_cause, gitignore_addition, identity_value,
+    parse_ahead_behind, remote_label, repo_folder_name_for_url,
 };
 use crate::repo_name_for_vault;
 
@@ -137,6 +137,81 @@ fn a_clone_takes_its_folder_name_from_the_address() {
     );
     assert_eq!(repo_folder_name_for_url(""), None);
     assert_eq!(repo_folder_name_for_url("https://github.com/"), None);
+}
+
+/// Every line here was printed by git on this machine under the app's own environment — prompts off, no askpass conversation — and then trimmed the way the panel trims it, so what is tested is the string a reader would actually be shown.
+#[test]
+fn a_failure_points_at_a_fix_only_where_git_named_one() {
+    // Nothing is signed in. Three ways of saying it, because the transport chooses which.
+    for signin in [
+        "Authentication failed for 'https://github.com/owner/name.git/'",
+        "could not read Username for 'https://github.com': terminal prompts disabled",
+        "git@github.com: Permission denied (publickey).",
+    ] {
+        assert_eq!(failure_cause(signin), Some("signin"), "on {signin}");
+    }
+
+    // git will not commit as nobody. The lecture that follows is cut off, so the first line is all the panel gets.
+    for identity in [
+        "Author identity unknown",
+        "empty ident name (for <>) not allowed",
+        "unable to auto-detect email address (got 'me@box.(none)')",
+    ] {
+        assert_eq!(failure_cause(identity), Some("identity"), "on {identity}");
+    }
+
+    // And the common case: real failures with no button in this panel. Naming a fix for one of these would send somebody to press the wrong thing.
+    for neither in [
+        "unable to access 'https://github.com/owner/name.git/': Could not resolve host: github.com",
+        "unable to access 'http://127.0.0.1:9/o/r.git/': Failed to connect to 127.0.0.1 port 9 after 2070 ms: Couldn't connect to server",
+        "Updates were rejected because the remote contains work that you do not have locally",
+        "repository 'https://github.com/owner/name.git/' not found",
+        "",
+    ] {
+        assert_eq!(failure_cause(neither), None, "on {neither}");
+    }
+}
+
+/// Whether git keeps what the Set button writes is the machine's own config, which this suite must never touch — so what is tested is the half that happens before git is run at all.
+#[test]
+fn who_you_are_is_refused_before_git_is_run_when_it_is_not_a_name() {
+    assert_eq!(
+        identity_value("name", "  Ada Lovelace  ").expect("a name is taken, trimmed"),
+        "Ada Lovelace"
+    );
+    assert_eq!(
+        identity_value("email", "ada@example.com").expect("an address is taken"),
+        "ada@example.com"
+    );
+
+    // Empty would clear the setting the button was pressed to fill, and whitespace is empty.
+    for blank in ["", "   ", "\t\n"] {
+        let refused = identity_value("name", blank).expect_err("a blank name is refused");
+        assert!(refused.detail.contains("no name given"), "said {refused}");
+    }
+    let refused = identity_value("email", " ").expect_err("a blank email is refused");
+    assert!(refused.detail.contains("no email given"), "said {refused}");
+
+    // A leading dash reaches git as an option rather than as a value, so it never gets that far.
+    for dashed in ["-c", "--global", "-Ada"] {
+        let refused = identity_value("name", dashed).expect_err("a leading dash is refused");
+        assert!(
+            refused.detail.contains("name cannot start with a dash"),
+            "said {refused}"
+        );
+    }
+    let refused = identity_value("email", " --replace-all")
+        .expect_err("a leading dash is refused after trimming");
+    assert!(
+        refused.detail.contains("email cannot start with a dash"),
+        "said {refused}"
+    );
+
+    // A dash anywhere else is an ordinary part of a name.
+    assert_eq!(
+        identity_value("name", "Ada-Lovelace").expect("a dash inside a name is fine"),
+        "Ada-Lovelace"
+    );
 }
 
 /// The two refusals that happen before git is ever run, so neither costs a network call and neither can half-make a vault.

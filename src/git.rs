@@ -251,6 +251,33 @@ fn configured(dir: &Path, key: &str) -> String {
     git(dir, &["config", "--get", key]).unwrap_or_default()
 }
 
+/// Tell git who is committing, for this whole machine.
+///
+/// Machine-wide because [`git_tooling`] reads it that way — `user.name` in the app's own folder, not in any vault. A write into one vault's repository would leave the panel's warning standing after a press that worked, and somebody with no identity at all wants it set once rather than once per vault.
+pub fn set_git_identity(name: &str, email: &str) -> Result<(), GitError> {
+    let name = identity_value("name", name)?;
+    let email = identity_value("email", email)?;
+    let here = Path::new(".");
+    git(here, &["config", "--global", "user.name", name])?;
+    git(here, &["config", "--global", "user.email", email])?;
+    Ok(())
+}
+
+/// One of the two values, checked before git is ever run. Empty would clear the setting the button was pressed to fill, and a leading dash arrives at git as an option rather than as a name.
+pub(crate) fn identity_value<'a>(what: &str, value: &'a str) -> Result<&'a str, GitError> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Err(GitError::new("set identity", format!("no {what} given")));
+    }
+    if value.starts_with('-') {
+        return Err(GitError::new(
+            "set identity",
+            format!("{what} cannot start with a dash"),
+        ));
+    }
+    Ok(value)
+}
+
 // ---------------------------------------------------------------------------
 // Reading a vault's situation
 // ---------------------------------------------------------------------------
@@ -652,6 +679,34 @@ fn first_useful_line(detail: &str) -> String {
         .trim_start_matches("fatal: ")
         .trim_start_matches("error: ")
         .to_string()
+}
+
+/// A failed git call as the one line the panel reports: a tag naming which of its own fixes to press where git's words name one, and git's own words where they name neither. A tag rather than a sentence for the same reason `created` and `linked` are tags — the words belong with the rest of the panel's words, in the page.
+pub fn failure_message(error: &GitError) -> String {
+    match failure_cause(&error.detail) {
+        Some(cause) => format!("failed:{cause}"),
+        None => error.to_string(),
+    }
+}
+
+/// Which of the panel's own fixes a failed git call points at, where git's words name one. `None` where they name neither, and that is the common case on purpose: a network that is down, a remote that has moved ahead and a repository that is not there all fail here, none of them has a button in the panel, and dressing one up as a sign-in problem would send somebody to press the wrong thing.
+///
+/// Read against what git prints under the app's own environment, already through [`first_useful_line`] — so the `remote:` and `hint:` lines are gone and the identity case is down to its first line, `Author identity unknown`, with git's three-paragraph lecture cut off behind it.
+pub(crate) fn failure_cause(detail: &str) -> Option<&'static str> {
+    let said = detail.to_ascii_lowercase();
+    if said.contains("authentication failed")
+        || said.contains("terminal prompts disabled")
+        || said.contains("permission denied (publickey)")
+    {
+        return Some("signin");
+    }
+    if said.contains("author identity unknown")
+        || said.contains("empty ident name")
+        || said.contains("unable to auto-detect email address")
+    {
+        return Some("identity");
+    }
+    None
 }
 
 /// Whether git's answer names the same folder we asked about. git prints forward slashes on Windows and may resolve a link, so compare canonically and fall back to a textual match.

@@ -65,6 +65,7 @@ export const COMMANDS = {
   createVaultRepo: [REFUSED, 'making a repository needs a disk and a process'],
   linkVaultRemote: [REFUSED, 'a vault is a folder on a disk, and an embed holds one document'],
   syncVault: [REFUSED, 'pushing a repository needs a disk and a process'],
+  setGitIdentity: [REFUSED, 'it writes who git commits as into the git settings on a machine, and an embed holds one document inside a page with no machine and no git under it'],
   refreshVault: [REFUSED, 'the product hands this document over and is the only thing that knows when it changed'],
   signInVault: [REFUSED, 'an embed has no window to open a browser sign-in from, no port to be answered on and nowhere to keep a token'],
   signOutVault: [REFUSED, 'there is no signed-in account behind an embed, so there is nothing to sign out of'],
