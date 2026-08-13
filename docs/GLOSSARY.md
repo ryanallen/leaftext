@@ -354,6 +354,10 @@ The bell in the [app bar](GLOSSARY.md#app-bar), there only when there is somethi
 
 A folder you have told Leaftext to treat as a library root. It is what [search](GLOSSARY.md#vault-search) and [GitHub sync](GLOSSARY.md#github-sync) work over, and what makes the [graph view](GLOSSARY.md#graph-view) bigger. Nothing is written into your folder — a vault is a row in Leaftext's own database. See [Library](01-features/03-library.md#vaults).
 
+## Vault introduction
+
+A short box at the top of the [library pane](GLOSSARY.md#library-pane)'s file list, shown once to a reader who has never made a [vault](GLOSSARY.md#vault): what a vault is, what it buys, and a button that picks the folder. Not a [bubble](GLOSSARY.md#bubble) — it stands until the thing is done rather than going the moment you point at it. Retired by picking a folder or by opening the [vault switcher](GLOSSARY.md#vault-switcher). See [Library](01-features/03-library.md#your-first-vault).
+
 ## Vault search
 
 Name and content search across the active [vault](GLOSSARY.md#vault). Name matches rank first, content matches by how often the terms appear, with snippets; top 50. There is no index on disk — the text is read once and held in memory, so nothing can go stale against your files. With no vault the box is hidden rather than left to return nothing.

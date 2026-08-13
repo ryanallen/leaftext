@@ -123,6 +123,8 @@ A side pane that browses one folder at a time, with a breadcrumb that always say
 
 The button that changes where the list is rooted is a caret and a mark, which says nothing on its own — so the first time you open the pane, one small bubble points at it and then never appears again. **[The first-launch bubble →](docs/01-features/03-library.md#the-bubble-on-your-first-launch)**
 
+Until you have a vault the start screen offers to add your notes folder, and the pane says once what one buys you. Both go for good the moment there is one. **[Your first vault →](docs/01-features/03-library.md#your-first-vault)**
+
 ### Search everything you've written
 
 ![Search results in the library pane: a filename match at the top, then content matches each with a snippet showing the search terms in context](imgs/search.png)

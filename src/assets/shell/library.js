@@ -313,6 +313,13 @@ window.leafRefreshLibraryFolder = () => {
 function bindLibraryRows() {
   libraryTree.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);
   libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);
+  const intro = libraryTree.querySelector('.library-intro-action');
+  if (intro) {
+    intro.addEventListener('click', () => {
+      send({ command: 'createVault' });
+      retireLibraryIntro();
+    });
+  }
 }
 // Act on the mouse's press, not the full click: the watcher re-reads on any change under a recursively watched vault, every re-read rewrites these rows through innerHTML, and a rebuild landing between press and release replaces the button so the click never fires. Keyboard keeps click (it has no press), and so do touch and pen — a touch press that starts a scroll must not act on the row under the finger.
 //
@@ -1003,8 +1010,8 @@ function pushCloneRow(items) {
 }
 window.leafSetCloudFolders = (folders) => {
   cloudFolders = Array.isArray(folders) ? folders : [];
-  // The switcher's glyphs are the only thing this changes, so redraw them where they are already drawn rather than rebuilding a menu under someone's cursor.
-  renderLibraryVaultSwitch();
+  // The switcher's glyphs and the pane's own introduction both turn on this answer — the pane through renderLibrary, which the switcher's redraw is part of. A menu already open is left standing: its glyphs are swapped where they are rather than rebuilt under someone's cursor.
+  renderLibrary();
   refreshSwitcherGlyphs();
 };
 // Ask about any vault we have not looked at yet. Bounded by the number of vaults and answered off the event loop, so opening the menu never waits on git.
@@ -1218,6 +1225,8 @@ function bindVaultSwitch(button, retire) {
     event.stopPropagation();
     event.preventDefault();
     if (retire) retireHint('libraryVault');
+    // The list that opens has New vault… in it, so the introduction has said its piece whether or not a folder is picked from it.
+    retireLibraryIntro();
     crumbMenuVault = null;
     toggleCrumbMenu(button, vaultMenuItems());
   });
@@ -1259,6 +1268,25 @@ function libraryEmptyText() {
   }
   return 'Nothing to read in this folder.';
 }
+// The name the introduction is retired under. It joins the bubbles' met list rather than growing a second record of what a reader has been shown, and registers no hint of its own: this is a box, not a bubble.
+const VAULT_INTRO_HINT = 'vaultIntro';
+// Four things have to be true. The vault button's own bubble has been met, so this is not the second thing said at once. The cloud folder answer has arrived — until it does, every vault looks like one nobody chose. Every vault there is sits inside one of those folders, which is the only way to tell one the reader made from one that registered itself, the store keeping no record of either. And this box has not been met already. Never in a browser: both hosts refuse the command behind its button.
+function libraryIntroShows() {
+  if (window.__leafSite || window.__leafEmbedded) return false;
+  if (!hintIsMet('libraryVault') || hintIsMet(VAULT_INTRO_HINT)) return false;
+  if (!cloudFolders) return false;
+  return !leafVaults.some((vault) => vault && vault.id && !vaultIsInACloudFolder(vault.id));
+}
+function libraryIntroHtml() {
+  if (!libraryIntroShows()) return '';
+  return '<div class="library-intro"><b class="library-intro-title">A vault is one folder of notes.</b><p class="library-intro-text">Point Leaftext at yours and search reads all of it, the map draws how the notes link, and this pane lists it.</p><button type="button" class="library-intro-action">Add your notes folder</button></div>';
+}
+// Met, and never drawn again: a folder was picked, or the menu offering one was opened. The pane is redrawn here rather than left to the next read, because the box is standing on screen at the moment either happens.
+function retireLibraryIntro() {
+  if (hintIsMet(VAULT_INTRO_HINT)) return;
+  retireHint(VAULT_INTRO_HINT);
+  renderLibrary();
+}
 function renderLibrary() {
   renderLibraryVaultSwitch();
   renderLibrarySearchability();
@@ -1270,7 +1298,7 @@ function renderLibrary() {
   const empty = libraryEntries.length
     ? ''
     : `<p class="library-empty">${escapeText(libraryEmptyText())}</p>`;
-  if (!setLibraryTreeHtml(renderProject(libraryEntries) + empty)) return false;
+  if (!setLibraryTreeHtml(libraryIntroHtml() + renderProject(libraryEntries) + empty)) return false;
   bindLibraryRows();
   return true;
 }

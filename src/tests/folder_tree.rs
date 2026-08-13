@@ -285,8 +285,9 @@ fn the_file_list_starts_with_a_way_back_out() {
     assert!(html.contains(
         "const empty = libraryEntries.length\n    ? ''\n    : `<p class=\"library-empty\">${escapeText(libraryEmptyText())}</p>`;"
     ));
-    assert!(html
-        .contains("if (!setLibraryTreeHtml(renderProject(libraryEntries) + empty)) return false;"));
+    assert!(html.contains(
+        "if (!setLibraryTreeHtml(libraryIntroHtml() + renderProject(libraryEntries) + empty)) return false;"
+    ));
 
     assert!(html.contains("const label = `Back to ${parent.name}`;"));
 }

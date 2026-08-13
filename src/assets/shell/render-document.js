@@ -172,6 +172,10 @@ function homeKickerMarkup() {
   const switchLabel = `Switch vault (in ${label})`;
   return `<button type="button" class="kicker library-vault-switch home-vault-switch" aria-haspopup="menu" aria-expanded="false" title="${escapeAttr(switchLabel)}" aria-label="${escapeAttr(switchLabel)}"><span class="library-crumb-caret" aria-hidden="true">▾</span>${vaultGlyph(true, activeVaultId)}${escapeText(label)}</button>`;
 }
+// The third way in, and only until the first vault: with one registered the word over the headline is the switcher and New vault… is one press inside it, so a permanent button would be a second way to do the same thing in the row the columns sit under. Never in a browser — both hosts refuse the command, a folder on a disk not being theirs to pick.
+function homeInvitesAVault() {
+  return !leafVaults.length && !window.__leafSite && !window.__leafEmbedded;
+}
 // The favorites as the screen draws them: what the store holds, plus every row that has been unfavorited and is still on its way out, back where it was.
 function homeFavoritesDrawn(favorites) {
   if (!homeDropping || !homeDropping.size) return favorites;
@@ -659,6 +663,7 @@ function renderState() {
   // No document, no rail — and the shell's column collapses with it.
   setMinimapMarkup('');
   updateEditingChrome();
+  const invite = homeInvitesAVault();
   app.innerHTML = `
     <section class="empty-state">
       ${homeKickerMarkup()}
@@ -668,7 +673,9 @@ function renderState() {
       <div class="empty-actions">
         <button type="button" class="primary-open">Choose file</button>
         <button type="button" class="primary-new">${newIconSvg()}New document</button>
+        ${invite ? '<button type="button" class="primary-vault">Add your notes folder</button>' : ''}
       </div>
+      ${invite ? '<p class="empty-vault-help">One folder of notes gives you search across all of it, a map of how they link, and the folder in the side pane.</p>' : ''}
       ${homeListsMarkup(state)}
       <!-- In the template, not filled in later: this screen is rebuilt on every
            home render, so an element found once at load is gone by the second. -->
@@ -676,6 +683,8 @@ function renderState() {
     </section>`;
   app.querySelector('.primary-open').addEventListener('click', () => send({ command: 'open' }));
   app.querySelector('.primary-new').addEventListener('click', () => send({ command: 'newDocument' }));
+  const primaryVault = app.querySelector('.primary-vault');
+  if (primaryVault) primaryVault.addEventListener('click', () => send({ command: 'createVault' }));
   const homeVaultSwitch = app.querySelector('.home-vault-switch');
   if (homeVaultSwitch) bindVaultSwitch(homeVaultSwitch, false);
   bindHomeRows(app);

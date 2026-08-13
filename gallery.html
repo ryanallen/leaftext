@@ -3608,6 +3608,33 @@ body.library-resizing {
 .library-results {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
 }
+/* Said once to a reader who has never made a vault, at the top of the list and inside it — so no band moves and nothing is covered. A box rather than a bubble: this has to stand until a folder has been picked, and a bubble is gone the moment a pointer reaches what it points at. */
+.library-intro {
+  margin: var(--lt-space-6) 0 var(--lt-space-12);
+  padding: var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+}
+.library-intro-title {
+  display: block;
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-4);
+  color: var(--lt-foreground);
+}
+.library-intro-text {
+  margin: var(--lt-space-6) 0 var(--lt-space-10);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-45);
+  color: var(--lt-muted-foreground);
+}
+.library-intro-action {
+  width: 100%;
+  padding: var(--lt-space-6) var(--lt-space-10);
+  border-radius: var(--lt-radius-md);
+  font-size: var(--lt-text-12);
+}
 /* The one line above the rows, and the one place search says it is working: it counts what is drawn, and it carries the ring while an answer is still coming. Drawn whether or not there are hits, so a search run over an older query's rows marks them instead of leaving them looking like the answer. */
 .library-results-count {
   display: flex;
@@ -6762,6 +6789,26 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 16px;
   height: 16px;
 }
+/* Quiet for the same reason New document is: this is the third way in on the screen a new reader meets, and only one thing there can be the obvious one. Drawn only while there is no vault. */
+.primary-vault {
+  font-size: var(--lt-text-15);
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border-color: var(--lt-border);
+  background: transparent;
+  color: var(--lt-markdown-foreground);
+}
+.primary-vault:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
+}
+/* Tighter to the buttons than the line about recent files, which sits further down: this one belongs to the button above it. */
+.empty-vault-help {
+  color: var(--lt-muted-foreground);
+  font: var(--lt-weight-500) var(--lt-text-14) / var(--lt-leading-1-55) var(--app-font);
+  margin: var(--lt-space-10) 0 0;
+  max-width: 54ch;
+}
 .recent {
   border-top: var(--lt-stroke-1) solid var(--lt-navigation-recent-border);
   margin-top: var(--lt-space-48);
@@ -8723,7 +8770,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 63 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 60 icons, and all 64 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8745,7 +8792,7 @@ body.is-home-row-dragging .home-list-scroll li {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>155</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>60</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>63</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>64</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -9104,7 +9151,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">63 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">64 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -9300,6 +9347,10 @@ body.is-home-row-dragging .home-list-scroll li {
 <section class="part">
 <header><h3>First-run bubble</h3><code class="built">.hint-bubble</code><span class="built">hints.js</span></header>
 <div class="stage"><div class="hint-bubble is-shown is-right" role="status" style="position:static;--hint-tail:20px"><span class="hint-bubble-text">Pick which folder the list below shows.</span><span class="hint-bubble-tail"></span></div></div>
+</section>
+<section class="part">
+<header><h3>Vault introduction</h3><code class="built">.library-intro</code><span class="built">library.js</span></header>
+<div class="stage"><div class="library-pane" style="position:static;width:240px"><div class="library-tree"><div class="library-intro"><b class="library-intro-title">A vault is one folder of notes.</b><p class="library-intro-text">Point Leaftext at yours and search reads all of it, the map draws how the notes link, and this pane lists it.</p><button type="button" class="library-intro-action">Add your notes folder</button></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Reader tool bar</h3><code class="built">.reader-tool</code><span class="built">app-shell.html</span></header>

@@ -111,6 +111,11 @@ function retireHint(name) {
   if (hintShowing === name) hideHintBubble();
 }
 
+// Whether a name has been met. Not every once-per-install promise is a bubble — the pane's vault introduction is a box that has to outlive a pointer — so the met list is readable by whatever draws one, while the pacing above stays the bubble's alone.
+function hintIsMet(name) {
+  return hintsSeen.has(name);
+}
+
 function drawHintBubble(hint, target) {
   hideHintBubble();
   const { element, rect: targetRect } = target;

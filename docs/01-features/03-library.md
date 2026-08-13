@@ -12,6 +12,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | --- | --- |
 | [Vaults](#vaults) | A folder you name as a library root. The switcher beside the breadcrumb creates, edits and moves between them |
 | [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button |
+| [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
 | [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault |
@@ -51,6 +52,14 @@ A caret and a mark is not much to go on, so the first time you open Leaftext wit
 It goes the moment you point at the button, and it never comes back — pressing the button does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it. There is no close button and no timer.
 
 One bubble per launch at most, with a quiet launch in between, and nothing at all once you have met them. With the pane shut there is no bubble, and that launch is not spent — you get it the next time the pane is open.
+
+### Your first vault
+
+Until there is a vault, the start screen carries a third button beside Choose file and New document: **Add your notes folder**, with one line under the row saying what a folder buys — search across all of it, a map of how the notes link, and the folder in the pane. It opens the same folder picker **New vault…** does. Once a vault exists the button goes, because from then on the name over the headline is the [switcher](#vaults) and **New vault…** is one press inside it.
+
+The pane says it once too. A reader who has met the [bubble](#the-bubble-on-your-first-launch) and still has no vault of their own finds a short box at the top of the file list: what a vault is, what it buys, and the same button. It sits inside the list, so nothing above it moves. Picking a folder retires it, and so does opening the vault list — either way it never comes back.
+
+A [cloud folder](#your-cloud-is-already-a-folder) that made itself a vault does not count as one you made, so the box still shows. A folder you picked yourself out of your Dropbox reads the same way, so that one reader may meet the box once.
 
 ### Your cloud is already a folder
 
@@ -390,6 +399,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | Search results | Top 50 |
 | Folder listing | One directory per click |
 | First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again |
+| The pane's vault introduction | Shown once, to a reader with no vault outside their cloud folders; retired by picking a folder or opening the vault list |
 
 > [!NOTE]
 > `manifest.db` keeps its name from when it held a file index. It no longer does — anything that reads a document reads the disk. What it holds now is the list of folders you called vaults, which is why losing it loses that list.

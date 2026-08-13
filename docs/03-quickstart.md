@@ -27,7 +27,7 @@ flowchart LR
 
 ## 1. Open a file
 
-![The Leaftext home screen with no document open: the Choose file and New document buttons, with the recent files list and your favorites beside it beneath them](../imgs/home.png)
+![The Leaftext home screen with no document open: the Choose file, New document and Add your notes folder buttons with a line under them about what a folder buys, and the recent files list with your favorites beside it beneath that](../imgs/home.png)
 
 | Method | How |
 | --- | --- |
@@ -36,6 +36,7 @@ flowchart LR
 | Recent files | Click a file on the no-file home screen |
 | Command line / Open with | Launch Leaftext with a file path, or double-click an [associated file](02-installation.md#file-associations) |
 | Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document) |
+| Point it at a folder | **Add your notes folder** on the home screen, until you have a [vault](01-features/03-library.md#your-first-vault) |
 
 > [!TIP]
 > Recent files keeps the last 50 opened files, so reopening a doc is usually one click — and inside a [vault](01-features/03-library.md#vaults) the list is that vault's own. Keep the ones you come back to and they get a column of their own beside it — see [Favorites](01-features/02-navigation.md#favorites).

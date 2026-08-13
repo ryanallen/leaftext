@@ -4844,6 +4844,26 @@ check('a published site draws no Back, no Forward, no window buttons and no firs
   }
 });
 
+// A folder on a disk is not a browser's to pick, which is why both hosts refuse the command that makes a vault. Drawing the button anyway would be a control whose only possible answer is no.
+check('neither browser host invites a reader to add a folder it cannot reach', () => {
+  const hosts = [
+    ['a published site', siteBoot(true).context],
+    ['an embed', runShell(source, { __leafEmbedded: true })],
+  ];
+  for (const [name, context] of hosts) {
+    context.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+    context.__frames.drain();
+    const markup = context.document.getElementById('app').innerHTML;
+    if (markup.includes('primary-vault') || markup.includes('empty-vault-help')) {
+      throw new Error(`${name} drew a button its host refuses: ${markup.slice(0, 400)}`);
+    }
+    // The third one gone, not the row: what a browser can answer is still standing.
+    if (!markup.includes('primary-open') || !markup.includes('primary-new')) {
+      throw new Error(`${name} lost the two actions the screen has always had: ${markup.slice(0, 400)}`);
+    }
+  }
+});
+
 check("a site cancels no mouse back gesture, and the fold and the disabled pass cope with the strip gone", () => {
   const site = siteBoot(true);
   const press = (context, button) => {
@@ -5259,6 +5279,62 @@ if (booted) {
     });
     if (!plain.includes('<p class="kicker">Leaftext</p>')) {
       throw new Error(`a start screen with no vaults is not the app's plain word: ${plain.slice(0, 400)}`);
+    }
+  });
+
+  // The screen a new reader meets says vaults exist, and stops saying it the moment there is one — from then on the word over the headline is the switcher, and New vault… is one press inside it.
+  check('with no vault the start screen offers a third way in, and it goes when a vault arrives', () => {
+    const sent = [];
+    const wasSend = booted.ipc.postMessage;
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    // A query on a stand-in element hands back a fresh stand-in every time, so the only way to reach the button the page really bound is to keep the one the page was handed.
+    const appElement = booted.document.getElementById('app');
+    const wasQuery = appElement.querySelector;
+    let vaultButton = null;
+    appElement.querySelector = (selector) => {
+      const found = wasQuery.call(appElement, selector);
+      if (String(selector) === '.primary-vault') vaultButton = found;
+      return found;
+    };
+    const draw = () => {
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+      return appElement.innerHTML;
+    };
+    try {
+      booted.leafSetVaults({ vaults: [], active: 0 });
+      const fresh = draw();
+      if (!fresh.includes('<button type="button" class="primary-vault">Add your notes folder</button>')) {
+        throw new Error(`a reader with no vault is never told one is possible: ${fresh.slice(0, 600)}`);
+      }
+      if (!fresh.includes('class="empty-vault-help"')) {
+        throw new Error(`the invitation never says what a folder buys: ${fresh.slice(0, 600)}`);
+      }
+      // Under the row of buttons, not inside it: the row is the two ways in plus this one, and the line is about the button rather than about the columns below.
+      const between = fresh.slice(fresh.indexOf('primary-vault'), fresh.indexOf('empty-vault-help'));
+      if (!between.includes('</div>')) throw new Error('the line about a vault is standing inside the actions row');
+      // And it is the command the pane's own menu sends, so there is no second way to make a vault.
+      if (!vaultButton) throw new Error('the page never went looking for the button it drew');
+      for (const handler of vaultButton.listeners.get('click') || []) handler({});
+      if (!sent.some((one) => one.command === 'createVault')) {
+        throw new Error(`pressing it sent ${JSON.stringify(sent.map((one) => one.command))}`);
+      }
+
+      booted.leafSetVaults({ vaults: VAULTS, active: 0 });
+      const owned = draw();
+      if (owned.includes('primary-vault') || owned.includes('empty-vault-help')) {
+        throw new Error(`the invitation outlived the first vault: ${owned.slice(0, 600)}`);
+      }
+      // Because this is where it went: the name over the headline opens the list New vault… is in.
+      if (!owned.includes('home-vault-switch')) {
+        throw new Error('the screen has neither the invitation nor the switcher that replaces it');
+      }
+    } finally {
+      appElement.querySelector = wasQuery;
+      booted.ipc.postMessage = wasSend;
+      booted.leafSetVaults({ vaults: [], active: 0 });
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
     }
   });
 
@@ -6435,6 +6511,133 @@ if (booted) {
     }
   });
 }
+
+// ---- 5c. the pane says what a vault is, once --------------------------------
+//
+// A box at the top of the file list, for a reader who has never made a vault. Four flags decide it and every one of them can be wrong in a way nothing else would catch: the store keeps no record of who made a vault, so "never made one" is answered by whether every vault sits inside a sync client's folder — and that answer arrives after boot, which is why an unanswered list must draw nothing rather than guess.
+
+if (booted) {
+  const libraryTreeElement = booted.document.getElementById('libraryTree');
+  const CLOUD_FOLDERS = [{ path: 'C:\\Users\\me\\Dropbox' }];
+  // Registered by the app itself because a sync client put the folder there — see remote-sources. Nobody chose it, so it is not evidence the reader knows what a vault is.
+  const CLOUD_VAULT = { id: 1, name: 'Dropbox', rootPath: 'C:\\Users\\me\\Dropbox\\Notes' };
+  const OWN_VAULT = { id: 2, name: 'Notes', rootPath: 'C:\\Vaults\\Notes' };
+
+  /** The pane drawn against one arrangement of the four flags. `folders` of null is the answer that has not landed yet. */
+  function paneWith({ met = true, folders = CLOUD_FOLDERS, vaults = [] } = {}) {
+    booted.leafResetHints();
+    if (met) booted.retireHint('libraryVault');
+    vm.runInContext('cloudFolders = null;', booted);
+    booted.leafSetVaults({ vaults, active: 0 });
+    if (folders) booted.leafSetCloudFolders(folders);
+    booted.renderLibrary();
+    return libraryTreeElement.innerHTML;
+  }
+  const introducing = (arrangement) => paneWith(arrangement).includes('library-intro');
+
+  check('the pane introduces vaults to the reader who never made one, and to nobody else', () => {
+    try {
+      if (!introducing({})) throw new Error('a reader with no vault at all was told nothing');
+      if (!introducing({ vaults: [CLOUD_VAULT] })) {
+        throw new Error('a vault that registered itself out of a sync folder counted as one the reader made');
+      }
+      if (introducing({ vaults: [OWN_VAULT] })) throw new Error('a reader who already made a vault was introduced to them');
+      if (introducing({ vaults: [CLOUD_VAULT, OWN_VAULT] })) {
+        throw new Error('one folder the reader chose was lost behind an auto-registered one');
+      }
+      // The answer has not arrived: every vault looks unchosen, and drawing on that is a guess.
+      if (introducing({ folders: null, vaults: [OWN_VAULT] })) {
+        throw new Error('the pane guessed before the cloud folders came back');
+      }
+      if (introducing({ folders: null })) throw new Error('the pane drew the box before it could know');
+      // One thing at a time: the bubble pointing at the vault button has to have been met first.
+      if (introducing({ met: false })) throw new Error('the box was drawn beside a bubble the reader had not met yet');
+      // And it is the words the ticket settled, with the same button the start screen offers.
+      const drawn = paneWith({});
+      for (const wanted of ['A vault is one folder of notes.', 'library-intro-text', '>Add your notes folder<']) {
+        if (!drawn.includes(wanted)) throw new Error(`the introduction is missing ${wanted}: ${drawn.slice(0, 400)}`);
+      }
+      // First in the list, above whatever the pane is browsing — which, with no vault, is the machine's drives.
+      const rows = drawn.indexOf('library-project');
+      if (rows >= 0 && drawn.indexOf('library-intro') > rows) throw new Error('the introduction landed under the list rather than above it');
+    } finally {
+      booted.leafResetHints();
+      booted.leafSetVaults({ vaults: [], active: 0 });
+      vm.runInContext('cloudFolders = null;', booted);
+      booted.renderLibrary();
+    }
+  });
+
+  check('the introduction is retired for good by picking a folder or by opening the list that offers one', () => {
+    const sent = [];
+    const wasSend = booted.ipc.postMessage;
+    // A query on a stand-in hands back a fresh stand-in, so the button the page really bound has to be kept as it is handed over.
+    const wasQuery = libraryTreeElement.querySelector;
+    let introButton = null;
+    libraryTreeElement.querySelector = (selector) => {
+      const found = wasQuery.call(libraryTreeElement, selector);
+      if (String(selector) === '.library-intro-action') introButton = found;
+      return found;
+    };
+    const metNames = () => {
+      const saves = sent.filter((one) => one.command === 'setHintState');
+      return saves.length ? saves[saves.length - 1].seen : [];
+    };
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+
+      // Its own button: the command the pane's menu already sends, and the box gone for good.
+      paneWith({});
+      if (!introButton) throw new Error('the page never went looking for the button it drew');
+      sent.length = 0;
+      for (const handler of introButton.listeners.get('click') || []) handler({});
+      if (!sent.some((one) => one.command === 'createVault')) {
+        throw new Error(`pressing it sent ${JSON.stringify(sent.map((one) => one.command))}`);
+      }
+      if (!metNames().includes('vaultIntro')) throw new Error(`the name was never saved: ${JSON.stringify(metNames())}`);
+      if (libraryTreeElement.innerHTML.includes('library-intro')) throw new Error('the box outlived the press');
+      // And it does not come back on the next read of the same folder.
+      booted.renderLibrary();
+      if (libraryTreeElement.innerHTML.includes('library-intro')) throw new Error('the box came back on the next read');
+
+      // Opening the vault list is meeting New vault…, so the box has said its piece either way.
+      paneWith({});
+      if (!libraryTreeElement.innerHTML.includes('library-intro')) throw new Error('the box did not come back for a fresh reader');
+      sent.length = 0;
+      const switcher = booted.document.getElementById('libraryVaultSwitch');
+      for (const handler of switcher.listeners.get('pointerdown') || []) {
+        handler({ button: 0, stopPropagation() {}, preventDefault() {} });
+      }
+      if (!metNames().includes('vaultIntro')) throw new Error(`opening the list saved ${JSON.stringify(metNames())}`);
+      if (libraryTreeElement.innerHTML.includes('library-intro')) throw new Error('the box outlived the menu opening');
+    } finally {
+      libraryTreeElement.querySelector = wasQuery;
+      booted.ipc.postMessage = wasSend;
+      booted.hideCrumbMenu();
+      booted.leafResetHints();
+      booted.leafSetVaults({ vaults: [], active: 0 });
+      vm.runInContext('cloudFolders = null;', booted);
+      booted.renderLibrary();
+    }
+  });
+}
+
+// A site cannot pick a folder on a disk it is not on, and an embed draws no pane at all — so neither may draw a box whose one button its host refuses.
+check('neither browser host introduces a vault it could not make', () => {
+  const hosts = [
+    ['a published site', siteBoot(true).context],
+    ['an embed', runShell(source, { __leafEmbedded: true })],
+  ];
+  for (const [name, context] of hosts) {
+    // Every flag set the way the window's would be, so what is being read is the browser guard and not an accident of the hints being off.
+    context.retireHint('libraryVault');
+    context.leafSetCloudFolders([{ path: 'C:\\Users\\me\\Dropbox' }]);
+    context.renderLibrary();
+    const drawn = context.document.getElementById('libraryTree').innerHTML;
+    if (drawn.includes('library-intro')) throw new Error(`${name} introduced a vault its host refuses to make: ${drawn.slice(0, 300)}`);
+    if (drawn.includes('Add your notes folder')) throw new Error(`${name} drew the button on its own`);
+  }
+});
 
 // ---- 6. the page reports its own errors -------------------------------------
 

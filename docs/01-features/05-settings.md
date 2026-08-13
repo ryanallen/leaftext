@@ -177,6 +177,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 - The [bubble that points at the vault switcher](03-library.md#the-bubble-on-your-first-launch) shows once and then never again, so what has already been met is remembered here
 - Saved as `hints_seen` (the ones you have met), `hint_launches` (launches that had one to show) and `hint_last_launch` (the launch the last bubble showed at, which is what puts a quiet launch between two of them)
+- The [pane's vault introduction](03-library.md#your-first-vault) is remembered in the same `hints_seen` list, though it is a box in the pane rather than a bubble
 - A launch with nothing to point at — the pane shut — is not counted, so it costs you nothing
 - Emptying `hints_seen` and setting both numbers to `0` puts the bubbles back
 
