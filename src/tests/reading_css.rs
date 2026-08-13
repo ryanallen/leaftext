@@ -695,6 +695,28 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
 }
 
 #[test]
+fn the_pages_two_bottom_corners_keep_their_stroke() {
+    // The clip is the half of this that is easy to drop: the transparent border reserves the card's straight edges, the padding-box clip reserves its curve. Without it the wash is cut at the border box and paints over both bottom arcs — the bottom-left one always, the bottom-right one whenever a minimap takes its scrollbar reserve to zero.
+    let css = reading_mode_css();
+    let rule = rule_body(css, ".reader-edge-fade {");
+    assert_contains(rule, "background-clip: padding-box;");
+    // Both halves, or the corner comes back the other way round.
+    assert_contains(
+        rule,
+        "border-width: 0 var(--lt-stroke-1) var(--lt-stroke-1);",
+    );
+    // And the curve being reserved has to be the card's own, or the clip is cut to a shape nothing draws.
+    let radius = "border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);";
+    let card = rule_body(css, ".reader-shell {");
+    assert_contains(
+        card,
+        "border-bottom: var(--lt-stroke-1) solid var(--lt-border);",
+    );
+    assert_contains(card, radius);
+    assert_contains(rule, radius);
+}
+
+#[test]
 fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     // The edge is the chrome's dot screen in the page's color, so it has to be the same circle on the same lattice as the bar — and each rule has to write the circles itself. A custom property holding the whole gradient resolves its ink where it is declared, so one at `:root` outranks every `--lt-grain-dot` below it: v0.1.439 screened the chrome's dark ink over a light page, 239-255 gray where the page is 255.
     let css = reading_mode_css();

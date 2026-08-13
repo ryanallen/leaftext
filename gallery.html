@@ -4602,9 +4602,10 @@ body:has(#readerToolbar:not([hidden])) {
   background-repeat: no-repeat;
   /* Over the document (the code view's textarea layer sits at 2), under the loading wash (6), the library sheet (5) and the app bar (10). */
   z-index: 4;
-  /* Inside the card's three hairlines, so the bottom band can't paint over the stroke or spill past the rounded corners. A transparent border, not a margin of the same width: a border width is snapped to whole device pixels and a margin is not, so at 150% the card's 1px stroke computes to 0.667px and a 1px margin leaves half a device pixel of the last line with no fade over it. */
+  /* Inside the card's three hairlines, so the bottom band can't paint over the stroke or spill past the rounded corners. Two things hold it off and both are needed: the transparent border reserves the straight edges, the padding-box clip reserves the curve — a background is clipped at the border box otherwise, and that curve is the card's outer one, so the wash paints over both bottom arcs. A transparent border, not a margin of the same width: a border width is snapped to whole device pixels and a margin is not, so at 150% the card's 1px stroke computes to 0.667px and a 1px margin leaves half a device pixel of the last line with no fade over it. */
   border: 0 solid transparent;
   border-width: 0 var(--lt-stroke-1) var(--lt-stroke-1);
+  background-clip: padding-box;
   /* The right side clears the scrollbar: the browser draws it inside the scroller where an overlay on the cell can't get under it, and the thumb starts at the same edge the top band does, so the wash would bury it. */
   margin-right: var(--reader-scrollbar);
   /* The card's own corner: an inner curve is the outer one less the border, and this border is snapped the same way the card's is. */
