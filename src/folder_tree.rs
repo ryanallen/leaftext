@@ -29,6 +29,8 @@ pub struct FolderListing {
     pub path: String,
     pub chain: Vec<FolderCrumb>,
     pub entries: Vec<FileTreeNode>,
+    /// Files in the folder the app cannot read, so an empty pane can say why it is empty instead of looking like a folder that lost its files.
+    pub skipped_files: usize,
 }
 
 /// List one folder. `root` is the active vault's folder, or `None` for the whole library; `path` is the folder being opened, or empty for the top level.
@@ -36,16 +38,21 @@ pub struct FolderListing {
 /// A `path` that has gone missing, or that sits outside the active vault (the vault changed under it), falls back to the top rather than to an empty pane.
 pub fn read_folder_listing(root: Option<&Path>, path: &str) -> FolderListing {
     match resolve_folder(root, path) {
-        Some(dir) => FolderListing {
-            path: path_to_string(&dir),
-            chain: chain_to(root, &dir),
-            entries: read_entries(&dir),
-        },
+        Some(dir) => {
+            let (entries, skipped_files) = read_entries(&dir);
+            FolderListing {
+                path: path_to_string(&dir),
+                chain: chain_to(root, &dir),
+                entries,
+                skipped_files,
+            }
+        }
         // No vault and no folder: the drive roots, which is the top of the library and the one listing that is not a directory read.
         None => FolderListing {
             path: String::new(),
             chain: Vec::new(),
             entries: drive_root_entries(),
+            skipped_files: 0,
         },
     }
 }
@@ -113,16 +120,18 @@ fn drive_root_entries() -> Vec<FileTreeNode> {
 
 /// One directory's immediate children: the folders you can open, and the documents you can read. Nothing below them is touched — that is the point.
 ///
-/// Every folder is listed — a leading dot, a build name, a junction. Guards against a runaway walk belong where a walk runs: this reads one directory and descends nowhere, and `vault_corpus.rs`, which does descend, keeps its junction guard.
-fn read_entries(dir: &Path) -> Vec<FileTreeNode> {
+/// Also how many files it left out, which is the only thing the pane can say when it draws nothing. Every folder is listed — a leading dot, a build name, a junction. Guards against a runaway walk belong where a walk runs: this reads one directory and descends nowhere, and `vault_corpus.rs`, which does descend, keeps its junction guard.
+fn read_entries(dir: &Path) -> (Vec<FileTreeNode>, usize) {
     let Ok(entries) = fs::read_dir(dir) else {
-        return Vec::new();
+        // A folder that cannot be read skipped nothing; it was never opened.
+        return (Vec::new(), 0);
     };
     // A drive root carries the OS's own furniture. Skipped only directly under a root, where the name is known to be system-owned.
     let at_drive_root = dir.parent().is_none();
 
     let mut folders: Vec<FileTreeNode> = Vec::new();
     let mut files: Vec<FileTreeNode> = Vec::new();
+    let mut skipped = 0usize;
     for entry in entries.flatten() {
         let Ok(file_type) = entry.file_type() else {
             continue;
@@ -152,14 +161,18 @@ fn read_entries(dir: &Path) -> Vec<FileTreeNode> {
                 title: None,
                 children: Vec::new(),
             });
-        } else if is_folder == Some(false) && crate::is_supported_document_path(&path) {
-            files.push(FileTreeNode {
-                name,
-                path: path_to_string(&path),
-                kind: NodeKind::File,
-                title: None,
-                children: Vec::new(),
-            });
+        } else if is_folder == Some(false) {
+            if crate::is_supported_document_path(&path) {
+                files.push(FileTreeNode {
+                    name,
+                    path: path_to_string(&path),
+                    kind: NodeKind::File,
+                    title: None,
+                    children: Vec::new(),
+                });
+            } else {
+                skipped += 1;
+            }
         }
     }
 
@@ -169,5 +182,5 @@ fn read_entries(dir: &Path) -> Vec<FileTreeNode> {
     folders.sort_by(by_name);
     files.sort_by(by_name);
     folders.extend(files);
-    folders
+    (folders, skipped)
 }

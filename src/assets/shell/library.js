@@ -1247,6 +1247,18 @@ function setLibraryTreeHtml(html) {
   libraryTree.innerHTML = html;
   return true;
 }
+// How many files the folder holds that the app cannot open. Only this file writes it and only this file reads it, so it stays here rather than joining the shared state.
+let librarySkippedFiles = 0;
+// An empty pane with no reason for being empty reads as lost files. One skipped file needs its own wording, or it says "1 files".
+function libraryEmptyText() {
+  if (librarySkippedFiles === 1) {
+    return 'Nothing to read in this folder. 1 file lives here, but it is not a kind Leaftext opens.';
+  }
+  if (librarySkippedFiles > 1) {
+    return `Nothing to read in this folder. ${librarySkippedFiles} files live here, but none is a kind Leaftext opens.`;
+  }
+  return 'Nothing to read in this folder.';
+}
 function renderLibrary() {
   renderLibraryVaultSwitch();
   renderLibrarySearchability();
@@ -1257,7 +1269,7 @@ function renderLibrary() {
   // Still render the rows when the folder is empty: that is exactly where the way back out matters most.
   const empty = libraryEntries.length
     ? ''
-    : `<p class="library-empty">${escapeText('Nothing to read in this folder.')}</p>`;
+    : `<p class="library-empty">${escapeText(libraryEmptyText())}</p>`;
   if (!setLibraryTreeHtml(renderProject(libraryEntries) + empty)) return false;
   bindLibraryRows();
   return true;
@@ -1270,6 +1282,8 @@ window.leafSetLibraryFolder = (payload) => {
   libraryChain = Array.isArray(next.chain) ? next.chain : [];
   libraryEntries = Array.isArray(next.entries) ? next.entries : [];
   libraryRootName = typeof next.rootName === 'string' ? next.rootName : '';
+  // A host that never learned to count leaves the line exactly as it has always read.
+  librarySkippedFiles = Number.isFinite(next.skippedFiles) ? next.skippedFiles : 0;
   // The trail changed, so it has to be laid out again.
   libraryCrumbFitKey = null;
   // A read that drew the same rows has nothing new to scroll to, and scrolling forces a layout.

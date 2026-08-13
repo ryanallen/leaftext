@@ -76,6 +76,36 @@ fn a_folder_lists_only_itself_with_no_index_and_no_walk_below_it() {
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
 
+#[test]
+fn a_folder_of_files_the_app_cannot_read_counts_them() {
+    let dir = tree_dir("skipped");
+    let root = dir.join("vault");
+    // The shape the owner hit: a folder of design captures, nothing in it the app reads.
+    write(&root.join("index.html"), "<p>one</p>");
+    write(&root.join("about.html"), "<p>two</p>");
+    write(&root.join("site.css"), "p{}");
+    // A folder is always a row, so it can never be one of the missing.
+    write(&root.join("notes").join("deep.md"), "# Deep\n");
+
+    let listing = read_folder_listing(Some(&root), "");
+    assert_eq!(names(&listing), vec!["notes"]);
+    assert_eq!(listing.skipped_files, 3);
+
+    // A folder of documents skipped nothing.
+    let notes = read_folder_listing(Some(&root), &root.join("notes").to_string_lossy());
+    assert_eq!(names(&notes), vec!["deep.md"]);
+    assert_eq!(notes.skipped_files, 0);
+
+    // Neither did an empty one, and neither do the drives, which read no directory at all.
+    fs::create_dir_all(root.join("empty")).expect("folder created");
+    let empty = read_folder_listing(Some(&root), &root.join("empty").to_string_lossy());
+    assert!(empty.entries.is_empty());
+    assert_eq!(empty.skipped_files, 0);
+    assert_eq!(read_folder_listing(None, "").skipped_files, 0);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
 /// A link to a folder, made the way the platform lets an ordinary user make one: a junction on Windows, a symlink everywhere else.
 fn link_dir(link: &Path, target: &Path) {
     #[cfg(windows)]
@@ -253,7 +283,7 @@ fn the_file_list_starts_with_a_way_back_out() {
         .contains("libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);"));
     // An empty folder is exactly where the way out matters, so the rows still render alongside the empty notice.
     assert!(html.contains(
-        "const empty = libraryEntries.length\n    ? ''\n    : `<p class=\"library-empty\">"
+        "const empty = libraryEntries.length\n    ? ''\n    : `<p class=\"library-empty\">${escapeText(libraryEmptyText())}</p>`;"
     ));
     assert!(html
         .contains("if (!setLibraryTreeHtml(renderProject(libraryEntries) + empty)) return false;"));

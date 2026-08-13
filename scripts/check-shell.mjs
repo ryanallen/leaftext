@@ -5637,6 +5637,41 @@ if (booted) {
       tree.innerHTML = held;
     }
   });
+
+  check('the empty folder line says how many files it skipped', () => {
+    const tree = booted.document.getElementById('libraryTree');
+    const drawn = (payload) => {
+      booted.leafSetLibraryFolder({
+        path: 'C:\\Vaults\\Work\\shots',
+        chain: [{ name: 'shots', path: 'C:\\Vaults\\Work\\shots' }],
+        rootName: 'Work',
+        entries: [],
+        ...payload,
+      });
+      return tree.innerHTML;
+    };
+
+    // The folder the owner opened: 80 files, none of them a kind the app reads.
+    const many = drawn({ skippedFiles: 80 });
+    if (!many.includes('80 files live here, but none is a kind Leaftext opens.')) {
+      throw new Error(`a folder of 80 unreadable files drew ${many}`);
+    }
+    // One file gets its own wording, or the pane says "1 files".
+    const one = drawn({ skippedFiles: 1 });
+    if (!one.includes('1 file lives here, but it is not a kind Leaftext opens.')) {
+      throw new Error(`a folder holding one unreadable file drew ${one}`);
+    }
+    // A host that never learned to count leaves the line as it has always read, and does not keep the last folder's number.
+    const older = drawn({});
+    if (!older.includes('Nothing to read in this folder.') || /lives? here/.test(older)) {
+      throw new Error(`a payload carrying no count drew ${older}`);
+    }
+    // A folder with nothing in it at all says only what it always said.
+    const bare = drawn({ skippedFiles: 0 });
+    if (!bare.includes('Nothing to read in this folder.') || /lives? here/.test(bare)) {
+      throw new Error(`an empty folder drew ${bare}`);
+    }
+  });
 }
 
 // ---- 6. the page reports its own errors -------------------------------------
@@ -5876,6 +5911,8 @@ checkSettled('the browser host opens a document, fills the pane and fills the st
   // A waiting state is a promise: the strip is drawn empty and this is what fills it.
   const pager = seen.pager[seen.pager.length - 1];
   if (!pager || !pager.html.includes('docs-pager-next')) throw new Error(`the Previous/Next strip came back empty: ${JSON.stringify(pager)}`);
+  // A site serves only documents the app reads, so its count is always none — sent all the same, so the pane never has to ask who is talking.
+  if (folder.skippedFiles !== 0) throw new Error(`a site handed the pane ${JSON.stringify(folder.skippedFiles)} as the files it skipped`);
 });
 
 checkSettled('the browser host follows a link inside the site and refuses one outside it', async () => {

@@ -260,6 +260,8 @@ export async function startLeaftext({ documents, name = '', read }) {
       chain,
       // What the trail calls the whole root. The desktop sends none and reads the vault it is standing in, or its own word.
       rootName: name,
+      // A site serves only documents the app reads, so there is never anything here to skip — sent anyway so both hosts hand the pane one shape.
+      skippedFiles: 0,
       entries: [
         ...[...folders].sort().map((name) => ({
           name,
