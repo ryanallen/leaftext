@@ -2,6 +2,7 @@
 
 use crate::args;
 use crate::exit;
+use crate::launch;
 use crate::locations;
 use crate::plan::{self, Root};
 
@@ -49,6 +50,46 @@ fn the_marker_says_this_copy_came_from_the_exe() {
     assert_eq!(
         marker.data,
         plan::Data::String(plan::INSTALLED_BY_EXE.to_string())
+    );
+}
+
+#[test]
+fn a_person_running_the_installer_gets_the_app_opened_and_a_silent_run_gets_nothing() {
+    // A silent run is the updater's, and it reopens the app itself. It is also what a scripted or managed install uses, which must start nothing.
+    let folder = std::path::Path::new(r"C:\somewhere\leaftext");
+    let plan = plan::plan(folder, std::path::Path::new(r"C:\start"), "0.0.0");
+
+    let opening = launch::after_install(&args::Request::default(), &plan)
+        .expect("an install somebody ran themselves ends with the app open");
+    assert_eq!(opening.program, folder.join(plan::APP_RELATIVE_PATH));
+    assert!(opening.working_directory.starts_with(folder));
+
+    let silent = args::Request {
+        silent: true,
+        ..args::Request::default()
+    };
+    assert_eq!(launch::after_install(&silent, &plan), None);
+}
+
+#[test]
+fn the_app_the_launch_opens_is_the_one_the_plan_wrote() {
+    // Read out of the plan rather than spelled a second time, so the installer opens the file it just laid down and the Start Menu entry points at the same one.
+    let plan = plan::plan(
+        std::path::Path::new(r"C:\x"),
+        std::path::Path::new(r"C:\y"),
+        "0.0.0",
+    );
+    let opening = launch::after_install(&args::Request::default(), &plan).expect("a launch");
+    let app = plan
+        .files
+        .iter()
+        .find(|file| file.content == plan::Content::App)
+        .expect("the plan writes the app");
+    assert_eq!(opening.program, app.path);
+    assert_eq!(opening.program, plan.shortcuts[0].target);
+    assert_eq!(
+        opening.working_directory,
+        plan.shortcuts[0].working_directory
     );
 }
 

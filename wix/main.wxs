@@ -24,7 +24,8 @@
      entry is not optional: it is the only way to launch or find the app.
 
      `.github/workflows/validate-installer.yml` compiles this file and asserts
-     the install scope, the remembered folder, and exactly one shortcut. Run it on a branch before tagging;
+     the install scope, the remembered folder, exactly one shortcut, and the
+     action that opens the app when a person ran the install themselves. Run it on a branch before tagging;
      the WiX toolset cannot be run on a dev machine, and shipping this file
      unproven has already cost two version numbers. -->
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
@@ -254,9 +255,10 @@
              The dialog is WiX's InstallDirDlg minus the Back button (nothing
              precedes it) and the banner bitmap, with Install in place of Next.
 
-             No ExitDialog either, so the window closes when the install ends.
-             ICE20 rejects that, which is why build-windows-release.ps1 passes
-             -sice:ICE20 to light. -->
+             No ExitDialog either, so the window closes when the install ends
+             and Leaftext itself opens in its place — see the custom action
+             below. ICE20 rejects a missing ExitDialog, which is why
+             build-windows-release.ps1 passes -sice:ICE20 to light. -->
         <UI>
             <UIRef Id='WixUI_Common'/>
 
@@ -335,6 +337,27 @@
                 <Show Dialog='LeafInstallDirDlg' Before='ProgressDlg'>NOT Installed</Show>
             </InstallUISequence>
         </UI>
+
+        <!-- The install ends with the app open rather than with a window that
+             vanished: when a single program is installed interactively, starting
+             it is the feedback that setup worked, and it is why there is no
+             completion page above to add a checkbox to.
+
+             UILevel=5 is a person who double-clicked the file. The updater passes
+             /qn, which is UILevel=2, and it relaunches the app itself once the
+             install is applied — so this must not fire there, and neither may a
+             scripted or managed install start a program. NOT Installed is the
+             same condition the one screen carries: a repair, a modify and an
+             uninstall launch nothing.
+
+             FileKey plus ExeCommand is a stock MSI custom action, so nothing new
+             is linked. Immediate and after InstallFinalize means it runs in the
+             client process, unelevated, with the install already finished;
+             asyncNoWait means msiexec does not wait on the app. -->
+        <CustomAction Id='LaunchLeaftext' FileKey='MainExecutableFile' ExeCommand='' Return='asyncNoWait'/>
+        <InstallExecuteSequence>
+            <Custom Action='LaunchLeaftext' After='InstallFinalize'>UILevel=5 AND NOT Installed</Custom>
+        </InstallExecuteSequence>
 
         <!-- No maintenance UI, so hide the Modify button in Installed Apps. -->
         <Property Id='ARPNOMODIFY' Value='1'/>

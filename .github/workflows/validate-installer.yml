@@ -136,6 +136,32 @@ jobs:
           }
           Write-Host "Shortcuts: 1, in the Start Menu"
 
+          # The install ends with Leaftext open when a person ran it, and with
+          # nothing when the updater did. That is one custom action and one
+          # condition; a missing row leaves the reader staring at their desktop,
+          # and a missing condition starts a window during a silent update and
+          # during every scripted install.
+          $action = @(Get-Rows 'SELECT `Action`, `Source` FROM `CustomAction` WHERE `Action` = ''LaunchLeaftext''')
+          if ($action.Count -ne 1) {
+            throw "Expected one LaunchLeaftext custom action, found $($action.Count). Without it the install ends with a window that vanished."
+          }
+          if ($action[0][1] -ne 'MainExecutableFile') {
+            throw "LaunchLeaftext must open the installed app, found source '$($action[0][1])'."
+          }
+          $sequenced = @(Get-Rows 'SELECT `Action`, `Condition` FROM `InstallExecuteSequence` WHERE `Action` = ''LaunchLeaftext''')
+          if ($sequenced.Count -ne 1) {
+            throw "LaunchLeaftext is not sequenced, so nothing would ever run it."
+          }
+          $condition = $sequenced[0][1]
+          Write-Host "Opens the app when: $condition"
+          if ($condition -notmatch 'UILevel\s*=\s*5') {
+            throw "LaunchLeaftext must be held to a full-UI install ('$condition'). The updater installs with /qn and relaunches the app itself; a scripted install must start nothing."
+          }
+          if ($condition -notmatch 'NOT\s+Installed') {
+            throw "LaunchLeaftext must be held to a fresh install ('$condition'), so a repair, a modify and an uninstall open nothing."
+          }
+          Write-Host "Opens the app: yes, only when somebody ran the install"
+
           Write-Host ""
           Write-Host "Directories:"
           foreach ($row in @(Get-Rows 'SELECT `Directory`, `DefaultDir` FROM `Directory`')) {

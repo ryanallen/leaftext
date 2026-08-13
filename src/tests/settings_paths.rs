@@ -785,6 +785,118 @@ fn installer_claims_every_readable_extension() {
     );
 }
 
+/// An install somebody ran themselves ends with Leaftext open; an install the updater ran ends with nothing, because the updater reopens the app itself and a scripted or managed install must start no program at all. In the MSI that whole rule is one condition on one action, so the condition is what this reads — with the recipe's comments stripped first, so a sentence explaining the rule cannot stand in for the rule.
+#[test]
+fn the_msi_opens_the_app_only_for_somebody_who_ran_the_install() {
+    let source = wix_source_without_comments();
+    let action = msi_launch_action(&source);
+    assert!(
+        action.contains("FileKey='MainExecutableFile'"),
+        "the MSI must open the app it installed, not a path spelled again: {action}"
+    );
+    assert!(
+        action.contains("Return='asyncNoWait'"),
+        "msiexec must not wait on the app it opened: {action}"
+    );
+
+    let (attributes, condition) = msi_launch_row(&source);
+    assert!(
+        attributes.contains("After='InstallFinalize'"),
+        "the app opens once the install is finished: {attributes}"
+    );
+    assert!(
+        condition.contains("UILevel=5"),
+        "a silent install must open nothing — the updater passes /qn, which is UILevel=2, and relaunches the app itself: {condition}"
+    );
+    assert!(
+        condition.contains("NOT Installed"),
+        "a repair, a modify and an uninstall must open nothing: {condition}"
+    );
+}
+
+/// The two Windows installers produce one install, so they owe one first experience too — and each writes its half of it in its own language, which is why neither can read the other's. Both are read here: the EXE installer's rule that a silent run opens nothing, the MSI's condition saying the same, and the one path underneath both of them.
+#[test]
+fn both_windows_installers_open_the_app_they_installed_and_only_for_a_person() {
+    let launch = include_str!("../../installer/src/launch.rs");
+    assert!(
+        launch.contains("if request.silent") && launch.contains("return None;"),
+        "the EXE installer must open nothing on a silent run"
+    );
+
+    let source = wix_source_without_comments();
+    let (_, condition) = msi_launch_row(&source);
+    assert!(condition.contains("UILevel=5"), "and neither may the MSI");
+
+    // The one path they both open. The EXE installer joins this onto the chosen folder and the MSI builds it out of a directory and a file, so the two spellings are held together here.
+    let (folder, file) = exe_installer_app_path()
+        .split_once('\\')
+        .expect("the app sits in a folder under the install folder");
+    assert!(
+        source.contains(&format!("<Directory Id='Bin' Name='{folder}'>")),
+        "wix/main.wxs puts the app somewhere other than {folder}"
+    );
+    let executable = source
+        .split("<File")
+        .find(|row| row.contains("Id='MainExecutableFile'"))
+        .expect("the MSI must carry the app");
+    assert!(
+        executable.contains(&format!("Name='{file}'")),
+        "wix/main.wxs names the app something other than {file}"
+    );
+}
+
+/// `wix/main.wxs` with its comments removed, so a rule is asserted against what WiX compiles rather than against a comment describing it.
+fn wix_source_without_comments() -> String {
+    let mut source = String::new();
+    let mut rest = include_str!("../../wix/main.wxs");
+    while let Some((before, after)) = rest.split_once("<!--") {
+        source.push_str(before);
+        rest = after.split_once("-->").expect("every comment must close").1;
+    }
+    source.push_str(rest);
+    source
+}
+
+/// The one action that opens the app, out of the MSI recipe.
+fn msi_launch_action(source: &str) -> &str {
+    source
+        .split("<CustomAction")
+        .find(|row| row.contains("Id='LaunchLeaftext'"))
+        .expect("the MSI must carry an action that opens the app")
+        .split_once("/>")
+        .expect("the action must close")
+        .0
+}
+
+/// Where that action is scheduled, split into what it is and when it fires. The condition is the whole of the silent-run rule.
+fn msi_launch_row(source: &str) -> (&str, &str) {
+    let sequence = source
+        .split_once("<InstallExecuteSequence>")
+        .expect("the MSI must sequence the launch")
+        .1
+        .split_once("</InstallExecuteSequence>")
+        .expect("the sequence must close")
+        .0;
+    let row = sequence
+        .split("<Custom ")
+        .find(|row| row.contains("Action='LaunchLeaftext'"))
+        .expect("the launch must be sequenced");
+    let (attributes, rest) = row.split_once('>').expect("the row must open");
+    let condition = rest.split_once("</Custom>").expect("the row must close").0;
+    (attributes, condition)
+}
+
+/// The app's path under the install folder, out of the EXE installer's plan. It is one constant there, so reading it is what stops the MSI's own spelling drifting away from it.
+fn exe_installer_app_path() -> &'static str {
+    include_str!("../../installer/src/plan.rs")
+        .split_once("pub const APP_RELATIVE_PATH: &str = r\"")
+        .expect("installer/src/plan.rs must name the app once")
+        .1
+        .split_once('"')
+        .expect("the path must close")
+        .0
+}
+
 /// The `EXTENSIONS` list out of the EXE installer's plan. Read rather than searched: that installer builds every registry key it writes from this one list, so the list is the claim.
 fn exe_installer_extensions() -> Vec<&'static str> {
     let plan = include_str!("../../installer/src/plan.rs");

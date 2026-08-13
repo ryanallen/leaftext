@@ -42,9 +42,9 @@ Every file on the release page is an installer you can run — no checksums, not
 
 **2. Run the installer.** If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs). If instead a small box says **the system administrator has set policies to prevent this installation**, take the `.exe` instead — see [Windows refuses the MSI](#windows-refuses-the-msi).
 
-**3. Click Install.** The installer shows one screen: the install folder, with **Change...** to pick another. There is no elevation prompt and no confirmation screen — Leaftext installs for the current user, and the window closes once the install finishes. The `.exe` installer draws the same single screen, in the same place, with the same two buttons.
+**3. Click Install.** The installer shows one screen: the install folder, with **Change...** to pick another. There is no elevation prompt and no confirmation screen — Leaftext installs for the current user, and when it is done the setup window closes and **Leaftext opens in its place**. The `.exe` installer draws the same single screen, in the same place, with the same two buttons, and opens the app the same way.
 
-**4. Launch Leaftext** from the Start Menu, or press the Windows key and type its name.
+**4. Every launch after that** is the Start Menu entry, or the Windows key and the app's name.
 
 ## The first-launch warnings
 
@@ -165,6 +165,8 @@ Leaftext checks GitHub Releases for a newer version at every launch, and re-chec
 The new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the bell wears a spinning ring and the button shows a spinner and its percentage. Once the installer is staged and verified the ring becomes a green dot and the button reads **Restart to update**.
 
 **Then quit and reopen, and you are on the new version.** The install happens at launch, before any window opens, because Windows cannot replace a running executable — the app hands off to a detached helper that waits for it to exit, installs, and starts the new build. On macOS that means mounting the disk image, copying the bundle out, and swapping it in. Nothing is prompted for, and nothing interrupts you mid-read. **Restart to update** remains on the button for anyone who would rather not wait for the next launch.
+
+**An update brings the app back by itself, the way the install opens it** — you never install and then go looking for Leaftext, and one window comes back, never two.
 
 Each version is installed automatically once. If an install fails, that version then waits for a deliberate click instead of being retried forever. There is no setting for any of this: staying current is what the app does.
 

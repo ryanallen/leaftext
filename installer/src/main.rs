@@ -8,6 +8,7 @@
 
 mod args;
 mod exit;
+mod launch;
 mod locations;
 mod plan;
 
@@ -65,7 +66,7 @@ fn run() -> i32 {
     }
 }
 
-/// Put the install on.
+/// Put the install on, then open the app for whoever ran this themselves.
 ///
 /// A silent run takes the folder it was given; anything else asks first, on the one screen, and a canceled screen is a run that did nothing and says so by exiting cleanly.
 #[cfg(windows)]
@@ -80,14 +81,20 @@ fn add(request: &args::Request) -> Result<(), exit::Failure> {
         exit::Failure::failed(format!("could not find this installer: {error}"))
     })?;
 
+    let plan = plan::plan(&folder, &locations::start_menu_folder(), VERSION);
     apply::install(
-        &plan::plan(&folder, &locations::start_menu_folder(), VERSION),
+        &plan,
         &apply::Sources {
             app: &app,
             uninstaller: &running,
         },
         None,
-    )
+    )?;
+
+    if let Some(opening) = launch::after_install(request, &plan) {
+        launch::start(&opening);
+    }
+    Ok(())
 }
 
 /// Take it back off.

@@ -246,7 +246,7 @@ Your app data lives alongside it:
 %LOCALAPPDATA%\ryanallen\leaftext\data
 ```
 
-Launch it from the Start Menu, or tap the Windows key and type **Leaftext**. One Start Menu entry, no desktop shortcut.
+**Leaftext opens itself when the install finishes.** After that, launch it from the Start Menu, or tap the Windows key and type **Leaftext**. One Start Menu entry, no desktop shortcut.
 
 If a small box says **the system administrator has set policies to prevent this installation**, that machine is set to refuse Windows Installer packages and no certificate would change it. Take the `.exe` from the release page instead — same install, same folder, same Start Menu entry, and updates keep arriving as that file. **[More detail →](docs/02-installation.md#windows-refuses-the-msi)**
 
