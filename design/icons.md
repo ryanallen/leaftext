@@ -85,3 +85,5 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | trash | trash.svg | heroicons | regular | — | Remove vault, in the vault settings menu. |
 | copy | copy.svg | heroicons | regular | — | Copy a code block. |
 | leaf | leaf.svg | leaftext | — | — | The header logomark, and a Markdown file's badge in the pane. |
+| windows | windows.svg | leaftext | — | — | The Windows mark on the landing page's Download for Windows button — a document names it in the button's braces. Four squares, so it is composed here. |
+| apple | apple.svg | simpleicons | — | — | The Apple mark on the Download for macOS button beside it. |

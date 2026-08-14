@@ -2676,6 +2676,8 @@ body:has(#readerToolbar:not([hidden])) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* The mark a button may wear sits before the label, so the two need a gap. */
+  gap: var(--lt-space-8);
   border: var(--lt-stroke-1) solid var(--lt-primary);
   border-radius: var(--lt-radius-md);
   background: var(--lt-primary);

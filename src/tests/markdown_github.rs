@@ -341,3 +341,77 @@ fn renders_leaf_button_link_custom_markdown() {
     assert!(!row.html.contains('{'));
     assert!(!row.html.contains('}'));
 }
+
+#[test]
+fn a_document_button_wears_the_mark_its_braces_name() {
+    let source_path = fixture_source_path("project/current.md");
+    let rendered = render_markdown_document(
+        "get {{{icon:windows[Download for Windows](https://example.com/a.exe)}}} now\n\nand {{{icon:apple[Download for macOS](https://example.com/a.dmg)}}}\n\nInline `{{{icon:windows[x](y)}}}` stays literal.\n",
+        &source_path,
+    );
+
+    // The mark is the renderer's own span, first inside the anchor, and the name goes with the braces.
+    assert_contains(
+        &rendered.html,
+        r#"<a class="leaf-md-button" href="https://example.com/a.exe" rel="noopener noreferrer"><span class="lt-icon lt-icon-windows"></span>Download for Windows</a>"#,
+    );
+    assert_contains(
+        &rendered.html,
+        r#"<span class="lt-icon lt-icon-apple"></span>Download for macOS</a>"#,
+    );
+    assert_contains(&rendered.html, "get <a");
+    assert_contains(&rendered.html, "</a> now");
+    assert!(!rendered.html.contains("icon:windows<a"));
+    assert!(!rendered.html.contains("get {"));
+    // Inside code there is no link event, so the whole token stays as typed.
+    assert_contains(&rendered.html, "<code>{{{icon:windows[x](y)}}}</code>");
+
+    // A name the list does not carry is not a button at all: the run stays literal prose, the way a lopsided wrapper does, rather than asking the page for a mask nothing generates.
+    let unknown = render_markdown_document(
+        "get {{{icon:penguin[Download](https://example.com/a.deb)}}} now\n",
+        &source_path,
+    );
+    assert!(!unknown.html.contains("leaf-md-button"));
+    assert!(!unknown.html.contains("lt-icon"));
+    assert_contains(&unknown.html, "{{{icon:penguin<a");
+    assert_contains(&unknown.html, "</a>}}} now");
+
+    // Prose that happens to say "icon:" before an ordinary button is prose, and the button still draws.
+    let prose = render_markdown_document(
+        "the icon: {{{[Filled](https://example.com)}}}\n",
+        &source_path,
+    );
+    assert_contains(
+        &prose.html,
+        r#"<a class="leaf-md-button" href="https://example.com" rel="noopener noreferrer">Filled</a>"#,
+    );
+    assert_contains(&prose.html, "the icon: <a");
+}
+
+#[test]
+fn every_mark_a_document_may_wear_has_a_row_in_the_icon_table() {
+    // The list in the renderer and the table that generates the masks are two files, so a name added to one and not the other would reach the page as a class nothing draws.
+    let table = include_str!("../../design/icons.md");
+    let events = include_str!("../markdown/events.rs");
+    let names = events
+        .split_once("const DOCUMENT_BUTTON_ICONS: &[&str] = &[")
+        .expect("the renderer names the marks a document may wear")
+        .1
+        .split_once("];")
+        .expect("that list ends")
+        .0;
+    let listed: Vec<&str> = names
+        .split(',')
+        .map(|name| name.trim().trim_matches('"'))
+        .filter(|name| !name.is_empty())
+        .collect();
+    assert!(!listed.is_empty(), "the list of marks is empty");
+    for name in listed {
+        assert!(
+            table
+                .lines()
+                .any(|line| line.starts_with(&format!("| {name} | "))),
+            "design/icons.md has no row for {name}, which a document may name in a button"
+        );
+    }
+}

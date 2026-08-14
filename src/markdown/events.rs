@@ -10,6 +10,8 @@ use super::*;
 ///
 /// Braces only: brackets would be read as link syntax, leaving the wrapper behind as literal text beside a plain link.
 ///
+/// The braces may also name a mark the button wears — `{{{icon:windows[Download for Windows](url)}}}` — which is the renderer's to put there, not the author's to draw: the sanitizer keeps no `class` on a `<span>`, and a document that could name one could wear any part of the app's own interface.
+///
 /// Links can't nest in CommonMark, so the braces stay literal: they arrive as the tail of the Text before the link and the head of the Text after it. We strip the matched run from each side and wrap the label in the button anchor. Working on Link events is what keeps the syntax literal inside code.
 pub(crate) fn button_links(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
     let mut out: Vec<Event<'static>> = Vec::with_capacity(events.len());
@@ -18,7 +20,7 @@ pub(crate) fn button_links(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
         if let Event::Start(Tag::Link { dest_url, .. }) = &events[index] {
             if let Some(end) = link_end_index(&events, index) {
                 // Braces merge with adjacent prose, so each side is a run at one Text boundary.
-                let open = out_trailing_run(&out, '{');
+                let (open, icon, opener) = out_trailing_button_open(&out);
                 let close = event_leading_run(events.get(end + 1), '}');
 
                 // Lopsided wrappers are prose, not a button, and are left alone.
@@ -32,11 +34,16 @@ pub(crate) fn button_links(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
                     .flatten();
 
                 if let Some(variant) = variant {
-                    strip_out_trailing_chars(&mut out, open);
+                    strip_out_trailing_chars(&mut out, opener);
                     out.push(Event::InlineHtml(cowstr(&format!(
                         r#"<a class="leaf-md-button{variant}" href="{}">"#,
                         encode_double_quoted_attribute(dest_url.as_ref())
                     ))));
+                    if let Some(icon) = icon {
+                        out.push(Event::InlineHtml(cowstr(&format!(
+                            r#"<span class="lt-icon lt-icon-{icon}"></span>"#
+                        ))));
+                    }
                     out.extend(events[index + 1..end].iter().cloned());
                     out.push(Event::InlineHtml(cowstr("</a>")));
                     // Keep any prose that merged onto the far side of the braces.
@@ -73,12 +80,32 @@ fn event_leading_run(event: Option<&Event<'static>>, ch: char) -> usize {
         .unwrap_or(0)
 }
 
-/// How many `ch` in a row the last event in `out` ends with, if it is a `Text`.
-fn out_trailing_run(out: &[Event<'static>], ch: char) -> usize {
-    out.last()
-        .and_then(event_text)
-        .map(|text| text.chars().rev().take_while(|c| *c == ch).count())
-        .unwrap_or(0)
+/// The marks a document may wear inside a button, and the whole of them.
+///
+/// An author cannot draw one: the sanitizer keeps no `class` on a `<span>`, so a document that could name one could put on any part of the app's own interface. This list is what a name is checked against, and every entry owes a row in `design/icons.md` — a name with no row would ask the page for a mask nothing generates.
+const DOCUMENT_BUTTON_ICONS: &[&str] = &["apple", "windows"];
+
+/// The button wrapper on the tail of `out`: how many `{` it opens with, the mark it names, and how many characters of it to strip.
+///
+/// An unknown name is no button at all, and the run stays literal prose — the way a lopsided wrapper already does.
+fn out_trailing_button_open(out: &[Event<'static>]) -> (usize, Option<&'static str>, usize) {
+    let Some(text) = out.last().and_then(event_text) else {
+        return (0, None, 0);
+    };
+    let named = text.rsplit_once("icon:").filter(|(_, name)| {
+        !name.is_empty() && name.chars().all(|c| c.is_ascii_lowercase() || c == '-')
+    });
+    let (head, icon, named_len) = match named {
+        Some((head, name)) => {
+            let Some(known) = DOCUMENT_BUTTON_ICONS.iter().find(|icon| **icon == name) else {
+                return (0, None, 0);
+            };
+            (head, Some(*known), name.len() + "icon:".len())
+        }
+        None => (text, None, 0),
+    };
+    let braces = head.chars().rev().take_while(|c| *c == '{').count();
+    (braces, icon, braces + named_len)
 }
 
 /// Drop the last `count` (single-byte wrapper) characters from the final `Text` event in `out`, removing the event entirely if that empties it.

@@ -81,8 +81,9 @@ if ($tagVersion -ne $version) {
 
 $arch = "x86_64"
 $dist = Join-Path $repoRoot $OutDir
-$msiName = "leaftext-$Tag-windows-$arch.msi"
-$setupName = "leaftext-$Tag-windows-$arch.exe"
+# No version in the name: the landing page's buttons point at a fixed address under releases/latest/download, which only answers when the asset name never moves.
+$msiName = "leaftext-windows-$arch.msi"
+$setupName = "leaftext-windows-$arch.exe"
 
 $exePath = Join-Path $repoRoot "target\release\leaftext.exe"
 $setupBuilt = Join-Path $repoRoot "target\release\leaftext-setup.exe"

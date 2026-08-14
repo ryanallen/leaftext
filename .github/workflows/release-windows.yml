@@ -63,9 +63,11 @@ jobs:
           # in-app updater installs: the MSI, and the EXE for a machine whose
           # policy blocks Windows Installer packages. Nothing here is published
           # for the updater alone.
+          # No version in either name, so the landing page's buttons can point
+          # at a fixed releases/latest/download address that keeps answering.
           $assets = @(
-            "dist/leaftext-$tag-windows-x86_64.msi",
-            "dist/leaftext-$tag-windows-x86_64.exe"
+            "dist/leaftext-windows-x86_64.msi",
+            "dist/leaftext-windows-x86_64.exe"
           )
           # Every one of them, not whichever turned up: a release missing the EXE
           # looks exactly like a release that never had one, and the machine it

@@ -135,14 +135,15 @@ jobs:
             local artifact_suffix="$1"
             local source_binary="$2"
 
-            local package_name="leaftext-${tag}-macos-${artifact_suffix}"
+            # No version in the name: the landing page's button points at a fixed releases/latest/download address, which only answers when the asset name never moves.
+            local package_name="leaftext-macos-${artifact_suffix}"
             local package_dir="dist/package/${package_name}"
             local app_dir="${package_dir}/${app_name}"
             local app_contents="${app_dir}/Contents"
             local app_macos="${app_contents}/MacOS"
             local app_resources="${app_contents}/Resources"
             local dmg_root="dist/dmg-${artifact_suffix}"
-            local dmg_path="dist/leaftext-${tag}-macos-${artifact_suffix}.dmg"
+            local dmg_path="dist/leaftext-macos-${artifact_suffix}.dmg"
 
             rm -rf "${package_dir}" "${dmg_root}"
             mkdir -p "${app_macos}" "${app_resources}" "${dmg_root}"
@@ -413,7 +414,7 @@ jobs:
 
           tag="${DIST_TAG}"
           assets=(
-            "dist/leaftext-${tag}-macos-universal.dmg"
+            "dist/leaftext-macos-universal.dmg"
           )
 
           # Ensure the release exists; ignore failure if another job created it first.

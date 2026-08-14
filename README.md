@@ -4,11 +4,11 @@
 
 ![The Leaftext window with a Markdown document open: the library pane at left, the rendered page in the middle with its outline collapsed under the title, and the minimap rail down the right edge](imgs/leaftext.png)
 
-<a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
-<a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
-<a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="Windows" src="https://img.shields.io/badge/Windows-x64-0078d4?style=flat&labelColor=4b5563"></a>
+{{{icon:windows[Download for Windows](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)}}} {{{icon:apple[Download for macOS](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)}}}
 
-**[Download it →](https://github.com/ryanallen/leaftext/releases/latest)** · **[How to install it →](docs/02-installation.md#install)** · **[Mac won't open it? →](docs/02-installation.md#mac-blocks-the-first-launch)**
+Free · Windows 10+ and macOS Universal · **[Windows `.msi`](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.msi)** · **[All releases](https://github.com/ryanallen/leaftext/releases/latest)**
+
+**[How to install it →](docs/02-installation.md#install)** · **[Mac won't open it? →](docs/02-installation.md#mac-blocks-the-first-launch)**
 
 > **Read this if you're on a Mac.** macOS refuses the first launch of any app Apple hasn't been paid to vouch for, and Leaftext is free, so it hasn't. Nothing was scanned and nothing was found. Let it through once — **System Settings → Privacy & Security → Open Anyway** — and it opens normally from then on. [The four clicks, spelled out →](docs/02-installation.md#mac-blocks-the-first-launch)
 
@@ -209,7 +209,7 @@ An installer downloads in the background, is checked for the length the release 
 
 ## Install it
 
-Leaftext is free. **[Download the latest release](https://github.com/ryanallen/leaftext/releases/latest)**, then follow your platform below — or the fuller walkthrough in the **[Installation guide](docs/02-installation.md#install)**.
+Leaftext is free. **[Download for Windows](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)** or **[for macOS](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)**, then follow your platform below — or the fuller walkthrough in the **[Installation guide](docs/02-installation.md#install)**.
 
 ### macOS
 

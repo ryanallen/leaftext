@@ -1,6 +1,6 @@
 # Installation
 
-> Download the build for your platform from GitHub Releases, install it, and open a Markdown, XML, JSON, YAML, or email file.
+> Download the installer for your platform, run it, and open a Markdown, XML, JSON, YAML, or email file.
 
 Leaftext is free, and it ships ready to run on macOS and Windows. There's no account to create, no plugins to pick, and no runtime to install first — download it, open it, and it works.
 
@@ -11,12 +11,12 @@ The one snag is the same one every small app hits: neither Apple nor Microsoft h
 | Platform | Package | Notes |
 | --- | --- | --- |
 | macOS | `.dmg` | Universal (Apple Silicon + Intel). First launch [needs unblocking](#mac-blocks-the-first-launch) |
-| Windows | `.msi` | Windows 10+ 64-bit. Installer [may warn once](#windows-warns-before-it-runs) |
-| Windows | `.exe` | The same install, for a machine [whose policy blocks `.msi`](#windows-refuses-the-msi) |
+| Windows | `.exe` | Windows 10+ 64-bit. Installer [may warn once](#windows-warns-before-it-runs) |
+| Windows | `.msi` | The same install, for a machine where you would rather Windows itself managed it |
 
-Every file on the release page is an installer you can run — no checksums, nothing published for the updater alone. Take the `.msi` on Windows; the `.exe` is there for the machines that refuse it, and the two produce exactly the same install. The [in-app updater](#updates) then keeps taking whichever file put Leaftext on the machine, so there is nothing to choose twice.
+Every file on the release page is an installer you can run — no checksums, nothing published for the updater alone. Take the `.exe` on Windows: it is the file the front page hands out, and it is the one no machine's policy refuses. The `.msi` is the same install managed by Windows Installer, which [some machines are set to block](#windows-refuses-the-msi). The [in-app updater](#updates) then keeps taking whichever file put Leaftext on the machine, so there is nothing to choose twice.
 
-**[Download the latest release →](https://github.com/ryanallen/leaftext/releases/latest)** — then follow the steps for your platform below.
+**[Download for Windows →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)** · **[Download for macOS →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)** — then follow the steps for your platform below.
 
 ## Install
 
@@ -24,7 +24,7 @@ Every file on the release page is an installer you can run — no checksums, not
 
 ![The mounted Leaftext disk image in the Finder: the leaf app icon on the left with an arrow pointing to the Applications folder shortcut on the right](../imgs/install-mac.png)
 
-**1. Download** the file ending in `-macos-universal.dmg` from the [latest release](https://github.com/ryanallen/leaftext/releases/latest). One file covers both Apple Silicon and Intel Macs.
+**1. Download** the file ending in `-macos-universal.dmg` — **[the disk image →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)**. One file covers both Apple Silicon and Intel Macs.
 
 **2. Open the downloaded file.** A window opens showing the leaf app on one side and an **Applications** folder on the other.
 
@@ -38,9 +38,9 @@ Every file on the release page is an installer you can run — no checksums, not
 
 ![The Leaftext MSI installer’s single screen, titled Destination Folder: the install path in a text field with a Change button under it, and Install and Cancel at the foot](../imgs/install-windows-msi.png)
 
-**1. Download** the file ending in `.msi` from the [latest release](https://github.com/ryanallen/leaftext/releases/latest). It needs 64-bit Windows 10 or later.
+**1. Download** the file ending in `.exe` — **[the installer →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)**. It needs 64-bit Windows 10 or later. If you would rather Windows itself managed the install, take **[the `.msi` →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.msi)** instead; both lay down exactly the same thing.
 
-**2. Run the installer.** If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs). If instead a small box says **the system administrator has set policies to prevent this installation**, take the `.exe` instead — see [Windows refuses the MSI](#windows-refuses-the-msi).
+**2. Run the installer.** If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs). If you took the `.msi` and a small box says **the system administrator has set policies to prevent this installation**, take the `.exe` — see [Windows refuses the MSI](#windows-refuses-the-msi).
 
 **3. Click Install.** The installer shows one screen: the install folder, with **Change...** to pick another. There is no elevation prompt and no confirmation screen — Leaftext installs for the current user, and when it is done the setup window closes and **Leaftext opens in its place**. The `.exe` installer draws the same single screen, in the same place, with the same two buttons, and opens the app the same way.
 
@@ -100,7 +100,7 @@ Windows may show a full-screen **Windows protected your PC** box the first time 
 
 Some managed machines are set to refuse Windows Installer packages outright. The box is small, comes from **Windows Installer** rather than from Leaftext, and says **the system administrator has set policies to prevent this installation**. It appears before the installer's own screen, and no certificate would change it: the refusal is about the kind of file, not about who made it.
 
-**Download the file ending in `.exe` instead.** It installs Leaftext the same way into the same folder, with the same Start Menu entry and the same file associations, and it never touches Windows Installer. From there everything below is identical, updates included.
+**[Download the file ending in `.exe` →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)** instead. It installs Leaftext the same way into the same folder, with the same Start Menu entry and the same file associations, and it never touches Windows Installer. From there everything below is identical, updates included.
 
 If that file is refused too, the machine is enforcing a different rule again — one about unsigned programs — and only whoever manages it can allow it through.
 

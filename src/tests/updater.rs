@@ -234,6 +234,32 @@ fn every_published_file_is_an_installer_a_person_can_run() {
 
     let macos = include_str!("../../.github/workflows/release-distributions.yml");
     assert!(macos.contains(&MACOS_SUFFIX["-macos-".len()..]));
+
+    // Every uploaded name is exactly `leaftext` and the updater's own suffix, with no version in it, because the landing page's buttons are fixed addresses under releases/latest/download and a name carrying the tag moves out from under them every release.
+    for (workflow, file, suffix) in [
+        (windows, "release-windows.yml", WINDOWS_MSI_SUFFIX),
+        (windows, "release-windows.yml", WINDOWS_EXE_SUFFIX),
+        (macos, "release-distributions.yml", MACOS_SUFFIX),
+    ] {
+        assert!(
+            workflow.contains(&format!("\"dist/leaftext{suffix}\"")),
+            "{file} does not upload dist/leaftext{suffix} under that exact name"
+        );
+    }
+
+    // The Windows names are built by a script the workflow calls, so the two have to agree or the upload finds nothing.
+    let build = include_str!("../../scripts/build-windows-release.ps1");
+    for suffix in [WINDOWS_MSI_SUFFIX, WINDOWS_EXE_SUFFIX] {
+        let extension = suffix
+            .rsplit_once('.')
+            .expect("a suffix names a file type")
+            .1;
+        assert!(
+            build.contains(&format!("\"leaftext-windows-$arch.{extension}\"")),
+            "build-windows-release.ps1 does not build leaftext{suffix}"
+        );
+    }
+
     assert_eq!(platform_asset_suffix(), {
         #[cfg(target_os = "macos")]
         {
@@ -250,6 +276,75 @@ fn every_published_file_is_an_installer_a_person_can_run() {
 /// The uploader's own list of assets, out of the Windows release workflow.
 fn release_windows_workflow() -> &'static str {
     include_str!("../../.github/workflows/release-windows.yml")
+}
+
+/// Where a fixed download address starts. GitHub resolves `latest` to the newest release and serves the asset with `content-disposition: attachment`, so a click saves the file and the page it was clicked from stays put.
+const FIXED_DOWNLOAD: &str = "https://github.com/ryanallen/leaftext/releases/latest/download/";
+
+#[test]
+fn the_front_page_buttons_are_the_files_themselves() {
+    // A visitor who has decided to try it should get the installer, not a listing of five files to choose from. So every button address is one file, at an address no release moves.
+    let readme = include_str!("../../README.md");
+    for (label, suffix) in [
+        ("Download for Windows", WINDOWS_EXE_SUFFIX),
+        ("Download for macOS", MACOS_SUFFIX),
+    ] {
+        assert!(
+            readme.contains(&format!("[{label}]({FIXED_DOWNLOAD}leaftext{suffix})")),
+            "the README's {label} button does not point at {FIXED_DOWNLOAD}leaftext{suffix}"
+        );
+    }
+
+    // The MSI keeps a link rather than a button: both files lay down the same install, and the one a machine's policy can refuse is not the one the front page hands out.
+    assert!(readme.contains(&format!("{FIXED_DOWNLOAD}leaftext{WINDOWS_MSI_SUFFIX}")));
+    assert!(
+        !readme.contains(&format!(
+            "[Download for Windows]({FIXED_DOWNLOAD}leaftext{WINDOWS_MSI_SUFFIX})"
+        )),
+        "the Windows button hands out the .msi, which a policy box can refuse outright"
+    );
+
+    // Nothing on that page is a badge fetched from somewhere else: the button the app draws from a document is the app's own.
+    assert!(
+        !readme.contains("img.shields.io"),
+        "the README still wears somebody else's badge"
+    );
+}
+
+#[test]
+fn no_page_sends_a_reader_to_the_release_listing_to_find_their_file() {
+    // Every place a person was handed a page of five files to read is the file itself now. The one listing link left is named as one, under the buttons, for somebody who wants to see every file.
+    const LISTING: &str = "https://github.com/ryanallen/leaftext/releases";
+    let readme = include_str!("../../README.md");
+    let install = include_str!("../../docs/02-installation.md");
+    let landing = include_str!("../../index.html");
+
+    let mut listings = 0;
+    for (name, page) in [
+        ("README.md", readme),
+        ("docs/02-installation.md", install),
+        ("index.html", landing),
+    ] {
+        for (at, _) in page.match_indices(LISTING) {
+            let rest = &page[at + LISTING.len()..];
+            if rest.starts_with("/latest/download/") {
+                continue;
+            }
+            listings += 1;
+            assert!(
+                name == "README.md" && rest.starts_with("/latest)"),
+                "{name} still sends a reader to the release listing at {LISTING}{}",
+                &rest[..rest.len().min(24)]
+            );
+        }
+    }
+    assert_eq!(listings, 1, "the one named All releases link is missing");
+    assert!(readme.contains(&format!("[All releases]({LISTING}/latest)")));
+
+    // The landing page's structured data offers the same file the Windows button does, rather than the listing.
+    assert!(landing.contains(&format!(
+        r#""downloadUrl": "{FIXED_DOWNLOAD}leaftext{WINDOWS_EXE_SUFFIX}""#
+    )));
 }
 
 #[test]
