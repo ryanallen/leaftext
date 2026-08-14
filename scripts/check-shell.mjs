@@ -4122,11 +4122,11 @@ if (booted) {
   // The inset is the room the drag handle and plus occupy, written once in the stylesheet and once in the script that places them.
   check('the table lane leaves exactly the block controls their margin', () => {
     const { css, rule } = tableLaneRule();
-    if (!rule.includes('var(--reader-table-lane-inset)')) {
+    if (!rule.includes('var(--reader-lane-inset)')) {
       throw new Error('the lane no longer keeps the block controls their strip');
     }
-    const declared = css.match(/--reader-table-lane-inset:\s*(\d+)px/);
-    if (!declared) throw new Error('--reader-table-lane-inset is not declared');
+    const declared = css.match(/--reader-lane-inset:\s*(\d+)px/);
+    if (!declared) throw new Error('--reader-lane-inset is not declared');
     const script = readFileSync(join(root, 'src/assets/shell/block-controls.js'), 'utf8');
     const tools = script.match(/BLOCK_TOOLS_WIDTH = (\d+)/);
     if (!tools) throw new Error('BLOCK_TOOLS_WIDTH is gone from block-controls.js');
@@ -4194,11 +4194,73 @@ if (booted) {
     }
     // The 62px strip is measured from the reader's edge, and the gutter from the text measure — so a widened table's handle lands on its first column unless it rides the lane.
     const place = controls.slice(controls.indexOf('function positionBlockGutter'), controls.indexOf('function blockGutterAnchorY'));
-    if (!place.includes(".closest('.table-lane')")) {
+    if (!place.includes(".closest('.table-lane, .image-lane')")) {
       throw new Error('the drag handle is anchored to the text measure, so it sits on a widened table');
     }
     const render = readFileSync(join(root, 'src/assets/shell/render-document.js'), 'utf8');
     if (!render.includes('laneWideTables();')) throw new Error('nothing calls laneWideTables on a render');
+  });
+
+  // The picture half of the same lane, and the one thing about it that cannot be read off the stylesheet: which paragraphs get the mark. CSS counts elements and never text, so the shapes below are exactly what a `:has(> img:only-child)` selector would have got wrong.
+  check('only a paragraph holding one picture and no words is widened to the lane', () => {
+    const paragraph = (children, text = '') => {
+      const block = fakeElement('p');
+      block.tagName = 'P';
+      block.children = children;
+      block.textContent = text;
+      return block;
+    };
+    const picture = () => {
+      const img = fakeElement('img');
+      img.tagName = 'IMG';
+      return img;
+    };
+    const opener = fakeElement('button');
+    opener.tagName = 'BUTTON';
+    const alone = paragraph([picture()], '\n  ');
+    const sentence = paragraph([picture()], 'watch this ');
+    const two = paragraph([picture(), picture()]);
+    const words = paragraph([], 'an ordinary paragraph');
+    // A picture already carrying the whole-window opener: the mark has to survive a second pass, or the button would un-widen the picture it sits on.
+    const opened = paragraph([picture(), opener], '\n');
+    const table = fakeElement('table');
+    table.tagName = 'TABLE';
+    const body = fakeElement('body');
+    body.children = [alone, sentence, two, words, opened, table];
+    booted.laneWidePictures({ querySelector: (selector) => (selector === '.document-body' ? body : null) });
+    for (const [name, block, expected] of [
+      ['a picture alone', alone, true],
+      ['a picture in a sentence', sentence, false],
+      ['two pictures', two, false],
+      ['a paragraph of words', words, false],
+      ['a picture already carrying its opener', opened, true],
+      ['a table', table, false],
+    ]) {
+      if (block.classList.contains('image-lane') !== expected) {
+        throw new Error(`${name} was ${expected ? 'not ' : ''}widened to the lane`);
+      }
+    }
+  });
+
+  // Its width rule, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a picture back at the text measure, a small one stretched to the lane, or one grown past the strip the block controls need.
+  check('a widened picture takes the lane and a small one keeps its own size', () => {
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const opened = css.indexOf('.document-body > p.image-lane {');
+    if (opened < 0) throw new Error('no rule widens a picture to the reader lane');
+    const rule = css.slice(opened, css.indexOf('}', opened));
+    // `max-content` is the picture's own size: a block box at `auto` would fill the measure, and a `max-width` alone can cap a width but never grant one.
+    if (!/width:\s*max-content/.test(rule)) throw new Error('the paragraph no longer sizes to the picture in it');
+    if (!rule.includes('max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)))')) {
+      throw new Error('a widened picture no longer stops at the lane, less the block controls their strip');
+    }
+    if (!/transform:\s*translateX\(-50%\)/.test(rule) || !/left:\s*50%/.test(rule)) {
+      throw new Error('the widened picture is no longer centered on its own width');
+    }
+    // The cap that keeps a small picture small, and a big one inside whatever the paragraph was given.
+    const image = css.slice(css.indexOf('.document-body img {'), css.indexOf('}', css.indexOf('.document-body img {')));
+    if (!/max-width:\s*100%/.test(image)) throw new Error('a picture is no longer capped at what holds it');
+    const render = readFileSync(join(root, 'src/assets/shell/render-document.js'), 'utf8');
+    if (!render.includes('laneWidePictures();')) throw new Error('nothing calls laneWidePictures on a render');
   });
 
   // The two halves of a node press, sliced out of the fragment the way the flowchart canvas handler is above: what each one sends is one line, and neither is reachable without a real Pixi stage.
@@ -4814,9 +4876,10 @@ function siteBoot(site) {
   return { context, sent, bubbles };
 }
 
-check('a published site draws no Back, no Forward, no window buttons and no first-run bubble', () => {
+check('a published site draws no Back, no Forward, no Open, no New document, no window buttons and no first-run bubble', () => {
   const site = siteBoot(true);
-  for (const id of ['backButton', 'forwardButton']) {
+  // The folder and the plus go with the pair: a static site has no file dialog and nowhere to save, so both commands are refused forever rather than not yet.
+  for (const id of ['backButton', 'forwardButton', 'openButton', 'newButton']) {
     if (site.context.document.getElementById(id)) throw new Error(`a site still has ${id} standing in the bar`);
   }
   if (site.context.document.querySelector('.history-actions')) throw new Error('a site still has the history strip in the bar');
@@ -4832,7 +4895,7 @@ check('a published site draws no Back, no Forward, no window buttons and no firs
 
   // The desktop is untouched: both buttons, and the bubble it has always shown on a first launch.
   const desktop = siteBoot(false);
-  for (const id of ['backButton', 'forwardButton']) {
+  for (const id of ['backButton', 'forwardButton', 'openButton', 'newButton']) {
     if (!desktop.context.document.getElementById(id)) throw new Error(`the desktop lost ${id}`);
   }
   if (desktop.bubbles.length !== 1) throw new Error(`a desktop first launch drew ${desktop.bubbles.length} first-run bubbles`);
@@ -6883,7 +6946,7 @@ function standInModule() {
 const SERVED_DOCUMENTS = [{ path: 'README.md' }, { path: 'notes/one.md' }, { path: 'notes/two.md' }];
 
 /** The host, in a page that has what the published one has. The export writes the pending-command stub, not the host, so it is installed here exactly as the export writes it — a check without it is not testing the page a reader is served. */
-async function bootWebHost({ pending = [], documents = SERVED_DOCUMENTS, name = '' } = {}) {
+async function bootWebHost({ pending = [], documents = SERVED_DOCUMENTS, name = '', kept = {} } = {}) {
   const module_ = standInModule();
   const extras = {
     // The published page's own queue: the front end sends its first commands before any module script can have run, and the host drains them.
@@ -6896,6 +6959,16 @@ async function bootWebHost({ pending = [], documents = SERVED_DOCUMENTS, name = 
   };
   const context = runShell(source, extras);
   context.window.ipc = { postMessage: noopPost };
+
+  // The browser's own store, and the file the published page reads it back with — run here the way the page runs it, above the host, because the host seeds itself out of what it finds there.
+  const store = new Map(Object.entries(kept));
+  context.window.localStorage = {
+    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => store.set(key, String(value)),
+  };
+  // The line the module's own boot script writes: the state the page starts from, with neither list in it.
+  context.window.__leafInitialState = { recent: [], favorites: [], tabs: [], active: null, document: null };
+  new vm.Script(readFileSync(join(root, 'web/preview/settings.js'), 'utf8'), { filename: 'settings.js' }).runInContext(context);
 
   // Everything the host hands the page, recorded on the way through. The pane and the strip still run the page's own call, so a payload the front end cannot take fails here. The state call is recorded and not run: it renders a whole document, and nothing is rendered on this page for it to render into — what is being proved is that the host reached the page by the call it reads a document in by.
   const seen = { state: [], folder: [], pager: [], fragment: [], place: [] };
@@ -6915,7 +6988,7 @@ async function bootWebHost({ pending = [], documents = SERVED_DOCUMENTS, name = 
 
   const host = readFileSync(join(root, 'web/preview/host.js'), 'utf8');
   // The host is an ES module with three exports and no imports, so it evaluates as a script once the export keyword is off. Nothing else about it is touched.
-  new vm.Script(host.replace(/^export /gm, '') + '\nglobalThis.__startLeaftext = startLeaftext;\nglobalThis.__COMMANDS = COMMANDS;\nglobalThis.__answers = answers;\nglobalThis.__LATER = LATER;', {
+  new vm.Script(host.replace(/^export /gm, '') + '\nglobalThis.__startLeaftext = startLeaftext;\nglobalThis.__COMMANDS = COMMANDS;\nglobalThis.__answers = answers;\nglobalThis.__LATER = LATER;\nglobalThis.__landingPath = landingPath;', {
     filename: 'host.js',
   }).runInContext(context);
 
@@ -6930,6 +7003,8 @@ async function bootWebHost({ pending = [], documents = SERVED_DOCUMENTS, name = 
     seen,
     asked: module_.asked,
     address: context.__address,
+    // What the browser would still be holding after a reload.
+    stored: () => JSON.parse(store.get('leaftext.settings') || '{}'),
     send: (message) => context.window.ipc.postMessage(JSON.stringify(message)),
   };
 }
@@ -6964,6 +7039,105 @@ checkSettled('the browser host opens a document, fills the pane and fills the st
   if (!pager || !pager.html.includes('docs-pager-next')) throw new Error(`the Previous/Next strip came back empty: ${JSON.stringify(pager)}`);
   // A site serves only documents the app reads, so its count is always none — sent all the same, so the pane never has to ask who is talking.
   if (folder.skippedFiles !== 0) throw new Error(`a site handed the pane ${JSON.stringify(folder.skippedFiles)} as the files it skipped`);
+});
+
+// A site's front door. The listing is ordered shallowest first and then by name, so a root GLOSSARY.md beats the README beside it — which is how a published site came to open on whatever sorted first rather than on the page its author would call its front.
+checkSettled('a site opens its own front page, and the leaf comes back to it', async () => {
+  // The same landing, opened the way the published boot opens it: the rule, handed to openAddress as the fallback.
+  const land = async (documents) => {
+    const booted = await bootWebHost({ documents });
+    await booted.leaf.openAddress(booted.context.__landingPath(documents));
+    const opened = booted.asked.filter((one) => one.call === 'documentScript');
+    return Object.assign(booted, { landed: opened.length ? opened[opened.length - 1].path : null });
+  };
+  const at = (booted) => {
+    const opened = booted.asked.filter((one) => one.call === 'documentScript');
+    return opened.length ? opened[opened.length - 1].path : null;
+  };
+
+  const readme = await land([{ path: 'GLOSSARY.md' }, { path: 'README.md' }, { path: 'index.md' }, { path: 'notes/one.md' }]);
+  if (readme.landed !== 'README.md') throw new Error(`a site with a README at the top of it opened ${JSON.stringify(readme.landed)}`);
+
+  const index = await land([{ path: 'GLOSSARY.md' }, { path: 'index.html.md' }, { path: 'notes/one.md' }]);
+  if (index.landed !== 'index.html.md') throw new Error(`a site with an index and no README opened ${JSON.stringify(index.landed)}`);
+
+  // Neither name at the top: the first document the listing serves, which is the order the Previous/Next strip walks.
+  const neither = await land([{ path: 'GLOSSARY.md' }, { path: 'notes/README.md' }]);
+  if (neither.landed !== 'GLOSSARY.md') throw new Error(`a site with neither name at its top opened ${JSON.stringify(neither.landed)}`);
+
+  // The spelling is the author's, so the test is not.
+  const lower = await land([{ path: 'aaa.md' }, { path: 'readme.md' }]);
+  if (lower.landed !== 'readme.md') throw new Error(`a lower-case readme did not land: ${JSON.stringify(lower.landed)}`);
+
+  // A document named in the bar is the reader asking for that one; the landing is only ever the fallback.
+  const documents = [{ path: 'README.md' }, { path: 'notes/one.md' }, { path: 'notes/two.md' }];
+  const asked_ = await bootWebHost({ documents });
+  asked_.context.__address.history.replaceState(null, '', '#notes/two.md');
+  await asked_.leaf.openAddress(asked_.context.__landingPath(documents));
+  if (at(asked_) !== 'notes/two.md') throw new Error(`an address naming a document opened ${JSON.stringify(at(asked_))}`);
+
+  // The leaf: the same function's answer, so the way back cannot disagree with the way in.
+  asked_.send({ command: 'goHome' });
+  await settle();
+  if (at(asked_) !== 'README.md') throw new Error(`the leaf went to ${JSON.stringify(at(asked_))} instead of the site's front page`);
+});
+
+/** The published boot itself, run the way the page runs it: its own file, its one import answered by the host already evaluated in this context, and every fetch answered by the check. A module's body runs inside a call, which is what the wrapper is for — the file has a top-level await and a script may not. */
+async function runSiteBoot(answer) {
+  const module_ = standInModule();
+  const context = runShell(source, {
+    __leafPending: [],
+    fetch: async (url) => answer(String(url)),
+    WebAssembly: {
+      Memory: WebAssembly.Memory,
+      instantiate: async () => ({ instance: { exports: module_.exports } }),
+    },
+  });
+  context.window.ipc = { postMessage: noopPost };
+  // Recorded rather than run, the way the host boot beside this one does it: the state call renders a whole document, and nothing is rendered on this page for it to render into.
+  const state = [];
+  context.window.leafSetState = (payload) => state.push(payload);
+  const host = readFileSync(join(root, 'web/preview/host.js'), 'utf8');
+  new vm.Script(host.replace(/^export /gm, ''), { filename: 'host.js' }).runInContext(context);
+  const boot = readFileSync(join(root, 'web/preview/boot.js'), 'utf8');
+  await new vm.Script(`(async () => {\n${boot.replace(/^import .*$/gm, '')}\n})()`, { filename: 'boot.js' }).runInContext(context);
+  return { context, state };
+}
+
+/** Every file a healthy site is served, answered from one listing. */
+const servedFiles = (documents) => async (url) => {
+  if (url.endsWith('.wasm')) return { ok: true, arrayBuffer: async () => new ArrayBuffer(8), url };
+  if (url === 'documents.json') return { ok: true, json: async () => ({ name: 'site', documents }), url };
+  if (url.startsWith('source/')) return { ok: true, text: async () => `# ${url}\n\nWords.\n`, url };
+  return { ok: false, status: 404, url };
+};
+
+// A site opened straight off a folder on the disk fetches nothing at all, and a publish that went out short fetches most of it. Both used to kill the boot silently and leave the reader at the empty start screen, reading it as a site with no documents in it.
+checkSettled('a file that did not arrive is named on the page instead of killing the boot quietly', async () => {
+  const documents = [{ path: 'README.md' }, { path: 'notes/one.md' }];
+
+  const healthy = await runSiteBoot(servedFiles(documents));
+  const drawn = String(healthy.context.document.getElementById('app').innerHTML || '');
+  if (drawn.includes('did not arrive')) throw new Error(`a site whose files all arrived said one had not: ${drawn.slice(0, 400)}`);
+  // And it landed on the site's own front page, which is the whole boot walked end to end.
+  const landed = healthy.state[healthy.state.length - 1];
+  if (!landed || !landed.document || landed.document.path !== 'README.md') {
+    throw new Error(`the published boot landed on ${JSON.stringify(landed && landed.document && landed.document.path)}`);
+  }
+
+  // The listing itself, which is what a folder opened off the disk fails at first.
+  const noListing = await runSiteBoot(async () => {
+    throw new TypeError('Failed to fetch');
+  });
+  const said = String(noListing.context.document.getElementById('app').innerHTML || '');
+  if (!said.includes('did not arrive')) throw new Error(`a site with no listing said nothing: ${said.slice(0, 300)}`);
+  if (!said.includes('documents.json')) throw new Error(`the message did not name the file that did not arrive: ${said.slice(0, 300)}`);
+
+  // One document short: published, listed, and not in the folder.
+  const served = servedFiles(documents);
+  const shortOne = await runSiteBoot(async (url) => (url === 'source/README.md' ? { ok: false, status: 404, url } : served(url)));
+  const missing = String(shortOne.context.document.getElementById('app').innerHTML || '');
+  if (!missing.includes('source/README.md')) throw new Error(`a missing document was not named: ${missing.slice(0, 300)}`);
 });
 
 checkSettled('the browser host follows a link inside the site and refuses one outside it', async () => {
@@ -7153,6 +7327,12 @@ checkSettled('a command the browser host has no arm for is refused where somethi
   webAnswered = answered.length;
   const expected = [
     'openRecent',
+    // The mark, kept in the browser's own store the way the reader's other choices are.
+    'toggleFavorite',
+    'checkFavorites',
+    'moveFavorite',
+    // The leaf, which on a site is the way back to its own front page.
+    'goHome',
     'openLink',
     'openGlossary',
     // The choices a site keeps, each written by the one command that owns it.
@@ -7320,6 +7500,54 @@ checkSettled('each choice a site keeps is written by the one command that owns i
       throw new Error(`${message.command} wrote ${JSON.stringify(writes[0])} rather than ${JSON.stringify(expected)}`);
     }
   }
+});
+
+// The marks are the one kept thing that is state rather than a setting, so they come back over the state the page was handed rather than over its settings — and three commands share the one key, because they are three edits of one list.
+checkSettled('a site keeps the marks a reader made, and says which of them has left the export', async () => {
+  const documents = [{ path: 'README.md' }, { path: 'notes/one.md' }, { path: 'notes/two.md' }];
+  const held = {
+    'leaftext.settings': JSON.stringify({
+      favorites: [
+        { vaultId: null, path: 'notes/two.md', kind: 'document' },
+        { vaultId: null, path: 'gone.md', kind: 'document' },
+      ],
+    }),
+  };
+  const { context, send, stored } = await bootWebHost({ documents, kept: held });
+
+  // Back over the state the page starts from, before the first render, the way a kept theme comes back over its settings.
+  const landed = (context.window.__leafInitialState || {}).favorites || [];
+  if (landed.map((one) => one.path).join(',') !== 'notes/two.md,gone.md') {
+    throw new Error(`the kept marks did not reach the page's boot state: ${JSON.stringify(landed)}`);
+  }
+
+  const marks = () => (stored().favorites || []).map((one) => one.path).join(',');
+
+  send({ command: 'toggleFavorite', path: 'README.md', kind: 'document' });
+  await settle();
+  if (marks() !== 'notes/two.md,gone.md,README.md') throw new Error(`a mark made was kept as ${marks()}`);
+
+  // Paths rather than places: the row before it is the one the reader dropped it above.
+  send({ command: 'moveFavorite', path: 'README.md', before: 'gone.md' });
+  await settle();
+  if (marks() !== 'notes/two.md,README.md,gone.md') throw new Error(`a reordered mark was kept as ${marks()}`);
+
+  // No row named: last.
+  send({ command: 'moveFavorite', path: 'notes/two.md', before: null });
+  await settle();
+  if (marks() !== 'README.md,gone.md,notes/two.md') throw new Error(`a mark dropped at the foot was kept as ${marks()}`);
+
+  // A mark whose document left the export, reported the way the desktop reports a moved file.
+  const answers_ = [];
+  context.window.leafSetFavoritesMissing = (answer) => answers_.push(answer);
+  send({ command: 'checkFavorites' });
+  await settle();
+  const answer = answers_[answers_.length - 1];
+  if (!answer || answer.paths.join(',') !== 'gone.md') throw new Error(`the missing marks came back as ${JSON.stringify(answer)}`);
+
+  send({ command: 'toggleFavorite', path: 'README.md', kind: 'document' });
+  await settle();
+  if (marks() !== 'gone.md,notes/two.md') throw new Error(`a mark taken off was kept as ${marks()}`);
 });
 
 check("a published page fills its settings global above the page's own theme bootstrap, so a restored theme reaches the first paint", () => {

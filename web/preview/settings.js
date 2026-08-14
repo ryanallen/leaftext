@@ -23,6 +23,11 @@
   const settings = Object.assign({}, defaults, kept());
   window.__leafSettings = settings;
 
+  // The marks are state rather than a setting — the page reads them off the state it was handed, not off its settings — so they are merged into that state here, beside the merge above and before the first render, which is the only place either of them can happen.
+  if (Array.isArray(settings.favorites) && window.__leafInitialState && typeof window.__leafInitialState === 'object') {
+    window.__leafInitialState.favorites = settings.favorites;
+  }
+
   // The one save. The browser's own host calls it with the keys a command owns, and nothing else writes the store.
   window.__leafSaveSettings = (changed) => {
     if (!changed || typeof changed !== 'object') return;

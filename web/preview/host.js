@@ -68,10 +68,10 @@ export const COMMANDS = {
   revealFile: [REFUSED, 'there is no file manager to show it in'],
   copyFile: [REFUSED, 'nothing here writes to a disk'],
   copyPath: [REFUSED, 'a served document has no path on this machine'],
-  toggleFavorite: [LATER, 'web-site-shell'],
-  checkFavorites: [LATER, 'web-site-shell'],
+  toggleFavorite: [ANSWERED],
+  checkFavorites: [ANSWERED],
   repointFavorite: [REFUSED, 'it reopens the file picker, which a static site has not got'],
-  moveFavorite: [LATER, 'web-site-shell'],
+  moveFavorite: [ANSWERED],
   renameFile: [REFUSED, 'nothing here writes to a disk'],
   deleteFile: [REFUSED, 'nothing here writes to a disk'],
   undoDelete: [REFUSED, 'nothing here writes to a disk'],
@@ -79,7 +79,7 @@ export const COMMANDS = {
   closeTab: [LATER, 'web-app-commands'],
   switchTab: [LATER, 'web-app-commands'],
   moveTab: [LATER, 'web-app-commands'],
-  goHome: [LATER, 'web-site-shell'],
+  goHome: [ANSWERED],
   openLink: [ANSWERED],
   openExternal: [REFUSED, 'the browser follows a link out of the site itself'],
   openGlossary: [ANSWERED],
@@ -158,10 +158,51 @@ export function answers(command) {
   return (COMMANDS[command] || [])[0] === ANSWERED;
 }
 
+/** A site's own front page: the README at the top of the export, else the index there, else whatever the listing serves first.
+ *
+ * Root-first rather than nearest-folder — a walk up from wherever the first document happens to sit lands a site with several sections silently inside one of them, and no other part of the app performs that walk. It extends the shipped rule that a link to a folder opens that folder's own page, and it makes the export contract one sentence: put a README at the top of the folder you export.
+ *
+ * The name is matched however it was spelled and whatever it was saved as, and no extension list appears here: the export writes only documents the app reads, so the listing is already the format table's answer.
+ */
+export function landingPath(documents) {
+  const paths = (documents || []).map((entry) => entry && entry.path).filter(Boolean);
+  const top = paths.filter((path) => !path.includes('/'));
+  return top.find((path) => /^readme\./i.test(path)) || top.find((path) => /^index\./i.test(path)) || paths[0] || '';
+}
+
+/** Say that a file the page went looking for never arrived, and name it.
+ *
+ * A site is a folder of files that fetch each other, so one that does not come back kills the boot where nobody can see it — and the reader is left at the start screen, reading it as a site with nothing in it. The two ways it happens are a folder opened straight off the disk, where a page may fetch none of its neighbors, and a publish that went out short.
+ *
+ * Drawn with the start screen's own markup rather than markup of its own: the same section the page already styles, so this owes the stylesheet nothing.
+ */
+export function sayMissing(file, reason) {
+  const app = typeof document === 'undefined' ? null : document.getElementById('app');
+  if (!app) return;
+  const text = (value) =>
+    String(value == null ? '' : value).replace(/[&<>]/g, (one) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[one]);
+  app.className = 'reader-shell empty';
+  app.innerHTML = `
+    <section class="empty-state">
+      <h1>A file this site needs did not arrive</h1>
+      <p class="empty-subtitle">${text(file || 'One of its files')} could not be read${reason ? ` — ${text(reason)}` : ''}.</p>
+      <p class="empty-description">The pages here fetch each other, which a browser only allows over a server. Opened straight from a folder on this machine, none of them arrives; published, this one is not in the folder.</p>
+    </section>`;
+}
+
 export async function startLeaftext({ documents, name = '', read }) {
   const core = await load(MODULE);
   const known = new Set(documents.map((entry) => entry.path));
   let open = null;
+
+  // The marks the reader made, out of the store their theme and their pane width come out of. Held here as well as written, because a toggle and a reorder each read the list before writing it — which is why three commands share one key where every other kept choice owns its own.
+  const favorites = Array.isArray((window.__leafSettings || {}).favorites)
+    ? window.__leafSettings.favorites.filter((one) => one && one.path).map((one) => ({ vaultId: null, path: String(one.path), kind: one.kind || 'document' }))
+    : [];
+  function keepFavorites() {
+    // Missing on a browser that refuses storage, which leaves the marks holding for this reading and no longer.
+    if (typeof window.__leafSaveSettings === 'function') window.__leafSaveSettings({ favorites });
+  }
 
   // The reading order the Previous/Next strip walks: the listing as served, shallowest first.
   const order = documents.map((entry) => entry.path);
@@ -421,6 +462,36 @@ export async function startLeaftext({ documents, name = '', read }) {
       stampPlace(command);
       // The heading rides the open that already takes one, so the address becomes `#<path>#<anchor>` and the browser's own Back walks out of it the way it walks out of a jump inside one document.
       return openDocument(target.path, { anchor: target.anchor });
+    },
+    // The leaf at the bar's left. On the desktop it goes to the start screen — a screen of recents and favorites a site has neither of — so here it goes to the site's own front page, out of the same function the first paint opened, which is why the two can never disagree.
+    goHome: (command) => {
+      stampPlace(command);
+      return openDocument(landingPath(documents));
+    },
+    // The heart. The page has already flipped its own copy and is telling the host to remember it, so this is the remembering.
+    toggleFavorite: (command) => {
+      const path = String(command.path || '');
+      if (!path) return;
+      const at = favorites.findIndex((one) => one.path === path);
+      if (at === -1) favorites.push({ vaultId: null, path, kind: command.kind || 'document' });
+      else favorites.splice(at, 1);
+      keepFavorites();
+    },
+    // Paths rather than places, because the list the reader dragged is grouped by vault and can still be drawing a row that has left the store. No `before` means last.
+    moveFavorite: (command) => {
+      const path = String(command.path || '');
+      const at = favorites.findIndex((one) => one.path === path);
+      if (at === -1) return;
+      const [moved] = favorites.splice(at, 1);
+      const before = command.before == null ? null : String(command.before);
+      const to = before === null ? -1 : favorites.findIndex((one) => one.path === before);
+      favorites.splice(to === -1 ? favorites.length : to, 0, moved);
+      keepFavorites();
+    },
+    // Which marks have nothing behind them. The desktop asks the disk; a site asks the listing it was published with, so a mark whose document left the export is reported the way a moved file is.
+    checkFavorites: () => {
+      const paths = favorites.map((one) => one.path).filter((path) => !known.has(path));
+      run(`window.leafSetFavoritesMissing && window.leafSetFavoritesMissing(${JSON.stringify({ paths, vaults: [] })});`);
     },
     openGlossary: ({ href }) => run(core.glossaryScript(href)),
     loadPager: ({ path }) => run(`window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`),

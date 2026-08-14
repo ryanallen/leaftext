@@ -11,6 +11,11 @@ if (window.__leafSite) {
   if (crumbRow) crumbRow.remove();
   const pane = document.getElementById('libraryPane');
   if (pane) pane.style.setProperty('--library-crumbs-height', '0px');
+  // The folder and the plus go the same way, and for the same reason: a static site has no file dialog to pick from and nowhere to save what a new document would become, so both are refused forever rather than not yet. Removed rather than hidden — a hidden button still takes a tab press and still sends a command nobody answers — and above the fold, which captures its candidates as it loads and would otherwise carry two absent buttons into the chevron menu.
+  for (const id of ['openButton', 'newButton']) {
+    const button = document.getElementById(id);
+    if (button) button.remove();
+  }
 }
 // A document inside somebody else's product: the product draws its own frame, its own buttons and its own save, so the bar carrying the tabs and the theme switch, the library pane, the handle between them and the floating toolbar all go. Marked on the body rather than removed a node at a time, which is the opposite of the site block above and for a reason — that one takes down four nodes, this one takes down the bar and the pane, and 34 fragments hold references to those. A removed node is a null reference in a fragment that never asked about embedding; a class the stylesheet reads leaves every one of them finding what it looked for. It is display, not the hidden attribute: an element nothing renders is an element nothing can tab to either.
 if (window.__leafEmbedded) document.body.classList.add('is-embedded');

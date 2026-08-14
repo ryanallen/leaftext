@@ -103,6 +103,9 @@ const {
 } = window.__lt.assets;
 let mermaidLoadPromise = null;
 let katexLoadPromise = null;
-document.getElementById('openButton').addEventListener('click', () => send({ command: 'open' }));
-document.getElementById('newButton').addEventListener('click', () => send({ command: 'newDocument' }));
+// Nothing to wire on a published site: dom.js has taken both out, the way it takes Back and Forward out, because neither command has an answer a static site could give.
+const openButton = document.getElementById('openButton');
+const newButton = document.getElementById('newButton');
+if (openButton) openButton.addEventListener('click', () => send({ command: 'open' }));
+if (newButton) newButton.addEventListener('click', () => send({ command: 'newDocument' }));
 homeButton.addEventListener('click', () => send({ command: 'goHome' }));

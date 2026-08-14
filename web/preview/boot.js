@@ -2,22 +2,41 @@
 //
 // Everything above this line is the app's own — its page, its script, its stylesheet. This only answers, and it answers out of files sitting beside the page: there is no server behind any of it.
 
-import { startLeaftext } from './host.js';
+import { landingPath, sayMissing, startLeaftext } from './host.js';
 
-// The listing carries the site's own name beside its documents: the pane draws it as the trail's first word, where the desktop draws the vault it is standing in.
-const listing = await (await fetch('documents.json')).json();
-const documents = listing.documents || [];
-const leaf = await startLeaftext({
-  documents,
-  name: listing.name || '',
-  read: async (path) => (await fetch(`source/${path}`)).text(),
-});
+/** One file from beside the page, or an error naming it.
+ *
+ * Every fetch here goes through this. A static host answers 404 for a file that was not published, and a browser refuses the request outright for a folder opened off a disk; both are the same fact, and neither may kill this module quietly — a boot that throws leaves the reader at the empty start screen, reading it as a site with nothing in it.
+ */
+async function fetched(path) {
+  let response;
+  try {
+    response = await fetch(path);
+  } catch (error) {
+    throw Object.assign(new Error(String((error && error.message) || error)), { file: path });
+  }
+  if (!response.ok) throw Object.assign(new Error(`the server answered ${response.status}`), { file: path });
+  return response;
+}
 
-// The nearest glossary, which the desktop finds by walking folders and a browser cannot. Handing it over is what auto-links its terms.
-const glossary = documents.find((entry) => /(^|\/)glossary\.md$/i.test(entry.path));
-if (glossary) leaf.core.setGlossary(await (await fetch(`source/${glossary.path}`)).text());
+try {
+  // The listing carries the site's own name beside its documents: the pane draws it as the trail's first word, where the desktop draws the vault it is standing in.
+  const listing = await (await fetched('documents.json')).json();
+  const documents = listing.documents || [];
+  const leaf = await startLeaftext({
+    documents,
+    name: listing.name || '',
+    read: async (path) => (await fetched(`source/${path}`)).text(),
+  });
 
-leaf.showFolder('');
+  // The nearest glossary, which the desktop finds by walking folders and a browser cannot. Handing it over is what auto-links its terms.
+  const glossary = documents.find((entry) => /(^|\/)glossary\.md$/i.test(entry.path));
+  if (glossary) leaf.core.setGlossary(await (await fetched(`source/${glossary.path}`)).text());
 
-// The document the address names, or the first one. The host owns the address from here — it writes an entry per document opened and reads one back when the reader walks, so watching it here as well would be two things answering one Back.
-await leaf.openAddress(documents[0]?.path);
+  leaf.showFolder('');
+
+  // The document the address names, or the site's own front page. The host owns the address from here — it writes an entry per document opened and reads one back when the reader walks, so watching it here as well would be two things answering one Back.
+  await leaf.openAddress(landingPath(documents));
+} catch (error) {
+  sayMissing(error && error.file, error && error.message);
+}
