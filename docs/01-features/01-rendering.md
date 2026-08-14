@@ -226,6 +226,17 @@ This one is a Leaftext addition, not standard Markdown. Wrap an ordinary inline 
 
 Each is just a normal `[label](url)` link with braces around the whole thing. The wrapper is braces only — brackets are link syntax, so `[[Label](url)]` is a plain link between two square brackets, not a button. The braces must balance: `{{…}` is prose and stays as written. The label may hold inline formatting, and the button follows a link like any other (external URLs open in your browser, relative `.md` paths open in the reader). Written inside code the wrapper stays literal, so this page can show the syntax without turning it into a button.
 
+**A button can wear a mark.** Name one inside the braces, before the label, and it is drawn at the front of the button in the button's own color:
+
+| Syntax | Looks like |
+| --- | --- |
+| `{{{icon:windows[Download for Windows](url)}}}` | The Microsoft four-square, then the label |
+| `{{{icon:apple[Download for macOS](url)}}}` | The Apple mark, then the label |
+
+{{{icon:windows[Download for Windows](https://github.com/ryanallen/leaftext)}}} {{{icon:apple[Download for macOS](https://github.com/ryanallen/leaftext)}}}
+
+The marks a document may wear are a short list, not the whole icon set: a document that could name any of them could wear any part of the app's own interface. A name that is not on the list is not a button at all — the whole thing stays as you wrote it, so a typo shows rather than drawing a button with a blank where its mark should be.
+
 ### Images
 
 Image paths are resolved against the open file: relative paths (including `../` at any depth), absolute paths, and `file://` URLs all load. The title shows on hover:

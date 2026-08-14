@@ -80,9 +80,7 @@ fn event_leading_run(event: Option<&Event<'static>>, ch: char) -> usize {
         .unwrap_or(0)
 }
 
-/// The marks a document may wear inside a button, and the whole of them.
-///
-/// An author cannot draw one: the sanitizer keeps no `class` on a `<span>`, so a document that could name one could put on any part of the app's own interface. This list is what a name is checked against, and every entry owes a row in `design/icons.md` — a name with no row would ask the page for a mask nothing generates.
+/// The marks a document may wear inside a button, and the whole of them. Every entry owes a row in `design/icons.md`, or the page is asked for a mask nothing generates.
 const DOCUMENT_BUTTON_ICONS: &[&str] = &["apple", "windows"];
 
 /// The button wrapper on the tail of `out`: how many `{` it opens with, the mark it names, and how many characters of it to strip.
