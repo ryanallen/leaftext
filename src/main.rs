@@ -43,8 +43,8 @@ use leaftext::{
     workspace_switch_script, CloudFolder, CloudRoots, CorpusDocument, DesktopHost, DocumentFormat,
     EditableDocument, Favorite, FavoriteKind, Favorites, FilterHints, FolderListing, GitTooling,
     GraphScope, LeafHost, OpenedDocument, Query, RecentFiles, ScrollAnchor, Session, SessionTab,
-    Settings, SettingsLoad, SourceText, UpdateDownload, VaultCorpus, VaultRepo,
-    CORPUS_SLICE_DOCUMENTS, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    Settings, SettingsLoad, SourceEncoding, SourceSpelling, SourceText, UpdateDownload,
+    VaultCorpus, VaultRepo, CORPUS_SLICE_DOCUMENTS, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,

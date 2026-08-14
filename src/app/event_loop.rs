@@ -440,6 +440,52 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 // try_send, not send: the asker may already have given up and gone, and the window thread must not block on a dead channel.
                 let _ = reply.try_send(Ok(pipe_state(&reader.workspace, &vault_state)));
             }
+            // The one honest visible effect of an agent reading a document: the window shows what it is holding, exactly as if somebody had opened it.
+            Event::UserEvent(UserEvent::PipeDoc { path, reply }) => {
+                let answer = match pipe_bring_to_front(&mut reader.workspace, &path) {
+                    Ok(moved) => {
+                        if moved {
+                            reader.render(ScrollIntent::Reset);
+                        }
+                        pipe_document_answer(&mut reader.workspace)
+                    }
+                    Err(reason) => Err(reason),
+                };
+                let _ = reply.try_send(answer);
+            }
+            Event::UserEvent(UserEvent::PipeEdit {
+                path,
+                start,
+                end,
+                text,
+                expect,
+                reply,
+            }) => {
+                let answer =
+                    pipe_edit_document(&mut reader.workspace, &path, start, end, &text, &expect);
+                if answer.is_ok() {
+                    // Straight back on screen, the way a reading-view edit is: the render restores a tab left in source from the same buffer, so either view shows what the agent wrote.
+                    reader.render(ScrollIntent::Preserve);
+                    resync_editing_state(reader.page(), &reader.workspace);
+                }
+                let _ = reply.try_send(answer);
+            }
+            Event::UserEvent(UserEvent::PipeSave {
+                path,
+                expect,
+                reply,
+            }) => {
+                let answer = pipe_save_document(
+                    reader.webview.as_ref(),
+                    &mut reader.workspace,
+                    &mut file_watch,
+                    &vault_state,
+                    &mut refresh_book,
+                    &path,
+                    &expect,
+                );
+                let _ = reply.try_send(answer);
+            }
             Event::UserEvent(UserEvent::PipeQuit { reply }) => {
                 // Answer only. The asker still has nothing in hand, and a loop that stopped here would take the reply with it.
                 let _ = reply.try_send(Ok(serde_json::json!({ "closing": true })));
@@ -951,7 +997,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     match name_untitled_document(&mut reader, pick_save_path) {
                         SaveReady::Canceled => {}
                         ready => {
-                            save_active_document(
+                            // The page has already been told how it went; nobody else is waiting on this one.
+                            let _ = save_active_document(
                                 reader.webview.as_ref(),
                                 &mut reader.workspace,
                                 &mut file_watch,

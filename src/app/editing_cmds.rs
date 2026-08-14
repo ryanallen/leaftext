@@ -213,21 +213,23 @@ pub(crate) fn name_untitled_document(
 }
 
 /// Write the active tab's edit buffer to disk. Sets the watcher's content hash to the written text so its own FileChanged for this save is a no-op.
+///
+/// The page is told either way, and the outcome is handed back as well: a save asked for over the pipe has somebody waiting on whether the file was written, and a script into the page is not an answer to them.
 pub(crate) fn save_active_document(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     vault_state: &VaultState,
     refresh_book: &mut RefreshBook,
-) {
+) -> Result<(), String> {
     let Some(edit) = workspace.active_edit_mut() else {
-        return;
+        return Err("no document is open".to_string());
     };
     let path = edit.path.clone();
     let text = edit.text().to_string();
     let path_str = path.display().to_string();
 
-    let script = match DesktopHost::default().save(
+    let (script, written) = match DesktopHost::default().save(
         &path,
         &SourceText {
             text: text.clone(),
@@ -240,16 +242,20 @@ pub(crate) fn save_active_document(
             file_watch.active_hash = Some(content_hash(&text));
             // The bytes are on this machine now, which is the whole guarantee: a document whose vault keeps its files somewhere else is sent on from here, and a send that fails cannot take back what was typed.
             push_saved_document(vault_state, refresh_book, webview, &path);
-            save_result_script(&path_str, true, None)
+            (save_result_script(&path_str, true, None), Ok(()))
         }
         Err(error) => {
             let message = error.to_string();
             eprintln!("Save failed for {}: {message}", path.display());
-            save_result_script(&path_str, false, Some(&message))
+            (
+                save_result_script(&path_str, false, Some(&message)),
+                Err(message),
+            )
         }
     };
 
     run_page_script(webview, &script, "Save: failed to report result");
+    written
 }
 
 /// Seed the edit buffer from disk on the first edit, then splice a reading-view inline edit over `[start, end)`. Returns whether a buffer was available (the caller re-renders from the now-authoritative buffer when so).
@@ -393,6 +399,150 @@ pub(crate) fn toggle_task_marker(
         &blocks_resynced_script(&tasks, dirty, can_undo, Some(&text)),
         "Toggle task: failed to resync reading view",
     );
+}
+
+/// What a document's source is worth as one short string, and the value a write over the ask pipe has to quote back.
+///
+/// Hex rather than the number itself: the asker reads it through JavaScript, where a 64-bit integer loses its low bits on the way through, and a fingerprint that changed in transit would refuse every write.
+pub(crate) fn source_fingerprint(text: &str) -> String {
+    format!("{:016x}", content_hash(text))
+}
+
+/// How a file spells its text, in the words the answer uses. Rust's own names for the encodings are the enum's; these are what somebody reading the reply would write.
+fn spelling_answer(spelling: SourceSpelling) -> serde_json::Value {
+    let encoding = match spelling.encoding {
+        SourceEncoding::Utf8 => "utf-8",
+        SourceEncoding::Utf16Le => "utf-16le",
+        SourceEncoding::Utf16Be => "utf-16be",
+        SourceEncoding::Utf32Le => "utf-32le",
+        SourceEncoding::Utf32Be => "utf-32be",
+    };
+    serde_json::json!({ "encoding": encoding, "mark": spelling.mark })
+}
+
+/// The active tab's edit buffer for the ask pipe, seeded from disk the first time. Unlike [`seeded_active_edit`] a failure comes back as words rather than a line in the log: somebody is waiting on this one.
+fn pipe_active_edit(workspace: &mut Workspace) -> Result<(PathBuf, &mut EditableDocument), String> {
+    let Some((index, path)) = active_tab_path(workspace) else {
+        return Err("no document is open".to_string());
+    };
+    let needs_seed = workspace
+        .tabs
+        .get(index)
+        .is_some_and(|tab| tab.needs_edit_seed(&path));
+    let contents = if needs_seed {
+        read_source(&path)
+            .map_err(|error| format!("{} could not be read: {error}", path.display()))?
+    } else {
+        SourceText::utf8(String::new())
+    };
+    let tab = workspace
+        .tabs
+        .get_mut(index)
+        .ok_or_else(|| "no document is open".to_string())?;
+    let edit = tab.edit_buffer(&path, contents);
+    Ok((path, edit))
+}
+
+/// Refuse anything aimed at a document that is not the one at the front. Every buffer and save routine here works the active tab, so a write meant for another one would land on this one.
+fn front_document(workspace: &Workspace, path: &Path) -> Result<(), String> {
+    match workspace.active_path() {
+        Some(current) if paths_refer_to_same_document(current, path) => Ok(()),
+        Some(current) => Err(format!(
+            "{} is the document at the front, not {} — ask for that one first",
+            current.display(),
+            path.display()
+        )),
+        None => Err("no document is open".to_string()),
+    }
+}
+
+/// Bring `path` to the front for the ask pipe, opening a tab when nothing is showing it. Answers whether the front moved, since only the loop can redraw.
+pub(crate) fn pipe_bring_to_front(workspace: &mut Workspace, path: &Path) -> Result<bool, String> {
+    if !path.is_file() {
+        return Err(format!("there is no file at {}", path.display()));
+    }
+    if front_document(workspace, path).is_ok() {
+        return Ok(false);
+    }
+    workspace.open_path(path.to_path_buf());
+    Ok(true)
+}
+
+/// What the ask pipe answers about the document at the front: its source as the buffer holds it, how its file is spelled, whether it has edits nobody has saved, and the fingerprint a write has to quote back.
+pub(crate) fn pipe_document_answer(workspace: &mut Workspace) -> Result<serde_json::Value, String> {
+    let (path, edit) = pipe_active_edit(workspace)?;
+    Ok(serde_json::json!({
+        "path": path.display().to_string(),
+        "text": edit.text(),
+        "spelling": spelling_answer(edit.spelling),
+        "unsaved": edit.is_dirty(),
+        "untitled": edit.untitled,
+        "fingerprint": source_fingerprint(edit.text()),
+    }))
+}
+
+/// A write refused because the document moved on under it, saying what it is now so the asker reads it again rather than guessing.
+fn stale_fingerprint(fresh: &str) -> String {
+    format!("the document has changed since that fingerprint — it is {fresh} now, so read it again before writing")
+}
+
+/// The pipe's write: splice `text` over `[start, end)` of the document at the front, as one undo step.
+///
+/// Refused unless `path` is that document and `expect` is its fingerprint. It splices the same buffer the window types into, so the loop redraws afterwards and the owner sees the edit land and can take it back.
+pub(crate) fn pipe_edit_document(
+    workspace: &mut Workspace,
+    path: &Path,
+    start: usize,
+    end: usize,
+    text: &str,
+    expect: &str,
+) -> Result<serde_json::Value, String> {
+    front_document(workspace, path)?;
+    let (path, edit) = pipe_active_edit(workspace)?;
+    let holding = source_fingerprint(edit.text());
+    if holding != expect {
+        return Err(stale_fingerprint(&holding));
+    }
+    edit.replace_range(start, end, text);
+    Ok(serde_json::json!({
+        "path": path.display().to_string(),
+        "bytes": edit.text().len(),
+        "unsaved": edit.is_dirty(),
+        "fingerprint": source_fingerprint(edit.text()),
+    }))
+}
+
+/// The pipe's save: write the document at the front to its file, through the same host save the page's own Save runs.
+///
+/// Refused for a document with no file yet — the dialog that asks where one goes is the owner's — and refused on a fingerprint that is not the buffer's, so nothing on disk is replaced by text nobody has read back.
+pub(crate) fn pipe_save_document(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    file_watch: &mut FileWatch,
+    vault_state: &VaultState,
+    refresh_book: &mut RefreshBook,
+    path: &Path,
+    expect: &str,
+) -> Result<serde_json::Value, String> {
+    front_document(workspace, path)?;
+    let (path, edit) = pipe_active_edit(workspace)?;
+    if edit.untitled {
+        return Err(format!(
+            "{} has never been saved, so the app has to ask where it goes — that dialog is the owner's to answer",
+            path.display()
+        ));
+    }
+    let holding = source_fingerprint(edit.text());
+    if holding != expect {
+        return Err(stale_fingerprint(&holding));
+    }
+    save_active_document(webview, workspace, file_watch, vault_state, refresh_book)
+        .map_err(|error| format!("{} was not written: {error}", path.display()))?;
+    Ok(serde_json::json!({
+        "saved": path.display().to_string(),
+        "unsaved": false,
+        "fingerprint": holding,
+    }))
 }
 
 /// Push the buffer's editing state (task offsets, dirty, undo availability) back to the reading view. The source is omitted since the caller's re-render already delivered it.

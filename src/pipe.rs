@@ -8,6 +8,7 @@ use crate::app::UserEvent;
 use crate::journal;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::path::PathBuf;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use tao::event_loop::EventLoopProxy;
@@ -50,6 +51,27 @@ pub(crate) enum Ask {
     /// This is arbitrary code inside the app, reachable by anything running as this user — the same bar as the single-instance pipe, which accepts only a file path where this accepts anything. It is also the whole reason the pipe beats reading the journal: without it you have a log reader, with it a live app can be inspected on both platforms.
     #[serde(rename = "eval")]
     Eval { script: String },
+    /// A document's source as the app holds it. The file is opened, or brought to the front if it is already open, so the window always shows what is being worked on. Answers the text, how the file is spelled, whether it has edits nobody has saved, and a fingerprint.
+    ///
+    /// This is the read half of the one path that writes a document without going through the page: the buffer keeps the file's encoding and its byte order mark, which is what a rewrite through a terminal cannot do.
+    #[serde(rename = "doc")]
+    Doc { path: PathBuf },
+    /// Splice `text` over the byte range `[start, end)` of the document at the front, as one undo step, so the owner can take it back the way they take back their own edits. The offsets count bytes of the UTF-8 text [`Ask::Doc`] answered; a whole-document replace is `0` to its length.
+    ///
+    /// `expect` is the fingerprint that answer carried. A document that has moved on since — the reader typed, the file was reloaded — refuses the write and says what its fingerprint is now, so nothing is written over an edit nobody has seen. There is no session behind this: each ask stands alone, and the fingerprint is the whole of what makes a write safe.
+    #[serde(rename = "edit")]
+    Edit {
+        path: PathBuf,
+        start: usize,
+        end: usize,
+        text: String,
+        expect: String,
+    },
+    /// Write the document at the front to its file, the way the page's own Save does — through the host, so the file is written back the way it was spelled. Guarded by the same fingerprint as [`Ask::Edit`].
+    ///
+    /// Refused for a document that has never been named: naming one opens a dialog, and that is the owner's to answer.
+    #[serde(rename = "save")]
+    Save { path: PathBuf, expect: String },
     /// Wait for the page to finish rendering, then answer. What a driven pass asks instead of guessing a sleep: guessing costs three seconds a command for a render that takes a fraction of that.
     #[serde(rename = "idle")]
     Idle,
@@ -107,7 +129,12 @@ where
                 "not an ask this app knows ({error}). It answers: \
                  {{\"ask\":\"log\"}}, {{\"ask\":\"log\",\"lines\":50}}, \
                  {{\"ask\":\"state\"}}, {{\"ask\":\"state\",\"reader\":true}}, \
-                 {{\"ask\":\"eval\",\"script\":\"1+1\"}}, {{\"ask\":\"idle\"}}, \
+                 {{\"ask\":\"eval\",\"script\":\"1+1\"}}, \
+                 {{\"ask\":\"doc\",\"path\":\"notes/a.md\"}}, \
+                 {{\"ask\":\"edit\",\"path\":\"notes/a.md\",\"start\":0,\"end\":0,\
+                 \"text\":\"new\",\"expect\":\"the fingerprint doc answered\"}}, \
+                 {{\"ask\":\"save\",\"path\":\"notes/a.md\",\
+                 \"expect\":\"the fingerprint doc answered\"}}, {{\"ask\":\"idle\"}}, \
                  {{\"ask\":\"version\"}}, {{\"ask\":\"quit\"}}"
             ))
         }
@@ -204,6 +231,26 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
         // The reader flag is answered above this, by a second ask through the page: the loop only ever builds the workspace half.
         Ask::State { .. } => UserEvent::PipeState { reply },
         Ask::Eval { script } => UserEvent::PipeEval { script, reply },
+        Ask::Doc { path } => UserEvent::PipeDoc { path, reply },
+        Ask::Edit {
+            path,
+            start,
+            end,
+            text,
+            expect,
+        } => UserEvent::PipeEdit {
+            path,
+            start,
+            end,
+            text,
+            expect,
+            reply,
+        },
+        Ask::Save { path, expect } => UserEvent::PipeSave {
+            path,
+            expect,
+            reply,
+        },
         // Whether the loop heard, and nothing else: the closing itself is [`UserEvent::PipeCloseNow`], sent after the reply is out.
         Ask::Quit => UserEvent::PipeQuit { reply },
         // Answered before this is reached.

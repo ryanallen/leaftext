@@ -53,6 +53,10 @@ function askApp(request) {
   });
 }
 
+// The whole document workflow in one line, carried in the description of every tool that is part of it, since a tool set is read one description at a time.
+const WORKFLOW =
+  'The workflow for working on a document is leaftext_doc to read it and take its fingerprint, leaftext_edit for each change, leaftext_idle to wait for the window to redraw, leaftext_save to write it, then leaftext_state to see it is no longer unsaved.';
+
 // One entry per ask in `Ask` (src/pipe.rs). A new variant there is a new row here and nothing else.
 const TOOLS = [
   {
@@ -87,6 +91,59 @@ const TOOLS = [
       required: ['script'],
     },
     ask: (args) => ({ ask: 'eval', script: String(args.script ?? '') }),
+  },
+  {
+    name: 'leaftext_doc',
+    description:
+      `A document's source, as the app holds it. Opens the file, or brings it to the front if it is already open, so the window shows what you are working on. Answers the text, how the file is spelled (its encoding and whether it has a byte order mark), whether it has edits nobody has saved, and a fingerprint. Read a file this way rather than through the shell, and write it back the same way: the app keeps the spelling the file arrived with, which is what rewriting a file through terminal text output loses. ${WORKFLOW}`,
+    inputSchema: {
+      type: 'object',
+      properties: { path: { type: 'string', description: 'The file to read' } },
+      required: ['path'],
+    },
+    ask: (args) => ({ ask: 'doc', path: String(args.path ?? '') }),
+  },
+  {
+    name: 'leaftext_edit',
+    description:
+      `Replace the bytes from \`start\` to \`end\` of the document at the front with \`text\`, as one undo step the reader can take back. The offsets count bytes of the UTF-8 text leaftext_doc answered — a whole-document rewrite is 0 to its length. \`expect\` is the fingerprint that answer carried: if the document has changed since, nothing is written and the refusal says what the fingerprint is now, so read it again and redo the edit against what is there. Nothing reaches the file until leaftext_save. ${WORKFLOW}`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'The document being edited' },
+        start: { type: 'number', description: 'First byte to replace' },
+        end: { type: 'number', description: 'One past the last byte to replace' },
+        text: { type: 'string', description: 'What goes in its place' },
+        expect: { type: 'string', description: 'The fingerprint leaftext_doc answered' },
+      },
+      required: ['path', 'start', 'end', 'text', 'expect'],
+    },
+    ask: (args) => ({
+      ask: 'edit',
+      path: String(args.path ?? ''),
+      start: Number(args.start ?? 0),
+      end: Number(args.end ?? 0),
+      text: String(args.text ?? ''),
+      expect: String(args.expect ?? ''),
+    }),
+  },
+  {
+    name: 'leaftext_save',
+    description:
+      `Write the document at the front to its file, the way the app's own Save does — so the file keeps the encoding and byte order mark it was read with, which is what rewriting a file through the shell cannot promise. \`expect\` is the fingerprint of the text you mean to save, as the last read or edit answered it. A document that has never been saved is refused: only the person at the window can say where a new file goes. ${WORKFLOW}`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'The document to write' },
+        expect: { type: 'string', description: 'The fingerprint of the text being saved' },
+      },
+      required: ['path', 'expect'],
+    },
+    ask: (args) => ({
+      ask: 'save',
+      path: String(args.path ?? ''),
+      expect: String(args.expect ?? ''),
+    }),
   },
   {
     name: 'leaftext_idle',

@@ -1941,6 +1941,258 @@ fn the_pipe_answers_and_refuses_out_loud() {
 }
 
 #[test]
+fn the_doc_ask_answers_the_buffer_and_refuses_a_path_that_will_not_open() {
+    // The read half of the agent's document workflow, without a window: bring a file to the front, then answer off the same buffer the reader types into.
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-doc-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n\nOne line.\n").expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    // Nothing is open, so the ask opens it — the one visible effect it has.
+    assert_eq!(pipe_bring_to_front(&mut workspace, &note), Ok(true));
+    assert_eq!(workspace.active_path(), Some(note.as_path()));
+    // Asked for again it is already at the front, so nothing needs redrawing.
+    assert_eq!(pipe_bring_to_front(&mut workspace, &note), Ok(false));
+
+    let answer = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    assert_eq!(answer["text"], "# Note\n\nOne line.\n");
+    assert_eq!(answer["unsaved"], false);
+    assert_eq!(answer["untitled"], false);
+    assert_eq!(answer["spelling"]["encoding"], "utf-8");
+    assert_eq!(answer["spelling"]["mark"], false);
+    let fingerprint = answer["fingerprint"]
+        .as_str()
+        .expect("a fingerprint")
+        .to_string();
+
+    // It is the buffer's fingerprint and not the file's: an edit nobody has saved moves it, which is the whole reason a write has to quote it back.
+    workspace
+        .active_edit_mut()
+        .expect("the buffer")
+        .replace_range(0, 0, "x");
+    let edited = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    assert_ne!(edited["fingerprint"], fingerprint.as_str());
+    assert_eq!(edited["unsaved"], true);
+
+    // A path with no file behind it is refused in words, and no tab is opened for it.
+    let missing = dir.join("gone.md");
+    let refusal =
+        pipe_bring_to_front(&mut workspace, &missing).expect_err("a missing file is refused");
+    assert!(refusal.contains("gone.md"), "{refusal}");
+    assert_eq!(workspace.tabs.len(), 1);
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_write_through_the_pipe_is_guarded_by_the_fingerprint_and_lands_on_disk() {
+    // The write half: an edit is refused unless it quotes what the buffer is holding, nothing reaches the file until a save is asked for, and a document with no file of its own cannot be saved at all.
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-write-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    let mut file_watch = FileWatch::default();
+    let vaults = VaultState::load(None);
+    let mut book = RefreshBook::default();
+
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    let opened = read["fingerprint"]
+        .as_str()
+        .expect("a fingerprint")
+        .to_string();
+
+    // A fingerprint that is not the buffer's writes nothing, and the refusal carries the one it is holding so the asker can read again rather than guess.
+    let refusal = pipe_edit_document(&mut workspace, &note, 0, 0, "x", "0000000000000000")
+        .expect_err("a stale fingerprint is refused");
+    assert!(refusal.contains(&opened), "{refusal}");
+    assert_eq!(
+        workspace.active_edit().map(|edit| edit.text().to_string()),
+        Some("# Note\n".to_string())
+    );
+
+    // So is a write aimed at a document that is not the one at the front, however good its fingerprint.
+    let elsewhere = dir.join("other.md");
+    assert!(pipe_edit_document(&mut workspace, &elsewhere, 0, 0, "x", &opened).is_err());
+
+    let written =
+        pipe_edit_document(&mut workspace, &note, 2, 6, "Edited", &opened).expect("the edit lands");
+    let edited = written["fingerprint"]
+        .as_str()
+        .expect("a fingerprint")
+        .to_string();
+    assert_eq!(written["unsaved"], true);
+    assert!(
+        workspace
+            .active_edit()
+            .is_some_and(EditableDocument::can_undo),
+        "an agent's edit is one undo step, so the owner takes it back the way they take back their own"
+    );
+    assert_eq!(
+        fs::read_to_string(&note).expect("the file is read"),
+        "# Note\n",
+        "nothing reaches the file until a save is asked for"
+    );
+
+    // The save is guarded by the same fingerprint, so the text on disk is the text somebody read back.
+    assert!(pipe_save_document(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &vaults,
+        &mut book,
+        &note,
+        &opened
+    )
+    .is_err());
+    let saved = pipe_save_document(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &vaults,
+        &mut book,
+        &note,
+        &edited,
+    )
+    .expect("the save lands");
+    assert_eq!(saved["unsaved"], false);
+    assert_eq!(
+        fs::read_to_string(&note).expect("the file is read"),
+        "# Edited\n"
+    );
+
+    // A document that has never been named has nowhere to be written, and the dialog that would ask is the owner's.
+    let mut blank = Workspace::default();
+    let untitled = blank.open_untitled();
+    let empty = pipe_document_answer(&mut blank).expect("an untitled buffer answers");
+    assert_eq!(empty["untitled"], true);
+    let refusal = pipe_save_document(
+        None,
+        &mut blank,
+        &mut file_watch,
+        &vaults,
+        &mut book,
+        &untitled,
+        empty["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect_err("an untitled document cannot be saved through the pipe");
+    assert!(refusal.contains("never been saved"), "{refusal}");
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_document_written_through_the_pipe_keeps_the_spelling_it_arrived_with() {
+    // The whole reason the feature exists: a file rewritten through terminal text output comes back UTF-8 with its mark gone, and the owner has paid for that once. Through the asks it goes out spelled the way it came in.
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-spelling-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("wide.md");
+    let spelling = SourceSpelling {
+        encoding: SourceEncoding::Utf16Le,
+        mark: true,
+    };
+    fs::write(&note, leaftext::encode_source("# Wide\n", spelling))
+        .expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    let mut file_watch = FileWatch::default();
+    let vaults = VaultState::load(None);
+    let mut book = RefreshBook::default();
+
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    // The mark is a fact about the file rather than a character in the text, so it is reported and never handed over to be edited around.
+    assert_eq!(read["text"], "# Wide\n");
+    assert_eq!(read["spelling"]["encoding"], "utf-16le");
+    assert_eq!(read["spelling"]["mark"], true);
+
+    let written = pipe_edit_document(
+        &mut workspace,
+        &note,
+        0,
+        7,
+        "# Wider\n",
+        read["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect("the edit lands");
+    pipe_save_document(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &vaults,
+        &mut book,
+        &note,
+        written["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect("the save lands");
+
+    let bytes = fs::read(&note).expect("the file is read");
+    assert_eq!(
+        &bytes[..2],
+        &[0xFF, 0xFE],
+        "the byte order mark the file arrived with is written back"
+    );
+    let back = leaftext::decode_source(&bytes).expect("the file still decodes");
+    assert_eq!(back.text, "# Wider\n");
+    assert_eq!(back.spelling, spelling);
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_save_that_fails_comes_back_as_a_refusal_and_never_as_a_success() {
+    // A write that did not happen must not read as one: an asker told a file was saved goes on to the next thing, and what was typed is only in a buffer nobody is watching.
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-save-fails-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    let mut file_watch = FileWatch::default();
+    let vaults = VaultState::load(None);
+    let mut book = RefreshBook::default();
+
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    let written = pipe_edit_document(
+        &mut workspace,
+        &note,
+        2,
+        6,
+        "Edited",
+        read["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect("the edit lands");
+
+    // The file goes and a folder takes its name, which is a write no platform allows.
+    fs::remove_file(&note).expect("the fixture file is removed");
+    fs::create_dir(&note).expect("a folder takes its place");
+
+    let refusal = pipe_save_document(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &vaults,
+        &mut book,
+        &note,
+        written["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect_err("a save that could not write refuses");
+    assert!(refusal.contains("was not written"), "{refusal}");
+    assert!(
+        workspace
+            .active_edit()
+            .is_some_and(EditableDocument::is_dirty),
+        "the buffer still has the edit nobody managed to write"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn the_quit_ask_answers_that_it_is_closing_and_refuses_when_the_window_is_silent() {
     // The trap this ask is built around: a variant with no arm of its own falls through to the mapping that knows only `state` and `eval`, so it would compile, ship, close nothing, and report the failure the pipe reserves for a wedged app.
     let asked = std::sync::atomic::AtomicUsize::new(0);

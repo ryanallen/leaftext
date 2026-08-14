@@ -3,6 +3,7 @@
 use super::*;
 
 /// Turns filesystem changes into `UserEvent::FileChanged` for the active document's directory (live-reload) and for the folder the library pane shows. Watches the parent directory, not the file, to survive editors that save by renaming a temp file over the original.
+#[derive(Default)]
 pub(crate) struct FileWatch {
     pub(crate) debouncer: Option<Debouncer<RecommendedWatcher>>,
     pub(crate) last_active: Option<PathBuf>,
