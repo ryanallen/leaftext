@@ -23,7 +23,7 @@ window.leafSetState = (state) => {
   if (!currentState.document) {
     // No document, no views. The three of them are three ways of showing one thing, and the home screen is not that thing — which is why the bar hides here. Without this, closing the last tab leaves the map on screen with nothing left to leave it by.
     closeGraphView();
-    emptyDescription = pickEmptyDescription();
+    homeMessage = pickHomeMessage();
   }
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = true;
@@ -88,7 +88,7 @@ function renderStateKeepingPlace() {
 window.leafSwitchTab = (state, anchor) => {
   currentState = state || { recent: [], favorites: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
-    emptyDescription = pickEmptyDescription();
+    homeMessage = pickHomeMessage();
   }
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = false;

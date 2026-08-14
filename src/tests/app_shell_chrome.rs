@@ -874,13 +874,29 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
     // Every label is in the markup or in the fragment that writes it, so the first frame is never a shell of blank buttons waiting on script.
     for expected in [
         r#"aria-label="Open" title="Open Markdown file""#,
-        "<h1>Refine your mind.</h1>",
-        "<p class=\"empty-subtitle\">Your thoughts, secure and free.</p>",
+        // The home screen's three top lines are chosen per visit, so the page carries the slots and the whole registry rather than one fixed slogan.
+        "<h1>${escapeText(homeMessage.hero)}</h1>",
+        r#"<p class="empty-subtitle">${escapeText(homeMessage.subtitle)}</p>"#,
+        r#"<p class="empty-description">${escapeText(homeMessage.description)}</p>"#,
         ">Choose file</button>",
-        "Open a file and read it in peace. It stays on your device, in plain text you own.",
         "Files you open show up here.",
         r#"aria-label="Themes" title="Themes""#,
         r#"<span class="reader-subselect-label">Graph size</span>"#,
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // One approved headline, subtitle and sentence per family, so a line dropped out of the registry fails here rather than on somebody's home screen.
+    for expected in [
+        "Turn over a new leaf.",
+        "Knowledge kept, leaf by leaf.",
+        "A palm-leaf book was threaded through a single hole and bound between wooden covers. Open yours.",
+        "Refine your mind.",
+        "Your thoughts, secure and free.",
+        "A quiet place for clear thinking.",
+        "Your files stay files.",
+        "Open what you already own.",
+        "Open a file and read it in peace. It stays on your device, in plain text you own.",
     ] {
         assert_contains(&html, expected);
     }

@@ -5416,16 +5416,102 @@ if (booted) {
     }
   });
 
-  check('a vault switch keeps the sentence under the headline', () => {
-    const line = (markup) => (markup.match(/<p class="empty-description">([^<]*)</) || [])[1];
+  /** The three lines the start screen rotates, read back off the screen it drew. */
+  function messageOnScreen(markup) {
+    const slot = (pattern) => (markup.match(pattern) || [])[1];
+    return {
+      hero: slot(/<h1>([^<]*)</),
+      subtitle: slot(/<p class="empty-subtitle">([^<]*)</),
+      description: slot(/<p class="empty-description">([^<]*)</),
+    };
+  }
+
+  /** Walk back onto the start screen, so the page picks a message the way a reader arriving does. */
+  function anotherHomeVisit() {
+    booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+    booted.__frames.drain();
+    return messageOnScreen(homeElement.innerHTML);
+  }
+
+  check('a vault switch keeps the whole message under the kicker', () => {
     onTheStartScreen(KEPT, (screen) => {
-      const before = line(screen());
-      if (!before) throw new Error(`the start screen drew no sentence at all: ${screen()}`);
+      const before = messageOnScreen(screen());
+      if (!before.hero || !before.subtitle || !before.description) {
+        throw new Error(`the start screen drew an incomplete message: ${JSON.stringify(before)}`);
+      }
       booted.leafSetVaults({ vaults: VAULTS, active: 2 });
-      if (line(screen()) !== before) {
-        throw new Error(`the sentence was reshuffled by a vault switch: ${before} became ${line(screen())}`);
+      const after = messageOnScreen(screen());
+      for (const slot of ['hero', 'subtitle', 'description']) {
+        if (after[slot] !== before[slot]) {
+          throw new Error(`the ${slot} was reshuffled by a vault switch: ${before[slot]} became ${after[slot]}`);
+        }
       }
     });
+  });
+
+  check('every visit to the start screen draws one family whole', () => {
+    // A headline from one family over a sentence from another is the failure this is here for: the three lines are one voice, so they are read back together and matched to the family that owns the headline.
+    const families = vm.runInContext('HOME_MESSAGE_FAMILIES', booted);
+    const seen = new Set();
+    let previous = null;
+    try {
+      for (let visit = 0; visit < 200; visit += 1) {
+        const shown = anotherHomeVisit();
+        const family = families.find((one) => one.hero === shown.hero);
+        if (!family) throw new Error(`the headline belongs to no family: ${JSON.stringify(shown)}`);
+        if (shown.subtitle !== family.subtitle) {
+          throw new Error(`${family.name} drew another family's subtitle: ${shown.subtitle}`);
+        }
+        if (!family.descriptions.includes(shown.description)) {
+          throw new Error(`${family.name} drew a sentence out of another pool: ${shown.description}`);
+        }
+        if (family.name === previous) throw new Error(`two visits in a row showed ${family.name}`);
+        previous = family.name;
+        seen.add(family.name);
+      }
+    } finally {
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+    }
+    if (seen.size !== families.length) {
+      throw new Error(`only ${seen.size} of ${families.length} families came up over 200 visits`);
+    }
+  });
+
+  check('the rotating message is escaped on its way onto the screen', () => {
+    // The copy is ours, so this is not about hostile input — it is that all three slots go through the same escape the sentence always did, and a later line carrying an ampersand or an angle bracket must not reach the page as markup.
+    const families = vm.runInContext('HOME_MESSAGE_FAMILIES', booted);
+    const wasHero = families[0].hero;
+    try {
+      vm.runInContext("HOME_MESSAGE_FAMILIES[0].hero = 'Leaves & <b>ink</b>'; lastHomeFamilyName = null;", booted);
+      let markup = '';
+      for (let visit = 0; visit < 50 && !markup.includes('Leaves'); visit += 1) {
+        anotherHomeVisit();
+        markup = homeElement.innerHTML;
+      }
+      if (!markup.includes('Leaves')) throw new Error('that family never came up over 50 visits');
+      if (!markup.includes('Leaves &amp; &lt;b&gt;ink&lt;/b&gt;')) {
+        throw new Error(`the headline reached the page unescaped: ${markup.slice(0, 400)}`);
+      }
+    } finally {
+      vm.runInContext(`HOME_MESSAGE_FAMILIES[0].hero = ${JSON.stringify(wasHero)}; lastHomeFamilyName = null;`, booted);
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+    }
+  });
+
+  check('the fixed half of the start screen never moves with the family', () => {
+    // Everything a reader presses, plus the kicker, the lists and the version line, is functional copy outside the registry. Rotating one of them by accident is a control that renames itself between visits.
+    const fixed = (markup) =>
+      markup.replace(/<h1>[^<]*<\/h1>/, '').replace(/<p class="empty-(?:subtitle|description)">[^<]*<\/p>/g, '');
+    anotherHomeVisit();
+    const first = fixed(homeElement.innerHTML);
+    for (let visit = 0; visit < 60; visit += 1) {
+      anotherHomeVisit();
+      if (fixed(homeElement.innerHTML) !== first) {
+        throw new Error(`the rest of the start screen changed with the family: ${fixed(homeElement.innerHTML)}`);
+      }
+    }
   });
 
   check('a removed vault takes its favorites off the start screen with it', () => {

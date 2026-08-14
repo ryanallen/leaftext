@@ -667,9 +667,9 @@ function renderState() {
   app.innerHTML = `
     <section class="empty-state">
       ${homeKickerMarkup()}
-      <h1>Refine your mind.</h1>
-      <p class="empty-subtitle">Your thoughts, secure and free.</p>
-      <p class="empty-description">${escapeText(emptyDescription)}</p>
+      <h1>${escapeText(homeMessage.hero)}</h1>
+      <p class="empty-subtitle">${escapeText(homeMessage.subtitle)}</p>
+      <p class="empty-description">${escapeText(homeMessage.description)}</p>
       <div class="empty-actions">
         <button type="button" class="primary-open">Choose file</button>
         <button type="button" class="primary-new">${newIconSvg()}New document</button>
