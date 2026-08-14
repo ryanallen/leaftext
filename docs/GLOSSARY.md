@@ -264,7 +264,7 @@ The rendered document — the view Leaftext is for. Its two companions on the [f
 
 ## Reduce Motion
 
-Your system's accessibility setting for cutting animation, which Leaftext follows. Turn it on and nothing in the app slides, rises or fades — [sheets](GLOSSARY.md#bottom-sheet), the [library pane](GLOSSARY.md#library-pane), menus, the [find bar](01-features/02-navigation.md#find-in-this-document), the [tab](GLOSSARY.md#tab) strip and a document opening all arrive in place. Spinners keep turning more slowly, a [wide table](01-features/01-rendering.md#tables)'s edge marks stay, and a loading placeholder stays dim, because stopping any of the three would say something untrue. There is no control for it in the app. See [Settings](01-features/05-settings.md#reduce-motion).
+Your system's accessibility setting for cutting animation, which Leaftext follows. Turn it on and nothing in the app slides, rises or fades — [sheets](GLOSSARY.md#bottom-sheet), the [library pane](GLOSSARY.md#library-pane), menus, the [find bar](01-features/02-navigation.md#find-in-this-document), the [tab](GLOSSARY.md#tab) strip and a document opening all arrive in place, and a control you point at takes its highlight in one frame instead of over a beat. Spinners keep turning more slowly, a [wide table](01-features/01-rendering.md#tables)'s edge marks stay, and a loading placeholder stays dim, because stopping any of the three would say something untrue. There is no control for it in the app. See [Settings](01-features/05-settings.md#reduce-motion).
 
 ## Recent files
 

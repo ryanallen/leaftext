@@ -1472,6 +1472,76 @@ fn reduce_motion_is_answered_once_and_won_back_by_name() {
 }
 
 #[test]
+fn a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot() {
+    let css = reading_mode_css();
+
+    // One rule for the whole file, because 85 of the 95 hover rules were written one at a time with nothing on them to fade with. Zero specificity is the point: anything with a transition of its own keeps it rather than fighting this.
+    let shared = rule_body(
+        css,
+        ":where(a, button, summary, .library-crumb, .home-row-name, .code-sticky-row, .flow-ring, .github-mention) {",
+    );
+    for property in ["background-color", "border-color", "color"] {
+        assert_contains(
+            shared,
+            &format!("{property} var(--lt-duration-120) var(--lt-ease)"),
+        );
+    }
+    // One duration and one curve in both directions — a hover has no direction to say — so the transition is declared once and never paired with an in and an out.
+    assert!(
+        !shared.contains("--lt-ease-decelerate") && !shared.contains("--lt-ease-accelerate"),
+        "a hover is not an arrival, so it takes the plain curve both ways: {shared}"
+    );
+    // No shadow here: it would put one on every button in the app to time the single chip that lights one.
+    assert!(
+        !shared.contains("box-shadow"),
+        "the shared rule carries the three properties a hover changes and no more: {shared}"
+    );
+
+    // A `transition` shorthand at any weight replaces a zero-specificity one outright, so every control that reveals itself by opacity names its own colors — and the reveal's own rule names them too, since that is the only state the control can be pointed at in.
+    for (selector, property) in [
+        (".tab-close {", "background-color"),
+        (".tab-close {", "border-color"),
+        (".tab-favorite {", "background-color"),
+        (".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite {", "color"),
+        (".crumb-menu-edit {", "background-color"),
+        (
+            ".crumb-menu-row:hover .crumb-menu-edit,\n.crumb-menu-row:focus-within .crumb-menu-edit {",
+            "color",
+        ),
+        // Switching a view setting on lights a fill, an ink and a hairline together; two of the three fading would be a seam.
+        (".reader-subtool {", "box-shadow"),
+        // A diagram box's + handle shows with the box it belongs to, so its fill is named beside that reveal.
+        (".flow-bud {", "background-color"),
+    ] {
+        assert_contains(
+            rule_body(css, selector),
+            &format!("{property} var(--lt-duration-120) var(--lt-ease)"),
+        );
+    }
+
+    // The one control taken out by name: its hover swaps a dot lattice and the custom property painting it, and neither interpolates, so a fade would drift the border and the ink around a lattice that had already snapped.
+    assert_contains(
+        rule_body(css, ".document-body .docs-pager a {"),
+        "transition: none;",
+    );
+    let pager_hover = rule_body(
+        css,
+        ".document-body .docs-pager a:hover,\n.document-body .docs-pager a:focus-visible {",
+    );
+    assert_contains(pager_hover, "--lt-grain-dot: var(--lt-grain-hover);");
+    assert_contains(pager_hover, "background-image: radial-gradient(");
+
+    // A plain link is the opposite: its ink fades off the shared rule, and the underline it also gains is not a color and still switches.
+    let link_hover = rule_body(css, ".document-body a:hover {");
+    assert_contains(link_hover, "color: var(--lt-link-hover);");
+    assert_contains(link_hover, "text-decoration: underline;");
+    assert!(
+        !link_hover.contains("transition"),
+        "a link has no transition of its own to lose the shared one to: {link_hover}"
+    );
+}
+
+#[test]
 fn a_curve_says_which_way_a_move_is_going() {
     let css = reading_mode_css();
 

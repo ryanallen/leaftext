@@ -1041,10 +1041,10 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
         close.contains("background: var(--lt-surface);"),
         "the cross needs a wash to read over the name: {close}"
     );
-    // In decelerating, out accelerating after a hold — the heart's timing in the opposite corner, every value a token.
+    // In decelerating, out accelerating after a hold — the heart's timing in the opposite corner, every value a token. The colors ride behind the opacity leg; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.
     assert_contains(
         &close.to_string(),
-        "transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);",
+        "transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),",
     );
     assert_contains(
         css,
@@ -1341,15 +1341,15 @@ fn a_marked_tab_is_the_width_of_an_unmarked_one() {
         !mark.contains("margin"),
         "an out-of-flow heart has no margin to push the row with: {mark}"
     );
-    // Never drawn at rest, and every value of the fade a token: in decelerating, then a hold, then a shorter exit that accelerates.
+    // Never drawn at rest, and every value of the fade a token: in decelerating, then a hold, then a shorter exit that accelerates. The colors ride behind the opacity leg in both rules; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.
     assert!(mark.contains("opacity: 0;"));
     assert_contains(
         &mark.to_string(),
-        "transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);",
+        "transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300),",
     );
     assert_contains(
         css,
-        ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite {\n  opacity: 1;\n  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);\n}",
+        ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite {\n  opacity: 1;\n  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),",
     );
     // A mark adds nothing to the tab's own padding, which is even: it is out of flow, and so is the cross in the opposite corner.
     let tab = css

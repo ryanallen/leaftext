@@ -146,6 +146,11 @@ body.mac-frame.is-fullscreen::before {
     animation-duration: var(--lt-duration-0) !important;
   }
 }
+/* Pointing at a control lights it up over a beat instead of between two frames, said once for the whole file so a hover rule written later fades by existing rather than by somebody remembering. `:where()` carries no specificity, so anything with a `transition` of its own keeps it outright rather than fighting this — which is why those elements name these colors by hand instead. One duration and one curve in both directions, because a hover has no direction to say. Only the three properties a hover changes: a `box-shadow` here would time one chip at the cost of every button in the app, and `text-decoration` is not a color. A theme swap cross-fades whatever this covers, which is measured and kept — both ends of every fade are the same token in two palettes, so it settles rather than arriving late. The Reduce Motion blanket above zeroes all of it. */
+:where(a, button, summary, .library-crumb, .home-row-name, .code-sticky-row, .flow-ring, .github-mention) {
+  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
+}
 /* Every piece of app chrome — this bar, the library pane, its two bands, the search field — takes `--lt-surface` itself. No per-surface tint or mix: any variant shows up as a tone seam where two of them meet. */
 .app-bar {
   position: fixed;
@@ -383,7 +388,9 @@ body.mac-frame.is-fullscreen::before {
   border-radius: var(--lt-radius-sm);
   background: var(--lt-surface);
   color: var(--lt-muted-foreground);
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
+  /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here instead. */
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 .tab-close .lt-icon {
   width: 12px;
@@ -418,19 +425,22 @@ body.mac-frame.is-fullscreen::before {
   border-radius: var(--lt-radius-sm);
   background: var(--lt-surface);
   color: var(--lt-muted-foreground);
-  /* Never there at rest, marked or not, so a strip of tabs carries nothing extra to read. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival that matched it. */
+  /* Never there at rest, marked or not, so a strip of tabs carries nothing extra to read. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival that matched it. The colors ride along for the reason written on the close button. */
   opacity: 0;
-  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
+  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 .tab-favorite .lt-icon {
   width: 12px;
   height: 12px;
   pointer-events: none;
 }
+/* The shorthand replaces the one above, and this is the only state the heart can be pointed at in, so the colors are named here too or the hover is instant on the one control that shows. */
 .tab:hover .tab-favorite,
 .tab:focus-within .tab-favorite {
   opacity: 1;
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 /* A hollow heart is an offer; a filled one is a fact, so it is drawn in full ink. */
 .tab-favorite.is-on {
@@ -1608,7 +1618,9 @@ body.library-resizing {
   border-radius: var(--lt-radius-sm);
   background: transparent;
   opacity: 0;
-  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
+  /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here and in the row's own hover below. */
+  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
   color: color-mix(in srgb, var(--lt-muted-foreground) 75%, transparent);
   cursor: pointer;
 }
@@ -1619,7 +1631,8 @@ body.library-resizing {
 .crumb-menu-row:hover .crumb-menu-edit,
 .crumb-menu-row:focus-within .crumb-menu-edit {
   opacity: 1;
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
 }
 .crumb-menu-row:hover .crumb-menu-edit {
   color: var(--lt-muted-foreground);
@@ -2086,6 +2099,9 @@ body:has(#readerToolbar:not([hidden])) {
   background: transparent;
   color: var(--lt-muted-foreground);
   cursor: pointer;
+  /* Switching this on lights a fill, an ink and a hairline together, and the shared rule at the top of the file carries no shadow — so all three are named here rather than putting a shadow transition on every button in the app to time one chip. */
+  transition: background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease),
+    box-shadow var(--lt-duration-120) var(--lt-ease);
 }
 /* The tools in the recess come and go with the view, and a display of our own beats the browser's rule for [hidden] — so say it again here. */
 .reader-subtool[hidden] {
@@ -2504,6 +2520,8 @@ body:has(#readerToolbar:not([hidden])) {
   border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
   border-radius: var(--lt-radius-lg);
   color: var(--lt-markdown-foreground);
+  /* The one control left out of the shared hover fade at the top of the file: its hover swaps a dot lattice and the custom property painting it, and neither a `background-image` nor an unregistered property interpolates — so a fade here would drift the border and the ink around a lattice that had already snapped. */
+  transition: none;
 }
 .docs-pager-skeleton {
   flex: 1 1 0;
@@ -5780,7 +5798,8 @@ body.is-home-row-dragging .home-list-scroll li {
   opacity: 0;
   pointer-events: auto;
   cursor: crosshair;
-  transition: opacity var(--lt-duration-100) var(--lt-ease);
+  /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the fill is named here instead. */
+  transition: opacity var(--lt-duration-100) var(--lt-ease), background-color var(--lt-duration-120) var(--lt-ease);
 }
 .flow-bud.is-up {
   left: 50%;
