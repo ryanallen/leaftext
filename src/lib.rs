@@ -238,6 +238,9 @@ pub struct OpenedDocument {
     /// The raw source the block ranges index into. Sent for the tree formats (TEI and a data file can't be reconstructed from the HTML); empty for Markdown, which round-trips from the DOM.
     #[serde(default)]
     pub source: String,
+    /// Which renderer inside the format drew it, where the format has more than one: `"tei"` for a TEI document, `None` for every other. The reading view offers a reader the elements that renderer draws, so the routing has to reach the page rather than be guessed there.
+    #[serde(default)]
+    pub dialect: Option<&'static str>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -470,9 +473,7 @@ pub fn opened_document_from_source_with_host(
 ) -> OpenedDocument {
     let path = path.as_ref();
     match DocumentFormat::from_path(path) {
-        DocumentFormat::Xml => {
-            opened_document_from_tree(source, path, DocumentFormat::Xml, render_xml_document, host)
-        }
+        DocumentFormat::Xml => opened_document_from_xml_with_host(source, path, host),
         DocumentFormat::Json => opened_document_from_tree(
             source,
             path,
@@ -503,13 +504,29 @@ pub fn load_xml_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
 
 /// Render an XML string into an `OpenedDocument`: TEI through the TEI renderer, any other XML through the generic one.
 pub fn opened_document_from_xml(xml: &str, path: impl AsRef<Path>) -> OpenedDocument {
-    opened_document_from_tree(
+    opened_document_from_xml_with_host(xml, path.as_ref(), &DesktopHost::default())
+}
+
+/// The same render, told who answers for it. The dialect comes back out of the render because the renderer is what picks it; deciding it here would mean parsing the document a second time to ask a question it has already answered.
+fn opened_document_from_xml_with_host(
+    xml: &str,
+    path: &Path,
+    host: &dyn LeafHost,
+) -> OpenedDocument {
+    let dialect = std::cell::Cell::new(None);
+    let mut document = opened_document_from_tree(
         xml,
-        path.as_ref(),
+        path,
         DocumentFormat::Xml,
-        render_xml_document,
-        &DesktopHost::default(),
-    )
+        |source, fallback_title| {
+            let (title, html, blocks, drawn_by) = render_xml_document(source, fallback_title);
+            dialect.set(drawn_by);
+            (title, html, blocks)
+        },
+        host,
+    );
+    document.dialect = dialect.get();
+    document
 }
 
 /// Render a JSON string into an `OpenedDocument`.
@@ -597,6 +614,7 @@ fn opened_document_from_tree(
         blocks,
         tasks: Vec::new(),
         source: source.to_string(),
+        dialect: None,
     }
 }
 
@@ -634,6 +652,7 @@ pub fn opened_document_from_markdown_with_host(
         tasks: task_marker_offsets(markdown),
         // Lets blocks that don't round-trip from the DOM (lists, tables, code, images, footnotes) edit their exact source; text blocks ignore it.
         source: markdown.to_string(),
+        dialect: None,
     }
 }
 

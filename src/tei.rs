@@ -137,7 +137,7 @@ pub(crate) fn tei_verse_blockquote(lines: &[String]) -> String {
     )
 }
 
-/// Render a run of block-level sibling elements, coalescing consecutive `<l>` lines (verse lines not wrapped in an `<lg>`) into a single quote block so they still render like a Markdown `>` quote when the `<lg>` group is absent.
+/// Render a run of block-level siblings, coalescing consecutive `<l>` lines (verse lines not wrapped in an `<lg>`) into a single quote block so they still render like a Markdown `>` quote when the `<lg>` group is absent.
 pub(crate) fn tei_render_block_sequence<'a>(
     siblings: &[roxmltree::Node<'a, 'a>],
     ctx: &mut TeiCtx,
@@ -168,7 +168,7 @@ pub(crate) fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx
 
     if heading_level.is_none() {
         // transparent container (e.g. div[@type="translation"])
-        let children: Vec<_> = node.children().filter(|c| c.is_element()).collect();
+        let children: Vec<_> = node.children().filter(is_block_node).collect();
         tei_render_block_sequence(&children, ctx, depth);
         return;
     }
@@ -202,13 +202,19 @@ pub(crate) fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx
     // Render non-head children
     let children: Vec<_> = node
         .children()
-        .filter(|c| c.is_element() && !c.tag_name().name().eq_ignore_ascii_case("head"))
+        .filter(|c| is_block_node(c) && !c.tag_name().name().eq_ignore_ascii_case("head"))
         .collect();
     tei_render_block_sequence(&children, ctx, depth + 1);
 }
 
-/// Dispatch rendering for any TEI element node.
+/// Dispatch rendering for any TEI node standing between blocks.
 pub(crate) fn tei_render_node<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: usize) {
+    if node.is_comment() {
+        let attrs = ctx.block_attrs("comment", node);
+        let html = xml_comment_html(&attrs, node.text().unwrap_or(""));
+        ctx.push(&html);
+        return;
+    }
     if !node.is_element() {
         return;
     }
@@ -233,17 +239,17 @@ pub(crate) fn tei_render_node<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCt
         }
         _ => {
             // Recurse into unknown block elements, still coalescing bare `<l>`.
-            let children: Vec<_> = node.children().filter(|c| c.is_element()).collect();
+            let children: Vec<_> = node.children().filter(is_block_node).collect();
             tei_render_block_sequence(&children, ctx, depth);
         }
     }
 }
 
-/// Render `text > front` as a collapsed `<details>` so front matter is out of the way by default and the reader lands on the translation. Uses the same block machinery as the body. Mirrors `renderFront` in site/tei-xml.js.
+/// Render `text > front` as a collapsed `<details>` so front matter is out of the way by default and the reader lands on the translation. Uses the same block machinery as the body.
 pub(crate) fn render_tei_front<'a>(front: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) {
     // Render into `ctx.out`, then split that tail off to wrap it; slug and footnote side effects stay recorded on ctx.
     let start = ctx.out.len();
-    let children: Vec<_> = front.children().filter(|c| c.is_element()).collect();
+    let children: Vec<_> = front.children().filter(is_block_node).collect();
     tei_render_block_sequence(&children, ctx, 0);
     let inner = ctx.out.split_off(start);
     if inner.trim().is_empty() {
@@ -400,7 +406,7 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
         render_tei_front(front, &mut ctx);
     }
 
-    let body_children: Vec<_> = body.children().filter(|c| c.is_element()).collect();
+    let body_children: Vec<_> = body.children().filter(is_block_node).collect();
     tei_render_block_sequence(&body_children, &mut ctx, 0);
 
     // Append footnotes — built as a separate string to avoid borrowing `ctx.footnotes` while mutating `ctx.out`.

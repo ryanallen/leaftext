@@ -151,7 +151,7 @@ Press it and a row of kinds fans out over the empty line, unfurling rather than 
 
 The first four **open** a block rather than writing one: you get an empty block of that kind showing gray placeholder wording, and **nothing reaches the file until your first keystroke**. Pick Heading and change your mind and the page is as it was — no stray word left in the document. Picking a kind on a line that is already empty just changes what that line is, rather than adding a second one.
 
-In [XML](01-rendering.md#xml) the row offers what makes sense there instead: another element with the same tag as the block you pressed it beside, emptied, and a comment.
+In [XML](01-rendering.md#xml) the row offers what makes sense there instead: an element, and a comment. The element **opens** a line to type on, the way the first four above do — what you type is committed inside the tag on your first keystroke, `Enter` starts another element of the same kind under it, and typing nothing writes nothing. Which tag it offers depends on what the page can draw where the line lands: in a TEI document that is a paragraph, since TEI draws one anywhere and refuses a second heading; in any other XML it is the tag of the block you pressed the plus beside. The comment is written straight in and drawn as [a comment fold](01-rendering.md#xml).
 
 #### Images
 

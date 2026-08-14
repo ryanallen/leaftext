@@ -2929,6 +2929,43 @@ body:has(#readerToolbar:not([hidden])) {
   overflow-wrap: anywhere;
   vertical-align: top;
 }
+/* A comment the file carries, folded away as a labeled row: a note beside the document rather than words of it, so it takes one line until somebody opens it. */
+.document-body .xml-comment {
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 0.9em;
+  margin: var(--type-spacing) 0;
+}
+.document-body .xml-comment-summary {
+  cursor: pointer;
+  font-weight: var(--lt-weight-600);
+  list-style: none;
+  user-select: none;
+}
+.document-body .xml-comment-summary::-webkit-details-marker {
+  display: none;
+}
+.document-body .xml-comment-summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  transition: transform var(--lt-duration-150) var(--lt-ease-emphasized);
+}
+.document-body .xml-comment[open] > .xml-comment-summary::before {
+  transform: rotate(90deg);
+}
+.document-body .xml-comment-summary:hover {
+  color: var(--lt-link-hover);
+}
+.document-body .xml-comment-body {
+  padding: 0.35em 0 0 1.5em;
+}
 :root[data-speed-reader="true"] .document-body {
   color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
   font-weight: var(--lt-weight-400);

@@ -34,20 +34,25 @@ const MARKDOWN_INSERTS = [
   { id: 'divider', label: 'Divider', icon: `<span class="lt-icon lt-icon-divider"></span>`, text: '---' },
 ];
 
-// XML has no schema we know, so the only element worth offering is another one like the block you clicked — its own tag, emptied. A comment is legal anywhere.
+// XML has no schema we know, so the only element worth offering is another one like the block you clicked — its own tag, around whatever gets typed. A comment is legal anywhere.
 function xmlInserts(target) {
   const options = [];
-  const tag = xmlBlockTagName(target);
+  const tag = xmlInsertTagName(target);
   if (tag) {
     options.push({
       id: 'element',
       label: '<' + tag + '> element',
       icon: `<span class="lt-icon lt-icon-code-view"></span>`,
-      text: '<' + tag + '></' + tag + '>',
+      blank: 'element:' + tag,
     });
   }
   options.push({ id: 'comment', label: 'Comment', icon: `<span class="lt-icon lt-icon-comment"></span>`, text: '<!-- note -->' });
   return options;
+}
+
+// The element the plus offers to add. TEI draws a `<p>` anywhere and refuses a second heading, so beside a heading a clone is the one tag that never appears; every other XML draws an element with words in it as prose or a labeled row, where the clone is right.
+function xmlInsertTagName(target) {
+  return currentDocumentDialect === 'tei' ? 'p' : xmlBlockTagName(target);
 }
 
 // The tag a block's source opens with. Read from the source rather than the DOM: the reading view renders an XML element as whatever HTML suits it, so the DOM tag name is the renderer's choice, not the document's.
@@ -232,7 +237,7 @@ function openLineAbove(before, specId) {
   const at = before && Number(before.dataset.srcStart);
   if (!Number.isFinite(at)) return;
   openInsertBlock(at, {
-    spec: BLANK_BLOCK_SPECS[specId] || PLAIN_LINE_SPEC,
+    spec: blankBlockSpec(specId) || PLAIN_LINE_SPEC,
     separator: '',
     suffix: currentDocumentFormat === 'markdown' ? '\n\n' : '\n',
     place: (host) => before.insertAdjacentElement('beforebegin', host),
@@ -560,8 +565,7 @@ function runGapInsert(gap, option) {
   const { after, before } = gap;
   collapseBlockInsertRow();
   hideBlockGutter();
-  // A blank line between two blocks in a note and in a message; one line between two elements in a tree.
-  const separator = currentDocumentFormat === 'xml' ? '\n' : documentLineEnding().repeat(2);
+  const separator = blockSeparator();
   // A block to type in rather than source to write: open one on the line below.
   if (option.blank) {
     if (after) openLineBelow(after, option.blank);

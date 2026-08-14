@@ -342,11 +342,23 @@ function documentLineEnding() {
     : '\n';
 }
 
-// What was typed into a blank line, as the open document spells it.
+// What separates two blocks in the open document: a blank line in a note and in a message, one line between two elements in a tree.
+function blockSeparator() {
+  return currentDocumentFormat === 'xml' ? '\n' : documentLineEnding().repeat(2);
+}
+
+// Text as a tree document holds it, so what somebody types is what the file says. Nothing else escapes these, and a typed `&` written straight in is a file that no longer parses.
+function escapeTreeText(text) {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+}
+
+// What was typed into a blank line, as the open document spells it. Never the Markdown serializer outside a note: a message would get asterisks it never had, and an element would get them inside its own tag.
 function typedBlockText(block) {
-  return currentDocumentFormat === 'eml'
-    ? emailBlockDomToText(block, documentLineEnding()).trim()
-    : inlineDomToMarkdown(block).trim();
+  if (currentDocumentFormat === 'eml') {
+    return emailBlockDomToText(block, documentLineEnding()).trim();
+  }
+  if (currentDocumentFormat === 'xml') return escapeTreeText(block.textContent).trim();
+  return inlineDomToMarkdown(block).trim();
 }
 
 // Whether the page can write this block's own bytes back out of what is on screen — the ticket's stamping rule one level up. Equal, and typing on the words is exact; not equal (a date the reader re-spelled, an address list rejoined, markup drawn from its source) and the block keeps the raw-slice editor.
@@ -502,6 +514,26 @@ const BLANK_BLOCK_SPECS = {
   quote: { tag: 'blockquote', kind: 'blockquote', placeholder: 'Someone else’s words...', marker: '> ' },
 };
 
+// The same, for one element of a tree document: `close` is the half Markdown never needs, so the first keystroke commits `<p>the words</p>` rather than an empty element nothing draws. `chain` carries the tag across Enter, since the next line is another of the same element rather than the plain line a note falls to.
+function xmlElementSpec(tag) {
+  return {
+    tag: 'p',
+    kind: 'paragraph',
+    placeholder: 'Write inside <' + tag + '>...',
+    marker: '<' + tag + '>',
+    close: '</' + tag + '>',
+    chain: 'element:' + tag,
+  };
+}
+
+// The blank block an id names. A tree document's element carries its own tag in the id, because the tag is the document's rather than one of the four kinds a note offers.
+function blankBlockSpec(id) {
+  if (typeof id === 'string' && id.startsWith('element:')) {
+    return xmlElementSpec(id.slice('element:'.length));
+  }
+  return BLANK_BLOCK_SPECS[id] || null;
+}
+
 // A list item has to stand in a list to look like one, so a spec may ask for a wrapper. `host` is what goes in the page; `block` is what you type in.
 function makeBlankHost(spec, insertAt) {
   const wording = spec.prompts
@@ -515,12 +547,12 @@ function makeBlankHost(spec, insertAt) {
 }
 
 // A fresh empty block, ready to type into. Markdown cannot hold an empty block, so it exists only in the DOM until its first commit, which splices `separator`
-// + the spec's marker + the typed text in at `insertAt`. Enter commits and chains another below (continuous writing flow); Backspace on the empty block dissolves it back into `previous`; clicking away commits, or dissolves it if nothing was typed -- unless `keepEmpty`, since an empty document has no other block to click into and removing this one would leave nowhere to type.
+// + the spec's marker + the typed text + the spec's closing half in at `insertAt`. Enter commits and chains another below (continuous writing flow); Backspace on the empty block dissolves it back into `previous`; clicking away commits, or dissolves it if nothing was typed -- unless `keepEmpty`, since an empty document has no other block to click into and removing this one would leave nowhere to type.
 function openInsertBlock(
   insertAt,
   {
     spec = PLAIN_LINE_SPEC,
-    separator = documentLineEnding().repeat(2),
+    separator = blockSeparator(),
     suffix = '',
     place,
     previous = null,
@@ -529,6 +561,8 @@ function openInsertBlock(
 ) {
   const { host, block } = makeBlankHost(spec, insertAt);
   const prefix = separator + spec.marker;
+  // The spec's own closing half, inside the call's suffix: an element closes around the words, and the separator the caller adds goes outside it.
+  const close = spec.close || '';
   place(host);
   const commit = (chainBelow, chainSpec) => {
     if (block.__committed) return true;
@@ -539,7 +573,7 @@ function openInsertBlock(
       command: 'editBlock',
       start: insertAt,
       end: insertAt,
-      text: prefix + text + suffix,
+      text: prefix + text + close + suffix,
     });
     if (chainBelow) {
       setPendingCaret({
@@ -555,7 +589,7 @@ function openInsertBlock(
     if (block.__committed) return;
     block.__committed = true;
     const typed = typedBlockText(block);
-    const lead = typed ? prefix + typed + separator : separator;
+    const lead = typed ? prefix + typed + close + separator : separator;
     sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: lead + option.text + suffix });
     if (option.caret) {
       setPendingCaret({ srcStart: insertAt + utf8ByteLength(lead) });
@@ -572,7 +606,7 @@ function openInsertBlock(
   };
   // The plus pressed on this very line: it is empty, so it becomes the kind that was picked rather than growing a second block beside it.
   block.__becomeBlock = (specId) => {
-    const next = BLANK_BLOCK_SPECS[specId];
+    const next = blankBlockSpec(specId);
     if (!next || block.__committed || inlineDomToMarkdown(block).trim()) return;
     host.remove();
     openInsertBlock(insertAt, { spec: next, separator, suffix, place, previous, keepEmpty });
@@ -580,7 +614,8 @@ function openInsertBlock(
   block.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      commit(true);
+      // A note carries on in a plain line, whatever kind this one was — you have finished the heading and are writing under it. An element has nothing plain to fall to, so it chains another of itself.
+      commit(true, spec.chain);
       return;
     }
     if (event.key === 'Escape') {
@@ -611,7 +646,7 @@ function openInsertBlockAfter(el, specId) {
   const insertAt = Number(el.dataset.srcEnd);
   if (!Number.isFinite(insertAt)) return;
   openInsertBlock(insertAt, {
-    spec: BLANK_BLOCK_SPECS[specId] || PLAIN_LINE_SPEC,
+    spec: blankBlockSpec(specId) || PLAIN_LINE_SPEC,
     place: (host) => el.insertAdjacentElement('afterend', host),
     previous: el,
   });
@@ -907,6 +942,8 @@ function wireSourceEditable(el) {
     if (el.dataset.editingSource === 'true') return;
     // Let a link click navigate; source editing starts from a click on any non-link part of the block.
     if (event.target && event.target.closest && event.target.closest('a')) return;
+    // A press on a fold's own row opens the fold. It is the one press on a block that already means something, and swallowing it would leave a box nothing can open.
+    if (event.target && event.target.closest && event.target.closest('summary')) return;
     if (el.dataset.processed === 'true' && el.classList.contains('mermaid')) return;
     event.preventDefault();
     el.__startSourceEdit();
@@ -1034,6 +1071,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (!body) return;
   currentDocumentFormat = doc.format || 'markdown';
   currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
+  currentDocumentDialect = typeof doc.dialect === 'string' ? doc.dialect : null;
   // Markdown is the named exception: an empty note has no blocks and is the one page a reader unlocks precisely to start typing in.
   currentDocumentBindsAnything =
     currentDocumentFormat === 'markdown' || (Array.isArray(doc.blocks) && doc.blocks.length > 0);

@@ -311,7 +311,7 @@ fn generic_xml_blocks_anchor_to_their_source_elements() {
     let xml = "<config><name>Widget</name><timeout>30</timeout>\
                <note>Some prose with <b>markup</b> in it.</note></config>";
 
-    let (_title, html, blocks) = render_xml_document(xml, None);
+    let (_title, html, blocks, _dialect) = render_xml_document(xml, None);
 
     // Every stamped block slices back to the element it was rendered from.
     assert!(!blocks.is_empty());
@@ -380,6 +380,29 @@ fn tei_documents_keep_going_to_the_tei_renderer() {
     // TEI-only markup, so the routing (not just the title) went to `tei.rs`.
     assert_contains(&html, "<blockquote class=\"tei-verse\">");
     assert!(!html.contains("data-fields"), "{html}");
+}
+
+#[test]
+fn a_document_says_which_renderer_drew_it_so_the_page_can_offer_what_it_draws() {
+    let tei = r#"<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <teiHeader><fileDesc><titleStmt><title>The Work</title></titleStmt></fileDesc></teiHeader>
+  <text><body><div><head>One</head><p>A line.</p></div></body></text>
+</TEI>"#;
+    let sitemap = "<urlset><url><loc>https://leaftext.com/</loc></url></urlset>";
+
+    assert_eq!(
+        opened_document_from_xml(tei, "work.xml").dialect,
+        Some("tei")
+    );
+    // Every other XML is drawn by the generic renderer, which has no dialect to name — and neither has a note.
+    assert_eq!(
+        opened_document_from_xml(sitemap, "sitemap.xml").dialect,
+        None
+    );
+    assert_eq!(
+        opened_document_from_markdown("# Note\n", "note.md").dialect,
+        None
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -740,6 +763,41 @@ fn tei_block_map_anchors_paragraphs_and_headings_to_xml_ranges() {
                 "{slice}"
             );
         }
+    }
+}
+
+#[test]
+fn a_comment_between_two_blocks_is_drawn_and_anchored_to_its_own_bytes() {
+    // The same document in both dialects, since a comment nobody draws is a comment nobody can see in either.
+    let tei = r#"<TEI><teiHeader><fileDesc><titleStmt><title>The Work</title></titleStmt></fileDesc></teiHeader>
+        <text><body><div><head>A Section</head>
+        <!-- checked against the manuscript -->
+        <p>First paragraph.</p>
+        </div></body></text></TEI>"#;
+    let config = "<config><name>Widget</name>\n<!-- checked against the manuscript -->\n<timeout>30</timeout></config>";
+
+    for source in [tei, config] {
+        let (_title, html, blocks, _dialect) = render_xml_document(source, None);
+
+        // Drawn as a fold saying what it is, with the comment's own words inside it and none of the file's punctuation on the page.
+        assert_contains(&html, "<details class=\"xml-comment\"");
+        assert_contains(
+            &html,
+            "<summary class=\"xml-comment-summary\">Comment</summary><div class=\"xml-comment-body\">checked against the manuscript</div>",
+        );
+        assert!(!html.contains("&lt;!--"), "{html}");
+        // And anchored, which is what makes a click on it open its source.
+        let comment = blocks
+            .iter()
+            .find(|span| span.kind == "comment")
+            .expect("the comment carries a block of its own");
+        assert_eq!(
+            &source[comment.start..comment.end],
+            "<!-- checked against the manuscript -->"
+        );
+        // Everything around it still draws: the comment ends the run it stands in rather than swallowing it.
+        assert_eq!(blocks.len(), 3, "{blocks:?}");
+        assert_eq!(comment.id, 1, "the comment stands between the two blocks");
     }
 }
 

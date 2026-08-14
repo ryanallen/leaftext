@@ -1960,6 +1960,203 @@ if (booted) {
     }
   });
 
+  /** An XML page with a blank line open on it: the page set to that document, the line the plus opened, and every command it sends. `place` is what the gutter does with the host; the line is the block, since these specs ask for no wrapper. */
+  function xmlBlankLine(source, dialect, specId, insertAt) {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = {
+      format: read('currentDocumentFormat'),
+      dialect: read('currentDocumentDialect'),
+      source: read('currentDocumentSource'),
+      send: booted.ipc.postMessage,
+    };
+    const sent = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    read(
+      `currentDocumentFormat = 'xml'; currentDocumentDialect = ${JSON.stringify(dialect)}; ` +
+        `currentDocumentSource = ${JSON.stringify(source)};`,
+    );
+    let line = null;
+    booted.openInsertBlock(insertAt, {
+      spec: booted.blankBlockSpec(specId) || booted.PLAIN_LINE_SPEC,
+      place: (host) => {
+        line = host;
+      },
+    });
+    const raise = (type, event) => {
+      for (const handler of line.listeners.get(type) || []) handler(event || {});
+    };
+    return {
+      line,
+      sent,
+      type: (words) => {
+        line.textContent = words;
+        raise('input', {});
+      },
+      enter: () => raise('keydown', { key: 'Enter', preventDefault() {} }),
+      away: () => raise('blur', { relatedTarget: null }),
+      caret: () => read('pendingCaret'),
+      restore: () => {
+        booted.ipc.postMessage = was.send;
+        read(
+          `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
+            `currentDocumentDialect = ${JSON.stringify(was.dialect)}; ` +
+            `currentDocumentSource = ${JSON.stringify(was.source)}; pendingCaret = null;`,
+        );
+      },
+    };
+  }
+
+  // Both of the plus's options on an XML page used to splice source neither renderer draws, so the click closed the row and changed nothing while the document quietly went unsaved. The element option now opens the same blank line a note's plus opens, and what is typed lands inside the tag.
+  check('the element the plus offers on an XML page is a line to type on, and the words land inside the tag', () => {
+    const { blockInsertOptions, blockSeparator } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const tei = '<div><head>One</head><p>A line.</p></div>';
+    const opened = xmlBlankLine(tei, 'tei', 'element:p', 21);
+    try {
+      // TEI draws a `<p>` anywhere in a section and refuses a second heading, so beside a heading the clone is the one tag that never appears.
+      const offered = blockInsertOptions({ dataset: { srcStart: '5', srcEnd: '21' } });
+      const element = offered.find((one) => one.id === 'element');
+      if (!element || element.text) {
+        throw new Error(`the element option still writes source: ${JSON.stringify(offered)}`);
+      }
+      if (element.blank !== 'element:p') {
+        throw new Error(`the option beside a TEI heading was ${JSON.stringify(element)}`);
+      }
+      if (blockSeparator() !== '\n') throw new Error('a tree document was given a note’s blank line');
+
+      // The line says what it is for and writes nothing until something is typed on it.
+      if (!String(opened.line.dataset.placeholder).includes('<p>')) {
+        throw new Error(`the line's wording was ${JSON.stringify(opened.line.dataset.placeholder)}`);
+      }
+      if (opened.sent.length) throw new Error('opening a line wrote to the document');
+
+      opened.type('The words');
+      opened.enter();
+      const wrote = opened.sent.filter((one) => one.command === 'editBlock');
+      if (wrote.length !== 1 || wrote[0].text !== '\n<p>The words</p>') {
+        throw new Error(`the first keystroke committed ${JSON.stringify(wrote)}`);
+      }
+      if (wrote[0].start !== 21 || wrote[0].end !== 21) {
+        throw new Error(`the element landed at ${wrote[0].start}..${wrote[0].end}`);
+      }
+    } finally {
+      opened.restore();
+    }
+  });
+
+  // Everywhere but TEI the offered element is the clone of the block beside the gap, since an element with words in it draws as prose or a labeled row. What is typed is the document's own text, and Enter carries on in another of the same element rather than the plain Markdown line the chain used to fall to.
+  check('a typed & arrives escaped inside the element, and Enter opens another one line apart', () => {
+    const { blockInsertOptions } = booted;
+    const config = '<config><name>Widget</name></config>';
+    const opened = xmlBlankLine(config, null, 'element:name', 27);
+    try {
+      const offered = blockInsertOptions({ dataset: { srcStart: '8', srcEnd: '27' } });
+      const element = offered.find((one) => one.id === 'element');
+      if (!element || element.blank !== 'element:name') {
+        throw new Error(`a generic document was offered ${JSON.stringify(offered)}`);
+      }
+
+      opened.type('Bells & <whistles>');
+      opened.enter();
+      const wrote = opened.sent.filter((one) => one.command === 'editBlock');
+      if (wrote.length !== 1 || wrote[0].text !== '\n<name>Bells &amp; &lt;whistles></name>') {
+        throw new Error(`what was typed reached the file as ${JSON.stringify(wrote)}`);
+      }
+      // Enter chains another of the same element, by name, one newline down from where this one landed.
+      const caret = opened.caret();
+      if (!caret || !caret.insertBelow || caret.blockSpec !== 'element:name') {
+        throw new Error(`Enter chained ${JSON.stringify(caret)}`);
+      }
+      if (caret.srcStart !== 28) throw new Error(`the next line was aimed at ${caret.srcStart}`);
+    } finally {
+      opened.restore();
+    }
+  });
+
+  // The other option: a comment is written into the gap as the file's own bytes, one line down from the block above it — and both renderers now draw one, so the click lands something visible instead of changing the document invisibly.
+  check('choosing Comment on an XML page writes one line down from the block above', () => {
+    const { blockInsertOptions, runGapInsert } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = {
+      format: read('currentDocumentFormat'),
+      dialect: read('currentDocumentDialect'),
+      source: read('currentDocumentSource'),
+      send: booted.ipc.postMessage,
+    };
+    const sent = [];
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      read(
+        "currentDocumentFormat = 'xml'; currentDocumentDialect = 'tei'; " +
+          "currentDocumentSource = '<div><head>One</head><p>A line.</p></div>';",
+      );
+      const after = { dataset: { srcStart: '5', srcEnd: '21' } };
+      const comment = blockInsertOptions(after).find((one) => one.id === 'comment');
+      if (!comment) throw new Error('an XML page stopped offering a comment');
+
+      runGapInsert({ after, before: null }, comment);
+      const wrote = sent.filter((one) => one.command === 'editBlock');
+      if (wrote.length !== 1 || wrote[0].text !== '\n<!-- note -->') {
+        throw new Error(`choosing Comment wrote ${JSON.stringify(wrote)}`);
+      }
+      if (wrote[0].start !== 21 || wrote[0].end !== 21) {
+        throw new Error(`the comment landed at ${wrote[0].start}..${wrote[0].end}`);
+      }
+    } finally {
+      booted.ipc.postMessage = was.send;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
+          `currentDocumentDialect = ${JSON.stringify(was.dialect)}; ` +
+          `currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // A drawn comment is a block with its own bytes behind it, and every tree block the page cannot type on as it looks opens as source when it is pressed. So this needs no wiring of its own — it needs proving that the comment is inside the rule.
+  check('a drawn comment opens its own source when it is pressed', () => {
+    const { wireSourceEditable } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const source = '<div><head>One</head><!-- note --><p>A line.</p></div>';
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      const comment = fakeElement('div');
+      comment.dataset = { srcStart: '21', srcEnd: '34', blockKind: 'comment' };
+      wireSourceEditable(comment);
+      const press = (comment.listeners.get('pointerdown') || [])[0];
+      if (!press) throw new Error('a drawn comment answers a press with nothing');
+
+      // The row the fold opens by is the one press on a block that already means something: it opens the fold, and the editor stays out of it.
+      const row = { closest: (selector) => (selector === 'summary' ? {} : null) };
+      press({ target: row, preventDefault() {} });
+      if (comment.dataset.editingSource === 'true') {
+        throw new Error('pressing the fold’s own row opened the editor instead of the fold');
+      }
+
+      press({ target: null, preventDefault() {} });
+      if (comment.dataset.editingSource !== 'true') throw new Error('pressing a comment opened no editor');
+      if (comment.textContent !== '<!-- note -->') {
+        throw new Error(`the comment opened on ${JSON.stringify(comment.textContent)}`);
+      }
+    } finally {
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // The whole point of opening a line rather than splicing one: changing your mind costs nothing. Nothing typed, nothing in the file, and the line goes away.
+  check('a line opened on an XML page and left alone writes nothing', () => {
+    const opened = xmlBlankLine('<div><p>A line.</p></div>', 'tei', 'element:p', 21);
+    try {
+      opened.away();
+      if (opened.sent.length) throw new Error(`an untouched line wrote ${JSON.stringify(opened.sent)}`);
+      if (opened.line.isConnected !== false) throw new Error('the empty line stayed on the page');
+    } finally {
+      opened.restore();
+    }
+  });
+
   // Half a message opens and half of it does not, and nothing on the page said which — the same fault the padlock had. A press on a shut part says why; a press on one that opens says nothing, because it is about to open.
   check('a part of a message that cannot open says why when it is pressed', () => {
     const { wireEmailClosedParts } = booted;

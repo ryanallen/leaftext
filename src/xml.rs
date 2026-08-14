@@ -41,27 +41,30 @@ pub(crate) fn document_is_tei(doc: &Document) -> bool {
         .any(|n| n.is_element() && n.tag_name().name().eq_ignore_ascii_case("teiHeader"))
 }
 
-/// Render any XML string to `(title, html, blocks)`, routing TEI to the TEI renderer and everything else to the generic one. `fallback_title` (normally the file name) heads the page when the document names no title of its own — which is also what a `None` title reports.
+/// The dialect name for a document the TEI renderer drew. The reading view asks for it by name: what a reader may add to a document depends on which renderer will draw it, and TEI draws a `<p>` anywhere while refusing a second `<head>`.
+pub(crate) const TEI_DIALECT: &str = "tei";
+
+/// Render any XML string to `(title, html, blocks, dialect)`, routing TEI to the TEI renderer and everything else to the generic one. `fallback_title` (normally the file name) heads the page when the document names no title of its own — which is also what a `None` title reports. `dialect` is the renderer that drew it, reported out of the routing rather than decided a second time.
 pub(crate) fn render_xml_document(
     xml: &str,
     fallback_title: Option<&str>,
-) -> (Option<String>, String, Vec<BlockSpan>) {
+) -> (Option<String>, String, Vec<BlockSpan>, Option<&'static str>) {
     let doc = match parse_xml(xml) {
         Ok(doc) => doc,
-        Err(error) => return (None, xml_parse_error_html(&error), Vec::new()),
+        Err(error) => return (None, xml_parse_error_html(&error), Vec::new(), None),
     };
     if document_is_tei(&doc) {
         let (title, ctx) = render_tei_inner(&doc);
-        return (title, ctx.out, ctx.blocks);
+        return (title, ctx.out, ctx.blocks, Some(TEI_DIALECT));
     }
     let (title, ctx) = render_generic_document(&doc, fallback_title);
-    (title, ctx.out, ctx.blocks)
+    (title, ctx.out, ctx.blocks, None)
 }
 
 /// The title and body HTML for any XML string, without the block map. Test-only: it checks the title and the body in one call.
 #[cfg(test)]
 pub(crate) fn render_xml_body(xml: &str) -> (Option<String>, String) {
-    let (title, html, _) = render_xml_document(xml, None);
+    let (title, html, _, _) = render_xml_document(xml, None);
     (title, html)
 }
 
@@ -80,6 +83,18 @@ pub(crate) fn xml_parse_error_html(error: &roxmltree::Error) -> String {
     format!(
         "<p><strong>XML parse error.</strong> {}</p>",
         encode_text(&error.to_string())
+    )
+}
+
+/// One comment, drawn as a fold: a row saying what it is, opened to read the words. It is a note beside the document rather than words of it, so it takes one line until somebody asks for it, and the file's own `<!--` marks stay off the page.
+///
+/// Both renderers draw it the same way, and it is anchored to its own bytes like every other block, which is what makes a press on the words open its source.
+///
+/// A comment between two blocks only. One inside an element is mixed content, which both renderers flatten to the element's text, and interrupting a sentence with interface would be worse than leaving it where the source view already shows it.
+pub(crate) fn xml_comment_html(attrs: &str, text: &str) -> String {
+    format!(
+        "<details class=\"xml-comment\"{attrs}><summary class=\"xml-comment-summary\">Comment</summary><div class=\"xml-comment-body\">{}</div></details>\n",
+        encode_text(text.trim())
     )
 }
 
@@ -184,7 +199,7 @@ fn render_generic_document<'a>(
     // The root element's own attributes (a feed's `version`, a manifest's `package`) carry real information; namespace declarations don't, and roxmltree keeps those out of `attributes()` already.
     render_attribute_fields(root, &mut ctx);
 
-    let children: Vec<Node> = root.children().filter(Node::is_element).collect();
+    let children: Vec<Node> = root.children().filter(is_block_node).collect();
     render_sequence(&children, &mut ctx, 0);
 
     (title, ctx)
@@ -212,10 +227,21 @@ fn pick_title_node<'a>(root: Node<'a, 'a>) -> Option<Node<'a, 'a>> {
     None
 }
 
-/// Render a run of sibling elements, grouping as it goes: repeated records become one table, consecutive leaves become one field list, and anything else renders on its own.
+/// What a block sequence is made of: the elements, and the comments standing between them. Everything else between two blocks — whitespace, a processing instruction — is not something a reader put there to be read. Both renderers ask this, so TEI and everything else agree on what a block is.
+pub(crate) fn is_block_node(node: &Node) -> bool {
+    node.is_element() || node.is_comment()
+}
+
+/// Render a run of sibling nodes, grouping as it goes: repeated records become one table, consecutive leaves become one field list, and anything else renders on its own.
 fn render_sequence<'a>(siblings: &[Node<'a, 'a>], ctx: &mut XmlCtx, depth: usize) {
     let mut i = 0;
     while i < siblings.len() {
+        // A comment ends whatever run it stands in and draws on its own line, which is where the file put it.
+        if siblings[i].is_comment() {
+            render_comment(siblings[i], ctx);
+            i += 1;
+            continue;
+        }
         if let Some((end, columns)) = table_group(siblings, i) {
             render_table(&siblings[i..end], &columns, ctx);
             i = end;
@@ -223,7 +249,7 @@ fn render_sequence<'a>(siblings: &[Node<'a, 'a>], ctx: &mut XmlCtx, depth: usize
         }
         if is_leaf(siblings[i]) {
             let mut end = i;
-            while end < siblings.len() && is_leaf(siblings[end]) {
+            while end < siblings.len() && siblings[end].is_element() && is_leaf(siblings[end]) {
                 end += 1;
             }
             render_fields(&siblings[i..end], ctx);
@@ -263,9 +289,16 @@ fn render_element<'a>(node: Node<'a, 'a>, ctx: &mut XmlCtx, depth: usize) {
     let label_id = label_node.map(|source| source.id());
     let children: Vec<Node> = node
         .children()
-        .filter(|child| child.is_element() && Some(child.id()) != label_id)
+        .filter(|child| is_block_node(child) && Some(child.id()) != label_id)
         .collect();
     render_sequence(&children, ctx, depth + 1);
+}
+
+/// Render one comment node as its own block, anchored to its bytes.
+fn render_comment<'a>(node: Node<'a, 'a>, ctx: &mut XmlCtx) {
+    let attrs = ctx.block_attrs("comment", node);
+    let html = xml_comment_html(&attrs, node.text().unwrap_or(""));
+    ctx.push(&html);
 }
 
 /// Render an element's text as a paragraph, flattening any inline markup.
