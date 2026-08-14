@@ -4,6 +4,8 @@
 //!
 //! Nothing here is a cache of what is in a file. The row says *which* file, and reading it is still the disk's job, the same as every other vault.
 
+// Only the desktop functions below reach for it; the row type itself needs nothing from the module.
+#[cfg(feature = "desktop")]
 use super::*;
 
 /// One file the mirror holds.

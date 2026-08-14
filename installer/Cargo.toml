@@ -9,6 +9,9 @@ publish = false
 name = "leaftext-setup"
 path = "src/main.rs"
 
+[lints]
+workspace = true
+
 # The payload is the app binary, deflated: 17.7 MB of executable becomes 6.9 MB, which puts the finished installer beside the MSI rather than at three times its size. `flate2` is already a direct dependency of the app, so this costs the tree nothing.
 [dependencies]
 flate2 = "1"

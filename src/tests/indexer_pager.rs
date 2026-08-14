@@ -2,6 +2,8 @@
 
 use super::*;
 
+use crate::pager::{pager_html, pager_label};
+
 #[test]
 fn pager_loaded_script_routes_through_webview_hook() {
     let path = PathBuf::from("docs").join("guide.md");

@@ -14,6 +14,9 @@ highlight = ["leaftext/web"]
 # The app's own page, its front end, its boot state and the document buffer an edit splices into — rather than a document rendered into someone else's markup. Half a megabyte of front end that a render-only embed has no use for, which is why it is not in the core. It does **not** ask for the highlighter: a product embedding an editor pays for the page and the front end, and pays for colors only if its documents have code in them, which is the same bargain the core already strikes. So `--features shell` is the module an embed downloads and `--features shell,highlight` is the whole app a published site is served.
 shell = []
 
+[lints]
+workspace = true
+
 [dependencies]
 # The same renderer the desktop runs, with the window, the file dialog and SQLite left out. No second implementation, which is the whole point of this package.
 leaftext = { path = "..", default-features = false }

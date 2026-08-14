@@ -24,7 +24,6 @@ pub(crate) use theme::*;
 mod scripts;
 pub use scripts::*;
 mod pager;
-pub(crate) use pager::*;
 pub use pager::{document_pager_html, pager_loaded_script, pager_loading_html};
 mod minimap;
 pub use minimap::{

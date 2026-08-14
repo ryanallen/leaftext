@@ -2,6 +2,7 @@
 
 use super::*;
 
+use crate::pager::{is_pager_page_extension, pager_label};
 use crate::remote::vault_mirror_dir;
 
 #[test]

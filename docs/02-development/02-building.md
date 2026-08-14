@@ -60,6 +60,8 @@ The design-system steps are the ones worth knowing about. `check-tokens`, `check
 
 `check-justfile-quotes` fails when a recipe puts single or double quotes directly around an interpolation, because Windows passes those characters into the program instead of using them to group a value.
 
+A compiler warning is an error here. `[workspace.lints.rust]` in the root `Cargo.toml` sets `warnings = "deny"` and all three packages opt in, so every way the tree is compiled refuses one — the four checks above, `cargo test`, the editor's analyzer at the line, and the release builds. The manifest rather than a flag on one recipe is what makes that true everywhere, and Cargo caps lints in dependencies to `allow`, so only this repo's own code is held to it. Where a warning is genuinely wanted, the fix is an `#[allow(...)]` on the item that needs it, with a comment saying why.
+
 A passing `just verify` is the baseline requirement before handing any work back.
 
 The Mermaid, KaTeX, and Noto assets are embedded in the binary from `src/assets` and also served as static files from `site/`. `src/assets` is the source of truth; `check-vendor` fails if the `site/` copies have drifted. Run `just sync-vendor` to recopy them and clear the drift.
