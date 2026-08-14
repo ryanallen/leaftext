@@ -3,7 +3,7 @@
 //
 // One license file per session, because two agents can work this checkout at once and a license keyed on the machine is a license the other agent can spend.
 //
-// Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, a deleted or moved branch, anything with --force, and the release scripts that do those. Reading is always fine.
+// Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, checkout, switch, restore, stash, worktree, a deleted or moved branch, anything with --force, and the release scripts that do those. Reading is always fine.
 //
 //   node scripts/gate-git.mjs           the hook payload on stdin
 //   node scripts/gate-git.mjs --check   self-test (`just verify`)
@@ -13,8 +13,10 @@ import { keep, licensePath, sessionOf } from './hook-payload.mjs';
 
 const LICENSE_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 
+// The last five discard the working tree rather than history, and are refused in every form: `git checkout -- <path>` is the ordinary undo, and reading a file out of a commit is `git show <ref>:<path>`, which stays allowed.
 const WRITE_SUBCOMMANDS = new Set(['commit', 'push', 'reset', 'rebase', 'revert',
-  'cherry-pick', 'merge', 'am', 'clean', 'filter-branch']);
+  'cherry-pick', 'merge', 'am', 'clean', 'filter-branch',
+  'checkout', 'switch', 'restore', 'stash', 'worktree']);
 // `git tag` reads when it is listing, writes otherwise.
 const TAG_READ_FLAGS = ['-l', '--list', '-n', '--contains', '--no-contains',
   '--points-at', '--merged', '--no-merged'];
@@ -114,6 +116,13 @@ function selfTest() {
     'git branch -D old',
     'cd /c/repo && git commit -am "x"',
     'git status; git push',
+    'git checkout -- src/lib.rs',
+    'git checkout -b feature',
+    'git switch main',
+    'git restore src/lib.rs',
+    'git stash',
+    'git stash list',
+    'git worktree add ../wt main',
     'just release 0.1.441',
     'node --experimental-strip-types scripts/prepare-release.mts 0.1.441',
     '"C:\\Program Files\\Git\\bin\\git.exe" push',
