@@ -40,7 +40,7 @@ Text marked with `>`, rendered with a left bar and a hanging indent. Nest them b
 
 ## Bottom sheet
 
-A panel that slides up over the reading view without taking you off the page — used for [glossary](GLOSSARY.md#glossary) entries and the [theme picker](GLOSSARY.md#theme-picker). It slows as it lands and leaves quicker than it arrived, or arrives in place under [Reduce Motion](GLOSSARY.md#reduce-motion). Dismiss it with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards.
+A panel that slides up over the reading view without taking you off the page — used for [glossary](GLOSSARY.md#glossary) entries, the [theme picker](GLOSSARY.md#theme-picker), the start screen's folded lists and the flowchart editor's shape picker. It rides a little past its seat and settles back onto it, and leaves quicker than it arrived — pulling up briefly first, unless you dragged it away, in which case it goes straight off. Under [Reduce Motion](GLOSSARY.md#reduce-motion) it arrives and leaves in place. Dismiss it with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards.
 
 ## Breadcrumb
 

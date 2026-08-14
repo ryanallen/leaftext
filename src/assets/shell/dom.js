@@ -156,12 +156,124 @@ const SHEET_FLICK_PX_PER_MS = 0.9;
 function resetSheetDrag(sheet) {
   if (sheet) sheet.style.removeProperty('--sheet-drag');
 }
+// The choreography every bottom sheet shares. Opening lands with a rubber band: past its seat by the raise, then back down onto it. Closing by the X, the scrim or Escape pulls up to that same mark first and then leaves fast; a drag dismissal skips the pull, because the hand already made it. Each leg is a class the stylesheet times, and the next one starts when the transform ends -- with a timer beside it, because Reduce Motion zeroes every duration and a zeroed transition fires no `transitionend` at all.
+const SHEET_RISE_MS = 260;
+const SHEET_SETTLE_MS = 140;
+const SHEET_PREP_MS = 120;
+const SHEET_BOOST_MS = 160;
+const SHEET_LEG_SLACK_MS = 80;
+const SHEET_MOVING = ['is-rising', 'is-settling', 'is-prepping', 'is-boosting'];
+// Which run of legs a sheet is on. Anything that starts a new run bumps it, so the run it interrupted stops where it stands instead of hiding a sheet somebody has just reopened.
+const sheetRun = new WeakMap();
+function cancelSheetLegs(sheet) {
+  if (!sheet) return;
+  sheetRun.set(sheet, (sheetRun.get(sheet) || 0) + 1);
+}
+function dropSheetMotion(sheet) {
+  SHEET_MOVING.forEach((name) => sheet.classList.remove(name));
+}
+// `fromHidden` is the entrance's: a sheet coming off `display: none` has no starting transform computed yet, so its first leg has to wait a frame or there is nothing to move from. A close is already laid out and starts at once.
+function runSheetLegs(sheet, legs, done, fromHidden) {
+  cancelSheetLegs(sheet);
+  const run = sheetRun.get(sheet);
+  const step = (index) => {
+    if (sheetRun.get(sheet) !== run) return;
+    if (index >= legs.length) {
+      done();
+      return;
+    }
+    legs[index].apply();
+    let timer = 0;
+    // A transition on a child bubbles through the sheet, and every leg moves the same property, so both have to be read off the event.
+    const next = (event) => {
+      if (event && (event.target !== sheet || event.propertyName !== 'transform')) return;
+      sheet.removeEventListener('transitionend', next);
+      clearTimeout(timer);
+      step(index + 1);
+    };
+    sheet.addEventListener('transitionend', next);
+    timer = setTimeout(() => next(null), legs[index].ms + SHEET_LEG_SLACK_MS);
+  };
+  if (fromHidden) requestAnimationFrame(() => step(0));
+  else step(0);
+}
+// `backdrop` is optional -- the shape picker inside the flowchart editor has none. `keepParked` is the picker's too: it redraws while it is open and stays where it was pushed to.
+function openSheet(sheet, backdrop, options) {
+  if (!sheet) return;
+  const already = !sheet.hidden && sheet.classList.contains('open');
+  if (backdrop) backdrop.hidden = false;
+  sheet.hidden = false;
+  if (already) {
+    // Asked for again while it is already up: a second glossary entry, the other start-screen list. It does not land twice, but it does come back flush, because whatever asked for it means it to be read.
+    if (!(options && options.keepParked)) resetSheetDrag(sheet);
+    return;
+  }
+  runSheetLegs(
+    sheet,
+    [
+      {
+        ms: SHEET_RISE_MS,
+        apply: () => {
+          if (backdrop) backdrop.classList.add('open');
+          resetSheetDrag(sheet);
+          dropSheetMotion(sheet);
+          sheet.classList.add('open');
+          sheet.classList.add('is-rising');
+        },
+      },
+      {
+        ms: SHEET_SETTLE_MS,
+        apply: () => {
+          sheet.classList.remove('is-rising');
+          sheet.classList.add('is-settling');
+        },
+      },
+    ],
+    () => sheet.classList.remove('is-settling'),
+    true,
+  );
+}
+// `dragged` is the one thing a caller says about how the sheet was dismissed. Hiding waits for the last leg: three of these sheets used to hide on whichever transition ended first, which with a leg in front of the exit would take them away half-way up.
+function closeSheet(sheet, backdrop, options) {
+  if (!sheet || sheet.hidden) return;
+  const legs = [];
+  if (!(options && options.dragged)) {
+    legs.push({
+      ms: SHEET_PREP_MS,
+      apply: () => {
+        dropSheetMotion(sheet);
+        sheet.classList.add('is-prepping');
+      },
+    });
+  }
+  legs.push({
+    ms: SHEET_BOOST_MS,
+    apply: () => {
+      if (backdrop) backdrop.classList.remove('open');
+      sheet.classList.remove('open');
+      dropSheetMotion(sheet);
+      sheet.classList.add('is-boosting');
+    },
+  });
+  runSheetLegs(sheet, legs, () => {
+    sheet.classList.remove('is-boosting');
+    // Only now: the offset is what the sheet slid away from, and clearing it any earlier makes it jump before it goes.
+    resetSheetDrag(sheet);
+    sheet.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+  });
+}
 function makeSheetDraggable(sheet, grip, dismiss) {
   if (!sheet || !grip) return;
   let drag = null;
   grip.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
+    // A sheet already on its way out is not grabbable: it has left its open state, and nothing would put it back.
+    if (!sheet.classList.contains('open')) return;
     event.preventDefault(); // don't start a text selection on the way down
+    // A hand landing mid-entrance takes over from it. The classes have to come off as well as the run being stopped: they outrank the drag exemption on specificity, so a leg left on would keep animating under the pointer.
+    cancelSheetLegs(sheet);
+    dropSheetMotion(sheet);
     // From wherever it is sitting, not from flush: a sheet parked half-way down has to be draggable back up, and a drag that always started at zero could only ever push it further away.
     const parked = parseFloat(sheet.style.getPropertyValue('--sheet-drag')) || 0;
     drag = {
@@ -202,9 +314,8 @@ function makeSheetDraggable(sheet, grip, dismiss) {
       if (dy < SHEET_PARK_MIN_PX) sheet.style.removeProperty('--sheet-drag');
       return;
     }
-    // The sheet's own close slides it to translateY(100%) from here; the offset can only be cleared once that has finished, or it would jump first.
-    dismiss();
-    window.setTimeout(() => sheet.style.removeProperty('--sheet-drag'), 400);
+    // The hand has already done the winding up, so the close skips its own. It slides the sheet off from wherever this left it and clears the offset at the end.
+    dismiss({ dragged: true });
   };
   grip.addEventListener('pointerup', finish);
   grip.addEventListener('pointercancel', finish);

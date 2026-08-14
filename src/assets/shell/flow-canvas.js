@@ -112,6 +112,9 @@ function closeFlowSheet() {
   flowPickerAdd = null;
   flowPickerName = '';
   if (flowPicker) {
+    // Whatever leg it was on stops here too, or a class from an entrance nobody will finish is still on it the next time the editor opens.
+    cancelSheetLegs(flowPicker);
+    dropSheetMotion(flowPicker);
     flowPicker.classList.remove('open');
     flowPicker.hidden = true;
   }
@@ -1610,7 +1613,8 @@ function readyFlowPicker() {
   if (typeof makeSheetDraggable === 'function' && grip) {
     makeSheetDraggable(flowPicker, grip, dismissFlowPicker);
   }
-  if (flowPickerClose) flowPickerClose.addEventListener('click', dismissFlowPicker);
+  // Wrapped, not handed straight over: the dismissal reads how it was asked for off its one argument, and a listener would pass it the click.
+  if (flowPickerClose) flowPickerClose.addEventListener('click', () => dismissFlowPicker());
 }
 
 function openFlowAddPicker(make) {
@@ -1632,15 +1636,15 @@ function closeFlowAddPicker() {
   drawFlowPicker();
 }
 
-// Nothing selected and nothing being added: the sheet has said all it has to.
-function dismissFlowPicker() {
+// Nothing selected and nothing being added: the sheet has said all it has to. The one thing carried through is how it was dismissed, because a drag has already done the winding up a button press has not.
+function dismissFlowPicker(options) {
   flowPickerAdd = null;
   flowPickerName = '';
   selectFlow(null, null);
-  drawFlowPicker();
+  drawFlowPicker(options);
 }
 
-function drawFlowPicker() {
+function drawFlowPicker(options) {
   if (!flowPicker || !flowPickerBody || !flowPickerHead) return;
   const graph = flowSession && flowSession.graph;
   const selection = flowSelection;
@@ -1649,19 +1653,13 @@ function drawFlowPicker() {
   const node = graph && selection && selection.kind === 'node' ? flowFindNode(graph, selection.id) : null;
   const edge = graph && selection && selection.kind === 'edge' ? flowFindEdge(graph, selection.id) : null;
   const adding = !!flowPickerAdd && !!graph;
-  const was = flowPicker.classList.contains('open');
   if (!node && !edge && !adding) {
-    flowPicker.classList.remove('open');
-    // Hidden only after it has slid back down, or it would vanish instead.
-    window.setTimeout(() => {
-      if (!flowPicker.classList.contains('open')) flowPicker.hidden = true;
-    }, 280);
+    // The shared close owns the wait: it hides the sheet only once the leg that takes it off screen has finished.
+    closeSheet(flowPicker, null, options);
     return;
   }
-  flowPicker.hidden = false;
-  // Pushed part-way down to see the diagram behind it, the sheet stays there while it is open — picking a second box does not shove it back up. It comes back flush only when it has been away and returns.
-  if (!was && typeof resetSheetDrag === 'function') resetSheetDrag(flowPicker);
-  requestAnimationFrame(() => flowPicker.classList.add('open'));
+  // Pushed part-way down to see the diagram behind it, the sheet stays there while it is open — picking a second box does not shove it back up. It comes back flush only when it has been away and returns, which is the entrance the shared open runs.
+  openSheet(flowPicker, null, { keepParked: true });
 
   flowPickerHead.appendChild(adding ? flowPickerNameField() : flowPickerField(graph, node, edge));
 

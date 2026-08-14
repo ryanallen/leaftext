@@ -7275,7 +7275,11 @@ body.is-home-row-dragging .home-list-scroll li {
 .leaf-sheet {
   left: 0;
   right: 0;
-  bottom: 0;
+  /* How far past its seat the sheet rides when it lands, and how far it pulls up before it leaves. */
+  --sheet-raise: 10px;
+  /* The skirt: the sheet is that much taller than it looks and rests with the extra below the window's edge, so neither raised moment shows the window under it — the same gap the drag clamps at flush to prevent. */
+  bottom: calc(var(--sheet-raise) * -1);
+  padding-bottom: var(--sheet-raise);
   display: flex;
   flex-direction: column;
   max-height: 78vh;
@@ -7300,6 +7304,25 @@ body.is-home-row-dragging .home-list-scroll li {
   /* `lt-ease-sheet` and not `lt-ease-decelerate`: it is the same shape, tuned by hand against a real drag, and the drag is what it has to feel continuous with. */
   transition: transform var(--lt-duration-260) var(--lt-ease-sheet);
 }
+/* Landing with a rubber band: past the seat by the raise, then back down onto it. Two legs on curves the app already has, and not `lt-ease-overshoot` — that one springs about a tenth of its whole travel, so over a full-height rise it would bounce tens of pixels. */
+.leaf-sheet.open.is-rising {
+  transform: translateY(calc(var(--sheet-raise) * -1));
+  transition: transform var(--lt-duration-260) var(--lt-ease-sheet);
+}
+.leaf-sheet.open.is-settling {
+  transform: translateY(var(--sheet-drag, 0px));
+  transition: transform var(--lt-duration-140) var(--lt-ease-decelerate);
+}
+/* Leaving with intent: a short pull up to that same mark, then away faster than it arrived. A drag dismissal skips the pull, because the hand already made it. */
+.leaf-sheet.open.is-prepping {
+  transform: translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));
+  transition: transform var(--lt-duration-120) var(--lt-ease-decelerate);
+}
+.leaf-sheet.is-boosting {
+  transform: translateY(100%);
+  transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+/* Last of the moving states, so a held pointer beats every one it ties with on specificity. The three-class ones it cannot outrank are dropped by the drag itself before this applies. */
 .leaf-sheet.is-dragging {
   transition: none;
 }
@@ -7326,7 +7349,7 @@ body.is-home-row-dragging .home-list-scroll li {
 .leaf-sheet.is-dragging .leaf-sheet-grip {
   cursor: grabbing;
 }
-/* The X. One look for all three; where it sits is the only thing that differs, because the theme sheet has a header row to put it in and the others don't. */
+/* The X. One look for all four; where it sits is the only thing that differs, because the theme and start-screen sheets have a header row to put it in and the others don't. */
 .leaf-sheet-close {
   display: grid;
   place-items: center;
@@ -7458,7 +7481,8 @@ body.is-home-row-dragging .home-list-scroll li {
 .home-sheet {
   position: fixed;
   z-index: var(--lt-z-41);
-  padding: 0 var(--lt-space-20) var(--lt-space-24);
+  /* The skirt is carried in the bottom padding: a plain `padding` here would drop the component's own and leave the last row hanging below the window's edge. */
+  padding: 0 var(--lt-space-20) calc(var(--lt-space-24) + var(--sheet-raise));
   background: var(--lt-background);
   color: var(--lt-foreground);
   font-family: var(--app-font);
@@ -7499,7 +7523,8 @@ body.is-home-row-dragging .home-list-scroll li {
   position: fixed;
   z-index: var(--lt-z-41);
   gap: var(--lt-space-14);
-  padding: 0 var(--lt-space-20) var(--lt-space-24);
+  /* The skirt is carried in the bottom padding, as on the start-screen sheet. */
+  padding: 0 var(--lt-space-20) calc(var(--lt-space-24) + var(--sheet-raise));
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   font-family: var(--app-font);
@@ -8628,7 +8653,7 @@ body.is-home-row-dragging .home-list-scroll li {
   top: 8px;
   right: 44px;
 }
-/* Wide enough that a sheet across the whole width would be a line of text you have to sweep your head along: every sheet becomes a centered column instead. On the component, so all three do it and a fourth gets it for nothing. */
+/* Wide enough that a sheet across the whole width would be a line of text you have to sweep your head along: every sheet becomes a centered column instead. On the component, so all four do it and a fifth gets it for nothing. The centering half of the transform has to be repeated on every moving state, or a sheet mid-flight would snap to the left edge. */
 @media (min-width: 760px) {
   .leaf-sheet {
     left: 50%;
@@ -8638,6 +8663,18 @@ body.is-home-row-dragging .home-list-scroll li {
   }
   .leaf-sheet.open {
     transform: translateX(-50%) translateY(var(--sheet-drag, 0px));
+  }
+  .leaf-sheet.open.is-rising {
+    transform: translateX(-50%) translateY(calc(var(--sheet-raise) * -1));
+  }
+  .leaf-sheet.open.is-settling {
+    transform: translateX(-50%) translateY(var(--sheet-drag, 0px));
+  }
+  .leaf-sheet.open.is-prepping {
+    transform: translateX(-50%) translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));
+  }
+  .leaf-sheet.is-boosting {
+    transform: translateX(-50%) translateY(100%);
   }
   /* Except the flowchart picker, which is two columns of drawings rather than a column of text. It takes nearly the whole editor, because that is what it takes to read forty-seven shapes without scrolling for every one. */
   .flow-picker {

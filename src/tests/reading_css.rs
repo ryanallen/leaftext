@@ -1514,6 +1514,24 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
             ".leaf-sheet.open {",
             "transition: transform var(--lt-duration-260) var(--lt-ease-sheet);",
         ),
+        // The rubber band's two legs: up past the seat on that same drag-tuned curve, then back down onto it as something arriving.
+        (
+            ".leaf-sheet.open.is-rising {",
+            "transition: transform var(--lt-duration-260) var(--lt-ease-sheet);",
+        ),
+        (
+            ".leaf-sheet.open.is-settling {",
+            "transition: transform var(--lt-duration-140) var(--lt-ease-decelerate);",
+        ),
+        // The close's two: a short pull up, then away on the leaving curve and over sooner than the rise was.
+        (
+            ".leaf-sheet.open.is-prepping {",
+            "transition: transform var(--lt-duration-120) var(--lt-ease-decelerate);",
+        ),
+        (
+            ".leaf-sheet.is-boosting {",
+            "transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);",
+        ),
         (
             ".app-toast {",
             "transition: opacity var(--lt-duration-120) var(--lt-ease-accelerate), transform var(--lt-duration-120) var(--lt-ease-accelerate);",
@@ -1574,6 +1592,83 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
         ".mermaid-zoom {",
     ] {
         assert_contains(rule_body(css, hover), "var(--lt-ease)");
+    }
+}
+
+#[test]
+fn a_bottom_sheet_lands_with_a_rubber_band_and_leaves_with_a_boost() {
+    let css = reading_mode_css();
+
+    // The skirt. Riding past the seat lifts the sheet's bottom edge off the window, which would show what is behind it — so the sheet is that much taller than it looks and rests with the extra below the edge. Both halves or neither: the offset alone hangs the content off the window, the padding alone leaves the gap.
+    let base = rule_body(css, ".leaf-sheet {\n  left: 0;");
+    assert_contains(base, "--sheet-raise:");
+    assert_contains(base, "bottom: calc(var(--sheet-raise) * -1);");
+    assert_contains(base, "padding-bottom: var(--sheet-raise);");
+    // The two sheets that write a `padding` shorthand of their own would drop that padding, so they carry the skirt themselves.
+    for skirted in [".home-sheet {", ".theme-sheet {"] {
+        assert_contains(
+            rule_body(css, skirted),
+            "calc(var(--lt-space-24) + var(--sheet-raise));",
+        );
+    }
+
+    // Where each leg goes. The raised mark is the same distance in both directions, and the close reads it off wherever a drag parked the sheet rather than off flush.
+    assert_contains(
+        rule_body(css, ".leaf-sheet.open.is-rising {"),
+        "transform: translateY(calc(var(--sheet-raise) * -1));",
+    );
+    assert_contains(
+        rule_body(css, ".leaf-sheet.open.is-settling {"),
+        "transform: translateY(var(--sheet-drag, 0px));",
+    );
+    assert_contains(
+        rule_body(css, ".leaf-sheet.open.is-prepping {"),
+        "transform: translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));",
+    );
+    assert_contains(
+        rule_body(css, ".leaf-sheet.is-boosting {"),
+        "transform: translateY(100%);",
+    );
+
+    // A wide window centers the sheet with the other half of the same transform, so every moving state has to repeat it or the sheet jumps to the left edge mid-flight.
+    let wide = &css[css
+        .find("@media (min-width: 760px) {\n  .leaf-sheet {")
+        .expect("the wide window centers the sheet")..];
+    for (selector, expected) in [
+        (
+            ".leaf-sheet.open.is-rising {",
+            "transform: translateX(-50%) translateY(calc(var(--sheet-raise) * -1));",
+        ),
+        (
+            ".leaf-sheet.open.is-settling {",
+            "transform: translateX(-50%) translateY(var(--sheet-drag, 0px));",
+        ),
+        (
+            ".leaf-sheet.open.is-prepping {",
+            "transform: translateX(-50%) translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));",
+        ),
+        (
+            ".leaf-sheet.is-boosting {",
+            "transform: translateX(-50%) translateY(100%);",
+        ),
+    ] {
+        assert_contains(rule_body(wide, selector), expected);
+    }
+
+    // The drag exemption ties with the boost on specificity, so it still has to come last of all the moving states — a held pointer tracks directly or it does not track at all.
+    let dragging = css
+        .find(".leaf-sheet.is-dragging {")
+        .expect("the sheet exempts its own drag");
+    for moving in [
+        ".leaf-sheet.open.is-rising {",
+        ".leaf-sheet.open.is-settling {",
+        ".leaf-sheet.open.is-prepping {",
+        ".leaf-sheet.is-boosting {",
+    ] {
+        assert!(
+            css.find(moving).expect("the state is declared") < dragging,
+            "{moving} must come before the drag exemption"
+        );
     }
 }
 

@@ -5784,6 +5784,53 @@ if (booted) {
     }
   });
 
+  // All four bottom sheets close through one helper, and the only thing they say about how is whether a hand did it. A drag has already supplied the wind-up, so repeating it would pull the sheet back up out from under the finger that just threw it away.
+  check('a dragged sheet says so, and skips the wind-up the other dismissals make', () => {
+    const sheet = fakeElement('draggedSheet');
+    const grip = fakeElement('draggedGrip');
+    sheet.getBoundingClientRect = () => ({ top: 0, left: 0, right: 400, bottom: 300, width: 400, height: 300 });
+    sheet.classList.add('open');
+    const asked = [];
+    booted.makeSheetDraggable(sheet, grip, (options) => asked.push(options));
+    const press = grip.listeners.get('pointerdown')[0];
+    const move = grip.listeners.get('pointermove')[0];
+    const up = grip.listeners.get('pointerup')[0];
+    press({ button: 0, pointerId: 1, clientY: 0, timeStamp: 0, preventDefault() {} });
+    // Most of the way down a 300px sheet, which is past the fraction the helper dismisses at.
+    move({ pointerId: 1, clientY: 250, timeStamp: 100 });
+    up({ pointerId: 1, timeStamp: 120 });
+    if (asked.length !== 1) throw new Error(`the drag asked to close ${asked.length} times`);
+    if (!asked[0] || asked[0].dragged !== true) throw new Error(`a drag off did not say so: ${JSON.stringify(asked[0])}`);
+
+    // Which legs a close actually runs, read at the moment each one registers the fallback timer behind it.
+    const legsOf = (options) => {
+      const seen = [];
+      const moving = fakeElement('closingSheet');
+      moving.classList.add('open');
+      const wasTimeout = booted.setTimeout;
+      booted.setTimeout = (fn) => {
+        for (const name of ['is-prepping', 'is-boosting']) {
+          if (moving.classList.contains(name)) seen.push(name);
+        }
+        fn();
+        return 0;
+      };
+      try {
+        booted.closeSheet(moving, null, options);
+      } finally {
+        booted.setTimeout = wasTimeout;
+      }
+      // The hide waits for the last leg. Three of these sheets used to go on whichever transition ended first, which with a leg in front of the exit takes them away half-way up.
+      if (!moving.hidden) throw new Error('the close ended with the sheet still showing');
+      if (moving.classList.contains('is-boosting')) throw new Error('the sheet kept its exit class after it had gone');
+      return seen.join();
+    };
+    const pressed = legsOf();
+    if (pressed !== 'is-prepping,is-boosting') throw new Error(`a button, scrim or Escape dismissal ran ${pressed || 'nothing'}`);
+    const flung = legsOf({ dragged: true });
+    if (flung !== 'is-boosting') throw new Error(`a drag off ran ${flung || 'nothing'}`);
+  });
+
   check('a home list draws an edge only where there is more list past it', () => {
     /** A scroll box that really has a position and a size, and the box holding it, with the classes recorded. */
     function boxAt(scrollTop, clientHeight, scrollHeight) {

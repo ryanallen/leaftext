@@ -514,36 +514,22 @@ function openHomeSheet(which) {
   watchHomeLists(homeSheetBody);
   markHomeFavorites(homeSheetBody);
   if (homeSheet.hidden) homeSheetLastFocus = document.activeElement;
-  homeSheetBackdrop.hidden = false;
-  homeSheet.hidden = false;
-  requestAnimationFrame(() => {
-    homeSheetBackdrop.classList.add('open');
-    // Flush again: a sheet parked part-way down by a drag stays there until it is closed, and whatever opens it next means to be read.
-    resetSheetDrag(homeSheet);
-    homeSheet.classList.add('open');
-  });
+  openSheet(homeSheet, homeSheetBackdrop);
   document.addEventListener('keydown', onHomeSheetKey);
   leafFocusForKeyboard(homeSheetClose);
 }
-function closeHomeSheet() {
+function closeHomeSheet(options) {
   if (!homeSheet || homeSheet.hidden) return;
   homeSheetShowing = null;
-  homeSheetBackdrop.classList.remove('open');
-  homeSheet.classList.remove('open');
   document.removeEventListener('keydown', onHomeSheetKey);
-  const hide = () => {
-    homeSheet.hidden = true;
-    homeSheetBackdrop.hidden = true;
-    homeSheet.removeEventListener('transitionend', hide);
-  };
-  homeSheet.addEventListener('transitionend', hide);
-  setTimeout(hide, 320);
+  closeSheet(homeSheet, homeSheetBackdrop, options);
   leafFocusForKeyboard(homeSheetLastFocus);
 }
 if (homeSheet) {
   makeSheetDraggable(homeSheet, homeSheet.querySelector('.leaf-sheet-grip'), closeHomeSheet);
-  homeSheetClose.addEventListener('click', closeHomeSheet);
-  homeSheetBackdrop.addEventListener('click', closeHomeSheet);
+  // Wrapped, not handed straight over: the close reads how the sheet was dismissed off its one argument, and a listener would pass it the click.
+  homeSheetClose.addEventListener('click', () => closeHomeSheet());
+  homeSheetBackdrop.addEventListener('click', () => closeHomeSheet());
 }
 // Is the start screen what is on the page? Not the same question as "is there a document": a tab opened straight into source leaves the page's copy of the state with no document on it, so that alone would draw the start screen over somebody's source and throw its editor away. The map needs no clause — it hides `app` and closes whenever a state arrives with no document.
 function homeScreenIsShowing() {

@@ -25,23 +25,12 @@ function updateThemeSelection() {
   });
 }
 function openThemeSheet() {
-  themeBackdrop.hidden = false;
-  themeSheet.hidden = false;
+  openSheet(themeSheet, themeBackdrop);
   loadThemeCardFonts();
-  requestAnimationFrame(() => {
-    themeBackdrop.classList.add('open');
-    resetSheetDrag(themeSheet);
-    themeSheet.classList.add('open');
-  });
 }
-function closeThemeSheet() {
-  themeBackdrop.classList.remove('open');
-  themeSheet.classList.remove('open');
+function closeThemeSheet(options) {
   unloadThemeCardFonts();
-  setTimeout(() => {
-    themeBackdrop.hidden = true;
-    themeSheet.hidden = true;
-  }, 200);
+  closeSheet(themeSheet, themeBackdrop, options);
 }
 // Each card previews its theme's own heading font, but web fonts are loaded only while the picker is open and dropped on close, so the app doesn't hold every theme's font at rest. A card keeps the app font (and shows a spinner) until its font is ready, then swaps. Random borrows whichever family it is cycling to.
 const themeCardFontLinks = new Map();
@@ -147,11 +136,12 @@ function stopThemeRandomCycle() {
 if (themeSheetOpen) {
   themeSheetOpen.addEventListener('click', openThemeSheet);
 }
+// Wrapped, not handed straight over: the close reads how the sheet was dismissed off its one argument, and a listener would pass it the click.
 if (themeSheetClose) {
-  themeSheetClose.addEventListener('click', closeThemeSheet);
+  themeSheetClose.addEventListener('click', () => closeThemeSheet());
 }
 if (themeBackdrop) {
-  themeBackdrop.addEventListener('click', closeThemeSheet);
+  themeBackdrop.addEventListener('click', () => closeThemeSheet());
 }
 if (themeSheet) {
   makeSheetDraggable(themeSheet, themeSheet.querySelector('.leaf-sheet-grip'), closeThemeSheet);

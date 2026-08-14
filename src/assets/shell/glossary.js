@@ -53,30 +53,15 @@ function onGlossaryKey(event) {
 function showGlossary() {
   // Only when it opens: a term followed from inside the sheet calls this again, and the focus to return to is the document's, not a link about to be replaced.
   if (glossarySheet.hidden) glossaryLastFocus = document.activeElement;
-  glossaryBackdrop.hidden = false;
-  glossarySheet.hidden = false;
-  requestAnimationFrame(() => {
-    glossaryBackdrop.classList.add('open');
-    // Flush again: a sheet parked part-way down by a drag stays there until it is closed, and the next thing to open it means to be read.
-    resetSheetDrag(glossarySheet);
-    glossarySheet.classList.add('open');
-  });
+  openSheet(glossarySheet, glossaryBackdrop);
   document.addEventListener('keydown', onGlossaryKey);
   leafFocusForKeyboard(glossarySheetClose);
 }
-function dismissGlossary() {
+function dismissGlossary(options) {
   if (glossarySheet.hidden) return;
   endGlossaryWait();
-  glossaryBackdrop.classList.remove('open');
-  glossarySheet.classList.remove('open');
   document.removeEventListener('keydown', onGlossaryKey);
-  const hide = () => {
-    glossarySheet.hidden = true;
-    glossaryBackdrop.hidden = true;
-    glossarySheet.removeEventListener('transitionend', hide);
-  };
-  glossarySheet.addEventListener('transitionend', hide);
-  setTimeout(hide, 320);
+  closeSheet(glossarySheet, glossaryBackdrop, options);
   leafFocusForKeyboard(glossaryLastFocus);
 }
 // A big glossary takes long enough to read and render that a tap can look like it missed, so the sheet goes up on a spinner the moment the link is followed. The page raises it rather than the host: the host can't send a script while it is rendering, so its spinner would arrive after the work it was to cover. The fade-in is delayed (CSS), so a cached lookup never flashes one.
@@ -127,8 +112,9 @@ window.leafGlossaryFailed = (reason) => {
   if (glossarySheet.hidden) return;
   glossarySheetMessage(reason === 'missing' ? 'No glossary file near this document.' : GLOSSARY_FAILED);
 };
-glossaryBackdrop.addEventListener('click', dismissGlossary);
-glossarySheetClose.addEventListener('click', dismissGlossary);
+// Wrapped, not handed straight over: the dismissal reads how it was asked for off its one argument, and a listener would pass it the click.
+glossaryBackdrop.addEventListener('click', () => dismissGlossary());
+glossarySheetClose.addEventListener('click', () => dismissGlossary());
 makeSheetDraggable(glossarySheet, glossarySheet.querySelector('.leaf-sheet-grip'), dismissGlossary);
 // "Open the full glossary" opens the glossary file as an ordinary document tab, resolved (like the link that opened the sheet) against the active document.
 glossaryFullLink.addEventListener('click', (event) => {
