@@ -119,6 +119,8 @@ Needs `rustup`, `just`, `node`, and `rustup component add rust-analyzer` — the
 
 **Keep this machine on current stable.** Every workflow builds on whatever stable is that day, so a machine a release behind runs a weaker gate than the one that publishes: v1.11.3 passed every check here and failed all four builds on a lint the newer compiler had added, because a warning nothing local could see is an error there. `rustup update stable` before a release, and fix what it then names.
 
+**A warning in Mac-only code is found by the release and nowhere else.** `cargo check --target aarch64-apple-darwin` needs a C compiler for that target to build `rusqlite`, and there is none here, so the whole of `#[cfg(target_os = "macos")]` is unread until a tag goes up — which is how v1.11.4 shipped a doc comment on an `extern` block and a variant only the Windows hand-off constructs. When a release fails there, fix it and bump the patch; never re-push the tag.
+
 Mac code and the installer cannot be built on this machine, and never have been. **Never say so.** Not as a caveat, not as a footnote, not "it ships unproven", not when the change is in one of them — that is exactly when it is most obvious and least worth a line. GitHub builds both on a tagged release and a break shows up there. It is true every single time, so saying it is the padding Rule 1 refuses. The one exception is a direct question about it.
 
 ## Driving the running app

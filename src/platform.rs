@@ -1237,9 +1237,9 @@ mod macos_impl {
             .position(|window| window == needle)
     }
 
-    /// The Keychain, through the calls that take plain strings and lengths.
-    ///
-    /// The dictionary-based `SecItemAdd` family is the modern spelling and needs CoreFoundation dictionaries, string constants and reference counting to say the same four things these say with a name, an account and some bytes. Fewer moving parts is the whole reason: this is the one place in the app holding somebody's credential, and it is not the place to be clever.
+    // The Keychain, through the calls that take plain strings and lengths.
+    //
+    // The dictionary-based `SecItemAdd` family is the modern spelling and needs CoreFoundation dictionaries, string constants and reference counting to say the same four things these say with a name, an account and some bytes. Fewer moving parts is the whole reason: this is the one place in the app holding somebody's credential, and it is not the place to be clever.
     #[link(name = "Security", kind = "framework")]
     extern "C" {
         fn SecKeychainAddGenericPassword(

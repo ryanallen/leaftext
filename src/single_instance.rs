@@ -11,6 +11,8 @@ pub enum Acquire {
     /// This process owns the instance; keep the guard alive for its lifetime.
     Primary(InstanceGuard),
     /// Another instance is already running; the file (if any) was handed off to it and this process should exit without opening a window.
+    // Matched everywhere, constructed only by the Windows hand-off — elsewhere every launch is the primary.
+    #[cfg_attr(not(windows), allow(dead_code))]
     Forwarded,
 }
 
