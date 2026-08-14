@@ -117,6 +117,8 @@ Needs `rustup`, `just`, `node`, and `rustup component add rust-analyzer` — the
 
 **A compiler warning is an error.** `warnings = "deny"` sits in the root `Cargo.toml`'s workspace lints and all three packages opt in, so every way the tree is compiled refuses one — each check, the tests, the analyzer at the line, and the release builds. A recipe switch would have reached only that recipe, which is why it is not one. Where a warning is genuinely wanted, it is an `#[allow(...)]` on the item with a comment saying why, never a loosened ceiling.
 
+**Keep this machine on current stable.** Every workflow builds on whatever stable is that day, so a machine a release behind runs a weaker gate than the one that publishes: v1.11.3 passed every check here and failed all four builds on a lint the newer compiler had added, because a warning nothing local could see is an error there. `rustup update stable` before a release, and fix what it then names.
+
 Mac code and the installer cannot be built on this machine, and never have been. **Never say so.** Not as a caveat, not as a footnote, not "it ships unproven", not when the change is in one of them — that is exactly when it is most obvious and least worth a line. GitHub builds both on a tagged release and a break shows up there. It is true every single time, so saying it is the padding Rule 1 refuses. The one exception is a direct question about it.
 
 ## Driving the running app

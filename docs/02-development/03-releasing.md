@@ -70,7 +70,7 @@ Use [semantic versioning](https://semver.org/): `MAJOR.MINOR.PATCH`. The current
 ```toml
 [package]
 name = "leaftext"
-version = "1.11.3"
+version = "1.11.4"
 edition = "2021"
 ```
 

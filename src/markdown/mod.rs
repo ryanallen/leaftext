@@ -21,18 +21,15 @@ pub(crate) use footnotes::*;
 pub(crate) use github::*;
 pub(crate) use headings::*;
 pub(crate) use htmlparse::*;
-pub(crate) use image_protocol::*;
+// These two are `pub` where the rest are `pub(crate)`: each holds an item lib.rs re-exports out of the crate, so the crate root binds that name at `pub` while a `pub(crate)` glob here binds it again at `pub(crate)`, and the two visibilities are an error. This module is private, so `pub` widens nothing beyond it.
+pub use image_protocol::*;
 pub(crate) use image_size::*;
-pub(crate) use images::*;
+pub use images::*;
 pub(crate) use paths::*;
 pub(crate) use rawhtml::*;
 
-// The crate's public surface. A pub(crate) glob cannot carry these out of the crate, and lib.rs re-exports them, so name them explicitly.
+// The crate's public surface. A pub(crate) glob cannot carry this out of the crate, and lib.rs re-exports it, so name it explicitly; the two `pub` globs above carry their own.
 pub use github::RepositoryContext;
-pub use image_protocol::{
-    is_local_image_path, local_image_protocol_response, local_image_source_dir,
-};
-pub use images::markdown_image_insert_destination;
 
 use crate::*;
 
