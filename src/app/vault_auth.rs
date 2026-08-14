@@ -15,6 +15,9 @@ use std::time::Instant;
 /// How long a sign-in waits for the browser to come back before it gives the port up. Long enough for a password manager, a second factor and a moment's reading; short enough that a sign-in somebody abandoned does not hold a socket and a thread for the rest of the session.
 const SIGN_IN_TIMEOUT: Duration = Duration::from_secs(180);
 
+/// How long one connection is given to say what it wants. Handed to the wait rather than read inside it, so a test can hold a silent connection without sitting through this; there are no default arguments in Rust, so a caller passes it.
+pub(crate) const SIGN_IN_READ_TIMEOUT: Duration = Duration::from_secs(10);
+
 /// The name a vault's token is kept under. The vault's row id, so renaming a vault or pointing it somewhere else does not orphan the credential, and two vaults on the same service keep their own.
 pub(crate) fn vault_secret_service(id: i64) -> String {
     format!("leaftext-vault-{id}")
@@ -47,6 +50,7 @@ pub(crate) fn open_sign_in_listener() -> Result<(TcpListener, String), String> {
 pub(crate) fn await_sign_in(
     listener: TcpListener,
     redirect_uri: String,
+    read_timeout: Duration,
 ) -> Result<SignInAnswer, String> {
     listener
         .set_nonblocking(false)
@@ -64,13 +68,12 @@ pub(crate) fn await_sign_in(
         if !from.ip().is_loopback() {
             continue;
         }
-        match serve_one(stream) {
+        match serve_one(stream, read_timeout) {
             Ok(Some(code)) => {
                 return Ok(SignInAnswer { code, redirect_uri });
             }
-            // A browser asking for a favicon, or a consent screen that came back with an error instead of a code. Neither is the answer, and neither should end the wait.
-            Ok(None) => continue,
-            Err(error) => return Err(error),
+            // A favicon, a consent screen that came back with an error instead of a code, or a connection that opened and said nothing — browsers open those on speculation, and a loopback port is one anything on the machine can touch. None is the answer, and none may end a sign-in somebody is still finishing; the deadline above is what bounds the wait.
+            Ok(None) | Err(_) => continue,
         }
     }
 }
@@ -79,9 +82,9 @@ pub(crate) fn await_sign_in(
 const MAX_REQUEST_HEADERS: usize = 64;
 
 /// Read the request, answer it, and take the code out of it if it carried one.
-fn serve_one(stream: TcpStream) -> Result<Option<String>, String> {
+fn serve_one(stream: TcpStream, read_timeout: Duration) -> Result<Option<String>, String> {
     stream
-        .set_read_timeout(Some(Duration::from_secs(10)))
+        .set_read_timeout(Some(read_timeout))
         .map_err(|error| format!("the sign-in would not settle: {error}"))?;
     let mut reader = BufReader::new(
         stream

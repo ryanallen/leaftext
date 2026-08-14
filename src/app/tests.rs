@@ -3072,7 +3072,8 @@ fn a_sign_in_takes_one_request_on_a_loopback_port_and_then_gives_it_up() {
     assert!(port > 0);
     assert!(redirect_uri.contains(&port.to_string()));
 
-    let waiting = std::thread::spawn(move || await_sign_in(listener, redirect_uri));
+    let waiting =
+        std::thread::spawn(move || await_sign_in(listener, redirect_uri, SIGN_IN_READ_TIMEOUT));
 
     // What a browser does when the consent screen sends it back. The favicon first, which is not the answer and must not end the wait.
     let mut ignored = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
@@ -3118,7 +3119,8 @@ fn the_page_saying_you_are_signed_in_is_never_lost_to_a_reset() {
     for round in 0..10 {
         let (listener, redirect_uri) = open_sign_in_listener().expect("a port is opened");
         let port = listener.local_addr().expect("readable").port();
-        let waiting = std::thread::spawn(move || await_sign_in(listener, redirect_uri));
+        let waiting =
+            std::thread::spawn(move || await_sign_in(listener, redirect_uri, SIGN_IN_READ_TIMEOUT));
 
         // The favicon goes down the same path and is answered the same way, so it is held here too.
         let mut ignored = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
@@ -3172,7 +3174,8 @@ fn a_sign_in_stops_reading_headers_rather_than_letting_a_client_hold_the_port() 
 
     let (listener, redirect_uri) = open_sign_in_listener().expect("a port is opened");
     let port = listener.local_addr().expect("readable").port();
-    let waiting = std::thread::spawn(move || await_sign_in(listener, redirect_uri));
+    let waiting =
+        std::thread::spawn(move || await_sign_in(listener, redirect_uri, SIGN_IN_READ_TIMEOUT));
 
     let mut browser = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
     browser
@@ -3193,6 +3196,42 @@ fn a_sign_in_stops_reading_headers_rather_than_letting_a_client_hold_the_port() 
     assert_eq!(answer.code, "abc123");
     // Well inside the ten seconds a read of its own is given, which is what the wait would have cost with nothing bounding it.
     assert!(started.elapsed() < Duration::from_secs(3), "{started:?}");
+}
+
+/// A connection that opens and says nothing is not the answer either, and must not end the sign-in. Browsers open connections on speculation and send nothing down them, and a loopback port is one anything on the machine can touch; the person is still reading the consent screen while it happens, and their browser then comes back to a port that is gone. The read timeout is handed in here so the silence costs the test a moment rather than the ten seconds the app gives it.
+#[test]
+fn a_connection_that_says_nothing_does_not_end_the_sign_in() {
+    use std::io::{Read, Write};
+
+    /// Long enough that the silent connection really is read and given up on, short enough that the test does not wait on it.
+    const SAYS_NOTHING_FOR: Duration = Duration::from_millis(150);
+
+    let (listener, redirect_uri) = open_sign_in_listener().expect("a port is opened");
+    let port = listener.local_addr().expect("readable").port();
+    let waiting =
+        std::thread::spawn(move || await_sign_in(listener, redirect_uri, SAYS_NOTHING_FOR));
+
+    // Opened and held: never written to and never closed, which is what a speculative connection looks like. Closing it would be the case already covered — an empty read, the try-again page, and the wait goes on.
+    let silent = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
+
+    // The person finishes on the consent screen while that one is still sitting there, so their real request is behind it.
+    let mut browser = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
+    browser
+        .write_all(b"GET /?code=abc123 HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+        .expect("comes back");
+    let mut answered = String::new();
+    browser.read_to_string(&mut answered).expect("is answered");
+
+    // The page still arrives, so the browser is not left on a blank tab after a consent screen.
+    assert!(answered.starts_with("HTTP/1.1 200"), "{answered}");
+    assert!(answered.contains("signed in"), "{answered}");
+
+    let answer = waiting.join().expect("the wait ends").expect("a code");
+    assert_eq!(answer.code, "abc123");
+
+    drop(silent);
+    // And the port is given up behind the answer, exactly as it is when nothing silent ever arrived.
+    assert!(std::net::TcpStream::connect(("127.0.0.1", port)).is_err());
 }
 
 /// Only a `code` is a code, and a consent screen that came back with something else is not one.
