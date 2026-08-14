@@ -2244,12 +2244,7 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
         &css,
         "body.frameless:not(.mac-frame).is-maximized,\nbody.mac-frame.is-fullscreen {",
     );
-    // A bare `body {` matches the `html, body` rule further up, so the page's own rule is anchored on its first declaration instead.
-    let page_rule = rule_body(
-        &css,
-        "body {
-  overflow: hidden;",
-    );
+    let page_rule = rule_body(&css, "body:has(.app-surface) {");
     for zero in [
         "--app-shadow-top: 0px;",
         "--app-shadow-side: 0px;",
@@ -2297,4 +2292,37 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
     );
     assert_contains(flush, "border: 0;");
     assert_contains(flush, "border-radius: 0;");
+}
+
+#[test]
+fn a_page_that_is_not_the_app_keeps_its_own_scroll() {
+    let css = reading_mode_css();
+
+    // Both published sites are handed this whole file. Where the root element's overflow is `visible` a browser takes the viewport's from `body`, so a bare `body { overflow: hidden }` leaves the page with no scrollport at all — which is what held leaftext.com and empty.guru to their first screenful from v1.5.0. `position` and `touch-action` are here for the same reason: unscoped, either one unmoors or freezes a page this stylesheet was only ever meant to give a document its look.
+    for selector in ["\nbody {", "\nhtml,\nbody {", "\n:root {"] {
+        let mut rest = css;
+        while let Some(at) = rest.find(selector) {
+            let opened = &rest[at + selector.len()..];
+            let rule = &opened[..opened.find('}').expect("the rule should close")];
+            for taken in ["\n  overflow:", "\n  position:", "\n  touch-action:"] {
+                assert!(
+                    !rule.contains(taken),
+                    "`{}` takes the frame with `{}` from every page handed this stylesheet, published sites included",
+                    selector.trim(),
+                    taken.trim()
+                );
+            }
+            rest = opened;
+        }
+    }
+}
+
+#[test]
+fn the_app_window_still_hides_its_own_overflow() {
+    // The window does not scroll: the app surface is a fixed box the page is clipped to, and a scrollport behind it would slide the app inside its own frame. So the rule is scoped rather than dropped, and its key is the one box only the app's own page carries.
+    assert_contains(
+        rule_body(reading_mode_css(), "body:has(.app-surface) {"),
+        "overflow: hidden;",
+    );
+    assert_contains(crate::APP_SHELL_HTML, r#"class="app-surface""#);
 }

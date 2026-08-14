@@ -25,7 +25,7 @@ Tests come before `verify` because `verify` runs the tests that exist. A change 
 just verify
 ```
 
-Thirty-five steps: `format-check`, `cargo check --all-targets`, `check-web`, `check-installer`, `check-web-commands`, `cargo test`, `check-vendor`, `check-themes`, `check-tokens`, `check-icons`, `check-gallery`, `check-design-docs`, `check-classes`, `check-literals`, `check-hover-fills`, `check-scratch-names`, `check-verify`, `check-justfile-quotes`, `check-spelling`, `check-docs`, `check-plan`, `check-wrapping`, `check-ascii-art`, `check-site`, `check-site-boot`, `check-shell`, `check-identity`, `check-hooks`, `check-release-package`, `check-workflow-installs`, `check-mcp`, `check-agent-settings`, `check-driver`, `check-shot-edges`, `check-compose-shots`.
+Thirty-six steps: `format-check`, `cargo check --all-targets`, `check-web`, `check-installer`, `check-web-commands`, `cargo test`, `check-vendor`, `check-themes`, `check-tokens`, `check-icons`, `check-gallery`, `check-design-docs`, `check-classes`, `check-literals`, `check-page-frame`, `check-hover-fills`, `check-scratch-names`, `check-verify`, `check-justfile-quotes`, `check-spelling`, `check-docs`, `check-plan`, `check-wrapping`, `check-ascii-art`, `check-site`, `check-site-boot`, `check-shell`, `check-identity`, `check-hooks`, `check-release-package`, `check-workflow-installs`, `check-mcp`, `check-agent-settings`, `check-driver`, `check-shot-edges`, `check-compose-shots`.
 
 Six of those hold the design system together: a value, a class, a component, an icon or a token that `design/` does not list fails the build. When one fires, the fix is a row in `design/` and a bundler run — see `/design-tokens` — never a loosened check.
 

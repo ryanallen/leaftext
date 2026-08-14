@@ -154,6 +154,13 @@ check-classes:
 check-literals:
     node scripts/check-literals.mjs
 
+# Fail on a rule in the app's stylesheet that would take a published page's frame:
+# an overflow, position or touch-action on a bare html, body or :root. The same
+# file is what leaftext.com and empty.guru are handed, and one of these left both
+# of them unscrollable on every device from v1.5.0.
+check-page-frame:
+    node scripts/check-page-frame.mjs --check
+
 # Fail on a rule painting a background behind a note's field values under the pointer.
 # A document being edited is still a document, so the caret is the cue and a band is
 # the app drawing a form over somebody's words.
@@ -298,7 +305,7 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

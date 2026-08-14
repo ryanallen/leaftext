@@ -2441,7 +2441,8 @@ body {
   color: var(--lt-foreground);
   font-family: var(--reading-font);
 }
-body {
+/* The app's own page and nothing else. Every declaration here is the window's, and the whole file is what a browser is handed — so a bare `body` rule reaches leaftext.com and empty.guru too, and a browser takes the viewport's overflow from `body` where the root element's is `visible`. v1.5.0 shipped both sites with no scrollport at all, unscrollable on every device. */
+body:has(.app-surface) {
   overflow: hidden;
   /* Nothing paints the whole window: past the app's own edge the window is where the shadow falls, and a page color there would be the app painting its own halo out to the frame. The app surface below carries the color. */
   background: transparent;
