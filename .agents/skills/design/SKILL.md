@@ -11,7 +11,7 @@ A ticket is followed months later by somebody with none of the conversation in t
 
 **Every ticket comes out of this pass with a picture in it** — step 6a. A plan handed on as prose alone is one where whoever builds it draws it in their own head instead.
 
-**Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug, it stays a box in the ticket — fixing it is a separate job with its own `/check`.
+**Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug in its own subject, it stays a box in the ticket — fixing it is a separate job with its own `/check`. **A fault this pass finds beside that one, which no phase in the file would build anyway, is its own ticket** — step 5b.
 
 Written for the tickets in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, each of which groups its files into subject folders. Read [ticket](../ticket/SKILL.md) first: it is the shape this holds a file to.
 
@@ -71,6 +71,7 @@ The tell is a plan that gets green without the thing being true.
 ## 5. The phases hold
 
 - **Every phase is buildable off this repo plus the phases above it.** A phase waiting on another ticket's work is the one fault that makes a file impossible to finish, so it is the first thing to check: read what each phase needs, and ask which of it exists. Where a file's later phases sit behind another ticket, **split the file at that seam** — the buildable phases keep the file and its name, the blocked ones become a new ticket saying what it rides on, and both rows in `../docs/README.md` are written in the same pass. Splitting is not "changing what gets built", so it does not wait on a question; renumbering the phases and re-pointing the running order is part of it.
+- **A file carrying two jobs is split on the same cut, blocked or not.** This is the pass that reads every phase against the code, so it is the one that can see a file has become two: its summary sentence needs an *and* to stay true, its phases answer more than one question, or somebody would build half of it and leave the rest. [ticket](../ticket/SKILL.md) holds the shape of that split; the rows are re-derived by [`/pm`](../pm/SKILL.md) rather than written here.
 - Each phase ships alone and is worth having alone.
 - The italic line says why it is in that position, and is true — phase 2 must really need what phase 1 proved.
 - A box has an obvious done. "Make it fast" does not.
@@ -95,7 +96,16 @@ grep -rn "<the behavior>" src/tests/ src/app/tests.rs src/store/tests.rs scripts
 - The box names the file it goes in — `src/tests/` per subject, `src/app/tests.rs` for the binary, `scripts/check-shell.mjs` for `src/assets/shell/`. A phase whose only work is a row in `design/` asks for no test; the design checks already refuse what is not listed.
 - **What genuinely cannot be tested here gets its line in the phase** — a real window, live selected text, a held pointer. Never the Mac build, the installer or the workflows; [`/check`](../check/SKILL.md) step 4 holds that rule.
 
-**A gap this reading turns up outside the ticket is its own ticket, never a box smuggled into this one.** Opening every citation walks a lot of code, so this is the pass that notices a subject nothing covers. File it — `../docs/refactor/` in the subject folder it belongs to, its row in the README, [`/pm`](../pm/SKILL.md) once — and name it in this ticket's **Still open** so nobody reads it as covered.
+**A test gap this reading turns up outside the ticket is its own ticket** — the commonest case of step 5b, and the one this pass hits most, because opening every citation walks a lot of code.
+
+## 5b. What this pass finds beside the work is its own ticket
+
+**This is the reading most likely to turn up something nobody was looking for**, because every citation is opened and every node in every drawing is chased into the code. A fault beside the one being planned, a rule nothing enforces, a check that would have caught it, a second copy of something that already has one source: none of it survives the session any other way, and it must not become a box in the ticket in front of you. A plan that grows a fix for something else is one the owner cannot read against what they asked for.
+
+[ticket](../ticket/SKILL.md) holds the rule and the test — a find no phase in this file would build anyway is a second file, its row in `../docs/README.md`, and [`/pm`](../pm/SKILL.md) once for both. Two things are this skill's own end of it:
+
+- **Name it in this ticket's Still open**, in the record at the bottom, so a later reader cannot mistake it for covered. That heading exists for exactly this.
+- **Never fix it here.** This skill does not edit app code, so the temptation is the other one: widening a phase to absorb it. A box that builds something the summary sentence does not name is a box to cut.
 
 ## 6. The six parts are there, and the summary earns its keep
 

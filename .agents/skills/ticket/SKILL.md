@@ -154,7 +154,22 @@ Drop the bundler line when the work is nowhere near `design/`.
 
 **A ticket that touches the front end says what the browser does about it.** The app and a published site are one front end with two hosts under it, so anything that adds or changes a command the page sends is two pieces of work — and the second one is decided here, while the work is being scoped, or it is decided by nobody. One line per new command in the phase that adds it: the browser answers it, will not and here is why, or not yet and here is the ticket that owns it. That line becomes the row in `web/preview/host.js`'s table, which `just check-web-commands` refuses the build without. Where the browser's answer is real work rather than a line, it is its own ticket in the same pass, ranked with [`/pm`](../pm/SKILL.md) — never a phase quietly widened to carry it.
 
-**A test gap outside this ticket is its own ticket.** Reading the code to write a plan is the pass most likely to turn up a subject nothing covers, and that finding does not survive the session any other way. It does **not** become a box here — a ticket about the find bar that quietly grows four tests for the pager is a ticket nobody can review. Write the second file in the same pass, under `../docs/refactor/` in the subject folder the gap is in, with its row in the README, and run [`/pm`](../pm/SKILL.md) once for both. [`/design`](../design/SKILL.md), [`/dev`](../dev/SKILL.md) and [`/sync-tests`](../sync-tests/SKILL.md) all hold to this: file rather than fix in passing, and **it is always a ticket**, never a sentence in a hand-back.
+**A test gap outside this ticket is its own ticket** — the commonest case of the rule below, and the one every pass here hits, because reading the code to write a plan is what turns up a subject nothing covers. Write the second file under `../docs/refactor/` in the subject folder the gap is in.
+
+## Work a pass turns up that is not this ticket's is its own ticket
+
+**Anything found while reading the code that no phase in this file would have to build anyway is a second file, written in the same pass.** A bug beside the one being planned, a rule nothing enforces, a check that would have caught it, a subject with no tests, a piece of work the ticket brushes past — the find does not survive the session any other way, and there are only two other places it can go, both of which lose it. A box smuggled in makes a ticket nobody can review: a ticket about the find bar that quietly grows four tests for the pager, or a fix for something else, is one the owner cannot read against what they asked for. A sentence in a hand-back dies with the session.
+
+- **The test is scope, not size.** A one-line fix that is out of this ticket's work is still a ticket, because what makes it one is the record, not the cost. A find a phase already in the file has to build anyway is a box in that phase, not a second file.
+- **Two files finish it, the same two as any other ticket** — the file, its row in `../docs/README.md`, then [`/pm`](../pm/SKILL.md) once for both. Never a row placed by hand.
+- **Name it in the ticket it was found from**, under **Still open**, so nobody reads it as covered by the work in front of them.
+- **It is always a ticket**, never a sentence in a hand-back and never fixed in passing. [`/design`](../design/SKILL.md), [`/dev`](../dev/SKILL.md), [`/pm`](../pm/SKILL.md) and [`/sync-tests`](../sync-tests/SKILL.md) all hold to this from their own end.
+
+## A ticket carrying two jobs is split, the way a blocked one is
+
+**A file whose phases add up to two pieces of work is split at the seam between them**, each half keeping a name of its own, a row in the README and a place in the running order, and each naming the other. The seam rule above is the same cut on a different line: there it is where buildable phases stop and blocked ones begin, here it is where one job stops and the next starts.
+
+A file is carrying two when its summary sentence needs an *and* to stay true, when its phases answer more than one question, or when somebody would pick up half of it and leave the rest. That last one is the tell that costs the most: a file nobody can finish never moves to `../docs/done/`, so its README row goes on describing a plan for ever. Splitting is describing the same work more honestly rather than changing it, so it does not wait on a question — but the running order is re-derived by [`/pm`](../pm/SKILL.md), never edited by hand, because two rows where there was one changes what somebody picks up next.
 
 ## A round of fixes on built work is a checklist before it is a change
 

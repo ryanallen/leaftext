@@ -17,7 +17,14 @@ Build the phase's test box with its code, and write the test's name on the box. 
 
 **A phase that adds or changes a command writes its browser line in the same edit as the code**, the way it ticks a box in the same edit. The app and a published site are one front end with two hosts under it, so a new command is two pieces of work and only one of them is obvious: the line goes in `web/preview/host.js`'s table, saying the browser answers it, will not and why, or not yet and which ticket owns it. `just check-web-commands` refuses the build without it, and the answer is decided while the code is in front of you rather than by whoever finds the dead control months later. A command whose browser answer turns out to be real work is that work's own ticket, not this phase's.
 
-A test gap outside this ticket is its own ticket, written with [`/ticket`](../ticket/SKILL.md) and ranked by [`/pm`](../pm/SKILL.md) in the same pass — never fixed in passing, never left in the hand-back.
+## What building turns up beside the work is its own ticket
+
+**Anything found while building that no phase in this ticket would have to build anyway is a second file, written in the same pass** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md), and named in this ticket's record so nobody reads it as covered. Never fixed in passing, never left in the hand-back. [`/ticket`](../ticket/SKILL.md) holds the rule; this is the pass that hits it hardest, because building is where the code is actually opened.
+
+- **A bug beside the one being fixed**, a test gap, a check that would have caught it, a rule nothing enforces: all the same answer. The test is scope, not size — a one-line fix out of this ticket's work is still a ticket.
+- **The temptation here is the fix, not the box.** The code is open and the change is small, so it goes in and the ticket silently grows work the owner never read. A ticket about the find bar carrying a pager fix is one nobody can review.
+- **A round that grows past the ticket is the same thing.** Where what the owner asked for is a second job rather than a refinement of this one, it is its own file — see the rounds below.
+- **A ticket that turns out to be two jobs is split**, each half keeping its own name and row. That is [`/design`](../design/SKILL.md)'s call, run from here.
 
 ## Refining what was built goes in the ticket, every round, unasked
 

@@ -13,7 +13,7 @@ user-invocable: true
 
 [`../docs/canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) holds the refused ones — the third of the three, and the one nothing else writes. **Canceling is the owner's call and no skill's**, so there is no `/done` for it: a plan is moved into `../docs/canceled/` and this pass is what gives it a row, by walking that folder rather than by being told (step 9).
 
-**Never run git. Never edit a ticket's phases.** A ticket that is wrong is [`/design`](../design/SKILL.md)'s work; here it gets a tier 0 row and a corrected status. Outside the three rankings this pass edits only a ticket's row in [`../docs/README.md`](../../../../docs/README.md), a glossary row (step 6), and a track's step order where this pass proves it wrong (step 5).
+**Never run git. Never edit a ticket's phases.** A ticket that is wrong is [`/design`](../design/SKILL.md)'s work; here it gets a tier 0 row and a corrected status. Outside the three rankings this pass edits only a ticket's row in [`../docs/README.md`](../../../../docs/README.md), a glossary row (step 6), and a track's step order where this pass proves it wrong (step 5). A ticket this pass finds unrankable or carrying two jobs is handed to [`/ticket`](../ticket/SKILL.md) to write or split (step 3), which is how a new file reaches the tree without this skill writing phases.
 
 ## 1. Read first
 
@@ -50,7 +50,9 @@ The tests pick the tier in that order, then run again inside it, which is what m
 
 **Unrankable, because the cost is unknown.** The ticket stays `Ready` with the reason in its row: it changes the window and has no drawn `What it looks like` section, or its phases carry no test box. Check both over every ticket while walking the folders.
 
-**A gap this pass turns up gets a ticket, not a row** — write it with [`/ticket`](../ticket/SKILL.md), give it its README row, rank it here in the same pass.
+**A ticket carrying two jobs is split before it is ranked.** This is the only pass that reads every live ticket in one sitting, so it is the one that can see a file has become two — its summary sentence needs an *and* to stay true, its phases answer more than one question, or its cost is two costs, which is what makes it unrankable rather than merely large. Split it at the seam with [`/ticket`](../ticket/SKILL.md): each half keeps a name of its own, a README row and a row here, and each names the other. Size alone is not the test — a big swing is a tier, not a split.
+
+**Anything this pass turns up that is not a row gets a ticket** — a gap nothing covers, a fault nobody has filed, a rule the tree is running under that is untrue. Write it with [`/ticket`](../ticket/SKILL.md), give it its README row, rank it here in the same pass. Never a sentence in the hand-back: reading eighty tickets against the code is the pass most likely to find something, and a finding with no file is one nobody sees again.
 
 ## 4. The tiers
 
