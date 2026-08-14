@@ -3079,8 +3079,11 @@ fn a_sign_in_takes_one_request_on_a_loopback_port_and_then_gives_it_up() {
     ignored
         .write_all(b"GET /favicon.ico HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
         .expect("asks");
-    let mut thrown_away = String::new();
-    let _ = ignored.read_to_string(&mut thrown_away);
+    let mut brushed_off = String::new();
+    ignored
+        .read_to_string(&mut brushed_off)
+        .expect("is answered too");
+    assert!(brushed_off.starts_with("HTTP/1.1 200"), "{brushed_off}");
 
     let mut browser = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
     browser
@@ -3102,6 +3105,94 @@ fn a_sign_in_takes_one_request_on_a_loopback_port_and_then_gives_it_up() {
 
     // And the port is gone with the listener, so nothing else on the machine can go on talking to it.
     assert!(std::net::TcpStream::connect(("127.0.0.1", port)).is_err());
+}
+
+/// The page saying you are signed in reaches the browser whole, every time. A socket closed with bytes of the request still unread is reset rather than closed, and the reset throws away what was written but not yet read. The headers are sent a moment after the request line here, which is the arrival order that leaves them unread — sent together they land in one read and the fault hides — and repeated, so nothing survives on luck.
+#[test]
+fn the_page_saying_you_are_signed_in_is_never_lost_to_a_reset() {
+    use std::io::{Read, Write};
+
+    /// Long enough that the request line is read on its own, short enough to stay well inside the sign-in's own read timeout.
+    const APART: Duration = Duration::from_millis(20);
+
+    for round in 0..10 {
+        let (listener, redirect_uri) = open_sign_in_listener().expect("a port is opened");
+        let port = listener.local_addr().expect("readable").port();
+        let waiting = std::thread::spawn(move || await_sign_in(listener, redirect_uri));
+
+        // The favicon goes down the same path and is answered the same way, so it is held here too.
+        let mut ignored = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
+        ignored
+            .write_all(b"GET /favicon.ico HTTP/1.1\r\n")
+            .expect("asks");
+        std::thread::sleep(APART);
+        ignored
+            .write_all(b"Host: 127.0.0.1\r\nAccept: image/png\r\n\r\n")
+            .expect("goes on");
+        std::thread::sleep(APART);
+        // Read as bytes and kept even when the read ends badly: the failure this covers is an empty answer, and a reader that throws away what did arrive cannot tell that apart from a short one.
+        let mut arrived = Vec::new();
+        let outcome = ignored.read_to_end(&mut arrived);
+        let brushed_off = String::from_utf8_lossy(&arrived).to_string();
+        outcome.unwrap_or_else(|error| panic!("round {round}: {error} after {brushed_off:?}"));
+        assert!(
+            brushed_off.contains("try again"),
+            "round {round}: {brushed_off}"
+        );
+
+        let mut browser = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
+        browser
+            .write_all(b"GET /?code=abc123 HTTP/1.1\r\n")
+            .expect("comes back");
+        std::thread::sleep(APART);
+        browser
+            .write_all(b"Host: 127.0.0.1\r\nUser-Agent: a browser\r\nAccept: text/html\r\nConnection: close\r\n\r\n")
+            .expect("goes on");
+        std::thread::sleep(APART);
+        let mut arrived = Vec::new();
+        let outcome = browser.read_to_end(&mut arrived);
+        let answered = String::from_utf8_lossy(&arrived).to_string();
+        outcome.unwrap_or_else(|error| panic!("round {round}: {error} after {answered:?}"));
+
+        // Whole, not merely started: the reset this covers cuts the answer off wherever it had got to.
+        assert!(
+            answered.ends_with("You are signed in. Close this tab and go back to Leaftext."),
+            "round {round}: {answered}"
+        );
+
+        let answer = waiting.join().expect("the wait ends").expect("a code");
+        assert_eq!(answer.code, "abc123");
+    }
+}
+
+/// Reading the rest of the request stops somewhere. The read's timeout is per read, so a client that keeps sending header lines and never sends the blank one would otherwise hold the port for as long as it kept typing; the sign-in gives up on the headers and answers, because the code was already out of the request line.
+#[test]
+fn a_sign_in_stops_reading_headers_rather_than_letting_a_client_hold_the_port() {
+    use std::io::Write;
+
+    let (listener, redirect_uri) = open_sign_in_listener().expect("a port is opened");
+    let port = listener.local_addr().expect("readable").port();
+    let waiting = std::thread::spawn(move || await_sign_in(listener, redirect_uri));
+
+    let mut browser = std::net::TcpStream::connect(("127.0.0.1", port)).expect("connects");
+    browser
+        .write_all(b"GET /?code=abc123 HTTP/1.1\r\n")
+        .expect("comes back");
+    let started = std::time::Instant::now();
+    // Far past the bound, and no blank line ever, so nothing but the bound can end the read. A write that fails is the sign-in having already given up and closed, which is the thing being asked for.
+    for line in 0..200 {
+        if browser
+            .write_all(format!("X-Padding-{line}: and on it goes\r\n").as_bytes())
+            .is_err()
+        {
+            break;
+        }
+    }
+
+    let answer = waiting.join().expect("the wait ends").expect("a code");
+    assert_eq!(answer.code, "abc123");
+    // Well inside the ten seconds a read of its own is given, which is what the wait would have cost with nothing bounding it.
+    assert!(started.elapsed() < Duration::from_secs(3), "{started:?}");
 }
 
 /// Only a `code` is a code, and a consent screen that came back with something else is not one.

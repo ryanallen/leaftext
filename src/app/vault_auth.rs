@@ -75,7 +75,10 @@ pub(crate) fn await_sign_in(
     }
 }
 
-/// Read one request line, answer it, and take the code out of it if it carried one.
+/// How many header lines are read past the request line before the rest is left where it is. The read timeout is per read, so without a bound a client dripping one header a timeout would hold the port for as long as it liked.
+const MAX_REQUEST_HEADERS: usize = 64;
+
+/// Read the request, answer it, and take the code out of it if it carried one.
 fn serve_one(stream: TcpStream) -> Result<Option<String>, String> {
     stream
         .set_read_timeout(Some(Duration::from_secs(10)))
@@ -90,6 +93,18 @@ fn serve_one(stream: TcpStream) -> Result<Option<String>, String> {
         .read_line(&mut request_line)
         .map_err(|error| format!("the sign-in said nothing: {error}"))?;
 
+    // The rest of the request is read before a word of the answer is written. A socket closed with bytes still unread is reset rather than closed, and the reset throws away what was written but not yet read — which is the whole answer, so the person sees their browser's connection-reset error over a sign-in that worked. Every way this ends still answers, because the code is already out of the request line.
+    let mut header = String::new();
+    for _ in 0..MAX_REQUEST_HEADERS {
+        header.clear();
+        match reader.read_line(&mut header) {
+            Ok(0) => break,
+            Ok(_) if header.trim_end_matches(['\r', '\n']).is_empty() => break,
+            Ok(_) => {}
+            Err(_) => break,
+        }
+    }
+
     let target = request_line.split_whitespace().nth(1).unwrap_or("");
     let answer = code_from_target(target);
     let page = match &answer {
@@ -103,6 +118,8 @@ fn serve_one(stream: TcpStream) -> Result<Option<String>, String> {
         page.len()
     );
     let _ = stream.flush();
+    // Said out loud rather than left to the drop, so the browser is told the answer ended instead of finding the connection gone under it.
+    let _ = stream.shutdown(std::net::Shutdown::Write);
     Ok(answer)
 }
 
