@@ -1594,8 +1594,14 @@ fn a_link_preview_request_arrives_with_its_hover_token() {
     }
 }
 
+/// One code-view payload is held at a time on purpose, so a test that stages one takes this until it is done with the slot — on the harness's threads another test's staging supersedes it and the read is a 404. Poison is shrugged off so one broken test is one failure.
+static SOURCE_PAYLOAD_SLOT: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 #[test]
 fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
+    let _slot = SOURCE_PAYLOAD_SLOT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     let url = stage_source_payload("{\"html\":\"x\"}".to_string());
 
     let served = source_payload_response(&url);
@@ -1627,6 +1633,9 @@ fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
 #[test]
 fn the_code_view_script_carries_a_url_and_not_the_source() {
     // The whole point: the megabytes stay behind the URL. A regression here is silent — it still works, just slowly.
+    let _slot = SOURCE_PAYLOAD_SLOT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     let payload = code_view_payload("huge text", "markdown", "Markdown", false, None);
     let script = code_view_fetch_script(&stage_source_payload(payload));
 
