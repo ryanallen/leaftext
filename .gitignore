@@ -2,6 +2,8 @@
 /dist
 # The two browser modules, built by `just build-web`.
 /web/dist
+# The renderer and the stylesheet the pages read through, written by the site publish. Never committed: a 2.7 MB module and a generated stylesheet are a worse tree to work in than the drift they end.
+/assets/leaftext
 .release-tag
 /.tmp
 .agents/settings.local.json

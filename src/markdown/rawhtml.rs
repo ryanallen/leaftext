@@ -257,16 +257,17 @@ pub(crate) fn is_safe_raw_markdown_html_url(value: &str) -> bool {
     }
 }
 
-pub(crate) fn resolve_img_tag_src(tag: &str, source_path: &Path) -> String {
+pub(crate) fn resolve_img_tag_src(tag: &str, source_path: &Path, host: &dyn LeafHost) -> String {
     let Some(attribute) = find_html_attribute(tag, "src") else {
         return tag.to_string();
     };
-    if local_image_source_dir(source_path).is_none()
+    // Left exactly as it was written when there is nothing to rewrite it against: no folder to resolve from, or a host that serves no folder of its own — a browser, where the path beside the document is already the path the page fetches.
+    if (!host.serves_local_images() || local_image_source_dir(source_path).is_none())
         && is_safe_relative_image_destination(attribute.value)
     {
         return tag.to_string();
     }
-    let resolved_src = resolve_image_destination(attribute.value, source_path)
+    let resolved_src = resolve_image_destination(attribute.value, source_path, host)
         .unwrap_or_else(|| "javascript:leaf-blocked".to_string());
 
     let mut resolved = String::with_capacity(tag.len() + resolved_src.len());

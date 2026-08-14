@@ -7,10 +7,38 @@
 // The host owns its own click handling, so this module does NOT register a document-wide listener. It returns `handleClick(event)`: call it first in the host's content click handler and bail out when it returns true.
 // ---------------------------------------------------------------------------
 
-import { extractSectionMarkdown } from './markdown.js';
-
 // The on-disk convention is GLOSSARY.md (like README.md). This is the comparison key only; the basename is lowercased before comparing, so a link to GLOSSARY.md or a legacy glossary.md both match.
 const GLOSSARY_FILE = 'glossary.md';
+
+/**
+ * One entry, cut out of the whole rendered glossary by its heading id.
+ *
+ * Cut from the **rendered** document rather than from the Markdown, because the heading ids are the renderer's and the links pointing at them were slugged by that same renderer — a second slug rule here is how a link stops finding its entry.
+ *
+ * Returns the entry's HTML, or null when no heading carries that id.
+ */
+export function entrySection(html, anchor) {
+  const held = document.createElement('div');
+  held.innerHTML = html;
+  // The renderer draws a Previous/Next strip at the foot of every document, and it would otherwise be swept into whichever entry comes last.
+  held.querySelectorAll('.docs-pager').forEach((strip) => strip.remove());
+  let heading = null;
+  try {
+    heading = held.querySelector(`[id="${CSS.escape(anchor)}"]`);
+  } catch (error) {
+    return null;
+  }
+  if (!heading) return null;
+  const level = /^h([1-6])$/i.exec(heading.tagName);
+  const depth = level ? Number(level[1]) : 6;
+  const entry = [heading];
+  for (let node = heading.nextElementSibling; node; node = node.nextElementSibling) {
+    const stop = /^h([1-6])$/i.exec(node.tagName);
+    if (stop && Number(stop[1]) <= depth) break;
+    entry.push(node);
+  }
+  return entry.map((node) => node.outerHTML).join('\n');
+}
 
 function decodeAnchor(raw) {
   try {
@@ -48,24 +76,24 @@ function glossaryAnchor(href) {
 }
 
 // Wire up the glossary sheet for one reading view.
-//   glossaryUrl    where to fetch the glossary Markdown from (fetched once, lazily)
-//   renderMarkdown the shared Markdown -> HTML renderer
+//   glossaryUrl    where to fetch the glossary from (fetched once, lazily)
+//   render         the app's own renderer: (text, path) -> a drawn document
 //   onNavigate     optional; called with an href when a non-glossary link inside
 //                  the sheet is followed, so the host can route to it
-export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
+export function installGlossary({ glossaryUrl, render, onNavigate }) {
   let loadPromise = null;
   let sheet = null;
   let backdrop = null;
   let bodyEl = null;
   let lastFocus = null;
 
-  // Fetch the glossary Markdown once and cache the raw text. We deliberately do NOT render the whole glossary here: a large glossary is many megabytes of HTML and DOM nodes, and laying all of it out just to show one term is what made the sheet hang on memory-limited mobile browsers (a big glossary on an iPhone would never finish loading). open() renders only the one entry it needs, sliced straight out of the raw text (see extractSectionMarkdown).
-  function loadGlossaryText() {
+  // Fetch and draw the glossary once, and cache the HTML. Nothing of it reaches the page: open() cuts out the one entry it needs and puts only that on screen, so a large glossary costs one render and one parse into a detached element rather than the layout of all of it, which hangs the sheet on a memory-limited phone.
+  function loadGlossaryHtml() {
     if (!loadPromise) {
       loadPromise = (async () => {
         const res = await fetch(glossaryUrl, { cache: 'no-cache' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.text();
+        return render(await res.text(), glossaryUrl).html;
       })();
     }
     return loadPromise;
@@ -162,18 +190,18 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
   async function open(anchor) {
     show();
     bodyEl.innerHTML = '<p class="glossary-sheet-status">Loading…</p>';
-    let text;
+    let html;
     try {
-      text = await loadGlossaryText();
+      html = await loadGlossaryHtml();
     } catch (err) {
       bodyEl.innerHTML =
         '<p class="glossary-sheet-status">Could not load the glossary (' + err.message + ').</p>';
       return;
     }
-    // Slice out just this entry's Markdown and render only that, so the sheet opens instantly and cheaply regardless of how large the glossary is.
-    const entryMarkdown = extractSectionMarkdown(text, anchor);
-    if (entryMarkdown != null) {
-      bodyEl.innerHTML = renderMarkdown(entryMarkdown);
+    // Cut out just this entry and put only that on the page, so the sheet opens instantly and cheaply regardless of how large the glossary is.
+    const entryHtml = entrySection(html, anchor);
+    if (entryHtml != null) {
+      bodyEl.innerHTML = entryHtml;
     } else {
       bodyEl.innerHTML =
         '<p class="glossary-sheet-status">No glossary entry for “' + anchor + '”.</p>';
@@ -215,7 +243,7 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
 // Terms from ## (h2) headings are used. Matching is whole-word, case-insensitive. Text inside existing <a>, <code>, and <pre> elements is skipped.
 //
 // Usage:
-//   installAutoGlossary({ contentEl, renderMarkdown, renderTEI, glossaryUrl })
+//   installAutoGlossary({ contentEl, render, glossaryUrl })
 //
 // Returns a promise that resolves when linking is done (or quietly fails).
 // ---------------------------------------------------------------------------
@@ -310,12 +338,15 @@ function extractTerms(html) {
  * `glossaryUrl` is one path or a list to try in order, each relative to the page
  * asking. Ours sits in docs/, not at the site root, so the caller has to say
  * where — a default of `GLOSSARY.md` is a silent no-op from anywhere else.
- * @param {Function} renderMarkdown
- * @param {Function|null} renderTEI
+ *
+ * The name is handed to the renderer along with the text, because that name is
+ * what decides the format: an `.xml` glossary reads as TEI and an `.md` one as
+ * Markdown with nothing here choosing between them.
+ * @param {Function} render
  * @param {string|string[]} glossaryUrl
  * @returns {Promise<string|null>}
  */
-async function fetchGlossaryHtml(renderMarkdown, renderTEI, glossaryUrl) {
+async function fetchGlossaryHtml(render, glossaryUrl) {
   const candidates = Array.isArray(glossaryUrl) ? glossaryUrl : [glossaryUrl];
   for (const name of candidates) {
     let res;
@@ -325,11 +356,7 @@ async function fetchGlossaryHtml(renderMarkdown, renderTEI, glossaryUrl) {
       continue;
     }
     if (!res.ok) continue;
-    const text = await res.text();
-    if (name.endsWith('.xml') && renderTEI) {
-      return renderTEI(text);
-    }
-    return renderMarkdown(text);
+    return render(await res.text(), name).html;
   }
   return null;
 }
@@ -340,20 +367,14 @@ async function fetchGlossaryHtml(renderMarkdown, renderTEI, glossaryUrl) {
  *
  * @param {object} opts
  * @param {Element} opts.contentEl     — the rendered document element
- * @param {Function} opts.renderMarkdown
- * @param {Function} [opts.renderTEI]  — optional; used for .xml glossary files
+ * @param {Function} opts.render       — the app's own renderer: (text, path) -> a drawn document
  * @param {string|string[]} opts.glossaryUrl — where the glossary is, from this page
  */
-export async function installAutoGlossary({
-  contentEl,
-  renderMarkdown,
-  renderTEI,
-  glossaryUrl,
-}) {
+export async function installAutoGlossary({ contentEl, render, glossaryUrl }) {
   if (!glossaryUrl) return;
   let glossaryHtml;
   try {
-    glossaryHtml = await fetchGlossaryHtml(renderMarkdown, renderTEI || null, glossaryUrl);
+    glossaryHtml = await fetchGlossaryHtml(render, glossaryUrl);
   } catch {
     return;
   }

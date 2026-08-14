@@ -55,8 +55,19 @@ function resolveTheme(mode) {
   return darkQuery && darkQuery.matches ? 'dark' : 'light';
 }
 
+// The document itself is painted by the app's own stylesheet, which is keyed on a theme family and an appearance rather than on the three names this menu offers — so each choice names the family it is drawn with. Light and Dark are GitHub's, which is where the site's own two came from; Dracula has no family of its own and takes Nightshade, the nearest of the eleven. Keep this in lockstep with the inline <head> bootstrap in each page.
+const LEAF_THEMES = {
+  light: ['github', 'light'],
+  dark: ['github', 'dark'],
+  dracula: ['nightshade', 'dark'],
+};
+
 function applyTheme(mode) {
-  root.dataset.theme = resolveTheme(mode);
+  const resolved = resolveTheme(mode);
+  root.dataset.theme = resolved;
+  const [family, appearance] = LEAF_THEMES[resolved] || LEAF_THEMES.light;
+  root.dataset.leafTheme = family;
+  root.dataset.leafAppearance = appearance;
 }
 function applySpeedReader(enabled) {
   if (enabled) root.dataset.speedReader = 'true';

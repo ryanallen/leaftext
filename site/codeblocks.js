@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // Shared code-block enhancement for both readers — the root README reader (reader.js) and the /docs SPA (docs.js). Two things, matching the desktop app: syntax highlighting via the vendored highlight.js, and a "copy all" button on every fenced block. Both readers import this so they can never drift apart (the docs page once shipped without highlighting or copy because this logic lived only in reader.js).
 //
-// markdown.js renders a languaged fence as
+// The renderer renders a languaged fence as
 //   <pre class="highlight" data-language="…"><code class="language-…">…</code></pre>
 // The token colors (.hljs-*) and the .code-copy button are styled in site/styles.css, which both pages load.
 // ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ function loadScript(src) {
   return scriptPromises.get(src);
 }
 
-// Colorize fenced code blocks inside `container`. highlight.js reads the language-<lang> class markdown.js puts on the <code>, tokenizes, and wraps tokens in <span class="hljs-…">. Mermaid fences are <pre class="mermaid"> with no inner <code>, so they're left alone. Unknown languages are skipped quietly, leaving plain (already-escaped) code text. `hljsSrc` is the path to the vendored runtime, relative to the calling page.
+// Colorize fenced code blocks inside `container`. highlight.js reads the language-<lang> class the renderer puts on the <code>, tokenizes, and wraps tokens in <span class="hljs-…">. Mermaid fences are <pre class="mermaid"> with no inner <code>, so they're left alone. Unknown languages are skipped quietly, leaving plain (already-escaped) code text. `hljsSrc` is the path to the vendored runtime, relative to the calling page.
 export async function highlightCode(container, hljsSrc) {
   const nodes = Array.from(container.querySelectorAll('pre code[class*="language-"]'));
   if (!nodes.length) return;
@@ -38,7 +38,7 @@ export async function highlightCode(container, hljsSrc) {
       // Only highlight languages the bundle actually knows; otherwise hljs would guess (often wrong) and the code reads better plain.
       if (!def) return;
       window.hljs.highlightElement(el);
-      // Upgrade the language label (set by markdown.js to the raw fence token) to highlight.js's display name, e.g. "sh" -> "Bash", "md" -> "Markdown". The name can carry aliases ("TOML, also INI"); keep just the primary name.
+      // Upgrade the language label (set by the renderer to the raw fence token) to highlight.js's display name, e.g. "sh" -> "Bash", "md" -> "Markdown". The name can carry aliases ("TOML, also INI"); keep just the primary name.
       const pre = el.closest('pre');
       if (pre && def.name) pre.dataset.language = def.name.split(',')[0].trim();
     });

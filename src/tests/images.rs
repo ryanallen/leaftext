@@ -530,7 +530,11 @@ fn local_image_protocol_serves_rendered_markdown_image_bytes() {
     fs::write(&image_path, png).expect("test png is written");
 
     assert_eq!(
-        resolve_image_destination("nested/space%20image.png", &markdown_path),
+        resolve_image_destination(
+            "nested/space%20image.png",
+            &markdown_path,
+            &DesktopHost::default()
+        ),
         Some(local_img("nested/space%20image.png"))
     );
     let rendered = render_markdown_document(
@@ -766,8 +770,12 @@ fn local_image_protocol_loads_absolute_paths_outside_the_document_tree() {
     fs::write(&image_path, png).expect("test image is written");
 
     let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
-    let url = resolve_image_destination(&image_path.to_string_lossy(), &markdown_path)
-        .expect("an absolute path outside the document tree resolves to a URL");
+    let url = resolve_image_destination(
+        &image_path.to_string_lossy(),
+        &markdown_path,
+        &DesktopHost::default(),
+    )
+    .expect("an absolute path outside the document tree resolves to a URL");
     let response = local_image_protocol_response(&url, Some(&source_dir));
 
     fs::remove_dir_all(&root).expect("test directories are removed");

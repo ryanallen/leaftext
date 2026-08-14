@@ -475,7 +475,7 @@ TEI documents have conventions worth following, so they get their own renderer.
 
 Both XML renderers walk the `roxmltree` DOM and produce the same HTML structure the Markdown pipeline outputs, so themes, footnotes, minimap, pager, and [inline editing](07-editing.md#inline-editing-the-reading-view) all work unchanged for XML documents.
 
-The web reader on this site (`site/reader.js`) renders `.xml` through `renderTEI()` from `tei-xml.js`, which uses `DOMParser` — the TEI path only, fully offline. The generic XML renderer is app-side.
+This site draws its own pages through the same renderer, fetched as a module, so a page here is the document Leaftext draws rather than a second implementation of one — XML and every other format alike.
 
 ## Data files (JSON and YAML)
 

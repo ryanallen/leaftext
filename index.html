@@ -76,7 +76,12 @@
     <link rel="stylesheet" href="site/noto-fonts.css" />
     <!-- KaTeX stylesheet, vendored locally (math is rendered by reader.js when present). -->
     <link rel="stylesheet" href="site/vendor/katex/katex.min.css" />
-    <!-- The whole look lives in site/styles.css; edit the tokens at the top of it. -->
+    <!-- Where the app's own renderer is served from, and the stylesheet it draws
+         a document with. Both are built when this site publishes and never
+         committed; another site can name this one here instead. -->
+    <meta name="leaftext-renderer" content="/assets/leaftext/" />
+    <link rel="stylesheet" href="/assets/leaftext/leaftext.css" />
+    <!-- What draws the page around the document: edit the tokens at the top of it. -->
     <link rel="stylesheet" href="site/styles.css" />
     <!-- Apply the saved theme and panel toggles before first paint (no flash).
          Keys mirror site/settings.js; "System" resolves to the device theme. -->
@@ -86,12 +91,16 @@
           var d = document.documentElement,
             s = window.localStorage;
           var m = s.getItem('leaf.theme') || 'system';
-          d.dataset.theme =
+          var t =
             m === 'light' || m === 'dark' || m === 'dracula'
               ? m
               : matchMedia('(prefers-color-scheme: dark)').matches
                 ? 'dark'
                 : 'light';
+          d.dataset.theme = t;
+          // The document's own paint comes from the app's stylesheet, which keys on a theme family and an appearance.
+          d.dataset.leafTheme = t === 'dracula' ? 'nightshade' : 'github';
+          d.dataset.leafAppearance = t === 'light' ? 'light' : 'dark';
           if (s.getItem('leaf.minimap') === '0') d.dataset.minimap = 'off';
           if (s.getItem('leaf.library') === '0') d.dataset.library = 'off';
           if (s.getItem('leaf.speedReader') === '1') d.dataset.speedReader = 'true';
@@ -125,8 +134,9 @@
         </p>
       </noscript>
     </main>
-    <!-- site/reader.js loads README.md and renders it; it imports markdown.js,
-         slugger.js, and minimap.js (the side-rail document overview). -->
+    <!-- site/reader.js loads the README beside this page and draws it with the
+         app's own renderer (leaftext-core.js), then builds the minimap
+         (minimap.js, the side-rail document overview). -->
     <script type="module" src="site/reader.js"></script>
     <script type="module">
       // The README links to docs/*.md by their real repo paths so they stay

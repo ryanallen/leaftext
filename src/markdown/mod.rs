@@ -72,7 +72,7 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     let events = register_markdown_extensions(events, source.source_path, source.host);
     let body = render_markdown_events_to_html(events);
     let body = table_alignment_as_attribute(&body);
-    let body = resolve_rendered_html_image_urls(&body, source.source_path);
+    let body = resolve_rendered_html_image_urls(&body, source.source_path, source.host);
     let body = format!("{frontmatter_html}{body}");
     // The size goes on last, after the sanitizer: the numbers are ours, and `img` keeps the attribute list it was given.
     stamp_image_intrinsic_sizes(
@@ -327,7 +327,7 @@ pub(crate) fn register_markdown_extensions(
     let repository = host.repository(source_path.parent().unwrap_or_else(|| Path::new(".")));
     let events = button_links(events);
     let events = linkify_plain_text(events);
-    let events = github_markdown_extras(events, repository.as_ref(), source_path);
+    let events = github_markdown_extras(events, repository.as_ref(), source_path, host);
     let events = table_cell_task_list_markers(events);
     let events = add_markdown_heading_ids(events);
     let events = resolve_absolute_markdown_image_urls(events, source_path);

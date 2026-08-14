@@ -148,7 +148,11 @@ pub(crate) fn github_actions_badge_label(workflow: &str) -> String {
         .join(" ")
 }
 
-pub(crate) fn resolve_image_destination(destination: &str, source_path: &Path) -> Option<String> {
+pub(crate) fn resolve_image_destination(
+    destination: &str,
+    source_path: &Path,
+    host: &dyn LeafHost,
+) -> Option<String> {
     if destination.is_empty() || destination.starts_with('#') || destination.starts_with("//") {
         return None;
     }
@@ -156,10 +160,15 @@ pub(crate) fn resolve_image_destination(destination: &str, source_path: &Path) -
     if let Some(url) = parse_image_destination_url(destination) {
         return match url.scheme() {
             "http" | "https" => Some(url.to_string()),
-            "file" => path_from_file_url(&url)
+            "file" if host.serves_local_images() => path_from_file_url(&url)
                 .and_then(|path| local_image_url_for_absolute_path(&path, source_path)),
             _ => None,
         };
+    }
+
+    // A host that serves no folder of its own has no file to reach for, and no way to fetch one: a relative destination stays as written, and a path into somebody's disk answers with nothing rather than with a URL that can only fail.
+    if !host.serves_local_images() {
+        return is_safe_relative_image_destination(destination).then(|| destination.to_string());
     }
 
     if Path::new(destination).is_absolute() {
@@ -221,7 +230,11 @@ pub(crate) fn is_safe_relative_image_destination(destination: &str) -> bool {
 }
 
 /// A diagram box can carry a picture — `B@{ img: "shot.png" }` — and the web view has no idea where the document is, so a path beside it means nothing there. Resolved with the same function a Markdown image goes through, so both spellings of "the picture next to this file" reach the page as one URL. Only inside `@{ … }` and only that key: the same word in a label is the reader's own text. Neither editor sees this — both read the block out of the file, never the page.
-pub(crate) fn resolve_mermaid_image_destinations(code: &str, source_path: &Path) -> String {
+pub(crate) fn resolve_mermaid_image_destinations(
+    code: &str,
+    source_path: &Path,
+    host: &dyn LeafHost,
+) -> String {
     if !code.contains("@{") {
         return code.to_string();
     }
@@ -234,7 +247,11 @@ pub(crate) fn resolve_mermaid_image_destinations(code: &str, source_path: &Path)
             resolved.push_str(body);
             return resolved;
         };
-        resolved.push_str(&resolve_mermaid_typed_body(&body[..close], source_path));
+        resolved.push_str(&resolve_mermaid_typed_body(
+            &body[..close],
+            source_path,
+            host,
+        ));
         resolved.push('}');
         rest = &body[close + 1..];
     }
@@ -255,7 +272,7 @@ fn mermaid_typed_body_end(body: &str) -> Option<usize> {
     None
 }
 
-fn resolve_mermaid_typed_body(body: &str, source_path: &Path) -> String {
+fn resolve_mermaid_typed_body(body: &str, source_path: &Path, host: &dyn LeafHost) -> String {
     let mut parts = Vec::new();
     let mut quoted = false;
     let mut start = 0usize;
@@ -272,12 +289,12 @@ fn resolve_mermaid_typed_body(body: &str, source_path: &Path) -> String {
     parts.push(&body[start..]);
     parts
         .into_iter()
-        .map(|part| resolve_mermaid_typed_part(part, source_path))
+        .map(|part| resolve_mermaid_typed_part(part, source_path, host))
         .collect::<Vec<String>>()
         .join(",")
 }
 
-fn resolve_mermaid_typed_part(part: &str, source_path: &Path) -> String {
+fn resolve_mermaid_typed_part(part: &str, source_path: &Path, host: &dyn LeafHost) -> String {
     let Some(colon) = part.find(':') else {
         return part.to_string();
     };
@@ -293,7 +310,7 @@ fn resolve_mermaid_typed_part(part: &str, source_path: &Path) -> String {
     } else {
         bare
     };
-    let Some(url) = resolve_image_destination(destination, source_path) else {
+    let Some(url) = resolve_image_destination(destination, source_path, host) else {
         return part.to_string();
     };
     // Always quoted on the way out: a resolved URL can hold the comma or the brace a bare value would end on.
@@ -301,7 +318,11 @@ fn resolve_mermaid_typed_part(part: &str, source_path: &Path) -> String {
     format!("{key}:{gap}\"{url}\"")
 }
 
-pub(crate) fn resolve_rendered_html_image_urls(html: &str, source_path: &Path) -> String {
+pub(crate) fn resolve_rendered_html_image_urls(
+    html: &str,
+    source_path: &Path,
+    host: &dyn LeafHost,
+) -> String {
     let mut resolved = String::with_capacity(html.len());
     let mut offset = 0usize;
     let lower_html = html.to_ascii_lowercase();
@@ -313,7 +334,11 @@ pub(crate) fn resolve_rendered_html_image_urls(html: &str, source_path: &Path) -
         };
 
         resolved.push_str(&html[offset..tag_start]);
-        resolved.push_str(&resolve_img_tag_src(&html[tag_start..tag_end], source_path));
+        resolved.push_str(&resolve_img_tag_src(
+            &html[tag_start..tag_end],
+            source_path,
+            host,
+        ));
         offset = tag_end;
     }
 

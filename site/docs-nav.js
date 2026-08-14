@@ -1,6 +1,8 @@
 // docs-nav.js
 // ---------------------------------------------------------------------------
-// Build the docs navigation from the REAL file/folder tree at runtime. Nothing about the page list is written by hand: every folder becomes a group, every .md file becomes a page, ordering is alphabetical, labels come from the file names. Add or remove a file and the nav follows — no manifest, no build step.
+// Build the docs navigation from the REAL file/folder tree at runtime. Nothing about the page list is written by hand: every folder becomes a group, every document becomes a page, ordering is alphabetical, labels come from the file names. Add or remove a file and the nav follows — no manifest, no build step.
+//
+// **Which files are documents is the renderer's answer, not this file's.** The caller passes the extension list it read off the module (`leaf_formats`), which is the app's own one table — so an XML, JSON, YAML or email file beside a page becomes a page by that table naming it, and there is never a second list of extensions in site code to fall behind the first.
 //
 // Static hosting (GitHub Pages) cannot list a directory at runtime, so the tree is discovered two ways, in order:
 //
@@ -17,8 +19,19 @@
 // Both strategies converge on the same shape:
 //   { hasIndex: boolean, nav: NavNode[] }
 //   NavNode = { route, label, path } | { group, items: NavNode[] }
-// where `route` is the clean path under the docs folder without ".md" (how "#/<route>" addresses it) and `path` is the real file to fetch. They match unless a file/folder carries a numeric ordering prefix (see stripOrder).
+// where `route` is the clean path under the docs folder with ".md" dropped and every other extension kept (how "#/<route>" addresses it) and `path` is the real file to fetch. They match unless a file/folder carries a numeric ordering prefix (see stripOrder), or the file is not Markdown.
 // ---------------------------------------------------------------------------
+
+// The extensions this build was told the renderer reads, and the two patterns every check below is made of. Set once per load by the public entry; Markdown alone until then, which is what the fallbacks in the callers already assume.
+let documentPattern = /\.md$/i;
+
+function useFormats(formats) {
+  if (formats && formats.length) documentPattern = new RegExp(`\\.(${formats.join('|')})$`, 'i');
+}
+
+const isDocument = (name) => documentPattern.test(name);
+// A route drops `.md` and keeps every other extension: a Markdown page reads as a clean path, and a link to a real `.xml` file stays a working link in a plain Markdown viewer as well as a route here.
+const routeName = (name) => name.replace(/\.md$/i, '');
 
 // ---- ordering prefix -------------------------------------------------------
 // A leading numeric prefix ("01-", "02_") orders files and folders in the sidebar without ever showing to the reader: it is stripped from the label AND from the route (so URLs and cross-page links stay clean), while the real, prefixed name is kept as the fetch `path`. Zero-pad so "10" sorts after "02". Word prefixes like "book-1-" are intentionally NOT stripped — those exist for sites that want the number visible in the title.
@@ -28,15 +41,16 @@ const stripOrder = (name) => name.replace(ORDER_PREFIX, '');
 // ---- labels: mechanical, never hand-set ------------------------------------
 // A name like "markdown-rendering" or "get_started" becomes "Markdown Rendering" / "Get Started". Pure transformation of the on-disk name, with any ordering prefix dropped first so it never reaches the label.
 function label(name) {
-  return stripOrder(name.replace(/\.md$/i, ''))
+  return stripOrder(name.replace(documentPattern, ''))
     .replace(/[-_]+/g, ' ')
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-const isReadme = (name) => name.toLowerCase() === 'readme.md';
-// GLOSSARY.md is a bottom-sheet target reached by `GLOSSARY.md#term` links, not a standalone page. Like README, it is never listed as an ordinary nav page (left in, it sorts alphabetically to the very top and leads the sidebar ahead of the Introduction). The bottom sheet fetches it by path directly, independent of nav.
-const isGlossary = (name) => name.toLowerCase() === 'glossary.md';
+// A folder's landing page, in any format the renderer reads — never required, and a folder without one is a plain heading.
+const isReadme = (name) => /^readme\./i.test(name) && isDocument(name);
+// A glossary is a bottom-sheet target reached by `GLOSSARY.md#term` links, not a standalone page. Like README, it is never listed as an ordinary nav page (left in, it sorts alphabetically to the very top and leads the sidebar ahead of the Introduction). The bottom sheet fetches it by path directly, independent of nav.
+const isGlossary = (name) => /^glossary\./i.test(name) && isDocument(name);
 const isPageFile = (name) => !isReadme(name) && !isGlossary(name);
 const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
 
@@ -76,7 +90,7 @@ function buildNav(relPaths) {
       .sort(byName)
       .forEach((f) =>
         out.push({
-          route: (cleanRel ? cleanRel + '/' : '') + stripOrder(f.replace(/\.md$/i, '')),
+          route: (cleanRel ? cleanRel + '/' : '') + stripOrder(routeName(f)),
           label: label(f),
           path: (rawRel ? rawRel + '/' : '') + f,
         })
@@ -91,7 +105,7 @@ function buildNav(relPaths) {
       if (readme)
         out.push({
           group: label(d),
-          route: childClean + '/' + stripOrder(readme.replace(/\.md$/i, '')),
+          route: childClean + '/' + stripOrder(routeName(readme)),
           path: childRaw + '/' + readme,
           items,
         });
@@ -129,14 +143,14 @@ async function fromAutoindex() {
       const childRel = rel ? rel + '/' + name : name;
       if (href.endsWith('/')) {
         await crawl(childRel);
-      } else if (/\.md$/i.test(name)) {
+      } else if (isDocument(name)) {
         paths.push(childRel);
       }
     }
   };
 
   await crawl('');
-  if (!paths.length) throw new Error('listing had no markdown');
+  if (!paths.length) throw new Error('listing had no documents');
   return buildNav(paths);
 }
 
@@ -154,17 +168,18 @@ async function fromGitHub(repo) {
 
   const prefix = base ? base.replace(/\/+$/, '') + '/' : '';
   const paths = data.tree
-    .filter((e) => e.type === 'blob' && e.path.startsWith(prefix) && /\.md$/i.test(e.path))
+    .filter((e) => e.type === 'blob' && e.path.startsWith(prefix) && isDocument(e.path))
     .map((e) => e.path.slice(prefix.length))
     .filter(Boolean);
 
-  if (!paths.length) throw new Error('no markdown under ' + (base || 'repo root'));
+  if (!paths.length) throw new Error('no documents under ' + (base || 'repo root'));
   return buildNav(paths);
 }
 
 // ---- public entry ----------------------------------------------------------
 // Resolve the nav, preferring a live directory listing, falling back to the GitHub tree. The result is NOT cached: boot() runs loadDocsNav once per full page load (in-app navigation is hash-based and never re-boots), so there is no per-session network saving worth the risk. A persisted copy only ever caused stale sidebars — a docs tree edited after a visit would keep showing the old shape until the tab was closed. Always rebuild from the real tree.
-export async function loadDocsNav(repo) {
+export async function loadDocsNav(repo, formats) {
+  useFormats(formats);
   try {
     return await fromAutoindex();
   } catch (e) {

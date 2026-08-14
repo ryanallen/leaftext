@@ -50,7 +50,13 @@ fn stamp_img_tag(
     let Some(src) = find_html_attribute(tag, "src") else {
         return tag.to_string();
     };
-    let Some(path) = local_image_protocol_path(src.value, source_dir) else {
+    // The desktop's own scheme, or the path exactly as the document wrote it — which is what a host that serves no folder of its own leaves behind. Either way the file is found the same way, so a host that can measure a picture still holds its box open.
+    let Some(path) = local_image_protocol_path(src.value, source_dir).or_else(|| {
+        is_safe_relative_image_destination(src.value)
+            .then(|| local_image_destination_path(src.value))
+            .flatten()
+            .map(|relative| normalize_path_lexically(&source_dir.join(relative)))
+    }) else {
         return tag.to_string();
     };
     let size = *sizes

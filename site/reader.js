@@ -2,11 +2,11 @@
 // ---------------------------------------------------------------------------
 // The glue: fetch ./README.md (the file sitting next to this page), turn it into HTML with our renderer, put it on the page, set the browser tab title, build the document minimap, and jump to any #anchor that is in the URL.
 //
-// This file is intentionally short. The interesting work is in markdown.js (rendering), minimap.js (the side-rail overview), and styles.css (the look).
+// This file is intentionally short. The interesting work is in the renderer, which is the app's own, fetched as a module (leaftext-core.js) — plus minimap.js (the side-rail overview) and styles.css (what draws the page around the document).
 // ---------------------------------------------------------------------------
 
-import { renderMarkdown } from './markdown.js';
-import { renderTEI, isTEI } from './tei-xml.js';
+import { createLeaftext } from './leaftext-core.js';
+import { fillPager } from './pager.js';
 import { initMinimap } from './minimap.js';
 import { buildOutline } from './outline.js';
 import { highlightCode, decorateCodeBlocks } from './codeblocks.js';
@@ -20,6 +20,14 @@ import { applySpeedReaderIfEnabled } from './speed-reader.js';
 const content = document.getElementById('content');
 const statusEl = document.getElementById('status');
 
+// The renderer, loaded before anything is drawn. Every call below is behind main() having reached it.
+let leaf = null;
+const renderDocument = (text, path) => {
+  const drawn = leaf.render(text, path);
+  if (!drawn) throw new Error('the renderer refused ' + path);
+  return drawn;
+};
+
 // The settings menu (theme + show/hide minimap) pinned to the top-right. The single-README site has no navigation sidebar, so no "Show library" toggle.
 installSettings({ hasLibrary: false });
 
@@ -28,7 +36,7 @@ installSettings({ hasLibrary: false });
 // This single-README page has no router, so it cannot render the whole glossary itself. "Open the full glossary" (and any plain link to the glossary file) goes to the docs viewer's GLOSSARY route — `docs/#/GLOSSARY` — which renders the file with full chrome; the default fetches the raw .md, which the browser shows as unrendered Markdown.
 const glossary = installGlossary({
   glossaryUrl: 'docs/GLOSSARY.md',
-  renderMarkdown,
+  render: (text, path) => renderDocument(text, path),
   onNavigate: (href) => {
     const hashAt = href.indexOf('#');
     const path = (hashAt >= 0 ? href.slice(0, hashAt) : href).split('?')[0];
@@ -87,7 +95,7 @@ async function renderMermaidDiagrams() {
   }
 }
 
-// The raw TeX lives in each .math element's text (stashed by markdown.js); we render it in place. (KaTeX's CSS is linked in index.html.)
+// The raw TeX lives in each .math element's text (stashed by the renderer); we render it in place. (KaTeX's CSS is linked in index.html.)
 async function renderMath() {
   const nodes = Array.from(content.querySelectorAll('.math'));
   if (!nodes.length) return;
@@ -127,49 +135,51 @@ function scrollToHash() {
 }
 
 /**
- * Fetch the document to display. Tries README.md first; if that fails with 404
- * tries README.xml (for TEI XML documents served next to this page).
- * Returns { text, isXML }.
+ * Fetch the document to display: the README beside this page, in whichever
+ * format the renderer reads. The list is the app's own one table, so a folder
+ * whose landing page is TEI, JSON or YAML serves it here with nothing to add.
+ * Returns { text, path }.
  */
 async function fetchDocument() {
-  let res = await fetch('./README.md', { cache: 'no-cache' });
-  if (res.ok) {
-    const text = await res.text();
-    // Also check content for XML declaration in case file has wrong extension
-    return { text, isXML: isTEI(text) };
+  for (const ext of leaf.formats) {
+    const path = './README.' + ext;
+    const res = await fetch(path, { cache: 'no-cache' });
+    if (res.ok) return { text: await res.text(), path };
   }
-  // Fallback: try README.xml
-  res = await fetch('./README.xml', { cache: 'no-cache' });
-  if (res.ok) {
-    return { text: await res.text(), isXML: true };
-  }
-  throw new Error('HTTP ' + res.status + ' — no README.md or README.xml found');
+  throw new Error('no README this reader can open beside this page');
 }
 
 async function main() {
   try {
-    const { text, isXML } = await fetchDocument();
+    leaf = await createLeaftext();
+  } catch (err) {
+    showStatus(
+      'The reader could not be loaded (' +
+        err.message +
+        '), so this page cannot be drawn. The full text is in README.md beside it.'
+    );
+    return;
+  }
+  try {
+    const { text, path } = await fetchDocument();
 
-    content.innerHTML = isXML ? renderTEI(text) : renderMarkdown(text);
+    const drawn = renderDocument(text, path);
+    content.innerHTML = drawn.html;
+    // One README, so there is nothing either side of it: the renderer's waiting strip is a promise this page cannot keep, and it comes out.
+    fillPager(content, null, null);
     decorateBlockquoteLines(content);
     // A collapsed outline (table of contents) built from the document's headings, tucked just under the title. Built before the anchor pass so its link-only entries stay out of the block-numbering scheme.
     buildOutline(content, { label: 'Outline' });
     if (statusEl) statusEl.hidden = true;
 
-    // Use the first heading as the tab title, if there is one.
-    const firstHeading = content.querySelector('h1, h2, h3');
-    if (firstHeading) {
-      const title = firstHeading.textContent.trim();
-      if (title) document.title = title.slice(0, 80);
-    }
+    // The document's own title, which the renderer works out the same way the app's tab strip does.
+    if (drawn.title) document.title = drawn.title.slice(0, 80);
 
-    // Render Mermaid diagrams and math (async; the minimap's resize observer picks up height changes), build the minimap, then jump to any #anchor.
-    if (!isXML) {
-      renderMermaidDiagrams();
-      renderMath();
-      highlightCode(content, HLJS_SRC);
-      decorateCodeBlocks(content);
-    }
+    // Render Mermaid diagrams and math (async; the minimap's resize observer picks up height changes), build the minimap, then jump to any #anchor. Run over every format: a document with no diagram and no fence in it costs each of these one query that finds nothing.
+    renderMermaidDiagrams();
+    renderMath();
+    highlightCode(content, HLJS_SRC);
+    decorateCodeBlocks(content);
     decorateAnchorLinks(content);
     // Clear any stale processed flag before anchoring the freshly rendered document (the settings boot may have run against this element while it was still empty), the same as the docs viewer does on every render.
     delete content.dataset.speedReaderProcessed;
@@ -180,8 +190,7 @@ async function main() {
     // Auto-link glossary terms after the page is displayed. The glossary is a published doc page, so it is under docs/, not beside this one.
     installAutoGlossary({
       contentEl: content,
-      renderMarkdown,
-      renderTEI,
+      render: renderDocument,
       glossaryUrl: 'docs/GLOSSARY.md',
     });
   } catch (err) {

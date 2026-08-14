@@ -51,6 +51,8 @@ Every artifact is automatically attached to the GitHub Release at [github.com/ry
 
 A third workflow runs on the same tag and **publishes nothing**: it installs the `wasm32` target and runs `just build-web`, so a break that only appears when the renderer is built for a browser is caught by the release rather than by whoever next builds it by hand. It holds read-only permissions and is deliberately not a step inside either job above — both of those can write and delete releases, and a tag can never be re-pushed, so a failure there would cost a version number instead of a message. That is the same shape as the installer check, which compiles the MSI on a branch push and inspects it without publishing.
 
+**The website publishes on a push to `main` rather than on a tag**, through a fourth workflow that is nothing to do with a release. It builds the renderer, writes it beside the pages under `assets/leaftext/`, and deploys — so a compiled module never enters the tree, and the site and the app cannot drift apart. It refuses to deploy a build that produced no working module, and GitHub Pages keeps serving the last successful deployment, so a failure means the site stops updating rather than going dark.
+
 ## Before releasing
 
 Always run the full verification suite before cutting a release to confirm formatting, type-checking, and tests all pass:

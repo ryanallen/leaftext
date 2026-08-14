@@ -33,16 +33,16 @@ if (!existsSync(module_)) {
   process.exit(1);
 }
 
-/** Every document under the folder, deepest last, labeled by something a person can pick from. */
-async function findDocuments(dir, base = dir, found = []) {
+/** Every document under the folder, deepest last, labeled by something a person can pick from. What counts as a document is the module's own format table, asked here rather than written out — a second list is how an export starts leaving out a format the app reads. */
+async function findDocuments(dir, opens, base = dir, found = []) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
     const path = join(dir, entry.name);
     if (entry.isDirectory()) {
-      await findDocuments(path, base, found);
+      await findDocuments(path, opens, base, found);
       continue;
     }
-    if (!/\.(md|markdown|mdown|xml|json|yaml|yml|eml|mht|mhtml)$/i.test(entry.name)) continue;
+    if (!opens.test(entry.name)) continue;
     const relativePath = relative(base, path).split(sep).join('/');
     found.push({ path: relativePath, depth: relativePath.split('/').length });
   }
@@ -50,7 +50,8 @@ async function findDocuments(dir, base = dir, found = []) {
 }
 
 const leaf = await instantiateCore(module_);
-const documents = (await findDocuments(source)).sort(
+const opens = new RegExp(`\\.(${leaf.formats().join('|')})$`, 'i');
+const documents = (await findDocuments(source, opens)).sort(
   (a, b) => a.depth - b.depth || a.path.localeCompare(b.path)
 );
 

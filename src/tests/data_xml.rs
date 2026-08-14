@@ -164,6 +164,63 @@ fn tei_headings_shrink_with_nesting_never_invert() {
 // Generic (non-TEI) XML
 // ---------------------------------------------------------------------------
 
+/// One page shaped the way Emptyguru's published translations are shaped, since that site draws its 375 scholarly pages through this renderer. Everything a reader of one of those pages sees at once: the English title chosen out of four languages, the collapsed front matter, sections holding chapters holding sections, verse, and an end note that becomes a numbered footnote with a way back to where it was cited.
+#[test]
+fn a_published_translation_renders_its_titles_verse_and_end_notes() {
+    let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <teiHeader><fileDesc><titleStmt>
+    <title type="mainTitle" xml:lang="en">The Chapter on Going Forth</title>
+    <title type="mainTitle" xml:lang="Sa-Ltn">Pravrajyāvastu</title>
+    <title type="longTitle" xml:lang="en">“The Chapter on Going Forth” from The Chapters on Monastic Discipline</title>
+  </titleStmt></fileDesc></teiHeader>
+  <text>
+    <front><div type="summary"><head>Summary</head><p>What this text is about.</p></div></front>
+    <body>
+      <div type="translation">
+        <div type="section">
+          <head>The Setting</head>
+          <p>The Blessed One was staying at Rājagṛha.<note place="end" xml:id="UT-1">Toh 1, folio 3.a.</note></p>
+          <div type="chapter">
+            <head>Going Forth</head>
+            <lg>
+              <l>When a tree rots,</l>
+              <l>What use has it for blossoms and boughs?</l>
+            </lg>
+          </div>
+        </div>
+      </div>
+      <div type="notes"><head>Notes</head></div>
+    </body>
+  </text>
+</TEI>"#;
+
+    let (title, html) = render_xml_body(xml);
+
+    assert_eq!(title.as_deref(), Some("The Chapter on Going Forth"));
+    // The other languages stack under the title rather than competing with it.
+    assert_contains(&html, "Pravrajyāvastu");
+    // The front matter is there and closed, so the reader lands on the translation.
+    assert_contains(&html, "<details class=\"tei-front\"");
+    assert!(
+        !html.contains("<details class=\"tei-front\" open"),
+        "a published page opens on its front matter"
+    );
+    // A chapter inside a section is drawn smaller than the section holding it — the fix Emptyguru's own copy never received.
+    assert_contains(&html, r#"id="the-setting">The Setting</h2>"#);
+    assert_contains(&html, r#"id="going-forth">Going Forth</h3>"#);
+    // Verse is a blockquote with its lines joined, not a paragraph of run-together text.
+    assert_contains(
+        &html,
+        "<blockquote class=\"tei-verse\">\n<p>When a tree rots,<br>\nWhat use has it for blossoms and boughs?</p>\n</blockquote>",
+    );
+    // An end note is cited where it was written and defined at the foot, with a way back.
+    assert_contains(&html, "<sup class=\"footnote-reference\"");
+    assert_contains(&html, "<div class=\"footnote-definition\" id=\"fn1\">");
+    assert_contains(&html, "Toh 1, folio 3.a.");
+    assert_contains(&html, "class=\"footnote-backref\"");
+}
+
 #[test]
 fn sitemap_records_render_as_a_table_of_links() {
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>

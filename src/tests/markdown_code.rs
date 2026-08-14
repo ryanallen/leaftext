@@ -22,6 +22,7 @@ fn highlighter_boundary_escapes_when_requested_language_has_no_syntax() {
             code: "<b>raw</b>".to_string(),
         },
         Path::new("README.md"),
+        &DesktopHost::default(),
     );
 
     assert_contains(&rendered, r#"data-language="imaginary-leaf-syntax""#);

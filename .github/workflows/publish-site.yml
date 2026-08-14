@@ -1,0 +1,101 @@
+name: Publish the site
+
+# leaftext.com, with the app's own renderer built and served beside its pages.
+#
+# The site used to publish itself: GitHub Pages served this branch as it stood,
+# so a file the pages fetched was a file somebody had committed. That is what
+# this replaces. The module is 2.7 MB and the stylesheet is generated, and
+# neither belongs in a tree whose whole point is small files a person can read —
+# so `.gitignore` refuses them and this workflow builds them at publish time.
+#
+# A failure here leaves the last successful deployment standing: the site stops
+# updating rather than going dark, and nothing a reader touches waits on this
+# build. `scripts/site-assets.mjs` asks the module to render before it writes
+# anything, so a build that produced nothing worth serving stops the run before
+# the upload rather than replacing the pages with ones that cannot draw.
+#
+# Emptyguru rides on the result. It has no Rust and no app source, so its pages
+# fetch these same files across origins — which is why the paths are a table in
+# one script rather than written out here.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Only what Pages needs. This workflow publishes the site; it never touches a
+# release or a tag.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One publish at a time, and a newer commit wins: a queued deployment of an
+# older tree would land after the newer one and put the site back.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    name: Build the renderer and deploy the pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/git
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-wasm-
+
+      # The recipe, not the script under it, so this cannot drift from what a
+      # person runs on their own machine.
+      - name: Install just
+        run: cargo install just --locked
+
+      - name: Build the browser modules
+        run: just build-web
+
+      # The one table of what the site serves beside its pages. It refuses to
+      # write a module that does not render, which is what stops a broken build
+      # reaching the deploy step below.
+      - name: Write the renderer beside the pages
+        run: node scripts/site-assets.mjs --write
+
+      # Everything the build left behind. The pages fetch the copies written
+      # above; the raw build output is 11 MB of wasm nobody asks for.
+      - name: Drop the build output
+        run: rm -rf web/dist target
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

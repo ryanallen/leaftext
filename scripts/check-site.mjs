@@ -5,11 +5,12 @@
 //
 // Each entry page's own folder is the base, read off the <script> tag it loads, so the page saying where the file is and the file being there cannot drift. Only literal paths can be checked; a path built at runtime is skipped.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeLink } from '../site/link-tooltip.js';
 import { discoveryFiles } from './seo-gen.mjs';
+import { ASSET_DIR, MODULE_PATH, PUBLISHED } from './site-assets.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -149,6 +150,75 @@ if (pager.detail !== '#/reading/002-rains') problems.push(`a pager button's card
 const jump = describeLink(anchor({ href: '#a-heading' }));
 if (jump.kind !== 'In-page jump') problems.push(`an ordinary fragment link became '${jump.kind}'`);
 
+// ---- the renderer the publish builds ---------------------------------------
+//
+// The module and the stylesheet are the two files on this site that are not in it: the publish workflow builds them and serves them beside the pages, so nothing generated ever enters the tree. That leaves two ways for the pages to end up fetching nothing — a page naming a path the build does not write, and the build being taken out of the publish — and neither shows up until the site is live. Both are read here instead. The workflow itself ships unproven, the way every workflow in this repo does; this is the half that can be proved with nothing running.
+
+const published = new Set(PUBLISHED);
+
+/** Every file a browser is served from this repo, so a path written in any of them is checked wherever it was written. */
+function siteSources() {
+  const found = new Set(PAGES);
+  for (const folder of ['site', 'docs']) {
+    for (const name of readdirSync(join(root, folder))) {
+      if (/\.(js|css|html)$/i.test(name)) found.add(`${folder}/${name}`);
+    }
+  }
+  return [...found];
+}
+
+let named = 0;
+for (const file of siteSources()) {
+  for (const match of readFileSync(join(root, file), 'utf8').matchAll(new RegExp(`${ASSET_DIR}/[\\w.-]+`, 'g'))) {
+    named += 1;
+    if (!published.has(match[0])) {
+      problems.push(`${file} fetches '${match[0]}' — the publish writes ${PUBLISHED.join(', ')} and nothing else`);
+    }
+  }
+}
+
+// The module is fetched by a path the page builds at runtime out of the folder it names in its head, so the literal scan above cannot see it. Read that folder and try the file against it, which is the same arithmetic `site/leaftext-core.js` does.
+for (const page of PAGES) {
+  const html = readFileSync(join(root, page), 'utf8');
+  const meta = /<meta[^>]*\bname="leaftext-renderer"[^>]*\bcontent="([^"]+)"/.exec(html);
+  if (!meta) {
+    problems.push(`${page} says nowhere the renderer is, so it loads no reader at all`);
+    continue;
+  }
+  const folder = meta[1].replace(/^\/+|\/+$/g, '');
+  // Another site naming this one across origins is answered by that site's own check, not this one.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(folder)) continue;
+  named += 1;
+  const wanted = `${folder}/${MODULE_PATH.split('/').pop()}`;
+  if (!published.has(wanted)) {
+    problems.push(`${page} loads its renderer from '${meta[1]}' — the publish writes ${MODULE_PATH}`);
+  }
+}
+
+// Nothing the publish writes may be a file somebody committed: a 2.7 MB compiled module and a generated stylesheet are a worse tree to work in than the drift they end.
+for (const path of PUBLISHED) {
+  if (!gitIgnores(path)) problems.push(`.gitignore does not refuse ${path}, so a built file can enter the tree`);
+}
+
+const publish = join(root, '.github', 'workflows', 'publish-site.yml');
+if (!existsSync(publish)) {
+  problems.push('nothing publishes this site, so the pages are served as they stand and the renderer is never built');
+} else {
+  const workflow = readFileSync(publish, 'utf8');
+  for (const step of ['just build-web', 'scripts/site-assets.mjs --write']) {
+    if (!workflow.includes(step)) problems.push(`the publish workflow does not run \`${step}\`, so it deploys pages with no renderer beside them`);
+  }
+}
+
+/** Whether `.gitignore` refuses a path, by the folder rules it actually writes rather than by matching the whole name. */
+function gitIgnores(path) {
+  const rules = readFileSync(join(root, '.gitignore'), 'utf8')
+    .split('\n')
+    .map((line) => line.trim().replace(/^\/+|\/+$/g, ''))
+    .filter((line) => line && !line.startsWith('#'));
+  return rules.some((rule) => path === rule || path.startsWith(`${rule}/`));
+}
+
 if (problems.length) {
   console.error('the published pages ask for files that are not there:');
   for (const problem of problems) console.error(`  ${problem}`);
@@ -157,5 +227,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, and a pager button's card names its page`
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore`
 );

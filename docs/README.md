@@ -97,10 +97,10 @@ These pages are plain Markdown, but the folder is also a deployable site:
 
 | File | Role |
 | --- | --- |
-| `index.html` | The docs shell at leaftext.com/docs — loads the shared site styles and applies the saved theme before first paint |
+| `index.html` | The docs shell at leaftext.com/docs — names where the renderer and its stylesheet are served from, loads the shared site styles and applies the saved theme before first paint |
 | `docs.js` | Fills the sidebar navigation and renders the page chosen by the URL route. After paint it links every term [GLOSSARY.md](GLOSSARY.md) defines, so a term opens in a sheet over the page the same way it does in the app — not on the glossary itself, where each heading would link to the entry it already is |
-| `docs.css` | Docs-only chrome: the sidebar and the page pager |
-| `render-docs-check.mjs` | Headless smoke test — renders every `.md` file here with the site renderer and fails loudly on errors or empty output |
+| `docs.css` | Docs-only chrome: the sidebar |
+| `render-docs-check.mjs` | Headless smoke test — renders every `.md` file here through the app's own renderer, the module the published site draws with, and fails loudly on errors or empty output. It needs `just build-web` first, which is why it is not part of `just verify` |
 
 ### Page order and file names
 
@@ -109,6 +109,7 @@ The sidebar is built from the real file tree, not from a hand-written list. A le
 Before shipping doc changes, run the check from the repo root:
 
 ```sh
+just build-web
 node docs/render-docs-check.mjs
 ```
 

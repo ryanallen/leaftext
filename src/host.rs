@@ -104,6 +104,13 @@ pub trait LeafHost {
         None
     }
 
+    /// Whether this host serves the open document's own folder over a protocol of its own, so a picture beside the document has to be addressed through it.
+    ///
+    /// The desktop does: its page is loaded from `leaf-asset://`, where a relative path resolves against nothing, so every local image is rewritten to `leaf-image://` and served from disk. A browser does not and must not — the document is fetched over http from beside its own pictures, so the path as written already resolves, and rewriting it to a scheme the browser cannot fetch is a broken picture on every page that has one. That is why the default here is no.
+    fn serves_local_images(&self) -> bool {
+        false
+    }
+
     /// The reader's own choices, which the page cannot keep for itself — the app shell's opaque origin has no storage of its own.
     fn settings(&self) -> Settings {
         Settings::default()
@@ -203,6 +210,11 @@ impl LeafHost for DesktopHost<'_> {
     /// The desktop compiles the highlighter in, so there is nothing to fetch. Only a browser core has a second module.
     fn highlighter_url(&self) -> Option<String> {
         None
+    }
+
+    /// The desktop serves the document's folder itself, over `leaf-image://`.
+    fn serves_local_images(&self) -> bool {
+        true
     }
 
     fn settings(&self) -> Settings {

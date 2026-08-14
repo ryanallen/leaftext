@@ -350,6 +350,34 @@ fn only_a_host_that_can_find_the_neighbors_draws_the_previous_next_strip() {
     }
 }
 
+/// A picture beside the document reaches the reader by whichever route its host can serve. The desktop's page is loaded from a scheme where a relative path resolves against nothing, so every local image is rewritten to `leaf-image://` and served off disk; a browser fetches the document over http from beside its own pictures, so the path as written is already the path that works, and rewriting it there is a broken picture on every page that has one.
+#[test]
+fn a_browser_leaves_a_pictures_path_the_way_the_document_wrote_it() {
+    let source = "![The window](imgs/leaftext.png)\n\n<img src=\"imgs/raw.png\" alt=\"Raw\">\n";
+    let path = Path::new("docs/README.md");
+
+    let desktop = opened_document_from_source(source, path);
+    assert!(
+        desktop.html.contains("leaf-image"),
+        "the desktop stopped serving a document's own folder:\n{}",
+        desktop.html
+    );
+
+    let browser = opened_document_from_source_with_host(source, path, &BareHost);
+    assert!(
+        !browser.html.contains("leaf-image"),
+        "a browser was handed a scheme it cannot fetch:\n{}",
+        browser.html
+    );
+    for written in ["src=\"imgs/leaftext.png\"", "src=\"imgs/raw.png\""] {
+        assert!(
+            browser.html.contains(written),
+            "a browser lost {written} out of the document:\n{}",
+            browser.html
+        );
+    }
+}
+
 /// The page a browser is served is the desktop's page with the host's own asset addresses in it. Nothing else about it may differ, or the two are two pages.
 #[test]
 fn the_page_takes_its_asset_addresses_from_the_host() {

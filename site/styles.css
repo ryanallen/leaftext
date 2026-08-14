@@ -1,8 +1,12 @@
 /* styles.css
    ==========================================================================
-   The design system for the README viewer.
+   What draws the page around the document.
 
-   EVERYTHING you would normally want to tweak lives in the :root block right below as named "tokens" (CSS variables). Change a value there and the whole page updates. The rules after that just wire those tokens into the page, so you rarely need to touch them.
+   **The document itself is not this file's.** It is painted by the app's own stylesheet, linked ahead of this one in each page's head and built when the site publishes — so a page here looks like a document in Leaftext rather than like a second design of one. Headings, text, lists, code, tables, alerts, footnotes, TEI and the diagrams all come from there. What is left here is everything around it: the canvas, the reading column, the outline, the code-block chrome, the gutter line numbers, the highlighter's token colors, the minimap rail, the settings menu, the glossary sheet and the link tooltip — every one of them drawn by this site's own scripts, which is why they are still styled here.
+
+   This file loads after the app's, so where both have a rule for the same thing this one wins. That is deliberate: the markup under these classes is the site's.
+
+   EVERYTHING you would normally want to tweak lives in the :root block right below as named "tokens" (CSS variables). Change a value there and the page around the document updates.
 
    The default values are GitHub's dark theme: a near-black canvas, near-white text, and blue links.
    ========================================================================== */
@@ -11,7 +15,6 @@
   /* ---- Colors -------------------------------------------------------- */
   --bg: #0d1117; /* page background (the canvas) */
   --bg-elevated: #161b22; /* code blocks, table header rows */
-  --bg-inline-code: rgba(110, 118, 129, 0.4); /* `inline code` background */
 
   --text: #e6edf3; /* main body text, near white */
   --text-muted: #9198a1; /* captions, quotes, footnotes */
@@ -24,8 +27,6 @@
   --border: #30363d; /* lines: rules, table borders, quote bar */
   --border-strong: #3d444d; /* slightly stronger border when needed */
 
-  --mark-bg: #bb800926; /* highlighted ==text== style, subtle amber */
-  --checkbox: #6e7681; /* task-list checkbox color */
 
   /* ---- Syntax highlighting ------------------------------------------ */
   /* Colors for highlighted code blocks (highlight.js, loaded lazily by reader.js). These mirror GitHub's dark "prettylights" palette, the same scheme the desktop app uses, so fenced code reads the same in both. */
@@ -56,22 +57,6 @@
   --type-spacing: calc(var(--type-base) * 1.5);
   --font-size: var(--type-base);
   --line-height: 1.6;
-  --type-display-size: calc(var(--type-base) * 3.2);
-  --type-h1-size: calc(var(--type-base) * 2.2);
-  --type-h2-size: calc(var(--type-base) * 2);
-  --type-h3-size: calc(var(--type-base) * 1.8);
-  --type-h4-size: calc(var(--type-base) * 1.6);
-  --type-h5-size: calc(var(--type-base) * 1.4);
-  --type-h6-size: calc(var(--type-base) * 1.2);
-  --type-display-line: 1.2;
-  --type-heading-line: 1.25;
-  --type-display-weight: 900;
-  --type-h1-weight: 850;
-  --type-h2-weight: 800;
-  --type-h3-weight: 750;
-  --type-h4-weight: 700;
-  --type-h5-weight: 650;
-  --type-h6-weight: 600;
 
   /* ---- Layout ------------------------------------------------------- */
   --content-width: 1012px; /* max width of the reading column */
@@ -104,7 +89,6 @@
 
   --bg: #ffffff;
   --bg-elevated: #f6f8fa;
-  --bg-inline-code: rgba(129, 139, 152, 0.2);
 
   --text: #1f2328;
   --text-muted: #59636e;
@@ -117,8 +101,6 @@
   --border: #d1d9e0;
   --border-strong: #afb8c1;
 
-  --mark-bg: #fff8c5;
-  --checkbox: #6e7781;
 
   --syntax-comment: #59636e;
   --syntax-keyword: #cf222e;
@@ -143,7 +125,6 @@
 
   --bg: #282a36;
   --bg-elevated: #343746;
-  --bg-inline-code: #1e2029;
 
   --text: #f8f8f2;
   --text-muted: #d6d6d0;
@@ -156,8 +137,6 @@
   --border: #6272a4;
   --border-strong: #bdc6f4;
 
-  --mark-bg: rgba(241, 250, 140, 0.18);
-  --checkbox: #bd93f9;
 
   --syntax-comment: #d6d6d0;
   --syntax-keyword: #ff79c6;
@@ -228,83 +207,6 @@ body {
   scroll-margin-top: var(--scroll-offset);
 }
 
-/* ---- Headings ------------------------------------------------------- */
-
-.markdown-body h1,
-.markdown-body h2,
-.markdown-body h3,
-.markdown-body h4,
-.markdown-body h5,
-.markdown-body h6 {
-  font-family: var(--font-heading);
-  letter-spacing: 0;
-  margin: var(--type-spacing) 0;
-}
-.markdown-body h1 {
-  font-size: var(--type-h1-size);
-  font-weight: var(--type-h1-weight);
-  line-height: var(--type-heading-line);
-  padding-bottom: 0.3em;
-  border-bottom: 1px solid var(--border);
-}
-/* The document's first H1 is the big display title, like the desktop app. */
-.markdown-body h1:first-of-type {
-  font-size: var(--type-display-size);
-  font-weight: var(--type-display-weight);
-  line-height: var(--type-display-line);
-}
-.markdown-body h2 {
-  font-size: var(--type-h2-size);
-  font-weight: var(--type-h2-weight);
-  line-height: var(--type-heading-line);
-  padding-bottom: 0.3em;
-  border-bottom: 1px solid var(--border);
-}
-.markdown-body h3 {
-  font-size: var(--type-h3-size);
-  font-weight: var(--type-h3-weight);
-  line-height: var(--type-heading-line);
-}
-.markdown-body h4 {
-  font-size: var(--type-h4-size);
-  font-weight: var(--type-h4-weight);
-  line-height: var(--type-heading-line);
-}
-.markdown-body h5 {
-  font-size: var(--type-h5-size);
-  font-weight: var(--type-h5-weight);
-  line-height: var(--type-heading-line);
-}
-.markdown-body h6 {
-  font-size: var(--type-h6-size);
-  font-weight: var(--type-h6-weight);
-  line-height: var(--type-heading-line);
-}
-
-/* ---- Text blocks ---------------------------------------------------- */
-
-.markdown-body p,
-.markdown-body ul,
-.markdown-body ol,
-.markdown-body blockquote,
-.markdown-body table,
-.markdown-body pre {
-  margin: 0 0 16px;
-}
-
-.markdown-body a {
-  color: var(--link);
-  text-decoration: none;
-}
-.markdown-body a:hover {
-  color: var(--link-hover);
-  text-decoration: underline;
-}
-
-.markdown-body strong {
-  font-weight: 600;
-}
-
 /* ---- Outline (table of contents) ------------------------------------ */
 /* A collapsed <details> built from the document's headings, sitting just under the title (see site/outline.js). Closed by default so it never crowds the top; open it to jump to any heading. */
 .markdown-body .document-outline {
@@ -371,66 +273,6 @@ body {
   color: var(--link-hover);
 }
 
-/* ---- TEI document titles --------------------------------------------- */
-/* Alternate-language title lines under a TEI document's main title (the Sanskrit main title, then the English and Sanskrit long titles). Muted and tight so the stack reads as one title block; pulled up toward the h1 it belongs to. */
-.markdown-body .tei-doc-subtitles {
-  margin: calc(-0.5 * var(--type-spacing)) 0 var(--type-spacing);
-  color: var(--text-muted);
-}
-.markdown-body .tei-doc-subtitles .tei-doc-subtitle {
-  margin: 0 0 0.3em;
-}
-.markdown-body .tei-doc-subtitles .tei-doc-subtitle:last-child {
-  margin-bottom: 0;
-}
-
-/* ---- TEI front matter ------------------------------------------------ */
-/* Summary, acknowledgments, and introduction from `text > front`, rendered as a collapsed <details> (see site/tei-xml.js) so the reader lands on the translation body. Mirrors the outline toggle above. */
-.markdown-body .tei-front {
-  margin: var(--type-spacing) 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg-elevated);
-}
-.markdown-body .tei-front-summary {
-  cursor: pointer;
-  padding: 0.5em 0.9em;
-  font-family: var(--font-heading);
-  font-weight: 600;
-  color: var(--text);
-  list-style: none;
-  user-select: none;
-}
-.markdown-body .tei-front-summary::-webkit-details-marker {
-  display: none;
-}
-.markdown-body .tei-front-summary::before {
-  content: '';
-  display: inline-block;
-  width: 0;
-  height: 0;
-  margin-right: 0.55em;
-  border-left: 0.4em solid currentColor;
-  border-top: 0.32em solid transparent;
-  border-bottom: 0.32em solid transparent;
-  vertical-align: middle;
-  transition: transform 0.15s ease;
-}
-.markdown-body .tei-front[open] > .tei-front-summary::before {
-  transform: rotate(90deg);
-}
-.markdown-body .tei-front-summary:hover {
-  color: var(--link-hover);
-}
-.markdown-body .tei-front-body {
-  padding: 0 1.4em 0.7em;
-  border-top: 1px solid var(--border);
-}
-/* Keep the first inner heading tight against the divider. */
-.markdown-body .tei-front-body > :first-child {
-  margin-top: 0.7em;
-}
-
 :root[data-speed-reader='true'] .markdown-body {
   color: var(--speed-reader-dim);
   font-weight: 400;
@@ -485,167 +327,6 @@ body {
   text-decoration: underline dotted;
   text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
   text-underline-offset: 0.18em;
-}
-
-.markdown-body hr {
-  height: 1px;
-  margin: 24px 0;
-  border: 0;
-  background: var(--border);
-}
-
-.markdown-body blockquote {
-  padding: 0 1em;
-  color: var(--text-muted);
-  border-left: 0.25em solid var(--border);
-}
-.markdown-body blockquote:not(.markdown-alert) p {
-  padding-left: 1.25em;
-  text-indent: -1.25em;
-}
-.markdown-body blockquote:not(.markdown-alert) p.blockquote-lines {
-  padding-left: 0;
-  text-indent: 0;
-}
-.markdown-body blockquote:not(.markdown-alert) .blockquote-line {
-  display: block;
-  padding-left: 1.25em;
-  text-indent: -1.25em;
-}
-.markdown-body blockquote > :first-child {
-  margin-top: 0;
-}
-.markdown-body blockquote > :last-child {
-  margin-bottom: 0;
-}
-
-/* ---- GitHub-style alerts ------------------------------------------- */
-/* A blockquote tagged `markdown-alert markdown-alert-TYPE` by the renderer; the colored title comes from ::before, matching the desktop app. */
-
-.markdown-body .markdown-alert {
-  padding: 0.6em 1em;
-  border-left-width: 0.25em;
-  color: var(--text);
-}
-.markdown-body .markdown-alert::before {
-  display: block;
-  font-weight: 700;
-  margin-bottom: 0.3em;
-}
-.markdown-body .markdown-alert-note {
-  border-left-color: #4493f8;
-}
-.markdown-body .markdown-alert-note::before {
-  content: 'Note';
-  color: #4493f8;
-}
-.markdown-body .markdown-alert-tip {
-  border-left-color: #3fb950;
-}
-.markdown-body .markdown-alert-tip::before {
-  content: 'Tip';
-  color: #3fb950;
-}
-.markdown-body .markdown-alert-important {
-  border-left-color: #a371f7;
-}
-.markdown-body .markdown-alert-important::before {
-  content: 'Important';
-  color: #a371f7;
-}
-.markdown-body .markdown-alert-warning {
-  border-left-color: #d29922;
-}
-.markdown-body .markdown-alert-warning::before {
-  content: 'Warning';
-  color: #d29922;
-}
-.markdown-body .markdown-alert-caution {
-  border-left-color: #f85149;
-}
-.markdown-body .markdown-alert-caution::before {
-  content: 'Caution';
-  color: #f85149;
-}
-
-/* ---- GitHub references, mentions, emoji, math ---------------------- */
-
-.markdown-body .github-ref {
-  color: var(--link);
-  text-decoration: none;
-}
-.markdown-body .github-ref:hover {
-  text-decoration: underline;
-}
-.markdown-body .github-mention {
-  color: var(--link);
-  font-weight: 600;
-}
-.markdown-body .emoji {
-  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
-  font-style: normal;
-}
-.markdown-body .math-block {
-  margin: 0 0 16px;
-  overflow-x: auto;
-  text-align: center;
-}
-
-/* ---- Lists ---------------------------------------------------------- */
-
-.markdown-body ul,
-.markdown-body ol {
-  padding-left: 2em;
-}
-.markdown-body li + li {
-  margin-top: 0.25em;
-}
-.markdown-body li > ul,
-.markdown-body li > ol {
-  margin: 0.25em 0 0;
-}
-/* Ordered lists follow the classic outline sequence by nesting depth — I, II, III then A, B, C then 1, 2, 3 then a, b, c then i, ii, iii — instead of restarting at decimal on every level. Depth is counted by ordered-list ancestors, so an <ol> nested inside a <ul> still reads as its own level. */
-.markdown-body ol {
-  list-style-type: upper-roman;
-}
-.markdown-body ol ol {
-  list-style-type: upper-alpha;
-}
-.markdown-body ol ol ol {
-  list-style-type: decimal;
-}
-.markdown-body ol ol ol ol {
-  list-style-type: lower-alpha;
-}
-.markdown-body ol ol ol ol ol {
-  list-style-type: lower-roman;
-}
-.markdown-body input[type='checkbox'] {
-  margin-right: 0.4em;
-  accent-color: var(--checkbox);
-}
-
-/* ---- Code ----------------------------------------------------------- */
-
-.markdown-body code {
-  font-family: var(--font-mono);
-  font-size: 0.875em;
-  padding: 0.2em 0.4em;
-  border-radius: var(--radius);
-  background: var(--bg-inline-code);
-}
-.markdown-body pre {
-  position: relative;
-  padding: 16px;
-  overflow: auto;
-  border-radius: var(--radius);
-  background: var(--bg-elevated);
-  line-height: 1.45;
-}
-.markdown-body pre code {
-  padding: 0;
-  background: transparent;
-  font-size: 0.875em;
 }
 
 /* ---- Code block chrome (language label + copy button) --------------- */
@@ -856,113 +537,6 @@ body {
   background-color: var(--syntax-deleted-bg);
 }
 
-/* ---- Tables --------------------------------------------------------- */
-
-.markdown-body table {
-  display: block;
-  width: max-content;
-  max-width: 100%;
-  overflow: auto;
-  border-collapse: collapse;
-}
-.markdown-body th,
-.markdown-body td {
-  padding: 6px 13px;
-  border: 1px solid var(--border-strong);
-}
-.markdown-body th {
-  font-weight: 600;
-  background: var(--bg-elevated);
-}
-.markdown-body tr:nth-child(2n) td {
-  background: rgba(110, 118, 129, 0.08);
-}
-
-/* ---- Frontmatter table --------------------------------------------- */
-/* A leading `--- … ---` block renders as a compact metadata table: small, no table chrome, distinct from a normal GFM table. */
-
-.markdown-body .frontmatter {
-  margin: 0 0 16px;
-  overflow-x: auto;
-}
-.markdown-body .frontmatter table {
-  display: table;
-  width: auto;
-  border-collapse: collapse;
-  font-size: 12px;
-  line-height: 1.5;
-}
-.markdown-body .frontmatter th,
-.markdown-body .frontmatter td {
-  padding: 1px 12px 1px 0;
-  border: 0;
-  background: none;
-  text-align: left;
-  vertical-align: top;
-}
-.markdown-body .frontmatter tr:nth-child(2n) td {
-  background: none;
-}
-.markdown-body .frontmatter th {
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--text-muted);
-}
-
-/* ---- Mermaid diagrams ---------------------------------------------- */
-/* Before the runtime processes it the fence shows its source; once rendered it holds a centered SVG with no code-block chrome. */
-
-.markdown-body pre.mermaid {
-  background: transparent;
-  padding: 0;
-  overflow: visible;
-  text-align: center;
-  line-height: 1.45;
-}
-.markdown-body pre.mermaid svg {
-  display: inline-block;
-  max-width: 100%;
-  height: auto;
-}
-
-/* ---- Media ---------------------------------------------------------- */
-
-.markdown-body img,
-.markdown-body svg {
-  max-width: 100%;
-  height: auto;
-}
-
-.markdown-body sub,
-.markdown-body sup {
-  font-size: 0.75em;
-}
-
-/* ---- Footnotes ------------------------------------------------------ */
-
-.markdown-body .footnotes {
-  font-size: 0.85em;
-  color: var(--text-muted);
-}
-/* Footnotes are numbered notes, not an outline: keep them Arabic (1, 2, 3) to match the inline superscript references and APA/MLA/Chicago style, overriding the upper-roman default used for ordinary ordered lists. */
-.markdown-body .footnotes > ol {
-  list-style-type: decimal;
-}
-.markdown-body .footnotes hr {
-  margin-top: 32px;
-}
-.markdown-body .footnote-ref a {
-  text-decoration: none;
-}
-.markdown-body .footnote-back {
-  margin-left: 0.3em;
-}
-.markdown-body .footnote-back-icon {
-  width: 1em;
-  height: 1em;
-  vertical-align: -0.15em;
-}
-
 /* ---- Minimap -------------------------------------------------------- */
 /* A fixed rail on the right holding a shrunk thumbnail of the whole document (built in minimap.js) and a rectangle marking the visible part. Clicking or dragging it scrolls the window. It stands in for the hidden scrollbar. */
 
@@ -1137,13 +711,6 @@ body {
 @media (max-width: 900px) {
   :root {
     --minimap-preview-width: 46px;
-    --type-display-size: calc(var(--type-base) * 2.4);
-    --type-h1-size: calc(var(--type-base) * 1.9);
-    --type-h2-size: calc(var(--type-base) * 1.7);
-    --type-h3-size: calc(var(--type-base) * 1.55);
-    --type-h4-size: calc(var(--type-base) * 1.4);
-    --type-h5-size: calc(var(--type-base) * 1.3);
-    --type-h6-size: calc(var(--type-base) * 1.15);
   }
 }
 
@@ -1166,13 +733,6 @@ body {
 @media (max-width: 600px) {
   :root {
     --content-pad: 16px;
-    --type-display-size: calc(var(--type-base) * 2);
-    --type-h1-size: calc(var(--type-base) * 1.6);
-    --type-h2-size: calc(var(--type-base) * 1.45);
-    --type-h3-size: calc(var(--type-base) * 1.35);
-    --type-h4-size: calc(var(--type-base) * 1.25);
-    --type-h5-size: calc(var(--type-base) * 1.2);
-    --type-h6-size: calc(var(--type-base) * 1.1);
   }
 }
 

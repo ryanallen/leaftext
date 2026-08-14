@@ -6,6 +6,7 @@ pub(crate) fn github_markdown_extras(
     events: Vec<Event<'static>>,
     repository: Option<&RepositoryContext>,
     source_path: &Path,
+    host: &dyn LeafHost,
 ) -> Vec<Event<'static>> {
     let mut transformed = Vec::new();
     let mut link_depth = 0usize;
@@ -24,6 +25,7 @@ pub(crate) fn github_markdown_extras(
                     transformed.push(Event::Html(cowstr(&render_code_block(
                         capture,
                         source_path,
+                        host,
                     ))));
                     code_block = None;
                 }
@@ -94,6 +96,7 @@ pub(crate) fn github_markdown_extras(
         transformed.push(Event::Html(cowstr(&render_code_block(
             capture,
             source_path,
+            host,
         ))));
     }
 

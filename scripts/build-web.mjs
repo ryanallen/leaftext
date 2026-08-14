@@ -101,6 +101,50 @@ for (const name of ['core', 'embed']) {
 }
 if (!rendered.highlight.html.includes('<span class="syn-')) problems.push('the second module did not color code, so there is no reason to fetch it');
 
+// ---- what a published site draws with ---------------------------------------
+//
+// Both published sites draw their document bodies through the core, so three things they depend on are asked here rather than found live: that the core opens every format its own table names, that a document comes back carrying exactly one Previous/Next strip and that it is the waiting one the page fills, and that a fence is left plain with its language still on it for the page's own highlighter to color.
+//
+// It belongs here rather than in `scripts/check-shell.mjs`: that check boots the front end offline against a stand-in module, and `just verify` must never ask for a wasm32 build. This script is the one place a real module is already loaded and questioned.
+
+const FORMAT_FIXTURES = {
+  md: '# Fixture\n\nA paragraph.\n',
+  markdown: '# Fixture\n',
+  mdown: '# Fixture\n',
+  xml: '<?xml version="1.0" encoding="UTF-8"?>\n<TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader><fileDesc><titleStmt><title>Fixture</title></titleStmt></fileDesc></teiHeader><text><body><p>A paragraph.</p></body></text></TEI>\n',
+  json: '{"title":"Fixture","note":"A paragraph."}\n',
+  yaml: 'title: Fixture\nnote: A paragraph.\n',
+  yml: 'title: Fixture\nnote: A paragraph.\n',
+  eml: 'From: someone@example.com\nSubject: Fixture\n\nA paragraph.\n',
+  mht: 'From: <Saved by Leaftext>\nContent-Type: text/html\n\n<html><body><p>A paragraph.</p></body></html>\n',
+  mhtml: 'From: <Saved by Leaftext>\nContent-Type: text/html\n\n<html><body><p>A paragraph.</p></body></html>\n',
+};
+
+const coreModule = await instantiateCore(core.file);
+for (const extension of coreModule.formats()) {
+  const fixture_ = FORMAT_FIXTURES[extension];
+  if (fixture_ === undefined) {
+    problems.push(`the core reads .${extension} and nothing here renders one — add a fixture beside the others`);
+    continue;
+  }
+  const drawn = coreModule.render(fixture_, `fixture.${extension}`);
+  if (!drawn?.html?.trim()) {
+    problems.push(`a .${extension} document came back with nothing drawn`);
+    continue;
+  }
+  const strips = drawn.html.match(/<nav class="docs-pager/g) || [];
+  if (strips.length !== 1) {
+    problems.push(`a .${extension} document carries ${strips.length} Previous/Next strips, and a page can only fill one`);
+  } else if (!drawn.html.includes('docs-pager-loading')) {
+    problems.push(`a .${extension} document's Previous/Next strip is not the waiting one, so the page has nothing to fill`);
+  }
+}
+// The fence the page colors itself: the language stays on the code element and no token span is in it.
+const fencedPlain = await render(core.file, '```rust\nfn main() {}\n```\n');
+if (!fencedPlain.html.includes('class="language-rust"')) {
+  problems.push('the core dropped the language off a fence, so the page cannot color it');
+}
+
 // Same syntax dumps, different regex engine — the desktop's is a C library with no browser build. The markup both have to produce is pinned in one file, and the desktop's half of this is a test beside the fixtures.
 const fence = JSON.parse(readFileSync(join(root, 'web', 'fence.json'), 'utf8'));
 const fenced = await render(highlight.file, fence.markdown);

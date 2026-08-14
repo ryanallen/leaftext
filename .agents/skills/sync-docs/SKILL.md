@@ -9,7 +9,7 @@ user-invocable: true
 
 Keep the user-facing documentation in `docs/` truthful to the app. This is a **docs-only** task — Markdown, the pictures the pages ask for, and the generated discovery files; nothing in `src/`. **Never run git**: releasing is [`/git-release`](../git-release/SKILL.md)'s.
 
-The docs are served at **leaftext.com/docs** by the static SPA in `docs/` (`index.html` + `docs.js` + `docs.css`). Each page is a plain `.md` file; `docs.js` renders it with the same renderer the root site uses (`site/markdown.js`) and routes by `#/<path>` (a route is the file path under `docs/` without `.md`).
+The docs are served at **leaftext.com/docs** by the static SPA in `docs/` (`index.html` + `docs.js` + `docs.css`). Each page is a plain `.md` file; `docs.js` draws it with the app's own renderer, fetched as a module (`site/leaftext-core.js`) and routes by `#/<path>` (a route is the file path under `docs/` without `.md`).
 
 ## When to run, and on what
 
@@ -87,7 +87,7 @@ A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu i
 
 **One page is generated and must not be hand-edited:** `docs/02-development/05-design-system.md`. Its every count is read out of `design/`, so an edit here is lost on the next run and `just check-design-docs` fails first. To change what it says, change `design/` (see `/design-tokens`) and run `just bundle-design-docs`.
 
-**Renderer constraints — the docs are rendered by `site/markdown.js`, which supports a GFM subset. Use only:**
+**Renderer constraints — the docs are drawn by the app's own renderer, which supports a GFM subset. Use only:**
 
 - Headings, paragraphs, **bold**/_italic_, lists (nested), tables, blockquotes, `inline code`, fenced code blocks, links, images, task lists, footnotes, emoji shortcodes, math (`$…$`, `$$…$$`), Mermaid fences.
 - GitHub alerts via blockquote markers: `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`.
@@ -218,6 +218,7 @@ Page list, titles, summaries and dates are all derived from the current files, a
   Or smoke-test rendering without a browser:
 
   ```bash
+  just build-web                    # the renderer it draws through
   node docs/render-docs-check.mjs   # renders every docs/*.md and fails on a throw
   ```
 
@@ -229,7 +230,7 @@ Leave the changes uncommitted. Tell the user what pages changed, and what the li
 
 - `docs/docs.js` — the shell, the routing and the link interception. Its nav comes from `site/docs-nav.js`, which reads the folder listing, so there is no page list in it.
 - `docs/index.html`, `docs/docs.css` — the docs shell and chrome.
-- `site/markdown.js` — the renderer that defines what Markdown the docs may use.
+- `site/leaftext-core.js` — loads the app's own renderer, which defines what Markdown the docs may use.
 - `README.md` — the **Documentation** section with relative `docs/<route>.md` links.
 - [Building](../../../docs/02-development/02-building.md#documentation-screenshots) — the published account of how a picture gets taken.
 - `/git-release` — the separate skill that commits and pushes (site-only changes don't bump the version).
