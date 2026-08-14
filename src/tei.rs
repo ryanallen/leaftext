@@ -296,8 +296,8 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
     let mut ctx = TeiCtx::new();
     let root = doc.root_element();
 
-    // Collect every `titleStmt > title` in document order. 84000 headers carry a matrix of titles (type × language), so we pick by type/lang below rather than taking whichever the file lists first.
-    let titles: Vec<(String, String, String)> = root
+    // Collect every `titleStmt > title` in document order. 84000 headers carry a matrix of titles (type × language), so we pick by type/lang below rather than taking whichever the file lists first. The node travels with the text so the drawn title can be anchored back to the element its words came from.
+    let titles: Vec<(String, String, String, roxmltree::Node<'a, 'a>)> = root
         .descendants()
         .filter(|n| {
             n.is_element()
@@ -324,14 +324,14 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
                 .map(|a| a.value())
                 .unwrap_or("")
                 .to_ascii_lowercase();
-            Some((kind, lang, text))
+            Some((kind, lang, text, n))
         })
         .collect();
     let pick = |kind: &str, lang: &str| {
         titles
             .iter()
-            .find(|(k, l, _)| k == kind && l == lang)
-            .map(|(_, _, text)| text.clone())
+            .find(|(k, l, _, _)| k == kind && l == lang)
+            .map(|(_, _, text, node)| (text.clone(), *node))
     };
 
     // The document title is the English main title. Fall back to the English long title, then to the first title in any language except Tibetan (which also covers plain untyped `<title>` elements).
@@ -340,22 +340,24 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
         .or_else(|| {
             titles
                 .iter()
-                .find(|(_, l, _)| l != "bo" && l != "bo-ltn")
-                .map(|(_, _, text)| text.clone())
+                .find(|(_, l, _, _)| l != "bo" && l != "bo-ltn")
+                .map(|(_, _, text, node)| (text.clone(), *node))
         });
 
     // Alternate-language title lines rendered under the main title, in this order: Sanskrit main title, English long title, Sanskrit long title. Tibetan titles are never shown. Sanskrit is set in italics; duplicates of the main title or of an earlier line are dropped.
-    let mut subtitles: Vec<(String, bool)> = Vec::new();
-    for (text, italic) in [
+    let mut subtitles: Vec<(String, bool, roxmltree::Node<'a, 'a>)> = Vec::new();
+    for (picked, italic) in [
         (pick("maintitle", "sa-ltn"), true),
         (pick("longtitle", "en"), false),
         (pick("longtitle", "sa-ltn"), true),
     ] {
-        let Some(text) = text else { continue };
-        if Some(&text) == title.as_ref() || subtitles.iter().any(|(t, _)| t == &text) {
+        let Some((text, node)) = picked else { continue };
+        if title.as_ref().map(|(t, _)| t) == Some(&text)
+            || subtitles.iter().any(|(t, _, _)| t == &text)
+        {
             continue;
         }
-        subtitles.push((text, italic));
+        subtitles.push((text, italic, node));
     }
 
     // Find <text><body>
@@ -369,28 +371,32 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
 
     let Some(body) = body else {
         ctx.push("<p><strong>No TEI body element found.</strong></p>");
-        return (title, ctx);
+        return (title.map(|(t, _)| t), ctx);
     };
 
-    // Title heading, then the alternate-language title lines beneath it.
-    if let Some(ref t) = title {
+    // Title heading, then the alternate-language title lines beneath it. Both are anchored to the `<title>` element they are drawn from, so a press opens them like every other block.
+    if let Some((ref t, node)) = title {
         let id = ctx.unique_slug(t);
+        let attrs = ctx.block_attrs("heading", node);
         ctx.push(&format!(
-            "<h1 id=\"{}\">{}</h1>\n",
+            "<h1{attrs} id=\"{}\">{}</h1>\n",
             encode_double_quoted_attribute(&id),
             encode_text(t)
         ));
     }
     if !subtitles.is_empty() {
         ctx.push("<div class=\"tei-doc-subtitles\">\n");
-        for (text, italic) in &subtitles {
+        for (text, italic, node) in &subtitles {
             let inner = encode_text(text);
             let inner = if *italic {
                 format!("<em>{inner}</em>")
             } else {
                 inner.into_owned()
             };
-            ctx.push(&format!("<p class=\"tei-doc-subtitle\">{inner}</p>\n"));
+            let attrs = ctx.block_attrs("paragraph", *node);
+            ctx.push(&format!(
+                "<p class=\"tei-doc-subtitle\"{attrs}>{inner}</p>\n"
+            ));
         }
         ctx.push("</div>\n");
     }
@@ -429,5 +435,5 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
         ctx.out.push_str(&fn_section);
     }
 
-    (title, ctx)
+    (title.map(|(t, _)| t), ctx)
 }

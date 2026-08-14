@@ -62,14 +62,10 @@ fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
 
     // Under the h1: Sanskrit main title, English long title, Sanskrit long title, in that order, with Sanskrit in italics.
     assert_contains(&html, "<div class=\"tei-doc-subtitles\">");
-    assert_contains(
-        &html,
-        "<p class=\"tei-doc-subtitle\"><em>Pravrajyāvastu</em></p>",
-    );
-    assert_contains(
-        &html,
-        "<p class=\"tei-doc-subtitle\"><em>Vinayavastu Pravrajyāvastu</em></p>",
-    );
+    // Three subtitle lines, each anchored to its own `<title>` element, so the class and the words are asserted apart from the range that sits between them.
+    assert_eq!(html.matches("<p class=\"tei-doc-subtitle\"").count(), 3);
+    assert_contains(&html, "<em>Pravrajyāvastu</em></p>");
+    assert_contains(&html, "<em>Vinayavastu Pravrajyāvastu</em></p>");
     let main_sa = html
         .find("<em>Pravrajyāvastu</em>")
         .expect("Sanskrit main title rendered");
@@ -746,8 +742,14 @@ fn tei_block_map_anchors_paragraphs_and_headings_to_xml_ranges() {
         </body></text></TEI>"#;
 
     let spans = xml_block_source_map(xml);
-    // One heading (the section head) and two paragraphs, all editable.
-    assert!(spans.iter().any(|s| s.kind == "heading" && s.editable));
+    // Two headings — the document title and the section head — and two paragraphs, all editable.
+    assert_eq!(
+        spans
+            .iter()
+            .filter(|s| s.kind == "heading" && s.editable)
+            .count(),
+        2
+    );
     assert_eq!(spans.iter().filter(|s| s.kind == "paragraph").count(), 2);
     // Ranges point at the real XML source for those nodes.
     for span in &spans {
@@ -759,11 +761,56 @@ fn tei_block_map_anchors_paragraphs_and_headings_to_xml_ranges() {
             );
         } else {
             assert!(
-                slice.starts_with("<head>") && slice.ends_with("</head>"),
+                (slice.starts_with("<head>") && slice.ends_with("</head>"))
+                    || (slice.starts_with("<title") && slice.ends_with("</title>")),
                 "{slice}"
             );
         }
     }
+}
+
+#[test]
+fn a_tei_title_and_its_alternate_language_lines_are_anchored_to_their_own_title_elements() {
+    // The title is the first line a reader meets and the one most likely to carry a typo, so it opens on a press like every other block rather than being drawn with no range at all.
+    let xml = r#"<TEI><teiHeader><fileDesc><titleStmt>
+        <title type="mainTitle" xml:lang="en">The Work</title>
+        <title type="mainTitle" xml:lang="sa-ltn">Karya</title>
+        <title type="longTitle" xml:lang="en">The Long Work</title>
+        </titleStmt></fileDesc></teiHeader>
+        <text><body><div><p>First paragraph.</p></div></body></text></TEI>"#;
+
+    let spans = xml_block_source_map(xml);
+    let heading = spans
+        .iter()
+        .find(|s| s.kind == "heading")
+        .expect("the title is drawn as an anchored heading");
+    assert!(heading.editable);
+    assert_eq!(
+        &xml[heading.start..heading.end],
+        r#"<title type="mainTitle" xml:lang="en">The Work</title>"#
+    );
+
+    // The Sanskrit and long-title lines under it are drawn from their own elements, so they carry their own bytes rather than the main title's.
+    let slices: Vec<&str> = spans
+        .iter()
+        .filter(|s| s.kind == "paragraph")
+        .map(|s| &xml[s.start..s.end])
+        .collect();
+    assert!(
+        slices.contains(&r#"<title type="mainTitle" xml:lang="sa-ltn">Karya</title>"#),
+        "{slices:?}"
+    );
+    assert!(
+        slices.contains(&r#"<title type="longTitle" xml:lang="en">The Long Work</title>"#),
+        "{slices:?}"
+    );
+
+    // A header naming no title draws no heading at all — the file name titles the tab, never the page, and anchoring must not invent one.
+    let untitled = r#"<TEI><teiHeader><fileDesc><titleStmt></titleStmt></fileDesc></teiHeader>
+        <text><body><div><p>First paragraph.</p></div></body></text></TEI>"#;
+    assert!(xml_block_source_map(untitled)
+        .iter()
+        .all(|s| s.kind != "heading"));
 }
 
 #[test]
@@ -795,9 +842,17 @@ fn a_comment_between_two_blocks_is_drawn_and_anchored_to_its_own_bytes() {
             &source[comment.start..comment.end],
             "<!-- checked against the manuscript -->"
         );
-        // Everything around it still draws: the comment ends the run it stands in rather than swallowing it.
-        assert_eq!(blocks.len(), 3, "{blocks:?}");
-        assert_eq!(comment.id, 1, "the comment stands between the two blocks");
+        // Everything around it still draws: the comment ends the run it stands in rather than swallowing it. The scholarly document carries one block more — its title, anchored to the `<title>` element the words came from.
+        assert_eq!(
+            blocks.len(),
+            if source == tei { 4 } else { 3 },
+            "{blocks:?}"
+        );
+        assert_eq!(
+            comment.id + 1,
+            blocks.len() - 1,
+            "the comment stands between the two blocks"
+        );
     }
 }
 
