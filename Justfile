@@ -121,6 +121,16 @@ check-ascii-art:
 check-site:
     node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-site.mjs
 
+# Boot the code that draws the two published sites against a stand-in page, fetch
+# and renderer module — nothing else in the suite ever runs it, so a script that
+# throws as it loads reaches a reader as a blank page. Each boot is read for its
+# finished page: both entry readers turn a mid-boot fault into a status line, so
+# "it did not throw" passes on a page the reader itself gave up on. The warning
+# silenced is Node's own, the same one check-site silences: these are `.js`
+# modules and no package.json here declares them to be.
+check-site-boot:
+    node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-site-boot.mjs
+
 # Fail on a scratch path in the OS temp folder built from a fixed name. Two agents can
 # work this checkout at once, and one file with two writers is how the gate started
 # failing on a clean tree. A row per path that is fixed on purpose, with the reason.
@@ -282,7 +292,7 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

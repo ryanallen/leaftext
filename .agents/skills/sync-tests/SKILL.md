@@ -39,6 +39,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | `src/store/**.rs` | `src/store/tests.rs` |
 | `installer/**.rs` — the Windows EXE installer | `installer/src/tests.rs`, run by `just check-installer`. It installs nothing: the plan is data, and the one test that writes drives a scratch folder and a scratch registry key and removes both |
 | `src/assets/shell/*.js` | `scripts/check-shell.mjs` |
+| `site/*.js`, `docs/docs.js` — what draws the published pages | `scripts/check-site-boot.mjs`, which boots both entry readers and everything they import against a stand-in page, fetch and renderer module. It reads the finished page, never the absence of a throw: both readers catch a mid-boot fault into a status line |
 | `src/assets/reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
 | a new class, component, token or icon | no test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list. Run them and add the row |
 | a new `scripts/*.mjs` | its own `--check` mode, and a line in `just verify` |
