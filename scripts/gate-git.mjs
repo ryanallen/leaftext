@@ -3,7 +3,7 @@
 //
 // One license file per session, because two agents can work this checkout at once and a license keyed on the machine is a license the other agent can spend.
 //
-// Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, checkout, switch, restore, stash, worktree, a deleted or moved branch, anything with --force, and the release scripts that do those. Reading is always fine.
+// Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, checkout, switch, restore, stash, worktree, pull, apply, rm, mv, a deleted or moved branch, anything with --force, and the release scripts that do those. Reading is always fine.
 //
 //   node scripts/gate-git.mjs           the hook payload on stdin
 //   node scripts/gate-git.mjs --check   self-test (`just verify`)
@@ -13,14 +13,17 @@ import { keep, licensePath, sessionOf } from './hook-payload.mjs';
 
 const LICENSE_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 
-// The last five discard the working tree rather than history, and are refused in every form: `git checkout -- <path>` is the ordinary undo, and reading a file out of a commit is `git show <ref>:<path>`, which stays allowed.
+// The middle five discard the working tree rather than history, and are refused in every form: `git checkout -- <path>` is the ordinary undo, and reading a file out of a commit is `git show <ref>:<path>`, which stays allowed. The last four are quieter writes with no reading form at all — `pull` carries a merge, `apply` rewrites the tree, `rm` deletes and `mv` renames.
 const WRITE_SUBCOMMANDS = new Set(['commit', 'push', 'reset', 'rebase', 'revert',
   'cherry-pick', 'merge', 'am', 'clean', 'filter-branch',
-  'checkout', 'switch', 'restore', 'stash', 'worktree']);
+  'checkout', 'switch', 'restore', 'stash', 'worktree',
+  'pull', 'apply', 'rm', 'mv']);
 // `git tag` reads when it is listing, writes otherwise.
 const TAG_READ_FLAGS = ['-l', '--list', '-n', '--contains', '--no-contains',
   '--points-at', '--merged', '--no-merged'];
 const BRANCH_WRITE_FLAGS = ['-d', '-D', '--delete', '-m', '-M', '--move', '-c', '-C', '--copy'];
+// git's own options come before the subcommand and these five carry their value as the next word, so the first word without a dash is the path in `git -C . commit`, not the command.
+const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace']);
 // These commit, tag and push on their own.
 const RELEASE_COMMANDS = [/\bjust\s+release\b/i, /prepare-release/i];
 
@@ -41,6 +44,15 @@ function tokens(rest) {
   return rest.split(/\s+/).filter(Boolean);
 }
 
+// Where the subcommand sits, having walked past git's own options and whatever they carry. It stops at the first plain word, so a `-c` after that is `git branch`'s copy flag rather than git's config option.
+function subcommandAt(args) {
+  let at = 0;
+  while (at < args.length && args[at].startsWith('-')) {
+    at += GIT_VALUE_OPTIONS.has(args[at]) ? 2 : 1;
+  }
+  return at;
+}
+
 // The git write this command performs, named, or '' if it performs none.
 export function gitWrite(command) {
   if (!command) return '';
@@ -51,8 +63,9 @@ export function gitWrite(command) {
     const match = segment.match(/(?:^|[\s&|;(])["']?(?:[^\s"']*[\\/])?git(?:\.exe)?["']?\s+(.+)$/i);
     if (!match) continue;
     const args = tokens(match[1]);
-    const flags = args.filter((a) => a.startsWith('-'));
-    const sub = args.find((a) => !a.startsWith('-'))?.toLowerCase() ?? '';
+    const at = subcommandAt(args);
+    const sub = args[at]?.toLowerCase() ?? '';
+    const flags = args.slice(at).filter((a) => a.startsWith('-'));
     if (flags.some((f) => f === '--force' || f.startsWith('--force-with-lease') || f === '--force-if-includes')) {
       return `git ${sub} --force`.trim();
     }
@@ -114,6 +127,10 @@ function selfTest() {
     'git push --force',
     'git push --force-with-lease origin main',
     'git branch -D old',
+    'git branch -c old new',
+    'git -C . commit -m x',
+    'git -c user.email=e commit -m x',
+    'git --git-dir .git --work-tree . commit -m x',
     'cd /c/repo && git commit -am "x"',
     'git status; git push',
     'git checkout -- src/lib.rs',
@@ -123,6 +140,10 @@ function selfTest() {
     'git stash',
     'git stash list',
     'git worktree add ../wt main',
+    'git pull',
+    'git apply fix.patch',
+    'git rm -f src/lib.rs',
+    'git mv src/lib.rs src/root.rs',
     'just release 0.1.441',
     'node --experimental-strip-types scripts/prepare-release.mts 0.1.441',
     '"C:\\Program Files\\Git\\bin\\git.exe" push',
@@ -134,6 +155,8 @@ function selfTest() {
     'git tag --list',
     'git tag -l "v0.1.4*"',
     'git branch --show-current',
+    'git -C . status',
+    'git -C . branch --show-current',
     'git show HEAD:src/lib.rs',
     'just verify',
     'cargo test',
