@@ -55,8 +55,13 @@ jobs:
 
       # The recipe, not the script under it, so this cannot drift from what a
       # person runs on their own machine.
+      #
+      # Guarded because `~/.cargo/bin` is one of the cached paths above: the
+      # first run to install `just` baked the binary into the cache, and every
+      # run since is handed it back into the one place `cargo install` refuses
+      # to overwrite. Unguarded, that refusal stops the job three steps in.
       - name: Install just
-        run: cargo install just --locked
+        run: command -v just || cargo install just --locked
 
       - name: Build the browser modules
         run: just build-web

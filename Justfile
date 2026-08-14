@@ -228,6 +228,12 @@ check-driver:
 check-release-package:
     node scripts/check-release-package.mjs
 
+# Fail if a workflow caches a directory `cargo install` writes to and installs
+# into it unguarded — the cache hands the binary back and the install refuses it,
+# which took the site off the air for a release.
+check-workflow-installs:
+    node scripts/check-workflow-installs.mjs
+
 # Fail if the MCP wrapper and src/pipe.rs disagree about what can be asked, or
 # about where to ask it. Offline: the wrapper itself needs the app running, this
 # reads two files.
@@ -292,7 +298,7 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
