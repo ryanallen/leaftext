@@ -488,7 +488,7 @@ TEI documents have conventions worth following, so they get their own renderer.
 | `<term>`, `<title>`, `<ref>` | Inline text (tags stripped) |
 | `<milestone>`, `<lb>`, `<caesura>` | Omitted |
 
-**A comment standing between two blocks is drawn, in either renderer**, as a shut row saying `Comment` that you click to read — it is a note somebody left beside the document rather than words of it, so it takes one line until you ask for it, and the file's own `<!--` marks stay out of the page. Clicking the words inside it opens the comment's source to edit. A comment written inside an element, among its words, is part of that element's text and is not drawn separately.
+**A comment standing between two blocks is drawn, in either renderer**, as a shut row saying `Comment` that you click to read — it is a note somebody left beside the document rather than words of it, so it takes one line until you ask for it, and the file's own `<!--` marks stay out of the page. Clicking the words inside it puts a caret in them, so the note is corrected where it is read and the marks stay out of the page — see [editing](07-editing.md#inline-editing-the-reading-view). A comment written inside an element, among its words, is part of that element's text and is not drawn separately.
 
 Both XML renderers walk the `roxmltree` DOM and produce the same HTML structure the Markdown pipeline outputs, so themes, footnotes, minimap, pager, and [inline editing](07-editing.md#inline-editing-the-reading-view) all work unchanged for XML documents.
 

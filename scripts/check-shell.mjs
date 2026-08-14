@@ -1905,6 +1905,357 @@ if (booted) {
     }
   });
 
+  // The message's gate, asked of an element: the words of an XML document are typed on where they are drawn, and the one thing that may never happen is a tag being rewritten by somebody fixing a word. So a block opens only where what is drawn is exactly the bytes between its own tags, and what it commits lands between those tags and nowhere near them.
+  check('an XML element opens for typing only where the drawn words are its own bytes', () => {
+    const { xmlBlockTypeableInPlace, blockDomToSource, commitBlockEdit } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source =
+      '<TEI>\n<p>The translation starts here.</p>\n<p>A <hi>word</hi> here.</p>\n' +
+      '<p>Tea &amp; toast.</p>\n<p>Tea &#38; toast.</p>\n<head>Split\n  over lines.</head>\n' +
+      '<lb/>\n<!-- a note -->\n<p>café 😀</p>\n</TEI>\n';
+    // The buffer counts bytes, so every range is measured the way the host measures it.
+    const bytesTo = (index) => Buffer.byteLength(source.slice(0, index), 'utf8');
+    const block = (fragment, drawn) => {
+      const at = source.indexOf(fragment);
+      if (at < 0) throw new Error(`the fixture has no ${fragment}`);
+      return {
+        isConnected: true,
+        tagName: 'P',
+        dataset: {
+          blockKind: 'paragraph',
+          srcStart: String(bytesTo(at)),
+          srcEnd: String(bytesTo(at + fragment.length)),
+        },
+        childNodes: [],
+        textContent: drawn,
+        previousElementSibling: null,
+        nextElementSibling: null,
+      };
+    };
+    const keeps = (fragment, drawn, why) => {
+      if (xmlBlockTypeableInPlace(block(fragment, drawn))) throw new Error(why);
+    };
+    const posted = [];
+    const wasIpc = booted.ipc;
+    const wasFormat = read('currentDocumentFormat');
+    const wasSource = read('currentDocumentSource');
+    try {
+      read("currentDocumentFormat = 'xml';");
+      booted.window.leafBlocksResynced({ source });
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+
+      // A paragraph of plain text: the span is the words alone, with the tags outside it on both sides.
+      const plain = block('<p>The translation starts here.</p>', 'The translation starts here.');
+      const span = xmlBlockTypeableInPlace(plain);
+      if (!span) throw new Error('a paragraph drawn as the file spells it did not open for typing');
+      if (source.slice(span.start, span.end) !== 'The translation starts here.') {
+        throw new Error(`the span opened was ${JSON.stringify(source.slice(span.start, span.end))}`);
+      }
+
+      // What the page writes for it: the words as a tree holds them, never Markdown.
+      const written = blockDomToSource({ ...plain, textContent: 'A word & another <one>.' });
+      if (written !== 'A word &amp; another &lt;one>.') {
+        throw new Error(`the tree serializer wrote ${JSON.stringify(written)}`);
+      }
+
+      // And the commit: only the span between the tags, so both tags survive it.
+      plain.__innerSpan = span;
+      posted.length = 0;
+      commitBlockEdit(plain, 'The translation starts there.');
+      const edits = posted.filter((message) => message.command === 'editBlock');
+      if (edits.length !== 1) throw new Error(`typing on an element sent ${edits.length} edits`);
+      if (edits[0].start !== span.start || edits[0].end !== span.end) {
+        throw new Error(`the commit widened the span to [${edits[0].start},${edits[0].end})`);
+      }
+      const after = source.slice(0, edits[0].start) + edits[0].text + source.slice(edits[0].end);
+      if (!after.includes('<p>The translation starts there.</p>')) {
+        throw new Error(`the tags did not survive the commit: ${JSON.stringify(after.slice(0, 60))}`);
+      }
+
+      // An entity the file spells as a tree does round-trips, so it opens; one spelled another way does not, and keeps the editor it has.
+      if (!xmlBlockTypeableInPlace(block('<p>Tea &amp; toast.</p>', 'Tea & toast.'))) {
+        throw new Error('an escaped ampersand that round-trips did not open for typing');
+      }
+      keeps('<p>Tea &#38; toast.</p>', 'Tea & toast.', 'an entity the file spells another way opened for typing');
+
+      // Everything the renderer changed on the way to the page keeps the raw editor.
+      keeps('<p>A <hi>word</hi> here.</p>', 'A word here.', 'inline markup the renderer flattened opened for typing');
+      keeps('<head>Split\n  over lines.</head>', 'Split over lines.', 'text the renderer collapsed opened for typing');
+      keeps('<!-- a note -->', ' a note ', 'a comment opened for typing');
+      keeps('<lb/>', '', 'an element with no inside opened for typing');
+
+      // The span is in bytes, not characters: a paragraph after multi-byte text still cuts where its words are.
+      const wide = xmlBlockTypeableInPlace(block('<p>café 😀</p>', 'café 😀'));
+      if (!wide) throw new Error('a paragraph of multi-byte text did not open for typing');
+      const bytes = Buffer.from(source, 'utf8');
+      if (bytes.subarray(wide.start, wide.end).toString('utf8') !== 'café 😀') {
+        throw new Error('the span was cut on characters rather than on bytes');
+      }
+
+      // A block with no usable range is nobody's to type on.
+      if (xmlBlockTypeableInPlace({ dataset: {}, textContent: '' })) {
+        throw new Error('a block with no range opened for typing');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.window.leafBlocksResynced({ source: wasSource });
+      read(`currentDocumentFormat = ${JSON.stringify(wasFormat)};`);
+    }
+  });
+
+  // The gate decides, but the wiring is what a reader meets: on one tree page the words that can be typed on have to come out as one kind of block and the markup that cannot as the other, side by side. And the keys that make structure are taken away there — an element is one block, so Enter would have to write its own tags.
+  check('an XML page wires the words it can type on apart from the markup it cannot', () => {
+    const { bindEditableBlocks, handleWysiwygKeydown } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source = '<div><p>A line.</p><p>A <hi>word</hi> here.</p></div>';
+    const at = (fragment) => {
+      const start = source.indexOf(fragment);
+      return {
+        blockKind: 'paragraph',
+        srcStart: String(start),
+        srcEnd: String(start + fragment.length),
+      };
+    };
+    const plain = fakeElement('plain');
+    plain.dataset = at('<p>A line.</p>');
+    plain.textContent = 'A line.';
+    const mixed = fakeElement('mixed');
+    mixed.dataset = at('<p>A <hi>word</hi> here.</p>');
+    mixed.textContent = 'A word here.';
+    const body = { querySelectorAll: () => [plain, mixed] };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const posted = [];
+    const wasIpc = booted.ipc;
+    const wasCaret = booted.caretTextOffsetIn;
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      bindEditableBlocks('xml');
+      if (!plain.listeners.has('pointerup')) throw new Error('a paragraph of plain words was not opened for typing');
+      if (!plain.__innerSpan) throw new Error('the paragraph carries no span for its commit to splice');
+      if (source.slice(plain.__innerSpan.start, plain.__innerSpan.end) !== 'A line.') {
+        throw new Error('the span wired onto the paragraph is not its own words');
+      }
+      if (!mixed.listeners.has('pointerdown') || mixed.listeners.has('pointerup')) {
+        throw new Error('a paragraph holding markup lost the raw editor it has today');
+      }
+      if (mixed.__innerSpan) throw new Error('a block that cannot be typed on carries a span anyway');
+      if (!plain.classList.contains('leaf-editable') || !mixed.classList.contains('leaf-editable')) {
+        throw new Error('a block was left out of the editable pass');
+      }
+
+      // Enter is the page's own from here rather than the browser's, so the new line can be an element; a letter is left alone. With no caret in the block neither writes anything.
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+      booted.caretTextOffsetIn = () => null;
+      const press = (key, shift) => {
+        let stopped = false;
+        handleWysiwygKeydown(plain, {
+          key,
+          shiftKey: !!shift,
+          preventDefault: () => {
+            stopped = true;
+          },
+        });
+        return stopped;
+      };
+      if (!press('Enter')) throw new Error('Enter was left to the browser to answer');
+      if (!press('Enter', true)) throw new Error('Enter with shift was left to the browser to answer');
+      if (press('a')) throw new Error('typing a letter was refused');
+      if (posted.length) throw new Error(`a key with no caret in the block wrote ${JSON.stringify(posted)}`);
+    } finally {
+      booted.ipc = wasIpc;
+      booted.caretTextOffsetIn = wasCaret;
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // Enter was refused in a tree document at first, and a refused Enter reads as a bug rather than as a rule. A newline written inside the element would draw as a space the moment the page redrew, so the new line is another element of the same name — the words on both sides of the caret survive it, the tags on both halves are the element's own, and the caret lands in the second.
+  check('Enter in an element of a tree document carries on in another of the same element', () => {
+    const { handleWysiwygKeydown } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const element = '<p rend="lead">One line here.</p>';
+    const source = `<div>\n${element}\n</div>`;
+    const start = source.indexOf(element);
+    const posted = [];
+    const asked = [];
+    const wasIpc = booted.ipc;
+    const wasCaret = booted.caretTextOffsetIn;
+    const wasInsert = booted.openInsertBlockAfter;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const paragraph = fakeElement('paragraph');
+    paragraph.dataset = {
+      blockKind: 'paragraph',
+      srcStart: String(start),
+      srcEnd: String(start + element.length),
+    };
+    paragraph.textContent = 'One line here.';
+    paragraph.__innerSpan = { start: start + '<p rend="lead">'.length, end: start + element.length - '</p>'.length };
+    paragraph.__editBaseline = 'One line here.';
+    const enter = () => {
+      posted.length = 0;
+      handleWysiwygKeydown(paragraph, { key: 'Enter', shiftKey: false, preventDefault() {} });
+      return posted.filter((message) => message.command === 'editBlock');
+    };
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+      booted.openInsertBlockAfter = (el, spec) => asked.push(spec);
+
+      // In the middle of the words: two elements, each with the attribute the one before it carried, and no word lost between them.
+      booted.caretTextOffsetIn = () => 'One line'.length;
+      const split = enter();
+      if (split.length !== 1) throw new Error(`Enter sent ${split.length} edits`);
+      const after = source.slice(0, split[0].start) + split[0].text + source.slice(split[0].end);
+      if (after !== '<div>\n<p rend="lead">One line</p>\n<p rend="lead">here.</p>\n</div>') {
+        throw new Error(`Enter left the file as ${JSON.stringify(after)}`);
+      }
+      const landed = vm.runInContext('pendingCaret', booted);
+      if (!landed || landed.srcStart !== start + '<p rend="lead">One line</p>\n'.length || landed.textOffset !== 0) {
+        throw new Error(`the caret landed at ${JSON.stringify(landed)}`);
+      }
+
+      // At the end of the words there is nothing to carry down, so a blank line opens inside another of the same element rather than an empty one being written.
+      vm.runInContext('pendingCaret = null;', booted);
+      booted.caretTextOffsetIn = () => 'One line here.'.length;
+      if (enter().length) throw new Error('an element with nothing in it was written into the file');
+      if (asked.length !== 1 || asked[0] !== 'element:p') {
+        throw new Error(`the blank line opened as ${JSON.stringify(asked)}`);
+      }
+
+      // At the very start it would leave an empty element above the words, so it does nothing at all.
+      booted.caretTextOffsetIn = () => 0;
+      if (enter().length || asked.length !== 1) throw new Error('Enter at the start of the words wrote something');
+
+      // A heading is not a paragraph: a second one in the same part is never drawn, so splitting it would take the words off the page.
+      booted.caretTextOffsetIn = () => 'One line'.length;
+      paragraph.dataset.blockKind = 'heading';
+      if (enter().length) throw new Error('a heading was split into one the page would not draw');
+    } finally {
+      booted.ipc = wasIpc;
+      booted.caretTextOffsetIn = wasCaret;
+      booted.openInsertBlockAfter = wasInsert;
+      vm.runInContext('pendingCaret = null;', booted);
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // A note left in an XML file is the one block that is only ever prose, and it answered a press with its own angle-bracket marks in code type while every sentence beside it took a caret. It types on its words now: the span is the inside of the marks, narrowed by the ends the fold trims, and nothing is escaped on the way in or out — a comment holds no escapes, so an ampersand typed into one is an ampersand in the file.
+  check('a comment types on its own words and its marks survive the commit', () => {
+    const { xmlCommentTypeableInPlace, blockDomToSource, commitBlockEdit, bindEditableBlocks } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const comment = '<!-- A note & a mark -->';
+    const source = `<div>\n${comment}\n</div>`;
+    const start = source.indexOf(comment);
+    const fold = fakeElement('fold');
+    fold.dataset = { blockKind: 'comment', srcStart: String(start), srcEnd: String(start + comment.length) };
+    const words = fakeElement('words');
+    words.classList.add('xml-comment-body');
+    words.textContent = 'A note & a mark';
+    fold.querySelector = (selector) => (selector === '.xml-comment-body' ? words : null);
+    const posted = [];
+    const wasIpc = booted.ipc;
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+
+      // The span is the words alone: the marks and the spaces the fold trimmed are outside it.
+      const span = xmlCommentTypeableInPlace(fold, words.textContent);
+      if (!span) throw new Error('a note drawn as the file spells it did not open for typing');
+      if (source.slice(span.start, span.end) !== 'A note & a mark') {
+        throw new Error(`the span opened was ${JSON.stringify(source.slice(span.start, span.end))}`);
+      }
+
+      // Words the fold did not draw are nobody's to splice over.
+      if (xmlCommentTypeableInPlace(fold, 'Something else')) {
+        throw new Error('a note drawn as something other than its own bytes opened for typing');
+      }
+
+      // Nothing escapes on the way out, which is the whole difference from an element.
+      if (blockDomToSource(words) !== 'A note & a mark') {
+        throw new Error(`a note was written as ${JSON.stringify(blockDomToSource(words))}`);
+      }
+
+      // The commit lands between the marks, and both marks are still there afterwards.
+      words.__innerSpan = span;
+      words.__editBaseline = 'A note & a mark';
+      posted.length = 0;
+      commitBlockEdit(words, 'A note & two marks');
+      const edits = posted.filter((message) => message.command === 'editBlock');
+      if (edits.length !== 1) throw new Error(`typing in a note sent ${edits.length} edits`);
+      const after = source.slice(0, edits[0].start) + edits[0].text + source.slice(edits[0].end);
+      if (after !== '<div>\n<!-- A note & two marks -->\n</div>') {
+        throw new Error(`the marks did not survive: ${JSON.stringify(after)}`);
+      }
+
+      // And the wiring: the words are what opens, while the fold keeps its own row for opening and shutting.
+      inApp.querySelector = (selector) => (selector === '.document-body' ? { querySelectorAll: () => [fold] } : wasQuery(selector));
+      bindEditableBlocks('xml');
+      if (!words.listeners.has('pointerup')) throw new Error('the note’s words were not opened for typing');
+      if (fold.listeners.has('pointerdown')) throw new Error('the fold was wired as an editor over its own row');
+    } finally {
+      booted.ipc = wasIpc;
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // Two dashes in a row end a comment early, and a comment has no escape to hide them behind — so the one thing somebody can type into a note that stops the file opening is refused rather than written, and the words go back to what the file has.
+  check('a note refuses two dashes in a row rather than writing a file that will not open', () => {
+    const { commitBlockEdit } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source = '<div>\n<!-- A note -->\n</div>';
+    const said = [];
+    const posted = [];
+    const wasToast = booted.leafToast;
+    const wasIpc = booted.ipc;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const words = fakeElement('words');
+    words.classList.add('xml-comment-body');
+    words.textContent = 'A note';
+    words.__editBaseline = 'A note';
+    words.__innerSpan = { start: source.indexOf('A note'), end: source.indexOf('A note') + 'A note'.length };
+    const edits = () => posted.filter((message) => message.command === 'editBlock');
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      booted.leafToast = (message) => said.push(message);
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+
+      words.textContent = 'A -- note';
+      commitBlockEdit(words, 'A -- note');
+      if (edits().length) throw new Error('a note holding two dashes was written into the file');
+      if (said.length !== 1) throw new Error(`the refusal said ${JSON.stringify(said)}`);
+      if (words.textContent !== 'A note') throw new Error('the words were left as the file cannot hold them');
+
+      // A dash at the end runs into the closing mark, and is refused the same way.
+      words.textContent = 'A note-';
+      commitBlockEdit(words, 'A note-');
+      if (edits().length) throw new Error('a note ending in a dash was written into the file');
+
+      // The same words without it are written as any other note is.
+      words.textContent = 'A better note';
+      commitBlockEdit(words, 'A better note');
+      if (edits().length !== 1) throw new Error('a note with nothing wrong with it was refused');
+    } finally {
+      booted.leafToast = wasToast;
+      booted.ipc = wasIpc;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
   // The grab bar is offered where a block's range is the whole block. In a message that is a body paragraph and nothing else: a header value's range is the value inside a labeled line, so dragging one would leave its label behind — the same reason JSON and YAML have no gutter at all.
   check('only a message’s body paragraphs are offered the grab bar', () => {
     const { blockGutterTargetAllowed } = booted;
@@ -2139,6 +2490,43 @@ if (booted) {
         throw new Error(`the comment opened on ${JSON.stringify(comment.textContent)}`);
       }
     } finally {
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // Half a tree document types on its words and half of it opens the file's markup, and nothing on the page says which — the same fault half a message had, and it takes the same answer. A note's code block is not in it: opening its source is what a code block is, so being told would be noise.
+  check('a block of a tree document that cannot be typed on says why when it is pressed', () => {
+    const { wireSourceEditable } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const said = [];
+    const wasToast = booted.leafToast;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const source = '<div><p>A <hi>word</hi> here.</p></div>';
+    const pressOn = (element) => {
+      wireSourceEditable(element);
+      const press = (element.listeners.get('pointerdown') || [])[0];
+      if (!press) throw new Error('a block answers a press with nothing');
+      press({ target: null, preventDefault() {} });
+    };
+    try {
+      booted.leafToast = (message) => said.push(message);
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      const paragraph = fakeElement('div');
+      paragraph.dataset = { srcStart: '5', srcEnd: '33', blockKind: 'paragraph' };
+      pressOn(paragraph);
+      if (said.length !== 1) throw new Error(`a block that opened markup said ${JSON.stringify(said)}`);
+      if (paragraph.dataset.editingSource !== 'true') throw new Error('saying why took the editor away');
+
+      // A note's own source blocks stay quiet.
+      read(`currentDocumentFormat = 'markdown'; currentDocumentSource = ${JSON.stringify('```\ncode\n```\n')};`);
+      const fence = fakeElement('div');
+      fence.dataset = { srcStart: '0', srcEnd: '12', blockKind: 'code_block' };
+      pressOn(fence);
+      if (said.length !== 1) throw new Error(`a note's code block was told why: ${JSON.stringify(said)}`);
+    } finally {
+      booted.leafToast = wasToast;
       read(
         `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
       );

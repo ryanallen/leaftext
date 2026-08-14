@@ -312,9 +312,27 @@ function setEditBaseline(el) {
   el.__editCells = tableCellTexts(el);
 }
 
-// A block back to the bytes of its own source range. Two kinds of document edit in place now and they write back differently: a note's block is Markdown, a message's is the words themselves.
+// A block back to the bytes of its own source range, which each kind of document spells differently: a note's block is Markdown, a message's is the words themselves, an element's is its words with what a tree escapes put back, and a comment's is the words exactly, since nothing escapes inside one.
 function blockDomToSource(el) {
-  return currentDocumentFormat === 'eml' ? emailBlockDomToText(el) : blockDomToMarkdown(el);
+  if (currentDocumentFormat === 'eml') return emailBlockDomToText(el);
+  if (currentDocumentFormat === 'xml') {
+    return blockHoldsCommentWords(el) ? el.textContent : escapeTreeText(el.textContent);
+  }
+  return blockDomToMarkdown(el);
+}
+
+// Whether this is the box holding a comment's words rather than an element's. The class the renderer draws it with is the mark, because the words sit inside the fold rather than being it.
+function blockHoldsCommentWords(el) {
+  return !!el && !!el.classList && el.classList.contains('xml-comment-body');
+}
+
+// A comment cannot hold two dashes in a row or end in one, and has no escape to hide them behind — so those are refused rather than written, and the words go back to what the file has.
+function commentTextRefused(el, text) {
+  if (!blockHoldsCommentWords(el)) return false;
+  if (!text.includes('--') && !text.endsWith('-')) return false;
+  leafToast('A note in an XML file cannot hold two dashes in a row, so this was not written.');
+  if (typeof el.__editBaseline === 'string') el.textContent = el.__editBaseline;
+  return true;
 }
 
 // An email block as the file spells it: text as it stands, a break as the ending its own slice uses, a link as the text it shows. Never the Markdown serializer, which would write asterisks and bracket forms into a message that never had them.
@@ -370,19 +388,66 @@ function emailBlockTypeableInPlace(el) {
   return emailBlockDomToText(el, src.includes('\r\n') ? '\r\n' : '\n') === src;
 }
 
+// The inside of one element's own tags, as offsets into `src`. Null unless both tags are found — this range is spliced verbatim, so a comment, a declaration, a self-closing element or a tag carrying a `>` inside an attribute falls back to editing the whole block.
+function xmlElementInnerSpan(src) {
+  const open = /^[ \t]*<([^\s/>!?][^\s/>]*)(?:\s[^>]*)?>/.exec(src);
+  if (!open) return null;
+  const close = new RegExp('</' + open[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[ \\t]*>[ \\t]*$').exec(src);
+  if (!close) return null;
+  const from = open[0].length;
+  // Below `from` the closing tag is inside the opening one: nothing between them to type on.
+  if (close.index < from) return null;
+  return { from, to: close.index };
+}
+
+// The span this tree block may be typed on, or null for one that keeps the raw editor — the message's question asked of an element. The drawn words, escaped the way a tree holds them, have to be exactly the bytes between the element's own tags: that equality is the whole safety, and inline markup the renderer flattened, whitespace it collapsed and an entity spelled another way all fail it.
+function xmlBlockTypeableInPlace(el) {
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  const span = xmlElementInnerSpan(src);
+  if (!span) return null;
+  if (escapeTreeText(el.textContent) !== src.slice(span.from, span.to)) return null;
+  // The span counts characters and the buffer counts bytes, and an element's text can be anything.
+  return {
+    start: start + utf8ByteLength(src.slice(0, span.from)),
+    end: start + utf8ByteLength(src.slice(0, span.to)),
+  };
+}
+
+// The span a comment's words may be typed on, given the words as they are drawn, or null for one that keeps the raw editor. A comment escapes nothing, so the drawn words are held against the bytes between the marks as they stand — allowing only for the ends the fold trims, which is the one change the renderer makes to them.
+function xmlCommentTypeableInPlace(el, words) {
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  if (!src.startsWith('<!--') || !src.endsWith('-->') || src.length < 7) return null;
+  const inner = src.slice(4, src.length - 3);
+  const text = inner.trim();
+  if (text !== words) return null;
+  const from = 4 + (inner.length - inner.trimStart().length);
+  return {
+    start: start + utf8ByteLength(src.slice(0, from)),
+    end: start + utf8ByteLength(src.slice(0, from + text.length)),
+  };
+}
+
 // Send an edit for `el`'s source range, only if `text` differs from the baseline captured when editing began (so a no-edit focus costs nothing). If the caret already moved into another block, carry it across this commit's re-render (adjusting for the splice's offset shift) so it isn't dumped out.
 //
-// `range` overrides the block's own: a fenced code block edits the inside of its fences, so what it writes back is narrower than the block.
+// `range` overrides the block's own: a fenced code block edits the inside of its fences, so what it writes back is narrower than the block. An element of a tree document carries the same override on itself, stamped when it was wired, so every path that commits it splices between its tags rather than over them.
 function commitBlockEdit(el, text, range) {
   // A block the page has already replaced describes a buffer that has moved on — a re-render blurs it, and that blur must not splice yesterday's offsets.
   if (!el.isConnected) return;
-  const start = range ? range.start : Number(el.dataset.srcStart);
-  const end = range ? range.end : Number(el.dataset.srcEnd);
+  if (commentTextRefused(el, text)) return;
+  const span = range || el.__innerSpan || null;
+  const start = span ? span.start : Number(el.dataset.srcStart);
+  const end = span ? span.end : Number(el.dataset.srcEnd);
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   if (text === el.__editBaseline) return;
-  if (!range && deleteEmptiedBlock(el, text)) return;
+  if (!span && deleteEmptiedBlock(el, text)) return;
   // A table where one cell changed writes that cell and leaves the rest of the file alone; `text` rides along as what the host falls back to when it cannot place it.
-  const cell = range ? null : tableCellChange(el.__editCells, tableCellTexts(el));
+  const cell = span ? null : tableCellChange(el.__editCells, tableCellTexts(el));
   sendEditCommand({ command: 'editBlock', start, end, text, cell });
   const delta = cell
     ? utf8ByteLength(cell.text) - utf8ByteLength(el.__editCells[cell.row][cell.column])
@@ -464,6 +529,49 @@ function splitBlockAtCaret(el) {
   } else {
     openInsertBlockAfter(el);
   }
+}
+
+// Enter inside an element of a tree document: end it at the caret and carry on in another of the same one, tags and attributes and all. A newline inside the element would draw as a space the moment the page redrew, so a new line has to be a new element. At the end of the words there is nothing to carry down, so the line the plus opens is opened instead.
+function splitTreeBlockAtCaret(el) {
+  const span = el.__innerSpan;
+  if (!span) return;
+  // Only a paragraph. A second heading in the same part, and a second title in a document's header, are not drawn at all — splitting one would take the words off the page while leaving them in the file.
+  if (el.dataset.blockKind !== 'paragraph') return;
+  if (el.classList && el.classList.contains('tei-doc-subtitle')) return;
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const offset = caretTextOffsetIn(el);
+  if (offset == null) return;
+  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  const inner = xmlElementInnerSpan(src);
+  if (!inner) return;
+  const open = src.slice(0, inner.from);
+  const close = src.slice(inner.to);
+  const named = /^[ \t]*<([^\s/>]+)/.exec(open);
+  const spec = named ? 'element:' + named[1] : undefined;
+  const text = el.textContent;
+  const part1 = text.slice(0, offset).trim();
+  const part2 = text.slice(offset).trim();
+  // Enter at the very start would leave an empty element above the words, so it does nothing — the answer a note gives at the same place.
+  if (!part1) return;
+  if (!part2) {
+    // Words typed and not saved yet go in first: the blank line splices at this element's end, and a blur committing afterwards would write them a second time.
+    if (blockDomToSource(el) !== el.__editBaseline) {
+      sendBlockSplice(el, span.start, span.end, escapeTreeText(part1));
+      setPendingCaret({ srcStart: start, insertBelow: true, blockSpec: spec });
+      return;
+    }
+    openInsertBlockAfter(el, spec);
+    return;
+  }
+  const first = open + escapeTreeText(part1) + close;
+  const separator = blockSeparator();
+  sendBlockSplice(el, start, end, first + separator + open + escapeTreeText(part2) + close);
+  setPendingCaret({
+    srcStart: start + utf8ByteLength(first) + utf8ByteLength(separator),
+    textOffset: 0,
+  });
 }
 
 // Backspace at the very start of a paragraph/heading: merge it into the previous block, Notion-style — the two texts join at a caret that stays put. Only fires when the previous sibling is itself a WYSIWYG paragraph/heading; anything else (a list, a code block, a rule) leaves Backspace inert at the boundary.
@@ -779,6 +887,13 @@ function handleWysiwygKeydown(el, event) {
     else splitBlockAtCaret(el);
     return;
   }
+  if (currentDocumentFormat === 'xml') {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    // Held down or with shift, it is the same key doing the same thing: there is no soft break inside an element for the other one to be.
+    splitTreeBlockAtCaret(el);
+    return;
+  }
   const kind = el.dataset.blockKind;
   if (kind === 'table') {
     if (event.key === 'Enter') event.preventDefault();
@@ -946,6 +1061,10 @@ function wireSourceEditable(el) {
     if (event.target && event.target.closest && event.target.closest('summary')) return;
     if (el.dataset.processed === 'true' && el.classList.contains('mermaid')) return;
     event.preventDefault();
+    // Now that most of a tree document types on its words, the markup arriving is the surprise, so the press that brings it says why — the same answer a packed part of a message gives. A note's code block or diagram opens its source because that is what it is, and says nothing.
+    if (currentDocumentFormat === 'xml') {
+      leafToast('This one carries markup, so the file’s own text opens instead.');
+    }
     el.__startSourceEdit();
   });
   el.addEventListener('blur', () => {
@@ -990,17 +1109,31 @@ function bindEditableBlocks(format) {
     if (el.dataset.srcStart == null || el.dataset.srcEnd == null) return;
     const kind = el.dataset.blockKind;
     if (kind === 'rule') return;
-    // A message's words are typed on where they are drawn wherever the page can write the file's bytes back out of them; everything else there keeps the raw-slice editor.
+    // A comment's words are drawn inside the block rather than as it, and the block's own row opens the fold — so what is wired for typing is the box holding the words, and the fold itself is left to the row. Words that are not the file's own bytes fall through to the raw editor the fold has today.
+    if (format === 'xml' && kind === 'comment') {
+      const words = el.querySelector('.xml-comment-body');
+      const commentSpan = words ? xmlCommentTypeableInPlace(el, words.textContent) : null;
+      if (commentSpan) {
+        words.__innerSpan = commentSpan;
+        wysiwygBlocks.push(words);
+        return;
+      }
+    }
+    // A message's words, and an element's, are typed on where they are drawn wherever the page can write the file's bytes back out of them; everything else keeps the raw-slice editor. The element also carries the span its commits splice, so the tags on either side are never in the edit.
+    const innerSpan = format === 'xml' ? xmlBlockTypeableInPlace(el) : null;
     const wysiwyg =
       format === 'eml'
         ? emailBlockTypeableInPlace(el)
-        : format === 'markdown' &&
-          (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
-            (kind === 'list' && listWysiwygSafe(el)) ||
-            (kind === 'table' && tableWysiwygSafe(el)) ||
-            (kind === 'blockquote' && blockquoteWysiwygSafe(el)) ||
-            (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el)));
+        : format === 'xml'
+          ? !!innerSpan
+          : format === 'markdown' &&
+            (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
+              (kind === 'list' && listWysiwygSafe(el)) ||
+              (kind === 'table' && tableWysiwygSafe(el)) ||
+              (kind === 'blockquote' && blockquoteWysiwygSafe(el)) ||
+              (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el)));
     if (wysiwyg) {
+      if (innerSpan) el.__innerSpan = innerSpan;
       wysiwygBlocks.push(el);
     } else if (Number.isFinite(Number(el.dataset.srcStart)) && Number.isFinite(Number(el.dataset.srcEnd))) {
       // A block with an unusable range gets neither the class nor a listener; wireSourceEditable's own guard would drop it anyway.
