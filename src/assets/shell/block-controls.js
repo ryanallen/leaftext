@@ -426,8 +426,9 @@ function positionBlockGutter() {
     return;
   }
   const layoutRect = layout.getBoundingClientRect();
-  // A wide table hangs out of the measure in a lane of its own, so the handle rides that block's own left edge — anchored to the body's, it would land on the table's first column instead of in clear air beside it.
-  const lane = blockGutterTarget && blockGutterTarget.closest && blockGutterTarget.closest('.table-lane');
+  // A wide table hangs out of the measure in a lane of its own, and a widened picture is its own lane, so the handle rides that block's own left edge — anchored to the body's, it would land on the table's first column or on the picture instead of in clear air beside it.
+  const lane =
+    blockGutterTarget && blockGutterTarget.closest && blockGutterTarget.closest('.table-lane, .image-lane');
   const bodyRect = (lane || body).getBoundingClientRect();
   const margin = Math.max(0, bodyRect.left - layoutRect.left);
   const shift = Math.min(margin, BLOCK_TOOLS_WIDTH + 10);

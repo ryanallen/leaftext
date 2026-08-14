@@ -162,6 +162,8 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/mermaid-icons.js"),
     include_str!("assets/shell/decorate.js"),
     include_str!("assets/shell/table-sheet.js"),
+    // Beside it: the same surface pointed at a picture, and after decorate.js because the paragraph it hangs an opener on is the one decorate.js marks.
+    include_str!("assets/shell/image-sheet.js"),
     // After decorate.js: the full-window diagram borrows its zoom group builder and its delegated pan, wheel and click.
     include_str!("assets/shell/diagram-view.js"),
     include_str!("assets/shell/minimap.js"),

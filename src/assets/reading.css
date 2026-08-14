@@ -3,8 +3,8 @@
   /* App bar height, shared by the bar itself and everything that offsets content below the fixed bar (document padding, library pane, minimap). */
   --app-bar-height: 40px;
   --reader-content-pad: 32px;
-  /* The strip a widened table keeps clear either side: the block handle and plus, so it is BLOCK_TOOLS_WIDTH in block-controls.js and not a spacing choice. check-shell.mjs holds the two copies to one number. */
-  --reader-table-lane-inset: 62px;
+  /* The strip anything widened past the measure keeps clear either side — a table, a picture, the start screen's lists: the block handle and plus, so it is BLOCK_TOOLS_WIDTH in block-controls.js and not a spacing choice. check-shell.mjs holds the two copies to one number. */
+  --reader-lane-inset: 62px;
   /* How deep an edge fade reaches — one number for the dot screen and the wash under it, which have to end together. Given half the depth the wash stopped where the screen carried on, and the break in slope read as a bright edge at the halfway mark; the eye catches a change of gradient far more readily than a gradient. At :root because a widened table's own ends use it too, and every edge in the app is one profile. */
   --reader-edge-fade-depth: 36px;
   /* One row in a start-screen list, exactly: two lines that never wrap, plus its own padding. Every cap on those lists is a whole number of these, so one never ends part-way down a row. At :root because the sheet draws the same rows outside the grid that holds them on the screen. */
@@ -3874,15 +3874,16 @@ body.is-block-dragging .document-body [data-src-start] {
   transform: translateX(-50%);
   /* The table's own width, capped. A block box at `auto` fills the measure and a `max-width` alone can only cap it, never let it grow past its parent. */
   width: max-content;
-  max-width: max(100%, calc(100cqi - 2 * var(--reader-table-lane-inset)));
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
   /* The bands sit here and the scroll is the table's, one box down, so the timeline has to be published up to this element for them to name it. */
   timeline-scope: --lt-table-scroll;
 }
 .table-lane > table {
   scroll-timeline: --lt-table-scroll inline;
 }
-/* The table's reading control is a second corner action beside the content, so it appears only when the table is being aimed at and leaves the page quiet otherwise. */
-.table-sheet-open {
+/* The table's reading control is a second corner action beside the content, so it appears only when the table is being aimed at and leaves the page quiet otherwise. A widened picture wears the same control in the same corner — one shape, two blocks, so the pair of them is written once. */
+.table-sheet-open,
+.image-sheet-open {
   position: absolute;
   top: var(--lt-space-6);
   right: var(--lt-space-6);
@@ -3901,18 +3902,23 @@ body.is-block-dragging .document-body [data-src-start] {
   pointer-events: none;
   transition: opacity var(--lt-duration-120) var(--lt-ease);
 }
-.table-sheet-open .lt-icon {
+.table-sheet-open .lt-icon,
+.image-sheet-open .lt-icon {
   width: 16px;
   height: 16px;
 }
 .table-lane:hover .table-sheet-open,
-.table-sheet-open:focus-visible {
+.table-sheet-open:focus-visible,
+.image-lane:hover .image-sheet-open,
+.image-sheet-open:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }
-.table-sheet-open:hover {
+/* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. */
+.table-sheet-open:hover,
+.image-sheet-open:hover {
   border-color: var(--lt-border-strong);
-  background: var(--lt-wash-hover);
+  background: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), var(--lt-surface-elevated);
   color: var(--lt-foreground);
 }
 /* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The lattice anchors to the wrapper rather than to the window: a transformed element is the containing block for its own fixed background. */
@@ -4210,6 +4216,18 @@ body.is-block-dragging .document-body [data-src-start] {
   min-width: 0;
   width: auto;
 }
+/* A picture alone in its paragraph reads through the reader's whole lane, less the strip the block controls need. It is the table's break-out on the paragraph itself, because a picture has no sliced column for edge bands to be painted in; `max-content` is the picture's own width, so a small one is left where it was, and the centering is a percentage transform because CSS cannot read a used width. */
+.document-body > p.image-lane {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+}
+/* A percentage cap resolves against the box being measured, so `max-width: 100%` below holds the paragraph at the very measure it is escaping; a percentage width does not, so the paragraph sizes to the picture and the picture fills it. */
+.document-body > p.image-lane > img {
+  width: 100%;
+}
 .document-body img {
   display: block;
   height: auto;
@@ -4461,7 +4479,7 @@ body.is-block-dragging .document-body [data-src-start] {
   /* Starts at the writing's own width and grows past it only where a path needs the room, never past the reader. Three declarations because a math function cannot hold `max-content`: the floor is the writing's column, the reach is the longest path, and the ceiling is what the reader can give. */
   width: max-content;
   min-width: 100%;
-  max-width: max(100%, calc(100cqi - 2 * var(--reader-table-lane-inset)));
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--lt-space-16);
@@ -6134,6 +6152,54 @@ body.is-home-row-dragging .home-list-scroll li {
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
+}
+/* ---- A picture on the whole window ----------------------------------------
+   The one full-window view with no panel: no header, no title, no words. The scrim behind is the ground and this box is only what centers the picture on it, which is why it has no surface, no border and no corner of its own — and why a press anywhere but the picture reads as a press on the ground and closes it. */
+.image-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--lt-z-41);
+  /* Flex rather than a centering grid: a grid row sized to its content leaves the picture's own height indefinite, so the cap below resolves against nothing and a tall picture is drawn past the bottom of the window. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--lt-space-24);
+  opacity: 0;
+  /* Only ever arrives: closing removes the element, so there is no exit to curve. */
+  transition: opacity var(--lt-duration-220) var(--lt-ease-decelerate);
+}
+.image-sheet-overlay.open {
+  opacity: 1;
+}
+/* Fitted whole: never cropped, and never drawn past its own size, because a cap can only cap. */
+.image-sheet-picture {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+/* The corner the close mark waits in. It is a region rather than the whole overlay so the mark is not drawn over a picture somebody is looking at, and it takes the pointer so it can be hovered — a press landing on it closes, the same as a press on the ground. */
+.image-sheet-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: start end;
+  padding: var(--lt-space-16);
+}
+.image-sheet-close {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--lt-duration-120) var(--lt-ease);
+}
+.image-sheet-corner:hover .image-sheet-close,
+.image-sheet-close:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 /* A `pre.mermaid` like the block in the page, and deliberately outside any .document-body: what it is for is the room the reading column does not have. */
 .diagram-stage {

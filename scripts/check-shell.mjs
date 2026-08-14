@@ -4217,6 +4217,9 @@ if (booted) {
     };
     const opener = fakeElement('button');
     opener.tagName = 'BUTTON';
+    const missing = picture();
+    missing.dataset = { imageMissing: 'true' };
+    const gone = paragraph([missing], '\n');
     const alone = paragraph([picture()], '\n  ');
     const sentence = paragraph([picture()], 'watch this ');
     const two = paragraph([picture(), picture()]);
@@ -4226,7 +4229,7 @@ if (booted) {
     const table = fakeElement('table');
     table.tagName = 'TABLE';
     const body = fakeElement('body');
-    body.children = [alone, sentence, two, words, opened, table];
+    body.children = [alone, sentence, two, words, opened, gone, table];
     booted.laneWidePictures({ querySelector: (selector) => (selector === '.document-body' ? body : null) });
     for (const [name, block, expected] of [
       ['a picture alone', alone, true],
@@ -4234,6 +4237,7 @@ if (booted) {
       ['two pictures', two, false],
       ['a paragraph of words', words, false],
       ['a picture already carrying its opener', opened, true],
+      ['a picture marked as missing', gone, false],
       ['a table', table, false],
     ]) {
       if (block.classList.contains('image-lane') !== expected) {
@@ -4261,6 +4265,128 @@ if (booted) {
     if (!/max-width:\s*100%/.test(image)) throw new Error('a picture is no longer capped at what holds it');
     const render = readFileSync(join(root, 'src/assets/shell/render-document.js'), 'utf8');
     if (!render.includes('laneWidePictures();')) throw new Error('nothing calls laneWidePictures on a render');
+  });
+
+  // The one place in the app where the hover wash sits on something other than the page. It is a 16% tint over transparent, so a rule that hands it the whole background takes the control's own surface away — beside a table that reads as a tint on the page and is nearly invisible, and over a picture it is a see-through square with the picture showing through it.
+  check('the pointer never takes a corner opener s surface away', () => {
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const at = css.indexOf('.table-sheet-open:hover,');
+    if (at < 0) throw new Error('the two corner openers no longer share one hover rule');
+    const rule = css.slice(at, css.indexOf('}', at));
+    if (!rule.includes('.image-sheet-open:hover')) throw new Error('the picture opener no longer shares the table opener s hover');
+    const fill = /background:\s*([^;]+);/.exec(rule);
+    if (!fill) throw new Error('the corner opener paints nothing under the pointer');
+    if (!fill[1].includes('var(--lt-surface-elevated)')) {
+      throw new Error('the wash replaces the opener s own surface, so a picture shows through the control');
+    }
+    if (!fill[1].includes('var(--lt-wash-hover)')) throw new Error('the corner opener answers the pointer with something other than the one wash');
+    // And the surface it is painted over is the one the button rests on, or the hover is a different color from the button.
+    const rest = css.slice(css.indexOf('.table-sheet-open,\n.image-sheet-open {'), css.indexOf('.table-sheet-open .lt-icon'));
+    if (!rest.includes('background: var(--lt-surface-elevated);')) {
+      throw new Error('the opener no longer rests on the surface its hover is painted over');
+    }
+  });
+
+  // The full-window picture is a reader and nothing else: it shows an element the page already holds, so no route from opening or closing it reaches the document buffer, and none of it needs a host.
+  check('a full-window picture is safe to open and can never write', () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/image-sheet.js'), 'utf8');
+    for (const part of ['function bindImageSheet(', 'function openImageSheet(', 'function closeImageSheet()', 'leafFocusForKeyboard(opener)', "event.key !== 'Escape'", "scrim.addEventListener('click', closeImageSheet)"]) {
+      if (!fragment.includes(part)) throw new Error(`the picture sheet lost: ${part}`);
+    }
+    if (/\b(?:send|sendEditCommand|ipc\.postMessage)\b/.test(fragment)) {
+      throw new Error('opening or closing the picture sheet can still reach the document buffer');
+    }
+    // The element's live source, never a copy taken earlier: a local picture's address carries a per-render token, so a stale one shows the file as it was before it changed on disk.
+    if (!fragment.includes('picture.currentSrc || picture.src')) {
+      throw new Error('the full-window picture no longer reads the element it was opened from');
+    }
+    // No header, no title, no words on the glass — the one full-window view without a panel.
+    if (/textContent\s*=/.test(fragment) || fragment.includes('createElement(\'header\')')) {
+      throw new Error('the full-window picture grew words of its own');
+    }
+    // Opening is reading, so the padlock is never asked; a marked missing picture has nothing behind the mark to show.
+    if (/readerEditingAllowed|documentLocked/.test(fragment)) {
+      throw new Error('opening a picture now waits on the padlock, and opening is reading');
+    }
+    if ((fragment.match(/imageMissing === 'true'/g) || []).length < 2) {
+      throw new Error('a marked missing picture can reach the full-window view, or still gets an opener');
+    }
+    const lib = readFileSync(join(root, 'src/lib.rs'), 'utf8');
+    const decorate = lib.indexOf('assets/shell/decorate.js');
+    const imageSheet = lib.indexOf('assets/shell/image-sheet.js');
+    if (imageSheet < decorate) throw new Error('the picture sheet loads before the paragraph it hangs an opener on is marked');
+    const render = readFileSync(join(root, 'src/assets/shell/render-document.js'), 'utf8');
+    if (render.indexOf('bindImageSheet();') < render.indexOf('laneWidePictures();')) {
+      throw new Error('the opener is bound before the paragraphs it looks for are marked');
+    }
+  });
+
+  // Which pictures get an opener, run rather than read: a marked missing one is holding our glyph over a transparent pixel, so there is nothing behind it to open.
+  check('a marked missing picture gets no opener', () => {
+    const paragraph = (picture) => {
+      const block = fakeElement('p');
+      block.tagName = 'P';
+      block.querySelector = (selector) => {
+        if (selector === ':scope > img') return picture;
+        if (selector === ':scope > .image-sheet-open') return block.children.find((child) => child.className === 'image-sheet-open') || null;
+        return null;
+      };
+      return block;
+    };
+    const real = paragraph(Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {} }));
+    const missing = paragraph(Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: { imageMissing: 'true' } }));
+    const empty = paragraph(null);
+    booted.bindImageSheet({ querySelectorAll: () => [real, missing, empty] });
+    const openers = (block) => block.children.filter((child) => child.className === 'image-sheet-open').length;
+    if (openers(real) !== 1) throw new Error('a picture did not get its opener');
+    if (openers(missing)) throw new Error('a marked missing picture was given an opener');
+    if (openers(empty)) throw new Error('a paragraph with no picture in it was given an opener');
+    // Twice over the same page must not stack a second button on every picture.
+    booted.bindImageSheet({ querySelectorAll: () => [real] });
+    if (openers(real) !== 1) throw new Error('a second pass stacked another opener on the same picture');
+    // The fetch fails after the page is decorated, so refusing at the bind is not enough on its own: the mark has to take back the lane and the opener the render already gave, and a picture that arrives later has to get both back.
+    const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
+    const mark = decorate.slice(decorate.indexOf('function markMissingImage'), decorate.indexOf('function restoreMissingImage'));
+    for (const wanted of ["classList.remove('image-lane')", "':scope > .image-sheet-open'"]) {
+      if (!mark.includes(wanted)) throw new Error(`the missing mark no longer takes back: ${wanted}`);
+    }
+    const refresh = decorate.slice(decorate.indexOf('window.leafRefreshImages'));
+    if (!refresh.includes('laneWidePictures();') || !refresh.includes('bindImageSheet();')) {
+      throw new Error('a picture that has arrived at last never gets its lane or its opener back');
+    }
+  });
+
+  // The close mark is the only thing drawn over the picture, so it waits in a corner rather than on the glass: absent until the pointer comes for it, and reachable by keyboard, because Escape and the ground are the other two ways out.
+  check('the close mark is hidden until its corner is pointed at', () => {
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const ruleBody = (selector) => {
+      const at = css.indexOf(selector);
+      if (at < 0) throw new Error(`no rule for ${selector}`);
+      return css.slice(at, css.indexOf('}', at));
+    };
+    const mark = ruleBody('.image-sheet-close {');
+    if (!/opacity:\s*0/.test(mark) || !/pointer-events:\s*none/.test(mark)) {
+      throw new Error('the close mark is drawn over the picture before the pointer asks for it');
+    }
+    const shown = ruleBody('.image-sheet-corner:hover .image-sheet-close,');
+    if (!/opacity:\s*1/.test(shown)) throw new Error('pointing at the corner no longer reveals the close mark');
+    if (!css.includes('.image-sheet-close:focus-visible {') && !css.includes('.image-sheet-close:focus-visible,')) {
+      throw new Error('the close mark cannot be reached by keyboard');
+    }
+    const corner = ruleBody('.image-sheet-corner {');
+    if (!/position:\s*absolute/.test(corner) || !/top:\s*0/.test(corner) || !/right:\s*0/.test(corner)) {
+      throw new Error('the close mark waits somewhere other than the overlay top right corner');
+    }
+    // Fitted whole: never cropped, and never drawn past its own size.
+    const picture = ruleBody('.image-sheet-picture {');
+    for (const declaration of ['max-width: 100%', 'max-height: 100%', 'width: auto', 'height: auto', 'object-fit: contain']) {
+      if (!picture.includes(declaration)) throw new Error(`the full-window picture no longer fits whole: ${declaration}`);
+    }
+    // No surface of its own: the scrim behind is the ground, which is what makes a press outside the picture read as a press on it.
+    const overlay = ruleBody('.image-sheet-overlay {');
+    if (/\bbackground/.test(overlay) || /\bborder/.test(overlay)) {
+      throw new Error('the full-window picture grew a panel, so the app is no longer the ground behind it');
+    }
   });
 
   // The two halves of a node press, sliced out of the fragment the way the flowchart canvas handler is above: what each one sends is one line, and neither is reachable without a real Pixi stage.

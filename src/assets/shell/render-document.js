@@ -587,6 +587,8 @@ function renderState() {
     localImageEpoch += 1;
     stampLocalImages();
     laneWideTables();
+    laneWidePictures();
+    bindImageSheet();
     decorateBlockquoteLines();
     buildDocumentOutline();
     decorateCodeBlocks();

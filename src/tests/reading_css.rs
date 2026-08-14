@@ -1888,7 +1888,7 @@ fn the_start_screen_folds_on_its_own_width_and_never_on_the_windows() {
     assert_contains(grid, "min-width: 100%;");
     assert_contains(
         grid,
-        "max-width: max(100%, calc(100cqi - 2 * var(--reader-table-lane-inset)));",
+        "max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));",
     );
     // And the list fills its column, so the fill under the pointer ends where the list ends.
     assert_contains(

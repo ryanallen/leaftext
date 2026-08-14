@@ -1440,6 +1440,19 @@ function laneWideTables(root = app) {
     lane.appendChild(table);
   }
 }
+// Mark a paragraph holding nothing but a picture, so the stylesheet can widen it to the reader's lane the way a table's is. No wrapper, so nothing walking the body learns a new shape. The mark is stamped here because CSS counts elements and never text: `p:has(> img:only-child)` matches a sentence with one picture in it just as it matches a picture alone. One picture and no words of its own is the test, so the opener the whole-window view appends is not counted either.
+function laneWidePictures(root = app) {
+  const body = root.querySelector('.document-body');
+  if (!body) return;
+  for (const block of Array.from(body.children)) {
+    if (block.tagName !== 'P') continue;
+    const pictures = Array.from(block.children).filter((child) => child.tagName === 'IMG');
+    // A marked missing picture is our glyph over a transparent pixel, held at its own small size — widening its paragraph would stretch the mark and give a reader a lane with nothing in it.
+    const alone =
+      pictures.length === 1 && pictures[0].dataset.imageMissing !== 'true' && !(block.textContent || '').trim();
+    block.classList.toggle('image-lane', alone);
+  }
+}
 function decorateBlockquoteLines(root = app) {
   root.querySelectorAll('blockquote:not(.markdown-alert) p').forEach((paragraph) => {
     if (paragraph.querySelector('.blockquote-line')) return;
@@ -1591,6 +1604,9 @@ function stampLocalImages(root = app) {
 window.leafRefreshImages = () => {
   localImageEpoch += 1;
   stampLocalImages();
+  // A picture that has arrived at last is back to being a picture, so it gets its lane and its opener the way a render would have given them.
+  laneWidePictures();
+  bindImageSheet();
   scheduleMinimapPreviewUpdate();
 };
 // The broken-image mark is an icon class like every other, painted over a transparent pixel: the element has to stay an <img> so a re-fetch can put the real picture back, and an <img> with no source draws the platform's own broken glyph instead of ours. The mask takes its ink from the rule, so a theme change repaints it with no work here.
@@ -1609,6 +1625,12 @@ function markMissingImage(img) {
   img.height = MISSING_IMAGE_SIZE;
   img.classList.add('lt-icon', 'lt-icon-missing-image');
   img.src = TRANSPARENT_PIXEL;
+  // The fetch fails after the page is decorated, so the lane and its opener are already on: take both off, because there is nothing behind the mark to open and nothing to widen it for.
+  const block = img.parentElement;
+  if (!block || !block.classList.contains('image-lane')) return;
+  block.classList.remove('image-lane');
+  const opener = block.querySelector(':scope > .image-sheet-open');
+  if (opener) opener.remove();
 }
 // Point a marked image back at its own source, so the next stamp can try it again.
 function restoreMissingImage(img) {
