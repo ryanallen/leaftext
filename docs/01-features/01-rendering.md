@@ -12,7 +12,7 @@ Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | GFM | Tables, task lists, strikethrough, autolinks |
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji |
 | Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces |
-| Local content | [Images](#images) by relative, absolute, or `file://` path |
+| Local content | [Images](#images) by relative, absolute, or `file://` path, using the page's width and opening on the whole window |
 | Safety | Sanitized HTML allowlist |
 | [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
 | [TEI XML](#tei-xml-84000-translations) | 84000 Buddhist-translation format; headings, paragraphs, verse, footnotes |
@@ -224,7 +224,7 @@ This one is a Leaftext addition, not standard Markdown. Wrap an ordinary inline 
 
 {[Ghost](https://github.com/ryanallen/leaftext)} {{[Outline](https://github.com/ryanallen/leaftext)}} {{{[Filled](https://github.com/ryanallen/leaftext)}}}
 
-Each is just a normal `[label](url)` link with braces around the whole thing. The wrapper is braces only — brackets are link syntax, so `[[Label](url)]` is a plain link between two square brackets, not a button. The braces must balance: `{{…}` is prose and stays as written. The label may hold inline formatting, and the button follows a link like any other (external URLs open in your browser, relative `.md` paths open in the reader). Written inside code the wrapper stays literal, so this page can show the syntax without turning it into a button.
+Each is just a normal `[label](url)` link with braces around the whole thing. The wrapper is braces only — brackets are link syntax, so `[[Label](url)]` is a plain link between two square brackets, not a button. The braces must balance: `{{…}` is prose and stays as written. The label may hold inline formatting, and the button follows a link like any other (external URLs open in your browser, relative `.md` paths open in the reader). Written inside code the wrapper stays literal, so this page can show the syntax without turning it into a button. Several buttons written on one line keep room between them at any width, so a pair that stands side by side on a wide page and stacks on a narrow one reads as two buttons either way.
 
 **A button can wear a mark.** Name one inside the braces, before the label, and it is drawn at the front of the button in the button's own color:
 
@@ -248,6 +248,8 @@ Allowed image types include SVG, PNG, JPEG, GIF, APNG, AVIF, BMP, ICO, and WebP.
 Every local picture is measured as the page is built — its size comes out of its own header — so the space it needs is held before it decodes and the words around it never jump. A picture Leaftext cannot find keeps its place too, marked with one glyph in the page's ink, with its alt text on hover. The same mark shows on both platforms.
 
 Images always show the file that is on disk. Overwriting one refreshes it in the open document straight away ([Reload](02-navigation.md#reload)), and every rerender re-reads them, so a replaced picture never lingers as a cached copy. A missing one that later appears is found by that same refresh.
+
+A picture alone in its paragraph reads at the width of the page rather than the width of the writing, the same room a wide [table](#tables) takes. It is never blown up: a picture smaller than the text column stays exactly the size it is, centered, and the words either side keep the measure. Hovering one shows an expand button at its top right, which opens it on the whole window — the picture fitted whole against the dimmed page, with no title bar and nothing written over it. The close mark appears only when the pointer comes near the top right corner; `Escape` and a click on the dimmed page close it as well. A picture Leaftext could not find gets no button, because there is nothing behind the mark to open.
 
 ### Math
 

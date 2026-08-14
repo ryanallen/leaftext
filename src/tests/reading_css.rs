@@ -2326,3 +2326,16 @@ fn the_app_window_still_hides_its_own_overflow() {
     );
     assert_contains(crate::APP_SHELL_HTML, r#"class="app-surface""#);
 }
+
+#[test]
+fn a_wrapped_run_of_document_buttons_does_not_touch() {
+    let css = reading_mode_css();
+    let button = rule_body(&css, ".document-body a.leaf-md-button {");
+
+    // A paragraph's spacing is under the paragraph rather than between its lines, so a run of buttons that wraps had nothing at all between the boxes: two fills in one green, measured meeting at exactly 0px, read as one control with a seam. The button is an `inline-flex` box, which is an atomic inline and so keeps a vertical margin, and 4px on each side meets its neighbor's to make 8px. Nothing on the left, or the first button leaves the text column.
+    assert_contains(
+        button,
+        "margin: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) 0;",
+    );
+    assert_contains(button, "display: inline-flex;");
+}

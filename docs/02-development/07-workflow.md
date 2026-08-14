@@ -27,7 +27,9 @@ Work here starts as a written plan and ends as a released version, and the same 
 - A phase whose only work is a row in `design/` asks for no test — the [design-system checks](05-design-system.md) already refuse anything those files do not list.
 - What genuinely cannot be tested here — a real window, live selected text, a held pointer — is said in the phase, so a missing test is not read as an oversight.
 
-**A gap outside the plan in hand becomes its own plan.** Reading the code turns up subjects nothing covers; that finding is written as a new plan rather than fixed in passing, because tests added for code the change never touched make a diff nobody can review.
+**Anything a pass turns up that is not the plan's own becomes its own plan.** Reading the code to write, design, build or rank one is what finds something else — a bug beside the one being fixed, a rule nothing enforces, a subject with no tests. The test is scope, not size: a find belongs to the plan in hand when a phase already in it would have to build it anyway, and otherwise it is a second file, written in the same pass and ranked with the rest. A one-line fix out of scope is still its own plan, because what makes it one is the record rather than the cost — a plan about the find bar carrying a pager fix is a diff nobody can review, and a finding left in a hand-back dies with the session.
+
+**A plan carrying two jobs is split, the same way a blocked one is.** Each half keeps its own name and its own row, and the two point at each other. Splitting on size is otherwise nobody's call, so a plan that is really two ships half and never closes.
 
 ## Where a test goes
 

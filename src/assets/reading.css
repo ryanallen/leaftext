@@ -2684,6 +2684,8 @@ body:has(#readerToolbar:not([hidden])) {
   color: var(--lt-primary-foreground);
   font: 600 15px var(--app-font);
   padding: var(--lt-space-12) var(--lt-space-20);
+  /* An atomic inline box keeps a vertical margin, so a run of buttons that wraps has room between its lines rather than two fills meeting. None on the left, so the first button stays on the text column. */
+  margin: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) 0;
   text-decoration: none;
   cursor: pointer;
 }
