@@ -122,3 +122,4 @@ A flag on something already listed, rather than a thing of its own. Anything sta
 | empty | The reader holds no document, so it is showing the start screen. |
 | font-ready | The theme's font has loaded, so text can stop hiding. |
 | tabs-settling | The tab strip is mid-animation and must not be measured. |
+| folds | A box that opens and shuts in the flow, so it slides to its new height instead of the page arriving at one. Every new folding block wears it; a `details` inside a document is covered without it. Not a popover — a panel that hangs over the page moves nothing under it and must not take this. |

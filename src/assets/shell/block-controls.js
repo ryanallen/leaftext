@@ -785,7 +785,7 @@ function bindBlockControls() {
   blockGutter.innerHTML = `<div class="block-gutter-tools">
       <button type="button" class="block-grip" title="Drag to reorder" aria-label="Drag to reorder this block"><span class="lt-icon lt-icon-grip"></span></button>
       <button type="button" class="block-add" title="Insert a block" aria-label="Insert a block"><span class="block-add-open"><span class="lt-icon lt-icon-new"></span></span><span class="block-add-close"><span class="lt-icon lt-icon-close"></span></span></button>
-    </div><div class="block-insert-row" hidden></div>`;
+    </div><div class="block-insert-row folds" hidden></div>`;
   blockGutterGrip = blockGutter.querySelector('.block-grip');
   blockGutterAdd = blockGutter.querySelector('.block-add');
   blockGutterRow = blockGutter.querySelector('.block-insert-row');

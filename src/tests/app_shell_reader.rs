@@ -902,7 +902,8 @@ fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
         r#"id="findMatchCase" class="find-flag icon-button""#,
         r#"id="findInSelection" class="find-flag icon-button""#,
         r#"id="findReplaceAll" class="find-action icon-button""#,
-        r#"<div class="find-row find-replace-row" id="findReplaceRow" hidden>"#,
+        // `folds` is the mark: the row slides down to its height rather than the bar arriving at a new one.
+        r#"<div class="find-row find-replace-row folds" id="findReplaceRow" hidden>"#,
         // A cursor on every match takes hold of them, so it stands with Previous and Next on the row that is always there — the two-caret mask says more than one cursor.
         r#"<button type="button" id="findSelectAll" class="find-step icon-button" aria-label="Put a cursor on every match" title="Put a cursor on every match (Alt+Enter)"><span class="lt-icon lt-icon-select-all"></span></button>"#,
     ] {

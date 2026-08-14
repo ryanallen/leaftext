@@ -4201,6 +4201,22 @@ if (booted) {
     if (!render.includes('laneWideTables();')) throw new Error('nothing calls laneWideTables on a render');
   });
 
+  // A box that folds in the flow wears `folds` and slides to its new height, so the mark and the rule are held to each other here: only the two together make it move, and a box that loses the mark snaps open with every other check still green.
+  check('both boxes that fold in place wear the mark the stylesheet slides', () => {
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    if (!css.includes('@supports (interpolate-size: allow-keywords) {') || !css.includes('  .folds {')) {
+      throw new Error('the shared folding rule is gone, so the mark below moves nothing');
+    }
+    const shell = readFileSync(join(root, 'src/assets/app-shell.html'), 'utf8');
+    if (!/id="findReplaceRow"/.test(shell) || !/class="[^"]*\bfolds\b[^"]*"[^>]*id="findReplaceRow"/.test(shell)) {
+      throw new Error('the find bar\'s Replace row lost the mark, so it jumps open again');
+    }
+    const gutter = readFileSync(join(root, 'src/assets/shell/block-controls.js'), 'utf8');
+    if (!/class="block-insert-row[^"]*\bfolds\b/.test(gutter)) {
+      throw new Error('the gutter\'s insert row lost the mark, so its options appear in one frame');
+    }
+  });
+
   // The picture half of the same lane, and the one thing about it that cannot be read off the stylesheet: which paragraphs get the mark. CSS counts elements and never text, so the shapes below are exactly what a `:has(> img:only-child)` selector would have got wrong.
   check('only a paragraph holding one picture and no words is widened to the lane', () => {
     const paragraph = (children, text = '') => {

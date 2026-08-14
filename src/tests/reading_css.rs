@@ -1542,6 +1542,80 @@ fn a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot() {
 }
 
 #[test]
+fn anything_that_folds_slides_to_its_new_height_from_one_shared_rule() {
+    let css = reading_mode_css();
+
+    // The whole answer sits behind the one property that lets a height nobody set be animated at all. An engine without it gets no rule rather than half of one, so the block simply opens.
+    assert_contains(css, "@supports (interpolate-size: allow-keywords) {");
+    assert_contains(
+        css,
+        "  .folds,\n  .document-body details {\n    interpolate-size: allow-keywords;\n  }",
+    );
+
+    // Half one: the mark an ordinary box wears, so a folding box written later slides by wearing it rather than by somebody remembering.
+    let marked = rule_body(css, "  .folds {");
+    // Clipping rather than hiding: `overflow: hidden` is a scroll container, and a sticky code header inside a folded block would then stick to the block instead of to the page.
+    assert_contains(marked, "overflow: clip;");
+    assert_contains(marked, "height: auto;");
+    // A flex item will not go below its own contents unless it is told it may, and without this the find bar's Replace row stays at full height for the whole travel — exactly the jump this replaces.
+    assert_contains(marked, "min-height: 0;");
+    // Opening from nothing needs a starting height to travel from, and `display` has to be carried discretely or the box is not there to be animated.
+    assert_contains(
+        css,
+        "@starting-style {\n    .folds {\n      height: 0;\n    }\n  }",
+    );
+    let marked_shut = rule_body(css, "  .folds[hidden] {");
+    assert_contains(marked_shut, "display: none;");
+    assert_contains(marked_shut, "height: 0;");
+
+    // Half two: a `details` in a document — the front matter, the outline, and whatever an author folded for themselves — covered without wearing anything.
+    let folded = rule_body(css, "  .document-body details::details-content {");
+    assert_contains(folded, "overflow: clip;");
+    assert_contains(folded, "block-size: 0;");
+    assert_contains(
+        rule_body(css, "  .document-body details[open]::details-content {"),
+        "block-size: auto;",
+    );
+    // Scoped to the document body because the update menu is a `details` too. Its panel hangs over the page, so nothing under it moves and it has nothing to travel with.
+    assert!(
+        !css.contains("\ndetails::details-content")
+            && !css.contains("\ndetails[open]::details-content"),
+        "a rule on the bare tag would reach the update menu and every other popover"
+    );
+
+    // Arriving one way, leaving the other and shorter, the way the rest of the file reads a direction.
+    for open in [
+        "height var(--lt-duration-260) var(--lt-ease-decelerate)",
+        "block-size var(--lt-duration-260) var(--lt-ease-decelerate)",
+    ] {
+        assert_contains(css, open);
+    }
+    for shut in [
+        "height var(--lt-duration-220) var(--lt-ease-accelerate)",
+        "block-size var(--lt-duration-220) var(--lt-ease-accelerate)",
+    ] {
+        assert_contains(css, shut);
+    }
+    // Never the spring, however much a fold wants one: it runs a tenth of the whole travel past its mark, and a fold's travel is however tall its contents are — 533px past on a long front matter, 133px on a forty-entry outline. The sheet's rubber band refused the same curve over a full-height rise for the same reason.
+    let folding = &css[css
+        .find("@supports (interpolate-size: allow-keywords) {")
+        .expect("the folding rule should be in the stylesheet")..];
+    let folding = &folding[..folding
+        .find("\n/*")
+        .expect("the folding rule should be followed by another")];
+    assert!(
+        !folding.contains("--lt-ease-overshoot"),
+        "a fold's travel is unbounded, so a curve that springs a tenth of it lurches: {folding}"
+    );
+
+    // Nothing new for Reduce Motion: the blanket at the top of the file zeroes both durations, and a zero-length discrete transition flips at once.
+    assert!(
+        !folding.contains("prefers-reduced-motion"),
+        "the blanket rule covers this by existing: {folding}"
+    );
+}
+
+#[test]
 fn a_curve_says_which_way_a_move_is_going() {
     let css = reading_mode_css();
 

@@ -2544,6 +2544,43 @@ body.mac-frame.is-fullscreen::before {
   transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease);
 }
+/* Anything that folds open travels to its new height instead of the page arriving at one, said once for the whole file so a folding block written later slides by existing rather than by somebody remembering. Two halves, because there are two kinds: the `folds` mark for an ordinary box the app shows and hides, and a `details` inside the document for the front matter, the outline and whatever an author folded for themselves. That half is scoped to the document body on purpose — the update menu is a `details` too, and its panel hangs over the page rather than sitting in it, so nothing under it moves and it must not take this; every other popover is out for the same reason. Opening is an arrival and closing a departure, shorter, the way the rest of the file reads a direction. Never the overshoot curve here, however much a fold wants a spring: it runs a tenth of the whole travel past the mark, and a fold's travel is however tall its contents are — measured at 533px past on a long front matter and 133px on a forty-entry outline, which is a lurch rather than a rubberband. The sheet refused the same curve for the same reason over a full-height rise. `interpolate-size` is the whole reason a height nobody set can be animated at all, so everything sits behind it: an engine without it gets no rule rather than half of one, and the block simply appears. `clip` rather than `hidden` — clipping is not a scroll container, so a sticky code header inside a folded block still sticks to the page. The Reduce Motion blanket above zeroes all of it. */
+@supports (interpolate-size: allow-keywords) {
+  .folds,
+  .document-body details {
+    interpolate-size: allow-keywords;
+  }
+  .folds {
+    overflow: clip;
+    height: auto;
+    /* A flex item will not go below its own contents unless it is told it may, and without this the find bar's Replace row stays at full height for the whole travel — exactly the jump this replaces. */
+    min-height: 0;
+    transition: height var(--lt-duration-260) var(--lt-ease-decelerate),
+      display var(--lt-duration-260) var(--lt-ease-decelerate) allow-discrete;
+  }
+  @starting-style {
+    .folds {
+      height: 0;
+    }
+  }
+  .folds[hidden] {
+    display: none;
+    height: 0;
+    transition: height var(--lt-duration-220) var(--lt-ease-accelerate),
+      display var(--lt-duration-220) var(--lt-ease-accelerate) allow-discrete;
+  }
+  .document-body details::details-content {
+    overflow: clip;
+    block-size: 0;
+    transition: block-size var(--lt-duration-220) var(--lt-ease-accelerate),
+      content-visibility var(--lt-duration-220) var(--lt-ease-accelerate) allow-discrete;
+  }
+  .document-body details[open]::details-content {
+    block-size: auto;
+    transition: block-size var(--lt-duration-260) var(--lt-ease-decelerate),
+      content-visibility var(--lt-duration-260) var(--lt-ease-decelerate) allow-discrete;
+  }
+}
 /* Every piece of app chrome — this bar, the library pane, its two bands, the search field — takes `--lt-surface` itself. No per-surface tint or mix: any variant shows up as a tone seam where two of them meet. */
 .app-bar {
   position: fixed;
