@@ -154,7 +154,17 @@ Press it and a row of kinds fans out over the empty line, unfurling rather than 
 
 The first four **open** a block rather than writing one: you get an empty block of that kind showing gray placeholder wording, and **nothing reaches the file until your first keystroke**. Pick Heading and change your mind and the page is as it was — no stray word left in the document. Picking a kind on a line that is already empty just changes what that line is, rather than adding a second one.
 
-In [XML](01-rendering.md#xml) the row offers what makes sense there instead: an element, and a comment. The element **opens** a line to type on, the way the first four above do — what you type is committed inside the tag on your first keystroke, `Enter` starts another element of the same kind under it, and typing nothing writes nothing. Which tag it offers depends on what the page can draw where the line lands: in a TEI document that is a paragraph, since TEI draws one anywhere and refuses a second heading; in any other XML it is the tag of the block you pressed the plus beside. The comment is written straight in and drawn as [a comment fold](01-rendering.md#xml).
+In [XML](01-rendering.md#xml) the row offers what the renderer drawing your file can draw, so a TEI document and every other kind of XML get different lists — one has verse and no tables, the other tables and no verse, and offering a kind the page will not draw is how a click lands nothing.
+
+| | TEI | Every other XML |
+| --- | --- | --- |
+| Text | A paragraph | An element under the name of the block you pressed the plus beside |
+| Heading | A section with its heading | A section with its heading |
+| Row | — | One more record on the table above, when the plus is under one |
+| Verse | A line of verse | — |
+| Comment | A comment | A comment |
+
+Every one of them but the comment **opens** a line to type on, the way the first four above do: what you type is committed inside the tags on your first keystroke, and typing nothing writes nothing. `Enter` carries on with whatever comes next there — another verse line, another row, another element of the same name, and a paragraph under a heading. A heading is written as the section its own heading names, because that is the only shape either renderer draws as a heading. Row is offered only under a table, and writes another record of the kind already in it with your words in its first column; a table whose columns are all attributes is offered no row, since there is nothing in it to type into. The comment is written straight in and drawn as [a comment fold](01-rendering.md#xml).
 
 #### Images
 

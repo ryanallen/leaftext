@@ -634,12 +634,57 @@ function xmlElementSpec(tag) {
   };
 }
 
-// The blank block an id names. A tree document's element carries its own tag in the id, because the tag is the document's rather than one of the four kinds a note offers.
+// The other kinds a tree document draws, each written as the source that draws it: a heading is a container with a titling child in it, and a verse line is one line of a run. `chain` is never absent here — a tree document has no plain line to fall to, so Enter on a spec with none would write bare words between two elements.
+const XML_BLOCK_SPECS = {
+  'tei:head': {
+    tag: 'h2',
+    kind: 'heading',
+    placeholder: 'Name this part...',
+    marker: '<div><head>',
+    close: '</head></div>',
+    chain: 'element:p',
+  },
+  'tei:l': {
+    tag: 'blockquote',
+    kind: 'blockquote',
+    placeholder: 'A line of verse...',
+    marker: '<l>',
+    close: '</l>',
+    chain: 'tei:l',
+  },
+  // Enter carries on in another heading rather than a paragraph: an element with words in it and nothing under it is drawn as a labeled value here, not as prose.
+  'xml:head': {
+    tag: 'h2',
+    kind: 'heading',
+    placeholder: 'Name this part...',
+    marker: '<section><head>',
+    close: '</head></section>',
+    chain: 'xml:head',
+  },
+};
+
+// One more record on a table: the run's own record tag, with the first of its columns to type into. Both names come from the table's source, so what is written is another of what is already there — and the words go in before it is written, since a record with no readable cell in it stops the whole run being a table.
+function xmlRowSpec(record, column) {
+  return {
+    tag: 'p',
+    kind: 'paragraph',
+    placeholder: 'Start a row...',
+    marker: '<' + record + '><' + column + '>',
+    close: '</' + column + '></' + record + '>',
+    chain: 'row:' + record + ':' + column,
+  };
+}
+
+// The blank block an id names. A tree document's element and its table record carry the document's own names in the id, because those are the document's rather than one of the four kinds a note offers.
 function blankBlockSpec(id) {
   if (typeof id === 'string' && id.startsWith('element:')) {
     return xmlElementSpec(id.slice('element:'.length));
   }
-  return BLANK_BLOCK_SPECS[id] || null;
+  if (typeof id === 'string' && id.startsWith('row:')) {
+    const [record, column] = id.slice('row:'.length).split(':');
+    return record && column ? xmlRowSpec(record, column) : null;
+  }
+  return BLANK_BLOCK_SPECS[id] || XML_BLOCK_SPECS[id] || null;
 }
 
 // A list item has to stand in a list to look like one, so a spec may ask for a wrapper. `host` is what goes in the page; `block` is what you type in.

@@ -401,6 +401,43 @@ fn a_document_says_which_renderer_drew_it_so_the_page_can_offer_what_it_draws() 
     );
 }
 
+#[test]
+fn every_kind_the_xml_plus_offers_draws_as_the_kind_it_claims() {
+    // Each source below is exactly what one entry of the plus's XML menu writes into a gap. An entry may only be offered once its source is drawn as the thing its label promises — offering one the renderer flattens is the fault this pins.
+    let tei = r#"<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <teiHeader><fileDesc><titleStmt><title>The Work</title></titleStmt></fileDesc></teiHeader>
+  <text><body><div type="translation">
+    <p>A line.</p>
+    <p>Typed words.</p>
+    <div><head>New part</head></div>
+    <l>A verse line.</l>
+  </div></body></text>
+</TEI>"#;
+
+    let (_title, html) = render_xml_body(tei);
+
+    assert_contains(&html, ">Typed words.</p>");
+    assert_contains(&html, ">New part</h2>");
+    assert_contains(
+        &html,
+        "<blockquote class=\"tei-verse\">\n<p>A verse line.</p>\n</blockquote>",
+    );
+
+    // The generic renderer heads a container by its labeling child, so a heading there is a section with a `<head>` in it and there is no other shape that draws as one.
+    let generic = "<config><size>Large</size><section><head>New part</head></section></config>";
+
+    let (_title, html) = render_xml_body(generic);
+
+    assert_contains(&html, ">New part</h2>");
+    assert_contains(&html, "<dt>Size</dt>");
+
+    // Why the generic menu offers the neighbor's own tag and never a paragraph: an element with words in it and no elements under it is a value, and a value is drawn as a labeled field whatever it is called.
+    let (_title, html) = render_xml_body("<config><size>Large</size><p>Typed words.</p></config>");
+
+    assert_contains(&html, "<dt>P</dt>");
+    assert!(!html.contains("<p data-block-id"), "{html}");
+}
+
 // ---------------------------------------------------------------------------
 // JSON and YAML
 // ---------------------------------------------------------------------------

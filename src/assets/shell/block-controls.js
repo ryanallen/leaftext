@@ -34,23 +34,57 @@ const MARKDOWN_INSERTS = [
   { id: 'divider', label: 'Divider', icon: `<span class="lt-icon lt-icon-divider"></span>`, text: '---' },
 ];
 
-// XML has no schema we know, so the only element worth offering is another one like the block you clicked — its own tag, around whatever gets typed. A comment is legal anywhere.
+// What the plus offers on a tree page: the kinds the renderer that drew it actually draws, and no others. The two draw different vocabularies — one has verse and no tables, the other tables and no verse — so a shared list would have to offer something one of them will not draw. A comment is legal anywhere.
 function xmlInserts(target) {
+  const tei = currentDocumentDialect === 'tei';
   const options = [];
-  const tag = xmlInsertTagName(target);
+  // Beside a table the clone is the one thing that must not be offered: another record with words straight inside it is prose to the grouping, and one of those stops the whole run being a table. That gap gets Row instead, which writes the same record properly.
+  const table = !!target && !!target.dataset && target.dataset.blockKind === 'table';
+  const tag = table ? null : xmlInsertTagName(target);
   if (tag) {
-    options.push({
-      id: 'element',
-      label: '<' + tag + '> element',
-      icon: `<span class="lt-icon lt-icon-code-view"></span>`,
-      blank: 'element:' + tag,
-    });
+    // On a scholarly page the tag can only ever be `<p>`, so the entry says what it makes; anywhere else it is the document's own word and reads better as itself.
+    options.push(
+      tei
+        ? { id: 'element', label: 'Text', icon: `<span class="lt-icon lt-icon-text"></span>`, blank: 'element:p' }
+        : {
+            id: 'element',
+            label: '<' + tag + '> element',
+            icon: `<span class="lt-icon lt-icon-code-view"></span>`,
+            blank: 'element:' + tag,
+          },
+    );
+  }
+  options.push({
+    id: 'heading',
+    label: 'Heading',
+    icon: `<span class="lt-icon lt-icon-heading"></span>`,
+    blank: tei ? 'tei:head' : 'xml:head',
+  });
+  const row = table ? xmlRowSpecId(target) : null;
+  if (row) {
+    options.push({ id: 'row', label: 'Row', icon: `<span class="lt-icon lt-icon-table"></span>`, blank: row });
+  }
+  if (tei) {
+    options.push({ id: 'verse', label: 'Verse', icon: `<span class="lt-icon lt-icon-quote"></span>`, blank: 'tei:l' });
   }
   options.push({ id: 'comment', label: 'Comment', icon: `<span class="lt-icon lt-icon-comment"></span>`, text: '<!-- note -->' });
   return options;
 }
 
-// The element the plus offers to add. TEI draws a `<p>` anywhere and refuses a second heading, so beside a heading a clone is the one tag that never appears; every other XML draws an element with words in it as prose or a labeled row, where the clone is right.
+// The record a new row is written as: the run's own tag and the first column with an element behind it, read out of the table block's source. A run whose columns are all attributes has nothing to type into, so it is offered nothing.
+function xmlRowSpecId(el) {
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  const source = sliceSourceBytes(currentDocumentSource, start, end);
+  const record = /^<\s*([A-Za-z_][\w.:-]*)([^>]*)>/.exec(source);
+  // A record that closes in its own tag holds only attributes, and an attribute is not a thing this can open a line inside of.
+  if (!record || record[2].trimEnd().endsWith('/')) return null;
+  const column = /^\s*<\s*([A-Za-z_][\w.:-]*)/.exec(source.slice(record[0].length));
+  return column ? 'row:' + record[1] + ':' + column[1] : null;
+}
+
+// The element the plus offers to add. TEI draws a `<p>` anywhere and refuses a second heading, so beside a heading a clone is the one tag that never appears; every other XML draws an element with words in it as a labeled value under its own name, where the clone is right and a `<p>` would be a field labeled "P".
 function xmlInsertTagName(target) {
   return currentDocumentDialect === 'tei' ? 'p' : xmlBlockTagName(target);
 }

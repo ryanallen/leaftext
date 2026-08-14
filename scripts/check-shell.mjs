@@ -2424,6 +2424,129 @@ if (booted) {
     }
   });
 
+  // The menu is the audit's table: each page is offered the kinds the renderer that drew it draws, and no others. A scholarly page has verse and no tables; the heading it writes is a section with its name in it, since that is the only shape drawn as a heading there.
+  check('the plus on a scholarly page offers a heading and a verse line, and both are lines to type on', () => {
+    const { blockInsertOptions } = booted;
+    const tei = '<div><head>One</head><p>A line.</p></div>';
+    const heading = xmlBlankLine(tei, 'tei', 'tei:head', tei.length);
+    try {
+      const offered = blockInsertOptions({ dataset: { srcStart: '5', srcEnd: '21' } });
+      const ids = offered.map((one) => one.id).join(',');
+      if (ids !== 'element,heading,verse,comment') {
+        throw new Error(`a scholarly page was offered ${ids}`);
+      }
+      // The tag can only ever be `<p>` there, so the entry says what it makes rather than naming markup.
+      if (offered[0].label !== 'Text') throw new Error(`the element entry read ${offered[0].label}`);
+      if (heading.sent.length) throw new Error('opening a heading wrote to the document');
+
+      heading.type('New part');
+      heading.enter();
+      const wrote = heading.sent.filter((one) => one.command === 'editBlock');
+      if (wrote.length !== 1 || wrote[0].text !== '\n<div><head>New part</head></div>') {
+        throw new Error(`Heading committed ${JSON.stringify(wrote)}`);
+      }
+      // Enter under a heading is the paragraph you write there. A tree document has no plain line to fall to, so an entry that named nothing would write bare words between two elements.
+      if (heading.caret().blockSpec !== 'element:p') {
+        throw new Error(`Enter under a heading chained ${JSON.stringify(heading.caret())}`);
+      }
+    } finally {
+      heading.restore();
+    }
+
+    const verse = xmlBlankLine(tei, 'tei', 'tei:l', tei.length);
+    try {
+      verse.type('A line of verse');
+      verse.enter();
+      const wrote = verse.sent.filter((one) => one.command === 'editBlock');
+      if (wrote.length !== 1 || wrote[0].text !== '\n<l>A line of verse</l>') {
+        throw new Error(`Verse committed ${JSON.stringify(wrote)}`);
+      }
+      // Verse is lines, so Enter carries on in another one and they join into one quote as they are drawn.
+      if (verse.caret().blockSpec !== 'tei:l') {
+        throw new Error(`Enter after a verse line chained ${JSON.stringify(verse.caret())}`);
+      }
+    } finally {
+      verse.restore();
+    }
+  });
+
+  // Every other XML has tables and no verse. A row is offered only beside one, and the clone is taken away exactly there: another record with words straight inside it reads as prose to the grouping, and one of those stops the whole run being a table and scatters it into a stack of headed lists.
+  check('the plus beside a table offers a row instead of the clone that would break it', () => {
+    const { blockInsertOptions } = booted;
+    const sitemap =
+      '<urlset><url><loc>https://leaftext.com/</loc></url>' +
+      '<url><loc>https://leaftext.com/docs/</loc></url></urlset>';
+    const at = sitemap.lastIndexOf('</url>') + '</url>'.length;
+    const table = {
+      dataset: { srcStart: String(sitemap.indexOf('<url>')), srcEnd: String(at), blockKind: 'table' },
+    };
+    const row = xmlBlankLine(sitemap, null, 'row:url:loc', at);
+    try {
+      const beside = blockInsertOptions(table)
+        .map((one) => one.id)
+        .join(',');
+      if (beside !== 'heading,row,comment') throw new Error(`the gap under a table was offered ${beside}`);
+
+      // Away from the table the clone is right and there is no row to add, since a row belongs to a table.
+      const field = {
+        dataset: {
+          srcStart: String(sitemap.indexOf('<loc>')),
+          srcEnd: String(sitemap.indexOf('</loc>') + '</loc>'.length),
+          blockKind: 'paragraph',
+        },
+      };
+      const elsewhere = blockInsertOptions(field)
+        .map((one) => one.id)
+        .join(',');
+      if (elsewhere !== 'element,heading,comment') {
+        throw new Error(`a gap away from the table was offered ${elsewhere}`);
+      }
+
+      // A table whose columns are all attributes has no child element to type into, so it is offered no row rather than one that cannot be filled in.
+      const attributes = '<urlset><url loc="https://leaftext.com/"/><url loc="https://leaftext.com/docs/"/></urlset>';
+      vm.runInContext(`currentDocumentSource = ${JSON.stringify(attributes)};`, booted);
+      const bare = blockInsertOptions({
+        dataset: {
+          srcStart: String(attributes.indexOf('<url ')),
+          srcEnd: String(attributes.lastIndexOf('/>') + 2),
+          blockKind: 'table',
+        },
+      })
+        .map((one) => one.id)
+        .join(',');
+      if (bare !== 'heading,comment') throw new Error(`a table of attributes was offered ${bare}`);
+      vm.runInContext(`currentDocumentSource = ${JSON.stringify(sitemap)};`, booted);
+
+      // The record's tag and its first column come out of the table's own source, so what lands is another of what is already there.
+      row.type('typed');
+      row.enter();
+      const wrote = row.sent.filter((one) => one.command === 'editBlock');
+      if (wrote.length !== 1 || wrote[0].text !== '\n<url><loc>typed</loc></url>') {
+        throw new Error(`Row committed ${JSON.stringify(wrote)}`);
+      }
+      if (wrote[0].start !== at || wrote[0].end !== at) {
+        throw new Error(`the row landed at ${wrote[0].start}..${wrote[0].end}`);
+      }
+      if (row.caret().blockSpec !== 'row:url:loc') {
+        throw new Error(`Enter after a row chained ${JSON.stringify(row.caret())}`);
+      }
+    } finally {
+      row.restore();
+    }
+
+    const heading = xmlBlankLine(sitemap, null, 'xml:head', at);
+    try {
+      heading.type('New part');
+      heading.enter();
+      const wrote = heading.sent.filter((one) => one.command === 'editBlock');
+      if (wrote.length !== 1 || wrote[0].text !== '\n<section><head>New part</head></section>') {
+        throw new Error(`Heading committed ${JSON.stringify(wrote)}`);
+      }
+    } finally {
+      heading.restore();
+    }
+  });
+
   // The other option: a comment is written into the gap as the file's own bytes, one line down from the block above it — and both renderers now draw one, so the click lands something visible instead of changing the document invisibly.
   check('choosing Comment on an XML page writes one line down from the block above', () => {
     const { blockInsertOptions, runGapInsert } = booted;
