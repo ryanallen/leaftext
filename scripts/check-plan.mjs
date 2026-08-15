@@ -40,6 +40,12 @@ function planRows(text) {
       sub = null;
       continue;
     }
+    // The Hold band: ranked rows the owner has parked, always after the numbered tiers.
+    if (/^##(?!#)\s+Hold\b/.test(line)) {
+      tier = 'hold';
+      sub = null;
+      continue;
+    }
     if (/^##(?!#)\s/.test(line)) {
       tier = null;
       sub = null;
@@ -220,9 +226,10 @@ function shapeProblems(text, tree) {
     }
   }
 
-  // The folder is the one claim about a ticket a script can read. Tier 0 is allowed because it sits above tier 1.
+  // The folder is the one claim about a ticket a script can read. Tier 0 is allowed because it sits above tier 1, and Hold because parking a row is the owner's call.
   for (const row of rows) {
     if (row.ticket === null) continue;
+    if (row.tier === 'hold') continue;
     if (row.ticket.startsWith('fixes/') && row.tier > 1) {
       say('fixes tier', row.ticket, `position ${row.position} sits in tier ${row.tier}, and ${row.ticket} is filed under fixes/ — a claim to be wrong today, which is what tier 1 holds`);
     }
@@ -250,7 +257,7 @@ function tree(live, retired = 0, turnedDown = 0, phases = null) {
 // `plan(t, [3, row, row], ...)` — one entry per tier heading, each with its rows. An entry starting `###` is a sub-band heading, and the rows after it get their own table. The foot is written from the tree, so only a case testing the counts has to disagree with it.
 function plan(t, ...tiers) {
   const bands = tiers.map(([n, ...items]) => {
-    let out = `## Tier ${n} — a band\n\n`;
+    let out = n === 'hold' ? '## Hold — parked by the owner\n\n' : `## Tier ${n} — a band\n\n`;
     let open = false;
     for (const item of items) {
       if (item.startsWith('###')) {
@@ -381,6 +388,10 @@ const CASES = [
   ['a features ticket in tier 1 is refused',
     plan(FEATURE, [1, FEATURE_ROW]), FEATURE, ['features tier features/b/g.md']],
   ['the same features ticket in tier 3 passes', plan(FEATURE, [3, FEATURE_ROW]), FEATURE, []],
+  ['a fixes ticket parked in the Hold band passes, because parking is the owner\'s call',
+    plan(FIX, ['hold', FIX_ROW]), FIX, []],
+  ['a row whose only home is the Hold band is still counted as ranked',
+    plan(PAIR, [1, ONE], ['hold', TWO]), PAIR, []],
 ];
 
 function selfTest() {
@@ -449,4 +460,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`plan: ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 and no feature in it`);
+console.log(`plan: ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, and no feature in tier 1`);

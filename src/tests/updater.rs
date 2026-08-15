@@ -474,9 +474,47 @@ fn a_successful_install_records_no_failure() {
 }
 
 #[test]
-fn the_applier_s_verdict_never_reaches_the_page() {
-    // It goes to stderr and nowhere else. A reader can do nothing about a failed install — the next check retries it — so the panel stays quiet.
-    assert!(!app_shell_page().contains("__leafUpdateApply"));
+fn the_applier_s_verdict_reaches_the_page_as_a_growl() {
+    // The *panel* stays quiet about a failed install, because a control offering a retry that would fail again is worth nothing. The fact is a different thing and it does reach the reader: a failed install relaunches the build that was already there, so nothing else on screen says which version is running. It is said once, which is what `the_applier_verdict_survives_pruning_and_is_read_once` holds the record to.
+    let failed = ApplyOutcome {
+        version: "0.1.400".to_string(),
+        ok: false,
+        message: "Leaftext was still open, so nothing was changed".to_string(),
+        finished_at: 0,
+    };
+    let seeded = update_failed_script(Some(&failed));
+    let payload = seeded
+        .strip_prefix("window.__leafUpdateFailed = ")
+        .and_then(|rest| rest.strip_suffix(';'))
+        .expect("the flag is seeded as one assignment");
+    let value: serde_json::Value = serde_json::from_str(payload).expect("the payload is JSON");
+    assert_eq!(value["version"], "0.1.400");
+    assert_eq!(
+        value["message"],
+        "Leaftext was still open, so nothing was changed"
+    );
+
+    // An install that worked, and a launch with nothing recorded, both seed null — and the flag is always emitted, so the boot never reads undefined.
+    let worked = ApplyOutcome {
+        ok: true,
+        message: String::new(),
+        ..failed
+    };
+    assert_eq!(
+        update_failed_script(Some(&worked)),
+        "window.__leafUpdateFailed = null;"
+    );
+    assert_eq!(
+        update_failed_script(None),
+        "window.__leafUpdateFailed = null;"
+    );
+
+    // Page side, the way `an_unreadable_settings_file_reaches_the_page_as_a_growl` pins the other pre-window failure: the boot reads the flag and raises the growl, and the sentence carries all three parts.
+    let html = app_shell_page();
+    assert_contains(&html, "if (window.__leafUpdateFailed) {");
+    assert_contains(&html, "Updating to v${failed.version} failed");
+    assert_contains(&html, "You are still on v${LEAF_VERSION}.");
+    assert_contains(&html, "window.leafShowError(`${opening}");
 }
 
 #[test]

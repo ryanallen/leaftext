@@ -56,6 +56,20 @@ pub fn settings_unreadable_script(unreadable: bool) -> String {
     format!("window.__leafSettingsUnreadable = {unreadable};")
 }
 
+/// The last install attempt when it failed, as `window.__leafUpdateFailed`: the version it was installing and the applier's own words. `null` for a success and for nothing recorded, and always emitted so the flag is never undefined.
+///
+/// An init script rather than a message, because the launch reads the record before the event loop starts and there is no page yet to send one to — the same crossing `settings_unreadable_script` makes. The success case is filtered here rather than at the launch so a test can call it; nothing can call into `run_app`.
+pub fn update_failed_script(outcome: Option<&ApplyOutcome>) -> String {
+    let state = match outcome.filter(|outcome| !outcome.ok) {
+        Some(outcome) => serde_json::json!({
+            "version": outcome.version,
+            "message": outcome.message,
+        }),
+        None => serde_json::Value::Null,
+    };
+    format!("window.__leafUpdateFailed = {state};")
+}
+
 /// Which favorites are not on the disk, and which vaults' own folders have gone, as `window.leafSetFavoritesMissing`. Sent when the start screen asks, because only the binary reads the disk: this payload's builder is library code a browser compiles too, and it is rebuilt on every render — including every document open, where nobody is looking at the favorites. Nothing marked is the resting state, so a browser and a reply still in flight both say the same true thing.
 pub fn favorites_missing_script(paths: &[String], vaults: &[i64]) -> String {
     format!(

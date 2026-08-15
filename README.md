@@ -205,7 +205,7 @@ Leaftext also keeps a plain text [journal](docs/01-features/05-settings.md#journ
 
 ### How an update lands
 
-An installer downloads in the background, is checked for the length the release advertised, and is re-hashed before it is ever run. Then the **next launch installs it, before any window opens** — the one moment Windows lets an app replace itself — or press **Restart to update** if you would rather not wait. Each version is installed automatically once; after that it waits for a click. **[Updates →](docs/01-features/05-settings.md#updates)**
+An installer downloads in the background, is checked for the length the release advertised, and is re-hashed before it is ever run. Then the **next launch installs it, before any window opens** — the one moment Windows lets an app replace itself — or press **Restart to update** if you would rather not wait. Each version is installed automatically once; after that it waits for a click. An install that does not take relaunches the build you already had, so the next launch tells you which version failed, why, and which one you are still on. **[Updates →](docs/01-features/05-settings.md#updates)**
 
 ## Install it
 

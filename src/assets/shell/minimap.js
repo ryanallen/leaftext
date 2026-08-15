@@ -1016,6 +1016,16 @@ window.leafSetNavigation({ canGoBack: false, canGoForward: false });
 if (window.__leafSettingsUnreadable) {
   window.leafShowError('Your settings file could not be read, so Leaftext started with its defaults. Your saved choices are still in the file.');
 }
+// A failed install relaunches the build that was already there, so the window coming back looks exactly like one that updated. Second of the two boot growls on purpose: they share one slot, and this is the one nobody could work out for themselves.
+if (window.__leafUpdateFailed) {
+  const failed = window.__leafUpdateFailed;
+  // The applier names no version when the staging path was malformed, and a bare "v" is worse than saying nothing.
+  const opening = failed.version ? `Updating to v${failed.version} failed` : 'Updating failed';
+  // Our own installer's codes are already sentences; an MSI's is a bare number, and both arrive without a full stop.
+  const why = String(failed.message || '').replace(/\.$/, '');
+  const still = LEAF_VERSION ? ` You are still on v${LEAF_VERSION}.` : '';
+  window.leafShowError(`${opening}${why ? `: ${why}` : ''}.${still}`);
+}
 // The vault list came in on the window rather than through its callback, so nothing has asked about its repository yet.
 requestActiveVaultStatus();
 // The first-run bubble, a frame later: a hint measures the control it points at, and a control the page has not laid out yet has no rectangle to measure.

@@ -38,8 +38,8 @@ use leaftext::{
     save_recent_files, save_result_script, scroll_anchor_script, search_results_script,
     set_git_identity, settings_file_path, settings_unreadable_script, source_payload_url,
     source_updated_script, sync_vault_repo, today_or_utc, unlock_reading_script,
-    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
-    workspace_only_script, workspace_reload_script, workspace_state_script,
+    update_failed_script, update_progress_script, update_state_script, vaults_script,
+    webview_user_data_dir, workspace_only_script, workspace_reload_script, workspace_state_script,
     workspace_switch_script, CloudFolder, CloudRoots, CorpusDocument, DesktopHost, DocumentFormat,
     EditableDocument, Favorite, FavoriteKind, Favorites, FilterHints, FolderListing, GitTooling,
     GraphScope, LeafHost, OpenedDocument, Query, RecentFiles, ScrollAnchor, Session, SessionTab,
@@ -264,15 +264,13 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    // What the detached applier had to say about the last install, if it ran. Read once and deleted, and only printed: the page says nothing about updates it cannot install, and a failed one retries on its own.
-    if let Some(data_dir) = app_data_dir() {
-        if let Some(outcome) = leaftext::take_apply_outcome(&data_dir).filter(|outcome| !outcome.ok)
-        {
-            eprintln!(
-                "Installing v{} failed: {}",
-                outcome.version, outcome.message
-            );
-        }
+    // What the detached applier had to say about the last install, if it ran. Read once and deleted, then both printed and carried to the page below: the journal line is what a bug report quotes, and the growl is the only thing the person who lost the update ever sees.
+    let apply_outcome = app_data_dir().and_then(|data_dir| leaftext::take_apply_outcome(&data_dir));
+    if let Some(outcome) = apply_outcome.as_ref().filter(|outcome| !outcome.ok) {
+        eprintln!(
+            "Installing v{} failed: {}",
+            outcome.version, outcome.message
+        );
     }
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
@@ -373,6 +371,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_html(app_shell_html())
         .with_initialization_script(initial_settings_script(&settings))
         .with_initialization_script(settings_unreadable_script(settings_unreadable))
+        .with_initialization_script(update_failed_script(apply_outcome.as_ref()))
         .with_initialization_script(initial_vaults_script(
             &vault_state.vaults(),
             vault_state.active,

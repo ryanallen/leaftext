@@ -451,6 +451,7 @@ function runShell(source, extras = {}) {
     __leafUpdateAsset: '',
     __leafDocumentExts: ['md', 'markdown', 'mdown', 'xml', 'json', 'yaml', 'yml', 'eml', 'mht', 'mhtml'],
     __leafSettingsUnreadable: false,
+    __leafUpdateFailed: null,
   };
   sandbox.window = sandbox;
   sandbox.self = sandbox;
@@ -512,6 +513,42 @@ check('the page parses', () => {
 let booted = null;
 check('the page boots', () => {
   booted = runShell(source);
+});
+
+// ---- 2b. an update that did not install says so at boot ---------------------
+//
+// The host reads the applier's verdict before the event loop starts, so it arrives as a seeded flag rather than a message. Read off the drawn toast rather than off the flag: what makes a failed install invisible is that the old build comes back looking like a new one, and only the sentence carries the version still running.
+
+/** Every growl standing on the app surface after a boot seeded with `extras`. */
+function bootGrowls(extras) {
+  const context = runShell(source, extras);
+  const surface = context.document.getElementById('appSurface');
+  return surface.children.filter((child) => String(child.className || '').includes('app-toast'));
+}
+
+check('a failed install growls once at boot, carrying all three parts', () => {
+  const growls = bootGrowls({
+    __leafUpdateFailed: { version: '1.14.13', message: 'Leaftext was still open, so nothing was changed' },
+    __leafVersion: '1.14.12',
+  });
+  if (growls.length !== 1) throw new Error(`expected one growl, got ${growls.length}`);
+  const said = String(growls[0].textContent);
+  for (const part of ['v1.14.13', 'Leaftext was still open', 'still on v1.14.12']) {
+    if (!said.includes(part)) throw new Error(`the growl lost "${part}": ${said}`);
+  }
+  if (!growls[0].className.includes('is-error')) throw new Error(`a failure drew the quiet growl: ${growls[0].className}`);
+});
+
+check('a malformed staging path never draws a bare v', () => {
+  const [growl] = bootGrowls({ __leafUpdateFailed: { version: '', message: 'no staged update to apply' }, __leafVersion: '1.14.12' });
+  if (!growl) throw new Error('a failure with no version said nothing at all');
+  if (/\bv\b|v:/.test(String(growl.textContent).replace(/v1\.14\.12/g, ''))) {
+    throw new Error(`a bare v reached the page: ${growl.textContent}`);
+  }
+});
+
+check('a launch after an install that worked growls nothing', () => {
+  if (bootGrowls({ __leafUpdateFailed: null }).length !== 0) throw new Error('a null flag still growled');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------

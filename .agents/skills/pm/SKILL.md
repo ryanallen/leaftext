@@ -63,8 +63,9 @@ The tests pick the tier in that order, then run again inside it, which is what m
 | **2** | **The shared piece.** Two or more rows wait on it and it is smaller than they are, so it is built once here or several times below |
 | **3** | The features people would name, cheapest first — and the work behind them nobody would name: how the repo is built, and the published pages, where neither is wrong today, a shared piece, nor a big swing |
 | **4** | Big swings, each absorbing the time all of tiers 1 to 3 take together. **On its own size** — a small row behind one is put here by the blocker rule below, not by this definition |
+| **Hold** | **Parked by the owner.** Rows the owner has decided not to spend on yet, kept ranked with status and order intact — always the last band in the file, written `## Hold — parked by the owner` |
 
-Tier 0 comes first, because the list is only as good as the statuses under it. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days. A tier is an ordering, and a number beside it reads as a promise about a calendar nobody made.
+Tier 0 comes first, because the list is only as good as the statuses under it. **Hold is the owner's, not this pass's**: a row moves in or out only on the owner's word, the pass keeps a parked row's status and order current where it sits, and a `fixes/` row there keeps its claim without being lifted back to tier 1 — `scripts/check-plan.mjs` allows exactly that and refuses it in any other band above 1. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days. A tier is an ordering, and a number beside it reads as a promise about a calendar nobody made.
 
 **No row sits in a tier above its own blocker.** It is the one rule that outranks the three tests: a shared piece behind a big swing goes with the swing, and a one-line row behind one stays behind it, because a row somebody cannot start is worse than a row somebody has to scroll to.
 
