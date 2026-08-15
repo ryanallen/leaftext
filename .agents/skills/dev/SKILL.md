@@ -7,15 +7,39 @@ user-invocable: true
 
 # Dev
 
+Build a ticket from its path, phase by phase, and stop at the owner's box.
+
+## Process
+
+### 1. Read the ticket, its row and the running order
+
 Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` before building. If the ticket has no dated `Designed` line, run `/design` before writing code.
+
+### 2. Set the live plan stage to `In development`
 
 When implementation starts, set its live plan stage to `In development`. Keep the stage synchronized with the ticket: `Ready`, `Designed`, `In development`, or `Released for test`.
 
-Work phases in order. Tick each box in the same edit as its code and test. Run `/check` after each phase and at the end. Drive what the running app can reach; name anything that needs the owner's gesture in the ticket.
+### 3. Work the phases in order
+
+Work phases in order. Tick each box in the same edit as its code and test. Drive what the running app can reach; name anything that needs the owner's gesture in the ticket.
+
+### 4. Build each phase's test with its code
 
 Build the phase's test box with its code, and write the test's name on the box. Where the ticket asks for a test but does not say where it goes, design it — [`/sync-tests`](../sync-tests/SKILL.md) holds the table and the naming rule — and record the choice in the ticket as a decision. Where a phase has no test box at all, write one and build it rather than shipping the code bare; only a real window, live selected text or a held pointer excuses one, and that is struck on the box with the reason.
 
 **A phase that adds or changes a command writes its browser line in the same edit as the code**, the way it ticks a box in the same edit. The app and a published site are one front end with two hosts under it, so a new command is two pieces of work and only one of them is obvious: the line goes in `web/preview/host.js`'s table, saying the browser answers it, will not and why, or not yet and which ticket owns it. `just check-web-commands` refuses the build without it, and the answer is decided while the code is in front of you rather than by whoever finds the dead control months later. A command whose browser answer turns out to be real work is that work's own ticket, not this phase's.
+
+### 5. File what building turned up beside the work, in the same pass
+
+Anything found while building that no phase in this ticket would have to build anyway is a second file, written before the reply that mentions it. The section below holds the rule and the sentences that break it.
+
+### 6. `/check` after each phase and at the end
+
+Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase is not finished until it is green.
+
+### 7. Hand back at the owner's box
+
+Stop at the owner's box. Do not run `/done` or `/git-release` yourself. Hand back whether anything is broken and the gestures needed for the owner's box. If the work is complete but not shipped, say to run `/git-release` next.
 
 ## What building turns up beside the work is its own ticket
 
@@ -41,7 +65,5 @@ Build the phase's test box with its code, and write the test's name on the box. 
 **A change to a skill, a hook or a check gets its own ticket, written in the same pass** — `../docs/refactor/workflow/`, its README row, ranked by [`/pm`](../pm/SKILL.md); [`/ticket`](../ticket/SKILL.md) holds the shape and the reason.
 
 **Ask the other skills rather than doing their job badly.** [`/design`](../design/SKILL.md) when a round opens a real fork, when the ticket's own words turn out to be false, or when a change reaches past what the phases cover — it decides and records, and this skill does not. [`/ticket`](../ticket/SKILL.md) when a round turns up work that is not this ticket's: a second file and a row in the README, ranked by [`/pm`](../pm/SKILL.md) in the same pass. Neither needs the owner's permission to be run; needing one and not running it is what the owner has to ask for twice.
-
-Stop at the owner's box. Do not run `/done` or `/git-release` yourself. Hand back whether anything is broken and the gestures needed for the owner's box. If the work is complete but not shipped, say to run `/git-release` next.
 
 <!-- keycode: LEAF-2F4B -->

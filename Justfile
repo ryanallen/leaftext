@@ -181,6 +181,7 @@ check-hooks:
     node scripts/gate-git.mjs --check
     node scripts/gate-voice.mjs --check
     node scripts/gate-keycode.mjs --check
+    node scripts/gate-checklist.mjs --check
 
 # Run the WebView front-end against a fake page: that it parses, that it boots
 # (the fragments are one script, so their order is load-bearing), and that the

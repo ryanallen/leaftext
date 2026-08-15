@@ -65,10 +65,12 @@ export function requiredFor(prompt) {
 }
 
 /// Start a turn: forget the last one in this session, and write down what this one owes. The other session's record is left alone, and every other session's is swept once it is a day old — one file per session is a folder that grows otherwise.
-export function open(required, session) {
+///
+/// `startedAt` is when the turn began. gate-voice.mjs reads it to tell a plan file written this turn from one that was already there, which is how "out of scope" is refused in a reply that filed nothing and allowed in one that filed something.
+export function open(required, session, startedAt = Date.now()) {
   const record = recordPath(session);
   mkdirSync(dirname(record), { recursive: true });
-  writeFileSync(record, JSON.stringify({ required, reported: {} }) + '\n');
+  writeFileSync(record, JSON.stringify({ required, reported: {}, startedAt }) + '\n');
   sweep(tmpdir(), 'leaftext-keycode-');
 }
 
@@ -143,6 +145,7 @@ function selfTest() {
   try {
     open([ALWAYS]);
     if (outstanding(read()).length !== 1) fails.push('a fresh turn owed nothing');
+    if (typeof read()?.startedAt !== 'number') fails.push('a fresh turn carries no start stamp');
     const record = read();
     record.reported = { [ALWAYS]: 'LEAF-WRONG' };
     writeFileSync(recordPath(), JSON.stringify(record) + '\n');

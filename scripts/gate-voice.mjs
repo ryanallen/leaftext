@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Stop hook. Measures the reply against Rule 1 and refuses to end the turn when it breaks. Printing a rule does not enforce it: gate-rules.mjs is the reminder, this is the check.
 //
-// Three things are countable, so those are the three it enforces: the 500-character ceiling, the sycophancy openers Rule 1 names one by one, and this turn's keycodes (gate-keycode.mjs). Everything else in Rule 1 is a judgment call and stays a reminder.
+// It enforces the half of Rule 1 that names its own words: the 500-character ceiling, the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
+//
+// A phrase is matched on what the reply says in its own voice: quoted material — fenced blocks, inline code, quotation marks, blockquote lines — is stripped first, so a reply quoting Rule 1 or naming a ticket by a phrase is not refused for the words it is quoting.
 //
 //   node scripts/gate-voice.mjs           the hook payload on stdin
 //   node scripts/gate-voice.mjs --check   self-test (`just verify`)
@@ -9,12 +11,18 @@
 // Never loops: a payload that says a stop hook is already running exits 0.
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { clear, heldBy, listPath, pending } from './gate-checklist.mjs';
 import { close, outstanding, read } from './gate-keycode.mjs';
 import { keep, sessionOf } from './hook-payload.mjs';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/// Where the tickets live, beside this repo. A file written here this turn is the work being filed.
+const PLAN_TREE = join(root, '..', 'docs');
 
 const LIMIT = 500;
 
@@ -30,17 +38,69 @@ const SYCOPHANCY = [
   /^\s*(i apologi[sz]e|sorry|my apologies)\b/i,
 ];
 
+// One answer, never a yes and a no. Only a reply that leads with a bare answer can walk one back, and only a connective that starts a sentence is walking it back — after a comma it is still the one answer, which Rule 1 allows.
+const BARE_ANSWER = /^\s*(yes|no|done)\b/i;
+const WALKBACK = /(?:[.!?;:]["'’”)\]]?\s+|\n\s*)(but|however|though|that said)\b/i;
+
+// Rule 1 names these five, because a phrase is recognized where a category is argued with. Refused only when nothing under the plan tree was written this turn: the sentence is allowed once the file exists, and then it names the file.
+const FILING = [
+  /\bneeds? a ticket\b/i,
+  /\bnot covered\b/i,
+  /\bout of scope\b/i,
+  /\bwould be its own\b/i,
+  /\ba different feature\b/i,
+];
+
+/// The reply in its own voice: quoted material out, so the words a reply quotes are not read as the words it says. Each removal leaves a space behind, or stripping would join the text either side of it into a phrase neither one said.
+export function unquoted(text) {
+  return text
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/^[ \t]*>.*$/gm, ' ')
+    .replace(/“[^”]*”/g, ' ')
+    .replace(/"[^"]*"/g, ' ');
+}
+
+/// True when something under the plan tree was written since the turn began — a ticket, its README row, the running order. Unreadable reads as filed: a gate that cannot see the tree must refuse nothing rather than refuse everything.
+export function filedSince(startedAt, dir = PLAN_TREE) {
+  if (!Number.isFinite(startedAt)) return true;
+  const stack = [dir];
+  try {
+    while (stack.length) {
+      const here = stack.pop();
+      for (const entry of readdirSync(here, { withFileTypes: true })) {
+        const full = join(here, entry.name);
+        if (entry.isDirectory()) stack.push(full);
+        else if (entry.name.endsWith('.md') && statSync(full).mtimeMs >= startedAt) return true;
+      }
+    }
+  } catch {
+    return true;
+  }
+  return false;
+}
+
 /// Each block on its own. Rule 1 caps a response, and a turn that says three things says three of them — joining first would fail a turn for the sum of twelve short lines and pass one that ended in an essay.
-export function offenses(blocks) {
+///
+/// `filed` is whether the plan tree was written this turn; it is the one thing here that is not in the reply, and it decides only the filing phrases.
+export function offenses(blocks, filed = true) {
   const out = [];
   for (const block of blocks) {
     const trimmed = block.trim();
     if (!trimmed) continue;
+    // The ceiling counts everything said. The phrases count only what the reply says in its own voice.
     if (trimmed.length > LIMIT) {
       out.push(`${trimmed.length} characters. Rule 1 caps a reply at ${LIMIT}. Cut it to the answer and stop.`);
     }
-    if (SYCOPHANCY.some((p) => p.test(trimmed))) {
+    const said = unquoted(trimmed);
+    if (SYCOPHANCY.some((p) => p.test(said))) {
       out.push('Opens with praise or an apology. Rule 1 forbids both. Delete the opener and lead with the answer.');
+    }
+    if (BARE_ANSWER.test(said) && WALKBACK.test(said)) {
+      out.push('Answers, then walks the answer back. Rule 1 allows one answer. Cut the sentence that qualifies it; if it is a real fact about the work, it belongs in the ticket.');
+    }
+    if (!filed && FILING.some((p) => p.test(said))) {
+      out.push('Names work instead of filing it, and nothing under the plan tree was written this turn. Write the ticket with `/ticket`, give it its README row, rank it, then name the file.');
     }
   }
   return out;
@@ -106,8 +166,8 @@ function nap(ms) {
 
 function selfTest() {
   const fails = [];
-  const check = (text, want, label) => {
-    const got = offenses([text]).length > 0;
+  const check = (text, want, label, filed = true) => {
+    const got = offenses([text], filed).length > 0;
     if (got !== want) fails.push(`${label}: expected ${want ? 'blocked' : 'allowed'}`);
   };
   check('Log to a file: yes, all three.', false, 'short answer');
@@ -121,6 +181,52 @@ function selfTest() {
   check('Exactly the twelve the ticket predicted.', false, 'a count, not a compliment');
   check('Exactly. Windows only.', true, 'agreement as the whole opener');
   check('', false, 'a turn that only ran tools');
+
+  // One answer, never a yes and a no. A pattern that fires on any "but" would refuse most of what is correctly said, so the anchor is both ends: a bare answer at the front and a sentence at the back that starts with a connective.
+  check('No. But the pane still opens.', true, 'a bare no walked back');
+  check('Yes.\n\nHowever, only on the second click.', true, 'a bare yes walked back over a break');
+  check('Done. That said, the strip still waits.', true, 'a bare done walked back');
+  check('No, but only on the second click.', false, 'one sentence, one answer');
+  check('Yes. Windows only.', false, 'a bare answer left alone');
+  check('The pager is off by one. However you look at it, the strip is wrong.', false, 'no bare answer to walk back');
+
+  // Naming work in place of filing it, which is only an offense when nothing was filed.
+  check('That needs a ticket.', true, 'a filing handed back with nothing written', false);
+  check('The second fault is out of scope here.', true, 'the scope phrase with nothing written', false);
+  check('That would be its own work.', true, 'the own-work phrase with nothing written', false);
+  check('That is a different feature.', true, 'the different-feature phrase with nothing written', false);
+  check('The strip is not covered.', true, 'the not-covered phrase with nothing written', false);
+  check('Filed as the pager ticket; the strip is out of scope for this one.', false, 'the same phrase once something was written', true);
+  check('The pane opens on the second click.', false, 'a reply naming no work at all', false);
+
+  // Quoted material is not what the reply says. Rule 1 itself carries every phrase above, so a reply naming the rule would refuse itself.
+  check('Rule 1 says a reply may not say "that needs a ticket".', false, 'the phrase inside quotation marks', false);
+  check('The gate refuses `out of scope`.', false, 'the phrase in inline code', false);
+  check('> No. But the pane still opens.\n\nThat line is the one it caught.', false, 'a quoted line as a blockquote', false);
+  check('```\nout of scope\n```\n\nThat is the fenced case.', false, 'the phrase in a fenced block', false);
+  if (unquoted('a `b` c').includes('b')) fails.push('unquoted: inline code survived');
+  if (unquoted('one "two" three') !== 'one   three') fails.push('unquoted: a removal did not leave a space behind');
+  if (!unquoted('keep this').includes('keep this')) fails.push('unquoted: ate text nothing quoted');
+
+  // Whether the work was filed, read off the tree rather than off a line the reply writes for itself.
+  const tree = join(tmpdir(), `gate-voice-plan-${process.pid}`);
+  try {
+    mkdirSync(join(tree, 'refactor', 'workflow'), { recursive: true });
+    const older = join(tree, 'README.md');
+    writeFileSync(older, 'a row\n');
+    const stamp = Date.now() + 1000;
+    if (filedSince(stamp, tree)) fails.push('filedSince: a tree nothing touched read as filed');
+    const fresh = join(tree, 'refactor', 'workflow', 'new-ticket.md');
+    writeFileSync(fresh, 'a plan\n');
+    const past = Date.now() - 1000;
+    if (!filedSince(past, tree)) fails.push('filedSince: a file written this turn was missed');
+    if (!filedSince(undefined, tree)) fails.push('filedSince: no stamp should refuse nothing');
+    if (!filedSince(past, join(tree, 'nowhere'))) fails.push('filedSince: an unreadable tree should refuse nothing');
+  } catch (error) {
+    fails.push(`filedSince: ${error.message}`);
+  } finally {
+    rmSync(tree, { force: true, recursive: true });
+  }
   // Twelve short lines said between tool calls are twelve replies, not one long one. Joining them was how the ceiling read as met.
   if (offenses(Array(12).fill('Now the fixes.')).length) fails.push('short lines summed into an offense');
   if (!offenses(['ok', 'x'.repeat(LIMIT + 1)]).length) fails.push('a long last block was missed');
@@ -159,6 +265,34 @@ function selfTest() {
     rmSync(path, { force: true });
   }
 
+  // The checklist's other half, through the real entry point: a step left un-struck has to actually hold the turn, and a turn held for a step alone must not be told to say its reply again. Its own session id, so a `just verify` beside another one does not hold the agent running it to a list this test wrote.
+  const mine = `gate-voice-selftest-${process.pid}`;
+  writeFileSync(path, [
+    JSON.stringify({ type: 'user', message: { content: 'go' } }),
+    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } }),
+  ].join('\n') + '\n');
+  const stop = (extra) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
+    input: JSON.stringify({ stop_hook_active: false, transcript_path: path, session_id: mine, ...extra }),
+    encoding: 'utf8',
+  });
+  try {
+    if (stop().trim() !== '') fails.push('checklist: a turn with no list was held');
+    writeFileSync(listPath(mine), '- 1. Tests first\n- ~~2. `just verify`~~\n');
+    const held = JSON.parse(stop() || '{}');
+    if (held.decision !== 'block') fails.push('checklist: an un-struck step did not hold the turn');
+    if (!held.reason?.includes('1. Tests first')) fails.push('checklist: the block did not say which step');
+    if (/say it again/i.test(held.reason || '')) fails.push('checklist: a turn held for a step was told to rewrite the reply');
+    writeFileSync(listPath(mine), '- ~~1. Tests first~~ — N/A; a hook with its own self-test\n');
+    if (stop().trim() !== '') fails.push('checklist: a fully struck list still held the turn');
+    writeFileSync(listPath(mine), '- 1. Tests first\n');
+    if (stop({ stop_hook_active: true }).trim() !== '') fails.push('checklist: held again while a stop hook was already running');
+  } catch (error) {
+    fails.push(`checklist: ${error.message}`);
+  } finally {
+    clear(mine);
+    rmSync(path, { force: true });
+  }
+
   // The wait has to end on its own, or a turn that legitimately says nothing would hang the hook until the host kills it.
   const unfinished = [
     JSON.stringify({ type: 'user', message: { content: 'go' } }),
@@ -176,7 +310,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, keycodes)`);
+  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, keycodes)`);
 }
 
 if (process.argv.includes('--check')) {
@@ -204,23 +338,27 @@ if (process.argv.includes('--check')) {
   } catch {
     process.exit(0);
   }
-  const found = offenses(blocks);
   // This session's record, not the other agent's: it owes its own codes and holds its own turn.
   const session = sessionOf(raw);
-  const owed = blocks.length ? outstanding(read(session)) : [];
-  if (found.length || owed.length) {
+  const record = read(session);
+  const found = offenses(blocks, filedSince(record?.startedAt));
+  const owed = blocks.length ? outstanding(record) : [];
+  // The turn checklist's other half. One Stop hook holds all three, because a second one would spend the same single block the host allows.
+  const left = pending(session);
+  if (found.length || owed.length || left.length) {
     const parts = [];
     if (found.length) parts.push(`Rule 1, from CLAUDE.md:\n${found.map((f) => `- ${f}`).join('\n')}`);
     if (owed.length) {
       parts.push(`Not read yet — report each keycode with \`node scripts/gate-keycode.mjs <file> <code>\`:\n${owed.map((o) => `- ${o}`).join('\n')}`);
     }
-    process.stdout.write(JSON.stringify({
-      decision: 'block',
-      reason: `${parts.join('\n\n')}\n\nSay it again, shorter. No note about this correction — just the answer.`,
-    }));
+    if (left.length) parts.push(heldBy(left, session));
+    // Only a reply that broke a rule is written again. A turn held for a step or a keycode says nothing new.
+    if (found.length) parts.push('Say it again, shorter. No note about this correction — just the answer.');
+    process.stdout.write(JSON.stringify({ decision: 'block', reason: parts.join('\n\n') }));
     process.exit(0);
   }
   // The turn stands. Forget what it owed rather than leave a file behind.
   close(session);
+  clear(session);
   process.exit(0);
 }
