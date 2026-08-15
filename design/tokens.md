@@ -179,8 +179,10 @@ Every transition and animation length, in milliseconds. `0.12s` and `120ms` were
 | lt-duration-160 | 160ms | A fade paired with a move. |
 | lt-duration-200 | 200ms | A panel appearing. |
 | lt-duration-220 | 220ms | A sheet sliding. |
-| lt-duration-260 | 260ms | The slowest thing that answers a click. |
+| lt-duration-260 | 260ms | The slowest single move that answers a click. A whole gesture drawn as one animation runs longer and takes a row of its own. |
+| lt-duration-280 | 280ms | A bottom sheet's whole dismissal: the pull-up and the departure, one animation. |
 | lt-duration-300 | 300ms | A deliberate reveal. |
+| lt-duration-400 | 400ms | A bottom sheet's whole landing: the rise past its seat and the settle onto it, one animation. |
 | lt-duration-700 | 700ms | One turn of a slow spinner. |
 | lt-duration-800 | 800ms | One turn of the reader's spinner. |
 | lt-duration-1100 | 1100ms | A long pulse. |

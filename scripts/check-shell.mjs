@@ -8190,33 +8190,106 @@ if (booted) {
     if (asked.length !== 1) throw new Error(`the drag asked to close ${asked.length} times`);
     if (!asked[0] || asked[0].dragged !== true) throw new Error(`a drag off did not say so: ${JSON.stringify(asked[0])}`);
 
-    // Which legs a close actually runs, read at the moment each one registers the fallback timer behind it.
-    const legsOf = (options) => {
+    // Which exit a close draws, read at the moment it registers the fallback timer behind its animation. Nothing here ever tells the sheet its animation ended, so the fallback alone has to take it away: an end event that goes missing must not leave a dismissed sheet standing on the window.
+    const exitOf = (options) => {
       const seen = [];
       const moving = fakeElement('closingSheet');
+      const scrim = fakeElement('closingScrim');
       moving.classList.add('open');
+      scrim.classList.add('open');
       const wasTimeout = booted.setTimeout;
       booted.setTimeout = (fn) => {
-        for (const name of ['is-prepping', 'is-boosting']) {
+        for (const name of ['is-leaving', 'is-boosting']) {
           if (moving.classList.contains(name)) seen.push(name);
         }
+        // The scrim waits out the wind-up so the two leave together, and only a dismissal that has one takes the wait.
+        if (scrim.classList.contains('is-held')) seen.push('scrim held');
         fn();
         return 0;
       };
       try {
-        booted.closeSheet(moving, null, options);
+        booted.closeSheet(moving, scrim, options);
       } finally {
         booted.setTimeout = wasTimeout;
       }
-      // The hide waits for the last leg. Three of these sheets used to go on whichever transition ended first, which with a leg in front of the exit takes them away half-way up.
-      if (!moving.hidden) throw new Error('the close ended with the sheet still showing');
-      if (moving.classList.contains('is-boosting')) throw new Error('the sheet kept its exit class after it had gone');
+      // The hide waits for the whole animation, never for whichever end arrives first: with a wind-up in front of the exit that takes the sheet away half-way up, which is how three of these once went.
+      if (!moving.hidden || !scrim.hidden) throw new Error('the close ended with the sheet still showing');
+      if (moving.classList.contains('is-leaving') || moving.classList.contains('is-boosting')) {
+        throw new Error('the sheet kept its exit class after it had gone');
+      }
+      if (scrim.classList.contains('is-held')) throw new Error('the scrim kept its wait after the sheet had gone');
       return seen.join();
     };
-    const pressed = legsOf();
-    if (pressed !== 'is-prepping,is-boosting') throw new Error(`a button, scrim or Escape dismissal ran ${pressed || 'nothing'}`);
-    const flung = legsOf({ dragged: true });
-    if (flung !== 'is-boosting') throw new Error(`a drag off ran ${flung || 'nothing'}`);
+    const pressed = exitOf();
+    if (pressed !== 'is-leaving,scrim held') throw new Error(`a button, scrim or Escape dismissal drew ${pressed || 'nothing'}`);
+    const flung = exitOf({ dragged: true });
+    if (flung !== 'is-boosting') throw new Error(`a drag off drew ${flung || 'nothing'}`);
+
+    // Reduce Motion zeroes every duration in the stylesheet, and a zeroed animation fires no end event at all. So a dismissed sheet goes at once instead of sitting out the fallback, which with motion off held one on the window for a measured 440ms.
+    const still = fakeElement('stillSheet');
+    still.classList.add('open');
+    still.style.setProperty('animation-duration', '0s');
+    let waits = 0;
+    const wasTimeout = booted.setTimeout;
+    booted.setTimeout = (fn) => {
+      waits += 1;
+      fn();
+      return 0;
+    };
+    try {
+      booted.closeSheet(still, null, null);
+    } finally {
+      booted.setTimeout = wasTimeout;
+    }
+    if (waits !== 0) throw new Error(`a close with motion off waited on ${waits} timer(s)`);
+    if (!still.hidden) throw new Error('a close with motion off left the sheet showing');
+  });
+
+  // The entrance takes the same one-animation path as the exit, and for a reason of its own: a sheet coming off `display: none` has no before-change style for a transition to move from, so a rise written as one does not draw at all and the sheet appears already raised.
+  check('a sheet lands on one animation, and is never left holding its landing', () => {
+    const sheet = fakeElement('landingSheet');
+    const scrim = fakeElement('landingScrim');
+    sheet.hidden = true;
+    scrim.hidden = true;
+    // Left on the scrim by a dismissal this very open interrupted. Carried into the entrance it would hold the dimming back for a wind-up nobody is making.
+    scrim.classList.add('is-held');
+    let waits = 0;
+    const wasTimeout = booted.setTimeout;
+    booted.setTimeout = () => {
+      waits += 1;
+      return 0;
+    };
+    try {
+      booted.openSheet(sheet, scrim);
+    } finally {
+      booted.setTimeout = wasTimeout;
+    }
+    if (sheet.hidden || scrim.hidden) throw new Error('the open left the sheet or its scrim hidden');
+    if (!sheet.classList.contains('open') || !sheet.classList.contains('is-landing')) {
+      throw new Error(`the open drew ${sheet.className || 'nothing'}`);
+    }
+    if (scrim.classList.contains('is-held')) throw new Error('the scrim carried a dismissal wait into an entrance');
+    if (waits !== 1) throw new Error(`the entrance registered ${waits} fallback timers rather than one`);
+    // The animation ends and the class goes, so nothing is left holding the sheet off its seat.
+    (sheet.listeners.get('animationend') || []).slice().forEach((handler) => handler({ target: sheet }));
+    if (sheet.classList.contains('is-landing')) throw new Error('the sheet kept its landing class after it had landed');
+    if (!sheet.classList.contains('open')) throw new Error('the landing took the sheet out of its open state');
+
+    // And where that end never arrives, the fallback clears it just the same.
+    const slow = fakeElement('slowSheet');
+    slow.hidden = true;
+    const wasSlowTimeout = booted.setTimeout;
+    booted.setTimeout = (fn) => {
+      fn();
+      return 0;
+    };
+    try {
+      booted.openSheet(slow, null);
+    } finally {
+      booted.setTimeout = wasSlowTimeout;
+    }
+    if (slow.classList.contains('is-landing')) throw new Error('a landing whose end never arrived was left on the sheet');
+    if (!slow.classList.contains('open')) throw new Error('a landing on the fallback did not leave the sheet open');
   });
 
   check('a home list draws an edge only where there is more list past it', () => {

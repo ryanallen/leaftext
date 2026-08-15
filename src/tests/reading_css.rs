@@ -1658,23 +1658,10 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
             ".leaf-sheet.open {",
             "transition: transform var(--lt-duration-260) var(--lt-ease-sheet);",
         ),
-        // The rubber band's two legs: up past the seat on that same drag-tuned curve, then back down onto it as something arriving.
-        (
-            ".leaf-sheet.open.is-rising {",
-            "transition: transform var(--lt-duration-260) var(--lt-ease-sheet);",
-        ),
-        (
-            ".leaf-sheet.open.is-settling {",
-            "transition: transform var(--lt-duration-140) var(--lt-ease-decelerate);",
-        ),
-        // The close's two: a short pull up, then away on the leaving curve and over sooner than the rise was.
-        (
-            ".leaf-sheet.open.is-prepping {",
-            "transition: transform var(--lt-duration-120) var(--lt-ease-decelerate);",
-        ),
+        // Each direction is one animation, so its two curves are written on the keyframes each interval starts at and are pinned with them. What is left here is the drag's exit, which is one direction the whole way.
         (
             ".leaf-sheet.is-boosting {",
-            "transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);",
+            "animation: sheet-boost var(--lt-duration-160) var(--lt-ease-accelerate) both;",
         ),
         (
             ".app-toast {",
@@ -1756,57 +1743,100 @@ fn a_bottom_sheet_lands_with_a_rubber_band_and_leaves_with_a_boost() {
         );
     }
 
-    // Where each leg goes. The raised mark is the same distance in both directions, and the close reads it off wherever a drag parked the sheet rather than off flush.
+    // A whole `@keyframes` or `@media` block: `rule_body` stops at the first closing brace, which inside a nested block is the end of its first keyframe.
+    fn block<'a>(css: &'a str, opener: &str) -> &'a str {
+        let start = css
+            .find(opener)
+            .unwrap_or_else(|| panic!("the stylesheet should define {opener}"));
+        let mut depth = 0usize;
+        for (at, ch) in css[start..].char_indices() {
+            if ch == '{' {
+                depth += 1;
+            } else if ch == '}' {
+                depth -= 1;
+                if depth == 0 {
+                    return &css[start..start + at + 1];
+                }
+            }
+        }
+        panic!("{opener} never closes");
+    }
+
+    // Each direction is one animation, so where the sheet is on every frame of it is written down here rather than being however long a class spent waiting on another class's end event. The landing's three marks: below the window, past the seat at the rise's share of the whole, then down onto it — and the settle takes the emphasized curve for the same reason the pull-up does, a 10px move by something already on screen.
+    let land = block(css, "@keyframes sheet-land {");
+    for (mark, expected) in [
+        ("0% {", "transform: translateY(100%);"),
+        ("0% {", "animation-timing-function: var(--lt-ease-sheet);"),
+        (
+            "65% {",
+            "transform: translateY(calc(var(--sheet-raise) * -1));",
+        ),
+        (
+            "65% {",
+            "animation-timing-function: var(--lt-ease-emphasized);",
+        ),
+        ("100% {", "transform: translateY(var(--sheet-drag, 0px));"),
+    ] {
+        assert_contains(rule_body(land, mark), expected);
+    }
     assert_contains(
-        rule_body(css, ".leaf-sheet.open.is-rising {"),
-        "transform: translateY(calc(var(--sheet-raise) * -1));",
-    );
-    assert_contains(
-        rule_body(css, ".leaf-sheet.open.is-settling {"),
-        "transform: translateY(var(--sheet-drag, 0px));",
-    );
-    assert_contains(
-        rule_body(css, ".leaf-sheet.open.is-prepping {"),
-        "transform: translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));",
-    );
-    assert_contains(
-        rule_body(css, ".leaf-sheet.is-boosting {"),
-        "transform: translateY(100%);",
+        rule_body(css, ".leaf-sheet.open.is-landing {"),
+        "animation: sheet-land var(--lt-duration-400) both;",
     );
 
-    // A wide window centers the sheet with the other half of the same transform, so every moving state has to repeat it or the sheet jumps to the left edge mid-flight.
-    let wide = &css[css
-        .find("@media (min-width: 760px) {\n  .leaf-sheet {")
-        .expect("the wide window centers the sheet")..];
-    for (selector, expected) in [
+    // The leave's three: the seat, the raised mark at the pull-up's share of the whole, and gone.
+    let leave = block(css, "@keyframes sheet-leave {");
+    for (mark, expected) in [
+        ("0% {", "transform: translateY(var(--sheet-drag, 0px));"),
         (
-            ".leaf-sheet.open.is-rising {",
-            "transform: translateX(-50%) translateY(calc(var(--sheet-raise) * -1));",
+            "0% {",
+            // A 10px move by something already on screen. The arriving curve spends half that in the first frame, which is the jitter itself.
+            "animation-timing-function: var(--lt-ease-emphasized);",
         ),
         (
-            ".leaf-sheet.open.is-settling {",
-            "transform: translateX(-50%) translateY(var(--sheet-drag, 0px));",
+            "43% {",
+            "transform: translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));",
         ),
         (
-            ".leaf-sheet.open.is-prepping {",
-            "transform: translateX(-50%) translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));",
+            "43% {",
+            "animation-timing-function: var(--lt-ease-accelerate);",
         ),
-        (
-            ".leaf-sheet.is-boosting {",
-            "transform: translateX(-50%) translateY(100%);",
-        ),
+        ("100% {", "transform: translateY(100%);"),
     ] {
-        assert_contains(rule_body(wide, selector), expected);
+        assert_contains(rule_body(leave, mark), expected);
     }
+    // A drag dismissal is the departure alone, from wherever the hand let the sheet go.
+    let boost = block(css, "@keyframes sheet-boost {");
+    assert_contains(
+        rule_body(boost, "from {"),
+        "transform: translateY(var(--sheet-drag, 0px));",
+    );
+    assert_contains(rule_body(boost, "to {"), "transform: translateY(100%);");
+    assert_contains(
+        rule_body(css, ".leaf-sheet.is-leaving {"),
+        "animation: sheet-leave var(--lt-duration-280) both;",
+    );
+    // The scrim waits out the pull-up so the two leave together, rather than the window brightening under a sheet still on screen.
+    assert_contains(
+        rule_body(css, ".lt-backdrop.is-held {"),
+        "transition-delay: var(--lt-duration-120);",
+    );
+
+    // A wide window centers the sheet with the `translate` property, which the browser composes ahead of whatever `transform` is drawing. One rule, so no state and no keyframe repeats it — written as half of a transform it had to be said on all six moving states, and a keyframe could not have said it at all.
+    let wide = block(css, "@media (min-width: 760px) {\n  .leaf-sheet {");
+    assert_contains(rule_body(wide, ".leaf-sheet {"), "translate: -50%;");
+    assert!(
+        !wide.contains("transform"),
+        "the wide window must not repeat a transform: the centering composes with the one the animations draw"
+    );
 
     // The drag exemption ties with the boost on specificity, so it still has to come last of all the moving states — a held pointer tracks directly or it does not track at all.
     let dragging = css
         .find(".leaf-sheet.is-dragging {")
         .expect("the sheet exempts its own drag");
     for moving in [
-        ".leaf-sheet.open.is-rising {",
-        ".leaf-sheet.open.is-settling {",
-        ".leaf-sheet.open.is-prepping {",
+        ".leaf-sheet.open.is-landing {",
+        ".leaf-sheet.is-leaving {",
         ".leaf-sheet.is-boosting {",
     ] {
         assert!(

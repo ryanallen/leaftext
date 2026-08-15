@@ -2061,7 +2061,9 @@
   --lt-duration-200: 200ms;
   --lt-duration-220: 220ms;
   --lt-duration-260: 260ms;
+  --lt-duration-280: 280ms;
   --lt-duration-300: 300ms;
+  --lt-duration-400: 400ms;
   --lt-duration-700: 700ms;
   --lt-duration-800: 800ms;
   --lt-duration-1100: 1100ms;
@@ -7396,23 +7398,60 @@ body.is-home-row-dragging .home-list-scroll li {
   /* `lt-ease-sheet` and not `lt-ease-decelerate`: it is the same shape, tuned by hand against a real drag, and the drag is what it has to feel continuous with. */
   transition: transform var(--lt-duration-260) var(--lt-ease-sheet);
 }
-/* Landing with a rubber band: past the seat by the raise, then back down onto it. Two legs on curves the app already has, and not `lt-ease-overshoot` — that one springs about a tenth of its whole travel, so over a full-height rise it would bounce tens of pixels. */
-.leaf-sheet.open.is-rising {
-  transform: translateY(calc(var(--sheet-raise) * -1));
-  transition: transform var(--lt-duration-260) var(--lt-ease-sheet);
+/* Landing with a rubber band: up from below the window, past the seat by the raise, then back down onto it. One animation and not two transitions — an element that has just come off `display: none` has no before-change style for a transition to move from, so a rise written as one does not draw and the sheet appears already raised. An animation starts from its own first keyframe, so there is nothing to wait a frame for. Not `lt-ease-overshoot` for the spring, either: that one runs about a tenth of its whole travel past the mark, and this travel is the sheet's own height. */
+@keyframes sheet-land {
+  0% {
+    transform: translateY(100%);
+    /* The rise keeps the curve tuned by hand against a real drag, which is the gesture it has to feel continuous with. */
+    animation-timing-function: var(--lt-ease-sheet);
+  }
+  /* The raised mark, at the rise's share of the whole landing: 260ms of 400. */
+  65% {
+    transform: translateY(calc(var(--sheet-raise) * -1));
+    animation-timing-function: var(--lt-ease-emphasized);
+  }
+  100% {
+    transform: translateY(var(--sheet-drag, 0px));
+  }
 }
-.leaf-sheet.open.is-settling {
-  transform: translateY(var(--sheet-drag, 0px));
-  transition: transform var(--lt-duration-140) var(--lt-ease-decelerate);
+.leaf-sheet.open.is-landing {
+  animation: sheet-land var(--lt-duration-400) both;
 }
-/* Leaving with intent: a short pull up to that same mark, then away faster than it arrived. A drag dismissal skips the pull, because the hand already made it. */
-.leaf-sheet.open.is-prepping {
-  transform: translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));
-  transition: transform var(--lt-duration-120) var(--lt-ease-decelerate);
+/* Leaving with intent: a short pull up to that same mark, then away faster than it arrived. One animation and not two transitions handing off — a transition ends long after its visible motion does and the next class waits on that end, which held the sheet perfectly still for a measured 35ms at the top of the pull. Here the apex is a percentage somebody wrote down. The seat is wherever a drag parked the sheet, so a dismissal from half-way down still winds up from where the hand left it. */
+@keyframes sheet-leave {
+  0% {
+    transform: translateY(var(--sheet-drag, 0px));
+    /* Something already on screen moving 10px, which is what emphasized is for. Never the arriving curve: it is front-loaded enough to spend half of a 10px throw in the first frame, which reads as a twitch rather than a wind-up. */
+    animation-timing-function: var(--lt-ease-emphasized);
+  }
+  /* The pull-up's share of the whole gesture: 120ms of 280. */
+  43% {
+    transform: translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));
+    animation-timing-function: var(--lt-ease-accelerate);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+/* A drag dismissal skips the pull, because the hand already made it: the departure alone, from wherever it was let go. */
+@keyframes sheet-boost {
+  from {
+    transform: translateY(var(--sheet-drag, 0px));
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+/* `both`, so the sheet holds the first keyframe before the animation starts and the last one after it ends — without it the sheet flicks back to where the cascade says it is for the frame between the end and the hide. No curve in the shorthand: each interval names its own on the keyframe it starts at. */
+.leaf-sheet.is-leaving {
+  animation: sheet-leave var(--lt-duration-280) both;
 }
 .leaf-sheet.is-boosting {
-  transform: translateY(100%);
-  transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);
+  animation: sheet-boost var(--lt-duration-160) var(--lt-ease-accelerate) both;
+}
+/* The scrim waits out the wind-up so the two leave together — a sheet still on screen over an undimmed window is the one thing the scrim is there to prevent. A drag dismissal has no wind-up and takes no delay. */
+.lt-backdrop.is-held {
+  transition-delay: var(--lt-duration-120);
 }
 /* Last of the moving states, so a held pointer beats every one it ties with on specificity. The three-class ones it cannot outrank are dropped by the drag itself before this applies. */
 .leaf-sheet.is-dragging {
@@ -8746,28 +8785,13 @@ body.is-home-row-dragging .home-list-scroll li {
   top: 8px;
   right: 44px;
 }
-/* Wide enough that a sheet across the whole width would be a line of text you have to sweep your head along: every sheet becomes a centered column instead. On the component, so all four do it and a fifth gets it for nothing. The centering half of the transform has to be repeated on every moving state, or a sheet mid-flight would snap to the left edge. */
+/* Wide enough that a sheet across the whole width would be a line of text you have to sweep your head along: every sheet becomes a centered column instead. On the component, so all four do it and a fifth gets it for nothing. The centering is the `translate` property and not the other half of a `transform`, because the browser composes the two in that order for free: one rule centers, and every state and keyframe below draws its travel in `transform` without knowing this rule exists. As half of a transform it has to be repeated on every moving state, where one that forgets it snaps to the left edge mid-flight, and a keyframe cannot be repeated per window width at all. */
 @media (min-width: 760px) {
   .leaf-sheet {
     left: 50%;
     right: auto;
     width: min(680px, 92%);
-    transform: translateX(-50%) translateY(100%);
-  }
-  .leaf-sheet.open {
-    transform: translateX(-50%) translateY(var(--sheet-drag, 0px));
-  }
-  .leaf-sheet.open.is-rising {
-    transform: translateX(-50%) translateY(calc(var(--sheet-raise) * -1));
-  }
-  .leaf-sheet.open.is-settling {
-    transform: translateX(-50%) translateY(var(--sheet-drag, 0px));
-  }
-  .leaf-sheet.open.is-prepping {
-    transform: translateX(-50%) translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));
-  }
-  .leaf-sheet.is-boosting {
-    transform: translateX(-50%) translateY(100%);
+    translate: -50%;
   }
   /* Except the flowchart picker, which is two columns of drawings rather than a column of text. It takes nearly the whole editor, because that is what it takes to read forty-seven shapes without scrolling for every one. */
   .flow-picker {
@@ -8979,7 +9003,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 155 values that do not change with the theme, all 62 icons, and all 67 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 157 values that do not change with the theme, all 62 icons, and all 67 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8999,7 +9023,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>155</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>157</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>62</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>67</b></button>
 </div>
@@ -9102,7 +9126,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">155 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">157 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -9227,7 +9251,9 @@ body.is-home-row-dragging .home-list-scroll li {
 <div class="value"><code>lt-duration-200</code><code>200ms</code></div>
 <div class="value"><code>lt-duration-220</code><code>220ms</code></div>
 <div class="value"><code>lt-duration-260</code><code>260ms</code></div>
+<div class="value"><code>lt-duration-280</code><code>280ms</code></div>
 <div class="value"><code>lt-duration-300</code><code>300ms</code></div>
+<div class="value"><code>lt-duration-400</code><code>400ms</code></div>
 <div class="value"><code>lt-duration-700</code><code>700ms</code></div>
 <div class="value"><code>lt-duration-800</code><code>800ms</code></div>
 <div class="value"><code>lt-duration-1100</code><code>1100ms</code></div>
