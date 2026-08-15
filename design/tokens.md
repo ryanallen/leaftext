@@ -71,8 +71,10 @@ The chrome's own sizes, in pixels because chrome does not scale with a document.
 | lt-text-12 | 12px | The chrome's body size, and the most-used one. |
 | lt-text-12-5 | 12.5px | A half-step up for a row that has to read first. |
 | lt-text-13 | 13px | A menu row, a tab's label. |
+| lt-text-13-5 | 13.5px | The theme card's name — a half-step kept as drawn, because nudging it to 13 or 14 changes every card's height. |
 | lt-text-14 | 14px | A heading inside the chrome. |
 | lt-text-15 | 15px | A sheet's title. |
+| lt-text-16 | 16px | The start screen's welcome prose — read like a page, so it sits above the chrome scale; kept as drawn rather than nudged to 15. |
 | lt-text-18 | 18px | The largest chrome text there is. |
 
 ## Interface weight
@@ -105,13 +107,16 @@ Interface line heights. A document's come from the type scale above.
 | Token | Value | What it is for |
 | --- | --- | --- |
 | lt-leading-1 | 1 | An icon or glyph that must not add leading. |
-| lt-leading-1-2 | 1.2 | A tight two-line label. |
+| lt-leading-1-04 | 1.04 | The start screen's headline, set solid — the largest text in the app; kept as drawn, because the nearest step opens the brand lockup. |
+| lt-leading-1-2 | 1.2 | A tight two-line label, and every chrome control that used to rest on `normal`. |
+| lt-leading-1-25 | 1.25 | The start screen's subtitle — kept as drawn, between the label step and the menu row. |
 | lt-leading-1-3 | 1.3 | A menu row. |
 | lt-leading-1-35 | 1.35 | A wrapped row in the library pane. |
 | lt-leading-1-4 | 1.4 | Chrome text that runs to a second line. |
 | lt-leading-1-45 | 1.45 | A paragraph inside a sheet. |
 | lt-leading-1-5 | 1.5 | Loose chrome prose. |
-| lt-leading-1-55 | 1.55 | An alert's body, the loosest in the interface. |
+| lt-leading-1-55 | 1.55 | An alert's body. |
+| lt-leading-1-6 | 1.6 | The start screen's prose, the loosest in the interface — a document's own body leading. |
 
 ## Letter spacing
 

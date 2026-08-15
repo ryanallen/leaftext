@@ -13,6 +13,8 @@
 //   - The metrics block in `:root` — the app bar's height, the reader's gutter, the
 //     minimap's widths. Each is one geometry said once, and its own name already.
 //
+// A `font` shorthand is refused whole, `font: inherit` excepted: the parts it does not name reset silently, so there is nothing on the line for the rules above to judge.
+//
 // A @media condition cannot hold a var(), so those lines are exempt by necessity.
 //
 // It also holds every hover fill to the one wash, or to the app's own dot lattice where a target is too big to take a flat tint. Refused there: a surface color, which a family may set to the very value of the panel behind it; a strength mixed from the theme's ink here rather than in the token; and a lattice drawn in any ink but the hover's, or any other image at all. A control already saying something — pressed, selected, open, disabled — keeps its own fill, and so does one deepening its own accent.
@@ -63,6 +65,12 @@ const RULES = [
   ['a font size', /font-size\s*:\s*([^;]+);/g, (value) => /\d\s*px/.test(value)],
   ['a weight', /font-weight\s*:\s*(\d+)\s*;/g, () => true],
   [
+    // Refused whole, tokens or not: the shorthand resets every part it does not name, so an unnamed line height silently becomes `normal`, read off whichever face is loaded. Only `font: inherit` stays — it takes the parent's values, which somebody chose. The lookbehind keeps `--app-font:` out of it.
+    'a font shorthand',
+    /(?<![-\w])font\s*:\s*([^;]+);/g,
+    (value) => value.trim() !== 'inherit',
+  ],
+  [
     'a stroke width',
     /\b(?:border|outline|column-rule)(?:-[a-z]+)*\s*:\s*([^;]+);/g,
     (value, prop) => !/radius/.test(prop) && /\d\s*px/.test(value),
@@ -85,16 +93,26 @@ const RULES = [
   ['a layer', /z-index\s*:\s*(\d+)\s*;/g, (value) => Number(value) >= 20],
 ];
 
-const hits = [];
-for (const { n, text } of code) {
-  if (METRICS.test(text)) continue;
-  for (const [what, pattern, offends] of RULES) {
-    for (const match of text.matchAll(pattern)) {
-      const value = match[1];
-      if (!offends(value, match[0])) continue;
-      hits.push(`${relative}:${n}  ${what} written by hand: ${value.trim()}`);
+// A function rather than a loop inlined over the file, so the fixture below can prove each rule still fires.
+function propertyHits(lines) {
+  const out = [];
+  for (const { n, text } of lines) {
+    if (METRICS.test(text)) continue;
+    for (const [what, pattern, offends] of RULES) {
+      for (const match of text.matchAll(pattern)) {
+        const value = match[1];
+        if (!offends(value, match[0])) continue;
+        out.push({ n, what, value });
+      }
     }
   }
+  return out;
+}
+
+const hits = [];
+for (const { n, what, value } of propertyHits(code)) {
+  const hint = what === 'a font shorthand' ? ' — write font-family, font-size, font-weight and line-height, each from the table' : '';
+  hits.push(`${relative}:${n}  ${what} written by hand: ${value.trim()}${hint}`);
 }
 
 // A hover fill is one wash, and only that wash. Two ways of writing one leave a row under the pointer invisible: naming a surface color, which a family is free to set to the very value of the panel behind it, and mixing a percentage here, which is a strength nothing checks — it reached five different numbers across nine rules before this.
@@ -154,7 +172,22 @@ function hoverFills(lines) {
   return out;
 }
 
-// The check proves it fires every time it runs: a rule matching nothing passes silently for ever, and both of these are written to match nothing once the stylesheet is right.
+// The check proves it fires every time it runs: a rule matching nothing passes silently for ever. The property rules first — a shorthand with a value typed in, one written wholly from tokens, the one form that stays, the longhand door, and the custom property the lookbehind keeps out.
+const PROPERTY_FIXTURE = [
+  ['.a {\n  font: 600 13px var(--app-font);\n}', 1, 'a font shorthand with a size typed in'],
+  ['.a {\n  font: var(--lt-weight-600) var(--lt-text-13) / var(--lt-leading-1-45) var(--app-font);\n}', 1, 'a font shorthand written wholly from tokens'],
+  ['.a {\n  font: inherit;\n}', 0, 'font: inherit'],
+  ['.a {\n  font-size: 13px;\n}', 1, 'a longhand size typed in'],
+  ['.a {\n  --app-font: sans-serif;\n}', 0, 'the font custom property'],
+];
+for (const [source, want, label] of PROPERTY_FIXTURE) {
+  const got = propertyHits(strip(source)).length;
+  if (got !== want) {
+    console.error(`the property check is broken: ${label} gave ${got} hit(s), wanted ${want}`);
+    process.exit(1);
+  }
+}
+
 const FIXTURE = [
   ['.a:hover {\n  background: var(--lt-surface-elevated);\n}', 1, 'a surface named under :hover'],
   ['.a:focus-visible {\n  background: var(--lt-surface-muted);\n}', 1, 'a surface named under :focus-visible'],

@@ -558,6 +558,16 @@ fn find_bar_controls_are_the_app_bars_own_button_size() {
 }
 
 #[test]
+fn the_bare_button_rule_names_its_own_line_height() {
+    // A `font` shorthand here once left this at `normal`, read off whichever face is loaded — on the one rule reaching every button in the app and every button a document draws.
+    let css = reading_mode_css();
+    assert_contains(
+        rule_body(css, "\nbutton {"),
+        "line-height: var(--lt-leading-1-2);",
+    );
+}
+
+#[test]
 fn the_find_bar_throws_the_same_dot_shadow_as_every_other_floating_panel() {
     // In the shared list, not a tenth copy of it: the spread is a fixed inset and the punch is that inset taken back off, so it fits any size of box. The reader toolbar's own copy is not a precedent — it has one mask, no punch, having no opaque face to clear.
     let css = reading_mode_css();

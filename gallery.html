@@ -1992,8 +1992,10 @@
   --lt-text-12: 12px;
   --lt-text-12-5: 12.5px;
   --lt-text-13: 13px;
+  --lt-text-13-5: 13.5px;
   --lt-text-14: 14px;
   --lt-text-15: 15px;
+  --lt-text-16: 16px;
   --lt-text-18: 18px;
   /* Interface weight */
   --lt-weight-400: 400;
@@ -2010,13 +2012,16 @@
   --lt-stroke-6: 6px;
   /* Line height */
   --lt-leading-1: 1;
+  --lt-leading-1-04: 1.04;
   --lt-leading-1-2: 1.2;
+  --lt-leading-1-25: 1.25;
   --lt-leading-1-3: 1.3;
   --lt-leading-1-35: 1.35;
   --lt-leading-1-4: 1.4;
   --lt-leading-1-45: 1.45;
   --lt-leading-1-5: 1.5;
   --lt-leading-1-55: 1.55;
+  --lt-leading-1-6: 1.6;
   /* Letter spacing */
   --lt-tracking-020: 0.02em;
   --lt-tracking-040: 0.04em;
@@ -2782,7 +2787,10 @@ body.mac-frame.is-fullscreen::before {
   border: var(--lt-stroke-1) solid transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
-  font: 600 13px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
   padding: var(--lt-space-6) var(--lt-space-14);
   text-align: left;
   -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
@@ -3075,7 +3083,10 @@ body.mac-frame.is-fullscreen .window-controls {
   border-radius: var(--lt-radius-sm);
   background: transparent;
   color: var(--lt-foreground);
-  font: 600 13px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
   text-align: left;
   cursor: pointer;
 }
@@ -3120,7 +3131,10 @@ body.mac-frame.is-fullscreen .window-controls {
   border-radius: var(--lt-radius-sm);
   background: var(--lt-surface);
   color: var(--lt-foreground);
-  font: 600 13px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
 }
 .rename-input:focus {
   outline: none;
@@ -3139,7 +3153,10 @@ body.mac-frame.is-fullscreen .window-controls {
   background: transparent;
   color: var(--lt-muted-foreground);
   cursor: pointer;
-  font: 700 13px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
   list-style: none;
   position: relative;
 }
@@ -3313,7 +3330,10 @@ button {
   background: var(--lt-primary);
   color: var(--lt-primary-foreground);
   cursor: pointer;
-  font: 600 14px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
   padding: var(--lt-space-8) var(--lt-space-14);
 }
 /* The one true toolbar icon button: every square icon control in the app bar (history, code view, settings, open) shares this box, radius, and icon size so their hover chips are identical. The floating library-open button matches it too. */
@@ -4515,7 +4535,10 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
-  font: 600 12px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
   padding: var(--lt-space-4) var(--lt-space-24) var(--lt-space-4) var(--lt-space-8);
 }
 /* Smaller than a view button, and never blue: the blue chip is how this bar says which view you are in, and a setting inside a view must not wear it. On gets a page-colored fill raised out of the recess's grain, so the state reads at a glance; off sits flat and muted. */
@@ -4834,7 +4857,10 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: var(--lt-radius-lg);
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
-  font: 600 14px/1.45 var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-45);
   padding: var(--lt-space-12) var(--lt-space-14);
   opacity: 0;
   transform: translateY(6px);
@@ -4883,7 +4909,10 @@ body:has(#readerToolbar:not([hidden])) {
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   box-shadow: var(--lt-shadow-raised);
-  font: var(--lt-weight-600) var(--lt-text-13) / var(--lt-leading-1-45) var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-45);
   padding: var(--lt-space-10) var(--lt-space-12);
   opacity: 0;
   transform: translateY(4px);
@@ -5132,7 +5161,12 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: var(--lt-radius-md);
   background: var(--lt-primary);
   color: var(--lt-primary-foreground);
-  font: 600 15px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-600);
+  /* A button can sit inside an italic run of a document. */
+  font-style: normal;
+  line-height: var(--lt-leading-1-2);
   padding: var(--lt-space-12) var(--lt-space-20);
   /* An atomic inline box keeps a vertical margin, so a run of buttons that wraps has room between its lines rather than two fills meeting. None on the left, so the first button stays on the text column. */
   margin: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) 0;
@@ -5597,7 +5631,10 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: var(--lt-radius-pill);
   background: var(--lt-markdown-background);
   color: var(--lt-markdown-foreground);
-  font: 600 12px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
   cursor: pointer;
 }
 .block-insert-choose:hover {
@@ -5614,7 +5651,10 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: var(--lt-radius-sm);
   background: var(--lt-markdown-background);
   color: var(--lt-markdown-foreground);
-  font: 13px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-400);
+  line-height: var(--lt-leading-1-2);
 }
 .block-insert-url:focus {
   border-color: var(--lt-accent, var(--lt-border));
@@ -5747,7 +5787,10 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-sm);
   background: var(--lt-surface);
   color: var(--lt-foreground);
-  font: 13px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-400);
+  line-height: var(--lt-leading-1-2);
 }
 .selection-link-input:focus {
   border-color: var(--lt-accent, var(--lt-border));
@@ -5973,7 +6016,12 @@ body.is-block-dragging .document-body [data-src-start] {
   top: 8px;
   right: 12px;
   color: var(--lt-muted-foreground);
-  font: 700 11px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-700);
+  /* The label sits inside a document that can set italic around its block. */
+  font-style: normal;
+  line-height: var(--lt-leading-1-2);
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -6846,32 +6894,47 @@ body.is-block-dragging .document-body [data-src-start] {
 .recent h2,
 .home-list h2 {
   color: var(--lt-primary);
-  font: 700 13px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
   letter-spacing: var(--lt-tracking-120);
   text-transform: uppercase;
 }
 .empty-state h1 {
   color: var(--lt-markdown-heading);
-  font: 700 clamp(2.6rem, 7vw, 5.2rem) / 1.04 var(--heading-font);
+  font-family: var(--heading-font);
+  font-size: clamp(2.6rem, 7vw, 5.2rem);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-04);
   letter-spacing: var(--lt-tracking-tight-01);
   margin: 0 0 var(--lt-space-10);
 }
 /* The second half of the brand lockup — quieter than the headline, but still set in the heading face so the two lines read as one statement. */
 .empty-subtitle {
   color: var(--lt-muted-foreground);
-  font: 500 clamp(1.15rem, 2.4vw, 1.6rem) / 1.25 var(--heading-font);
+  font-family: var(--heading-font);
+  font-size: clamp(1.15rem, 2.4vw, 1.6rem);
+  font-weight: var(--lt-weight-500);
+  line-height: var(--lt-leading-1-25);
   letter-spacing: var(--lt-tracking-tight-005);
   margin: 0 0 var(--lt-space-20);
 }
 .empty-description {
   color: var(--lt-muted-foreground);
-  font: 500 16px/1.6 var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-16);
+  font-weight: var(--lt-weight-500);
+  line-height: var(--lt-leading-1-6);
   margin: 0 0 var(--lt-space-24);
   max-width: 54ch;
 }
 .empty-help {
   color: var(--lt-muted-foreground);
-  font: 500 15px/1.6 var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-500);
+  line-height: var(--lt-leading-1-6);
   margin: var(--lt-space-20) 0 0;
 }
 /* Running version, at the foot of the one screen always reachable: quiet, one line, selectable because it exists to be pasted into a bug report. */
@@ -6930,7 +6993,10 @@ body.is-block-dragging .document-body [data-src-start] {
 /* Tighter to the buttons than the line about recent files, which sits further down: this one belongs to the button above it. */
 .empty-vault-help {
   color: var(--lt-muted-foreground);
-  font: var(--lt-weight-500) var(--lt-text-14) / var(--lt-leading-1-55) var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-500);
+  line-height: var(--lt-leading-1-55);
   margin: var(--lt-space-10) 0 0;
   max-width: 54ch;
 }
@@ -7626,7 +7692,10 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 .home-sheet-title {
   color: var(--lt-primary);
-  font: var(--lt-weight-700) var(--lt-text-13) var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
   letter-spacing: var(--lt-tracking-120);
   text-transform: uppercase;
 }
@@ -7681,7 +7750,10 @@ body.is-home-row-dragging .home-list-scroll li {
   border-radius: var(--lt-radius-lg);
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
-  font: 600 12px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
   cursor: pointer;
 }
 .theme-mode-btn:hover {
@@ -7725,7 +7797,10 @@ body.is-home-row-dragging .home-list-scroll li {
   /* The card wears the theme's own paper and ink (Random falls back to a neutral tile), so it reads as a sample of the theme. A faint stroke in the SHEET's ink keeps a paper-white card from vanishing on a light sheet. */
   background: var(--card-bg-light, color-mix(in srgb, var(--lt-foreground) 5%, var(--lt-surface-elevated)));
   color: var(--card-fg-light, var(--lt-foreground));
-  font: 700 13.5px var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13-5);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
   text-align: left;
   cursor: pointer;
   overflow: hidden;
@@ -7761,7 +7836,7 @@ body.is-home-row-dragging .home-list-scroll li {
   padding: var(--lt-space-12) var(--lt-space-14) var(--lt-space-12);
   /* The app font until the picker has loaded this theme's own font; then swap. */
   font-family: var(--app-font);
-  /* Named, because the card's `font` shorthand leaves this at `normal`, which every face answers differently — the name's line box is the only part of a card a font can resize, so an unset one moves the whole sheet 2px as the previews land. */
+  /* Named, because the name's line box is the only part of a card a font can resize — left to a face's own `normal` it moved the whole sheet 2px as the previews landed. */
   line-height: var(--lt-leading-1-3);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -8302,7 +8377,10 @@ body.is-home-row-dragging .home-list-scroll li {
   border-radius: var(--lt-radius-full);
   background: var(--lt-link);
   color: var(--lt-surface);
-  font: 700 14px/1 var(--app-font);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1);
   opacity: 0;
   pointer-events: auto;
   cursor: crosshair;
@@ -8663,7 +8741,10 @@ body.is-home-row-dragging .home-list-scroll li {
 .table-sheet-title {
   margin: 0;
   color: var(--lt-foreground);
-  font: var(--lt-weight-700) var(--lt-text-15) var(--heading-font);
+  font-family: var(--heading-font);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
 }
 .table-sheet-grid {
   flex: 1 1 auto;
@@ -9005,7 +9086,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 157 values that do not change with the theme, all 62 icons, and all 67 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 162 values that do not change with the theme, all 62 icons, and all 67 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -9025,7 +9106,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>157</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>162</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>62</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>67</b></button>
 </div>
@@ -9128,7 +9209,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">157 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">162 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -9177,8 +9258,10 @@ body.is-home-row-dragging .home-list-scroll li {
 <div class="value"><code>lt-text-12</code><i class="demo type" style="font-size:var(--lt-text-12)">Ag</i><code>12px</code></div>
 <div class="value"><code>lt-text-12-5</code><i class="demo type" style="font-size:var(--lt-text-12-5)">Ag</i><code>12.5px</code></div>
 <div class="value"><code>lt-text-13</code><i class="demo type" style="font-size:var(--lt-text-13)">Ag</i><code>13px</code></div>
+<div class="value"><code>lt-text-13-5</code><i class="demo type" style="font-size:var(--lt-text-13-5)">Ag</i><code>13.5px</code></div>
 <div class="value"><code>lt-text-14</code><i class="demo type" style="font-size:var(--lt-text-14)">Ag</i><code>14px</code></div>
 <div class="value"><code>lt-text-15</code><i class="demo type" style="font-size:var(--lt-text-15)">Ag</i><code>15px</code></div>
+<div class="value"><code>lt-text-16</code><i class="demo type" style="font-size:var(--lt-text-16)">Ag</i><code>16px</code></div>
 <div class="value"><code>lt-text-18</code><i class="demo type" style="font-size:var(--lt-text-18)">Ag</i><code>18px</code></div>
 </div>
 <h3>Interface weight</h3><div class="wall wide">
@@ -9198,13 +9281,16 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 <h3>Line height</h3><div class="wall wide">
 <div class="value"><code>lt-leading-1</code><i class="demo type lines" style="line-height:var(--lt-leading-1)">Two lines of it, so the gap shows</i><code>1</code></div>
+<div class="value"><code>lt-leading-1-04</code><i class="demo type lines" style="line-height:var(--lt-leading-1-04)">Two lines of it, so the gap shows</i><code>1.04</code></div>
 <div class="value"><code>lt-leading-1-2</code><i class="demo type lines" style="line-height:var(--lt-leading-1-2)">Two lines of it, so the gap shows</i><code>1.2</code></div>
+<div class="value"><code>lt-leading-1-25</code><i class="demo type lines" style="line-height:var(--lt-leading-1-25)">Two lines of it, so the gap shows</i><code>1.25</code></div>
 <div class="value"><code>lt-leading-1-3</code><i class="demo type lines" style="line-height:var(--lt-leading-1-3)">Two lines of it, so the gap shows</i><code>1.3</code></div>
 <div class="value"><code>lt-leading-1-35</code><i class="demo type lines" style="line-height:var(--lt-leading-1-35)">Two lines of it, so the gap shows</i><code>1.35</code></div>
 <div class="value"><code>lt-leading-1-4</code><i class="demo type lines" style="line-height:var(--lt-leading-1-4)">Two lines of it, so the gap shows</i><code>1.4</code></div>
 <div class="value"><code>lt-leading-1-45</code><i class="demo type lines" style="line-height:var(--lt-leading-1-45)">Two lines of it, so the gap shows</i><code>1.45</code></div>
 <div class="value"><code>lt-leading-1-5</code><i class="demo type lines" style="line-height:var(--lt-leading-1-5)">Two lines of it, so the gap shows</i><code>1.5</code></div>
 <div class="value"><code>lt-leading-1-55</code><i class="demo type lines" style="line-height:var(--lt-leading-1-55)">Two lines of it, so the gap shows</i><code>1.55</code></div>
+<div class="value"><code>lt-leading-1-6</code><i class="demo type lines" style="line-height:var(--lt-leading-1-6)">Two lines of it, so the gap shows</i><code>1.6</code></div>
 </div>
 <h3>Letter spacing</h3><div class="wall wide">
 <div class="value"><code>lt-tracking-020</code><i class="demo type" style="letter-spacing:var(--lt-tracking-020)">Spacing</i><code>0.02em</code></div>
