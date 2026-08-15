@@ -192,6 +192,54 @@ pub(crate) fn buffer_already_shows(edit: Option<&EditableDocument>, contents: &s
     edit.is_some_and(|edit| !edit.is_dirty() && edit.text() == contents)
 }
 
+/// Whether the page still shows what `contents` holds for `path` in `tab`.
+///
+/// Answered from what the page was actually drawn from: this tab's edit buffer where it has one for this document, and the tab's last render otherwise. A tab with neither has nothing to stand on, so it counts as moved — asking [`FileWatch::active_hash`] instead would say "moved" for every freshly opened document, since that hash is `None` until something reloads or saves.
+///
+/// A buffer holding unsaved edits says yes: the disk cannot move a page the reader is typing into, and [`reload_active_document`] refuses one anyway.
+pub(crate) fn page_shows_file(tab: &Tab, path: &Path, contents: &str) -> bool {
+    if let Some(edit) = tab.edit.as_ref().filter(|_| tab.has_edit_for(path)) {
+        return edit.is_dirty() || edit.text() == contents;
+    }
+    tab.rendered
+        .as_ref()
+        .is_some_and(|cache| cache.answers_for(path, content_hash(contents)))
+}
+
+/// Bring the view back in step with the disk before an answer carrying offsets read off the page is handed over.
+///
+/// A modal dialog blocks the loop, so the file can move while it stands open and the answer reaches the page ahead of any queued reload — offsets then spent against text the page has never seen. Reading the disk here rather than taking the pending change first is what covers both ways in: a document with no edit buffer seeds one from disk on the write itself, and that path raises no watcher event at all.
+///
+/// When the file moved, the reload redraws, and the redraw is what clears the page's pending writer — so the answer that follows has nothing to write with and is dropped. When it did not, nothing is redrawn.
+pub(crate) fn reload_if_file_moved(reader: &mut Reader, file_watch: &mut FileWatch) {
+    let Some(index) = reader.workspace.active else {
+        return;
+    };
+    let Some(path) = reader
+        .workspace
+        .tabs
+        .get(index)
+        .and_then(|tab| tab.history.current().cloned())
+    else {
+        return;
+    };
+    // Unreadable mid-save or briefly gone: leave the page as it is rather than dropping the answer over a read that would have settled.
+    let Ok(source) = read_source(&path) else {
+        return;
+    };
+    let still_shown = reader
+        .workspace
+        .tabs
+        .get(index)
+        .is_some_and(|tab| page_shows_file(tab, &path, &source.text));
+    if still_shown {
+        return;
+    }
+    // The page has been established stale, so the reload's own hash gate must not be allowed to wave it through: that hash records the last reload, not what is on the page.
+    file_watch.active_hash = None;
+    reload_active_document(reader, file_watch);
+}
+
 /// Re-render the active document from disk, preserving scroll position. Reads the file once and hash-gates, so a spurious event with unchanged contents re-renders nothing.
 pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileWatch) {
     let workspace = &mut reader.workspace;

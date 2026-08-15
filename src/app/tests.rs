@@ -1710,6 +1710,57 @@ changed
     assert!(!buffer_already_shows(Some(&edit), &contents));
 }
 
+#[test]
+fn a_picture_picked_after_the_file_moved_is_never_spliced_at_the_offsets_the_page_had() {
+    // The picture dialog blocks the loop, so the file can move while it stands open and the answer reaches the page carrying offsets read before it did. The dialog's arm asks this question first: "moved" reloads, the redraw clears the page's pending writer, and the picture is dropped rather than spliced into the middle of a sentence.
+    let path = PathBuf::from("notes/a.md");
+    let text = "# Title\n\nbody\n";
+    let moved = "# Title\n\na paragraph nobody on the page has seen\n\nbody\n";
+
+    // A freshly opened document has no edit buffer at all, so its last render is what the page was drawn from.
+    let opened = Tab {
+        rendered: Some(RenderedCache {
+            path: path.clone(),
+            hash: content_hash(text),
+            document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+        }),
+        ..Default::default()
+    };
+    assert!(
+        page_shows_file(&opened, &path, text),
+        "the last render is of exactly what the file holds, so the picture lands where the plus stood"
+    );
+    assert!(
+        !page_shows_file(&opened, &path, moved),
+        "the file moved while the dialog was up"
+    );
+
+    // Neither a buffer nor a render: nothing says what the page shows, so it cannot be trusted with offsets.
+    assert!(!page_shows_file(&Tab::default(), &path, text));
+
+    // A clean buffer is what the page is drawn from once the document has been edited and saved.
+    let mut edited = Tab {
+        edit: Some(EditableDocument::new(
+            path.clone(),
+            SourceText::utf8(text.to_string()),
+        )),
+        ..Default::default()
+    };
+    assert!(page_shows_file(&edited, &path, text));
+    assert!(!page_shows_file(&edited, &path, moved));
+
+    // Unsaved edits are left alone: the disk cannot move that page, and the reload refuses it anyway.
+    edited
+        .edit
+        .as_mut()
+        .expect("the buffer was just made")
+        .replace_range(2, 7, "Other");
+    assert!(
+        page_shows_file(&edited, &path, moved),
+        "a page holding unsaved edits is answered as it stands"
+    );
+}
+
 /// A scratch folder for the transfer tests, named per test so they can run at once.
 fn transfer_fixture(label: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!(

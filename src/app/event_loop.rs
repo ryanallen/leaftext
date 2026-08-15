@@ -1081,6 +1081,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::PickImage { token } => {
                     // The dialog blocks this thread, like Open's does. What comes back is a destination for the document to hold, not a file to copy: the picture stays where the user keeps it.
                     if let Some(image) = pick_image_file() {
+                        // The dialog stood open while the loop was blocked, so the file may have moved under it. The answer below carries offsets the page read before that, so the view is brought back in step first: a moved file redraws, and the redraw clears the page's pending writer, so the picture is dropped instead of spliced into text nobody has seen.
+                        reload_if_file_moved(&mut reader, &mut file_watch);
                         let source = reader
                             .workspace
                             .active_path()

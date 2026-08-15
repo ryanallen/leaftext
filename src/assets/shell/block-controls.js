@@ -182,17 +182,18 @@ function openBlockGapLine(gap) {
   if (blockGapLine && sameBlockGap(blockGapLine.__gap, gap)) return;
   closeBlockGapLine();
   const layout = app.querySelector('.reader-layout');
-  if (!layout || !gap.after) return;
+  if (!layout || (!gap.after && !gap.before)) return;
   const line = document.createElement('div');
   line.className = 'block-gap-line';
   line.setAttribute('aria-hidden', 'true');
   line.__gap = gap;
-  // Clicking the space is the other way of saying it: body text, starting here, with whatever is being typed above saved on the way — no Enter, no clicking out first.
+  // Clicking the space is the other way of saying it: body text, starting here, with whatever is being typed above saved on the way — no Enter, no clicking out first. A space with no block to write after is above everything, so the line opens above instead, the way the plus there already does.
   line.addEventListener('mousedown', (event) => {
     event.preventDefault();
-    const host = gap.after;
+    const { after, before } = gap;
     hideBlockGutter();
-    openLineBelow(host);
+    if (after) openLineBelow(after);
+    else openLineAbove(before);
   });
   layout.appendChild(line);
   blockGapLine = line;
@@ -229,17 +230,19 @@ function positionBlockGapLine() {
   const layoutRect = layout.getBoundingClientRect();
   const bodyRect = body.getBoundingClientRect();
   const span = blockGapSpan(line.__gap);
-  // Clickable from the thing above down to the foot of the new line: the margin over the line belongs to the line, and aiming for a bare gap is fiddly.
-  const top = Math.min(span.top, line.__gap.above.getBoundingClientRect().bottom);
+  // Clickable from the thing above down to the foot of the new line: the margin over the line belongs to the line, and aiming for a bare gap is fiddly. Above everything there is nothing to reach up to, so the span's own top is the line's — over the page's padding and nothing the page drew.
+  const above = line.__gap.above;
+  const top = above ? Math.min(span.top, above.getBoundingClientRect().bottom) : span.top;
   line.style.left = bodyRect.left - layoutRect.left + 'px';
   line.style.width = bodyRect.width + 'px';
   line.style.top = top - layoutRect.top + 'px';
   line.style.height = Math.max(BLOCK_GAP_MIN, span.bottom - top) + 'px';
 }
 
-// Whether the space still exists: both ends still on the page, and something above to measure from.
+// Whether the space still exists: whichever end it really has is still on the page. The space above the first block has no above at all — the same branch blockGapSpan measures — so it stands on its below alone.
 function blockGapStanding(gap) {
-  if (!gap || !gap.above || !gap.above.isConnected) return false;
+  if (!gap || (!gap.above && !gap.below)) return false;
+  if (gap.above && !gap.above.isConnected) return false;
   return !gap.below || gap.below.isConnected;
 }
 
@@ -538,6 +541,9 @@ function expandBlockInsertRow() {
 // The picture is never copied anywhere. What goes in the document is where it already is: relative to the document when it sits under it, so the pair survive being moved together, and absolute when it doesn't.
 let blockImageWrite = null;
 let blockImageToken = 0;
+// A picture answered after its box closed. The dialog has no parent window, so the app stays clickable under it and the box can be folded — by the plus, by Escape, or by a render rebuilding the gutter — while somebody is still choosing. Dropping the answer is right, because the line it was headed for may be gone; the word is what was missing.
+const BLOCK_IMAGE_GONE =
+  'That picture went nowhere — its box closed while the dialog was up. Press the plus to pick it again.';
 
 function openBlockImageBox(write) {
   if (!blockGutterRow) return;
@@ -579,11 +585,14 @@ function openBlockImageBox(write) {
 function writeBlockImage(destination, alt) {
   const write = blockImageWrite;
   blockImageWrite = null;
-  if (!write) return;
+  if (!write) {
+    leafToast(BLOCK_IMAGE_GONE, 'error');
+    return;
+  }
   write({ id: 'image', text: '![' + alt.replace(/[[\]]/g, '') + '](' + destination + ')' });
 }
 
-// The picker's answer. A token from a box that has since closed is dropped: the document may have moved on while the dialog was up.
+// The picker's answer. An old token is dropped without a word: it only goes stale when a newer box was opened, so the reader has already moved on and a growl about the answer they abandoned would land after they left. A closed box is the one that speaks, above.
 window.leafImagePicked = (token, destination, alt) => {
   if (token !== blockImageToken || !destination) return;
   writeBlockImage(destination, alt || '');

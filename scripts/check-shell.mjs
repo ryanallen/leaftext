@@ -3917,6 +3917,143 @@ if (booted) {
     });
   });
 
+  // The file dialog is built with no parent window, so the app stays clickable under it: the box the picture was headed for can be folded by hand, or swept away by a render, while somebody is still choosing a file. Dropping that answer is right — the line it was aimed at may be gone — and the word is what was missing, without which a reader picks a file and watches the page do nothing.
+  check('a picture answered after its box closed says so, and one a newer box replaced stays silent', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const wasToast = booted.leafToast;
+    const wrote = [];
+    const said = [];
+    const write = (option) => wrote.push(option);
+    // A fresh row to draw the box into each time, the way every render leaves one, and the token the picker will answer with.
+    const openBox = () => {
+      booted.__blockRowUnderTest = fakeElement('blockInsertRowUnderTest');
+      read('blockGutterRow = __blockRowUnderTest;');
+      booted.openBlockImageBox(write);
+      return read('blockImageToken');
+    };
+    try {
+      booted.leafToast = (message) => said.push(message);
+
+      // A box still standing when its answer lands: the picture is written, and nothing is said about it.
+      booted.leafImagePicked(openBox(), 'shots/leaf.png', 'A leaf');
+      if (wrote.length !== 1 || wrote[0].text !== '![A leaf](shots/leaf.png)') {
+        throw new Error(`the answer to a standing box wrote ${JSON.stringify(wrote)}`);
+      }
+      if (said.length) throw new Error(`a picture that landed said ${JSON.stringify(said)}`);
+
+      // Folded by hand under the dialog — the plus, or Escape.
+      const folded = openBox();
+      booted.collapseBlockInsertRow();
+      booted.leafImagePicked(folded, 'shots/leaf.png', 'A leaf');
+      if (wrote.length !== 1) throw new Error(`the answer to a folded box wrote ${JSON.stringify(wrote)}`);
+      if (said.length !== 1 || !said[0].includes('went nowhere')) {
+        throw new Error(`a folded box said ${JSON.stringify(said)}`);
+      }
+
+      // Swept away by a render landing in the moment Choose was pressed: the same drop, so the same word.
+      said.length = 0;
+      const redrawn = openBox();
+      booted.bindBlockControls();
+      booted.leafImagePicked(redrawn, 'shots/leaf.png', 'A leaf');
+      if (wrote.length !== 1) throw new Error(`the answer to a redrawn box wrote ${JSON.stringify(wrote)}`);
+      if (said.length !== 1 || !said[0].includes('went nowhere')) {
+        throw new Error(`a redrawn box said ${JSON.stringify(said)}`);
+      }
+
+      // A newer box has since been opened, so the old answer belongs to somebody who has already moved on: dropped, and no word chases them.
+      said.length = 0;
+      const old = openBox();
+      openBox();
+      booted.leafImagePicked(old, 'shots/leaf.png', 'A leaf');
+      if (wrote.length !== 1) throw new Error(`a stale answer wrote ${JSON.stringify(wrote)}`);
+      if (said.length) throw new Error(`a stale answer said ${JSON.stringify(said)}`);
+    } finally {
+      booted.collapseBlockInsertRow();
+      delete booted.__blockRowUnderTest;
+      read('blockGutterRow = null;');
+      booted.leafToast = wasToast;
+    }
+  });
+
+  // The space above the first block used to be built, offered the plus, and then called gone in the next statement — the standing test wanted something above to measure from, when that space measures off the block below. So the plus was hidden the moment it was drawn, and the field block it starts up there could never be started.
+  check('the plus that was hidden the moment it was drawn: the top space stands, and starts a field block', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const below = fakeElement('first');
+    below.getBoundingClientRect = () => ({ top: 100, bottom: 140 });
+    if (!booted.blockGapStanding({ above: null, below })) {
+      throw new Error('the space above the first block is still called gone');
+    }
+    // The gutter takes its line from the middle of the space blockGapSpan already measures for it: one line up from the block below.
+    const was = { format: read('currentDocumentFormat'), unlocked: read('readingUnlocked') };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    try {
+      read(`currentDocumentFormat = 'markdown'; readingUnlocked = true; blockGutterGap = null;`);
+      inApp.querySelector = (selector) => (selector === '.frontmatter' ? null : wasQuery.call(inApp, selector));
+      read('blockGutterGap = { above: null, below: null }');
+      const gap = read('blockGutterGap');
+      gap.below = below;
+      const middle = booted.blockGutterAnchorY();
+      if (middle !== 84) throw new Error(`the gutter sat at ${middle}, not on the middle of the space`);
+      // The label and the press both key on this one answer: above everything, on a note with no field block, the plus starts one.
+      if (!booted.frontmatterCanStart(gap)) {
+        throw new Error('the plus above everything does not offer to start a field block');
+      }
+      // With a field block already at the top there is nothing to start, so the plus is the insert menu it reads as.
+      inApp.querySelector = (selector) => (selector === '.frontmatter' ? {} : wasQuery.call(inApp, selector));
+      if (booted.frontmatterCanStart(gap)) {
+        throw new Error('a note that has a field block was offered a second one');
+      }
+    } finally {
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
+          `readingUnlocked = ${JSON.stringify(was.unlocked)}; blockGutterGap = null;`,
+      );
+    }
+  });
+
+  // The top space used to get no clickable line at all — refused for having no block to write after — and the line's own placing reached for a block above that is not there. It is measured from the span's own top now, and its click opens a line above the first block through the same opener the plus uses, writing nothing until something is typed in it.
+  check('clicking the space above the first block opens a line above it, and writes nothing until it is typed in', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    noteGutter('# Title\n\nA paragraph.\n', ({ block, sent }) => {
+      const first = block(0, 7);
+      first.getBoundingClientRect = () => ({ top: 100, bottom: 140, left: 0, right: 0, width: 600, height: 40 });
+      booted.openBlockGapLine({ above: null, below: first, after: null, before: first });
+      const line = read('blockGapLine');
+      if (!line) throw new Error('the space above the first block got no clickable line');
+      // One line tall against the top of the block below — the span blockGapSpan measures — not reaching for a block above that is not there.
+      if (line.style.top !== '68px' || line.style.height !== '32px') {
+        throw new Error(`the line was laid at ${line.style.top} for ${line.style.height}`);
+      }
+      for (const handler of line.listeners.get('mousedown') || []) handler({ preventDefault() {} });
+      if (!first.placed || first.placed.where !== 'beforebegin') {
+        throw new Error(`clicking the top space opened ${JSON.stringify(first.placed && first.placed.where)}`);
+      }
+      if (sent.length) throw new Error(`clicking the top space wrote ${JSON.stringify(sent)}`);
+      read('closeBlockGapLine()');
+    });
+  });
+
+  // The other half of the standing test: a space is gone when the end it really has has left the page, so the plus is never left floating beside nothing after a render replaced the block it was measured off.
+  check('a space whose real end has left the page is still called gone', () => {
+    const off = fakeElement('replaced');
+    off.isConnected = false;
+    const on = fakeElement('standing');
+    if (booted.blockGapStanding({ above: null, below: off })) {
+      throw new Error('the top space stands on a block a render took away');
+    }
+    if (booted.blockGapStanding({ above: off, below: on })) {
+      throw new Error('a space stands on an above a render took away');
+    }
+    if (booted.blockGapStanding({ above: on, below: off })) {
+      throw new Error('a space stands on a below a render took away');
+    }
+    if (booted.blockGapStanding({ above: null, below: null })) {
+      throw new Error('a space with no ends at all is standing');
+    }
+  });
+
   // A pause puts what is being typed into the file without redrawing the page, so both plus paths under a block have to save that block even where its words are back at the baseline — skip it and the file keeps a word the page shows as taken back, for the next render to draw in again.
   check('a word typed and taken back inside the pause is still written out by both plus paths', () => {
     const note = '# Title\n\nA paragraph.\n';
