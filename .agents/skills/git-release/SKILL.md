@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: Commit and push releases, the only skill allowed to write git. Ships built tickets for testing, sets their stage to Released for test, and tells the owner to run the done skill afterward. Use only when the user explicitly requests a release or git operation.
+description: Commit and push releases, the only skill allowed to write git. Ships built tickets for testing, sets their stage to Released, and tells the owner to run the done skill afterward. Use only when the user explicitly requests a release or git operation.
 disable-model-invocation: true
 argument-hint: "[version] [message]"
 user-invocable: true
@@ -12,11 +12,11 @@ This is the only skill that commits, tags, pushes, or changes the version. Run `
 
 An app change is one that touches `src/`, `Cargo.toml`, `Cargo.lock`, `build.rs`, `wix/`, `leaf.rc`, `scripts/` or a `release-` workflow. Everything else — the README, the site, `docs/`, `design/`, `themes/`, the skills, the plan tree — is site-only: commit and push `main`, make no tag, and leave the version alone. Read that off the diff against the remote rather than off memory of what was edited.
 
-Before releasing, inspect live tickets. A ticket with exactly one open box must have that box under `The owner's box`; otherwise stop. Every built phase must have its test box ticked, or struck with the reason it cannot be tested here; an open test box stops the release the same way an open work box does. Any test gap found on the way is filed as its own ticket before the release, never carried in the commit. Release the code, then set its live plan row to `Released for test`. Do not move it into `done/` here.
+Before releasing, inspect live tickets. A ticket with exactly one open box must have that box under `The owner's box`; otherwise stop. Every built phase must have its test box ticked, or struck with the reason it cannot be tested here; an open test box stops the release the same way an open work box does. Any test gap found on the way is filed as its own ticket before the release, never carried in the commit. Release the code, then set its live plan row to `Released`. Do not move it into `done/` here.
 
 ## Which number moves
 
-Read it off the folder of the ticket whose row is about to say `Released for test`. It is a path, not a judgment — the rule this replaced asked whether a reader would notice, and that question came back "patch" five hundred and two times running.
+Read it off the folder of the ticket whose row is about to say `Released`. It is a path, not a judgment — the rule this replaced asked whether a reader would notice, and that question came back "patch" five hundred and two times running.
 
 | What the release carries | What the version becomes |
 | --- | --- |
@@ -38,6 +38,6 @@ The push is the last write, but it is not the end. Read the workflow list once a
 
 If none exists, start the two release workflows by hand against that tag rather than pushing the tag again. Never re-push a tag.
 
-After the release, tell the owner to test it and run the done skill, named with your host's own sign — `/done` in Claude, `$done` in Codex. If any ticket is already `Released for test`, stop and tell the owner to run it before another release.
+After the release, tell the owner to test it and run the done skill, named with your host's own sign — `/done` in Claude, `$done` in Codex. If any ticket is already `Released`, stop and tell the owner to run it before another release.
 
 <!-- keycode: LEAF-4409 -->

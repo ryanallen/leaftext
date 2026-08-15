@@ -25,7 +25,7 @@ user-invocable: true
 
 ## 2. Re-derive every status
 
-Never trust the cell. `Ready` — no dated [`/design`](../design/SKILL.md) line. `Designed` — that line exists, no box ticked. `In development` — a box is ticked. `Released for test` — shipped, not yet retired. The ticket is the authority; when the README disagrees, fix the README.
+Never trust the cell. `Ready` — no dated [`/design`](../design/SKILL.md) line. `Designed` — that line exists, no box ticked. `Dev` — a box is ticked. `Released` — shipped, not yet retired. The ticket is the authority; when the README disagrees, fix the README.
 
 Then check in the code, not in the file:
 
@@ -93,17 +93,17 @@ It opens with the first work table. Title, counts and anything off the list go a
 ```markdown
 ## Tier 1 — wrong today
 
-| # | Ticket | Status | Depends on | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Why here |
 
 ## Tier 3 — the features people would name, cheapest first
 
 ### One or two phases
 
-| # | Ticket | Status | Depends on | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Why here |
 
 ### Three or four phases
 
-| # | Ticket | Status | Depends on | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Why here |
 ```
 
 - **The number is the position**, not the ticket's identity: moving a row renumbers everything under it, and the number is never copied anywhere else. The name is what every line of prose cites.
@@ -111,7 +111,8 @@ It opens with the first work table. Title, counts and anything off the list go a
 - **Nothing that belongs to the ticket** — no citation, no phase count, no box count, no cost breakdown, no date of who asked for it, no restating what the README already says the ticket is.
 - **No preamble under a heading, no method, no record, no picture.** How rows are ranked is this skill; what an earlier ranking got wrong is `done/PLAN.md`'s.
 - **Every ticket name is a link**, in every cell and every line of prose, using the path from the README. A bare name is a ranking error.
-- **`Depends on` holds live blockers only**, linked, or `—`. A ticket that has shipped does not block anything, so naming one there reads as a wait that is over.
+- **`Blocks` is `Blocked by` read the other way** — every live row whose `Blocked by` names this one, linked, or `—`. It carries no claim of its own: the waiting ticket's cell is the source, and this one exists so a row being weighed says what sits behind it without reading the whole file. `scripts/check-plan.mjs` holds the two columns to each other.
+- **`Blocked by` holds live blockers only**, linked, or `—`. A ticket that has shipped does not block anything, so naming one there reads as a wait that is over.
 - **A track is `TRACKS.md`'s.** A row says which step it is and nothing more, and the ranking does not import the track's order — most steps are a preference the track says so about, and only a real block moves a row. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is a track**, so a subject the ranking is carrying in three separate cells gets one written instead.
 - **Off the list** — a sentence, with what would put it back. Off with a reason beats bottom of the list.
 

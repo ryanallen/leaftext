@@ -9,7 +9,7 @@ user-invocable: true
 
 Retire a ticket on the owner's word. **Closing is the owner's call.** Never refuse and never infer it. Any status closes, open boxes and all.
 
-With no argument, take a live ticket at `Released for test`.
+With no argument, take a live ticket at `Released`.
 
 1. Add the shipped note and keep the dated `Designed` line.
 2. Move the ticket into the matching folder under `../docs/done/` and fix its relative links. Take the links pointing *at* it with it: search both trees for its file name and repoint every one, or `/check` fails naming each.

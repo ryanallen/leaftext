@@ -15,9 +15,9 @@ Build a ticket from its path, phase by phase, and stop at the owner's box.
 
 Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` before building. If the ticket has no dated `Designed` line, run `/design` before writing code.
 
-### 2. Set the live plan stage to `In development`
+### 2. Set the live plan stage to `Dev`
 
-When implementation starts, set its live plan stage to `In development`. Keep the stage synchronized with the ticket: `Ready`, `Designed`, `In development`, or `Released for test`.
+When implementation starts, set its live plan stage to `Dev`. Keep the stage synchronized with the ticket: `Ready`, `Designed`, `Dev`, or `Released`.
 
 ### 3. Work the phases in order
 
