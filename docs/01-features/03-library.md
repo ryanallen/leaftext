@@ -128,6 +128,8 @@ Reveal and Properties map to each OS:
 - Windows: Explorer; the file Properties dialog.
 - macOS: Finder; Get Info.
 
+Where that view will not open, a message in the bottom-right corner says so, so the menu item never just appears to do nothing.
+
 ### Deleting asks first, and can be taken back
 
 ![The confirmation over a dimmed page: "Delete “Reading list.md”?", the line saying it goes to the Recycle Bin, then Cancel and a red Delete](../../imgs/delete-confirm.png)

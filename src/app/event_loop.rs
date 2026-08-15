@@ -674,6 +674,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::ShowProperties { path } => {
                     if let Err(error) = show_properties(&path) {
                         eprintln!("Failed to show properties for {}: {error}", path.display());
+                        // The mechanism is a shell verb here and Finder there; neither is what the reader pressed.
+                        report_file_action_failure(
+                            reader.page(),
+                            "the information window could not be opened",
+                        );
                     }
                 }
                 IpcCommand::CloseTab { index } => {
