@@ -7779,6 +7779,41 @@ if (booted) {
     booted.leafSetVaults({ vaults: [], active: 0 });
   });
 
+  check('leaving the window closes a list of vaults and leaves a vault settings panel standing', () => {
+    // Another program's window coming forward, which is all a blur is.
+    const leaveTheWindow = () => {
+      for (const handler of [...(booted.window.__windowListeners.get('blur') || [])]) handler({});
+    };
+    const button = fakeElement('libraryVaultSwitch');
+    button.classList.add('library-vault-switch');
+    booted.bindVaultSwitch(button, false);
+    const press = button.listeners.get('pointerdown')[0];
+    const event = { button: 0, stopPropagation() {}, preventDefault() {} };
+    booted.leafSetVaults({ vaults: VAULTS, active: 1 });
+
+    press(event);
+    if (vm.runInContext('crumbMenu.hidden', booted)) throw new Error('the switcher did not open its list of vaults');
+    leaveTheWindow();
+    // A list is a menu: one press from coming back, and leaving it hanging over a window nobody is in is the odd behavior.
+    if (!vm.runInContext('crumbMenu.hidden', booted)) throw new Error('a list of vaults outlived the window it hangs in');
+
+    press(event);
+    const row = vm.runInContext('vaultMenuItems()', booted).find((one) => one && one.edit);
+    if (!row) throw new Error('no vault row offers its own settings');
+    row.edit();
+    if (vm.runInContext('crumbMenu.hidden', booted) || !vm.runInContext('crumbMenuVault', booted)) {
+      throw new Error("the settings button did not open that vault's settings panel");
+    }
+    leaveTheWindow();
+    // The panel is a place work is done, and its own rows send the reader to a browser and then ask them to paste what it gives them back in here -- so closing it on the way out takes away the field they were sent to fill.
+    if (vm.runInContext('crumbMenu.hidden', booted)) {
+      throw new Error('a vault settings panel shut itself when the window lost focus, with nobody pressing anything');
+    }
+
+    vm.runInContext('hideCrumbMenu()', booted);
+    booted.leafSetVaults({ vaults: [], active: 0 });
+  });
+
   check('the home vault switcher keeps the regular marks and leaves room before its name', () => {
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
     const home = css.split('.home-vault-switch {')[1];

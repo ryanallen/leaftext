@@ -973,6 +973,8 @@ function editVaultMenuItems(vault) {
     {
       label: 'Back',
       icon: BACK_ARROW_SVG,
+      // Redraws in place like the git rows: closing first clears crumbMenuOwner, and the redraw below is handed it.
+      keepOpen: true,
       // Back to the list, so the panel is no longer up: clear the mark or a stale status answer would still think it is.
       run: () => {
         crumbMenuVault = null;
@@ -1238,7 +1240,8 @@ function showCrumbMenu(button, items) {
 window.addEventListener('pointerdown', (event) => {
   if (!crumbMenu.contains(event.target)) hideCrumbMenu();
 });
-window.addEventListener('blur', hideCrumbMenu);
+// Leaving the window closes a list and never the settings panel: a list is a menu, one press from coming back, while the panel holds an address field and rows that send the reader to a browser to fetch what goes in it. crumbMenuVault is set for the panel and null for a list; Back, a press outside and Escape are the ways out.
+window.addEventListener('blur', () => { if (!crumbMenuVault) hideCrumbMenu(); });
 leafOnEscape(hideCrumbMenu);
 // The band's width changes with a divider drag, a window resize, and the pane opening — all of which change how much of the path fits. One rAF-throttled refit covers every case.
 let crumbFitFrame = 0;

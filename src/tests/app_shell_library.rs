@@ -670,6 +670,40 @@ fn rebuilding_the_breadcrumb_leaves_the_vault_switcher_open() {
 }
 
 #[test]
+fn a_vault_settings_panel_survives_the_window_losing_focus() {
+    let html = app_shell_page();
+
+    // Any second window taking the foreground blurs this one, so closing the panel on a blur is a close nobody pressed for -- and the reader meets it whenever the panel's own rows send them to a browser to copy a repository address and paste it back in here.
+    assert!(html.contains(
+        "window.addEventListener('blur', () => { if (!crumbMenuVault) hideCrumbMenu(); });"
+    ));
+    // Set for the panel and null for a list, which is the whole of what the guard reads.
+    assert!(html.contains("let crumbMenuVault = null;"));
+    assert!(html.contains("  crumbMenuVault = null;"));
+    // A list of vaults or folders is a menu and still closes with the window, and so does the file right-click menu.
+    assert!(html.contains("window.addEventListener('blur', hideContextMenu);"));
+    // Three ways out that owe nothing to the window: Back and a press outside are presses, Escape is a key.
+    assert!(html.contains("if (!crumbMenu.contains(event.target)) hideCrumbMenu();"));
+    assert!(html.contains("leafOnEscape(hideCrumbMenu);"));
+}
+
+#[test]
+fn back_returns_the_switcher_to_its_list_of_vaults() {
+    let html = app_shell_page();
+
+    // Back is the one row that redraws the menu in place without sending the reader anywhere, so it has to carry the mark the git rows carry: unmarked, the handler hides first, hideCrumbMenu clears crumbMenuOwner, and the redraw is handed null -- which throws on the button before anything is unhidden, leaving the reader with the whole menu gone.
+    assert!(html.contains(
+        "      label: 'Back',\n      icon: BACK_ARROW_SVG,\n      // Redraws in place like the git rows: closing first clears crumbMenuOwner, and the redraw below is handed it.\n      keepOpen: true,"
+    ));
+    // The mark is only worth anything because the handler reads it before it hides.
+    assert!(html.contains("      if (!entry.keepOpen) hideCrumbMenu();"));
+    // And the row still drops the panel mark before it redraws, so a git answer landing a beat later cannot draw the panel back over the list.
+    assert!(html.contains(
+        "        crumbMenuVault = null;\n        showCrumbMenu(crumbMenuOwner, vaultMenuItems());"
+    ));
+}
+
+#[test]
 fn a_vault_can_be_put_on_github_from_its_own_settings() {
     let html = app_shell_page();
     let css = reading_mode_css();
