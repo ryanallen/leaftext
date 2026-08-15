@@ -730,6 +730,8 @@ function pushCreateRoutes(items, vault, state, busy) {
   items.push({
     label: 'Create it on GitHub ↗',
     title: 'Opens GitHub with the name filled in. Copy the address it gives you and paste it below.',
+    // The row's own words send the reader to a browser and back to the field below it, so the press must not take that field away.
+    keepOpen: true,
     run: () => send({
       command: 'openExternal',
       url: `https://github.com/new?name=${encodeURIComponent(state.suggested)}&visibility=private`,

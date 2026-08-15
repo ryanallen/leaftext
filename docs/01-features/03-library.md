@@ -303,7 +303,7 @@ They are found wherever the reader can click one: written out as `[text](https:/
 
 ![A vault's settings panel showing the connected GitHub repository address with a Change repo button beside it, and the sync button at the end of the breadcrumb carrying a count of changes waiting to be pushed](../../imgs/github-sync.png)
 
-A vault can be a git repository that pushes to GitHub. Open a vault's settings from the switcher to see where it stands. The panel stays open while you go elsewhere — switch to your browser and back and it is still there, with whatever you had typed in it — so pasting an address you had to fetch is one trip rather than two. The lists it opens over, the vaults and the folders the path swallowed, close with the window the way any menu does.
+A vault can be a git repository that pushes to GitHub. Open a vault's settings from the switcher to see where it stands. The panel stays open while you go elsewhere — the row that opens a browser leaves it standing, and switching away and back leaves it there with whatever you had typed in it — so pasting an address you had to fetch is one trip rather than two. The lists it opens over, the vaults and the folders the path swallowed, close with the window the way any menu does.
 
 ### What it needs
 

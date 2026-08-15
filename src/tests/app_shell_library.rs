@@ -751,6 +751,28 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
 }
 
 #[test]
+fn creating_a_repo_in_the_browser_leaves_the_paste_field_standing() {
+    let html = app_shell_page();
+
+    // The label and the mark are asserted in one snippet on purpose: five other rows carry a bare `keepOpen: true,`, so only a match tying the mark to this row's label can fail before the fix.
+    assert!(html.contains(
+        "    label: 'Create it on GitHub ↗',\n    title: 'Opens GitHub with the name filled in. Copy the address it gives you and paste it below.',\n    // The row's own words send the reader to a browser and back to the field below it, so the press must not take that field away.\n    keepOpen: true,"
+    ));
+    // The mark is only worth anything because the handler reads it before it hides.
+    assert!(html.contains("      if (!entry.keepOpen) hideCrumbMenu();"));
+    // The field those words point at is the next row in the same block, so closing on the press takes away the only place the address can go.
+    assert!(html.contains("    placeholder: 'Paste the repository address',"));
+    // The other half of the round trip: the browser taking the foreground blurs the window, and a blur closes a list rather than the panel.
+    assert!(html.contains(
+        "window.addEventListener('blur', () => { if (!crumbMenuVault) hideCrumbMenu(); });"
+    ));
+    // Install git ↗ is the same trip one state earlier and stays closing: nothing re-reads the folder while the panel stands, so a panel kept open would still say git is missing after it arrived, and its words promise no field to come back to.
+    assert!(html.contains(
+        "      label: 'Install git ↗',\n      run: () => send({ command: 'openExternal', url: 'https://git-scm.com/downloads' }),"
+    ));
+}
+
+#[test]
 fn a_vault_that_cannot_sign_in_is_told_how_to() {
     let html = app_shell_page();
 
