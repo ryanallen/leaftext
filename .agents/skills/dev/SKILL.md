@@ -23,6 +23,8 @@ When implementation starts, set its live plan stage to `Dev`. Keep the stage syn
 
 Work phases in order. Tick each box in the same edit as its code and test. Drive what the running app can reach; name anything that needs the owner's gesture in the ticket.
 
+**A change that moves something on the screen is proved by sampled positions, never by classes.** `just probe-motion <selector> <trigger>` watches one element's computed value every frame while the trigger runs and fails when the first frame is already at the resting value. Classes arrive on schedule whether or not anything draws — the leg runner carries a timer for the case where no `transitionend` comes — so a proof that reads the class timeline passes on a motion that snapped, which is how the bottom sheet's entrance shipped.
+
 ### 4. Build each phase's test with its code
 
 Build the phase's test box with its code, and write the test's name on the box. Where the ticket asks for a test but does not say where it goes, design it — [`/sync-tests`](../sync-tests/SKILL.md) holds the table and the naming rule — and record the choice in the ticket as a decision. Where a phase has no test box at all, write one and build it rather than shipping the code bare; only a real window, live selected text or a held pointer excuses one, and that is struck on the box with the reason.

@@ -224,9 +224,18 @@ mcp:
 drive out *steps:
     node scripts/drive.mjs {{ out }} {{ steps }}
 
-# Fail if the gesture driver cannot read its own -Do list: a verb that no longer
-# parses, an unknown one accepted, or an attached run accepting a flag that would
-# write over the owner's settings. Offline: -DryRun needs no app and no window.
+# Prove a motion drew rather than that its classes ran: sample one element's
+# computed value every frame while a trigger runs, print time and value per
+# frame, and fail when the first frame is already at the resting value.
+#   just probe-motion .lt-bottom-sheet window.leafOpenSheet()
+# --property picks what to watch (transform), --for how long to sample (1000ms).
+probe-motion selector *trigger:
+    node scripts/probe-motion.mjs {{ selector }} {{ trigger }}
+
+# Fail if the provers cannot read their own arguments back: a driver verb that no
+# longer parses, an unknown one accepted, an attached run accepting a flag that
+# would write over the owner's settings, or the motion probe taking a run with an
+# argument missing. Offline: none of those halves needs an app or a window.
 check-driver:
     node scripts/check-driver.mjs
 

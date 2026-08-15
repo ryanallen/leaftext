@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// The two drivers are what prove a change was pressed rather than assumed — the gesture driver against a real window, and `drive-web.mjs` against a published site in a headless browser. This checks the half of each that needs no app and no site.
+// The three provers are what prove a change happened rather than was assumed — the gesture driver against a real window, `drive-web.mjs` against a published site in a headless browser, and `probe-motion.mjs` sampling where an element actually was on each frame. This checks the half of each that needs no app and no site.
 //
 //   node scripts/check-driver.mjs   (`just verify`)
 //
 // `-DryRun` returns before the gesture driver loads an assembly, launches anything or reaches user32, so this is the one thing about it that a machine with no app built and no window open can check: that every verb parses, that an unknown one is refused, and that an attached run refuses the flags that would rewrite the owner's profile rather than ignoring them.
 //
 // It also reads that script itself for the half a dry run never reaches: that the throwaway profile is built from nothing on every run. That one is not a matter of taste — a profile carrying the last shot's vaults photographs them.
+//
+// The motion probe needs a running copy, so what is read back here is its dry run: that it echoes the element, the trigger and the property it would watch, and that it refuses a run missing one of them rather than sampling something nobody named.
 //
 // The browser driver is checked by driving it, because what this is afraid of is the browser changing under it and a source read can never see that. A headless page hides itself a few seconds in, which stops every animation frame and so every bit of the front end's placing, while each step still says it worked; one focus call holds it awake. `about:blank` hides just the same, so the probe needs no site, no export and no server.
 
@@ -18,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const script = join(root, 'scripts/capture-screenshot.ps1');
 const webDriver = join(root, 'scripts/drive-web.mjs');
+const motionProbe = join(root, 'scripts/probe-motion.mjs');
 const out = join(tmpdir(), 'leaftext-driver-check.bmp');
 
 // One entry per verb the driver takes, with what a dry run says it would do. A verb with no row here is a verb nobody has read back.
@@ -66,9 +69,42 @@ if (!/document\.visibilityState/.test(webText) || !/no frame ran/.test(webText))
   process.exit(1);
 }
 
+const problems = [];
+
+/** Say what was wrong and stop. Reached from two places: a machine with no PowerShell still runs the probe's half. */
+function stop() {
+  console.error('a prover does not read its own arguments back:');
+  for (const problem of problems) console.error(`  ${problem}`);
+  console.error('scripts/capture-screenshot.ps1 drives the window and scripts/probe-motion.mjs samples where it moved; a dry run of either is the half that needs no app.');
+  process.exit(1);
+}
+
+/** One dry run of the motion probe: it reads its arguments back and stops before the pipe. */
+function dryProbe(args) {
+  const run = spawnSync(process.execPath, [motionProbe, '--dry-run', ...args], { encoding: 'utf8' });
+  return { text: `${run.stdout ?? ''}${run.stderr ?? ''}`, ok: run.status === 0 };
+}
+
+// A trigger is a line of JavaScript with spaces in it, and `just` hands it over already split at them — so what the probe watches has to survive being handed a selector and four separate words.
+const probed = dryProbe(['.lt-bottom-sheet', 'window.leafOpenSheet(', '1', ')', '--property', 'opacity']);
+if (!probed.ok) problems.push(`a dry run of the motion probe was refused:\n${probed.text}`);
+for (const said of ['watching opacity on .lt-bottom-sheet', 'trigger window.leafOpenSheet( 1 )']) {
+  if (!probed.text.includes(said)) problems.push(`the motion probe did not read back "${said}":\n${probed.text}`);
+}
+// Sampling a property nobody named would watch `transform` on whatever the selector caught and call the answer a proof.
+for (const [what, args] of [
+  ['no element to watch', []],
+  ['no trigger', ['.lt-bottom-sheet']],
+  ['a property given as nothing', ['.lt-bottom-sheet', 'go()', '--property', '']],
+  ['a sampling window that is not a number', ['.lt-bottom-sheet', 'go()', '--for', 'soon']],
+]) {
+  if (dryProbe(args).ok) problems.push(`the motion probe accepted a run with ${what}`);
+}
+
 const exe = shell();
 if (!exe) {
-  // A skip, said out loud. A silent pass here would read as "the driver is fine" on a machine that cannot run a line of it.
+  // A skip, said out loud. A silent pass here would read as "the driver is fine" on a machine that cannot run a line of it. The probe's own read-back still counts: it is node, so it ran.
+  if (problems.length) stop();
   console.log('driver: skipped — no PowerShell on this machine, so the -Do list was not read back');
   process.exit(0);
 }
@@ -92,8 +128,6 @@ function viaSteps(steps) {
   );
   return { text: `${run.stdout ?? ''}${run.stderr ?? ''}`, ok: run.status === 0 };
 }
-
-const problems = [];
 
 rmSync(out, { force: true });
 const all = dryRun(VERBS.map(([step]) => step));
@@ -155,12 +189,7 @@ for (const [what, pattern] of PROFILE) {
   if (!pattern.test(text)) problems.push(`the shot profile no longer starts every run with ${what}`);
 }
 
-if (problems.length) {
-  console.error('the gesture driver does not read its own -Do list:');
-  for (const problem of problems) console.error(`  ${problem}`);
-  console.error('scripts/capture-screenshot.ps1 drives the window; -DryRun is the half of it that runs with no app.');
-  process.exit(1);
-}
+if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag, the shot profile starts empty in ${PROFILE.length} ways, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag, the shot profile starts empty in ${PROFILE.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );

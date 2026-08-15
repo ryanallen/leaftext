@@ -1847,6 +1847,23 @@ fn a_bottom_sheet_lands_with_a_rubber_band_and_leaves_with_a_boost() {
 }
 
 #[test]
+fn a_theme_card_holds_its_name_to_one_line_height() {
+    let css = reading_mode_css();
+
+    // The swatch block above the name is a fixed height and the padding either side of it is a fixed step, so the name's line box is the only part of a card a font can resize — and the card sets its type with a `font` shorthand, which leaves the line height at `normal`, read off whichever face is loaded. Unset, the previews arriving grow the sheet 2px under the reader, and the drop as the picker closes moves it back.
+    assert_contains(
+        rule_body(css, ".theme-item-name {"),
+        "line-height: var(--lt-leading-1-3);",
+    );
+    // The swap is the face alone. A line height on this side would be one the resting card does not have, which is the same fault with a different sign.
+    let swap = rule_body(css, ".theme-item.font-ready .theme-item-name {");
+    assert!(
+        !swap.contains("line-height"),
+        "the font-ready swap must change nothing but the face"
+    );
+}
+
+#[test]
 fn the_normal_width_library_toggle_rides_the_motion_rail() {
     let css = reading_mode_css();
 
