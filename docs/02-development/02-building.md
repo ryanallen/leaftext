@@ -205,7 +205,7 @@ An out ending `.png` comes back through the app's own encoder, so the picture ca
 A change that moves something on the screen is proved against the same open copy, by where it was rather than by which classes ran:
 
 ```bash
-just probe-motion #themeSheet openThemeSheet()
+just probe-motion '#themeSheet' 'openThemeSheet()'
 ```
 
 That samples the element's computed `transform` every frame while the trigger runs, prints time and value per frame, and fails when the first frame is already at the resting value. `--property` watches something else and `--for` sets how long it samples. It is worth the command because the class timeline keeps schedule whether or not anything moves — the runner behind each sheet carries a timer for the case where no end event arrives — so a proof that reads classes passes on a motion that snapped.
