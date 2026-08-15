@@ -226,6 +226,8 @@ Page list, titles, summaries and dates are all derived from the current files, a
 
 Leave the changes uncommitted. Tell the user what pages changed, and what the lint found that is still open. If they want it published, that is a separate, explicit `/git-release` (site-only: no version bump).
 
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+
 ## Reference
 
 - `docs/docs.js` — the shell, the routing and the link interception. Its nav comes from `site/docs-nav.js`, which reads the folder listing, so there is no page list in it.

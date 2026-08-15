@@ -45,6 +45,8 @@ Say what it costs and what it replaces, and stop. Adding it is the owner's call,
 
 `ammonia` (stands between hostile HTML and the web view — never hand-roll a sanitizer), `rusqlite`, `syntect`, `wry`/`tao`. These are not up for review.
 
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+
 ## Reference
 
 - `AGENTS.md`, Dependencies — the standing policy.

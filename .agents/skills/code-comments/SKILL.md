@@ -97,6 +97,8 @@ So, per rewrite: grep every identifier the replacement names and confirm it is r
 4. Run `cargo doc --no-deps --lib` if any Rust changed, then `just verify`.
 5. Say how many comments were cut, rewritten or shortened, in which files, and anything left alone as out of scope.
 
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+
 ## Reference
 
 - `../../../docs/done/repo/code-comments.md` — the completed 2026-08-01 sweep: 8,789 comment lines over 136 files, one verdict per file, and what it found (twelve dead references to a deleted indexer, four doc comments attached to the wrong item, five dead intra-doc links). Read it before a large pass; it is where the judgment calls are already settled.

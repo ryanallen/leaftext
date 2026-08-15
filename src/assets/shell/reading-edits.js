@@ -402,8 +402,16 @@ function xmlElementInnerSpan(src) {
 
 // The span this tree block may be typed on, or null for one that keeps the raw editor — the message's question asked of an element. The drawn words, escaped the way a tree holds them, have to be exactly the bytes between the element's own tags: that equality is the whole safety, and inline markup the renderer flattened, whitespace it collapsed and an entity spelled another way all fail it.
 function xmlBlockTypeableInPlace(el) {
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  return xmlRangeTypeableInPlace(el, Number(el.dataset.srcStart), Number(el.dataset.srcEnd));
+}
+
+// The same question asked of one cell of a table. A cell is not a block and must never answer to a block's own names, so it carries its element's range under names of its own; everything after that is the block's proof unchanged, because a cell's words come from one leaf element exactly as a paragraph's do.
+function xmlCellTypeableInPlace(el) {
+  return xmlRangeTypeableInPlace(el, Number(el.dataset.cellStart), Number(el.dataset.cellEnd));
+}
+
+// The proof both of those spend: `start..end` is one element, and what is drawn is exactly the bytes between its tags.
+function xmlRangeTypeableInPlace(el, start, end) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
   const src = sliceSourceBytes(currentDocumentSource, start, end);
   const span = xmlElementInnerSpan(src);
@@ -455,14 +463,18 @@ function commitBlockEdit(el, text, range) {
   window.setTimeout(() => {
     if (pendingCaret) return; // a structural edit already claimed the caret
     const active = document.activeElement;
-    if (!active || active === el || !active.dataset || active.dataset.srcStart == null) return;
+    if (!active || active === el || !active.dataset) return;
+    // A caret that walked into a cell of a table is carried by the cell's own names — the block's would find the table, whose range does not move with the splice.
+    const inCell = active.dataset.cellStart != null;
+    if (!inCell && active.dataset.srcStart == null) return;
     if (active.getAttribute('contenteditable') !== 'true') return;
     if (active.dataset.editingSource === 'true') return;
-    const activeStart = Number(active.dataset.srcStart);
+    const activeStart = Number(inCell ? active.dataset.cellStart : active.dataset.srcStart);
     if (!Number.isFinite(activeStart)) return;
     const offset = caretTextOffsetIn(active);
     setPendingCaret({
       srcStart: activeStart >= end ? activeStart + delta : activeStart,
+      cell: inCell,
       textOffset: offset == null ? 0 : offset,
     });
   }, 0);
@@ -1180,11 +1192,23 @@ function bindEditableBlocks(format) {
     if (wysiwyg) {
       if (innerSpan) el.__innerSpan = innerSpan;
       wysiwygBlocks.push(el);
+    } else if (format === 'xml' && kind === 'table') {
+      // A table is the one block whose shape is the reading: swapping the grid for the markup of every record takes the page away from somebody who pressed one word. So it takes no listener at all, and never a message saying why — its cells type where they can, and opening the heading and the joined cells is xml-table-heading-and-joined-cells.
     } else if (Number.isFinite(Number(el.dataset.srcStart)) && Number.isFinite(Number(el.dataset.srcEnd))) {
       // A block with an unusable range gets neither the class nor a listener; wireSourceEditable's own guard would drop it anyway.
       sourceBlocks.push(el);
     }
   });
+  // A cell of a table is drawn from one leaf element, so it can answer the same question — but nothing walks a cell, because the pass above walks the names a block is found by. So the cells get a pass of their own, and the ones that cannot be proved are left to the table's own press to answer.
+  if (format === 'xml') {
+    body.querySelectorAll('td[data-cell-start]').forEach((el) => {
+      if (el.dataset.cellStart == null) return;
+      const cellSpan = xmlCellTypeableInPlace(el);
+      if (!cellSpan) return;
+      el.__innerSpan = cellSpan;
+      wysiwygBlocks.push(el);
+    });
+  }
   wysiwygBlocks.forEach(markMarkdownEditable);
   wysiwygBlocks.forEach((el) => el.classList.add('leaf-editable'));
   sourceBlocks.forEach((el) => el.classList.add('leaf-editable'));
@@ -1220,7 +1244,10 @@ function placePendingCaret(body) {
     openMediumStart(body);
     return;
   }
-  const target = body.querySelector(`[data-src-start="${pending.srcStart}"]`);
+  // A cell answers to its own names, never a block's — the gutter reads a block's, and a cell wearing them would be offered a drag handle.
+  const target = body.querySelector(
+    pending.cell ? `[data-cell-start="${pending.srcStart}"]` : `[data-src-start="${pending.srcStart}"]`,
+  );
   if (!target) return;
   if (pending.insertBelow) {
     openInsertBlockAfter(target, pending.blockSpec);

@@ -46,6 +46,8 @@ The Mac build, the installer and the GitHub workflows do not run here, GitHub bu
 
 Say what changed and that `just verify` is green, in plain words: what the app does differently, not which constant moved. The tree stays dirty; that is the correct end state.
 
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+
 ## Reference
 
 - `Justfile` — what `verify` runs, and each step on its own.

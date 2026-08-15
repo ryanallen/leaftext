@@ -238,12 +238,80 @@ fn sitemap_records_render_as_a_table_of_links() {
     // Repeated flat records become one table, with spelled-out column headings.
     assert_contains(&html, "<table class=\"data-table\"");
     assert_contains(&html, "<th>URL</th><th>Last modified</th>");
-    assert_contains(
-        &html,
-        "<td><a href=\"https://leaftext.com/\">https://leaftext.com/</a></td><td>2026-07-24</td>",
-    );
+    assert_contains(&html, ">https://leaftext.com/</a></td><td data-cell-start=");
+    assert_contains(&html, ">2026-07-24</td>");
     // And nothing of the TEI renderer's leaks through.
     assert!(!html.contains("No TEI body"), "{html}");
+}
+
+/// The XML a table's cell stamps are proved against: an attribute column, a folded column, a column one record is short of, and two plain ones.
+const CELL_STAMP_XML: &str = r#"<urlset>
+  <url id="a"><loc>https://leaftext.com/</loc><lastmod>2026-07-24</lastmod><tag>one</tag><tag>two</tag></url>
+  <url id="b"><loc>https://leaftext.com/docs/</loc><tag>three</tag></url>
+</urlset>"#;
+
+/// Every `<td>` of the first table in `html`, as its opening tag.
+fn table_cell_tags(html: &str) -> Vec<&str> {
+    let table = &html[html.find("<table").expect("a table")..];
+    table
+        .match_indices("<td")
+        .map(|(at, _)| &table[at..at + table[at..].find('>').expect("a closed cell") + 1])
+        .collect()
+}
+
+#[test]
+fn a_table_cell_carries_the_bytes_of_the_element_it_was_drawn_from() {
+    // Typing in a cell rests on the cell naming one element's own range. A cell drawn from an attribute, folded from two elements, or invented because the record was short of that column is nobody's bytes, so it names none and keeps the raw editor the whole table has today.
+    let (_title, html) = render_xml_body(CELL_STAMP_XML);
+
+    let tags = table_cell_tags(&html);
+    // Four columns — the attribute, the address, the date, the folded tags — over two records.
+    assert_eq!(tags.len(), 8, "{html}");
+    let stamped: Vec<bool> = tags
+        .iter()
+        .map(|tag| tag.contains("data-cell-start"))
+        .collect();
+    // Row one: the attribute, the address, the date, the two tags folded together. Row two: the attribute, the address, the column it is short of, its single tag.
+    assert_eq!(
+        stamped,
+        vec![false, true, true, false, false, true, false, true],
+        "{tags:?}"
+    );
+    // And never the names a block is found by, or the gutter would offer a cell a drag handle.
+    assert!(
+        !tags.iter().any(|tag| tag.contains("data-src-start")),
+        "{tags:?}"
+    );
+}
+
+#[test]
+fn a_table_cells_range_slices_out_its_whole_element() {
+    // The page proves a cell by finding the tags inside the slice and comparing what is between them with the drawn words, so the stamp has to be the element whole. An inner range would hand it a slice with no tags in it.
+    let (_title, html) = render_xml_body(CELL_STAMP_XML);
+
+    let offset = |tag: &str, name: &str| -> Option<usize> {
+        let from = tag.find(name)? + name.len();
+        tag[from..from + tag[from..].find('"')?].parse().ok()
+    };
+    let mut sliced: Vec<&str> = Vec::new();
+    for tag in table_cell_tags(&html) {
+        let (Some(start), Some(end)) = (
+            offset(tag, "data-cell-start=\""),
+            offset(tag, "data-cell-end=\""),
+        ) else {
+            continue;
+        };
+        sliced.push(&CELL_STAMP_XML[start..end]);
+    }
+    assert_eq!(
+        sliced,
+        vec![
+            "<loc>https://leaftext.com/</loc>",
+            "<lastmod>2026-07-24</lastmod>",
+            "<loc>https://leaftext.com/docs/</loc>",
+            "<tag>three</tag>",
+        ],
+    );
 }
 
 #[test]

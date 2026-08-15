@@ -2003,6 +2003,137 @@ if (booted) {
     }
   });
 
+  // The same gate asked of one cell of a table, and the whole point of asking it: a reader correcting one date must not have every other row of the file move under them. So the splice a cell commits is its own element's words and the rest of the file comes back byte for byte.
+  check('a cell of an XML table writes its own bytes and leaves every other row alone', () => {
+    const { xmlCellTypeableInPlace, commitBlockEdit } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source =
+      '<urlset>\n<url><loc>https://leaftext.com/</loc><lastmod>2026-07-24</lastmod></url>\n' +
+      '<url><loc>https://leaftext.com/docs/</loc><lastmod>2026-07-11</lastmod></url>\n</urlset>\n';
+    const cellFor = (element, drawn) => {
+      const at = source.indexOf(element);
+      if (at < 0) throw new Error(`the fixture has no ${element}`);
+      const cell = fakeElement('cell');
+      cell.tagName = 'TD';
+      cell.dataset = { cellStart: String(at), cellEnd: String(at + element.length) };
+      cell.textContent = drawn;
+      return cell;
+    };
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const wasIpc = booted.ipc;
+    const posted = [];
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+
+      const date = cellFor('<lastmod>2026-07-24</lastmod>', '2026-07-24');
+      const span = xmlCellTypeableInPlace(date);
+      if (!span) throw new Error('a cell drawn from one element could not be typed on');
+      if (source.slice(span.start, span.end) !== '2026-07-24') {
+        throw new Error('the span a cell commits through is not its own words');
+      }
+      // Two elements drawn as one string with a separator the file has not got: no splice can name it, so no caret goes in it.
+      if (xmlCellTypeableInPlace(cellFor('<lastmod>2026-07-24</lastmod>', '2026-07-24, 2026-07-11'))) {
+        throw new Error('a cell holding two elements opened for typing');
+      }
+      // A cell with no range at all — one the record was short of — is nobody's to type on either.
+      if (xmlCellTypeableInPlace({ dataset: {}, textContent: '' })) {
+        throw new Error('a cell with no range opened for typing');
+      }
+
+      date.__innerSpan = span;
+      date.__editBaseline = '2026-07-24';
+      commitBlockEdit(date, '2026-08-01');
+      const edit = posted.find((message) => message.command === 'editBlock');
+      if (!edit) throw new Error('typing in a cell wrote nothing');
+      const after = source.slice(0, edit.start) + edit.text + source.slice(edit.end);
+      if (!after.includes('<lastmod>2026-08-01</lastmod>')) throw new Error('the cell was not written');
+      if (after.replace('2026-08-01', '2026-07-24') !== source) {
+        throw new Error('writing one cell moved something else in the file');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // A table is the one block whose shape is the reading, so nothing a reader presses may take the grid away and leave the markup of every record in its place. The parts of it that can be typed on answer for themselves; every other press says where the file's own text is instead.
+  check('an XML table keeps its shape when a press lands where nothing can be typed', () => {
+    const { bindEditableBlocks } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const run =
+      '<url><loc>https://leaftext.com/</loc><tag>one</tag></url>\n' +
+      '<url><loc>https://leaftext.com/docs/</loc><tag>two</tag><tag>three</tag></url>';
+    const source = `<urlset>\n${run}\n</urlset>\n`;
+    const cell = (id, element, drawn) => {
+      const at = source.indexOf(element);
+      const el = fakeElement(id);
+      el.tagName = 'TD';
+      el.dataset = { cellStart: String(at), cellEnd: String(at + element.length) };
+      el.textContent = drawn;
+      return el;
+    };
+    const table = fakeElement('table');
+    table.dataset = {
+      blockKind: 'table',
+      srcStart: String(source.indexOf(run)),
+      srcEnd: String(source.indexOf(run) + run.length),
+    };
+    const proved = cell('proved', '<loc>https://leaftext.com/</loc>', 'https://leaftext.com/');
+    const folded = cell('folded', '<tag>two</tag>', 'two, three');
+    const body = { querySelectorAll: () => [table, proved, folded] };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const wasToast = booted.leafToast;
+    const said = [];
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      booted.leafToast = (words) => said.push(words);
+      bindEditableBlocks('xml');
+
+      if (!proved.listeners.has('pointerup')) throw new Error('a cell of its own element was not opened for typing');
+      if (!proved.__innerSpan) throw new Error('the cell carries no span for its commit to splice');
+      if (!proved.classList.contains('leaf-editable')) throw new Error('a proved cell was left out of the editable pass');
+      if (folded.listeners.has('pointerup') || folded.__innerSpan || folded.classList.contains('leaf-editable')) {
+        throw new Error('a cell holding two elements was wired for typing anyway');
+      }
+      // The names a block is found by stay a block's, or the gutter would offer a cell a drag handle and a plus.
+      if (proved.dataset.srcStart != null || proved.dataset.srcEnd != null) {
+        throw new Error('a cell answers to the names a block is found by');
+      }
+
+      // Nothing may swap the grid for its own markup, so the table is never handed the raw-source editor.
+      if (typeof table.__startSourceEdit === 'function' || table.classList.contains('leaf-editable')) {
+        throw new Error('a table was wired to open as its own text');
+      }
+      // And nothing may answer a press with a message either: a strip growling at somebody who pressed a heading is a locked door with a sign on it, not a page. Opening those is xml-table-heading-and-joined-cells.
+      if (table.listeners.size) {
+        throw new Error(`a table answers a press with ${[...table.listeners.keys()].join(', ')}`);
+      }
+      if (said.length) throw new Error(`the page said ${JSON.stringify(said)} while drawing a table`);
+    } finally {
+      booted.leafToast = wasToast;
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // The gutter's drag handle reorders a block and its plus inserts beside one; a cell is neither. That is the whole reason a cell carries names of its own rather than a block's, and the way it stays true is that the gutter never learns the cell's.
+  check('the gutter still finds only blocks, so no cell is offered a handle or a plus', () => {
+    const gutter = readFileSync(join(root, 'src/assets/shell/block-controls.js'), 'utf8');
+    if (/data-cell-|cellStart|cellEnd/.test(gutter)) {
+      throw new Error('the block gutter reaches for a table cell');
+    }
+    const lookups = (gutter.match(/closest\('\[data-src-start\]/g) || []).length;
+    if (lookups < 2) throw new Error(`the gutter no longer finds a block by its own name (${lookups})`);
+  });
+
   // The gate decides, but the wiring is what a reader meets: on one tree page the words that can be typed on have to come out as one kind of block and the markup that cannot as the other, side by side. And the keys that make structure are taken away there — an element is one block, so Enter would have to write its own tags.
   check('an XML page wires the words it can type on apart from the markup it cannot', () => {
     const { bindEditableBlocks, handleWysiwygKeydown } = booted;

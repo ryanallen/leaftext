@@ -321,7 +321,11 @@ window.addEventListener('keydown', (event) => {
 function nativeUndoOwnsKey(target) {
   if (!isEditableMouseTarget(target)) return false;
   if (codeViewActive) return true;
-  const block = target && target.closest ? target.closest('[data-src-start].leaf-editable') : null;
+  // A cell of a table is a surface of its own, so it is asked before the table around it — otherwise typing in a cell reads as the table's, which holds no keystrokes, and the press steps back a committed edit instead.
+  const block =
+    target && target.closest
+      ? target.closest('td[data-cell-start].leaf-editable, [data-src-start].leaf-editable')
+      : null;
   if (!block) return true;
   return block.__editingActive === true && blockDomToMarkdown(block) !== block.__editBaseline;
 }

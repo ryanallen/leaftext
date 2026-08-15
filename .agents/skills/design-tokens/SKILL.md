@@ -64,6 +64,8 @@ Edit the row, run the bundler, `just verify`. That is all — nothing else holds
 
 `just bundle-gallery` builds it, and it needs a compile: the stylesheet comes out of the binary (`--dump-css`), because the theme compiler is Rust. It is a page in the repo, not a feature in the app — nothing about it ships to a reader.
 
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+
 ## Reference
 
 - `design/colors.md`, `design/tokens.md`, `design/icons.md`, `design/components.md` — the four sources. Plain Markdown, so Leaftext opens them.

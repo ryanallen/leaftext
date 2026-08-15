@@ -406,12 +406,14 @@ struct Cell {
     html: String,
     /// Plain-text length, for deciding whether the run reads as a table.
     chars: usize,
+    /// The one element this cell's words came from, opening tag to closing tag. None where the words are nobody's own bytes: an attribute value, or two elements folded into one string.
+    range: Option<(usize, usize)>,
 }
 
 /// The cells of one record: its attributes first, then its leaf children. Repeated child names fold into a single comma-joined cell.
 fn row_cells<'a>(node: Node<'a, 'a>) -> Vec<Cell> {
     let mut cells: Vec<Cell> = Vec::new();
-    let mut push = |name: &str, text: &str| {
+    let mut push = |name: &str, text: &str, range: Option<(usize, usize)>| {
         let key = name.to_lowercase();
         let chars = text.chars().count();
         let html = linkify(text);
@@ -420,25 +422,32 @@ fn row_cells<'a>(node: Node<'a, 'a>) -> Vec<Cell> {
                 cell.html.push_str(", ");
                 cell.html.push_str(&html);
                 cell.chars += chars + 2;
+                // Two elements drawn as one string, joined by a separator the file has not got: no splice can name it.
+                cell.range = None;
             }
             None => cells.push(Cell {
                 key,
                 label: friendly_label(name),
                 html,
                 chars,
+                range,
             }),
         }
     };
     for attribute in node.attributes() {
         let value = attribute.value().trim();
         if !value.is_empty() {
-            push(attribute.name(), value);
+            push(attribute.name(), value, None);
         }
     }
     for child in node.children().filter(|child| child.is_element()) {
         let text = element_text(child);
         if !text.is_empty() {
-            push(child.tag_name().name(), &text);
+            let range = is_leaf(child).then(|| {
+                let range = child.range();
+                (range.start, range.end)
+            });
+            push(child.tag_name().name(), &text, range);
         }
     }
     cells
@@ -506,12 +515,16 @@ fn render_table<'a>(rows: &[Node<'a, 'a>], columns: &[(String, String)], ctx: &m
         let cells = row_cells(*row);
         html.push_str("<tr>");
         for (key, _) in columns {
-            let value = cells
-                .iter()
-                .find(|cell| &cell.key == key)
-                .map(|cell| cell.html.as_str())
-                .unwrap_or("");
-            html.push_str(&format!("<td>{value}</td>"));
+            let cell = cells.iter().find(|cell| &cell.key == key);
+            let value = cell.map(|cell| cell.html.as_str()).unwrap_or("");
+            // Never the names a block is found by: four separate things read `data-src-start`, and a cell answering to one would be offered a drag handle and a plus.
+            let stamp = match cell.and_then(|cell| cell.range) {
+                Some((start, end)) => {
+                    format!(" data-cell-start=\"{start}\" data-cell-end=\"{end}\"")
+                }
+                None => String::new(),
+            };
+            html.push_str(&format!("<td{stamp}>{value}</td>"));
         }
         html.push_str("</tr>\n");
     }

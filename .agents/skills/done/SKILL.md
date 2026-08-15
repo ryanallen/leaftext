@@ -21,4 +21,6 @@ Then run `/sync-docs`, `/code-comments`, `/check`, and `/pm`, in that order. Do 
 
 Hand back whether anything is broken and what the owner must press. If the ticket is released but not done, tell the owner to run `/done`.
 
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+
 <!-- keycode: LEAF-6C31 -->
