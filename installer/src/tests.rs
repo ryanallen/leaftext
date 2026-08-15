@@ -163,6 +163,9 @@ fn installing_into_a_scratch_root_lays_the_plan_down_and_uninstalling_leaves_not
     let stand_in = root.join("stand-in.exe");
     std::fs::write(&stand_in, b"not really an installer").expect("stand-in");
 
+    // The shell broadcast has no readback, so the counter is the proof each path reaches it — without the call, an EXE install left every associated file wearing the blank page icon until something else told Explorer.
+    let notified = apply::NOTIFICATIONS.load(std::sync::atomic::Ordering::SeqCst);
+
     apply::install(
         &plan,
         &apply::Sources {
@@ -192,6 +195,11 @@ fn installing_into_a_scratch_root_lays_the_plan_down_and_uninstalling_leaves_not
     for key in &plan.owned_keys {
         assert!(registry::key_exists(Some(&prefix), key), "{key} is missing");
     }
+    assert_eq!(
+        apply::NOTIFICATIONS.load(std::sync::atomic::Ordering::SeqCst),
+        notified + 1,
+        "installing never told the shell the associations changed"
+    );
 
     apply::uninstall(&plan, Some(&prefix)).expect("uninstall");
 
@@ -212,6 +220,11 @@ fn installing_into_a_scratch_root_lays_the_plan_down_and_uninstalling_leaves_not
     for key in &plan.owned_keys {
         assert!(!registry::key_exists(Some(&prefix), key), "{key} survived");
     }
+    assert_eq!(
+        apply::NOTIFICATIONS.load(std::sync::atomic::Ordering::SeqCst),
+        notified + 2,
+        "uninstalling never told the shell the associations changed"
+    );
 
     registry::remove_tree(None, &prefix);
     let _ = std::fs::remove_dir_all(&root);

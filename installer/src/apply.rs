@@ -51,6 +51,7 @@ pub fn install(plan: &Plan, sources: &Sources, prefix: Option<&str>) -> Result<(
         shortcut::write(link).map_err(Failure::failed)?;
     }
 
+    notify_shell(prefix);
     Ok(())
 }
 
@@ -84,6 +85,7 @@ pub fn uninstall(plan: &Plan, prefix: Option<&str>) -> Result<(), Failure> {
         let _ = std::fs::remove_dir(folder);
     }
 
+    notify_shell(prefix);
     Ok(())
 }
 
@@ -140,6 +142,29 @@ pub fn unpack(payload: &[u8], expected: usize) -> Result<Vec<u8>, Failure> {
     }
     Ok(app)
 }
+
+/// Tell the shell the file associations changed, after they are all written or all removed — a broadcast sent mid-write tells Explorer to re-read a half-written state. Windows Installer sends this itself, which is why the MSI's icons appear at once and the EXE's never did. Under a scratch prefix nothing real changed, so the machine's shell is not told; the counter still rises, which is the only readback a broadcast has.
+fn notify_shell(prefix: Option<&str>) {
+    #[cfg(test)]
+    NOTIFICATIONS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    if prefix.is_some() {
+        return;
+    }
+    use windows_sys::Win32::UI::Shell::{SHChangeNotify, SHCNE_ASSOCCHANGED, SHCNF_IDLIST};
+    unsafe {
+        // The event constant is a `u32` and the parameter an `i32` in windows-sys 0.59's own declaration, so the cast is the binding's shape.
+        SHChangeNotify(
+            SHCNE_ASSOCCHANGED as i32,
+            SHCNF_IDLIST,
+            std::ptr::null(),
+            std::ptr::null(),
+        )
+    };
+}
+
+/// How many times `notify_shell` was reached, counting scratch runs the broadcast itself skips.
+#[cfg(test)]
+pub static NOTIFICATIONS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
 /// Whether the uninstaller has to move before it can work: a program cannot delete the folder it is running from. It copies itself into the temporary folder and runs again from there.
 pub fn uninstall_needs_relocation(running: &Path, folder: &Path) -> bool {
