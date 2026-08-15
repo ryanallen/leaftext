@@ -3601,6 +3601,428 @@ if (booted) {
     }
   });
 
+  /** A note with a blank line open on it: the page set to that document, the line the plus opened, and every command it sends. `host` is what the gutter placed and `line` is what you type in — a list asks for a wrapper around its item, so the two are not always the same element, and `__becomeBlock` swaps both for another kind. */
+  function noteBlankLine(source, specId, insertAt, { previous = null, keepEmpty = false } = {}) {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = {
+      format: read('currentDocumentFormat'),
+      source: read('currentDocumentSource'),
+      send: booted.ipc.postMessage,
+    };
+    const sent = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    read(
+      `currentDocumentFormat = 'markdown'; currentDocumentSource = ${JSON.stringify(source)}; pendingCaret = null;`,
+    );
+    let host = null;
+    const place = (node) => {
+      host = node;
+    };
+    booted.openInsertBlock(insertAt, {
+      spec: booted.blankBlockSpec(specId) || booted.PLAIN_LINE_SPEC,
+      place,
+      previous,
+      keepEmpty,
+    });
+    const lineIn = () => (host.children.length ? host.children[0] : host);
+    const raise = (type, event) => {
+      for (const handler of lineIn().listeners.get(type) || []) handler(event || {});
+    };
+    return {
+      get host() {
+        return host;
+      },
+      get line() {
+        return lineIn();
+      },
+      sent,
+      wrote: () => sent.filter((one) => one.command === 'editBlock'),
+      type: (words) => {
+        const line = lineIn();
+        line.textContent = words;
+        // A note's commit reads the words back off the child nodes rather than the text, so a stand-in holding only the text is a line nothing was typed on.
+        line.childNodes = words ? [{ nodeType: 3, nodeValue: words }] : [];
+        raise('input', {});
+      },
+      enter: () => raise('keydown', { key: 'Enter', preventDefault() {} }),
+      backspace: () => raise('keydown', { key: 'Backspace', preventDefault() {} }),
+      away: () => raise('blur', { relatedTarget: null }),
+      caret: () => read('pendingCaret'),
+      restore: () => {
+        booted.ipc.postMessage = was.send;
+        read(
+          `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
+            `currentDocumentSource = ${JSON.stringify(was.source)}; pendingCaret = null;`,
+        );
+      },
+    };
+  }
+
+  // Everything the plus writes into a note goes through this one commit, and it splices straight into somebody's file: a wrong separator writes a heading into the middle of the paragraph above.
+  check('each kind of line a note offers commits its own marker at the offset it was opened at', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const at = note.length;
+    const kinds = { text: '\n\nTyped', heading: '\n\n## Typed', list: '\n\n- Typed', quote: '\n\n> Typed' };
+    for (const [kind, expected] of Object.entries(kinds)) {
+      const opened = noteBlankLine(note, kind, at);
+      try {
+        // A list item has to stand in a list to look like one, so what the gutter placed is the list and the line to type in is inside it.
+        if (kind === 'list' && opened.host === opened.line) {
+          throw new Error('a list line was opened with no list around it');
+        }
+        if (kind !== 'list' && opened.host !== opened.line) {
+          throw new Error(`a ${kind} line was wrapped in something`);
+        }
+        if (opened.sent.length) throw new Error(`opening a ${kind} line wrote to the document`);
+
+        opened.type('Typed');
+        opened.enter();
+        const edits = opened.wrote();
+        if (edits.length !== 1 || edits[0].text !== expected) {
+          throw new Error(`${kind} committed ${JSON.stringify(edits)}`);
+        }
+        if (edits[0].start !== at || edits[0].end !== at) {
+          throw new Error(`${kind} landed at ${edits[0].start}..${edits[0].end}`);
+        }
+      } finally {
+        opened.restore();
+      }
+    }
+  });
+
+  // The two keys that chain one line to the next, both of them arithmetic over the separator's own length: Enter opens the next line past what this one just wrote, and Backspace on a line with nothing on it dissolves it back into the block above.
+  check('Enter opens the next line past the one it wrote, and Backspace on an empty one steps back up', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const at = note.length;
+    const opened = noteBlankLine(note, 'heading', at);
+    try {
+      opened.type('New part');
+      opened.enter();
+      const caret = opened.caret();
+      if (!caret || !caret.insertBelow) throw new Error(`Enter chained ${JSON.stringify(caret)}`);
+      if (caret.srcStart !== at + 2) throw new Error(`the next line was aimed at ${caret.srcStart}`);
+      // A note carries on in a plain line whatever kind this one was: you have finished the heading and are writing under it.
+      if (caret.blockSpec) throw new Error(`Enter under a heading opened another ${caret.blockSpec}`);
+    } finally {
+      opened.restore();
+    }
+
+    const above = fakeElement('p');
+    above.textContent = 'A paragraph.';
+    let took = 0;
+    above.focus = () => {
+      took += 1;
+    };
+    const empty = noteBlankLine(note, 'text', at, { previous: above });
+    try {
+      const host = empty.host;
+      empty.backspace();
+      if (empty.sent.length) throw new Error(`Backspace on an empty line wrote ${JSON.stringify(empty.sent)}`);
+      if (host.isConnected !== false) throw new Error('the empty line stayed on the page');
+      if (took !== 1) throw new Error('the block above was not given the caret back');
+    } finally {
+      empty.restore();
+    }
+  });
+
+  // Clicking away is the third way the line commits, and the one a reader makes without meaning to. Words typed have to survive it; a line nobody typed on has to leave nothing behind, since the whole point of opening a line rather than splicing one is that changing your mind costs nothing.
+  check('clicking away from a new line keeps what was typed and drops the line when nothing was', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const at = note.length;
+    const typed = noteBlankLine(note, 'quote', at);
+    try {
+      typed.type('Someone else said this');
+      typed.away();
+      const edits = typed.wrote();
+      if (edits.length !== 1 || edits[0].text !== '\n\n> Someone else said this') {
+        throw new Error(`clicking away committed ${JSON.stringify(edits)}`);
+      }
+      // Not Enter: clicking away is the end of the writing, so nothing opens under it.
+      if (typed.caret()) throw new Error(`clicking away chained ${JSON.stringify(typed.caret())}`);
+    } finally {
+      typed.restore();
+    }
+
+    const untouched = noteBlankLine(note, 'text', at);
+    try {
+      const host = untouched.host;
+      untouched.away();
+      if (untouched.sent.length) throw new Error(`an untouched line wrote ${JSON.stringify(untouched.sent)}`);
+      if (host.isConnected !== false) throw new Error('the empty line stayed on the page');
+    } finally {
+      untouched.restore();
+    }
+
+    // The one exception: an empty document has no other block to click into, so taking its line away would leave nowhere to type.
+    const only = noteBlankLine('', 'text', 0, { keepEmpty: true });
+    try {
+      const host = only.host;
+      only.away();
+      if (only.sent.length) throw new Error(`the only line on an empty page wrote ${JSON.stringify(only.sent)}`);
+      if (host.isConnected === false) throw new Error('the only line on an empty page was taken away');
+    } finally {
+      only.restore();
+    }
+  });
+
+  // The format bar over a line that is not in the buffer yet. A splice from out there would land the marker beside the words and the blur behind it would then write them again, so the line's own commit carries the marker — and this is what holds that to one edit.
+  check('the format bar on a new line writes the words once, under the marker it picked', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const at = note.length;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const opened = noteBlankLine(note, 'text', at);
+    try {
+      opened.type('Made a heading');
+      booted.blankLineUnderTest = opened.line;
+      read('selectionToolbarBlock = blankLineUnderTest;');
+      // The bigger H on a plain line steps in at the ordinary section heading, since there is no level above it to step out of.
+      booted.applyBlockFormat(read('BLOCK_FORMATS').find((one) => one.id === 'bigger'));
+      const edits = opened.wrote();
+      if (edits.length !== 1 || edits[0].text !== '\n\n## Made a heading') {
+        throw new Error(`the format bar committed ${JSON.stringify(edits)}`);
+      }
+      if (edits[0].start !== at || edits[0].end !== at) {
+        throw new Error(`the format bar landed at ${edits[0].start}..${edits[0].end}`);
+      }
+
+      // The words are written now, so the blur that follows the press must not write them a second time.
+      opened.away();
+      if (opened.wrote().length !== 1) {
+        throw new Error(`the words reached the file ${opened.wrote().length} times`);
+      }
+    } finally {
+      read('selectionToolbarBlock = null;');
+      delete booted.blankLineUnderTest;
+      opened.restore();
+    }
+  });
+
+  // The other two ways the gutter commits this line, both of them one splice because none of it is in the buffer: the plus pressed on the line itself has to carry the half-written sentence along with the block that was picked, and the plus on the gap below saves the line the way Enter does.
+  check('the plus on a half-written line writes both in one edit, and the plus below it saves the line', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const at = note.length;
+    const carried = noteBlankLine(note, 'text', at);
+    try {
+      const divider = booted.blockInsertOptions(null).find((one) => one.id === 'divider');
+      carried.type('Half a sentence');
+      booted.runBlockInsert(carried.line, divider);
+      const edits = carried.wrote();
+      if (edits.length !== 1 || edits[0].text !== '\n\nHalf a sentence\n\n---') {
+        throw new Error(`the plus on a half-written line wrote ${JSON.stringify(edits)}`);
+      }
+      if (edits[0].start !== at || edits[0].end !== at) {
+        throw new Error(`it landed at ${edits[0].start}..${edits[0].end}`);
+      }
+    } finally {
+      carried.restore();
+    }
+
+    const below = noteBlankLine(note, 'text', at);
+    try {
+      const text = booted.blockInsertOptions(null).find((one) => one.id === 'text');
+      below.type('A line');
+      booted.runGapInsert({ after: below.line, before: null }, text);
+      const edits = below.wrote();
+      if (edits.length !== 1 || edits[0].text !== '\n\nA line') {
+        throw new Error(`the plus in the gap below wrote ${JSON.stringify(edits)}`);
+      }
+      const caret = below.caret();
+      if (!caret || !caret.insertBelow || caret.srcStart !== at + 2) {
+        throw new Error(`the gap below chained ${JSON.stringify(caret)}`);
+      }
+    } finally {
+      below.restore();
+    }
+  });
+
+  /** A note on the page with a block of it standing in, holding the source range the gutter reads and recording whatever gets placed beside it. Everything sent while `run` works is handed back. */
+  function noteGutter(source, run) {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = {
+      format: read('currentDocumentFormat'),
+      source: read('currentDocumentSource'),
+      send: booted.ipc.postMessage,
+    };
+    const sent = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    read(
+      `currentDocumentFormat = 'markdown'; currentDocumentSource = ${JSON.stringify(source)}; pendingCaret = null;`,
+    );
+    const block = (start, end) => {
+      const el = fakeElement('p');
+      el.dataset = { blockKind: 'paragraph', srcStart: String(start), srcEnd: String(end) };
+      el.insertAdjacentElement = (where, node) => {
+        el.placed = { where, node };
+        return node;
+      };
+      return el;
+    };
+    try {
+      run({ block, sent, option: (id) => booted.blockInsertOptions(null).find((one) => one.id === id), caret: () => read('pendingCaret') });
+    } finally {
+      booted.ipc.postMessage = was.send;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
+          `currentDocumentSource = ${JSON.stringify(was.source)}; pendingCaret = null;`,
+      );
+    }
+  }
+
+  // The two ways into everything above: the space between two blocks, and the plus pressed on a line that is already empty. Each opens a line of the kind the option names and writes nothing, so the reader can still change their mind — and where the line goes decides which side of it the blank line is written on.
+  check('the plus in the gap and the plus on an empty line each open the kind it names, and write nothing', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    noteGutter(note, ({ block, sent, option }) => {
+      // Under a block: the line opens after it, at the end of its source.
+      const above = block(9, 21);
+      booted.runGapInsert({ after: above, before: null }, option('heading'));
+      if (!above.placed || above.placed.where !== 'afterend') {
+        throw new Error(`the gap under a block opened ${JSON.stringify(above.placed && above.placed.where)}`);
+      }
+      if (above.placed.node.dataset.srcStart !== '21') {
+        throw new Error(`the line opened at ${above.placed.node.dataset.srcStart}`);
+      }
+      if (above.placed.node.dataset.placeholder !== 'Name this part...') {
+        throw new Error(`the gap opened a ${JSON.stringify(above.placed.node.dataset.placeholder)}`);
+      }
+      if (sent.length) throw new Error(`opening a line in the gap wrote ${JSON.stringify(sent)}`);
+
+      // Above the first block there is nothing to hang a blank line off, so the break goes after the new line instead of before it.
+      const first = block(0, 7);
+      booted.runGapInsert({ after: null, before: first }, option('quote'));
+      if (!first.placed || first.placed.where !== 'beforebegin') {
+        throw new Error(`the gap over the first block opened ${JSON.stringify(first.placed && first.placed.where)}`);
+      }
+      const line = first.placed.node;
+      line.textContent = 'Someone else said this';
+      line.childNodes = [{ nodeType: 3, nodeValue: 'Someone else said this' }];
+      for (const handler of line.listeners.get('keydown') || []) handler({ key: 'Enter', preventDefault() {} });
+      const edits = sent.filter((one) => one.command === 'editBlock');
+      if (edits.length !== 1 || edits[0].text !== '> Someone else said this\n\n') {
+        throw new Error(`the line over the first block committed ${JSON.stringify(edits)}`);
+      }
+      if (edits[0].start !== 0 || edits[0].end !== 0) {
+        throw new Error(`it landed at ${edits[0].start}..${edits[0].end}`);
+      }
+    });
+
+    // The plus on a line that is already in the file and has nothing on it: the same opener, aimed at that line's own offset.
+    noteGutter('# Title\n\n\n\nA paragraph.\n', ({ block, sent, option }) => {
+      const empty = block(9, 9);
+      booted.runBlockInsert(empty, option('list'));
+      if (!empty.placed) throw new Error('the plus on an empty line opened nothing');
+      if (empty.placed.node.children[0].dataset.placeholder !== 'First of a list...') {
+        throw new Error(`the plus on an empty line opened ${JSON.stringify(empty.placed.node.children[0].dataset.placeholder)}`);
+      }
+      if (sent.length) throw new Error(`the plus on an empty line wrote ${JSON.stringify(sent)}`);
+    });
+  });
+
+  // Picking a kind on a line that is already open is the one option that commits nothing: the line is not in the buffer, so it swaps for an empty one of the kind that was picked and waits for its first word. Writing here would splice a marker with no words behind it.
+  check('picking another kind on a line already open swaps it and sends no edit', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const opened = noteBlankLine(note, 'text', note.length);
+    try {
+      const was = opened.host;
+      booted.runBlockInsert(opened.line, booted.blockInsertOptions(null).find((one) => one.id === 'quote'));
+      if (opened.sent.length) throw new Error(`swapping the kind wrote ${JSON.stringify(opened.sent)}`);
+      if (opened.host === was) throw new Error('the line was not swapped at all');
+      if (was.isConnected !== false) throw new Error('the line it swapped out stayed on the page');
+      if (opened.line.dataset.placeholder !== 'Someone else’s words...') {
+        throw new Error(`it swapped to ${JSON.stringify(opened.line.dataset.placeholder)}`);
+      }
+
+      // And the swapped line commits as its own kind, at the offset the first one was opened at.
+      opened.type('Said elsewhere');
+      opened.enter();
+      const edits = opened.wrote();
+      if (edits.length !== 1 || edits[0].text !== '\n\n> Said elsewhere') {
+        throw new Error(`the swapped line committed ${JSON.stringify(edits)}`);
+      }
+      if (edits[0].start !== note.length) throw new Error(`it landed at ${edits[0].start}`);
+    } finally {
+      opened.restore();
+    }
+  });
+
+  // A document with nothing in it opens on a title and a line under it, and neither is in the source yet — so the pair has to commit as ONE splice at offset zero. Two blocks each holding "insert at 0" would overwrite each other, whichever committed second, and the reader would watch half of what they wrote disappear.
+  check('an empty note writes its title and its first line as one edit at the top of the file', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = {
+      format: read('currentDocumentFormat'),
+      source: read('currentDocumentSource'),
+      send: booted.ipc.postMessage,
+    };
+    let sent = [];
+    // The page's body. The pair goes in front of whatever is already there, story first and the title in front of it.
+    const openStart = () => {
+      sent = [];
+      const placed = [];
+      booted.openMediumStart({
+        firstChild: null,
+        insertBefore: (node) => {
+          placed.unshift(node);
+          return node;
+        },
+      });
+      return { title: placed[0], story: placed[1] };
+    };
+    const write = (block, words) => {
+      block.textContent = words;
+      block.childNodes = [{ nodeType: 3, nodeValue: words }];
+      for (const handler of block.listeners.get('input') || []) handler({});
+    };
+    const raise = (block, type, event) => {
+      for (const handler of block.listeners.get(type) || []) handler(event || {});
+    };
+    const wrote = () => sent.filter((one) => one.command === 'editBlock');
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      read("currentDocumentFormat = 'markdown'; currentDocumentSource = ''; pendingCaret = null;");
+
+      const both = openStart();
+      write(both.title, 'A name');
+      write(both.story, 'The first words');
+      // Enter in the title is not a commit: a title with no story under it is not a document yet, so it walks down to the line below.
+      raise(both.title, 'keydown', { key: 'Enter', preventDefault() {} });
+      if (wrote().length) throw new Error(`Enter in the title wrote ${JSON.stringify(wrote())}`);
+      raise(both.story, 'keydown', { key: 'Enter', preventDefault() {} });
+      const edits = wrote();
+      if (edits.length !== 1 || edits[0].text !== '# A name\n\nThe first words') {
+        throw new Error(`the pair committed ${JSON.stringify(edits)}`);
+      }
+      if (edits[0].start !== 0 || edits[0].end !== 0) {
+        throw new Error(`the pair landed at ${edits[0].start}..${edits[0].end}`);
+      }
+
+      // A title on its own is still something to carry on under, so clicking away keeps it and writes nothing else.
+      const named = openStart();
+      write(named.title, 'A name');
+      raise(named.title, 'focusout', { relatedTarget: null });
+      if (wrote().length !== 1 || wrote()[0].text !== '# A name') {
+        throw new Error(`a title on its own committed ${JSON.stringify(wrote())}`);
+      }
+
+      // And words with no title keep their own line, with no heading invented over them.
+      const unnamed = openStart();
+      write(unnamed.story, 'The first words');
+      raise(unnamed.story, 'keydown', { key: 'Enter', preventDefault() {} });
+      if (wrote().length !== 1 || wrote()[0].text !== 'The first words') {
+        throw new Error(`a story on its own committed ${JSON.stringify(wrote())}`);
+      }
+
+      // Neither typed on is not a document: the pair stays standing and nothing is written.
+      const untouched = openStart();
+      raise(untouched.story, 'focusout', { relatedTarget: null });
+      if (sent.length) throw new Error(`an untouched pair wrote ${JSON.stringify(sent)}`);
+    } finally {
+      booted.ipc.postMessage = was.send;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
+          `currentDocumentSource = ${JSON.stringify(was.source)}; pendingCaret = null;`,
+      );
+    }
+  });
+
   // Half a message opens and half of it does not, and nothing on the page said which — the same fault the padlock had. A press on a shut part says why; a press on one that opens says nothing, because it is about to open.
   check('a part of a message that cannot open says why when it is pressed', () => {
     const { wireEmailClosedParts } = booted;
