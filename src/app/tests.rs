@@ -1530,6 +1530,28 @@ fn a_table_cell_edit_arrives_under_the_names_the_page_sends() {
 }
 
 #[test]
+fn a_splice_made_while_the_reader_types_arrives_under_the_names_the_page_sends() {
+    // Nothing on this enum rejects an unknown field, so either flag spelled differently on the two sides would deserialize to false and fail silently: a splice sent mid-typing would rebuild the page under the caret, and every pause in one sentence would become its own press of undo.
+    let sent = r#"{"command":"editBlock","start":9,"end":10,"text":"A paragraph.","live":true,"continuing":true}"#;
+    match serde_json::from_str::<IpcCommand>(sent) {
+        Ok(IpcCommand::EditBlock {
+            live, continuing, ..
+        }) => assert!(live && continuing),
+        other => panic!("the live splice did not arrive: {other:?}"),
+    }
+
+    // And a commit that ends the typing renders and records its own step, which is what every edit that says nothing about either flag has to be.
+    match serde_json::from_str::<IpcCommand>(
+        r#"{"command":"editBlock","start":0,"end":5,"text":"Hi"}"#,
+    ) {
+        Ok(IpcCommand::EditBlock {
+            live, continuing, ..
+        }) => assert!(!live && !continuing),
+        other => panic!("the edit did not arrive: {other:?}"),
+    }
+}
+
+#[test]
 fn the_new_page_flag_arrives_only_under_the_name_the_page_sends() {
     // Nothing on this enum rejects an unknown field, so a name the two sides spelled differently would deserialize to false and the gesture would do nothing, silently. That is what this pins.
     let held = r#"{"command":"openLink","href":"./next.md","scroll_anchor":{"section":null,"block":0,"offsetY":0},"newPage":true}"#;

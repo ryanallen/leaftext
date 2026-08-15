@@ -630,7 +630,12 @@ fn apply_pinned_buffer_edit(edit: &mut EditableDocument, step: &serde_json::Valu
         }
         Some("block") => {
             let (start, end) = range(edit, text("block"));
-            edit.replace_range(start, end, text("text_in"));
+            // A step marked `continuing` is a splice of a typing run after its first: the run's own first splice is the undo point, so the rest record nothing and one press takes the whole run back.
+            if step["continuing"].as_bool().unwrap_or(false) {
+                edit.replace_range_without_undo(start, end, text("text_in"));
+            } else {
+                edit.replace_range(start, end, text("text_in"));
+            }
         }
         Some("cell") => {
             let (start, end) = range(edit, text("block"));

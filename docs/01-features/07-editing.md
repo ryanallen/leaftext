@@ -43,8 +43,8 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Pinned headings](#pinned-headings) | In Markdown source, the headings you are reading under stay at the top edge as you scroll; click one to jump to it |
 | [Editing the source](#editing-the-source) | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file stays responsive |
 | [Typing help](#typing-help) | Monaco's IntelliSense, answered from your own notes: type `[[` to see them, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline |
-| [Save](#save) | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
-| [Unsaved marker](#save) | A tab with unsaved edits shows a dot beside its name |
+| [Save](#save) | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears from the first keystroke, and writes the words on screen without clicking out of them |
+| [Unsaved marker](#save) | A tab with unsaved edits shows a dot beside its name, from the first keystroke |
 
 ## New document
 
@@ -74,7 +74,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **The field block at the top edits too**, in its own way — see [the fields at the top of a note](#the-fields-at-the-top-of-a-note). It is drawn by the reader rather than being a block of the document, so it takes no caret and no gutter handle; every paragraph, heading, list and table below it edits exactly as it would in a note with no fields.
 - **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
 - **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*.
-- Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
+- Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way — from your first keystroke, without clicking out of what you are typing in. **Save**, **Undo** and `Ctrl+S` all act on the words on screen, and the typing itself reaches the document at every pause, so an outside change arriving mid-sentence no longer takes it away.
 - The reading view opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
 
 ### Editing an email
@@ -94,7 +94,7 @@ A note's [field block](01-rendering.md#frontmatter) — the `title`, `status`, `
 
 ![A note's field block with the pointer on one row: nothing is painted behind the value and a small cross has appeared at the row's end, a checkbox is a real tick box, the tags are chips each with a cross and a plus after them, and an Add a field row sits under the last field](../../imgs/frontmatter-fields.png)
 
-- **Click a value and type.** `Enter` keeps it, `Escape` abandons it, and clicking away keeps it.
+- **Click a value and type.** `Enter` keeps it, `Escape` abandons it, and clicking away keeps it. `Ctrl+S` from inside the box keeps it and saves the file with it.
 - **The control matches the field.** A date opens a calendar. A checkbox is a real box you tick. A list draws one chip per item, each with a cross, and a `+` for the next one. Everything else is a plain box. The app never guesses a control for a value it cannot read — a field pinned as a date but holding `sometime` keeps its plain box rather than opening a picker that would blank it.
 - **Click a field's name to rename it.** The value, its quoting and its place in the block all stay where they were. A name the block already uses is refused, since two fields of one name is a note that half reads.
 - **A cross at the end of a row takes the field away**, shown when you point at the row. `Ctrl+Z` puts it back.
@@ -210,8 +210,8 @@ The recess holds the tools of the view you are in — the padlock in both, the [
 
 Reading-view edits are undoable, step by step.
 
-- Every inline edit — a typed change, a block split or merge — records one undo step. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo. (Checkbox toggles are the exception: they auto-save and are not undoable.)
-- Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. The keystroke goes to the platform's own undo only while the block you are in holds typing it has not saved yet — so mid-sentence it takes back letters, and everywhere else it takes back the last edit, including a [delete](#deleting) that removed several blocks.
+- Every inline edit — a typed change, a block split or merge — records one undo step, and a run of typing is one step however long you pause in the middle of it. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo. (Checkbox toggles are the exception: they auto-save and are not undoable.)
+- Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. The keystroke goes to the platform's own undo only while the block you are in holds typing it has not saved yet — so mid-sentence it takes back letters, and everywhere else it takes back the last edit, including a [delete](#deleting) that removed several blocks. The **Undo** button pressed mid-sentence takes back the whole run of typing rather than the edit before it.
 - A successful **Save** makes the current text the new baseline and clears the undo history, so Undo only ever steps back through edits made since your last save — it never walks you below saved text.
 - [The flowchart editor](#the-flowchart-editor) keeps its own history while it is open, because everything you do in there arrives here as a single edit.
 - A file you just deleted from the [library pane](03-library.md#deleting-asks-first-and-can-be-taken-back) takes the key first, while the message offering it back is still on screen. That is a file coming out of the Recycle Bin, not a text edit, and it is the only thing here that does not touch the document you are reading.
@@ -354,8 +354,8 @@ It never interrupts prose: suggestions appear only on those triggers, never as y
 
 Saving is always explicit.
 
-- With no unsaved changes there is no save control at all. The moment the buffer differs from the file, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-floating-toolbar) and the tab shows a dot beside its name.
-- Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. The button and dot clear on success.
+- With no unsaved changes there is no save control at all. From your first keystroke, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-floating-toolbar) and the tab shows a dot beside its name — typing in the page counts, with nothing clicked out of. Take that typing back to where it started and both go out again.
+- Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. Whatever you are typing goes in first, so what is written is the words on screen. The button and dot clear on success.
 - A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything.
 - A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
 - A file is written in the [encoding it was read in](01-rendering.md#file-encodings). A UTF-16 document stays UTF-16; a file with no byte order mark does not gain one.
@@ -365,7 +365,7 @@ Saving is always explicit.
 The [live reload](02-navigation.md#reload) watcher keeps working alongside editing:
 
 - With a **clean** buffer, an outside change reloads as usual — and if the code view is open, the source refreshes in place.
-- With **unsaved edits**, an outside change never clobbers the buffer: your edits stay, and saving writes them over the file.
+- With **unsaved edits**, an outside change never clobbers the buffer: your edits stay, and saving writes them over the file. Typing in the page is an unsaved edit as you type it, so a change landing mid-sentence leaves your words alone.
 
 ## Formats
 

@@ -169,10 +169,16 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
   // What the page sends the host. A command with no arm here is one this host cannot answer.
   const commands = {
     saveDocument: () => write(),
-    editBlock: (command) =>
-      command.autosave
-        ? applyAndWrite({ edit: 'block', start: command.start, end: command.end, text: command.text, undo: false, cell: command.cell })
-        : apply({ edit: 'block', start: command.start, end: command.end, text: command.text, undo: true, cell: command.cell }),
+    editBlock: (command) => {
+      // `continuing` marks every splice of a typing run after its first, so one press of undo takes the whole run back however many times it paused. `live` means the reader is still typing in the block: the buffer moves and the document is left standing, because a redraw would take the words out from under the caret — the commit that ends the run is the one that redraws.
+      const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell };
+      if (command.autosave) return applyAndWrite(edit);
+      if (command.live) {
+        tell({ kind: 'document', state: module.buffer.edit(held, edit) });
+        return undefined;
+      }
+      return apply(edit);
+    },
     toggleTask: (command) => applyAndWrite({ edit: 'task', index: command.index }),
     setField: (command) =>
       command.value === undefined || command.value === null

@@ -38,11 +38,20 @@ function updateEditingChrome() {
   refitAppBar();
 }
 
-// Ask the host to revert the most recent reading-view edit. The host pops its snapshot, re-renders, and resyncs the chrome, so undoing the last edit hides both buttons.
+// Ask the host to revert the most recent reading-view edit. Words still under the caret are committed first, so undo pressed mid-typing takes back what was just typed rather than the edit before it. The host pops its snapshot, re-renders, and resyncs the chrome, so undoing the last edit hides both buttons.
 function undoLastEdit() {
   const path = activeDocumentPath();
-  if (!path || undoableByPath.get(path) !== true) return;
-  send({ command: 'undoEdit' });
+  if (!path) return;
+  commitActiveEditingBlock();
+  afterActiveEditCommits(() => {
+    if (activeDocumentPath() !== path || undoableByPath.get(path) !== true) return;
+    send({ command: 'undoEdit' });
+  });
+}
+
+// Do `act` once every editor's commit is on the wire. A field box settles its own text through a timeout registered by the blur above, and so ahead of this one — without the wait, Save would write the file before the typed field reached the buffer.
+function afterActiveEditCommits(act) {
+  window.setTimeout(act, 0);
 }
 
 // The last buffer text the host was given: what the next splice is measured against, and what proves the two copies still agree.
@@ -128,11 +137,16 @@ window.leafResyncSource = () => {
   send({ command: 'updateSource', text: codeViewText });
 };
 
+// Write the words on screen. Whatever is being typed in commits first — the dirty state is read after that, so a save whose only edit is the one still under the caret goes through instead of refusing.
 function saveActiveDocument() {
   const path = activeDocumentPath();
-  if (!path || !isDocumentDirty(path)) return;
-  flushSourceUpdate();
-  send({ command: 'saveDocument' });
+  if (!path) return;
+  commitActiveEditingBlock();
+  afterActiveEditCommits(() => {
+    if (activeDocumentPath() !== path || !isDocumentDirty(path)) return;
+    flushSourceUpdate();
+    send({ command: 'saveDocument' });
+  });
 }
 
 // How far down the active view is scrolled, as a 0..1 fraction of its scrollable range. Approximate by design — the two views wrap differently — but it keeps "top is top" and "middle is middle" across the toggle. Monaco scrolls itself and the shell around it doesn't, so in the code view only Monaco knows.
@@ -309,14 +323,18 @@ if (saveButton) {
 if (undoButton) {
   undoButton.addEventListener('click', undoLastEdit);
 }
-// Ctrl/Cmd+S saves the active document when there is something to save.
+// Ctrl/Cmd+S saves the active document. Not gated on the dirty state: typing that has not been clicked out of yet is not dirty, and the save is what commits it — saveActiveDocument decides after that.
 window.addEventListener('keydown', (event) => {
-  const saveKey = (event.ctrlKey || event.metaKey) && !event.altKey && (event.key === 's' || event.key === 'S');
-  if (!saveKey) return;
-  if (!activeDocumentPath() || !isDocumentDirty(activeDocumentPath())) return;
+  if (!isSaveKey(event)) return;
+  if (!activeDocumentPath()) return;
   event.preventDefault();
   saveActiveDocument();
 });
+
+// The save shortcut, named once: a field box swallows every other key and has to let this one out.
+function isSaveKey(event) {
+  return (event.ctrlKey || event.metaKey) && !event.altKey && (event.key === 's' || event.key === 'S');
+}
 // Whether the surface under the keystroke has typing of its own for the browser to take back. A block only owns Ctrl+Z while it holds uncommitted keystrokes: after a delete or a split the caret sits in a block with no keystroke history at all, and handing the key over there meant the press did nothing while the Undo button beside it worked. Monaco and the app's own fields keep theirs unconditionally.
 function nativeUndoOwnsKey(target) {
   if (!isEditableMouseTarget(target)) return false;

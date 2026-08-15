@@ -720,7 +720,7 @@ function beginBlockDrag(event) {
   blockDrag = {
     target,
     layout,
-    ranges: run.ranges,
+    elements: run.elements,
     from,
     others,
     baselines: others.map((el) => {
@@ -766,7 +766,8 @@ function commitBeforeBlockMove() {
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
   const text = blockDomToMarkdown(active);
   active.__editingActive = false;
-  if (text === active.__editBaseline) return null;
+  // A pause in the typing has already written into the buffer, so even text back at the words it started with has to go out — the move would otherwise carry blocks around a document holding words the page no longer shows.
+  if (text === active.__editBaseline && !active.__liveStarted) return null;
   sendBlockSplice(active, start, end, text);
   return { start, end, delta: utf8ByteLength(text) - (end - start) };
 }
@@ -794,8 +795,18 @@ function endBlockDrag(commit) {
     hideBlockGutter();
     return;
   }
-  const ranges = rangesAfterCommit(drag.ranges, commitBeforeBlockMove());
-  sendEditCommand({ command: 'moveBlock', ranges, from: drag.from, to: drag.to });
+  // Read at the drop rather than kept from the grab: a pause in the typing writes into the buffer without redrawing the page, so a run captured on the way down can name bytes that have moved by the time the pointer comes up — and a move splices, so that is the wrong file rather than the wrong picture. A run that stopped being movable in between moves nothing at all.
+  const ranges = blockRunRanges(drag.elements);
+  if (!ranges) {
+    hideBlockGutter();
+    return;
+  }
+  sendEditCommand({
+    command: 'moveBlock',
+    ranges: rangesAfterCommit(ranges, commitBeforeBlockMove()),
+    from: drag.from,
+    to: drag.to,
+  });
   hideBlockGutter();
 }
 

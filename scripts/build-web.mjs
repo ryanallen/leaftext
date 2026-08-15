@@ -207,7 +207,8 @@ function pinnedEdit(step, text, blocks) {
       return { edit: 'task', index: step.index };
     case 'block': {
       const span = blockHolding(text, blocks, step.block);
-      return { edit: 'block', start: span.start, end: span.end, text: step.text_in };
+      // A step marked `continuing` is a splice of a typing run after its first, which records no undo point of its own — so one press takes the whole run back however many times it paused.
+      return { edit: 'block', start: span.start, end: span.end, text: step.text_in, undo: !step.continuing };
     }
     case 'cell': {
       const span = blockHolding(text, blocks, step.block);

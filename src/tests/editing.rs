@@ -92,6 +92,30 @@ fn checkbox_edits_flip_the_marker_but_record_no_undo() {
 }
 
 #[test]
+fn a_typing_run_with_pauses_in_it_is_one_undo_step() {
+    // Typing reaches the document at every pause, so a run of typing is several splices rather than one. Only the first records its snapshot and every later one — the pauses in the middle and the commit that ends the run — carries `continuing`, or a sentence typed over four pauses would take four presses of undo to take back, and the 200-snapshot stack would fill with fragments of one word.
+    let markdown = "# Title\n\nA\n";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("note.md"),
+        SourceText::utf8(markdown.to_string()),
+    );
+
+    // The first pause of the run: the snapshot the whole run is taken back to.
+    assert!(edit.replace_range(9, 10, "A p"));
+    // Three more pauses, and then the click-out that ends it. Each replaces what the pause before it wrote.
+    edit.replace_range_without_undo(9, 12, "A par");
+    edit.replace_range_without_undo(9, 14, "A paragr");
+    edit.replace_range_without_undo(9, 17, "A paragraph.");
+    assert_eq!(edit.text(), "# Title\n\nA paragraph.\n");
+
+    // One press takes the whole run back, and there is nothing behind it.
+    assert!(edit.can_undo());
+    assert!(edit.undo());
+    assert_eq!(edit.text(), markdown);
+    assert!(!edit.can_undo());
+}
+
+#[test]
 fn replace_range_splices_and_clamps_safely() {
     let mut edit = EditableDocument::new(
         PathBuf::from("a.md"),

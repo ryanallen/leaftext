@@ -122,7 +122,7 @@ impl EditableDocument {
         self.splice(start, end, replacement, true)
     }
 
-    /// Like `replace_range` but records no undo snapshot — for the auto-saving checkbox path, which is deliberately not undoable.
+    /// Like `replace_range` but records no undo snapshot — for the auto-saving checkbox path, which is deliberately not undoable, and for every splice of a typing run after its first, so a run that paused four times is still one press of undo.
     pub fn replace_range_without_undo(
         &mut self,
         start: usize,

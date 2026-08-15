@@ -28,9 +28,18 @@ function frontmatterBlock(root) {
   return (root || app).querySelector('.frontmatter');
 }
 
-// Send one field to the host. `value` null removes the field.
+// Send one field to the host. `value` null removes the field. Through the reading view's own edit path, because a field write is an undoable buffer edit like any other — the dot and the two buttons have to answer for it at once, or a save fired straight after one would find nothing to write.
 function sendFieldEdit(key, value) {
-  send({ command: 'setField', key, value });
+  sendEditCommand({ command: 'setField', key, value });
+}
+
+// Every key inside a field box is the box's own, except the save: the window owns that one, and the box's blur commit writes what was typed on the way out. Answers whether the key was let past, so the box knows not to swallow it.
+function frontmatterKeyLeavesBox(event) {
+  if (!isSaveKey(event)) {
+    event.stopPropagation();
+    return false;
+  }
+  return true;
 }
 
 // A single-line box that lives inside a table cell for as long as it is being typed into: Enter commits, Escape abandons, leaving it commits. The vault menu's fields, in the field block. `commit` is given the trimmed text; a falsy return leaves the box open, which is how the add row refuses a blank name without throwing away what was typed beside it.
@@ -43,6 +52,8 @@ function frontmatterBox(label, known) {
   field.setAttribute('aria-label', label);
   // The browser's own completion over the drawn box: names offered, nothing new on the page, and anything else still typeable.
   if (known) field.setAttribute('list', frontmatterKnownKeyList());
+  // A field typed in is words on screen like any other, so the dot, Save and Undo answer for it from the first keystroke rather than from the box being left.
+  field.addEventListener('input', raiseTypingChrome);
   return field;
 }
 
@@ -57,7 +68,7 @@ function frontmatterInput({ value, label, known, commit, abandon }) {
     if (!write && abandon) abandon();
   };
   field.addEventListener('keydown', (event) => {
-    event.stopPropagation();
+    if (frontmatterKeyLeavesBox(event)) return;
     if (event.key === 'Enter') {
       event.preventDefault();
       finish(true);
@@ -110,6 +121,7 @@ function editFrontmatterDate(cell, key) {
   field.className = 'frontmatter-input frontmatter-date';
   field.value = frontmatterDateValue(before);
   field.setAttribute('aria-label', key);
+  field.addEventListener('input', raiseTypingChrome);
   let settled = false;
   const settle = (text, write) => {
     if (settled) return;
@@ -119,7 +131,7 @@ function editFrontmatterDate(cell, key) {
     if (write && text !== before) sendFieldEdit(key, text);
   };
   field.addEventListener('keydown', (event) => {
-    event.stopPropagation();
+    if (frontmatterKeyLeavesBox(event)) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       settle(before, false);
@@ -147,7 +159,7 @@ function bindFrontmatterChips(cell, key) {
   const items = Array.from(cell.querySelectorAll('li')).map((item) => item.textContent);
   const chips = document.createElement('div');
   chips.className = 'frontmatter-chips';
-  const write = (next) => send({ command: 'setListField', key, items: next });
+  const write = (next) => sendEditCommand({ command: 'setListField', key, items: next });
   for (let at = 0; at < items.length; at += 1) {
     const chip = document.createElement('span');
     chip.className = 'frontmatter-chip';
@@ -244,7 +256,7 @@ function frontmatterAddRow(block, onEmpty) {
     for (const box of [name, value]) {
       box.addEventListener('blur', leaving);
       box.addEventListener('keydown', (event) => {
-        event.stopPropagation();
+        if (frontmatterKeyLeavesBox(event)) return;
         if (event.key === 'Enter') {
           event.preventDefault();
           // Enter on a half-filled row moves to the empty half rather than writing a key with nothing under it.
@@ -311,7 +323,7 @@ function bindFrontmatterFields(root) {
     if (name) {
       // Renaming is one splice over the key's own bytes on the host side, so the field keeps its value, its quoting and its place in the block.
       name.addEventListener('click', () => editFrontmatterCell(name, `Name of ${key}`, (text) => {
-        send({ command: 'renameField', key, to: text });
+        sendEditCommand({ command: 'renameField', key, to: text });
       }, true));
     }
     if (row) row.appendChild(frontmatterRemoveCell(key));

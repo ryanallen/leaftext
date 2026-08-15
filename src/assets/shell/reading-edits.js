@@ -7,10 +7,58 @@ function setPendingCaret(next) {
   pendingCaret = next ? { ...next, path: activeDocumentPath() } : null;
 }
 
+// What the tab's dot, Save and Undo said before a typing session raised them, and which document it was. Null while nothing is raised on typing alone. The three are raised at the first keystroke, since words on screen have to be savable and undoable before anything is clicked out of; this is what puts them back where the host had them if the session ends up writing nothing.
+let chromeBeforeTyping = null;
+
+// The first keystroke of a typing session: promise the save and the undo the actions make good on. Silent after the first, and silent once a commit has gone out, which is when the promise stops being local.
+function raiseTypingChrome() {
+  const path = activeDocumentPath();
+  if (!path || chromeBeforeTyping) return;
+  chromeBeforeTyping = {
+    path,
+    dirty: isDocumentDirty(path),
+    undoable: undoableByPath.get(path) === true,
+  };
+  undoableByPath.set(path, true);
+  setDirtyState(path, true);
+  updateEditingChrome();
+}
+
+// A session that wrote nothing — typed and taken back to where it started, or abandoned — puts the three back to the host's own answer. A document that was already dirty stays dirty.
+function lowerTypingChrome() {
+  const held = chromeBeforeTyping;
+  chromeBeforeTyping = null;
+  if (!held) return;
+  if (held.undoable) undoableByPath.set(held.path, true);
+  else undoableByPath.delete(held.path);
+  setDirtyState(held.path, held.dirty);
+  updateEditingChrome();
+}
+
+// The caret has left every surface that types. Whatever the session wrote is already on the wire, so a record still standing is one that wrote nothing. Deferred a tick because the commit and the focus change land in either order depending on which editor it was.
+function endTypingSession() {
+  window.setTimeout(() => {
+    if (!chromeBeforeTyping || typingSurfaceHasFocus()) return;
+    lowerTypingChrome();
+  }, 0);
+}
+
+// Whether the caret is still in something that types — the add row's two boxes are one session, so stepping between them must not end it.
+function typingSurfaceHasFocus() {
+  const active = document.activeElement;
+  if (!active) return false;
+  if (active.classList && active.classList.contains('frontmatter-input')) return true;
+  return !!active.getAttribute && active.getAttribute('contenteditable') === 'true';
+}
+
+window.addEventListener('focusout', endTypingSession);
+
 // Send a buffer-mutating reading-view command. Each lands one host undo snapshot, and this raises the dirty state (Save button + tab dot) optimistically.
 function sendEditCommand(message) {
   const path = activeDocumentPath();
   if (path) {
+    // The session has written something, so the raise is no longer a promise to take back.
+    chromeBeforeTyping = null;
     undoableByPath.set(path, true);
     setDirtyState(path, true);
     // The toggle's saved pixels no longer describe this text.
@@ -310,6 +358,7 @@ function selectAllTargetFor(block) {
 function setEditBaseline(el) {
   el.__editBaseline = blockDomToSource(el);
   el.__editCells = tableCellTexts(el);
+  beginTypingRun(el);
 }
 
 // A block back to the bytes of its own source range, which each kind of document spells differently: a note's block is Markdown, a message's is the words themselves, an element's is its words with what a tree escapes put back, and a comment's is the words exactly, since nothing escapes inside one.
@@ -441,29 +490,38 @@ function xmlCommentTypeableInPlace(el, words) {
   };
 }
 
-// Send an edit for `el`'s source range, only if `text` differs from the baseline captured when editing began (so a no-edit focus costs nothing). If the caret already moved into another block, carry it across this commit's re-render (adjusting for the splice's offset shift) so it isn't dumped out.
+// Send an edit for `el`'s source range, only if `text` differs from the baseline captured when editing began (so a no-edit focus costs nothing). Wherever the caret is — another block, or still in this one, which is how Save and Undo commit — carry it across this commit's re-render (adjusting for the splice's offset shift) so it isn't dumped out.
 //
 // `range` overrides the block's own: a fenced code block edits the inside of its fences, so what it writes back is narrower than the block. An element of a tree document carries the same override on itself, stamped when it was wired, so every path that commits it splices between its tags rather than over them.
+//
+// Answers whether anything was written, because the chrome raised at the first keystroke is a promise a session that wrote nothing has to take back.
 function commitBlockEdit(el, text, range) {
+  // The pause is spent: this commit writes whatever the pause would have.
+  if (el.__liveTimer) {
+    window.clearTimeout(el.__liveTimer);
+    el.__liveTimer = 0;
+  }
   // A block the page has already replaced describes a buffer that has moved on — a re-render blurs it, and that blur must not splice yesterday's offsets.
-  if (!el.isConnected) return;
-  if (commentTextRefused(el, text)) return;
+  if (!el.isConnected) return false;
+  if (commentTextRefused(el, text)) return false;
   const span = range || el.__innerSpan || null;
   const start = span ? span.start : Number(el.dataset.srcStart);
   const end = span ? span.end : Number(el.dataset.srcEnd);
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-  if (text === el.__editBaseline) return;
-  if (!span && deleteEmptiedBlock(el, text)) return;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+  // Back to the words it started with, and nothing written on the way: a no-edit focus costs nothing. Where a pause HAS written, the same text still has to go out — the buffer holds what the pause wrote, and leaving it there would save words the page no longer shows.
+  if (text === el.__editBaseline && !el.__liveStarted) return false;
+  if (!span && deleteEmptiedBlock(el, text)) return true;
   // A table where one cell changed writes that cell and leaves the rest of the file alone; `text` rides along as what the host falls back to when it cannot place it.
   const cell = span ? null : tableCellChange(el.__editCells, tableCellTexts(el));
-  sendEditCommand({ command: 'editBlock', start, end, text, cell });
+  // The run's own first splice is the undo point; this one continues it wherever a pause has already written part of the run.
+  sendEditCommand({ command: 'editBlock', start, end, text, cell, continuing: el.__liveStarted === true });
   const delta = cell
     ? utf8ByteLength(cell.text) - utf8ByteLength(el.__editCells[cell.row][cell.column])
     : utf8ByteLength(text) - (end - start);
   window.setTimeout(() => {
     if (pendingCaret) return; // a structural edit already claimed the caret
     const active = document.activeElement;
-    if (!active || active === el || !active.dataset) return;
+    if (!active || !active.dataset) return;
     // A caret that walked into a cell of a table is carried by the cell's own names — the block's would find the table, whose range does not move with the splice.
     const inCell = active.dataset.cellStart != null;
     if (!inCell && active.dataset.srcStart == null) return;
@@ -478,14 +536,120 @@ function commitBlockEdit(el, text, range) {
       textOffset: offset == null ? 0 : offset,
     });
   }, 0);
+  return true;
 }
 
-// Commit whichever block holds an active editing session. Used before actions that bypass the focusout commit — e.g. a link click whose mousedown is swallowed.
+// ---- typing that reaches the document at every pause -------------------------
+// The pause after which what is on screen goes into the buffer. The code view's own beat, so both editors reach the document together.
+const LIVE_EDIT_PAUSE_MS = 180;
+
+// What a live splice would write for `el`, or null for a block whose typing waits for the click-out. A note's table is the one that waits: its commit writes one cell rather than a range, and where the buffer's table then differs from the page's own serialization there is no length the page can move its map by — and a map that lags writes the wrong bytes on the next gesture.
+function liveEditOf(el) {
+  if (el.dataset.editingSource === 'true') {
+    return typeof el.__liveSourceEdit === 'function' ? el.__liveSourceEdit() : null;
+  }
+  if (!el.__editingActive) return null;
+  if (el.dataset.blockKind === 'table' && currentDocumentFormat === 'markdown') return null;
+  const text = blockDomToSource(el);
+  const span = el.__innerSpan;
+  if (span) return { start: span.start, end: span.end, text, inner: true };
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  // A line with no bytes of its own yet is written by its own commit, which carries the marker and the separator with it.
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  // A block typed empty is a block taken away, which is a structural edit and the click-out's to make.
+  if (blockSerializationEmpty(text, el.dataset.blockKind)) return null;
+  return { start, end, text, inner: false };
+}
+
+// Put what is typed in `el` into the document without redrawing the page, then move the page's own map by what the splice changed. Nothing has re-rendered, so this map is the only thing that stays true — every block after the typed one shifts, and the source the page slices from is spliced to match. The blur baseline is deliberately left alone: the browser's own Ctrl+Z is decided against it, so advancing it would hand the key to the app mid-word.
+function sendLiveBlockEdit(el) {
+  if (!el.isConnected) return;
+  const edit = liveEditOf(el);
+  if (!edit) return;
+  // Nothing new since the last pause.
+  if (edit.text === (el.__liveText === undefined ? el.__editBaseline : el.__liveText)) return;
+  if (commentTextRefused(el, edit.text)) return;
+  sendEditCommand({
+    command: 'editBlock',
+    start: edit.start,
+    end: edit.end,
+    text: edit.text,
+    live: true,
+    continuing: el.__liveStarted === true,
+  });
+  el.__liveStarted = true;
+  el.__liveText = edit.text;
+  advanceLiveRanges(el, edit);
+}
+
+// The map, moved by the splice that just went out: the source the page slices from, the typed block's own span, and every offset after it.
+function advanceLiveRanges(el, edit) {
+  const written = utf8ByteLength(edit.text);
+  const bytes = sourceByteEncoder.encode(currentDocumentSource || '');
+  currentDocumentSource =
+    sourceByteDecoder.decode(bytes.slice(0, edit.start)) +
+    edit.text +
+    sourceByteDecoder.decode(bytes.slice(edit.end));
+  if (edit.inner) el.__innerSpan = { start: edit.start, end: edit.start + written };
+  if (typeof el.__liveSourceMoved === 'function') el.__liveSourceMoved(edit.start + written);
+  const delta = written - (edit.end - edit.start);
+  if (delta) shiftBlockRangesAfter(edit.end, delta, el);
+}
+
+// Every offset at or past `at` moves by `delta`. One pass over the mapped blocks and the cells of a tree document's tables, because anything holding a range that lags the buffer — the gutter's plus, the drag, a delete over a run — splices the wrong bytes on its next press.
+function shiftBlockRangesAfter(at, delta, typed) {
+  const body = app.querySelector('.document-body');
+  if (!body) return;
+  const move = (value) => (Number.isFinite(value) && value >= at ? value + delta : value);
+  const shiftSpan = (node) => {
+    // The typed block's own span was just set to what was written; moving it again would count the splice twice.
+    if (node === typed || !node.__innerSpan) return;
+    node.__innerSpan = { start: move(node.__innerSpan.start), end: move(node.__innerSpan.end) };
+  };
+  body.querySelectorAll('[data-src-start]').forEach((node) => {
+    node.dataset.srcStart = String(move(Number(node.dataset.srcStart)));
+    node.dataset.srcEnd = String(move(Number(node.dataset.srcEnd)));
+    shiftSpan(node);
+  });
+  body.querySelectorAll('[data-cell-start]').forEach((node) => {
+    node.dataset.cellStart = String(move(Number(node.dataset.cellStart)));
+    node.dataset.cellEnd = String(move(Number(node.dataset.cellEnd)));
+    shiftSpan(node);
+  });
+}
+
+// Arm the pause. Re-armed by every keystroke, so what goes into the document is a run of typing rather than a letter.
+function scheduleLiveBlockEdit(el) {
+  if (el.__liveTimer) window.clearTimeout(el.__liveTimer);
+  el.__liveTimer = window.setTimeout(() => {
+    el.__liveTimer = 0;
+    sendLiveBlockEdit(el);
+  }, LIVE_EDIT_PAUSE_MS);
+}
+
+// A typing run starts here: nothing of it has reached the buffer yet, so the next splice is its first and records the snapshot the whole run is taken back to.
+function beginTypingRun(el) {
+  el.__liveStarted = false;
+  el.__liveText = undefined;
+}
+
+// Commit whatever holds an active editing session, whichever of the three editors it is. Used before actions that bypass the click-out commit: a link click whose mousedown is swallowed, and Save or Undo pressed with the caret still in the words. A raw-source block and a field box are written by their own blur, which is also the one path that puts the rendered block back — a styled block is committed in place instead, so the caret can be carried across the re-render rather than dumped out.
 function commitActiveEditingBlock() {
   const active = document.activeElement;
-  if (!active || !active.__editingActive) return;
+  if (!active) return;
+  if (active.dataset && active.dataset.editingSource === 'true') {
+    active.blur();
+    return;
+  }
+  if (active.classList && active.classList.contains('frontmatter-input')) {
+    active.blur();
+    return;
+  }
+  if (!active.__editingActive) return;
   active.__editingActive = false;
-  commitBlockEdit(active, blockDomToSource(active));
+  // Nothing written means the keystroke that lit the dot was taken back, so the dot goes out before Save or Undo reads it and acts on a promise there is nothing behind.
+  if (!commitBlockEdit(active, blockDomToSource(active))) lowerTypingChrome();
 }
 
 // Splice `text` over `[start, end)` for a STRUCTURAL edit (split/merge/insert). Unlike commitBlockEdit this always sends, and it neutralizes the block's blur baseline afterwards: the DOM still shows the pre-splice content, and letting the blur commit fire would replay a stale range against the new buffer.
@@ -612,6 +776,8 @@ function makeBlankBlock(tag, kind, placeholder, insertAt) {
   block.setAttribute('spellcheck', 'false');
   block.addEventListener('input', () => {
     block.dataset.blank = block.textContent.trim() ? 'false' : 'true';
+    // A line that is not in the buffer yet is still words on screen: the dot, Save and Undo answer for it from the first keystroke like any other block's.
+    raiseTypingChrome();
   });
   return block;
 }
@@ -1058,6 +1224,11 @@ function wireMarkdownEditable(el) {
     // Back to being page rather than editor, so the next drag can leave it.
     closeWysiwygBlock(el);
   });
+  // The first keystroke is what the dot, Save and Undo answer to — the words are on screen, so the three have to say so before anything is clicked out of. Then every pause in the typing puts the words themselves into the document.
+  el.addEventListener('input', () => {
+    raiseTypingChrome();
+    scheduleLiveBlockEdit(el);
+  });
   el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event));
 }
 
@@ -1077,12 +1248,16 @@ function fencedCodeInnerSpan(src) {
 
 // Wire `el` as a raw-source editor, for XML blocks and Markdown blocks that don't round-trip WYSIWYG. The block swaps to its exact source on focus and splices it back on blur; no change restores the rendered view, a real change triggers a host re-render. Unlike a WYSIWYG block it is not an editing host up front — `contenteditable` goes on at pointerdown, one block at a time.
 function wireSourceEditable(el) {
-  const blockStart = Number(el.dataset.srcStart);
-  const blockEnd = Number(el.dataset.srcEnd);
-  if (!Number.isFinite(blockStart) || !Number.isFinite(blockEnd)) return;
-  let start = blockStart;
-  let end = blockEnd;
-  if (el.dataset.blockKind === 'code_block') {
+  if (!Number.isFinite(Number(el.dataset.srcStart)) || !Number.isFinite(Number(el.dataset.srcEnd))) return;
+  let start = 0;
+  let end = 0;
+  // Worked out on the press rather than when the block was wired: a pause in another block's typing writes into the buffer without redrawing the page, so the range this block is stamped with is the only one that is still true by then.
+  const readRange = () => {
+    const blockStart = Number(el.dataset.srcStart);
+    const blockEnd = Number(el.dataset.srcEnd);
+    start = blockStart;
+    end = blockEnd;
+    if (el.dataset.blockKind !== 'code_block') return;
     const src = sliceSourceBytes(currentDocumentSource, blockStart, blockEnd);
     const span = fencedCodeInnerSpan(src);
     // The span counts characters and the buffer counts bytes, and the code inside can be anything — so both ends are converted rather than assumed ASCII.
@@ -1090,14 +1265,16 @@ function wireSourceEditable(el) {
       start = blockStart + utf8ByteLength(src.slice(0, span.from));
       end = blockStart + utf8ByteLength(src.slice(0, span.to));
     }
-  }
+  };
   // Held on the block so a control elsewhere can open the same edit: a drawn diagram is dragged to pan, so its source comes from a corner button instead (decorate.js). Everything else still opens on a press.
   el.__startSourceEdit = () => {
     if (el.dataset.editingSource === 'true') return;
+    readRange();
     // Swapping a rendered block (often a tall image) for its one-line source collapses its height; pin the reader to the block above first, or a near-top image shrinking the document would clamp the scroll to the top. focus() must not scroll either — preventScroll keeps the caret from yanking the view.
     const aboveAnchor = anchorAboveElement(el);
     const src = sliceSourceBytes(currentDocumentSource, start, end);
     el.__editBaseline = src;
+    beginTypingRun(el);
     el.__renderedHtml = el.innerHTML;
     el.dataset.editingSource = 'true';
     el.textContent = src;
@@ -1110,6 +1287,17 @@ function wireSourceEditable(el) {
       restoreReaderScrollAnchor(aboveAnchor);
     }
   };
+  // What a pause writes here: the exact bytes on screen, over the range this editor opened — never the Markdown serializer, which is not what a raw-source block is showing.
+  el.__liveSourceEdit = () => ({ start, end, text: el.innerText, inner: false });
+  // And where those bytes now end, so the next pause splices over them rather than over what they replaced.
+  el.__liveSourceMoved = (to) => {
+    end = to;
+  };
+  el.addEventListener('input', () => {
+    if (el.dataset.editingSource !== 'true') return;
+    raiseTypingChrome();
+    scheduleLiveBlockEdit(el);
+  });
   el.addEventListener('pointerdown', (event) => {
     if (el.dataset.editingSource === 'true') return;
     // Let a link click navigate; source editing starts from a click on any non-link part of the block.
@@ -1132,7 +1320,8 @@ function wireSourceEditable(el) {
     delete el.dataset.editingSource;
     // The block is about to grow back to its rendered height (an image re-decodes from zero). Anchor to the stable block above so the reader holds its place.
     const aboveAnchor = anchorAboveElement(el);
-    if (text === el.__editBaseline) {
+    // A pause that has already written means the buffer holds something the page no longer shows, so even the untouched text has to go back through the commit.
+    if (text === el.__editBaseline && !el.__liveStarted) {
       // No change: restore the rendered view (no host round-trip needed).
       el.innerHTML = el.__renderedHtml;
       stampLocalImages(el);

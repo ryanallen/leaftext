@@ -1025,6 +1025,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     end,
                     text,
                     autosave,
+                    live,
+                    continuing,
                     cell,
                 } => {
                     // Splice into the source buffer, then re-render from it, keeping the reader's place. Source stays authoritative for MD and XML. A checkbox toggle (autosave) splices without an undo step and writes to disk right away.
@@ -1033,13 +1035,16 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         start,
                         end,
                         &text,
-                        !autosave,
+                        !autosave && !continuing,
                         cell.as_ref(),
                     ) {
                         if autosave {
                             autosave_active_buffer(&mut reader.workspace, &mut file_watch);
                         }
-                        reader.render(ScrollIntent::Preserve);
+                        // A live splice leaves the page standing: the reader is still typing in it, and a render would take the words out from under the caret.
+                        if !live {
+                            reader.render(ScrollIntent::Preserve);
+                        }
                         // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess.
                         resync_editing_state(reader.page(), &reader.workspace);
                     }

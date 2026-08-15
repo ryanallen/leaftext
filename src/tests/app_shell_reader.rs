@@ -1554,10 +1554,10 @@ fn the_field_block_at_the_top_of_a_note_is_bound_to_the_block_not_to_a_place_on_
         &html,
         "box.addEventListener('change', () => sendFieldEdit(key, box.checked ? 'true' : 'false'));",
     );
-    // A list goes back whole, because how it is written is the file's own shape to keep.
+    // A list goes back whole, because how it is written is the file's own shape to keep — and through the reading view's own edit path, because a field write is an undoable buffer edit and the dot has to answer for it at once.
     assert_contains(
         &html,
-        "send({ command: 'setListField', key, items: next });",
+        "sendEditCommand({ command: 'setListField', key, items: next });",
     );
 
     // Enter commits, Escape abandons, leaving the box commits — the vault menu's fields, in a table cell.
@@ -1568,8 +1568,14 @@ fn the_field_block_at_the_top_of_a_note_is_bound_to_the_block_not_to_a_place_on_
     );
 
     // The host owns every write: where a field's bytes are, whether a quote goes back on, and whether a new name would collide, are all the parser's to know.
-    assert_contains(&html, "send({ command: 'setField', key, value });");
-    assert_contains(&html, "send({ command: 'renameField', key, to: text });");
+    assert_contains(
+        &html,
+        "sendEditCommand({ command: 'setField', key, value });",
+    );
+    assert_contains(
+        &html,
+        "sendEditCommand({ command: 'renameField', key, to: text });",
+    );
 
     // The cross per row and the add row under the last field, both inside the block.
     assert_contains(&html, "button.className = 'frontmatter-remove';");

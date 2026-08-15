@@ -427,6 +427,12 @@ pub(crate) enum IpcCommand {
         /// Set by checkbox toggles: splice with no undo step and write to disk immediately, rather than the normal undoable, dirty-marking edit.
         #[serde(default)]
         autosave: bool,
+        /// Set while the reader is still typing in the block: splice the buffer and leave the page alone. The box being typed in is already the picture, and rebuilding the document would throw the editing session away under the caret — so the commit that ends the run is the one that renders.
+        #[serde(default)]
+        live: bool,
+        /// Set on every splice of a typing run after its first — the pauses in the middle, and the commit that ends it. The first splice of a run records the snapshot, so however many times the typing paused, one press of undo takes the whole run back.
+        #[serde(default)]
+        continuing: bool,
         /// Set when one cell of a table was what changed. The cell is written on its own so the rest of the table keeps the spacing somebody gave it; `text` and the range stay the whole-table rewrite, which is what a cell the source map cannot prove falls back to.
         #[serde(default)]
         cell: Option<TableCellEdit>,

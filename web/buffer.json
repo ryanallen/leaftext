@@ -97,6 +97,38 @@
       "kind": "unknown",
       "changed": false,
       "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "the first pause of a typing run, which is the splice the whole run is taken back to",
+      "kind": "block",
+      "block": "The last line.",
+      "text_in": "The last line, typed",
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "a later pause in the same run, splicing over what the pause before it wrote and recording nothing",
+      "kind": "block",
+      "block": "The last line, typed",
+      "text_in": "The last line, typed on",
+      "continuing": true,
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "the commit that ends the run, which continues it too — the words on screen and the words in the buffer are the same by then",
+      "kind": "block",
+      "block": "The last line, typed on",
+      "text_in": "The last line, typed on and on.",
+      "continuing": true,
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on and on.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "one press of undo taking the whole run back, however many pauses it had in it",
+      "kind": "undo",
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
     }
   ]
 }

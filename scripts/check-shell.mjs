@@ -1472,6 +1472,504 @@ if (booted) {
     }
   });
 
+  // ---- typing that has not been clicked out of yet ---------------------------
+  // The stand-in window swallows a timer, and Save and Undo hand their own send to the next tick so a field box's settle is on the wire ahead of them. So a check that wants to see the write has to hold the timers and run them.
+  const withPageTimers = (run) => {
+    const queued = [];
+    const wasTimeout = booted.setTimeout;
+    booted.setTimeout = (fn) => queued.push(fn);
+    const drain = () => {
+      let ran = 0;
+      while (queued.length) {
+        if (ran > 100) throw new Error('the page kept asking for another timer');
+        ran += 1;
+        queued.shift()();
+      }
+    };
+    try {
+      return run(drain);
+    } finally {
+      booted.setTimeout = wasTimeout;
+    }
+  };
+
+  // Raise an event at the window, through the page's own handlers in the order they registered.
+  const raiseWindowEvent = (type, event) => {
+    for (const handler of [...(booted.window.__windowListeners.get(type) || [])]) handler(event);
+  };
+  const pressWindowKey = (event) => raiseWindowEvent('keydown', event);
+  const saveKeyPress = () => ({
+    key: 's',
+    ctrlKey: true,
+    metaKey: false,
+    altKey: false,
+    shiftKey: false,
+    isComposing: false,
+    target: Object.assign(new FakeElement(), { nodeType: 1, closest: () => null }),
+    preventDefault() {},
+    stopPropagation() {},
+  });
+
+  // A block of the open document with the caret in it and words typed since it was opened: on screen, and not yet clicked out of.
+  const typedBlock = ({ kind = 'paragraph', tag = 'P', start, end, typed, baseline, innerSpan = null }) => {
+    // The page's own stand-in element, so the editors can really be wired to it and the keystroke really reaches their listeners.
+    const el = Object.assign(fakeElement(), {
+      nodeType: 1,
+      tagName: tag,
+      isConnected: true,
+      dataset: { blockKind: kind, srcStart: String(start), srcEnd: String(end) },
+      childNodes: [{ nodeType: 3, nodeValue: typed }],
+      textContent: typed,
+      previousElementSibling: null,
+      nextElementSibling: null,
+      __editingActive: true,
+      __editBaseline: baseline,
+      __innerSpan: innerSpan,
+    });
+    el.getAttribute = (name) => (name === 'contenteditable' ? 'true' : null);
+    el.contains = () => true;
+    el.closest = () => el;
+    return el;
+  };
+
+  // The open document, the page's own record of it, and a clean slate to send into.
+  const openTyping = (source, format = 'markdown') => {
+    vm.runInContext(`currentState = { tabs: [{ path: 'notes.md' }], active: 0 };`, booted);
+    vm.runInContext('pendingCaret = null; dirtyByPath.clear(); undoableByPath.clear();', booted);
+    vm.runInContext(`currentDocumentFormat = ${JSON.stringify(format)};`, booted);
+    // No caret to carry unless a check draws one: the stand-in page has no selection of its own.
+    booted.getSelection = () => null;
+    booted.window.leafBlocksResynced({ source });
+  };
+  const restTyping = () => {
+    delete booted.getSelection;
+    vm.runInContext('currentState = null; pendingCaret = null; dirtyByPath.clear(); undoableByPath.clear();', booted);
+    vm.runInContext("currentDocumentFormat = 'markdown';", booted);
+    booted.window.leafBlocksResynced({ source: '' });
+  };
+
+  // Typing under the caret does not raise the dirty flag, so a save gated on that flag refuses outright when the typing is the only edit, and with an earlier edit behind it writes the file WITHOUT the words on screen. The commit goes first and the write follows it, which is the order held here.
+  check('Ctrl+S while typing writes the typed words, and writes them before it saves', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      const source = '# Title\n\nA paragraph.\n';
+      openTyping(source);
+      const block = typedBlock({ start: 9, end: 21, typed: 'A paragraph, typed on.', baseline: 'A paragraph.' });
+      booted.document.activeElement = block;
+      withPageTimers((drain) => {
+        pressWindowKey(saveKeyPress());
+        drain();
+      });
+      const commands = posted.map((message) => message.command);
+      if (commands.indexOf('editBlock') !== 0) {
+        throw new Error(`the save sent ${JSON.stringify(commands)} rather than committing first`);
+      }
+      if (commands.indexOf('saveDocument') !== 1) {
+        throw new Error(`nothing was saved: ${JSON.stringify(commands)}`);
+      }
+      const edit = posted[0];
+      if (edit.start !== 9 || edit.end !== 21) {
+        throw new Error(`the commit covered [${edit.start},${edit.end}) rather than the block`);
+      }
+      const written = source.slice(0, edit.start) + edit.text + source.slice(edit.end);
+      if (written !== '# Title\n\nA paragraph, typed on.\n') {
+        throw new Error(`the file would have become ${JSON.stringify(written)}`);
+      }
+      // And the session is closed behind it, so the click-out that follows does not write the same words a second time.
+      if (block.__editingActive) throw new Error('the block was left holding an open session');
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // Every editor commits through the same path, so this is the same fix in a document spelled another way — and the one that would damage a file if the range were wrong: an element's commit splices BETWEEN its tags, never over them.
+  check('Ctrl+S while typing on an element’s words writes them between the tags', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      const source = '<doc>\n<p>The words.</p>\n</doc>\n';
+      openTyping(source, 'xml');
+      // The span bindEditableBlocks stamps on the element: the bytes between `<p>` and `</p>`.
+      const start = source.indexOf('The words.');
+      const block = typedBlock({
+        start: source.indexOf('<p>'),
+        end: source.indexOf('</p>') + 4,
+        typed: 'The words, typed on.',
+        baseline: 'The words.',
+        innerSpan: { start, end: start + 'The words.'.length },
+      });
+      booted.document.activeElement = block;
+      withPageTimers((drain) => {
+        pressWindowKey(saveKeyPress());
+        drain();
+      });
+      const edit = posted.find((message) => message.command === 'editBlock');
+      if (!edit) throw new Error('typing on an element was never committed');
+      const written = source.slice(0, edit.start) + edit.text + source.slice(edit.end);
+      if (written !== '<doc>\n<p>The words, typed on.</p>\n</doc>\n') {
+        throw new Error(`the file would have become ${JSON.stringify(written)}`);
+      }
+      if (posted.map((message) => message.command).indexOf('saveDocument') !== 1) {
+        throw new Error('the element’s words were not saved after being committed');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // The commit re-renders the whole page, and a caret still inside the committed block is dropped by that render unless the block claims it — which is saving mid-sentence putting the reader out of the words they are typing.
+  check('after a mid-typing save the caret is back in the same block at the same place', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    const wasRange = booted.document.createRange;
+    try {
+      openTyping('# Title\n\nA paragraph.\n');
+      const block = typedBlock({ start: 9, end: 21, typed: 'A paragraph, typed on.', baseline: 'A paragraph.' });
+      booted.document.activeElement = block;
+      // Where the caret sits inside the block, measured the way the page measures it: the text before it.
+      const caretAt = 14;
+      booted.getSelection = () => ({
+        rangeCount: 1,
+        isCollapsed: true,
+        getRangeAt: () => ({ startContainer: block.childNodes[0], startOffset: caretAt }),
+      });
+      booted.document.createRange = () => {
+        let upTo = 0;
+        return {
+          selectNodeContents() {},
+          setStart() {},
+          setEnd: (_container, offset) => {
+            upTo = offset;
+          },
+          collapse() {},
+          cloneContents: () => ({ textContent: 'x'.repeat(upTo) }),
+        };
+      };
+      withPageTimers((drain) => {
+        pressWindowKey(saveKeyPress());
+        drain();
+      });
+      const caret = vm.runInContext('pendingCaret', booted);
+      if (!caret) throw new Error('the caret was dumped out of the block it was typed in');
+      if (caret.srcStart !== 9) throw new Error(`the caret landed on the block at ${caret.srcStart}`);
+      if (caret.textOffset !== caretAt) {
+        throw new Error(`the caret came back at ${caret.textOffset} rather than ${caretAt}`);
+      }
+      if (caret.path !== 'notes.md') throw new Error('the caret was not stamped with its own document');
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.createRange = wasRange;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // Undo pressed mid-typing has to commit the typing first, or it steps back the edit BEFORE it — leaving the words on screen and taking away something the reader had finished with.
+  check('Undo pressed mid-typing puts the block back to before the typing began', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      openTyping('# Title\n\nA paragraph.\n');
+      const block = typedBlock({ start: 9, end: 21, typed: 'A paragraph, typed on.', baseline: 'A paragraph.' });
+      booted.document.activeElement = block;
+      withPageTimers((drain) => {
+        booted.undoLastEdit();
+        drain();
+      });
+      const commands = posted.map((message) => message.command);
+      if (commands.indexOf('editBlock') !== 0 || commands.indexOf('undoEdit') !== 1) {
+        throw new Error(`undo sent ${JSON.stringify(commands)} rather than committing and then stepping back`);
+      }
+      if (posted[0].text !== 'A paragraph, typed on.') {
+        throw new Error(`the commit undo landed on wrote ${JSON.stringify(posted[0].text)}`);
+      }
+
+      // And with nothing typed, undo is the plain one it has always been: the baseline commits nothing.
+      posted.length = 0;
+      const quiet = typedBlock({ start: 9, end: 21, typed: 'A paragraph.', baseline: 'A paragraph.' });
+      booted.document.activeElement = quiet;
+      withPageTimers((drain) => {
+        booted.undoLastEdit();
+        drain();
+      });
+      if (posted.some((message) => message.command === 'editBlock')) {
+        throw new Error('a block sitting at its baseline wrote an edit on its way to the undo');
+      }
+      if (!posted.some((message) => message.command === 'undoEdit')) {
+        throw new Error('undo stopped reaching the host once it committed first');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // The dot, Save and Undo all waited for the click-out, so a page with words typed on it read as saved and offered nothing to take them back with. They answer the first keystroke now — a promise phase 1's commit-first is what makes good on — and typing taken back to where it started has to put them out again, or a document nobody changed reads as edited for ever.
+  check('one keystroke lights the dot, and taking the typing back puts it out', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      // Every kind of document commits through the same two editors, so the dot has to light in each of them the same way.
+      for (const [format, source, typed, baseline] of [
+        ['markdown', '# Title\n\nA paragraph.\n', 'A paragraph, typed on.', 'A paragraph.'],
+        ['xml', '<doc>\n<p>The words.</p>\n</doc>\n', 'The words, typed on.', 'The words.'],
+        ['eml', 'From: a@b.c\n\nThe message.\n', 'The message, typed on.', 'The message.'],
+      ]) {
+        posted.length = 0;
+        openTyping(source, format);
+        const block = typedBlock({
+          start: source.indexOf(baseline),
+          end: source.indexOf(baseline) + baseline.length,
+          typed,
+          baseline,
+        });
+        booted.wireMarkdownEditable(block);
+        booted.document.activeElement = block;
+        const fire = (type, event) => {
+          for (const handler of [...(block.listeners.get(type) || [])]) handler(event);
+        };
+
+        // The first keystroke, and nothing on the wire behind it: the promise is local until an action makes good on it.
+        fire('input', {});
+        if (!booted.isDocumentDirty('notes.md')) throw new Error(`${format}: a keystroke left the dot out`);
+        if (vm.runInContext("undoableByPath.get('notes.md')", booted) !== true) {
+          throw new Error(`${format}: a keystroke offered nothing to undo`);
+        }
+        if (posted.length) throw new Error(`${format}: a keystroke reached the host: ${JSON.stringify(posted)}`);
+
+        // Taken back to the words it started with, and clicked out of. Nothing is written, and the three go back to the host's own answer.
+        block.childNodes[0].nodeValue = baseline;
+        block.textContent = baseline;
+        withPageTimers((drain) => {
+          fire('focusout', { relatedTarget: null });
+          booted.document.activeElement = null;
+          raiseWindowEvent('focusout', { relatedTarget: null });
+          drain();
+        });
+        if (posted.length) throw new Error(`${format}: typing taken back still wrote ${JSON.stringify(posted)}`);
+        if (booted.isDocumentDirty('notes.md')) {
+          throw new Error(`${format}: the file was untouched and the dot stayed lit`);
+        }
+        if (vm.runInContext("undoableByPath.get('notes.md')", booted) === true) {
+          throw new Error(`${format}: Undo was left offered with nothing to undo`);
+        }
+      }
+
+      // A document that was already dirty keeps its dot when a typing session on top of it writes nothing: what is put back is the host's answer, not "clean".
+      posted.length = 0;
+      openTyping('# Title\n\nA paragraph.\n');
+      booted.window.leafBlocksResynced({ source: '# Title\n\nA paragraph.\n', dirty: true, canUndo: true });
+      const block = typedBlock({ start: 9, end: 21, typed: 'A paragraph.', baseline: 'A paragraph.' });
+      booted.wireMarkdownEditable(block);
+      booted.document.activeElement = block;
+      for (const handler of [...(block.listeners.get('input') || [])]) handler({});
+      withPageTimers((drain) => {
+        booted.document.activeElement = null;
+        raiseWindowEvent('focusout', { relatedTarget: null });
+        drain();
+      });
+      if (!booted.isDocumentDirty('notes.md')) {
+        throw new Error('an edit made before the typing was reported as saved');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // Typing reaches the document at every pause, so an edit arriving from anywhere else mid-typing no longer redraws the page over words nothing holds. Nothing redraws at a pause either, which leaves the page's own map of where every block's bytes are as the only thing keeping the next splice honest — and a map that lags writes the wrong bytes, so the shift is held here rather than left to be found.
+  check('a pause in the typing writes into the document, and moves the map with it', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      const source = '# Title\n\nA\n\nAfter it.\n';
+      openTyping(source);
+      const block = typedBlock({ start: 9, end: 10, typed: 'A paragraph.', baseline: 'A' });
+      // The block after it, whose stamped range describes the buffer before the splice.
+      const after = typedBlock({ start: 12, end: 21, typed: 'After it.', baseline: 'After it.' });
+      const app = vm.runInContext('app', booted);
+      const wasQuery = app.querySelector;
+      const body = Object.assign(fakeElement('document-body'), {
+        querySelectorAll: (selector) => (String(selector) === '[data-src-start]' ? [block, after] : []),
+      });
+      app.querySelector = (selector) => (String(selector) === '.document-body' ? body : wasQuery(selector));
+
+      booted.sendLiveBlockEdit(block);
+      const live = posted.filter((message) => message.command === 'editBlock');
+      if (live.length !== 1) throw new Error(`the pause sent ${live.length} edits`);
+      if (live[0].live !== true) throw new Error('the pause asked for a re-render under the caret');
+      if (live[0].continuing) throw new Error('the first splice of a run recorded no undo point');
+      const written = source.slice(0, live[0].start) + live[0].text + source.slice(live[0].end);
+      if (written !== '# Title\n\nA paragraph.\n\nAfter it.\n') {
+        throw new Error(`the document became ${JSON.stringify(written)}`);
+      }
+
+      // The map moved with it: the typed block grew, the block after it shifted by the same, and the source the page slices from is the spliced one.
+      if (block.dataset.srcEnd !== '21') throw new Error(`the typed block ends at ${block.dataset.srcEnd}`);
+      if (after.dataset.srcStart !== '23' || after.dataset.srcEnd !== '32') {
+        throw new Error(`the block after it is at [${after.dataset.srcStart},${after.dataset.srcEnd})`);
+      }
+      if (vm.runInContext('currentDocumentSource', booted) !== written) {
+        throw new Error('the page kept slicing the document it had before the pause');
+      }
+      // And what the shifted range names in the shifted source is still that block.
+      if (written.slice(Number(after.dataset.srcStart), Number(after.dataset.srcEnd)) !== 'After it.') {
+        throw new Error('the shifted range no longer covers the block it belongs to');
+      }
+
+      // A second pause continues the run, so the whole run is one undo step — and it splices over what the first pause wrote, not over what it replaced.
+      posted.length = 0;
+      block.childNodes[0].nodeValue = 'A paragraph, longer.';
+      block.textContent = 'A paragraph, longer.';
+      booted.sendLiveBlockEdit(block);
+      const second = posted.filter((message) => message.command === 'editBlock');
+      if (second.length !== 1 || second[0].continuing !== true) {
+        throw new Error('a later pause in the same run started a second undo step');
+      }
+      if (second[0].start !== 9 || second[0].end !== 21) {
+        throw new Error(`the second pause spliced [${second[0].start},${second[0].end})`);
+      }
+      if (written.slice(0, 9) + second[0].text + written.slice(21) !== '# Title\n\nA paragraph, longer.\n\nAfter it.\n') {
+        throw new Error('the second pause wrote over the wrong bytes');
+      }
+
+      // Nothing new since the last pause is nothing to send.
+      posted.length = 0;
+      booted.sendLiveBlockEdit(block);
+      if (posted.length) throw new Error('a pause with nothing typed in it still wrote to the document');
+
+      // A note's table waits for the click-out: its commit writes one cell rather than a range, so nothing here can say how long the buffer's table became.
+      posted.length = 0;
+      const table = typedBlock({ kind: 'table', tag: 'TABLE', start: 9, end: 21, typed: 'x', baseline: 'y' });
+      booted.sendLiveBlockEdit(table);
+      if (posted.length) throw new Error('a table wrote a range splice it cannot measure');
+    } finally {
+      booted.ipc = wasIpc;
+      restTyping();
+    }
+  });
+
+  // The other reader that holds a range over time rather than reading one: a drag names its blocks as byte ranges, and the move splices exactly those. The grab and the drop are seconds apart, and the gutter holds the focus in between, so a pause in the typing lands right there — a run kept from the grab would carry the blocks around a document whose bytes had moved under it.
+  check('a block dropped after a pause in the typing moves the bytes the pause left behind', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      const source = '# Title\n\nA\n\nAfter it.\n';
+      openTyping(source);
+      const typing = typedBlock({ start: 9, end: 10, typed: 'A paragraph.', baseline: 'A' });
+      const after = typedBlock({ start: 12, end: 21, typed: 'After it.', baseline: 'After it.' });
+      const app = vm.runInContext('app', booted);
+      const wasQuery = app.querySelector;
+      const body = Object.assign(fakeElement('document-body'), {
+        querySelectorAll: (selector) => (String(selector) === '[data-src-start]' ? [typing, after] : []),
+      });
+      app.querySelector = (selector) => (String(selector) === '.document-body' ? body : wasQuery(selector));
+      // Grabbed while the words were still only on screen, so the run it was grabbed on is the one the buffer no longer has.
+      booted.__dragRun = [typing, after];
+      vm.runInContext(
+        'blockDrag = { target: __dragRun[0], elements: __dragRun, others: [__dragRun[1]], from: 0, to: 1, moved: true };',
+        booted,
+      );
+      // The pause, mid-drag: the typed block grows by eleven bytes and the one under it moves by the same.
+      booted.sendLiveBlockEdit(typing);
+      posted.length = 0;
+      // Nothing has the caret at the drop, so the move is the only thing sent.
+      booted.document.activeElement = null;
+      booted.endBlockDrag(true);
+      const moves = posted.filter((message) => message.command === 'moveBlock');
+      if (moves.length !== 1) throw new Error(`the drop sent ${moves.length} moves`);
+      if (JSON.stringify(moves[0].ranges) !== JSON.stringify([[9, 21], [23, 32]])) {
+        throw new Error(`the drop moved ${JSON.stringify(moves[0].ranges)}, which is where the blocks were before the pause`);
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // The block after the typed one is what the shift is for, and the raw-source editor is the reader most easily caught by a stale one: the bytes it opens are worked out on the press, since anything worked out when it was wired is from before any pause could move them.
+  check('a raw-source block opens the bytes it is stamped with now, not when it was wired', () => {
+    const source = '# Title\n\nA\n\n```\ncode\n```\n';
+    openTyping(source);
+    const fence = typedBlock({ kind: 'code_block', tag: 'PRE', start: 12, end: 23, typed: '', baseline: '' });
+    booted.wireSourceEditable(fence);
+    // A pause in the block above wrote eleven more bytes, and the shift moved this block's stamp with them.
+    const grown = '# Title\n\nA paragraph.\n\n```\ncode\n```\n';
+    vm.runInContext(`currentDocumentSource = ${JSON.stringify(grown)};`, booted);
+    fence.dataset.srcStart = String(grown.indexOf('```'));
+    fence.dataset.srcEnd = String(grown.length - 1);
+    try {
+      fence.__startSourceEdit();
+      if (fence.textContent !== 'code') {
+        throw new Error(`the block opened ${JSON.stringify(fence.textContent)} rather than the code it is showing`);
+      }
+    } finally {
+      restTyping();
+    }
+  });
+
+  // A field box swallows every key so the page's own shortcuts cannot fire under a caret in a text field — which meant mid-field Ctrl+S reached nothing at all, and a field typed and saved wrote the file without it. The save is the one key let out, and the write it triggers has to have raised the dot by the time the save reads it.
+  check('a field box lets the save key out, and a field write raises the dot itself', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      openTyping('---\ntags: one\n---\n');
+      const box = booted.frontmatterInput({ value: 'one', label: 'tags', commit: () => true });
+      const keydown = (box.listeners.get('keydown') || [])[0];
+      if (!keydown) throw new Error('the field box wired no keys at all');
+      const press = (key, ctrl) => {
+        let stopped = false;
+        keydown({
+          key,
+          ctrlKey: !!ctrl,
+          metaKey: false,
+          altKey: false,
+          preventDefault() {},
+          stopPropagation() {
+            stopped = true;
+          },
+        });
+        return stopped;
+      };
+      if (press('s', true)) throw new Error('the save key was swallowed inside a field box');
+      if (press('S', true)) throw new Error('the save key held down with shift was swallowed');
+      // Every other key is still the box's own, or the page's shortcuts fire under a caret in a text field.
+      for (const key of ['s', 'a', 'Enter', 'Escape', 'z']) {
+        if (!press(key, key === 'z')) throw new Error(`${key} escaped the field box`);
+      }
+
+      // And the write itself: the dot and the undo are up the moment it is sent, so the save reading them a tick later finds something to write.
+      posted.length = 0;
+      booted.sendFieldEdit('tags', 'two');
+      if (!posted.some((message) => message.command === 'setField')) {
+        throw new Error('the field never reached the host');
+      }
+      if (!booted.isDocumentDirty('notes.md')) throw new Error('a field write left the document reading as saved');
+      if (vm.runInContext("undoableByPath.get('notes.md')", booted) !== true) {
+        throw new Error('a field write left nothing to undo');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      restTyping();
+    }
+  });
+
   // A selection can already cross blocks — Ctrl+A makes one — and each block is its own editing host, so the browser has no answer for Delete on it. The splice that answers it runs from the first touched block's start to the last one's end, which is the widest range anything in the reading view writes: getting it wrong takes out text nobody selected.
   check('Delete over a run of blocks keeps the two ends and nothing between them', () => {
     const { blockRunForDelete, crossBlockDeletePlan, blockMarkerOf, blockCanBeCutInHalf } = booted;
@@ -8898,6 +9396,26 @@ checkSettled('every editing command reaches the buffer as the edit the desktop m
       }
     }
   }
+});
+
+checkSettled('a pause in the typing moves an embedded buffer and leaves the document standing', async () => {
+  const { send, asked, seen } = await bootEmbedHost({ save: async () => {} });
+  // A redraw is the host handing the page a whole document again, which is the thing a live splice must not do.
+  const drawn = () => seen.state.length;
+  const before = drawn();
+  // Still typing in the block: the box on screen is already the picture, so a redraw would take the words out from under the caret. And every splice of the run after its first records no undo point, or one sentence would take four presses to take back.
+  send({ command: 'editBlock', start: 0, end: 7, text: '# Retitled', live: true, continuing: true });
+  await settle();
+  const made = asked.filter((one) => one.call === 'edit').map((one) => one.edit);
+  const found = made.find((edit) => edit.edit === 'block');
+  if (!found) throw new Error(`a live splice reached the buffer as ${JSON.stringify(made)}`);
+  if (found.undo !== false) throw new Error('a splice continuing a typing run started a second undo step');
+  if (drawn() !== before) throw new Error('a live splice redrew the document the reader was typing in');
+
+  // The commit that ends the run is the one that redraws, and it is still the same buffer underneath.
+  send({ command: 'editBlock', start: 0, end: 10, text: '# Retitled again', continuing: true });
+  await settle();
+  if (drawn() === before) throw new Error('the commit that ends a run never redrew the document');
 });
 
 checkSettled('an edit that writes itself reaches the caller without a Save press, and an undoable one does not', async () => {
