@@ -490,6 +490,11 @@ function xmlCommentTypeableInPlace(el, words) {
   };
 }
 
+// Whether what is on the page still has to go into the buffer. Back at the words it started with and nothing written on the way is a no-edit focus and costs nothing; back at those words after a pause HAS written is a buffer holding text the page no longer shows, so the same words go out again to take it back. Five gestures ask this — the click-out, the source view's blur, the drag, the gap under a block and the line opened under one — and it is one function because a second copy of the question is one that can drop the second half.
+function blockTextNeedsWriting(el, text) {
+  return text !== el.__editBaseline || el.__liveStarted === true;
+}
+
 // Send an edit for `el`'s source range, only if `text` differs from the baseline captured when editing began (so a no-edit focus costs nothing). Wherever the caret is — another block, or still in this one, which is how Save and Undo commit — carry it across this commit's re-render (adjusting for the splice's offset shift) so it isn't dumped out.
 //
 // `range` overrides the block's own: a fenced code block edits the inside of its fences, so what it writes back is narrower than the block. An element of a tree document carries the same override on itself, stamped when it was wired, so every path that commits it splices between its tags rather than over them.
@@ -508,8 +513,7 @@ function commitBlockEdit(el, text, range) {
   const start = span ? span.start : Number(el.dataset.srcStart);
   const end = span ? span.end : Number(el.dataset.srcEnd);
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
-  // Back to the words it started with, and nothing written on the way: a no-edit focus costs nothing. Where a pause HAS written, the same text still has to go out — the buffer holds what the pause wrote, and leaving it there would save words the page no longer shows.
-  if (text === el.__editBaseline && !el.__liveStarted) return false;
+  if (!blockTextNeedsWriting(el, text)) return false;
   if (!span && deleteEmptiedBlock(el, text)) return true;
   // A table where one cell changed writes that cell and leaves the rest of the file alone; `text` rides along as what the host falls back to when it cannot place it.
   const cell = span ? null : tableCellChange(el.__editCells, tableCellTexts(el));
@@ -1463,8 +1467,7 @@ function wireSourceEditable(el) {
     delete el.dataset.editingSource;
     // The block is about to grow back to its rendered height (an image re-decodes from zero). Anchor to the stable block above so the reader holds its place.
     const aboveAnchor = anchorAboveElement(el);
-    // A pause that has already written means the buffer holds something the page no longer shows, so even the untouched text has to go back through the commit.
-    if (text === el.__editBaseline && !el.__liveStarted) {
+    if (!blockTextNeedsWriting(el, text)) {
       // No change: restore the rendered view (no host round-trip needed).
       el.innerHTML = el.__renderedHtml;
       stampLocalImages(el);

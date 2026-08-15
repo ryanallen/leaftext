@@ -3917,6 +3917,45 @@ if (booted) {
     });
   });
 
+  // A pause puts what is being typed into the file without redrawing the page, so both plus paths under a block have to save that block even where its words are back at the baseline — skip it and the file keeps a word the page shows as taken back, for the next render to draw in again.
+  check('a word typed and taken back inside the pause is still written out by both plus paths', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const start = note.indexOf('A paragraph.');
+    const end = start + 'A paragraph.'.length;
+    const typedOn = (block) => {
+      const el = block(start, end);
+      el.textContent = 'A paragraph.';
+      el.childNodes = [{ nodeType: 3, nodeValue: 'A paragraph.' }];
+      el.__editingActive = true;
+      el.__editBaseline = 'A paragraph.';
+      // The pause has already put this block's typing into the buffer, and the words have since gone back to what they started as.
+      el.__liveStarted = true;
+      return el;
+    };
+    const saved = (edit, what) => {
+      if (edit.start !== start || edit.end !== end || edit.text !== 'A paragraph.') {
+        throw new Error(`${what} saved the block as ${JSON.stringify(edit)}`);
+      }
+    };
+
+    noteGutter(note, ({ block, sent, option }) => {
+      const after = typedOn(block);
+      booted.runGapInsert({ after, before: null }, option('divider'));
+      const edits = sent.filter((one) => one.command === 'editBlock');
+      if (edits.length !== 2) throw new Error(`the gap under it sent ${JSON.stringify(edits)}`);
+      saved(edits[0], 'the gap under it');
+      if (edits[1].start !== end) throw new Error(`the new block landed at ${edits[1].start}, not after the saved line`);
+    });
+
+    noteGutter(note, ({ block, sent, option }) => {
+      const after = typedOn(block);
+      booted.runGapInsert({ after, before: null }, option('text'));
+      const edits = sent.filter((one) => one.command === 'editBlock');
+      if (edits.length !== 1) throw new Error(`the line opened under it sent ${JSON.stringify(edits)}`);
+      saved(edits[0], 'the line opened under it');
+    });
+  });
+
   // Picking a kind on a line that is already open is the one option that commits nothing: the line is not in the buffer, so it swaps for an empty one of the kind that was picked and waits for its first word. Writing here would splice a marker with no words behind it.
   check('picking another kind on a line already open swaps it and sends no edit', () => {
     const note = '# Title\n\nA paragraph.\n';
@@ -4559,6 +4598,104 @@ if (booted) {
     }
     if (byteOffsetAtLineIndex(text, 2) !== Buffer.byteLength('ascii\ncafé and ünicode\n')) {
       throw new Error('the third line does not account for multi-byte characters');
+    }
+  });
+
+  // The sheet stands open for minutes, so the document moves under it. Where Save writes is read when Save is pressed, and a Save with nothing left to write onto says so rather than splicing into whatever took those bytes.
+  check('the diagram sheet writes where the block is when Save is pressed, and refuses once it has gone', () => {
+    const note = '# Title\n\n```mermaid\nflowchart TD\n    A["a"]\n```\n';
+    const at = note.indexOf('```mermaid');
+    const end = note.indexOf('\n```\n', at) + '\n```'.length;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = { source: read('currentDocumentSource'), send: booted.ipc.postMessage, toast: booted.leafToast };
+    const sent = [];
+    const said = [];
+    const block = fakeElement('flowBlockUnderTest');
+    block.dataset = { srcStart: String(at), srcEnd: String(end) };
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.leafToast = (message) => said.push(message);
+      read(`currentDocumentSource = ${JSON.stringify(note)};`);
+      booted.openMermaidBlockSheet(block);
+      if (read('flowSession && flowSession.text') !== 'flowchart TD\n    A["a"]') {
+        throw new Error(`the sheet opened on ${JSON.stringify(read('flowSession && flowSession.text'))}`);
+      }
+
+      // A pause in somebody's typing above the diagram: the buffer grows and every block's numbers move, with nothing redrawn — what advanceLiveRanges does as the splice lands.
+      const grew = 'A new sentence.\n\n';
+      read(`currentDocumentSource = ${JSON.stringify(note.slice(0, at) + grew + note.slice(at))};`);
+      block.dataset.srcStart = String(at + grew.length);
+      block.dataset.srcEnd = String(end + grew.length);
+
+      read('flowCode').value = 'flowchart TD\n    A["b"]';
+      booted.saveFlowSheet();
+      const edits = sent.filter((one) => one.command === 'editBlock');
+      if (edits.length !== 1) throw new Error(`Save sent ${JSON.stringify(sent)}`);
+      if (edits[0].start !== at + grew.length + '```mermaid\n'.length) {
+        throw new Error(`Save landed at ${edits[0].start}, which is where the block used to be`);
+      }
+      if (edits[0].text !== 'flowchart TD\n    A["b"]') throw new Error(`Save wrote ${JSON.stringify(edits[0].text)}`);
+      if (said.length) throw new Error(`a Save that landed said ${JSON.stringify(said)}`);
+
+      // The same sheet over a block a render has taken away: nothing is written, the reader is told why, and the drawing stays on screen to be copied out of.
+      sent.length = 0;
+      booted.openMermaidBlockSheet(block);
+      block.isConnected = false;
+      booted.saveFlowSheet();
+      if (sent.filter((one) => one.command === 'editBlock').length) {
+        throw new Error(`a Save with no block left wrote ${JSON.stringify(sent)}`);
+      }
+      if (said.length !== 1 || !said[0].includes('nowhere left to save it')) {
+        throw new Error(`it said ${JSON.stringify(said)}`);
+      }
+      if (!read('!!flowSession')) throw new Error('the refused Save closed the sheet over the drawing');
+    } finally {
+      read('flowSession = null;');
+      read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      booted.ipc.postMessage = was.send;
+      booted.leafToast = was.toast;
+      booted.__frames.drain();
+    }
+  });
+
+  // The other way in: the plus offers a new diagram, and the gutter it was pressed on is rebuilt by every render — so a drawing that comes back after one has no line left to be written onto.
+  check('a new diagram writes nothing once the line the plus stood on has gone', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = { source: read('currentDocumentSource'), toast: booted.leafToast };
+    const wrote = [];
+    const said = [];
+    const line = fakeElement('flowPlaceUnderTest');
+    line.dataset = { srcStart: '9', srcEnd: '9' };
+    try {
+      booted.leafToast = (message) => said.push(message);
+      read(`currentDocumentSource = ${JSON.stringify('# Title\n\n\n')};`);
+      const standing = (place) => booted.blockInsertPlaceStanding(place);
+      if (!standing({ target: line })) throw new Error('a line still on the page was called gone');
+      if (!standing({ gap: { after: line, before: null } })) throw new Error('a gap under a standing block was called gone');
+      if (standing(null) || standing({ target: null }) || standing({ gap: { after: null, before: null } })) {
+        throw new Error('a place with nothing in it was called standing');
+      }
+
+      booted.openBlockFlowSheet((written) => wrote.push(written), { target: line });
+      line.isConnected = false;
+      booted.saveFlowSheet();
+      if (wrote.length) throw new Error(`it wrote ${JSON.stringify(wrote)}`);
+      if (said.length !== 1 || !said[0].includes('nowhere left to save it')) {
+        throw new Error(`it said ${JSON.stringify(said)}`);
+      }
+      if (!read('!!flowSession')) throw new Error('the refused Save closed the sheet over the drawing');
+
+      // And back on a line that is still there, the same Save writes the fenced block.
+      line.isConnected = true;
+      booted.saveFlowSheet();
+      if (wrote.length !== 1 || !wrote[0].text.startsWith('```mermaid\n')) {
+        throw new Error(`the Save that should have landed wrote ${JSON.stringify(wrote)}`);
+      }
+    } finally {
+      read('flowSession = null;');
+      read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      booted.leafToast = was.toast;
+      booted.__frames.drain();
     }
   });
 

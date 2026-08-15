@@ -257,7 +257,7 @@ function openLineBelow(after, specId) {
   if (after.__editingActive) {
     const text = blockDomToMarkdown(after);
     after.__editingActive = false;
-    if (text !== after.__editBaseline) {
+    if (blockTextNeedsWriting(after, text)) {
       sendBlockSplice(after, start, end, text);
       setPendingCaret({ srcStart: start, insertBelow: true, blockSpec: specId });
       return;
@@ -491,6 +491,13 @@ function blockGutterAnchorY() {
   return rect.top + Math.min(lineHeight, rect.height) / 2;
 }
 
+// Whether what the plus was standing on is still on the page — the block whose line it was offered on, or the block a gap hangs its write off. Asked as connectedness, never as the numbers: a block a render replaced still answers the ones it was drawn with, and an option that waits for an answer (the picture, the diagram) can come back long after that render landed.
+function blockInsertPlaceStanding(place) {
+  if (!place) return false;
+  const host = place.gap ? place.gap.after || place.gap.before : place.target;
+  return !!host && host.isConnected;
+}
+
 // Open the insert row: the plus becomes a cross, and the options fan out to the right of it over the (usually empty) line, the way Medium's does.
 function expandBlockInsertRow() {
   const target = blockGutterTarget;
@@ -511,7 +518,7 @@ function expandBlockInsertRow() {
     const write = (chosen) => (gap ? runGapInsert(gap, chosen) : runBlockInsert(target, chosen));
     button.addEventListener('click', () => {
       if (option.ask === 'image') openBlockImageBox(write);
-      else if (option.ask === 'flow') openBlockFlowSheet(write);
+      else if (option.ask === 'flow') openBlockFlowSheet(write, gap ? { gap } : { target });
       else write(option);
     });
     blockGutterRow.appendChild(button);
@@ -589,7 +596,7 @@ function gapInsertOffsetAfter(after) {
   if (!after.__editingActive || !Number.isFinite(start) || !Number.isFinite(end)) return end;
   const text = blockDomToMarkdown(after);
   after.__editingActive = false;
-  if (text === after.__editBaseline) return end;
+  if (!blockTextNeedsWriting(after, text)) return end;
   sendBlockSplice(after, start, end, text);
   return start + utf8ByteLength(text);
 }
@@ -766,8 +773,7 @@ function commitBeforeBlockMove() {
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
   const text = blockDomToMarkdown(active);
   active.__editingActive = false;
-  // A pause in the typing has already written into the buffer, so even text back at the words it started with has to go out — the move would otherwise carry blocks around a document holding words the page no longer shows.
-  if (text === active.__editBaseline && !active.__liveStarted) return null;
+  if (!blockTextNeedsWriting(active, text)) return null;
   sendBlockSplice(active, start, end, text);
   return { start, end, delta: utf8ByteLength(text) - (end - start) };
 }

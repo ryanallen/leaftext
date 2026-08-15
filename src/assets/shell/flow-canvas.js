@@ -64,6 +64,9 @@ const FLOW_TIP_FIRST = 'Its four + handles start the chart running that way. Aft
 const FLOW_TIP_EDGE = 'Drag either end onto another box to reconnect it · Delete removes it.';
 // The same sentence the text pane carries, on the button that does it — the pane is easy to have scrolled past, and this is the last moment to say so.
 const FLOW_SAVE_REWRITES = 'Save rewrites the whole block: one box to a line, every label quoted.';
+// A Save with nowhere left to go: the page redrew while the sheet was up, so what the diagram was going to be written onto is gone and its old offsets name somebody else's words. The sheet stays open behind this, because the text pane is the only copy of a drawing that took minutes.
+const FLOW_SAVE_GONE =
+  'The document changed underneath this diagram, so there is nowhere left to save it. Copy the text below before closing.';
 // A diagram the canvas cannot model. It is drawn, and that is all it is.
 const FLOW_TIP_PREVIEW = 'Drag to move the picture · Ctrl-scroll to zoom · type below to change it.';
 // What a drag is offering, said while it is still in the air. Every drop this canvas takes is one of these, so none of them has to be guessed at.
@@ -141,8 +144,12 @@ function saveFlowSheet() {
   if (flowSheetSave && flowSheetSave.disabled) return;
   const save = flowSession.save;
   const text = flowSession.text;
+  // The write reads where it goes now rather than where it went when the sheet opened, and it happens before the sheet closes: one that has nowhere left to land says so and leaves the drawing on screen.
+  if (typeof save === 'function' && save(text) === false) {
+    leafToast(FLOW_SAVE_GONE, 'error');
+    return;
+  }
   closeFlowSheet();
-  if (typeof save === 'function') save(text);
 }
 
 // Escape closes without writing, the same as Cancel. Delete removes what the canvas has selected, but never while something is being typed.
@@ -1948,29 +1955,49 @@ if (flowSheetExport) {
 
 // ---- the two ways in -------------------------------------------------------
 
-// From the block gutter's plus: nothing exists yet, so Save writes a whole block through the insert row's own write path.
-function openBlockFlowSheet(write) {
+// From the block gutter's plus: nothing exists yet, so Save writes a whole block through the insert row's own write path. `place` is what the plus was standing on, asked again at Save — every render rebuilds the gutter, and this sheet is held open across as many of them as somebody takes to draw.
+function openBlockFlowSheet(write, place) {
   collapseBlockInsertRow();
   openFlowSheet({
     title: 'New flowchart',
     text: FLOW_STARTER,
-    save: (text) => write({ id: 'flow', text: '```mermaid\n' + text + '\n```' }),
+    save: (text) => {
+      if (!blockInsertPlaceStanding(place)) return false;
+      write({ id: 'flow', text: '```mermaid\n' + text + '\n```' });
+      return true;
+    },
   });
 }
 
 // From a diagram already in the page. The text comes from the buffer, never the DOM: the rendered `<pre>` holds the runtime source with the YAML front matter stripped out, so what it says is not what the document says.
 function openMermaidBlockSheet(block) {
-  const blockStart = Number(block.dataset.srcStart);
-  const blockEnd = Number(block.dataset.srcEnd);
-  if (!Number.isFinite(blockStart) || !Number.isFinite(blockEnd)) return;
-  const source = sliceSourceBytes(currentDocumentSource, blockStart, blockEnd);
-  const span = fencedCodeInnerSpan(source);
+  const span = flowBlockSpan(block);
   if (!span) return;
-  const start = blockStart + utf8ByteLength(source.slice(0, span.from));
-  const end = blockStart + utf8ByteLength(source.slice(0, span.to));
   openFlowSheet({
     title: 'Flowchart',
-    text: source.slice(span.from, span.to),
-    save: (text) => sendEditCommand({ command: 'editBlock', start, end, text }),
+    text: span.text,
+    // Read again here, never kept from the open: a pause in somebody's typing moves every block's numbers as it lands, and the offsets this sheet opened on would by then name a sentence.
+    save: (text) => {
+      const now = flowBlockSpan(block);
+      if (!now) return false;
+      sendEditCommand({ command: 'editBlock', start: now.start, end: now.end, text });
+      return true;
+    },
   });
+}
+
+// Where a diagram block's own text sits in the buffer right now: the block's range, narrowed to the inside of its fences. Null once it has left the page, asked as connectedness — a block a render replaced still answers the numbers it was drawn with.
+function flowBlockSpan(block) {
+  if (!block || !block.isConnected) return null;
+  const blockStart = Number(block.dataset.srcStart);
+  const blockEnd = Number(block.dataset.srcEnd);
+  if (!Number.isFinite(blockStart) || !Number.isFinite(blockEnd)) return null;
+  const source = sliceSourceBytes(currentDocumentSource, blockStart, blockEnd);
+  const span = fencedCodeInnerSpan(source);
+  if (!span) return null;
+  return {
+    start: blockStart + utf8ByteLength(source.slice(0, span.from)),
+    end: blockStart + utf8ByteLength(source.slice(0, span.to)),
+    text: source.slice(span.from, span.to),
+  };
 }
