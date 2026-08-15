@@ -984,6 +984,32 @@ fn every_macos_file_type_claiming_extensions_names_the_icon() {
     );
 }
 
+/// The sentence macOS shows when it asks whether the app may read a folder is written in the bundle, and it is the only thing the reader is given at the moment they decide. Dropping a key leaves macOS its own wording or an outright refusal, and the background indexer these once described was removed in migration 6 — so the word must not come back, in a string or in a comment beside one.
+#[test]
+fn macos_folder_asks_say_what_the_app_does() {
+    let workflow = include_str!("../../.github/workflows/release-distributions.yml");
+    for key in [
+        "NSDesktopFolderUsageDescription",
+        "NSDocumentsFolderUsageDescription",
+        "NSDownloadsFolderUsageDescription",
+        "NSRemovableVolumesUsageDescription",
+        "NSNetworkVolumesUsageDescription",
+    ] {
+        let reason = plist_string(workflow, key).unwrap_or_else(|| {
+            panic!("{key} must be in the bundle, or macOS writes the ask itself")
+        });
+        assert!(
+            !reason.is_empty(),
+            "{key} is empty, so the reader is asked for a folder with no reason"
+        );
+    }
+
+    assert!(
+        !workflow.to_ascii_lowercase().contains("index"),
+        "nothing walks a folder the user did not point at; an ask describing an index describes the behavior they would most reasonably refuse"
+    );
+}
+
 /// The pager, the file dialog, drag-and-drop, link following and the library pane all ask `format.rs` rather than carrying a list. Anything the app can open must page too.
 #[test]
 fn every_readable_format_is_a_pager_page_and_an_in_app_link() {

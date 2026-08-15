@@ -180,16 +180,23 @@ jobs:
             <true/>
             <key>NSPrincipalClass</key>
             <string>NSApplication</string>
+            <!-- Three paths reach one of these folders with no open dialog in
+                 front of them, which is why the keys are here: the pane
+                 browsing down from the drive root, a saved tab's path checked
+                 at launch, and a vault read whole for search. The second
+                 sentence names that vault, because reading a whole folder is
+                 the fact the reader is actually deciding about.
+                 `macos_folder_asks_say_what_the_app_does` pins all five. -->
             <key>NSDesktopFolderUsageDescription</key>
-            <string>Leaftext indexes Markdown files in your Desktop folder so they appear in the library and search.</string>
+            <string>Leaftext reads the documents you open or browse to in your Desktop folder. A folder there that you add as a vault is read in full, so search and the map of links can work.</string>
             <key>NSDocumentsFolderUsageDescription</key>
-            <string>Leaftext indexes Markdown files in your Documents folder so they appear in the library and search.</string>
+            <string>Leaftext reads the documents you open or browse to in your Documents folder. A folder there that you add as a vault is read in full, so search and the map of links can work.</string>
             <key>NSDownloadsFolderUsageDescription</key>
-            <string>Leaftext indexes Markdown files in your Downloads folder so they appear in the library and search.</string>
+            <string>Leaftext reads the documents you open or browse to in your Downloads folder. A folder there that you add as a vault is read in full, so search and the map of links can work.</string>
             <key>NSRemovableVolumesUsageDescription</key>
-            <string>Leaftext indexes Markdown files on connected drives so they appear in the library and search.</string>
+            <string>Leaftext reads the documents you open or browse to on a connected drive. A folder there that you add as a vault is read in full, so search and the map of links can work.</string>
             <key>NSNetworkVolumesUsageDescription</key>
-            <string>Leaftext indexes Markdown files on network volumes so they appear in the library and search.</string>
+            <string>Leaftext reads the documents you open or browse to on a network volume. A folder there that you add as a vault is read in full, so search and the map of links can work.</string>
             <!-- Without this the bundle claims no documents: Finder shows a blank
                  icon for .md files, leaftext is absent from Open With, and Get
                  Info offers no way to make it the default. Viewer, not Editor:
@@ -357,8 +364,8 @@ jobs:
             # hardened runtime, which without the allow-jit entitlement would break
             # the WKWebView the reader renders in. An ad-hoc signature is not
             # notarized, so first launch still needs right-click > Open, and the
-            # signature (and thus any per-folder TCC grant) changes each release —
-            # Full Disk Access is the durable way to index everything (see docs).
+            # signature (and thus any per-folder TCC grant) changes each release,
+            # so a reader is asked for a folder again after every update.
             codesign --force --sign - "${app_dir}"
             codesign --verify --verbose "${app_dir}"
 
