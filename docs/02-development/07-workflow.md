@@ -12,7 +12,7 @@ Work here starts as a written plan and ends as a released version, and the same 
 
 **3. Rank it.** `/pm` puts every live plan into one running order — what is wrong today first, then what other plans are waiting on it, then cost.
 
-**4. Build it.** `/dev` works the phases in order and ticks each box in the same edit as its code and its test.
+**4. Build it.** `/dev` works the phases in order and ticks each box in the same edit as its code and its test. A change that moves something on the screen is proved by sampled positions rather than by classes — see [the motion probe](02-building.md#driving-the-copy-you-already-have-open).
 
 **5. Gate it.** `/check` runs `/sync-tests` and then `just verify`. Tests come first because `just verify` only runs the tests that exist — a change with no test passes it and proves nothing.
 
