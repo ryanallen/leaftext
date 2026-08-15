@@ -115,6 +115,8 @@ function fakeElement(id = '') {
       };
     })(),
     children: [],
+    // Every element has one, so a stand-in without it turns "this block is empty" into a crash in whatever walks it.
+    childNodes: [],
     parentElement: null,
     // Kept rather than swallowed, the way the document's and the window's are: a check raises a made-up event on an element and gets the page's own handler. What a link click sends is the page's own choice, and a dropped listener leaves nothing but the source text to read it off.
     listeners: new Map(),
@@ -181,6 +183,15 @@ function fakeElement(id = '') {
       height: 0,
     }),
     getContext: () => null,
+  });
+  // A raw-source block is read back through innerText and written through textContent, so a stand-in keeping the two apart would say the block is empty while showing a file's own bytes.
+  Object.defineProperty(element, 'innerText', {
+    get: () => element.textContent,
+    set: (value) => {
+      element.textContent = value;
+    },
+    configurable: true,
+    enumerable: true,
   });
   return element;
 }
@@ -419,6 +430,8 @@ function runShell(source, extras = {}) {
     Element: FakeElement,
     // No cascade here, but a custom property set on the element itself does come back out of a real browser's computed style, and the page reads its own writes that way.
     getComputedStyle: (element) => ({ getPropertyValue: (name) => (element && element.style && typeof element.style.getPropertyValue === 'function' ? element.style.getPropertyValue(name) : ''), color: 'rgb(0, 0, 0)' }),
+    // A page always has one, even with nothing in it — a check that draws a caret replaces this, and everything else reads "no selection" rather than finding no such call.
+    getSelection: () => null,
     matchMedia: () => ({
       matches: false,
       addEventListener() {},
@@ -1532,6 +1545,47 @@ if (booted) {
     return el;
   };
 
+  // Keep a stand-in block's markup and its words in step, the way a real one does: a step put back rewrites the markup, and everything downstream reads the words back off the block.
+  const wordsFollowMarkup = (el) => {
+    let held = el.textContent;
+    Object.defineProperty(el, 'innerHTML', {
+      get: () => held,
+      set: (value) => {
+        held = value;
+        el.textContent = value;
+        el.childNodes[0].nodeValue = value;
+      },
+    });
+    return el;
+  };
+
+  // Type into a block one character at a time, the way the page sees it: the words are already on screen when the keystroke arrives.
+  const typeInto = (el, chars) => {
+    for (const char of chars) {
+      el.innerHTML = el.textContent + char;
+      for (const handler of [...(el.listeners.get('input') || [])]) handler({ data: char, inputType: 'insertText' });
+    }
+  };
+
+  // Ctrl+Z, or Ctrl+Shift+Z, at a block. Answers whether the page took the keystroke off the web view.
+  const pressUndoKey = (target, { shift = false, key = 'z' } = {}) => {
+    let prevented = 0;
+    pressWindowKey({
+      key,
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false,
+      shiftKey: shift,
+      isComposing: false,
+      target,
+      preventDefault() {
+        prevented += 1;
+      },
+      stopPropagation() {},
+    });
+    return prevented > 0;
+  };
+
   // The open document, the page's own record of it, and a clean slate to send into.
   const openTyping = (source, format = 'markdown') => {
     vm.runInContext(`currentState = { tabs: [{ path: 'notes.md' }], active: 0 };`, booted);
@@ -1542,7 +1596,7 @@ if (booted) {
     booted.window.leafBlocksResynced({ source });
   };
   const restTyping = () => {
-    delete booted.getSelection;
+    booted.getSelection = () => null;
     vm.runInContext('currentState = null; pendingCaret = null; dirtyByPath.clear(); undoableByPath.clear();', booted);
     vm.runInContext("currentDocumentFormat = 'markdown';", booted);
     booted.window.leafBlocksResynced({ source: '' });
@@ -2167,8 +2221,8 @@ if (booted) {
     }
   });
 
-  // Ctrl+Z used to bow out whenever the keystroke landed in a block you can type in, and after a delete the caret is in one — so the press did nothing while the Undo button beside it worked. A block only owns the key while it has keystrokes of its own to take back.
-  check('Ctrl+Z reaches the app’s undo unless the block has typing to take back', () => {
+  // Ctrl+Z inside a block is the page's press, never the web view's: the web view's own step is one letter, so a paragraph took hundreds of presses to clear. What still keeps its own undo is everything else editable — the source view and the app's own field boxes.
+  check('Ctrl+Z inside a block is the page’s, and every other editable surface keeps its own', () => {
     const { nativeUndoOwnsKey } = booted;
     const inApp = booted.document.getElementById('app');
     const wasContains = inApp.contains;
@@ -2188,11 +2242,10 @@ if (booted) {
         el.closest = () => el;
         return el;
       };
-      // A block being typed in: its own text has moved off the baseline, so the browser's keystroke undo is the right one.
-      if (!nativeUndoOwnsKey(block({ editing: true, baseline: 'something else' }))) {
-        throw new Error('a block mid-typing lost its native undo');
+      // Mid-typing and untouched alike: the block's own groups answer the key, and the web view never sees it.
+      if (nativeUndoOwnsKey(block({ editing: true, baseline: 'something else' }))) {
+        throw new Error('a block mid-typing handed the key back to the web view, one letter a press');
       }
-      // The same block with nothing typed yet — where the caret lands after a delete or a split.
       if (nativeUndoOwnsKey(block({ editing: true, baseline: '' }))) {
         throw new Error('a block with no keystrokes of its own still swallowed Ctrl+Z');
       }
@@ -2205,6 +2258,13 @@ if (booted) {
         throw new Error('Monaco lost its own undo');
       }
       vm.runInContext('codeViewActive = false;', booted);
+      // A field box sits inside no editable block, so the walk finds none and it keeps the browser's own.
+      const field = Object.assign(new FakeElement(), {
+        nodeType: 1,
+        tagName: 'INPUT',
+        closest: (selector) => (String(selector).includes('data-src-start') ? null : field),
+      });
+      if (!nativeUndoOwnsKey(field)) throw new Error('a field box lost its own undo');
       // Nothing editable under the key at all: the app's undo, as before.
       if (nativeUndoOwnsKey(Object.assign(new FakeElement(), { nodeType: 1, closest: () => null }))) {
         throw new Error('a press outside every field was treated as typing');
@@ -2212,6 +2272,250 @@ if (booted) {
     } finally {
       inApp.contains = wasContains;
       vm.runInContext('codeViewActive = false;', booted);
+    }
+  });
+
+  // The whole of what was asked for: a paragraph of forty words was two hundred presses to clear, because the web view's undo steps one letter. A press takes back a word now — a group that ends at a word boundary, at a caret moved elsewhere, and (phase 2) at a pause.
+  check('a press takes back a word of the typing, not a letter', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      const source = '# Title\n\nA\n';
+      openTyping(source);
+      const block = wordsFollowMarkup(typedBlock({ start: 9, end: 10, typed: 'A', baseline: 'A' }));
+      booted.wireMarkdownEditable(block);
+      booted.document.activeElement = block;
+      const fire = (type, event) => {
+        for (const handler of [...(block.listeners.get(type) || [])]) handler(event);
+      };
+      // The session opens on the click in: the block as it stands is the bottom of the list.
+      block.__editingActive = false;
+      fire('focusin', {});
+
+      typeInto(block, ' one two');
+      if (block.textContent !== 'A one two') throw new Error(`the block holds ${JSON.stringify(block.textContent)}`);
+
+      // Three presses for three groups — the last word, the one before it, and the space that opened the typing. Nine keystrokes went in.
+      const words = [];
+      for (let press = 0; press < 3; press += 1) {
+        if (!pressUndoKey(block)) throw new Error(`press ${press + 1} was handed to the web view`);
+        words.push(block.textContent);
+      }
+      if (JSON.stringify(words) !== JSON.stringify(['A one ', 'A ', 'A'])) {
+        throw new Error(`the presses walked back through ${JSON.stringify(words)}`);
+      }
+
+      // And each press put its words into the document rather than only on the page, continuing the run so the app's own stack still holds the session as one step.
+      const written = posted.filter((message) => message.command === 'editBlock');
+      if (!written.length) throw new Error('a press took the words off the page and left them in the document');
+      // The trailing space is the serializer's to drop, exactly as it does for the pause that writes mid-typing.
+      if (written[0].text !== 'A one') throw new Error(`the first press wrote ${JSON.stringify(written[0].text)}`);
+      if (written.some((message) => message.live !== true)) {
+        throw new Error('a press asked for a re-render under the caret');
+      }
+      if (written.slice(1).some((message) => message.continuing !== true)) {
+        throw new Error('a press started a second undo step in the app’s own stack');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // The hand-over: a block's groups are the page's, and once they are spent the same key goes on meaning what it has always meant — one committed edit back. Swallowing it there would leave the reader pressing a key that does nothing.
+  check('the last group spent hands Ctrl+Z to the app’s own undo', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      openTyping('# Title\n\nA\n');
+      const block = wordsFollowMarkup(typedBlock({ start: 9, end: 10, typed: 'A', baseline: 'A' }));
+      booted.wireMarkdownEditable(block);
+      booted.document.activeElement = block;
+      block.__editingActive = false;
+      for (const handler of [...(block.listeners.get('focusin') || [])]) handler({});
+      typeInto(block, ' one two');
+      // Three groups: the space that opened the typing, and a word each.
+      pressUndoKey(block);
+      pressUndoKey(block);
+      pressUndoKey(block);
+      if (block.textContent !== 'A') throw new Error(`the presses left ${JSON.stringify(block.textContent)}`);
+      posted.length = 0;
+      withPageTimers((drain) => {
+        pressUndoKey(block);
+        drain();
+      });
+      if (!posted.some((message) => message.command === 'undoEdit')) {
+        throw new Error('the press after the last group was swallowed instead of reaching the app’s undo');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // Word boundaries end most groups, and a long word typed slowly has none — so without this half a reader who stops to think mid-word gets the whole stop back in one press, or nothing until the next space.
+  check('a pause in the typing ends the group too', () => {
+    const wasIpc = booted.ipc;
+    const wasNow = booted.typingStepNow;
+    booted.ipc = { postMessage: () => {} };
+    try {
+      let clock = 1000;
+      booted.typingStepNow = () => clock;
+      const typeWithPause = () => {
+        openTyping('# Title\n\nA\n');
+        const block = wordsFollowMarkup(typedBlock({ start: 9, end: 10, typed: 'A', baseline: 'A' }));
+        booted.wireMarkdownEditable(block);
+        booted.document.activeElement = block;
+        block.__editingActive = false;
+        for (const handler of [...(block.listeners.get('focusin') || [])]) handler({});
+        return block;
+      };
+
+      // One word, typed straight through: one press takes the whole of it back.
+      let block = typeWithPause();
+      typeInto(block, 'bcde');
+      pressUndoKey(block);
+      if (block.textContent !== 'A') throw new Error(`typed straight through, a press left ${JSON.stringify(block.textContent)}`);
+
+      // The same word with a stop in the middle of it: two presses, one for each side of the stop.
+      block = typeWithPause();
+      typeInto(block, 'bc');
+      clock += 2000;
+      typeInto(block, 'de');
+      pressUndoKey(block);
+      if (block.textContent !== 'Abc') throw new Error(`after the stop, a press left ${JSON.stringify(block.textContent)}`);
+      pressUndoKey(block);
+      if (block.textContent !== 'A') throw new Error(`the second press left ${JSON.stringify(block.textContent)}`);
+    } finally {
+      booted.ipc = wasIpc;
+      booted.typingStepNow = wasNow;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // Taking the key off the web view took its redo with it, and the app has none to fall back on — so without this a press too many is words nobody can get back, which is worse than the letter-at-a-time undo it replaced.
+  check('a press too many walks forward again, until something new is typed', () => {
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: () => {} };
+    try {
+      const open = () => {
+        openTyping('# Title\n\nA\n');
+        const block = wordsFollowMarkup(typedBlock({ start: 9, end: 10, typed: 'A', baseline: 'A' }));
+        booted.wireMarkdownEditable(block);
+        booted.document.activeElement = block;
+        block.__editingActive = false;
+        for (const handler of [...(block.listeners.get('focusin') || [])]) handler({});
+        return block;
+      };
+      const pressRedo = (target, how) => pressUndoKey(target, how);
+
+      // Three back and two forward is one press from where the typing stood.
+      let block = open();
+      typeInto(block, ' one two');
+      for (let press = 0; press < 3; press += 1) pressUndoKey(block);
+      if (block.textContent !== 'A') throw new Error(`three presses left ${JSON.stringify(block.textContent)}`);
+      // Both spellings of the key, so neither is left doing nothing.
+      if (!pressRedo(block, { key: 'y' })) throw new Error('Ctrl+Y was handed to the web view');
+      if (!pressRedo(block, { shift: true })) throw new Error('Ctrl+Shift+Z was handed to the web view');
+      if (block.textContent !== 'A one ') throw new Error(`two forward left ${JSON.stringify(block.textContent)}`);
+      pressRedo(block, { key: 'y' });
+      if (block.textContent !== 'A one two') throw new Error('the newest words never came back');
+      // Nothing ahead of the newest words: the key is quiet rather than walking off the end.
+      pressRedo(block, { key: 'y' });
+      if (block.textContent !== 'A one two') throw new Error('a press walked past the words that were typed');
+
+      // Typing after a press drops what was ahead of it, the way every editor does.
+      block = open();
+      typeInto(block, ' one two');
+      pressUndoKey(block);
+      typeInto(block, ' three');
+      pressRedo(block, { key: 'y' });
+      if (block.textContent !== 'A one  three') {
+        throw new Error(`the words a press had walked back from came back after typing: ${JSON.stringify(block.textContent)}`);
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // The groups live on the block, so two blocks typed in are two lists — and a press answers the one the caret is in. A single list would take a word off a paragraph somebody stopped typing in ten minutes ago.
+  check('a press takes back the block it was pressed in, and leaves the other alone', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      openTyping('# Title\n\nA\n\nB\n');
+      const first = wordsFollowMarkup(typedBlock({ start: 9, end: 10, typed: 'A', baseline: 'A' }));
+      const second = wordsFollowMarkup(typedBlock({ start: 12, end: 13, typed: 'B', baseline: 'B' }));
+      for (const block of [first, second]) {
+        booted.wireMarkdownEditable(block);
+        block.__editingActive = false;
+        for (const handler of [...(block.listeners.get('focusin') || [])]) handler({});
+      }
+      typeInto(first, ' one');
+      typeInto(second, ' two');
+      booted.document.activeElement = second;
+      if (!pressUndoKey(second)) throw new Error('the press was handed to the web view');
+      if (second.textContent !== 'B ') throw new Error(`the pressed block holds ${JSON.stringify(second.textContent)}`);
+      if (first.textContent !== 'A one') throw new Error('the press reached into a block nobody was typing in');
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // A press that only rewrote the page would leave the buffer holding what the pauses spliced, so a save right after it would write the words the press removed. What a press puts back rides the live splice, which is what makes the save honest.
+  check('a save right after a press writes the words the press put back', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    try {
+      const source = '# Title\n\nA\n';
+      openTyping(source);
+      const block = wordsFollowMarkup(typedBlock({ start: 9, end: 10, typed: 'A', baseline: 'A' }));
+      booted.wireMarkdownEditable(block);
+      booted.document.activeElement = block;
+      // The page's own map of where every block's bytes are, so the second splice writes over what the first one left rather than over what it replaced.
+      const appElement = vm.runInContext('app', booted);
+      const wasQuery = appElement.querySelector;
+      const body = Object.assign(fakeElement('document-body'), {
+        querySelectorAll: (selector) => (String(selector) === '[data-src-start]' ? [block] : []),
+      });
+      appElement.querySelector = (selector) => (String(selector) === '.document-body' ? body : wasQuery(selector));
+      block.__editingActive = false;
+      for (const handler of [...(block.listeners.get('focusin') || [])]) handler({});
+      typeInto(block, ' one two');
+      // The pause the typing left behind, so the buffer really holds the words the press is about to take off.
+      booted.sendLiveBlockEdit(block);
+      pressUndoKey(block);
+      posted.length = 0;
+      withPageTimers((drain) => {
+        booted.saveActiveDocument();
+        drain();
+      });
+      const written = posted.filter((message) => message.command === 'editBlock');
+      if (written.length && written[written.length - 1].text !== 'A one') {
+        throw new Error(`the save wrote ${JSON.stringify(written[written.length - 1].text)}`);
+      }
+      if (vm.runInContext('currentDocumentSource', booted) !== '# Title\n\nA one\n') {
+        throw new Error(`the document became ${JSON.stringify(vm.runInContext('currentDocumentSource', booted))}`);
+      }
+      if (!posted.some((message) => message.command === 'saveDocument')) {
+        throw new Error('the save never reached the host');
+      }
+      appElement.querySelector = wasQuery;
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
     }
   });
 

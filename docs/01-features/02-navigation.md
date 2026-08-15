@@ -50,7 +50,8 @@ flowchart LR
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
 | Save (with [unsaved edits](07-editing.md#save), your own typing included) | `Ctrl+S` | `Cmd+S` |
-| [Undo](07-editing.md#undo) the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
+| [Undo](07-editing.md#undo) — a word of your typing, then the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
+| [Redo](07-editing.md#undo) a word of typing you took back | `Ctrl+Y` or `Ctrl+Shift+Z` | `Cmd+Shift+Z` |
 | Select the page — or, with the caret in a block, [a step wider per press](07-editing.md#deleting) | `Ctrl+A` | `Cmd+A` |
 | [Delete](07-editing.md#deleting) a selection that crosses blocks | `Delete` or `Backspace` | `Delete` or `Backspace` |
 | [Find](#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |

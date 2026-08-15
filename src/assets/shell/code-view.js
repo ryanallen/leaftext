@@ -335,25 +335,32 @@ window.addEventListener('keydown', (event) => {
 function isSaveKey(event) {
   return (event.ctrlKey || event.metaKey) && !event.altKey && (event.key === 's' || event.key === 'S');
 }
-// Whether the surface under the keystroke has typing of its own for the browser to take back. A block only owns Ctrl+Z while it holds uncommitted keystrokes: after a delete or a split the caret sits in a block with no keystroke history at all, and handing the key over there meant the press did nothing while the Undo button beside it worked. Monaco and the app's own fields keep theirs unconditionally.
+// The block a keystroke landed in, or null. A cell of a table is a surface of its own, so it is asked before the table around it — otherwise typing in a cell reads as the table's and the press steps back a committed edit instead.
+function editableBlockAt(target) {
+  return target && target.closest
+    ? target.closest('td[data-cell-start].leaf-editable, [data-src-start].leaf-editable')
+    : null;
+}
+
+// Whether the surface under the keystroke keeps an undo of its own. Monaco and the app's own fields do. A block does not: its typing is taken back in groups a person can use, and the web view's own group is one letter.
 function nativeUndoOwnsKey(target) {
   if (!isEditableMouseTarget(target)) return false;
   if (codeViewActive) return true;
-  // A cell of a table is a surface of its own, so it is asked before the table around it — otherwise typing in a cell reads as the table's, which holds no keystrokes, and the press steps back a committed edit instead.
-  const block =
-    target && target.closest
-      ? target.closest('td[data-cell-start].leaf-editable, [data-src-start].leaf-editable')
-      : null;
-  if (!block) return true;
-  return block.__editingActive === true && blockDomToMarkdown(block) !== block.__editBaseline;
+  return !editableBlockAt(target);
 }
 
-// Ctrl/Cmd+Z steps back one committed reading-view edit — but not while the surface under it has uncommitted typing, whose native undo covers it keystroke by keystroke.
+// Ctrl/Cmd+Z takes back one group of the typing in the block under the caret, and once that block's groups are spent one committed edit.
 window.addEventListener('keydown', (event) => {
   const undoKey =
     (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z');
   if (!undoKey) return;
   if (nativeUndoOwnsKey(event.target)) return;
+  const block = editableBlockAt(event.target);
+  if (block) {
+    // The web view's letter-at-a-time undo never runs inside a block, whether or not there is a group left to take back.
+    event.preventDefault();
+    if (stepTypingBack(block)) return;
+  }
   // Ahead of the line below, which ends the keystroke unless the open document has an edit of its own — and a file deleted from the pane usually is not that document.
   if (undoableDelete) {
     event.preventDefault();
@@ -364,6 +371,20 @@ window.addEventListener('keydown', (event) => {
   if (!path || undoableByPath.get(path) !== true) return;
   event.preventDefault();
   undoLastEdit();
+});
+
+// Ctrl+Y and Ctrl+Shift+Z walk the same groups forward again, up to the newest words the reader typed. Only inside a block: taking the key off the web view took its redo with it, and the app's whole-edit undo has no forward of its own yet.
+window.addEventListener('keydown', (event) => {
+  const redoKey =
+    (event.ctrlKey || event.metaKey) &&
+    !event.altKey &&
+    (event.key === 'y' || event.key === 'Y' || (event.shiftKey && (event.key === 'z' || event.key === 'Z')));
+  if (!redoKey) return;
+  if (nativeUndoOwnsKey(event.target)) return;
+  const block = editableBlockAt(event.target);
+  if (!block) return;
+  event.preventDefault();
+  stepTypingForward(block);
 });
 
 // The raw-source code view is Monaco (the VS Code editor): it owns line wrapping, virtualized rendering of huge files, and its own colored minimap. The vendored bundle loads lazily on first entry; edits relay back to the host as source splices. Monaco scrolls internally, so the reader shell does not scroll here and carries no rail.

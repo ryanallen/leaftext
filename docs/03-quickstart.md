@@ -98,7 +98,8 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | Back | `Alt+Left` | `Cmd+Left` |
 | Forward | `Alt+Right` | `Cmd+Right` |
 | Save ([unsaved edits](01-features/07-editing.md#save), your own typing included) | `Ctrl+S` | `Cmd+S` |
-| [Undo](01-features/07-editing.md#undo) the last edit | `Ctrl+Z` | `Cmd+Z` |
+| [Undo](01-features/07-editing.md#undo) — a word of your typing, then the last edit | `Ctrl+Z` | `Cmd+Z` |
+| [Redo](01-features/07-editing.md#undo) a word of typing you took back | `Ctrl+Y` or `Ctrl+Shift+Z` | `Cmd+Shift+Z` |
 | [Bold](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+B` | `Cmd+B` |
 | [Italic](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
 | [Link](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |

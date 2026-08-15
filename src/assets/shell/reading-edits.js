@@ -544,13 +544,17 @@ function commitBlockEdit(el, text, range) {
 const LIVE_EDIT_PAUSE_MS = 180;
 
 // What a live splice would write for `el`, or null for a block whose typing waits for the click-out. A note's table is the one that waits: its commit writes one cell rather than a range, and where the buffer's table then differs from the page's own serialization there is no length the page can move its map by — and a map that lags writes the wrong bytes on the next gesture.
-function liveEditOf(el) {
+//
+// `words` overrides what the block would be read as: a step taken back writes the words it put on the page rather than a second reading of them.
+function liveEditOf(el, words) {
   if (el.dataset.editingSource === 'true') {
-    return typeof el.__liveSourceEdit === 'function' ? el.__liveSourceEdit() : null;
+    const edit = typeof el.__liveSourceEdit === 'function' ? el.__liveSourceEdit() : null;
+    if (edit && words !== undefined) edit.text = words;
+    return edit;
   }
   if (!el.__editingActive) return null;
   if (el.dataset.blockKind === 'table' && currentDocumentFormat === 'markdown') return null;
-  const text = blockDomToSource(el);
+  const text = words === undefined ? blockDomToSource(el) : words;
   const span = el.__innerSpan;
   if (span) return { start: span.start, end: span.end, text, inner: true };
   const start = Number(el.dataset.srcStart);
@@ -563,9 +567,9 @@ function liveEditOf(el) {
 }
 
 // Put what is typed in `el` into the document without redrawing the page, then move the page's own map by what the splice changed. Nothing has re-rendered, so this map is the only thing that stays true — every block after the typed one shifts, and the source the page slices from is spliced to match. The blur baseline is deliberately left alone: the browser's own Ctrl+Z is decided against it, so advancing it would hand the key to the app mid-word.
-function sendLiveBlockEdit(el) {
+function sendLiveBlockEdit(el, words) {
   if (!el.isConnected) return;
-  const edit = liveEditOf(el);
+  const edit = liveEditOf(el, words);
   if (!edit) return;
   // Nothing new since the last pause.
   if (edit.text === (el.__liveText === undefined ? el.__editBaseline : el.__liveText)) return;
@@ -632,6 +636,131 @@ function scheduleLiveBlockEdit(el) {
 function beginTypingRun(el) {
   el.__liveStarted = false;
   el.__liveText = undefined;
+  beginTypingSteps(el);
+}
+
+// ---- what one press of Ctrl+Z takes back -------------------------------------
+// A press takes back a group of keystrokes rather than a letter. The web view's own undo cannot be asked for a bigger step, so inside a block the key is the page's and the grouping is here — a step ends at a word, at a caret moved elsewhere, and at a pause.
+
+// The stillness that ends the open step, so a stop to think mid-word is a group of its own. Word boundaries end most steps already, so this only has to catch the slow typist — and a short one would hand them back the letter-at-a-time undo this replaced. Not the 180 ms beat above: that is how often the document catches up, not how big a step is.
+const TYPING_STEP_PAUSE_MS = 2000;
+
+// The clock the steps are timed on, named so a check can hold it still.
+function typingStepNow() {
+  return Date.now();
+}
+
+// The keys that move the caret without typing anything.
+const TYPING_STEP_MOVE_KEYS = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'Home',
+  'End',
+  'PageUp',
+  'PageDown',
+]);
+
+// Whether a character ends a word: a space, a line break, a punctuation mark — anything a word is not made of.
+function typingBoundaryChar(char) {
+  return !!char && !/[\p{L}\p{N}_]/u.test(char);
+}
+
+// The character a keystroke put in, or '' for anything that is not one — a delete, a paste, a line break the browser makes for us.
+function typedCharOf(event) {
+  const data = event && typeof event.data === 'string' ? event.data : '';
+  return data.length === 1 ? data : '';
+}
+
+// What the block holds right now, as one step: the markup on screen, where the caret is in it, and the source those words write. The source is kept rather than worked out again later, so what a press puts into the document is exactly what it puts on the page.
+function typingSnapshotOf(el) {
+  const offset = caretTextOffsetIn(el);
+  return {
+    html: el.innerHTML,
+    text: el.dataset.editingSource === 'true' ? el.innerText : blockDomToSource(el),
+    offset: offset == null ? visibleTextLength(el) : offset,
+  };
+}
+
+// Start `el`'s steps over. Nothing has been typed in this session, so what the block holds now is the bottom of the list — the state the last press left to take back.
+function beginTypingSteps(el) {
+  el.__typingSteps = [];
+  el.__typingAhead = [];
+  el.__typingOpen = typingSnapshotOf(el);
+  el.__typingLastChar = '';
+  el.__typingAt = 0;
+  el.__typingBreak = false;
+}
+
+// Whether this keystroke opens a new step: a word starting after a boundary, a delete beside typing or typing beside a delete, the caret moved somewhere else since the last one, or a pause long enough to be a stop rather than a slow hand.
+function typingStepEndsBefore(el, typed) {
+  if (el.__typingBreak === true) return true;
+  if (el.__typingAt && typingStepNow() - el.__typingAt >= TYPING_STEP_PAUSE_MS) return true;
+  const last = el.__typingLastChar || '';
+  // One of them is not a typed character at all, so the two keystrokes are different things and take a step each.
+  if (!typed || !last) return typed !== last;
+  return !typingBoundaryChar(typed) && typingBoundaryChar(last);
+}
+
+// Record the keystroke that just landed. Everything typed between two step ends is one step, and what is pushed is the block as it stood before the keystroke that opened the new one.
+function recordTypingStep(el, typed) {
+  if (!el.__typingSteps) beginTypingSteps(el);
+  // Typing is the newest thing that happened, so whatever a press had walked back from is gone.
+  el.__typingAhead = [];
+  if (!el.__typingSteps.length || typingStepEndsBefore(el, typed)) el.__typingSteps.push(el.__typingOpen);
+  el.__typingOpen = typingSnapshotOf(el);
+  el.__typingLastChar = typed;
+  el.__typingAt = typingStepNow();
+  el.__typingBreak = false;
+}
+
+// Take `el`'s typing back one step. Answers false with nothing left, which is what hands the key on to the app's own undo.
+function stepTypingBack(el) {
+  const steps = el.__typingSteps;
+  if (!steps || !steps.length) return false;
+  if (!el.__typingAhead) el.__typingAhead = [];
+  el.__typingAhead.push(typingSnapshotOf(el));
+  restoreTypingSnapshot(el, steps.pop());
+  return true;
+}
+
+// Walk `el`'s typing forward again, up to where the presses started. Answers false with nothing ahead — the reader is back at the newest words they typed.
+function stepTypingForward(el) {
+  const ahead = el.__typingAhead;
+  if (!ahead || !ahead.length) return false;
+  if (!el.__typingSteps) el.__typingSteps = [];
+  el.__typingSteps.push(typingSnapshotOf(el));
+  restoreTypingSnapshot(el, ahead.pop());
+  return true;
+}
+
+// Put the block back to a step: the words, the caret, and the document behind them. The splice continues the run, so the app's own stack still holds the whole session as one step and a save right after a press writes the words on screen.
+function restoreTypingSnapshot(el, snap) {
+  el.innerHTML = snap.html;
+  rebindRestoredCheckboxes(el);
+  placeCaretInBlock(el, snap.offset);
+  el.__typingOpen = snap;
+  el.__typingLastChar = '';
+  // Typing after a press starts a step of its own rather than joining the one it landed in.
+  el.__typingBreak = true;
+  sendLiveBlockEdit(el, snap.text);
+}
+
+// A restored block is fresh markup, so anything the page had bound inside it is gone with the nodes. Only the checkboxes carry a listener of their own; each already knows the task it flips, and a table's own are bound off the table.
+function rebindRestoredCheckboxes(el) {
+  if (el.dataset.blockKind === 'table') {
+    bindTableCheckboxesIn(el);
+    return;
+  }
+  el.querySelectorAll('input[type="checkbox"][data-task-index]').forEach((box) => {
+    if (box.closest('td')) return;
+    const index = Number(box.dataset.taskIndex);
+    if (!Number.isFinite(index)) return;
+    box.addEventListener('change', () => {
+      send({ command: 'toggleTask', index });
+    });
+  });
 }
 
 // Commit whatever holds an active editing session, whichever of the three editors it is. Used before actions that bypass the click-out commit: a link click whose mousedown is swallowed, and Save or Undo pressed with the caret still in the words. A raw-source block and a field box are written by their own blur, which is also the one path that puts the rendered block back — a styled block is committed in place instead, so the caret can be carried across the re-render rather than dumped out.
@@ -1225,11 +1354,23 @@ function wireMarkdownEditable(el) {
     closeWysiwygBlock(el);
   });
   // The first keystroke is what the dot, Save and Undo answer to — the words are on screen, so the three have to say so before anything is clicked out of. Then every pause in the typing puts the words themselves into the document.
-  el.addEventListener('input', () => {
+  el.addEventListener('input', (event) => {
     raiseTypingChrome();
+    recordTypingStep(el, typedCharOf(event));
     scheduleLiveBlockEdit(el);
   });
   el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event));
+  wireTypingStepBreaks(el);
+}
+
+// A step also ends when the caret is moved somewhere else, so typing in two places is two steps. Inside one block it moves two ways: the keys that walk it, and the press that puts it down.
+function wireTypingStepBreaks(el) {
+  el.addEventListener('keydown', (event) => {
+    if (TYPING_STEP_MOVE_KEYS.has(event.key)) el.__typingBreak = true;
+  });
+  el.addEventListener('pointerdown', () => {
+    el.__typingBreak = true;
+  });
 }
 
 // A fenced code block's inside, as offsets into `src`. The fences are what make it a code block, so offering them for editing puts one backspace between the reader and a broken document. Null unless BOTH are found — this range is spliced verbatim, so an indented or unterminated block falls back to editing the whole thing.
@@ -1274,13 +1415,14 @@ function wireSourceEditable(el) {
     const aboveAnchor = anchorAboveElement(el);
     const src = sliceSourceBytes(currentDocumentSource, start, end);
     el.__editBaseline = src;
-    beginTypingRun(el);
     el.__renderedHtml = el.innerHTML;
     el.dataset.editingSource = 'true';
     el.textContent = src;
     el.setAttribute('contenteditable', 'true');
     el.setAttribute('spellcheck', 'false');
     el.classList.add('leaf-editing-source');
+    // After the swap, so the run's first step is the bytes this editor opened rather than the rendered block it replaced.
+    beginTypingRun(el);
     el.focus({ preventScroll: true });
     if (aboveAnchor) {
       readerScrollAnchor = aboveAnchor;
@@ -1293,9 +1435,10 @@ function wireSourceEditable(el) {
   el.__liveSourceMoved = (to) => {
     end = to;
   };
-  el.addEventListener('input', () => {
+  el.addEventListener('input', (event) => {
     if (el.dataset.editingSource !== 'true') return;
     raiseTypingChrome();
+    recordTypingStep(el, typedCharOf(event));
     scheduleLiveBlockEdit(el);
   });
   el.addEventListener('pointerdown', (event) => {
@@ -1336,6 +1479,7 @@ function wireSourceEditable(el) {
     commitBlockEdit(el, text, { start, end });
     // The host re-renders the document from the buffer, which restores styling.
   });
+  wireTypingStepBreaks(el);
 }
 
 // A block opened from somewhere other than a press on it. Silent on a block that was never wired: a diagram in a locked document has no edit to open.

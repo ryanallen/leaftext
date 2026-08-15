@@ -127,18 +127,21 @@ function bindTaskCheckboxes(tasks) {
 function bindTableCheckboxes() {
   const body = app.querySelector('.document-body');
   if (!body) return;
-  body.querySelectorAll('[data-block-kind="table"]').forEach((table) => {
-    if (!tableWysiwygSafe(table)) return;
-    const start = Number(table.dataset.srcStart);
-    const end = Number(table.dataset.srcEnd);
-    if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-    table.querySelectorAll('td input[type="checkbox"]').forEach((box) => {
-      const cell = box.closest('td');
-      box.removeAttribute('disabled');
-      box.addEventListener('change', () => {
-        // Read after the flip: the change event fires with the new state already on.
-        sendCheckboxBlockEdit(table, start, end, tableDomToMarkdown(table), tableCellPosition(table, cell));
-      });
+  body.querySelectorAll('[data-block-kind="table"]').forEach(bindTableCheckboxesIn);
+}
+
+// One table's, on their own — a step of typing taken back is new markup, so the boxes inside it need binding again.
+function bindTableCheckboxesIn(table) {
+  if (!tableWysiwygSafe(table)) return;
+  const start = Number(table.dataset.srcStart);
+  const end = Number(table.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  table.querySelectorAll('td input[type="checkbox"]').forEach((box) => {
+    const cell = box.closest('td');
+    box.removeAttribute('disabled');
+    box.addEventListener('change', () => {
+      // Read after the flip: the change event fires with the new state already on.
+      sendCheckboxBlockEdit(table, start, end, tableDomToMarkdown(table), tableCellPosition(table, cell));
     });
   });
 }
