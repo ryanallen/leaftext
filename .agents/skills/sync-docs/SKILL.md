@@ -105,7 +105,7 @@ A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu i
 
 ### 5. Take the pictures the pages ask for
 
-A page that names a screenshot nobody took renders a broken frame at leaftext.com. Nothing else in the repo notices, so this step is where it is caught.
+A page that names a screenshot nobody took renders a broken frame at leaftext.com. `just check-doc-images` is in `just verify`, so one written and left fails the build — this step is where it is taken rather than where it is caught, and a reference added without its picture stops the release rather than shipping.
 
 ```bash
 node scripts/doc-images.mjs            # every reference, and which are not there
@@ -125,7 +125,7 @@ just squeeze-png shot.bmp imgs/<name>.png --palette
 - **`-Crop "X,Y,W,H"`, same pixels.** Detail shots ship cropped: a whole window around a 200 px control is a picture of the window.
 - `--palette` cuts the image to 256 colors: it halves the file and is the only step that moves a pixel. Use it for every screenshot.
 - The shot runs against a throwaway profile under `-Work`, never the owner's — their settings, recent files and vault registry are not read or written. Nothing here needs `settings.json` hand-edited.
-- **Anything the window cannot be made to show is not faked.** A macOS install dialog, an installer that cannot be built here, a state that needs a real GitHub repo or a pending release: leave the reference, say which pictures are still missing and why, in the hand-back.
+- **Anything the window cannot be made to show is not faked, and the reference cannot be left standing either.** `check-doc-images` fails the build on one, so a picture nobody can take is a decision rather than a note in the hand-back: take it another way — a state staged through the page's own setter, a shot of another program taken by hand, both of which `06-screenshots.md` now carries rows for — or cut the reference and write the sentence the picture was going to say. Either way the call goes in the ticket.
 - **Check every shot against the sentence that asks for it.** The alt text is a promise about what is in the frame; where the window will not produce it, fix the alt rather than shipping a picture that does not match.
 - Batch politely: each capture launches the app and waits several seconds, so take them in one pass rather than one per edit.
 
@@ -204,7 +204,7 @@ Page list, titles, summaries and dates are all derived from the current files, a
 
 - `just check-wrapping` — no paragraph or comment broken across lines in either tree, the stylesheets included.
 - Grep the changed files for leftovers: no `<Tabs`, `<Card`, `<Step`, `<Note`, `<Tip`, `<Warning`, `<Accordion`, or `theme={null}`.
-- `node scripts/doc-images.mjs` — every picture a touched page asks for is there, and any that are not are named in the hand-back with the reason.
+- `node scripts/doc-images.mjs` — every picture a touched page asks for is there. `just verify` refuses one that is not, so this is where it is found rather than at the release.
 - Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 8 was skipped or a doc changed after it ran).
 - Every enumeration on a touched page matches the source one-for-one — no stale, missing or extra rows.
 - Every internal link resolves to a real `.md` / route, each `#anchor` matches a real heading slug on the target page, and step 3's linking pass has actually been made over the touched pages and the README intro.

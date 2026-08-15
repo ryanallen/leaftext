@@ -260,10 +260,15 @@ conformance *flags:
     node scripts/fetch-conformance.mjs {{ flags }}
     cargo test conformance -- --nocapture
 
-# Which pictures the docs ask for, and which are not there. Not in `verify`: the
-# backlog would make it red before anybody touched it. `/sync-docs` runs it.
+# Which pictures the docs ask for, and which are not there. The list, for a pass
+# that is about to take one; `check-doc-images` is the gate.
 doc-images:
     node scripts/doc-images.mjs
+
+# Fail on a page naming a picture nobody took — a broken frame under a heading at
+# leaftext.com, which no other check reads and no reader of this repo ever meets.
+check-doc-images:
+    node scripts/doc-images.mjs --check
 
 # Fail on a picture carrying a black strip nobody drew — the window's invisible
 # resize border, photographed. Twenty-four of them shipped to leaftext.com.
@@ -306,7 +311,7 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-plan check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-doc-images check-plan check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
