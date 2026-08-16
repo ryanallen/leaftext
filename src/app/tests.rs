@@ -3614,6 +3614,10 @@ fn two_development_sessions_get_their_own_instance_slot_and_ask_pipe() {
         ask_pipe_name("rwall", ""),
         r"\\.\pipe\leaftext-journal-rwall"
     );
-    // And nothing in this test process set a session, which is every installed copy's case.
-    assert_eq!(leaftext::dev_name_suffix(), "");
+    // And this launch's names carry its own session's suffix or nothing — the test binary itself may sit inside a session's copy, so what "no session" means is asserted on the spelled-out names above, not on the ambient launch.
+    let ambient = match leaftext::dev_session() {
+        Some(session) => session.name_suffix(),
+        None => String::new(),
+    };
+    assert_eq!(leaftext::dev_name_suffix(), ambient);
 }

@@ -708,11 +708,22 @@ fn a_development_session_gets_its_own_files_while_a_normal_launch_keeps_the_docu
         );
     }
 
-    // Nothing set this launch's session, which is every installed copy's case: the two roots answer exactly what they answered before any of this existed, and no process name gains anything.
-    assert!(dev_session().is_none());
-    assert_eq!(project_config_dir(), installed_config_dir());
-    assert_eq!(project_data_local_dir(), installed_data_local_dir());
-    assert_eq!(dev_name_suffix(), "");
+    // The two roots and the process names follow this launch's own session, whichever answer that is — the test binary itself may sit inside a session's copy. No session is every installed copy's case; the derivation itself is proved on made-up paths in the test below.
+    match dev_session() {
+        None => {
+            assert_eq!(project_config_dir(), installed_config_dir());
+            assert_eq!(project_data_local_dir(), installed_data_local_dir());
+            assert_eq!(dev_name_suffix(), "");
+        }
+        Some(session) => {
+            assert_eq!(project_config_dir(), dev_session::dev_config_dir(session));
+            assert_eq!(
+                project_data_local_dir(),
+                dev_session::dev_data_local_dir(session)
+            );
+            assert_eq!(dev_name_suffix(), session.name_suffix());
+        }
+    }
 }
 
 /// Nothing opens a copy of the app, so a launch from a session's own checkout has no environment set for it and would answer on the name every other copy is using. Where it was built says which copy it is instead — and an installed copy, or an ordinary build in the owner's own checkout, sits nowhere near a session's folder and derives nothing at all.
