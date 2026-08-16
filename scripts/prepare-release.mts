@@ -47,7 +47,7 @@ function assertCleanWorkingTree(): void {
   }
 }
 
-// A public release is the primary copy's alone. A managed workspace hands its work over privately instead, or two agents tag and push over each other from copies neither of them can see.
+// One public release, in one place: a session's copy hands its work over instead, or two agents tag over each other.
 function assertPrimaryCheckout(): void {
   if (isManaged(process.cwd())) {
     throw new Error("A public release runs in the primary checkout. This is a managed workspace: hand the work over with `node scripts/agent-workspace.mjs private`, then submit the handoff from the primary copy.");

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // One session's private pair of worktrees, so two agents at once cannot take each other's work.
 //
-// `leaftext/` is two repositories, not one: the private Studio work repository owns the plan tree at `leaftext/docs/`, and the nested Leaftext repository owns the app at `leaftext/app/`, which Studio's own `.gitignore` refuses to track. Sharing either is what lets one session's build hold another's, and one session's ranking pass reset another's status. So a workspace is both — a Studio worktree at the private parent, and a Leaftext worktree at that tree's ignored `leaftext/app/` path, which is the same path shape the primary checkout has.
+// `leaftext/` is two repositories: Studio owns the plan tree, the nested Leaftext repository owns the app at Studio's own ignored `leaftext/app/`. A pair is one worktree of each, at the path shape the primary checkout has.
 //
 //   node scripts/agent-workspace.mjs create      make this session's pair
 //   node scripts/agent-workspace.mjs path        where this session's pair is
@@ -11,9 +11,9 @@
 //   node scripts/agent-workspace.mjs remove      take this session's pair down
 //   node scripts/agent-workspace.mjs --check     self-test (`just check-workspace`)
 //
-// **The owner runs this, not an agent.** `scripts/gate-git.mjs` names it beside `prepare-release`, so an agent typing it at a shell is refused exactly as `git commit` is — the gate reads a command string and cannot see the git a script spawns, so a helper it could not name would be the one way around the release license. Its own refusals below are the rest of the guard: no session id, a root that is not a repository's own top level, a target outside the private parent, a primary copy with work in it, or a call made from inside a managed workspace, which is how one agent would start another.
+// A hook runs `create` before every message; nobody types it. `private` commits and pushes, so `scripts/gate-git.mjs` gates that one — the gate reads a command string and cannot see the git a script spawns.
 //
-// The private parent is outside every repository on purpose — Studio work sits inside the Studio tree, which is a repository too, so any parent under either of them would leave a session's whole workspace as untracked noise in somebody else's status.
+// The private parent is outside every repository: Studio work sits inside the Studio tree, which is one too, so a parent under either would be untracked noise in a third status.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -24,18 +24,18 @@ import { sessionOf, sessionTag } from './hook-payload.mjs';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/// Where a session's pair is made. Outside every repository, and overridable so the self-test can point at a folder of its own.
+/// Where pairs are made. Overridable so the self-test gets a folder of its own.
 export function workspaceParent() {
   return (process.env.LEAFTEXT_WORKSPACES || '').trim() || join(homedir(), '.leaftext-workspaces');
 }
 
-/// The branch both halves of one session's pair are made on. The same name in two repositories, because they are one session's work.
+/// One branch name in both repositories: it is one session's work.
 export function branchFor(session) {
   const tag = sessionTag(session);
   return tag ? `agent/${tag}` : '';
 }
 
-/// Where one session's Studio worktree goes, and the app worktree inside it. The app path is Studio's own ignored one, so the plan tree and the app keep the ownership boundary they already have.
+/// The pair's two paths. The app sits at Studio's own ignored one, keeping the ownership boundary.
 export function workspacePaths(parent, session) {
   const tag = sessionTag(session);
   if (!tag) return null;
@@ -43,13 +43,13 @@ export function workspacePaths(parent, session) {
   return { tag, studio, app: join(studio, 'leaftext', 'app'), manifest: join(parent, `${tag}.json`) };
 }
 
-/// Whether a path really sits under a parent. A target outside the private parent is the one that would put a worktree in somebody's repository.
+/// Whether a path really sits under a parent — outside it would mean a worktree in somebody's repository.
 export function inside(parent, child) {
   const rel = relative(resolve(parent), resolve(child));
   return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel);
 }
 
-/// A patch is the one answer here that must come back byte for byte: trimming it takes the newline `git apply` needs, and a binary hunk is bigger than a pipe's default room.
+/// Untrimmed and roomy: a patch needs its last newline, and a binary hunk outgrows the default pipe.
 function gitRaw(dir, args) {
   return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
 }
@@ -58,7 +58,7 @@ function git(dir, args) {
   return gitRaw(dir, args).trim();
 }
 
-/// A repository's own top level, or '' when the path is not one. A path inside a repository answers its top level rather than itself, which is why the two are compared rather than the call simply succeeding.
+/// A repository's own top level, or ''. Compared rather than merely asked: a path inside one answers the top level, not itself.
 export function repoRoot(dir) {
   try {
     return resolve(git(dir, ['rev-parse', '--show-toplevel'])) === resolve(dir) ? resolve(dir) : '';
@@ -67,7 +67,7 @@ export function repoRoot(dir) {
   }
 }
 
-/// Whether a checkout is already a worktree of another one. This is what tells a managed workspace from the primary copy, and it is how "no agent starts another" is held.
+/// Whether a checkout is a worktree of another — what tells a session's copy from the primary.
 export function isManaged(dir) {
   try {
     return resolve(git(dir, ['rev-parse', '--absolute-git-dir'])) !== resolve(git(dir, ['rev-parse', '--path-format=absolute', '--git-common-dir']));
@@ -76,13 +76,13 @@ export function isManaged(dir) {
   }
 }
 
-/// Every path a checkout has work in — staged, unstaged or untracked. Read raw, because the two status columns are a space where nothing happened and trimming the answer takes the first line's column with it, which reads every modified path one letter short.
+/// Every path a checkout has work in. Read raw: trimming eats the first line's status column and cuts a letter off the path.
 export function dirtyPaths(dir) {
   try {
     return gitRaw(dir, ['status', '--porcelain'])
       .split('\n')
       .filter((line) => line.length > 3)
-      // A rename is reported as both halves; the one that matters is where the file is now.
+      // A rename reports both halves; where the file is now is the one that matters.
       .map((line) => line.slice(3).replace(/^.* -> /, '').replace(/^"(.*)"$/, '$1'))
       .filter(Boolean);
   } catch {
@@ -90,7 +90,7 @@ export function dirtyPaths(dir) {
   }
 }
 
-/// The revision a workspace is cut from, recorded so a handoff can be checked against the copy it was written on.
+/// The revision a pair is cut from, so a handoff can be checked against it.
 export function baseOf(dir) {
   try {
     return git(dir, ['rev-parse', 'HEAD']);
@@ -99,7 +99,7 @@ export function baseOf(dir) {
   }
 }
 
-/// Why a pair may not be made, or '' when it may. Pure, so every refusal is proved on made-up input rather than by breaking a real checkout.
+/// Why a pair may not be made, or ''. Pure, so refusals are proved without breaking a checkout.
 export function creationRefusal(state) {
   const { session, studioRoot, appRoot, parent, target, managed } = state;
   if (!sessionTag(session)) return 'no session id, so there is nothing to keep one agent\'s work apart from another\'s';
@@ -111,7 +111,7 @@ export function creationRefusal(state) {
   return '';
 }
 
-/// What is worth saying about a pair that is being made anyway. Work sitting in a primary copy used to refuse this outright, which left a session nowhere to go for as long as a submitted handoff was waiting to be released — and a copy is cut at the primary's own revision, so it never carries that work in the first place. The overlap check at submit time is what keeps two sessions off one file.
+/// Said, not refused: a copy is cut at the primary's revision and never carries its loose work, and refusing would strand every session while a handoff waits to be released.
 export function creationWarnings(state) {
   const { studioDirty = [], appDirty = [], assigned = [] } = state;
   const held = new Set(assigned);
@@ -120,7 +120,7 @@ export function creationWarnings(state) {
   return [`the copy the owner reads has work no handoff has taken, and this pair is cut without it: ${loose.slice(0, 8).join(', ')}${loose.length > 8 ? ` and ${loose.length - 8} more` : ''}`];
 }
 
-/// Every path already spoken for by a private handoff. Empty until a handoff records one, which is what keeps a workspace from being made over work that is mid-delivery.
+/// Every path a handoff has already claimed.
 export function assignedPaths(parent) {
   const found = [];
   for (const record of manifests(parent)) {
@@ -133,7 +133,7 @@ export function assignedPaths(parent) {
 export function manifests(parent) {
   try {
     return readdirSync(parent)
-      // A leading dot is the reservation's and the journal's, which belong to a submit rather than to a workspace.
+      // A leading dot belongs to a submit, not to a pair.
       .filter((name) => name.endsWith('.json') && !name.startsWith('.'))
       .map((name) => {
         try {
@@ -148,7 +148,7 @@ export function manifests(parent) {
   }
 }
 
-/// The primary pair this checkout belongs to: the app is where this script lives, and the Studio work repository is two folders above it, which is where `leaftext/docs/` is tracked.
+/// The primary pair: the app is where this script lives, Studio two folders above it.
 export function primaryRoots() {
   return { appRoot: repoRoot(here), studioRoot: repoRoot(join(here, '..', '..')) };
 }
@@ -163,13 +163,13 @@ function hasBranch(root, branch) {
   }
 }
 
-/// Hang a worktree on this session's branch: a new one cut from the primary's revision, or the branch it already has. Taking a workspace down leaves the branch standing, because the handoff is what is on it, so a session coming back has to continue from that branch rather than reset it to the primary's revision and lose the delivery.
+/// Cut a new branch, or reattach to the one this session has. Reattach, never reset: a handoff is on it.
 function attach(root, branch, path, base) {
   if (hasBranch(root, branch)) git(root, ['worktree', 'add', path, branch]);
   else git(root, ['worktree', 'add', '-b', branch, path, base]);
 }
 
-/// Make one session's pair. The Studio worktree first, because the app worktree goes inside it.
+/// Make a pair. Studio first — the app worktree goes inside it.
 export function create({ session, studioRoot, appRoot, parent }) {
   const paths = workspacePaths(parent, session);
   const state = {
@@ -201,7 +201,7 @@ export function create({ session, studioRoot, appRoot, parent }) {
   return record;
 }
 
-/// This session's pair, made if it is not there yet. What the hook calls before every message that changes anything: a session that already has one is answered with it, and nobody ever types a command.
+/// This session's pair, made if it is not there. What the hook calls before every message.
 export function ensure({ session, studioRoot, appRoot, parent }) {
   const tag = sessionTag(session);
   if (!tag) throw new Error('no session id, so there is nothing to keep one agent\'s work apart from another\'s');
@@ -211,7 +211,7 @@ export function ensure({ session, studioRoot, appRoot, parent }) {
   return { ...create({ session, studioRoot, appRoot, parent }), made: true };
 }
 
-/// Take one session's pair down: the app worktree first, because it lives inside the Studio one. The branches stay — a private handoff is what is on them.
+/// Take a pair down, app first — it lives inside Studio. The branches stay: the handoff is on them.
 export function remove({ session, parent }) {
   const paths = workspacePaths(parent, session);
   if (!paths) throw new Error('no session id, so there is no workspace to name');
@@ -221,7 +221,7 @@ export function remove({ session, parent }) {
     try {
       git(root, ['worktree', 'remove', '--force', tree]);
     } catch {
-      // A tree already gone, or one git will not let go of, is finished off below and pruned after.
+      // A tree git will not let go of is finished off below.
     }
     rmSync(tree, { recursive: true, force: true });
     try {
@@ -234,13 +234,13 @@ export function remove({ session, parent }) {
   return record;
 }
 
-/// Where a session's app patch and its record sit inside its own Studio worktree. Out of the plan tree on purpose: a handoff is delivery, not planning, and it exists only on the session's own branch.
+/// Where the patch and its record sit. Out of the plan tree: delivery is not planning.
 export function handoffPaths(studio, tag) {
   const folder = join(studio, '.handoff', tag);
   return { folder, patch: join(folder, 'app.patch'), record: join(folder, 'handoff.json') };
 }
 
-/// A finished worker result, delivered privately. The plan changes and the app patch go on one session branch in the private Studio repository and nowhere else: no tag, no version, and no word to the Leaftext remote, which stays the primary copy's alone.
+/// Deliver privately: plan changes and app patch on this session's Studio branch. No tag, no version, no word to the Leaftext remote.
 export function releasePrivate({ session, parent, from = process.cwd(), message = '' }) {
   const tag = sessionTag(session);
   if (!tag) throw new Error('no session id, so there is no workspace to release');
@@ -249,11 +249,11 @@ export function releasePrivate({ session, parent, from = process.cwd(), message 
   if (!record) throw new Error(`no managed workspace for this session under ${parent}`);
   if (!isManaged(record.studio) || !isManaged(record.app)) throw new Error(`${record.studio} is not a managed pair any more`);
 
-  // The app half is a patch against the revision the workspace was cut from, staged first so a file the work added travels with the ones it changed.
+  // Staged first, so a file the work added travels with the ones it changed.
   git(record.app, ['add', '-A']);
   const appPaths = git(record.app, ['diff', '--cached', '--name-only', record.appBase]).split('\n').filter(Boolean);
   const patch = gitRaw(record.app, ['diff', '--cached', '--binary', record.appBase]);
-  // Read before the handoff is written, or the handoff counts itself as plan work.
+  // Read before the handoff is written, or it counts itself.
   git(record.studio, ['add', '-A']);
   const planPaths = git(record.studio, ['diff', '--cached', '--name-only', record.studioBase]).split('\n').filter(Boolean);
   if (!appPaths.length && !planPaths.length) throw new Error('this workspace has no work in it, so there is nothing to hand over');
@@ -274,7 +274,7 @@ export function releasePrivate({ session, parent, from = process.cwd(), message 
   writeFileSync(where.record, JSON.stringify(handoff, null, 2) + '\n');
 
   git(record.studio, ['add', '-A']);
-  // Unsigned on purpose: a branch nobody publishes needs no signature, and a machine with no key must still be able to hand its work over.
+  // Unsigned: nobody publishes this branch, and a machine with no key must still hand work over.
   git(record.studio, ['-c', 'commit.gpgsign=false', 'commit', '--no-gpg-sign', '-m', message || `Private handoff ${tag}`]);
   handoff.commit = baseOf(record.studio);
 
@@ -290,20 +290,20 @@ export function releasePrivate({ session, parent, from = process.cwd(), message 
 // Submitting one private handoff to the primary copies.
 // ---------------------------------------------------------------------------
 
-/// The claim on the primary pair, held only while one handoff is being applied. A folder, because making one is the cheapest thing both platforms do atomically — two submits cannot both believe they made it.
+/// The claim on the primary pair. A folder: making one is the cheapest atomic act both platforms have.
 export function reservationPath(parent) {
   return join(parent, '.reservation');
 }
 
-/// The record of what the primary copies held before a submit touched them. One file, because one reservation means one submit, and a submit that never finished is the only thing that reads it.
+/// What the primary copies held before a submit touched them. One file, because one reservation means one submit.
 export function journalPath(parent) {
   return join(parent, '.journal.json');
 }
 
-/// A reservation older than this belonged to a run that is gone. Holding the primary pair for ever because a process was killed is worse than taking it over, which is safe: the journal beside it is rolled back first.
+/// Past this a claim belonged to a killed run. Taking it over is safe — the journal is rolled back first.
 export const RESERVATION_STALE_MS = 60 * 60 * 1000;
 
-/// Take the claim, or say who has it. Nothing else may write the primary copies while it is held.
+/// Take the claim, or say who holds it.
 export function reserve(parent, holder, now = Date.now()) {
   mkdirSync(parent, { recursive: true });
   const path = reservationPath(parent);
@@ -314,7 +314,7 @@ export function reserve(parent, holder, now = Date.now()) {
     try {
       held = JSON.parse(readFileSync(join(path, 'held-by.json'), 'utf8'));
     } catch {
-      // A claim with nothing readable in it is treated as this moment's, and waits out the window like any other.
+      // An unreadable claim waits out the window like any other.
     }
     if (now - Date.parse(held.at || 0) < RESERVATION_STALE_MS) {
       throw new Error(`${held.holder} holds the primary reservation — one handoff reaches the primary copies at a time`);
@@ -323,7 +323,7 @@ export function reserve(parent, holder, now = Date.now()) {
   writeFileSync(join(path, 'held-by.json'), JSON.stringify({ holder: sessionTag(holder) || 'unknown', at: new Date().toISOString() }) + '\n');
 }
 
-/// Give the claim back. Every result releases it, or the next submit waits an hour for nothing.
+/// Give the claim back, on every result.
 export function releaseReservation(parent) {
   rmSync(reservationPath(parent), { recursive: true, force: true });
 }
@@ -336,7 +336,7 @@ function bytesAt(path) {
   }
 }
 
-/// What the primary copies hold at every path a handoff is about to write, so an apply that fails halfway can be put back. `null` is a path that was not there, which is restored by deleting it again.
+/// What the primary copies hold where a handoff will write. `null` is a path that was not there.
 export function journalFor(roots, handoff) {
   const entries = [];
   for (const [root, paths] of [[roots.studioRoot, handoff.planPaths], [roots.appRoot, handoff.appPaths]]) {
@@ -357,7 +357,7 @@ export function restoreFrom(entries) {
   }
 }
 
-/// Why a handoff may not be applied, or '' when it may. Pure, so a stale base and an overlap are proved without breaking a primary copy to do it.
+/// Why a handoff may not be applied, or ''. Pure, so a stale base and an overlap are proved cheaply.
 export function submitRefusal(state) {
   const { managed, handoff, studioHead, appHead, planDirty = [], appDirty = [] } = state;
   if (managed) return 'a handoff is submitted from the primary checkout — a workspace hands its work over, it does not take another\'s';
@@ -372,7 +372,7 @@ export function submitRefusal(state) {
   return '';
 }
 
-/// What a private branch says it is handing over, read out of the branch itself rather than out of the record beside the workspace — the branch is what was pushed, and the record is only this machine's copy of it.
+/// Read off the branch, not the record beside the pair: the branch is what was pushed.
 export function handoffOn(studioRoot, branch, tag) {
   try {
     return JSON.parse(git(studioRoot, ['show', `${branch}:.handoff/${tag}/handoff.json`]));
@@ -381,7 +381,7 @@ export function handoffOn(studioRoot, branch, tag) {
   }
 }
 
-/// Apply one private handoff to the primary copies and leave them dirty. Nothing here commits, tags or pushes: the primary agent reads what arrived and `$git-release` makes the public release, with every check it already runs.
+/// Apply one handoff and leave the primary copies dirty. Nothing here commits, tags or pushes.
 export function submit({ session, parent, studioRoot, appRoot, from = process.cwd(), now = Date.now() }) {
   const tag = sessionTag(session);
   if (!tag) throw new Error('no session named, so there is no handoff to submit');
@@ -391,7 +391,7 @@ export function submit({ session, parent, studioRoot, appRoot, from = process.cw
   reserve(parent, tag, now);
   let journal = [];
   try {
-    // A journal left behind is a submit that was killed. Roll it back before anything reads the primary copies, or every check below is made against a half-applied tree.
+    // A journal left behind is a killed submit. Roll it back, or every check below reads a half-applied tree.
     try {
       restoreFrom(JSON.parse(readFileSync(journalPath(parent), 'utf8')));
       rmSync(journalPath(parent), { force: true });
@@ -414,7 +414,7 @@ export function submit({ session, parent, studioRoot, appRoot, from = process.cw
     journal = journalFor({ studioRoot, appRoot }, handoff);
     writeFileSync(journalPath(parent), JSON.stringify(journal) + '\n');
 
-    // The plan half is written out of the branch a path at a time; a path the branch no longer has is one the work deleted.
+    // A path the branch does not have is one the work deleted.
     for (const path of handoff.planPaths) {
       const full = join(studioRoot, path);
       let content = null;
@@ -430,7 +430,7 @@ export function submit({ session, parent, studioRoot, appRoot, from = process.cw
       }
     }
 
-    // The app half is the patch, against the revision the primary copy is checked to be on.
+    // The app half is the patch, against the revision just checked.
     if (handoff.appPaths.length) {
       const patch = git(studioRoot, ['show', `${branch}:${handoff.patch}`]);
       execFileSync('git', ['-C', appRoot, 'apply', '-'], { input: patch + '\n', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
@@ -448,7 +448,7 @@ export function submit({ session, parent, studioRoot, appRoot, from = process.cw
 }
 
 // ---------------------------------------------------------------------------
-// Self-test. Two throwaway repositories, two sessions, and the four things a shared copy got wrong.
+// Self-test, on throwaway repositories.
 // ---------------------------------------------------------------------------
 
 function run(dir, args) {
@@ -464,7 +464,7 @@ function read(path) {
   return existsSync(path) ? readFileSync(path, 'utf8') : null;
 }
 
-/// A stand-in for the real pair: a Studio repository carrying the plan tree and ignoring `leaftext/app/`, and a Leaftext repository ignoring its build folder. Each gets a bare remote of its own, so what a private release does and does not push is a fact rather than a promise.
+/// A stand-in pair, each half with a bare remote — so what is pushed is a fact rather than a promise.
 function fixtures(home) {
   const studioRoot = join(home, 'work');
   const appRoot = join(home, 'app');
@@ -477,11 +477,11 @@ function fixtures(home) {
   for (const [root, remote, what] of [[studioRoot, studioRemote, 'plan'], [appRoot, appRemote, 'app']]) {
     execFileSync('git', ['init', '--bare', '-b', 'main', remote], { stdio: ['ignore', 'pipe', 'pipe'] });
     run(root, ['init', '-b', 'main']);
-    // Written into the repository rather than passed per command: everything the helper itself runs uses plain git, and a worktree reads its identity from the repository they share.
+    // Into the repository, not per command: the helper runs plain git, and a worktree shares this.
     run(root, ['config', 'user.name', 'check']);
     run(root, ['config', 'user.email', 'check@example.com']);
     run(root, ['config', 'commit.gpgsign', 'false']);
-    // The real pair is LF everywhere by `.gitattributes`. Without this a Windows machine with the usual global setting rewrites every applied patch to CRLF, and a fixture would fail for a reason the rule never had.
+    // The real pair is LF by `.gitattributes`; without this Windows rewrites every applied patch to CRLF.
     run(root, ['config', 'core.autocrlf', 'false']);
     run(root, ['remote', 'add', 'origin', remote]);
     run(root, ['add', '-A']);
@@ -491,7 +491,7 @@ function fixtures(home) {
   return { studioRoot, appRoot, studioRemote, appRemote };
 }
 
-/// Every ref a bare repository holds, so a push nobody was supposed to make shows up as one.
+/// Every ref a bare repository holds, so an unwanted push shows up.
 function refsIn(bare) {
   return execFileSync('git', ['-C', bare, 'for-each-ref', '--format=%(refname)'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim().split('\n').filter(Boolean).sort();
 }
@@ -515,7 +515,7 @@ function refusalCases() {
     ['a target outside the private parent', { ...ok, target: '/elsewhere/x' }, 'outside the private worktree parent'],
     ['a target that is the parent itself', { ...ok, target: '/private' }, 'outside the private worktree parent'],
     ['a managed workspace starting another', { ...ok, managed: true }, 'already a managed workspace'],
-    // Work sitting in a primary copy is said, never refused: refusing it left a session with nowhere to go for as long as a submitted handoff was waiting to be released.
+    // Said, never refused.
     ['a primary plan copy with work in it', { ...ok, studioDirty: ['docs/PLAN.md'] }, ''],
     ['a primary app copy with work in it', { ...ok, appDirty: ['src/lib.rs'] }, ''],
   ];
@@ -552,7 +552,7 @@ function refusalCases() {
   return fails;
 }
 
-/// The public release path and this helper must not drift apart. `scripts/prepare-release.mts` is what commits, tags and pushes Leaftext, and it refuses a managed workspace by calling the same reader tested both ways above — a second implementation over there would pass its own check while letting a workspace tag, which is the one mistake nobody can take back.
+/// `scripts/prepare-release.mts` must keep refusing a session's copy through the reader tested above. A second implementation there would pass its own check and let a copy tag.
 function publicReleaseGuard() {
   const fails = [];
   const text = readFileSync(join(here, 'scripts', 'prepare-release.mts'), 'utf8');
@@ -562,7 +562,7 @@ function publicReleaseGuard() {
   const commits = text.indexOf('runRequired("git", commitArgs)');
   if (asks < 0) fails.push('the public release path never asks whether it is in a managed workspace');
   else if (commits < 0 || asks > commits) fails.push('the public release path asks about the workspace after it has already committed');
-  // A submitted handoff arrives in the primary copies as a change nothing there has run a check over, so the whole suite has to pass before anything is tagged or pushed.
+  // A handoff arrives unchecked, so the suite runs before anything is tagged.
   if (checks < 0) fails.push('the public release path no longer runs the check suite');
   else if (commits < 0 || checks > commits) fails.push('the public release path checks after it has already committed');
   return fails;
@@ -570,7 +570,7 @@ function publicReleaseGuard() {
 
 function selfTest() {
   const fails = [...refusalCases(), ...publicReleaseGuard()];
-  // This run's own folder, and no other's: two runs of the suite at once must not share a fixture repository.
+  // This run's own folder: two suites at once must not share fixtures.
   const home = mkdtempSync(join(tmpdir(), `leaf-workspace-${process.pid}-`));
   const parent = join(home, 'private');
   const ONE = 'aaaaaaaa-1111-1111-1111-111111111111';
@@ -590,7 +590,7 @@ function selfTest() {
     if (one.studioBase !== baseOf(studioRoot)) fails.push('the Studio base revision was not recorded');
     if (one.appBase !== baseOf(appRoot)) fails.push('the app base revision was not recorded');
 
-    // The plan tree, which two sessions ranking at once reset under each other.
+    // The plan tree, which two rankings at once reset under each other.
     const plan = (w) => join(w.studio, 'leaftext', 'docs', 'PLAN.md');
     write(plan(one), '# one\n');
     write(plan(two), '# two\n');
@@ -598,27 +598,27 @@ function selfTest() {
     if (read(plan(two)) !== '# two\n') fails.push('one session\'s plan edit took the other\'s');
     if (read(join(studioRoot, 'leaftext', 'docs', 'PLAN.md')) !== '# primary plan\n') fails.push('a workspace plan edit reached the primary copy');
 
-    // The app source, which is the half a shared checkout let one build hold.
+    // The app source, where a shared checkout let one build hold another.
     const lib = (w) => join(w.app, 'src', 'lib.rs');
     write(lib(one), '// one\n');
     write(lib(two), '// two\n');
     if (read(lib(one)) !== '// one\n') fails.push('one session\'s app edit did not survive the other\'s');
     if (read(join(appRoot, 'src', 'lib.rs')) !== '// primary app\n') fails.push('a workspace app edit reached the primary copy');
 
-    // The index, which is what a version bump staged in one session and released from another rode on.
+    // The index, which a version bump staged in one session and released from another rode on.
     run(one.app, ['add', 'src/lib.rs']);
     const staged = (dir) => git(dir, ['diff', '--cached', '--name-only']);
     if (staged(one.app) !== 'src/lib.rs') fails.push('a staged app change was not in the session that staged it');
     if (staged(two.app) !== '') fails.push('one session\'s staged app change appeared in the other\'s index');
     if (staged(appRoot) !== '') fails.push('one session\'s staged app change appeared in the primary index');
 
-    // The build folder, which is why a shared checkout made two agents wait on each other.
+    // The build folder, where a shared checkout made two agents wait.
     write(join(one.app, 'target', 'build.txt'), 'one\n');
     write(join(two.app, 'target', 'build.txt'), 'two\n');
     if (read(join(one.app, 'target', 'build.txt')) !== 'one\n') fails.push('one session\'s build output was overwritten by the other\'s');
     if (existsSync(join(appRoot, 'target', 'build.txt'))) fails.push('a workspace build wrote into the primary checkout');
 
-    // A second workspace for a session that has one, and a removal that leaves the other standing.
+    // A second pair for a session that has one.
     let second = '';
     try {
       create({ session: ONE, studioRoot, appRoot, parent });
@@ -627,11 +627,11 @@ function selfTest() {
     }
     if (!second.includes('already there')) fails.push('a session was given a second workspace over its first');
 
-    // Two workspaces of edited, staged and built work leave the primary copies clean, which is the boundary the whole pair exists to hold.
+    // Two pairs of edited, staged and built work leave the primary copies clean.
     if (dirtyPaths(appRoot).length) fails.push(`a workspace left work in the primary app copy: ${dirtyPaths(appRoot).join(', ')}`);
     if (dirtyPaths(studioRoot).length) fails.push(`a workspace left work in the primary plan copy: ${dirtyPaths(studioRoot).join(', ')}`);
 
-    // Work sitting in a primary copy is said and stepped around, never refused — a session that could not start while a handoff waited to be released is a session with nowhere to go.
+    // Said and stepped around, never refused.
     const THREE = 'cccccccc-3333-3333-3333-333333333333';
     write(join(appRoot, 'src', 'half-done.rs'), '// mid-edit\n');
     const third = create({ session: THREE, studioRoot, appRoot, parent });
@@ -640,7 +640,7 @@ function selfTest() {
     remove({ session: THREE, parent });
     rmSync(join(appRoot, 'src', 'half-done.rs'), { force: true });
 
-    // What the hook calls: a session that has a pair is answered with it, and one that does not is given one.
+    // What the hook calls.
     const againOne = ensure({ session: ONE, studioRoot, appRoot, parent });
     if (againOne.made) fails.push('a session that already had a copy was given a second one');
     if (againOne.studio !== one.studio) fails.push('a session was answered with somebody else\'s copy');
@@ -648,13 +648,13 @@ function selfTest() {
     const fresh = ensure({ session: FIVE, studioRoot, appRoot, parent });
     if (!fresh.made) fails.push('a session with no copy was not given one');
     if (!existsSync(fresh.app)) fails.push('the copy a session was given is not on disk');
-    // A record left behind by a copy somebody deleted must be replaced rather than handed back.
+    // A record pointing at a deleted copy is replaced, not handed back.
     rmSync(fresh.app, { recursive: true, force: true });
     if (!ensure({ session: FIVE, studioRoot, appRoot, parent }).made) fails.push('a record pointing at a copy that is gone was handed back as one');
     remove({ session: FIVE, parent });
 
     // ---- Phase 2: the private handoff. ----
-    // A private release runs from inside a workspace, and a session with none has nothing to release.
+    // A private release runs from inside a copy.
     let wrongPlace = '';
     try {
       releasePrivate({ session: ONE, parent, from: appRoot });
@@ -675,7 +675,7 @@ function selfTest() {
     if (!handoff.appPaths.includes('src/lib.rs')) fails.push('the handoff did not name the app file the work changed');
     if (!handoff.planPaths.includes('leaftext/docs/PLAN.md')) fails.push('the handoff did not name the plan file the work changed');
 
-    // What the private branch really holds, read back off the remote rather than off the tree that pushed it.
+    // Read off the remote, not the tree that pushed it.
     const onBranch = (path) => {
       try {
         return execFileSync('git', ['-C', studioRemote, 'show', `${one.branch}:${path}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -691,7 +691,7 @@ function selfTest() {
     if (!carriedRecord || JSON.parse(carriedRecord).appBase !== one.appBase) fails.push('the private branch does not carry the app base revision beside its patch');
     if (onBranch('src/lib.rs') !== null) fails.push('the private branch carries the app source itself rather than a patch of it');
 
-    // The half a private release must never touch: the Leaftext remote takes no push, nothing is tagged, and the app repository gains no commit.
+    // What a private release must never touch.
     if (refsIn(appRemote).join(' ') !== appRefsBefore.join(' ')) fails.push('a private release pushed to the Leaftext remote');
     if (git(appRoot, ['tag', '-l'])) fails.push('a private release made a tag');
     if (git(one.app, ['tag', '-l'])) fails.push('a private release made a tag in the workspace');
@@ -699,16 +699,16 @@ function selfTest() {
     if (!refsIn(studioRemote).includes(`refs/heads/${one.branch}`)) fails.push('a private release pushed no private branch');
     if (refsIn(studioRemote).some((ref) => ref.startsWith('refs/tags/'))) fails.push('a private release tagged the private repository');
 
-    // Work a handoff has taken stops refusing the next workspace, which is the whole reason the record is kept beside the pair.
+    // Work a handoff has taken is no longer warned about.
     const assigned = assignedPaths(parent);
     if (!assigned.includes('app: src/lib.rs')) fails.push('a released handoff did not claim the app work it carries');
     if (assigned.some((p) => p.startsWith('plan: ') && !handoff.planPaths.includes(p.slice(6)))) fails.push("one session's handoff claimed another session's work");
     if (assignedPaths(parent).length !== handoff.paths.length) fails.push("a session's handoff claimed work no session had released");
-    // The overlapping half of the pair: the same two files, released from the other session.
+    // The overlapping half: the same two files from the other session.
     releasePrivate({ session: TWO, parent, from: two.app });
 
     // ---- Phase 3: submitting a handoff to the primary copies. ----
-    // Two more sessions, each on files of its own, because two handoffs that arrive together have to be ones that do not fight.
+    // Two more sessions, each on files of its own.
     const PLAIN = 'eeeeeeee-5555-5555-5555-555555555555';
     const OTHER = 'ffffffff-6666-6666-6666-666666666666';
     const three = create({ session: PLAIN, studioRoot, appRoot, parent });
@@ -736,14 +736,14 @@ function selfTest() {
     if (read(join(studioRoot, 'leaftext', 'docs', 'FOUR.md')) !== '# four\n') fails.push('the second handoff did not reach the primary plan copy');
     if (read(join(appRoot, 'src', 'four.rs')) !== '// four\n') fails.push('the second handoff did not reach the primary app copy');
     if (read(join(studioRoot, 'leaftext', 'docs', 'THREE.md')) !== '# three\n') fails.push('the second handoff took the first one\'s plan work');
-    // Dirty on purpose: the primary agent reads what arrived, and `$git-release` is what commits it.
+    // Dirty on purpose: what arrived is read before it is committed.
     if (!dirtyPaths(studioRoot).includes('leaftext/docs/THREE.md')) fails.push('a submitted handoff left the primary plan copy clean, so nothing is there to check');
     if (!dirtyPaths(appRoot).includes('src/three.rs')) fails.push('a submitted handoff left the primary app copy clean, so nothing is there to check');
     if (baseOf(studioRoot) !== one.studioBase) fails.push('a submit committed in the primary plan copy');
     if (baseOf(appRoot) !== one.appBase) fails.push('a submit committed in the primary app copy');
     if (refsIn(appRemote).join(' ') !== appRefsBefore.join(' ')) fails.push('a submit pushed to the Leaftext remote');
 
-    // The overlap: two handoffs written on the same two files, and the second must change nothing at all.
+    // Two handoffs on the same files: the second must change nothing.
     submit({ session: ONE, parent, studioRoot, appRoot, from: appRoot });
     const watched = ['leaftext/docs/PLAN.md', 'leaftext/docs/THREE.md', 'leaftext/docs/FOUR.md'].map((p) => join(studioRoot, p))
       .concat(['src/lib.rs', 'src/three.rs', 'src/four.rs'].map((p) => join(appRoot, p)));
@@ -759,7 +759,7 @@ function selfTest() {
     if (existsSync(reservationPath(parent))) fails.push('a refused submit kept the primary reservation');
     if (existsSync(journalPath(parent))) fails.push('a refused submit left its recovery journal behind');
 
-    // A submit that was killed halfway: its journal is what puts both roots back, and the next submit is what reads it.
+    // A submit killed halfway: the next one reads its journal and puts both roots back.
     write(join(studioRoot, 'leaftext', 'docs', 'THREE.md'), '# half-written\n');
     write(join(appRoot, 'src', 'three.rs'), '// half-written\n');
     write(join(appRoot, 'src', 'never-asked-for.rs'), '// half-written\n');
@@ -782,7 +782,7 @@ function selfTest() {
     if (!afterKill.includes('overlaps work already sitting')) fails.push('the submit after a recovery did not read the roots it had just put back');
     if (existsSync(reservationPath(parent))) fails.push('a stale reservation was not taken over and released');
 
-    // One reservation, and one handoff through it at a time.
+    // One handoff through the reservation at a time.
     reserve(parent, ONE);
     let contended = '';
     try {

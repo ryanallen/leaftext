@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // UserPromptSubmit hook. Puts this session in a copy of its own before the message is read, and says where it is.
 //
-// **Nobody types a command.** The owner calls the skills they already call — `/ticket`, `/dev`, `/design`, `/pm` and the rest — and the pair of worktrees those skills need is already there when the agent starts reading. A session that has one is answered with it; a session that has none is given one.
+// Nobody types a command: the owner calls the skills they already call and the pair is there.
 //
 //   node scripts/gate-workspace.mjs           the hook payload on stdin
 //   node scripts/gate-workspace.mjs --check   self-test (`just verify`)
 //
-// Only a message that names a skill that changes something gets a copy. A question, a `/clear`, a message naming nothing: no copy, because cutting a worktree for somebody asking what a button does is a folder nobody will ever look in.
+// Only a message naming a skill that changes something. A question would get a folder nobody opens.
 //
-// **Never blocks.** A pair that cannot be made is said in one line and the turn goes on in the copy the owner is reading, which is where every turn ran before this existed. A hook that can wedge a session is worse than no hook.
+// Never blocks: a pair that cannot be made is one line, and the turn runs where it already was.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -20,10 +20,10 @@ import { keep, sessionOf } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/// The skills that only read. Naming one of these is not a reason to cut a copy, and `check` is the loudest of them: it is run from inside whatever copy the work is already in.
+/// Skills that only read. `check` runs inside whatever copy the work is already in.
 export const READ_ONLY = new Set(['check', 'add-dependency', 'code-comments', 'workspace']);
 
-/// Whether this message is work that belongs in a copy of its own. Read off the one table of keyed skills, so a skill is named in one place and a new one joins this by existing.
+/// The skill wanting a copy, or ''. Off the one table of keyed skills, so a new one joins by existing.
 export function wantsWorkspace(prompt) {
   for (const file of keyedFiles()) {
     const name = file.match(/skills\/(.*?)\//)?.[1];
@@ -33,7 +33,7 @@ export function wantsWorkspace(prompt) {
   return '';
 }
 
-/// What the agent is told. It names both halves, because the plan tree and the app are two repositories and a session that edits one in its copy and the other in the owner's has handed nobody anything.
+/// Both halves, because editing one here and one in the owner's copy hands nobody anything.
 export function directions(record, skill) {
   return [
     `This session works in its own copy, not in the one the owner is reading. \`/${skill}\` and everything under it happens here:`,
@@ -53,7 +53,7 @@ function selfTest() {
   if (wantsWorkspace('what does the pager do')) fails.push('a question was given a copy');
   if (wantsWorkspace('/clear')) fails.push('a host command was given a copy');
   if (wantsWorkspace('run the checker')) fails.push('prose named a skill');
-  // The gate skill runs inside whatever copy the work is already in, so naming it must not cut a second one.
+  // Naming the gate skill must not cut a second copy.
   if (wantsWorkspace('/check it')) fails.push('the gate skill was given a copy of its own');
   if (wantsWorkspace('/workspace list')) fails.push('the copy skill was given a copy of its own');
 
@@ -62,7 +62,7 @@ function selfTest() {
   if (!said.includes('leaftext') || !said.includes('docs')) fails.push('the directions do not say where the plan tree is');
   if (!said.includes('work is sitting in the primary app copy')) fails.push('a warning from making the copy was not passed on');
 
-  // Imported rather than run, this file must do nothing: the hook body reading stdin on import would swallow another hook's payload.
+  // Imported, the hook body must not run: reading stdin would swallow another hook's payload.
   try {
     const loaded = execFileSync(process.execPath, ['--input-type=module', '-e', `import ${JSON.stringify(import.meta.url)}; console.log('loaded');`], {
       input: JSON.stringify({ prompt: '/dev it' }),
@@ -108,7 +108,7 @@ if (!args) {
       const { studioRoot, appRoot } = primaryRoots();
       context = directions(ensure({ session: sessionOf(raw), studioRoot, appRoot, parent: workspaceParent() }), skill);
     } catch (error) {
-      // The turn carries on in the copy the owner is reading, which is where every turn ran before this existed.
+      // The turn carries on where it already was.
       context = `This session has no copy of its own: ${error.message}. Work in the checkout you are in and say so when you hand back.`;
     }
     process.stdout.write(JSON.stringify({
