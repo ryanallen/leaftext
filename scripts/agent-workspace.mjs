@@ -315,27 +315,31 @@ export function journalPath(parent) {
   return join(parent, '.journal.json');
 }
 
-/// Past this a claim belonged to a killed run. Taking it over is safe — the journal is rolled back first.
-export const RESERVATION_STALE_MS = 60 * 60 * 1000;
+/// Match the running order claim, so a killed run does not stop the next handoff for an hour.
+export const RESERVATION_STALE_MS = 2 * 60 * 1000;
 
-/// Take the claim, or say who holds it.
-export function reserve(parent, holder, now = Date.now()) {
+/// Take the claim, waiting for a live holder and taking over one a killed run left behind.
+export function reserve(parent, holder, { waitMs = 10 * 1000, clock = Date.now, sleep = sleepSync, stale = RESERVATION_STALE_MS } = {}) {
   mkdirSync(parent, { recursive: true });
   const path = reservationPath(parent);
-  try {
-    mkdirSync(path);
-  } catch {
-    let held = { holder: 'another session', at: 0 };
+  const until = clock() + waitMs;
+  for (;;) {
     try {
-      held = JSON.parse(readFileSync(join(path, 'held-by.json'), 'utf8'));
+      mkdirSync(path);
+      break;
     } catch {
-      // An unreadable claim waits out the window like any other.
-    }
-    if (now - Date.parse(held.at || 0) < RESERVATION_STALE_MS) {
-      throw new Error(`${held.holder} holds the primary reservation — one handoff reaches the primary copy at a time`);
+      let held = { holder: 'another session', at: 0 };
+      try {
+        held = JSON.parse(readFileSync(join(path, 'held-by.json'), 'utf8'));
+      } catch {
+        // An unreadable claim waits out the window like any other.
+      }
+      if (clock() - Date.parse(held.at || 0) >= stale) break;
+      if (clock() >= until) throw new Error(`${held.holder} holds the primary reservation — one handoff reaches the primary copy at a time`);
+      sleep(100);
     }
   }
-  writeFileSync(join(path, 'held-by.json'), JSON.stringify({ holder: sessionTag(holder) || 'unknown', at: new Date().toISOString() }) + '\n');
+  writeFileSync(join(path, 'held-by.json'), JSON.stringify({ holder: sessionTag(holder) || 'unknown', at: new Date(clock()).toISOString() }) + '\n');
 }
 
 /// Give the claim back, on every result.
@@ -357,6 +361,11 @@ export function planScratchPath(parent, session) {
   return join(parent, `.plan-${sessionTag(session) || 'unknown'}.md`);
 }
 
+/// What that session took its copy from, beside the copy. The claim folder is the one place it cannot live: a second session opening the running order would write over it, and the first would then be told its own copy is somebody else's.
+export function planOpenedPath(parent, session) {
+  return join(parent, `.plan-${sessionTag(session) || 'unknown'}.json`);
+}
+
 /// Short on purpose: a claim is held across one edit, not across a build, so a run killed holding one wedges the next ranking pass for two minutes rather than an hour.
 export const PLAN_CLAIM_STALE_MS = 2 * 60 * 1000;
 
@@ -365,11 +374,20 @@ function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+/// So a turn that pauses says what it is pausing for.
+function warn(message) {
+  process.stderr.write(`agent-workspace: ${message}\n`);
+}
+
 /// Take the running order's claim, waiting for the run that holds it and taking over one a killed run left behind.
-export function claimPlan(parent, holder, { waitMs = 10 * 1000, clock = Date.now, stale = PLAN_CLAIM_STALE_MS } = {}) {
+///
+/// No deadline by default. A hold lasts as long as an agent's edit, which has no ceiling, so any fixed wait is a number somebody exceeds — ten seconds refused three sessions in a row on 16 August 2026 and lost each one's status. The ceiling is the holder's own record going stale, which is a killed run rather than a slow one. `waitMs` refuses on demand and is the self-test's.
+export function claimPlan(parent, holder, { waitMs = null, clock = Date.now, stale = PLAN_CLAIM_STALE_MS, sleep = sleepSync, notify = warn } = {}) {
   mkdirSync(parent, { recursive: true });
   const path = planClaimPath(parent);
-  const until = clock() + waitMs;
+  const began = clock();
+  const until = waitMs === null ? null : began + waitMs;
+  let said = false;
   for (;;) {
     try {
       mkdirSync(path);
@@ -382,8 +400,11 @@ export function claimPlan(parent, holder, { waitMs = 10 * 1000, clock = Date.now
         // An unreadable claim waits out the window like any other.
       }
       if (clock() - Date.parse(held.at || 0) >= stale) break;
-      if (clock() >= until) throw new Error(`${held.holder} is writing the running order — nothing was changed, so try again`);
-      sleepSync(100);
+      if (until !== null && clock() >= until) throw new Error(`${held.holder} is writing the running order — nothing was changed after waiting ${Math.round((clock() - began) / 1000)}s`);
+      // Once, not every pass.
+      if (!said) notify(`waiting for ${held.holder} to finish writing the running order`);
+      said = true;
+      sleep(100);
     }
   }
   writeFileSync(join(path, 'held-by.json'), JSON.stringify({ holder: sessionTag(holder) || 'unknown', at: new Date().toISOString() }) + '\n');
@@ -414,41 +435,41 @@ export function writePlanRow(parent, holder, edit, options = {}) {
   }
 }
 
-/// Take a copy of the running order to edit, holding the claim until it is written back. What a skill runs when the edit is a person's rather than a function's.
-export function openPlan({ session, parent, plans = null, options = {} }) {
+/// Take a copy of the running order to edit. What a skill runs when the edit is a person's rather than a function's.
+///
+/// Nothing is held while it is open. The claim would have to span an agent's edit, and nothing is running to renew one — the command exits the moment it hands the copy back. What decides the write instead is the fingerprint the copy was taken at, which is the same test the app runs on a document written through its own pipe.
+export function openPlan({ session, parent, plans = null }) {
   const file = join(plans || planTree(), 'PLAN.md');
   const scratch = planScratchPath(parent, session);
-  claimPlan(parent, session, options);
-  try {
-    const text = readFileSync(file, 'utf8');
-    writeFileSync(scratch, text);
-    writeFileSync(join(planClaimPath(parent), 'opened.json'), JSON.stringify({ file, scratch, was: planFingerprint(text) }) + '\n');
-    return { scratch, file };
-  } catch (error) {
-    releasePlan(parent);
-    throw error;
-  }
+  mkdirSync(parent, { recursive: true });
+  const text = readFileSync(file, 'utf8');
+  writeFileSync(scratch, text);
+  writeFileSync(planOpenedPath(parent, session), JSON.stringify({ file, scratch, was: planFingerprint(text) }) + '\n');
+  return { scratch, file };
 }
 
-/// Write the copy back and give the claim up. Refused where the running order moved underneath, because the copy was taken before whatever moved it.
-export function closePlan({ session, parent }) {
+/// Write the copy back, the claim held across the read, the test and the write alone. Refused where the running order moved underneath, because the copy was taken before whatever moved it — and the copy is kept where it is, since it holds an edit nobody else has.
+export function closePlan({ session, parent, options = {} }) {
   const scratch = planScratchPath(parent, session);
+  const record = planOpenedPath(parent, session);
   let opened = null;
   try {
-    opened = JSON.parse(readFileSync(join(planClaimPath(parent), 'opened.json'), 'utf8'));
+    opened = JSON.parse(readFileSync(record, 'utf8'));
   } catch {
     throw new Error('this session is not holding the running order — open it before writing it back');
   }
-  if (opened.scratch !== scratch) throw new Error(`${opened.scratch} is the copy being held, and this session's is ${scratch}`);
+  claimPlan(parent, session, options);
   try {
     if (planFingerprint(readFileSync(opened.file, 'utf8')) !== opened.was) {
-      throw new Error('the running order moved while this copy was open, so writing it back would take the other rows with it — open it again and redo the row');
+      throw new Error(`the running order moved while this copy was open, so writing it back would take the other rows with it — this session's copy is still at ${scratch}; open the running order again and redo the row`);
     }
     writeFileSync(opened.file, readFileSync(scratch, 'utf8'));
   } finally {
-    rmSync(scratch, { force: true });
     releasePlan(parent);
   }
+  // Only once it landed: a refused copy is the only place that edit exists.
+  rmSync(scratch, { force: true });
+  rmSync(record, { force: true });
   return opened.file;
 }
 
@@ -562,13 +583,13 @@ export function submitRefusal(state) {
 }
 
 /// Apply one handoff and leave the primary app copy dirty. Nothing here commits, tags or pushes.
-export function submit({ session, parent, appRoot, from = process.cwd(), now = Date.now() }) {
+export function submit({ session, parent, appRoot, from = process.cwd() }) {
   const tag = sessionTag(session);
   if (!tag) throw new Error('no session named, so there is no handoff to submit');
   const managed = isManaged(from);
   if (managed) throw new Error(submitRefusal({ managed }));
 
-  reserve(parent, tag, now);
+  reserve(parent, tag);
   let journal = [];
   try {
     // A journal left behind is a killed submit. Roll it back, or every check below reads a half-applied tree.
@@ -1045,23 +1066,55 @@ function selfTest() {
     if (!held.includes('is writing the running order')) fails.push('two sessions edited the running order at the same moment');
     if (existsSync(planClaimPath(parent))) fails.push('a running-order edit that threw inside kept the claim');
 
-    // A claim left behind by a killed run is taken over rather than wedging the next pass.
+    // A claim left behind by a killed run is taken over rather than wedging the next pass. On the shipped default, which is what a session actually runs.
     mkdirSync(planClaimPath(parent), { recursive: true });
     writeFileSync(join(planClaimPath(parent), 'held-by.json'), JSON.stringify({ holder: 'killed', at: new Date(Date.now() - PLAN_CLAIM_STALE_MS - 1000).toISOString() }) + '\n');
-    writePlanRow(parent, TWO, status('first', 'Dev', 'Released'), { plans: ownersPlan, waitMs: 0 });
+    writePlanRow(parent, TWO, status('first', 'Dev', 'Released'), { plans: ownersPlan });
     if (!read(order).includes('| first | Released |')) fails.push('a claim a killed run left behind wedged the next session');
 
-    // The copy a skill edits by hand, held from the read to the write back.
+    // The wait ends when the holder gives the claim up, not on a stopwatch: the clock is well past the ten seconds that used to refuse, and the holder lets go on the first pass.
+    mkdirSync(planClaimPath(parent), { recursive: true });
+    writeFileSync(join(planClaimPath(parent), 'held-by.json'), JSON.stringify({ holder: 'the other session', at: new Date().toISOString() }) + '\n');
+    const said = [];
+    let ticked = 0;
+    const started = Date.now();
+    claimPlan(parent, ONE, {
+      clock: () => started + (ticked += 20 * 1000),
+      sleep: () => releasePlan(parent),
+      notify: (message) => said.push(message),
+    });
+    const holds = JSON.parse(read(join(planClaimPath(parent), 'held-by.json')) || '{}');
+    if (holds.holder !== sessionTag(ONE)) fails.push('a session that waited out the holder was refused instead of ending up with the running order');
+    if (said.length !== 1) fails.push(`a waiting session said so ${said.length} times rather than once`);
+    if (!said[0]?.includes('the other session')) fails.push('a waiting session did not say who it was waiting for');
+    releasePlan(parent);
+
+    // The refusal is still there for a caller that asks for one, and says how long it held on.
+    mkdirSync(planClaimPath(parent), { recursive: true });
+    writeFileSync(join(planClaimPath(parent), 'held-by.json'), JSON.stringify({ holder: 'the other session', at: new Date().toISOString() }) + '\n');
+    let atOnce = '';
+    try {
+      claimPlan(parent, TWO, { waitMs: 0, notify: () => {} });
+    } catch (error) {
+      atOnce = error.message;
+    }
+    if (!atOnce.includes('after waiting 0s')) fails.push(`a refusal on a caller's own deadline did not say how long it waited: ${atOnce || 'it was allowed'}`);
+    releasePlan(parent);
+
+    // The copy a skill edits by hand. Nothing is held while it is open — the fingerprint it was taken at is what decides the write.
     const taken = openPlan({ session: ONE, parent, plans: ownersPlan });
     if (read(taken.scratch) !== read(order)) fails.push('the copy taken to edit is not the running order');
+    if (existsSync(planClaimPath(parent))) fails.push('a copy handed back to edit held the claim across the edit, which nothing is running to renew');
     write(taken.scratch, read(taken.scratch).replace('| second | Released |', '| second | Dev |'));
     closePlan({ session: ONE, parent });
     if (!read(order).includes('| second | Dev |')) fails.push('an edited copy did not reach the running order');
     if (existsSync(taken.scratch)) fails.push('a written-back copy was left behind');
+    if (existsSync(planOpenedPath(parent, ONE))) fails.push('a written-back copy left its record behind');
     if (existsSync(planClaimPath(parent))) fails.push('writing a copy back kept the claim');
 
-    // A copy written back over rows it never read takes them with it, so it is refused instead.
-    openPlan({ session: ONE, parent, plans: ownersPlan });
+    // A copy written back over rows it never read takes them with it, so it is refused instead — and kept, because it is the only place that edit exists.
+    const stale = openPlan({ session: ONE, parent, plans: ownersPlan });
+    write(stale.scratch, read(stale.scratch).replace('| second | Dev |', '| second | Ready |'));
     write(order, '| 1 | first | Released |\n| 2 | second | Dev |\n| 3 | third | Ready |\n');
     let moved = '';
     try {
@@ -1070,8 +1123,34 @@ function selfTest() {
       moved = error.message;
     }
     if (!moved.includes('moved while this copy was open')) fails.push('a copy taken before another session\'s row was written back over it');
+    if (!moved.includes(stale.scratch)) fails.push('a refused write back did not say where the copy it refused is');
+    if (!existsSync(stale.scratch)) fails.push('a refused write back deleted the copy it told the session to redo the row from');
     if (!read(order).includes('third')) fails.push('a refused write back took the row another session had just added');
     if (existsSync(planClaimPath(parent))) fails.push('a refused write back kept the claim');
+    rmSync(stale.scratch, { force: true });
+    rmSync(planOpenedPath(parent, ONE), { force: true });
+
+    // Two sessions hold a copy at the same moment: neither blocks the other, the first to write back lands, and the second is refused with its own copy still there to redo the row from.
+    write(order, '| 1 | first | Released |\n| 2 | second | Dev |\n');
+    const bothOne = openPlan({ session: ONE, parent, plans: ownersPlan });
+    const bothTwo = openPlan({ session: TWO, parent, plans: ownersPlan });
+    if (read(bothTwo.scratch) !== read(bothOne.scratch)) fails.push('two sessions opening the running order were given different copies of it');
+    write(bothOne.scratch, read(bothOne.scratch).replace('| first | Released |', '| first | Dev |'));
+    write(bothTwo.scratch, read(bothTwo.scratch).replace('| second | Dev |', '| second | Released |'));
+    closePlan({ session: ONE, parent });
+    if (!read(order).includes('| first | Dev |')) fails.push('the first of two open copies did not reach the running order');
+    let secondBack = '';
+    try {
+      closePlan({ session: TWO, parent });
+    } catch (error) {
+      secondBack = error.message;
+    }
+    if (!secondBack.includes('moved while this copy was open')) fails.push('the second of two open copies was written back over the first one\'s row');
+    if (!existsSync(bothTwo.scratch)) fails.push('the second session\'s copy was deleted rather than kept to redo the row from');
+    if (!read(order).includes('| first | Dev |')) fails.push('a refused write back took the row the other session had just written');
+    rmSync(bothTwo.scratch, { force: true });
+    rmSync(planOpenedPath(parent, TWO), { force: true });
+
     let unheld = '';
     try {
       closePlan({ session: TWO, parent });
@@ -1080,17 +1159,43 @@ function selfTest() {
     }
     if (!unheld.includes('not holding the running order')) fails.push('a session that had taken no copy was allowed to write one back');
 
-    // One handoff through the reservation at a time.
+    // A live reservation waits for its holder rather than refusing the next handoff.
     reserve(parent, ONE);
-    let contended = '';
+    let retries = 0;
+    const waitingNow = Date.now();
+    reserve(parent, TWO, {
+      clock: () => waitingNow,
+      sleep: () => {
+        retries += 1;
+        releaseReservation(parent);
+      },
+    });
+    if (retries !== 1) fails.push('a live primary reservation was not retried once before it was released');
+    if (JSON.parse(readFileSync(join(reservationPath(parent), 'held-by.json'), 'utf8')).holder !== TWO) fails.push('a retried primary reservation did not reach the waiting session');
+    let timedOut = '';
     try {
-      reserve(parent, TWO);
+      reserve(parent, ONE, { waitMs: 0 });
     } catch (error) {
-      contended = error.message;
+      timedOut = error.message;
     }
-    if (!contended.includes('holds the primary reservation')) fails.push('two sessions took the primary reservation at once');
+    if (!timedOut.includes(`${TWO} holds the primary reservation`)) fails.push('a timed-out primary reservation did not name its holder');
+    if (JSON.parse(readFileSync(join(reservationPath(parent), 'held-by.json'), 'utf8')).holder !== TWO) fails.push('a timed-out primary reservation took the live claim');
     releaseReservation(parent);
+
+    // A killed reservation is taken over after the same two-minute window as the running order claim.
+    mkdirSync(reservationPath(parent), { recursive: true });
+    writeFileSync(join(reservationPath(parent), 'held-by.json'), JSON.stringify({ holder: 'killed', at: new Date(Date.now() - RESERVATION_STALE_MS - 1).toISOString() }) + '\n');
     reserve(parent, TWO);
+    if (JSON.parse(readFileSync(join(reservationPath(parent), 'held-by.json'), 'utf8')).holder !== TWO) fails.push('a primary reservation older than two minutes was not taken over');
+    releaseReservation(parent);
+    reserve(parent, ONE);
+    let stillHeld = '';
+    try {
+      reserve(parent, TWO, { waitMs: 0 });
+    } catch (error) {
+      stillHeld = error.message;
+    }
+    if (!stillHeld.includes(`${ONE} holds the primary reservation`)) fails.push('a primary reservation inside two minutes was taken over');
     releaseReservation(parent);
 
     for (const session of [PLAIN, OTHER]) remove({ session, parent });
@@ -1119,7 +1224,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log('agent-workspace: ok (private app copies keeping source, index and build apart while the plan stays the owner\'s; one-commit handoffs that reach no remote; two arriving at the primary copy, an overlap refused, and an interrupted submit put back; two sessions writing the running order one at a time, a killed run\'s claim taken over, and a copy taken before somebody else\'s row refused; a release reading one still copy of the plan tree, a moving tree refused, and the copy gone on every result)');
+  console.log('agent-workspace: ok (private app copies keeping source, index and build apart while the plan stays the owner\'s; one-commit handoffs that reach no remote; two arriving at the primary copy, an overlap refused, and an interrupted submit put back; two sessions writing the running order one at a time, a killed run\'s claim taken over, a session waiting out the run holding it rather than a stopwatch, two copies open at once with nothing held between them, and a copy taken before somebody else\'s row refused and kept; a release reading one still copy of the plan tree, a moving tree refused, and the copy gone on every result)');
 }
 
 function main(args) {
