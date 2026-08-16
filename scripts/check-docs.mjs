@@ -10,12 +10,14 @@
 //
 // And it opens every document link both trees make. Retiring a ticket moves the file and fixes its own links, never the ones pointing at it, so each retirement left a few dead — forty of them by August 2026, twelve inside live tickets.
 //
+// A link crossing between the two repositories is resolved inside the other tree's own root rather than wherever climbing out of this one lands, because only a primary checkout has them side by side: a session's copy is the app alone, so every skill linking into the plan tree opened nothing there. The one thing that cannot be looked up is an app file the owner has and a copy was cut before, so the owner's app is a second place to look and a link found only there is reported rather than failed.
+//
 // It also refuses a live ticket that adds a control and never says what it looks like. See `drawingOwed` for what that question really asks and what it cannot see.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planTree } from './agent-workspace.mjs';
+import { planTree, primaryAppRoot } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const plans = planTree(root);
@@ -123,6 +125,98 @@ function linkSelfTest() {
   return fails;
 }
 
+// Where a link landed, said as a path inside the repository sitting beside this one — or null where it never left its own tree, which is an ordinary dead link and nobody's cut.
+export function crossesTo(at, parent, sibling) {
+  const out = relative(parent, at).split(sep).join('/');
+  return out.startsWith(`${sibling}/`) ? out.slice(sibling.length + 1) : null;
+}
+
+// What one link that failed to open really is. A crossing link is looked for again inside the other tree's own root; `ownersRoot` is the second place a plan document's link into the app may be, and it is null wherever there is no second place — every app-side link, and every link at all in a primary checkout.
+export function crossingLink({ at, parent, sibling, otherRoot, ownersRoot, exists }) {
+  const inner = crossesTo(at, parent, sibling);
+  if (inner === null) return 'gone';
+  if (exists(join(otherRoot, inner))) return 'opens';
+  if (ownersRoot && exists(join(ownersRoot, inner))) return 'waiting';
+  return 'gone';
+}
+
+// One run's failed links, kept apart: what nothing has, and what only the app copy the owner reads has. A run reporting both without naming them apart is one somebody reads as clean.
+export function classifyLinks(links, verdict) {
+  const dead = [];
+  const waiting = [];
+  for (const link of links) {
+    const said = verdict(link);
+    if (said === 'opens') continue;
+    (said === 'waiting' ? waiting : dead).push(link);
+  }
+  return { dead, waiting };
+}
+
+// The two trees as three roots: the owner's pair, and the copy a session is checking. Written out so the cases below read as the shapes they are.
+const OWNERS_APP = resolve('/leaftext/app');
+const OWNERS_PLANS = resolve('/leaftext/docs');
+const SESSION_APP = resolve('/ws/leaftext/app');
+
+// Each row: what it proves, where the ordinary resolution landed, which roots to ask, what is on the disk, and the verdict.
+const CROSSING_CASES = [
+  [
+    'a link out of the app into the plan tree opens against the plan tree the check reads',
+    { at: resolve(SESSION_APP, '..', 'docs', 'GLOSSARY.md'), parent: resolve(SESSION_APP, '..'), sibling: 'docs', otherRoot: OWNERS_PLANS, ownersRoot: null },
+    [join(OWNERS_PLANS, 'GLOSSARY.md')],
+    'opens',
+  ],
+  [
+    'a link out of the plan tree into the app opens against the checkout being checked',
+    { at: resolve(OWNERS_PLANS, '..', 'app', 'scripts', 'here.mjs'), parent: resolve(OWNERS_PLANS, '..'), sibling: 'app', otherRoot: SESSION_APP, ownersRoot: OWNERS_APP },
+    [join(SESSION_APP, 'scripts', 'here.mjs')],
+    'opens',
+  ],
+  [
+    'a dead link inside one tree is nobody\'s cut and still fails',
+    { at: resolve(SESSION_APP, 'docs', 'gone.md'), parent: resolve(SESSION_APP, '..'), sibling: 'docs', otherRoot: OWNERS_PLANS, ownersRoot: null },
+    [],
+    'gone',
+  ],
+  [
+    'a link into an app file only the copy the owner reads has is held rather than failed',
+    { at: resolve(OWNERS_PLANS, '..', 'app', 'scripts', 'new.mjs'), parent: resolve(OWNERS_PLANS, '..'), sibling: 'app', otherRoot: SESSION_APP, ownersRoot: OWNERS_APP },
+    [join(OWNERS_APP, 'scripts', 'new.mjs')],
+    'waiting',
+  ],
+  [
+    'the same link in a primary checkout, where both app roots are one folder, still fails',
+    { at: resolve(OWNERS_PLANS, '..', 'app', 'scripts', 'new.mjs'), parent: resolve(OWNERS_PLANS, '..'), sibling: 'app', otherRoot: OWNERS_APP, ownersRoot: null },
+    [],
+    'gone',
+  ],
+  [
+    'a link into an app file nobody has fails in a session too',
+    { at: resolve(OWNERS_PLANS, '..', 'app', 'scripts', 'never.mjs'), parent: resolve(OWNERS_PLANS, '..'), sibling: 'app', otherRoot: SESSION_APP, ownersRoot: OWNERS_APP },
+    [],
+    'gone',
+  ],
+];
+
+function crossingSelfTest() {
+  const fails = [];
+  for (const [name, link, disk, want] of CROSSING_CASES) {
+    const got = crossingLink({ ...link, exists: (path) => disk.includes(path) });
+    if (got !== want) fails.push(`${name}: got ${got}, want ${want}`);
+  }
+  // A held link and a dead one arriving in the same run is the case a reader has to be able to tell apart, so it is asked directly rather than read off the rows above.
+  const held = CROSSING_CASES[3];
+  const nowhere = CROSSING_CASES[5];
+  const { dead, waiting } = classifyLinks(
+    [{ name: 'held', ...held[1] }, { name: 'nowhere', ...nowhere[1] }],
+    (link) => crossingLink({ ...link, exists: (path) => held[2].includes(path) }),
+  );
+  const names = (links) => links.map((link) => link.name).join();
+  if (names(waiting) !== 'held' || names(dead) !== 'nowhere') {
+    fails.push(`a run carrying both kinds did not keep them apart: waiting [${names(waiting)}], dead [${names(dead)}]`);
+  }
+  return fails;
+}
+
 const DONE_REPOINTS_ADVICE = 'and /done repoints the links pointing at the ticket it moves, so this means that step was skipped; repoint it.';
 const DONE_REPOINTS_STEP = 'Take the links pointing *at* it with it: search both trees for its file name and repoint every one';
 
@@ -133,9 +227,9 @@ function adviceSelfTest() {
     : [`${DONE_REPOINTS_ADVICE}  ->  .agents/skills/done/SKILL.md no longer says it repoints every link pointing at the ticket it moves`];
 }
 
-const selfTestFails = linkSelfTest();
+const selfTestFails = [...linkSelfTest(), ...crossingSelfTest()];
 if (selfTestFails.length) {
-  console.error('links: the code strip is wrong, so nothing was read:');
+  console.error('links: the code strip or the crossing rule is wrong, so nothing was read:');
   for (const line of selfTestFails) console.error(`  ${line}`);
   process.exit(1);
 }
@@ -310,25 +404,49 @@ if (finished.length) {
   process.exit(1);
 }
 
+// In a primary checkout the owner's app is this checkout, so there is no second place to look and nothing can ever be held there.
+const ownersApp = resolve(primaryAppRoot(root));
+const ownersAppRoot = ownersApp === resolve(root) ? null : ownersApp;
+
 let opened = 0;
-const dead = [];
+const failed = [];
 for (const [base, file, shown] of scanned) {
   const from = join(base, dirname(file));
+  const app = base === root;
   for (const { line, target } of deadLinks(readFileSync(join(base, file), 'utf8'), (t) => {
     opened++;
     return existsSync(resolve(from, decodeURIComponent(t)));
   })) {
-    dead.push(`${shown}:${line}  ->  ${target}`);
+    failed.push({
+      shown: `${shown}:${line}  ->  ${target}`,
+      at: resolve(from, decodeURIComponent(target)),
+      parent: resolve(base, '..'),
+      // The folder each repository sits under beside the other, read off the roots rather than written down twice.
+      sibling: app ? basename(plans) : basename(root),
+      otherRoot: app ? plans : root,
+      ownersRoot: app ? null : ownersAppRoot,
+    });
   }
+}
+
+const { dead, waiting } = classifyLinks(failed, (link) => crossingLink({ ...link, exists: existsSync }));
+
+if (waiting.length) {
+  console.log('these links open in the app copy the owner reads and not in this one, which was cut before that file landed:');
+  for (const link of waiting) console.log(`  ${link.shown}`);
+  console.log(`  Fix them in ${ownersApp}; this session leaves them alone.`);
 }
 
 if (dead.length) {
   console.error('these links open nothing:');
-  for (const line of dead) console.error(`  ${line}`);
+  for (const link of dead) console.error(`  ${link.shown}`);
   console.error('point each at where the file is now. A ticket that shipped moved into ../docs/done/,');
   console.error(DONE_REPOINTS_ADVICE);
   process.exit(1);
 }
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live ticket that adds a control saying what it looks like, ${opened} document links all opening something`);
+const links = waiting.length
+  ? `${opened} document links, ${waiting.length} waiting on the app copy the owner reads and the rest opening something`
+  : `${opened} document links all opening something`;
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live ticket that adds a control saying what it looks like, ${links}`);
