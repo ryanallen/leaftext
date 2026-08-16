@@ -35,7 +35,7 @@ window.leafSetState = (state) => {
     if (pendingSearchJump) {
       const jump = pendingSearchJump;
       pendingSearchJump = null;
-      // Land on the line the match is on, not the heading above it — a hit near the foot of a long section used to open at the top of that section. The heading is the fallback, for a document whose source the page does not hold (only Markdown carries block ranges).
+      // Land on the line the match is on, not the heading above it, or a hit near the foot of a long section opens at the top of that section. The heading is the fallback, for a document whose source the page does not hold (only Markdown carries block ranges).
       const landed =
         activeDocumentPath() === jump.path &&
         jump.line > 1 &&

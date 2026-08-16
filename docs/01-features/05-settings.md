@@ -36,7 +36,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 
 | File | Purpose |
 | --- | --- |
-| `{config_dir}/settings.json` | Preferences and the tabs to reopen |
+| `{config_dir}/settings.json` | Preferences, the tabs to reopen, and any [unsaved edits](07-editing.md#save) the window was closed on |
 | `{config_dir}/recent-files.json` | Last 8 opened files |
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/webview2` | WebView2 data |
@@ -54,7 +54,7 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
 {
   "session": {
     "tabs": [
-      { "path": "/Users/alice/notes/daily.md", "title": "Daily notes", "code_view": false, "anchor": { "section": "tasks", "block": 1, "offsetY": -18.0 }, "saved_code_scroll": null }
+      { "path": "/Users/alice/notes/daily.md", "title": "Daily notes", "code_view": false, "anchor": { "section": "tasks", "block": 1, "offsetY": -18.0 }, "saved_code_scroll": null, "unsaved_text": null, "saved_text": null }
     ],
     "active": 0
   },
@@ -173,6 +173,13 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Saved as `window_width` and `window_height` (in logical, DPI-independent pixels) plus `window_maximized`
 - The size is stored separately from the maximized state, so un-maximizing returns to the windowed dimensions rather than the full-screen ones
 - Window position is not restored — only the size and maximized state
+
+### Unsaved edits
+
+- Closing the window with [unsaved edits](07-editing.md#save) writes them here rather than discarding them, and the next launch puts them back in their [tabs](02-navigation.md#tabs) with the dot lit
+- Saved on the tab as `unsaved_text` (the words as they stood) and `saved_text` (the same document as it was last written to disk), both `null` for a tab with nothing unsaved
+- The second is what the next launch compares the file against: matched, the words go back; changed underneath, the file wins and both are dropped
+- Only closing writes them. A window left open saves nothing of what you have typed, and what has been typed in the last fraction of a second before the close is not carried
 
 ### First-launch bubble
 

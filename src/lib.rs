@@ -170,7 +170,7 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
 
 /// The whole front-end, joined and served as `app.js` over the asset protocol.
 ///
-/// The page goes to WebView2 as one string with a ~2 MB ceiling, and the script was 505,232 of its 576,693 characters. Served instead, the page is a skeleton — and because no fragment carries a placeholder any more, this is a join and nothing else: no substitution pass, and one file on the wire rather than two.
+/// The page goes to WebView2 as one string with a ~2 MB ceiling, and the script was 505,232 of its 576,693 characters. Served instead, the page is a skeleton — and because no fragment carries a placeholder, this is a join and nothing else: no substitution pass, and one file on the wire rather than two.
 pub fn app_shell_script() -> &'static str {
     static SCRIPT: OnceLock<String> = OnceLock::new();
     SCRIPT.get_or_init(|| APP_SHELL_SCRIPT_PARTS.concat())

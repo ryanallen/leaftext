@@ -191,7 +191,7 @@ pub unsafe extern "C" fn leaf_document_script(
     };
     let path = borrow_str(path_ptr, path_len).unwrap_or("document.md");
     let document = opened_document_from_source_with_host(source, Path::new(path), &PageHost);
-    // The whole workspace, not just the document: the tab strip and the floating toolbar are drawn off the tabs, so a document sent without them arrives in a window with no chrome around it. Title first, then path — the order the page reads a tab in. A document handed over as text has no buffer behind it, so there is nothing unsaved and nothing to take back.
+    // The whole workspace, not just the document: the tab strip and the floating toolbar are drawn off the tabs, so a document sent without them arrives in a window with no chrome around it. Handed over as text it has no buffer behind it, so there is nothing unsaved and nothing to take back.
     let tabs = vec![leaftext::TabSummary {
         title: leaftext::tab_title_from_path(Path::new(path)),
         path: path.to_string(),

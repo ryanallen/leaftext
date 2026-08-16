@@ -318,7 +318,7 @@ The code view is a real editor surface: unlock it with the [padlock](#the-padloc
 - Color follows your typing: the source is tokenized as you go, so a construct takes its color the moment you finish typing it.
 - A multi-megabyte file types and scrolls like a short one, because only the lines on screen are ever drawn. Earlier versions carried a hand-built surface to manage that; the editor does it now.
 - What reaches the host is the edit, not the file: the offset, how much was removed, and what was typed. Sending a multi-megabyte buffer on every pause in typing cost a fifth of a second of it. The message carries the buffer's new length too, so if the host's copy ever disagreed it would ask for the whole text again rather than splice into a buffer it no longer understood.
-- Each tab keeps its own edit buffer: switching tabs or toggling back to the reading view never loses unsaved work.
+- Each tab keeps its own edit buffer: switching tabs, toggling back to the reading view, or closing the window never loses unsaved work. Closing carries the words into the [saved session](05-settings.md#example) and the next launch puts them back, with one press of undo standing between them and the file as you last saved it.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.
 
 ### Pinned headings
@@ -357,6 +357,7 @@ Saving is always explicit.
 - With no unsaved changes there is no save control at all. From your first keystroke, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-floating-toolbar) and the tab shows a dot beside its name — typing in the page counts, with nothing clicked out of. Take that typing back to where it started and both go out again.
 - Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. Whatever you are typing goes in first, so what is written is the words on screen. The button and dot clear on success.
 - A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything.
+- Closing the window does not save, and does not throw the edits away either: they travel in the [saved session](05-settings.md#example) and are back, with the dot, at the next launch. Only the close carries them — a window left open writes nothing of what you have typed.
 - A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
 - A file is written in the [encoding it was read in](01-rendering.md#file-encodings). A UTF-16 document stays UTF-16; a file with no byte order mark does not gain one.
 

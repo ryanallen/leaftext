@@ -7704,7 +7704,7 @@ if (booted) {
     if (folder.includes('file-type-badge')) throw new Error(`a folder gained a file type badge: ${folder}`);
   });
 
-  // The page's own record of what is unsaved is empty at every launch, so a tab whose edits the last close carried out of the window would come back with no dot and no way to take the one step it holds. The host says both in the tab's own payload; the page may only ever believe it, never disbelieve it, because typing since the last pause has not reached the host yet.
+  // The page's own record of what is unsaved is empty at every launch, so a restored tab's dot and its one undo step can only come from the tab's own payload — and the page may believe it, never disbelieve it, since typing since the last pause has not reached the host yet.
   check('a tab the host says is unsaved comes back with its dot and its Undo', () => {
     const path = 'C:\\Notes\\restored.md';
     vm.runInContext('dirtyByPath.clear(); undoableByPath.clear();', booted);
