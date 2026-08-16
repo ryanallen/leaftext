@@ -44,7 +44,7 @@ The first row that applies wins. Size never moves a number on its own: the first
 
 **Delete every other tag, here and on GitHub, before making the new one.** Tags are pruned by the build itself: after it publishes, it deletes every older release along with its tag, so a tag left here comes back the moment anything is pushed with `--tags`. Let four pile up and the next push carries four, and **GitHub creates no push event at all for a push carrying more than three tags** — so no build starts, no installer is published, and the tag sits on GitHub looking shipped. That is how v0.1.502 went out with nothing to download.
 
-So the order is: delete the old tags, make the new one, push `main`, then push the tag on its own.
+So the order is: check, delete the old tags, commit, make the new one, push `main`, then push the tag on its own — and all of it is one command, `just release <version>`, which holds one still copy of the plan tree from the check to the last push. **The check comes before the cleanup on purpose.** The plan tree is shared, so another session can write a ticket, a row or a skill copy while the check runs; the release reads a copy taken before it started, and a check that stops anyway leaves the last released tag exactly where it was. When it was two commands with the cleanup first, a stopped check took the last tag with it and left nothing shipped-looking to fall back on. A failure *after* the cleanup is a release that failed — say that, and never call it a plan race.
 
 ## Confirm the build started
 

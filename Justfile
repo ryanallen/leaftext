@@ -152,6 +152,12 @@ check-scratch-names:
 check-workspace:
     node scripts/agent-workspace.mjs --check
 
+# Self-test the public release on a fixture that runs nothing: the order it goes in, and
+# what a failed gate, a plan tree that will not hold still, a session's copy, a dirty
+# tree or a wrong version never reaches. Offline, and it touches no repository.
+check-release:
+    node --experimental-strip-types scripts/prepare-release.mts --check
+
 # Fail if a check the Justfile defines is not in `just verify` — a rule with no check
 # in the suite holds only while someone remembers it.
 check-verify:
@@ -336,9 +342,10 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-workspace check-verify check-justfile-quotes check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-workspace check-release check-verify check-justfile-quotes check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
-# Cut a release: commit, tag, and push so CI builds all platforms.
+# Cut a release: one command from the gate to the push, all of it inside one still copy of
+# the plan tree. It was two — check and tag, then push after that process had exited — and
+# the push had no copy behind it at all.
 release version:
     node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit
-    git push origin HEAD --follow-tags

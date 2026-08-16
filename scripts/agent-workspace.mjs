@@ -19,7 +19,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -102,9 +102,13 @@ export function primaryAppRoot(dir = here) {
   }
 }
 
+/// What a public release points the plan-reading checks at instead of the live tree. Set on the gate's own child processes and nothing else, so an ordinary run always answers the owner's folder.
+export const PLAN_ROOT_ENV = 'LEAFTEXT_PLAN_ROOT';
+
 /// Where the plan tree is, for a command running in either copy: the owner's, always. It is what the six checks that read `../docs` ask, because beside a session's copy there is nothing there to read.
 export function planTree(dir = here) {
-  return join(primaryAppRoot(dir), '..', 'docs');
+  const held = (process.env[PLAN_ROOT_ENV] || '').trim();
+  return held || join(primaryAppRoot(dir), '..', 'docs');
 }
 
 /// Every path a checkout has work in. Read raw: trimming eats the first line's status column and cuts a letter off the path.
@@ -448,6 +452,79 @@ export function closePlan({ session, parent }) {
   return opened.file;
 }
 
+// ---------------------------------------------------------------------------
+// One still copy of the plan tree, for a public release to check itself against.
+// ---------------------------------------------------------------------------
+
+/// Every plan file and what it held. The claim only covers the running order, so a ticket, a README row or a skill copy is written straight into the shared tree — this is how a release sees that happen instead of failing on half of somebody else's edit.
+export function planManifest(root) {
+  const found = [];
+  const walk = (dir, prefix) => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of [...entries].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      if (entry.name === '.git') continue;
+      const full = join(dir, entry.name);
+      const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(full, path);
+      else {
+        try {
+          found.push(`${path} ${createHash('sha256').update(readFileSync(full)).digest('hex')}`);
+        } catch {
+          // A file that vanished between the listing and the read is a moving tree, which is what the caller compares for.
+          found.push(`${path} gone`);
+        }
+      }
+    }
+  };
+  walk(root, '');
+  return found.join('\n');
+}
+
+/// How many times a moving tree is copied again before the release gives up.
+export const SNAPSHOT_ATTEMPTS = 3;
+
+/// A still copy of the plan tree, in a folder of this run's own. The manifest is taken before and after the copy: a tree that changed while it was being read is copied again rather than handed to the gate, because half of somebody else's edit is not a state anybody wrote.
+export function snapshotPlanTree({ plans = planTree(), attempts = SNAPSHOT_ATTEMPTS, copy = null } = {}) {
+  const take = copy || ((from, to) => cpSync(from, to, { recursive: true }));
+  for (let attempt = 1; ; attempt += 1) {
+    const root = mkdtempSync(join(tmpdir(), `leaf-plan-${process.pid}-`));
+    const before = planManifest(plans);
+    try {
+      take(plans, root);
+    } catch (error) {
+      rmSync(root, { recursive: true, force: true });
+      throw error;
+    }
+    if (planManifest(plans) === before) return { root, plans };
+    rmSync(root, { recursive: true, force: true });
+    if (attempt >= attempts) throw new Error(`the plan tree changed every time it was copied (${attempts} tries), so there is no one state to check this release against — let the other session finish its edit and release again`);
+  }
+}
+
+/// Run something against a still copy of the plan tree and take the copy down afterwards, whichever way it ends. The signal handlers are for a run somebody stops: without them a killed release leaves a whole plan tree in the temp folder.
+export function withPlanSnapshot(fn, options = {}) {
+  const snapshot = snapshotPlanTree(options);
+  const drop = () => rmSync(snapshot.root, { recursive: true, force: true });
+  const stopped = () => {
+    drop();
+    process.exit(130);
+  };
+  process.once('SIGINT', stopped);
+  process.once('SIGTERM', stopped);
+  try {
+    return fn(snapshot);
+  } finally {
+    process.removeListener('SIGINT', stopped);
+    process.removeListener('SIGTERM', stopped);
+    drop();
+  }
+}
+
 function bytesAt(path) {
   try {
     return readFileSync(path).toString('base64');
@@ -625,24 +702,124 @@ function refusalCases() {
   return fails;
 }
 
-/// `scripts/prepare-release.mts` must keep refusing a session's copy through the reader tested above. A second implementation there would pass its own check and let a copy tag.
+/// `scripts/prepare-release.mts` must keep reading a session's copy and the plan snapshot through the readers tested above. A second implementation there would pass its own check and let a copy tag, or gate against the live plan tree. The order the release runs in is proved by its own self-test, on a fixture host that runs nothing.
 function publicReleaseGuard() {
   const fails = [];
   const text = readFileSync(join(here, 'scripts', 'prepare-release.mts'), 'utf8');
-  if (!/import \{[^}]*\bisManaged\b[^}]*\} from "\.\/agent-workspace\.mjs"/.test(text)) fails.push('the public release path does not read a managed workspace with this helper');
-  const asks = text.indexOf('assertPrimaryCheckout();');
-  const checks = text.indexOf('runRequired("just", ["verify"]);');
-  const commits = text.indexOf('runRequired("git", commitArgs)');
-  if (asks < 0) fails.push('the public release path never asks whether it is in a managed workspace');
-  else if (commits < 0 || asks > commits) fails.push('the public release path asks about the workspace after it has already committed');
-  // A handoff arrives unchecked, so the suite runs before anything is tagged.
-  if (checks < 0) fails.push('the public release path no longer runs the check suite');
-  else if (commits < 0 || checks > commits) fails.push('the public release path checks after it has already committed');
+  const imports = /import \{([^}]*)\} from "\.\/agent-workspace\.mjs"/.exec(text);
+  for (const name of ['isManaged', 'withPlanSnapshot', 'PLAN_ROOT_ENV']) {
+    if (!imports || !imports[1].includes(name)) fails.push(`the public release path does not read ${name} from this helper`);
+  }
+  if (!text.includes('assertPrimaryCheckout(host)')) fails.push('the public release path never asks whether it is in a managed workspace');
+  if (!text.includes('host.withSnapshot(')) fails.push('the public release path no longer checks itself against a still copy of the plan tree');
+  if (!/\[PLAN_ROOT_ENV\]: root/.test(text)) fails.push('the public release path does not point the check suite at the plan copy it made');
+  return fails;
+}
+
+/// The six checks that read the plan tree have to ask this helper where it is, or a release pointing at a still copy hands it to some of them and not the rest.
+const PLAN_READERS = ['check-ascii-art.mjs', 'check-docs.mjs', 'check-learn-snapshots.mjs', 'check-plan.mjs', 'check-spelling.mjs', 'check-wrapping.mjs'];
+
+function planSnapshotCases() {
+  const fails = [];
+
+  for (const reader of PLAN_READERS) {
+    const text = readFileSync(join(here, 'scripts', reader), 'utf8');
+    const imports = /import \{([^}]*)\} from '\.\/agent-workspace\.mjs'/.exec(text);
+    if (!imports || !imports[1].includes('planTree')) fails.push(`${reader} does not ask this helper where the plan tree is, so a release cannot point it at a still copy`);
+  }
+
+  // The override the release sets, and nothing else, moves the answer.
+  const was = process.env[PLAN_ROOT_ENV];
+  try {
+    delete process.env[PLAN_ROOT_ENV];
+    const live = planTree(here);
+    process.env[PLAN_ROOT_ENV] = join(tmpdir(), `a-still-copy-${process.pid}`);
+    if (planTree(here) !== join(tmpdir(), `a-still-copy-${process.pid}`)) fails.push('a release pointing the checks at a still copy of the plan tree was ignored');
+    delete process.env[PLAN_ROOT_ENV];
+    if (planTree(here) !== live) fails.push('the plan tree stayed on the release override after it was taken away');
+  } finally {
+    if (was === undefined) delete process.env[PLAN_ROOT_ENV];
+    else process.env[PLAN_ROOT_ENV] = was;
+  }
+
+  // This run's own folder: two suites at once must not share fixtures.
+  const home = mkdtempSync(join(tmpdir(), `leaf-plan-check-${process.pid}-`));
+  const plans = join(home, 'docs');
+  const taken = [];
+  try {
+    write(join(plans, 'PLAN.md'), '# one\n');
+    write(join(plans, 'refactor', 'workflow', 'a.md'), '# a\n');
+
+    // A tree holding still is copied whole, and the copy is bytes rather than a listing.
+    const still = snapshotPlanTree({ plans });
+    taken.push(still.root);
+    if (read(join(still.root, 'PLAN.md')) !== '# one\n') fails.push('the still copy did not carry the running order');
+    if (read(join(still.root, 'refactor', 'workflow', 'a.md')) !== '# a\n') fails.push('the still copy did not carry a ticket in a subject folder');
+    if (planManifest(still.root) !== planManifest(plans)) fails.push('the still copy and the plan tree do not hold the same bytes');
+    rmSync(still.root, { recursive: true, force: true });
+
+    // A tree written to on every attempt is refused rather than handed to the gate: half of somebody else's edit is not a state anybody wrote.
+    let writes = 0;
+    let moving = '';
+    try {
+      snapshotPlanTree({
+        plans,
+        copy: (from, to) => {
+          writes += 1;
+          write(join(from, 'PLAN.md'), `# edit ${writes}\n`);
+          cpSync(from, to, { recursive: true });
+        },
+      });
+    } catch (error) {
+      moving = error.message;
+    }
+    if (!moving.includes('changed every time it was copied')) fails.push(`a plan tree written to while it was copied was still handed to the gate: ${moving || 'it was allowed'}`);
+    if (writes !== SNAPSHOT_ATTEMPTS) fails.push(`a moving plan tree was copied ${writes} times rather than ${SNAPSHOT_ATTEMPTS}`);
+
+    // The other session finishes: the next attempt settles, and what the gate reads is the finished state.
+    let attempts = 0;
+    const settled = snapshotPlanTree({
+      plans,
+      copy: (from, to) => {
+        attempts += 1;
+        if (attempts === 1) write(join(from, 'PLAN.md'), '# the other session\n');
+        cpSync(from, to, { recursive: true });
+      },
+    });
+    taken.push(settled.root);
+    if (attempts !== 2) fails.push(`a plan tree that settled was copied ${attempts} times rather than twice`);
+    if (read(join(settled.root, 'PLAN.md')) !== '# the other session\n') fails.push('the still copy does not hold the plan state the other session finished writing');
+    rmSync(settled.root, { recursive: true, force: true });
+
+    // The copy goes on every result, because a release that fails must not leave a plan tree in the temp folder.
+    let held = '';
+    withPlanSnapshot((snapshot) => {
+      held = snapshot.root;
+    }, { plans });
+    if (!held || existsSync(held)) fails.push('a finished release left its copy of the plan tree on disk');
+    let threw = '';
+    let heldOnThrow = '';
+    try {
+      withPlanSnapshot((snapshot) => {
+        heldOnThrow = snapshot.root;
+        throw new Error('the gate failed');
+      }, { plans });
+    } catch (error) {
+      threw = error.message;
+    }
+    if (threw !== 'the gate failed') fails.push('a failing gate did not come back out of the plan copy');
+    if (!heldOnThrow || existsSync(heldOnThrow)) fails.push('a failed release left its copy of the plan tree on disk');
+  } catch (error) {
+    fails.push(`plan snapshot: ${error.message}`);
+  } finally {
+    for (const root of taken) rmSync(root, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
   return fails;
 }
 
 function selfTest() {
-  const fails = [...refusalCases(), ...publicReleaseGuard()];
+  const fails = [...refusalCases(), ...publicReleaseGuard(), ...planSnapshotCases()];
   // This run's own folder: two suites at once must not share fixtures.
   const home = mkdtempSync(join(tmpdir(), `leaf-workspace-${process.pid}-`));
   const parent = join(home, 'private');
@@ -942,7 +1119,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log('agent-workspace: ok (private app copies keeping source, index and build apart while the plan stays the owner\'s; one-commit handoffs that reach no remote; two arriving at the primary copy, an overlap refused, and an interrupted submit put back; two sessions writing the running order one at a time, a killed run\'s claim taken over, and a copy taken before somebody else\'s row refused)');
+  console.log('agent-workspace: ok (private app copies keeping source, index and build apart while the plan stays the owner\'s; one-commit handoffs that reach no remote; two arriving at the primary copy, an overlap refused, and an interrupted submit put back; two sessions writing the running order one at a time, a killed run\'s claim taken over, and a copy taken before somebody else\'s row refused; a release reading one still copy of the plan tree, a moving tree refused, and the copy gone on every result)');
 }
 
 function main(args) {
