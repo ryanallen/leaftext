@@ -597,6 +597,53 @@ export function restoreFrom(entries) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// The pending-release receipt: what the submits since the last release left in the primary copy.
+// ---------------------------------------------------------------------------
+
+/// Where those bytes are kept — outside every repository, beside the reservation the submits writing it already take one at a time. The journal answers a different question and does not outlive the patch it protects: it is gone the moment one lands, so a release has nothing to read.
+export function pendingReleasePath(parent) {
+  return join(parent, '.pending-release.json');
+}
+
+/// The receipt, or an empty one. `null` at a path is a file the handoff took away, which is a state a release has to carry as much as a rewritten file is.
+export function readPendingRelease(parent) {
+  try {
+    const held = JSON.parse(readFileSync(pendingReleasePath(parent), 'utf8'));
+    return { root: held.root || '', paths: held.paths || {} };
+  } catch {
+    return { root: '', paths: {} };
+  }
+}
+
+/// Add what a finished submit left. The bytes are read back off the tree rather than taken from the patch, so the receipt says what is actually there; a receipt naming another checkout is replaced rather than added to.
+export function recordPendingRelease(parent, appRoot, paths) {
+  const root = resolve(appRoot);
+  const held = readPendingRelease(parent);
+  const kept = held.root && resolve(held.root) === root ? held.paths : {};
+  for (const path of paths) kept[path] = bytesAt(join(root, path));
+  const receipt = { root, paths: kept };
+  mkdirSync(parent, { recursive: true });
+  writeFileSync(pendingReleasePath(parent), JSON.stringify(receipt, null, 2) + '\n');
+  return receipt;
+}
+
+/// Consumed, not merely read: only a release that has committed those bytes clears it.
+export function clearPendingRelease(parent) {
+  rmSync(pendingReleasePath(parent), { force: true });
+}
+
+/// Why the work sitting in the primary copy may not be released, or ''. A path list alone would not answer this — a handed-over path edited afterwards keeps its name — so every dirty path has to be one a submit left, at the bytes it left there.
+export function pendingReleaseRefusal({ root, dirty, receipt, bytes = null }) {
+  const at = bytes || ((path) => bytesAt(join(root, path)));
+  const known = receipt.root && resolve(receipt.root) === resolve(root) ? receipt.paths : {};
+  for (const path of dirty) {
+    if (!(path in known)) return `${path} has work in it that no handoff left, so a release would carry work nobody handed over — put it back or hand it over first`;
+    if (at(path) !== known[path]) return `${path} was changed after the handoff that put it there, so a release would carry an edit nobody handed over — put it back or hand it over again`;
+  }
+  return '';
+}
+
 /// Why a handoff may not be applied, or ''. Pure, so a stale base and an overlap are proved cheaply.
 export function submitRefusal(state) {
   const { managed, handoff, appHead, appDirty = [] } = state;
@@ -640,6 +687,8 @@ export function submit({ session, parent, appRoot, from = process.cwd() }) {
     }
 
     rmSync(journalPath(parent), { force: true });
+    // Only once the patch has landed: a refused or killed submit adds nothing, so the receipt never claims bytes the tree does not hold.
+    recordPendingRelease(parent, appRoot, handoff.appPaths);
     return handoff;
   } catch (error) {
     restoreFrom(journal);
@@ -754,10 +803,12 @@ function publicReleaseGuard() {
   const fails = [];
   const text = readFileSync(join(here, 'scripts', 'prepare-release.mts'), 'utf8');
   const imports = /import \{([^}]*)\} from "\.\/agent-workspace\.mjs"/.exec(text);
-  for (const name of ['isManaged', 'withPlanSnapshot', 'PLAN_ROOT_ENV']) {
+  for (const name of ['isManaged', 'withPlanSnapshot', 'PLAN_ROOT_ENV', 'readPendingRelease', 'pendingReleaseRefusal', 'clearPendingRelease', 'reserve']) {
     if (!imports || !imports[1].includes(name)) fails.push(`the public release path does not read ${name} from this helper`);
   }
   if (!text.includes('assertPrimaryCheckout(host)')) fails.push('the public release path never asks whether it is in a managed workspace');
+  if (!text.includes('assertOnlyHandedOverWork(host)')) fails.push('the public release path never checks the work in the tree against the receipt a submit left');
+  if (!text.includes('host.holdPrimary(')) fails.push('the public release path does not hold the primary reservation, so a handoff can land while it is checking the tree');
   if (!text.includes('host.withSnapshot(')) fails.push('the public release path no longer checks itself against a still copy of the plan tree');
   if (!/\[PLAN_ROOT_ENV\]: root/.test(text)) fails.push('the public release path does not point the check suite at the plan copy it made');
   return fails;
@@ -867,6 +918,9 @@ function planSnapshotCases() {
 
 function selfTest() {
   const fails = [...refusalCases(), ...publicReleaseGuard(), ...planSnapshotCases()];
+  // Every fixture below builds its own plan tree and asks where the plan tree is to prove a copy answers the owner's. A release runs the suite with that answer pointed at its still copy, so the override goes for the whole run and comes back afterwards — without it four claims fail inside a release, on trees nobody in it touched.
+  const overridden = process.env[PLAN_ROOT_ENV];
+  delete process.env[PLAN_ROOT_ENV];
   // This run's own folder: two suites at once must not share fixtures.
   const home = mkdtempSync(join(tmpdir(), `leaf-workspace-${process.pid}-`));
   const parent = join(home, 'private');
@@ -1054,10 +1108,18 @@ function selfTest() {
     if (baseOf(appRoot) !== one.appBase) fails.push('a submit committed in the primary app copy');
     if (refsIn(appRemote).join(' ') !== appRefsBefore.join(' ')) fails.push('a submit pushed to the app remote');
 
-    // Two handoffs on the same file: the second must change nothing.
+    // The receipt: what a release may commit. Two handoffs accumulate rather than the second replacing the first, and the bytes are the ones actually on disk.
+    const receipt = readPendingRelease(parent);
+    if (resolve(receipt.root) !== resolve(appRoot)) fails.push('the pending-release receipt does not name the app copy the handoffs were applied to');
+    if (!('src/three.rs' in receipt.paths) || !('src/four.rs' in receipt.paths)) fails.push(`the pending-release receipt lost a handoff's paths: ${Object.keys(receipt.paths).join(', ') || 'it is empty'}`);
+    if (receipt.paths['src/three.rs'] !== Buffer.from('// three\n').toString('base64')) fails.push('the pending-release receipt does not hold the bytes the first handoff left');
+    if (pendingReleaseRefusal({ root: appRoot, dirty: dirtyPaths(appRoot), receipt })) fails.push(`a release was refused the work two submits had just handed it: ${pendingReleaseRefusal({ root: appRoot, dirty: dirtyPaths(appRoot), receipt })}`);
+
+    // Two handoffs on the same file: the second must change nothing, the receipt included.
     submit({ session: ONE, parent, appRoot, from: appRoot });
     const watched = ['src/lib.rs', 'src/three.rs', 'src/four.rs'].map((p) => join(appRoot, p));
     const before = JSON.stringify(watched.map(read));
+    const receiptBefore = read(pendingReleasePath(parent));
     let overlap = '';
     try {
       submit({ session: TWO, parent, appRoot, from: appRoot });
@@ -1068,6 +1130,7 @@ function selfTest() {
     if (JSON.stringify(watched.map(read)) !== before) fails.push('a refused handoff still changed the primary copy');
     if (existsSync(reservationPath(parent))) fails.push('a refused submit kept the primary reservation');
     if (existsSync(journalPath(parent))) fails.push('a refused submit left its recovery journal behind');
+    if (read(pendingReleasePath(parent)) !== receiptBefore) fails.push('a refused submit still wrote itself into the pending-release receipt');
 
     // A submit killed halfway: the next one reads its journal and puts the root back.
     write(join(appRoot, 'src', 'three.rs'), '// half-written\n');
@@ -1088,6 +1151,35 @@ function selfTest() {
     if (existsSync(join(appRoot, 'src', 'never-asked-for.rs'))) fails.push('an interrupted submit left behind a file it had added');
     if (!afterKill.includes('overlaps work already sitting')) fails.push('the submit after a recovery did not read the root it had just put back');
     if (existsSync(reservationPath(parent))) fails.push('a stale reservation was not taken over and released');
+    if (read(pendingReleasePath(parent)) !== receiptBefore) fails.push('an interrupted submit changed the pending-release receipt');
+
+    // ---- What a public release may commit. ----
+    // Loose work at a path no handoff left is the whole reason the old clean-tree refusal existed, and it still stops the release.
+    write(join(appRoot, 'src', 'stray.rs'), '// nobody handed this over\n');
+    const strayRefusal = pendingReleaseRefusal({ root: appRoot, dirty: dirtyPaths(appRoot), receipt: readPendingRelease(parent) });
+    if (!strayRefusal.includes('src/stray.rs')) fails.push(`a release was allowed to carry work no handoff left: ${strayRefusal || 'it was allowed'}`);
+    rmSync(join(appRoot, 'src', 'stray.rs'), { force: true });
+
+    // A path a handoff did leave, edited afterwards: the name is the same and the bytes are not, which is what a path list alone cannot see.
+    write(join(appRoot, 'src', 'three.rs'), '// three, edited afterwards\n');
+    const editedRefusal = pendingReleaseRefusal({ root: appRoot, dirty: dirtyPaths(appRoot), receipt: readPendingRelease(parent) });
+    if (!editedRefusal.includes('src/three.rs') || !editedRefusal.includes('changed after the handoff')) fails.push(`a handed-over path edited after the handoff was released as if it were the handoff: ${editedRefusal || 'it was allowed'}`);
+    write(join(appRoot, 'src', 'three.rs'), '// three\n');
+    if (pendingReleaseRefusal({ root: appRoot, dirty: dirtyPaths(appRoot), receipt: readPendingRelease(parent) })) fails.push('a path put back the way the handoff left it was still refused');
+
+    // A file a handoff took away is a state a release carries too, so an absent path matches an absent record.
+    const gone = recordPendingRelease(parent, appRoot, ['src/never-written.rs']);
+    if (gone.paths['src/never-written.rs'] !== null) fails.push('the receipt did not record a path the handoff left absent');
+    if (pendingReleaseRefusal({ root: appRoot, dirty: ['src/never-written.rs'], receipt: gone })) fails.push('a path the handoff left absent was refused as work nobody handed over');
+
+    // A receipt belonging to another checkout answers for none of this one's work.
+    if (!pendingReleaseRefusal({ root: appRoot, dirty: ['src/three.rs'], receipt: { root: join(home, 'elsewhere'), paths: { 'src/three.rs': null } } })) fails.push('a receipt written against another checkout was read as this one\'s');
+
+    // Consumed, not merely read: only a release that has committed those bytes clears it.
+    clearPendingRelease(parent);
+    if (existsSync(pendingReleasePath(parent))) fails.push('a cleared pending-release receipt is still on disk');
+    if (Object.keys(readPendingRelease(parent).paths).length) fails.push('a cleared pending-release receipt still names paths');
+    if (!pendingReleaseRefusal({ root: appRoot, dirty: dirtyPaths(appRoot), receipt: readPendingRelease(parent) })) fails.push('a released tree was allowed to release the same work twice');
 
     // ---- The running order, which is the one plan file two sessions write at once. ----
     const order = join(ownersPlan, 'PLAN.md');
@@ -1266,14 +1358,19 @@ function selfTest() {
       }
     }
     rmSync(home, { recursive: true, force: true });
+    if (overridden === undefined) delete process.env[PLAN_ROOT_ENV];
+    else process.env[PLAN_ROOT_ENV] = overridden;
   }
+
+  // Proof the run answered its fixtures rather than whatever a release had pointed it at, since every claim above passes either way once the answer is the fixture's.
+  if ((process.env[PLAN_ROOT_ENV] || '') !== (overridden || '')) fails.push('the self-test left the plan-root override somewhere else than it found it');
 
   if (fails.length) {
     console.error('agent-workspace: failed');
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log('agent-workspace: ok (private app copies keeping source, index and build apart while the plan stays the owner\'s; one-commit handoffs that reach no remote; two arriving at the primary copy, an overlap refused, and an interrupted submit put back; two sessions writing the running order one at a time, a killed run\'s claim taken over, a session waiting out the run holding it rather than a stopwatch, two copies open at once with nothing held between them, and a copy taken before somebody else\'s row refused and kept; a release reading one still copy of the plan tree, a moving tree refused, and the copy gone on every result)');
+  console.log('agent-workspace: ok (private app copies keeping source, index and build apart while the plan stays the owner\'s; one-commit handoffs that reach no remote; two arriving at the primary copy, an overlap refused, and an interrupted submit put back; a receipt of the exact bytes each submit left, unchanged by a refused or interrupted one, refusing a stray path and a handed-over path edited afterwards, and cleared only by the release that commits it; two sessions writing the running order one at a time, a killed run\'s claim taken over, a session waiting out the run holding it rather than a stopwatch, two copies open at once with nothing held between them, and a copy taken before somebody else\'s row refused and kept; a release reading one still copy of the plan tree, a moving tree refused, and the copy gone on every result)');
 }
 
 function main(args) {

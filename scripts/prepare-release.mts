@@ -3,6 +3,8 @@
 //   node --experimental-strip-types scripts/prepare-release.mts <version> [--no-sign-commit]
 //   node --experimental-strip-types scripts/prepare-release.mts --check    self-test (`just check-release`)
 //
+// The tree is dirty on purpose when a handoff has just been submitted, so the guard is exactness rather than cleanliness: every path with work in it has to be one a submit left, at the bytes it left there, and those paths alone are staged and committed.
+//
 // The gate reads a still copy of the plan tree rather than the live one. Tickets, README rows and skill copies are written straight into the tree the owner reads while a release runs, and one landing mid-gate is real drift that the release did not cause and cannot fix — which is how a release stopped after the old tag had already gone.
 //
 // Every command the release runs goes through one runner, so the self-test can hand it a fixture and read back the order: what must not happen after a failed gate is proved by the commands that were never reached.
@@ -11,11 +13,14 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { PLAN_ROOT_ENV, isManaged, withPlanSnapshot } from "./agent-workspace.mjs";
+import { PLAN_ROOT_ENV, clearPendingRelease, dirtyPaths, isManaged, pendingReleaseRefusal, readPendingRelease, releaseReservation, reserve, withPlanSnapshot, workspaceParent } from "./agent-workspace.mjs";
+import { sessionOf } from "./hook-payload.mjs";
 
 type CommandResult = { status: number; stdout: string };
 type RunOptions = { capture?: boolean; env?: Record<string, string | undefined> };
 type Runner = (command: string, args: string[], options?: RunOptions) => CommandResult;
+/// What the submits since the last release left: the refusal where the tree holds anything else, and the paths to commit.
+type Handoff = { refusal: string; paths: string[] };
 type ReleaseHost = {
   run: Runner;
   enterRepoRoot: () => void;
@@ -23,6 +28,9 @@ type ReleaseHost = {
   managed: () => boolean;
   withSnapshot: (fn: (root: string) => void) => void;
   recordTag: (tag: string) => void;
+  holdPrimary: (fn: () => void) => void;
+  handoff: () => Handoff;
+  clearHandoff: () => void;
 };
 type ReleaseOptions = { signCommit: boolean; host?: ReleaseHost };
 
@@ -68,6 +76,24 @@ export function liveHost(): ReleaseHost {
     recordTag: (tag: string) => {
       writeFileSync(".release-tag", tag);
     },
+    // The same claim a submit takes, held from the receipt being read to the last push: a handoff landing midway would otherwise arrive after the tree was checked and ride out untested on the commit.
+    holdPrimary: (fn: () => void) => {
+      const parent = workspaceParent();
+      reserve(parent, sessionOf(""));
+      try {
+        fn();
+      } finally {
+        releaseReservation(parent);
+      }
+    },
+    handoff: () => {
+      const root = process.cwd();
+      const paths = dirtyPaths(root);
+      return { refusal: pendingReleaseRefusal({ root, dirty: paths, receipt: readPendingRelease(workspaceParent()) }), paths };
+    },
+    clearHandoff: () => {
+      clearPendingRelease(workspaceParent());
+    },
   };
   return host;
 }
@@ -80,10 +106,13 @@ function normalizeVersion(version: string): string {
   return normalized;
 }
 
-function assertCleanWorkingTree(host: ReleaseHost): void {
-  if (required(host, "git", ["status", "--porcelain"], { capture: true })) {
-    throw new Error("Working tree must be clean before releasing. Commit or stash changes first.");
+// The tree is dirty on purpose after a submit — that is how what arrived is read before it ships — so the guard is not cleanliness any more but exactness: everything in the tree has to be bytes a handoff left, and anything else still stops the release.
+function assertOnlyHandedOverWork(host: ReleaseHost): string[] {
+  const handoff = host.handoff();
+  if (handoff.refusal) {
+    throw new Error(handoff.refusal);
   }
+  return handoff.paths;
 }
 
 // One public release, in one place: a session's copy hands its work over instead, or two agents tag over each other.
@@ -124,25 +153,33 @@ export function prepareRelease(version: string, options: ReleaseOptions = { sign
   if (host.packageVersion() !== normalized) {
     throw new Error(`Cargo.toml version does not match ${normalized}.`);
   }
-  assertCleanWorkingTree(host);
-  assertTagDoesNotExist(host, tag);
   const commitArgs = options.signCommit
     ? ["commit", "-S", "-m", `Release ${tag} [release-prep]`]
     : ["-c", "commit.gpgsign=false", "commit", "--no-gpg-sign", "-m", `Release ${tag} [release-prep]`];
   const tagArgs = options.signCommit
     ? ["tag", "-s", tag, "-m", `Release ${tag}`]
     : ["-c", "tag.gpgSign=false", "tag", "-a", "--no-sign", tag, "-m", `Release ${tag}`];
-  // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
-  host.withSnapshot((root) => {
-    required(host, "just", ["verify"], { env: { ...process.env, [PLAN_ROOT_ENV]: root } });
-    // Only now: a gate that stops here leaves the last released tag exactly where it was.
-    retireOldTags(host, tag);
-    required(host, "git", commitArgs);
-    required(host, "git", tagArgs);
-    host.recordTag(tag);
-    required(host, "git", ["push", "origin", "HEAD"]);
-    // The tag on its own, after main: a push carrying several tags makes no push event, so no build starts.
-    required(host, "git", ["push", "origin", tag]);
+  // The claim is held across the whole release: what the receipt was checked against has to be what gets committed, and a submit is the one other thing that writes this tree.
+  host.holdPrimary(() => {
+    const handedOver = assertOnlyHandedOverWork(host);
+    assertTagDoesNotExist(host, tag);
+    // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
+    host.withSnapshot((root) => {
+      required(host, "just", ["verify"], { env: { ...process.env, [PLAN_ROOT_ENV]: root } });
+      // Only now: a gate that stops here leaves the last released tag exactly where it was.
+      retireOldTags(host, tag);
+      if (handedOver.length) {
+        required(host, "git", ["add", "--", ...handedOver]);
+      }
+      required(host, "git", commitArgs);
+      // Only once the commit holds those bytes: a release that stopped before it leaves the receipt for the next attempt to check the same tree against.
+      host.clearHandoff();
+      required(host, "git", tagArgs);
+      host.recordTag(tag);
+      required(host, "git", ["push", "origin", "HEAD"]);
+      // The tag on its own, after main: a push carrying several tags makes no push event, so no build starts.
+      required(host, "git", ["push", "origin", tag]);
+    });
   });
   return tag;
 }
@@ -188,6 +225,22 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
     recordTag: (tag) => {
       record(`record ${tag}`);
     },
+    holdPrimary: (fn) => {
+      record("primary reserved");
+      try {
+        fn();
+      } finally {
+        record("primary released");
+      }
+    },
+    // A submitted handoff waiting to be released: two paths, and nothing else in the tree.
+    handoff: () => {
+      record("receipt read");
+      return { refusal: "", paths: ["Cargo.toml", "src/lib.rs"] };
+    },
+    clearHandoff: () => {
+      record("receipt cleared");
+    },
     ...overrides,
   };
   return { host, calls, envs };
@@ -202,8 +255,8 @@ function refused(run: () => void): string {
   return "";
 }
 
-/// What no failure may ever reach.
-const TAG_WORK = /^git (commit|tag|push)|^git .*(tag -d|--delete)/;
+/// What no failure may ever reach — staging included, since the index is the release's own write as much as the commit is.
+const TAG_WORK = /^git (add|commit|tag|push)|^git .*(tag -d|--delete)/;
 
 function selfTest(): void {
   const fails: string[] = [];
@@ -214,14 +267,19 @@ function selfTest(): void {
   if (tag !== "v1.2.3") fails.push(`a passing release answered ${tag} rather than its tag`);
   const at = (want: string) => clean.calls.findIndex((call) => call.includes(want));
   const order: Array<[string, number]> = [
+    ["the primary copy was reserved", clean.calls.indexOf("primary reserved")],
+    ["the receipt was read", clean.calls.indexOf("receipt read")],
     ["the plan tree was copied", clean.calls.indexOf("snapshot taken")],
     ["the check suite ran", clean.calls.indexOf("just verify")],
     ["the old tags went", at("git tag -d")],
+    ["the handed-over paths were staged", at("git add --")],
     ["the release was committed", at("commit --no-gpg-sign")],
+    ["the receipt was cleared", clean.calls.indexOf("receipt cleared")],
     ["the new tag was made", at("tag -a --no-sign")],
     ["main was pushed", at("git push origin HEAD")],
     ["the tag was pushed", at("git push origin v1.2.3")],
     ["the plan copy was taken down", clean.calls.indexOf("snapshot removed")],
+    ["the primary copy was given back", clean.calls.indexOf("primary released")],
   ];
   for (const [what, where] of order) {
     if (where < 0) fails.push(`a passing release never reached the step where ${what}`);
@@ -234,6 +292,30 @@ function selfTest(): void {
   if (!clean.calls.some((call) => call.includes("push origin --delete"))) fails.push("the old tags were left on the remote, so they come back on the next push carrying tags");
   const held = clean.envs[clean.calls.indexOf("just verify")];
   if (held?.[PLAN_ROOT_ENV] !== "/snapshot/docs") fails.push("the check suite was not pointed at the plan copy");
+  // Only what the receipt names: a release stages the handed-over paths by name rather than everything the tree happens to hold.
+  if (!clean.calls.includes("git add -- Cargo.toml src/lib.rs")) fails.push(`a release did not stage the paths the handoff left: ${clean.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
+  if (clean.calls.some((call) => /^git add (-A|--all|\.)(\s|$)/.test(call))) fails.push("a release staged the whole tree rather than the paths the handoff left");
+
+  // A tree holding work no handoff left: refused before the gate, before the tag check, and before anything is staged — and the claim goes back.
+  const strange = fixture(() => null, {
+    handoff: () => ({ refusal: "src/stray.rs has work in it that no handoff left", paths: [] }),
+  });
+  const strangeFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: strange.host }));
+  if (!strangeFailed.includes("no handoff left")) fails.push(`a release ran with work in the tree that no handoff left: ${strangeFailed || "it passed"}`);
+  if (strange.calls.includes("just verify")) fails.push("a tree holding work nobody handed over reached the gate");
+  if (strange.calls.includes("snapshot taken")) fails.push("a tree holding work nobody handed over copied the plan tree before being refused");
+  if (strange.calls.includes("receipt cleared")) fails.push("a refused release cleared the receipt of what is waiting to be released");
+  for (const call of strange.calls) {
+    if (TAG_WORK.test(call)) fails.push(`a tree holding work nobody handed over still ran ${call}`);
+  }
+  if (!strange.calls.includes("primary released")) fails.push("a refused release kept the primary reservation");
+
+  // A commit that fails: the receipt stays, so the next attempt checks the same tree against the same bytes rather than meeting a tree it cannot account for.
+  const noCommit = fixture((command, args) => (command === "git" && args.includes("commit") ? { status: 1, stdout: "" } : null));
+  const commitFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: noCommit.host }));
+  if (!commitFailed.includes("commit")) fails.push(`a failed commit did not stop the release: ${commitFailed || "it passed"}`);
+  if (noCommit.calls.includes("receipt cleared")) fails.push("a release whose commit failed threw away the receipt of what is waiting to be released");
+  if (!noCommit.calls.includes("primary released")) fails.push("a release whose commit failed kept the primary reservation");
 
   // A gate that fails: nothing is committed, tagged or pushed, and the copy still goes.
   const broken = fixture((command) => (command === "just" ? { status: 1, stdout: "" } : null));
@@ -244,6 +326,8 @@ function selfTest(): void {
   }
   if (broken.calls.some((call) => call.includes("tag -d") || call.includes("--delete"))) fails.push("a failed gate took down the last released tag");
   if (!broken.calls.includes("snapshot removed")) fails.push("a failed gate left its copy of the plan tree behind");
+  if (broken.calls.includes("receipt cleared")) fails.push("a failed gate threw away the receipt of what is waiting to be released");
+  if (!broken.calls.includes("primary released")) fails.push("a failed gate kept the primary reservation");
 
   // Nothing the release does may outlive the plan copy the gate read: the old path was two processes, and the push in the second one had no copy behind it at all.
   const outside = clean.calls.indexOf("snapshot removed");
@@ -270,12 +354,7 @@ function selfTest(): void {
     fails.push("a managed workspace was allowed to make a public release");
   }
   if (managed.calls.includes("snapshot taken")) fails.push("a managed workspace copied the plan tree before being refused");
-
-  const dirty = fixture((_command, args) => (args[0] === "status" ? { status: 0, stdout: " M src/lib.rs\n" } : null));
-  if (!refused(() => prepareRelease("1.2.3", { signCommit: false, host: dirty.host })).includes("must be clean")) {
-    fails.push("a release ran with work sitting in the tree");
-  }
-  if (dirty.calls.includes("snapshot taken")) fails.push("a dirty tree copied the plan tree before being refused");
+  if (managed.calls.includes("primary reserved")) fails.push("a managed workspace took the primary reservation before being refused");
 
   const mismatched = fixture(() => null, { packageVersion: () => "9.9.9" });
   if (!refused(() => prepareRelease("1.2.3", { signCommit: false, host: mismatched.host })).includes("does not match")) {
@@ -289,7 +368,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (one command from the gate to the push, all of it inside a still copy of the plan tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a workspace, a dirty tree or a wrong version reaches no tag cleanup, commit, tag or push)");
+  console.log("prepare-release: ok (one command from the gate to the push, all of it inside a still copy of the plan tree and under the primary reservation; the handed-over paths are staged by name and their receipt cleared only once the commit holds them; the old tags go only after the gate passes, and a failed gate, a moving tree, a workspace, work nobody handed over or a wrong version reaches no tag cleanup, staging, commit, tag or push)");
 }
 
 function isMainModule(): boolean {

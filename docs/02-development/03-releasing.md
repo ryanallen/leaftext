@@ -23,7 +23,7 @@ release version:
     node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit
 ```
 
-**`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release, from the check suite to the last push. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, refuses to run from a session's private copy at all, requires a clean working tree, and requires the tag not to exist yet. It then takes a still copy of the plan tree next door, runs `just verify` against that copy, and — only if the suite passed — deletes every older tag here and on the remote, creates the release commit and an annotated tag, pushes `main`, and pushes the tag on its own. All of it happens while the copy is held, and the copy is removed whichever way the release ends.
+**`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release, from the check suite to the last push. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, refuses to run from a session's private copy at all, requires every path with work in it to be one a submitted handoff left at the bytes it left there, and requires the tag not to exist yet. It then takes a still copy of the plan tree next door, runs `just verify` against that copy, and — only if the suite passed — deletes every older tag here and on the remote, stages those handed-over paths by name, creates the release commit and an annotated tag, pushes `main`, and pushes the tag on its own. All of it happens while the copy is held and while the shared app copy is reserved, and the copy is removed whichever way the release ends.
 
 It was two commands, the second of which pushed after the first had exited. Two things came out of that: a plan edit landing mid-check stopped a release the release had not caused, and the push ran with no checked plan state behind it at all. The private-copy refusal is what keeps one public release in one place: a session hands its finished work over on a branch of its own, that result is applied to the shared copies, and the release is made there — see [Workflow](07-workflow.md#two-at-once). It never edits `Cargo.toml` — the version bump is a manual, already-committed step.
 
@@ -63,7 +63,7 @@ Always run the full verification suite before cutting a release to confirm forma
 just verify
 ```
 
-This runs `cargo fmt --check`, `cargo check --all-targets`, `cargo test`, and a vendored-asset drift check (`just check-vendor`) in sequence. A clean `just verify` is required before invoking `just release` — and `just release` runs it again itself, so a dirty tree or a failing check will stop the release.
+This runs `cargo fmt --check`, `cargo check --all-targets`, `cargo test`, and a vendored-asset drift check (`just check-vendor`) in sequence. A clean `just verify` is required before invoking `just release` — and `just release` runs it again itself, so a failing check, or work in the tree that no handoff left, will stop the release.
 
 ## Version format
 
