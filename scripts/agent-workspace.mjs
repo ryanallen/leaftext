@@ -181,18 +181,16 @@ export function manifests(parent) {
   }
 }
 
-/// The loose app work one recorded copy holds. Each path comes from its record; no folder is walked.
+/// Read each manifest's app path, never a folder tree.
 export function workspaceStatus(record) {
   const appPaths = dirtyPaths(record.app);
   return { record, appPaths, hasWork: appPaths.length > 0 };
 }
 
-/// Every recorded copy and its loose-work state, read once for one answer.
 export function workspaceStatuses(parent) {
   return manifests(parent).map(workspaceStatus);
 }
 
-/// One list row, including the same state an empty handoff uses to suggest a target.
 export function workspaceLine(status) {
   const { record, appPaths, hasWork } = status;
   const state = hasWork ? `work waiting (${appPaths.length} app path${appPaths.length === 1 ? '' : 's'})` : 'clear';
@@ -311,7 +309,7 @@ export function releasePrivate({ session, parent, from = process.cwd(), message 
   return handoff;
 }
 
-/// The current session remains the default, and a named target is deliberate.
+/// A named target is deliberate; the current session remains the default.
 export function privateArguments(args, currentSession) {
   if (args[0] !== '--session') return { session: currentSession, message: args.join(' ') };
   return { session: args[1] || '', message: args.slice(2).join(' ') };
