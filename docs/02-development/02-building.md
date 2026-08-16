@@ -98,7 +98,7 @@ Each step in the verification pipeline can also be run on its own:
 | A published page's frame | `just check-page-frame` | Fail on an `overflow`, `position` or `touch-action` in `reading.css` on a bare `html`, `body` or `:root`, which reaches every page the app's stylesheet is handed to |
 | Hover fills  | `just check-hover-fills`    | Fail on a rule painting behind a note's field values under the pointer, and on a button that clears its own fill at rest without naming one for hover |
 | Scratch names | `just check-scratch-names` | Fail on a temp-folder path built from a fixed name, which two runs at once would share |
-| Private copies | `just check-workspace`    | Prove a session's own pair of worktrees keeps its plan edits, app edits, index and build folder to itself, that a handoff reaches the shared copies without ever touching the app's remote, that an overlapping one is refused, and that an interrupted one puts both shared copies back |
+| Private copies | `just check-workspace`    | Prove a session's own copy of the app keeps its source, index and build folder to itself while its plan edits land where the owner reads them, that a handoff reaches the shared copy without ever touching a remote, that an overlapping one is refused, and that an interrupted one puts the shared copy back |
 | Suite check  | `just check-verify`         | Fail when a check exists that `verify` does not run |
 | Justfile quotes | `just check-justfile-quotes` | Fail when quote characters directly surround an interpolation in a recipe |
 | Spelling     | `just check-spelling`       | Fail on British spelling in the repo's own writing |

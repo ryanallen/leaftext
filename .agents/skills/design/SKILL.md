@@ -171,6 +171,8 @@ It is also the flag [dev](../dev/SKILL.md) tests for: no line, and it runs this 
 
 **Then set the ticket's status in the running order, in the same pass.** [`../docs/PLAN.md`](../../../../docs/PLAN.md) carries a `Status` column, and this ticket's row becomes `Designed`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The status mirrors the ticket's dated line, so writing one without the other is how the two start disagreeing.
 
+**Write it under the claim, never straight over the file.** `node scripts/agent-workspace.mjs plan-open` hands back a copy and holds the running order, `plan-close` writes that copy back and gives it up, and a copy taken before another session's row is refused rather than written over it. Edit the copy it names; [`/pm`](../pm/SKILL.md) holds the reason.
+
 A ticket with no row there yet is a ticket [`/ticket`](../ticket/SKILL.md) did not finish — add the row, unticked, then tick it.
 
 ## 9. Leave the record

@@ -9,6 +9,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { planTree } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -135,12 +136,12 @@ const pattern = new RegExp(
   'gi'
 );
 
-// The tickets live in `../docs`, beside the app and outside this git repo, so the walk above never reached them — which is how a British spelling got into one. Only the live plans plus the index: `done/` and `canceled/` are history, not writing to fix, but the index describes them in words written now.
-const TICKET_PATHS = ['../docs/README.md', '../docs/PLAN.md', '../docs/GLOSSARY.md', '../docs/features', '../docs/refactor', '../docs/fixes'];
+// The tickets live in the plan tree, beside the app and outside this git repo, so the walk above never reached them — which is how a British spelling got into one. Only the live plans plus the index: `done/` and `canceled/` are history, not writing to fix, but the index describes them in words written now.
+const TICKET_PATHS = ['README.md', 'PLAN.md', 'GLOSSARY.md', 'features', 'refactor', 'fixes'];
 function ticketFiles() {
   const out = [];
   for (const path of TICKET_PATHS) {
-    const full = join(root, path);
+    const full = join(planTree(root), path);
     // A clone of `app/` alone has no sibling docs tree; that is not a failure.
     if (!existsSync(full)) continue;
     out.push(...(statSync(full).isDirectory() ? files(full) : [full]));

@@ -12,9 +12,10 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { planTree } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const plans = join(root, '..', 'docs');
+const plans = planTree(root);
 
 // Every file in these is a ticket — none of them holds an index.
 const LIVE_PLANS = ['features', 'refactor', 'fixes'];

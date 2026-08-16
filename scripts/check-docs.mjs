@@ -15,9 +15,10 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { planTree } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const plans = join(root, '..', 'docs');
+const plans = planTree(root);
 
 // Each row: where the files are, and what keeps them true. Order matters — the first match wins, so a specific folder goes above the folder holding it.
 const ROLES = [

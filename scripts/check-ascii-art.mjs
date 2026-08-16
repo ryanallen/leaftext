@@ -9,9 +9,10 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+import { planTree } from './agent-workspace.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
-const TREES = [ROOT, resolve(ROOT, '..', 'docs')];
+const TREES = [ROOT, resolve(planTree(ROOT))];
 const SKIPPED = new Set(['node_modules', 'target', 'dist', '.git', 'vendor']);
 
 /// The corner a hand-drawn frame opens with. Nothing else in this tree writes one.

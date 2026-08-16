@@ -13,12 +13,12 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isManaged } from './agent-workspace.mjs';
+import { isManaged, planTree } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Where the copies live, and where each one was taken from. Both hold one folder per skill, holding one `SKILL.md`. */
-const COPIES = join(root, '..', 'docs', 'learn', 'ticket-workflow-medium', 'skills');
+const COPIES = join(planTree(root), 'learn', 'ticket-workflow-medium', 'skills');
 const SOURCES = join(root, '.agents', 'skills');
 
 /** How each side reads in a message, so a failure names a path somebody can open rather than an absolute one off this machine. */

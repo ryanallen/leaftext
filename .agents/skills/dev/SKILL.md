@@ -19,6 +19,8 @@ Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` be
 
 When implementation starts, set its live plan stage to `Dev`. Keep the stage synchronized with the ticket: `Ready`, `Designed`, `Dev`, or `Released`.
 
+**Write it under the claim, never straight over the file.** `node scripts/agent-workspace.mjs plan-open` hands back a copy of the running order and holds it, `plan-close` writes that copy back and gives it up, and a copy taken before another session's row is refused rather than written over it. Edit the copy it names; [`/pm`](../pm/SKILL.md) holds the reason.
+
 ### 3. Work the phases in order
 
 Work phases in order. Tick each box in the same edit as its code and test. Drive what the running app can reach; name anything that needs the owner's gesture in the ticket.

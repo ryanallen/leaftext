@@ -19,9 +19,10 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { planTree } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const plans = join(root, '..', 'docs');
+const plans = planTree(root);
 
 const SKIP_DIRS = new Set(['node_modules', 'target', 'dist', '.git', 'vendor', 'conformance']);
 
