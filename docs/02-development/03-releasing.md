@@ -2,7 +2,7 @@
 
 > Bump `Cargo.toml` and commit it first, then run `just release <version>` to verify, tag, and push. CI automatically builds the Windows MSI and the macOS DMG.
 
-Leaftext releases are managed with a single `just release <version>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and commit it first; `just release <version>` then verifies that `Cargo.toml` already matches the version you pass, tags the release, and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
+Leaftext releases are managed with a single `just release <version>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and commit it first; `just release <version>` then verifies that `Cargo.toml` already matches the version you pass, runs the whole check suite against a still copy of the plan tree, retires the older tags, commits, tags, and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
 
 ## Release command
 
@@ -16,16 +16,18 @@ Example:
 just release 0.2.0
 ```
 
-This executes the following two steps as defined in the `Justfile`:
+This executes one step as defined in the `Justfile`:
 
 ```text
 release version:
-    node --experimental-strip-types scripts/prepare-release.mts "{{ version }}" --no-sign-commit
-    git push origin HEAD --follow-tags
+    node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit
 ```
 
-1. **`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, refuses to run from a session's private copy at all, requires a clean working tree, requires the tag not to exist yet, runs `just verify`, then creates a `Release v<version> [release-prep]` commit and an annotated git tag. The private-copy refusal is what keeps one public release in one place: a session hands its finished work over on a branch of its own, that result is applied to the shared copies, and the release is made there — see [Workflow](07-workflow.md#two-at-once). It never edits `Cargo.toml` — the version bump is a manual, already-committed step.
-2. **`git push origin HEAD --follow-tags`** — Pushes the commit and all reachable annotated tags to the remote. The tag push triggers CI.
+**`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release, from the check suite to the last push. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, refuses to run from a session's private copy at all, requires a clean working tree, and requires the tag not to exist yet. It then takes a still copy of the plan tree next door, runs `just verify` against that copy, and — only if the suite passed — deletes every older tag here and on the remote, creates the release commit and an annotated tag, pushes `main`, and pushes the tag on its own. All of it happens while the copy is held, and the copy is removed whichever way the release ends.
+
+It was two commands, the second of which pushed after the first had exited. Two things came out of that: a plan edit landing mid-check stopped a release the release had not caused, and the push ran with no checked plan state behind it at all. The private-copy refusal is what keeps one public release in one place: a session hands its finished work over on a branch of its own, that result is applied to the shared copies, and the release is made there — see [Workflow](07-workflow.md#two-at-once). It never edits `Cargo.toml` — the version bump is a manual, already-committed step.
+
+The plan copy exists because the plan tree next door is shared with every session on purpose, so the owner can watch a build happen. Six of the suite's checks read it, and they ask one resolver where it is; during a release that resolver answers the copy, so all six read the same complete state whatever anybody else is writing at the time. A tree that changes while it is being copied is copied again, and a tree that will not settle stops the release before any tag is touched.
 
 So the full flow is: edit `Cargo.toml` → commit → `just release <version>`.
 
