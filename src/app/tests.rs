@@ -1616,6 +1616,26 @@ fn a_link_preview_request_arrives_with_its_hover_token() {
     }
 }
 
+#[test]
+fn a_page_that_cannot_be_previewed_is_still_answered() {
+    // The card's waiting box is cleared by nothing but an answer, so a page that cannot be rendered goes down the same channel as an empty one. This is the arm's own expression: link_preview_html's None, defaulted, then written as the answer.
+    let dir = std::env::temp_dir().join(format!("leaf-missing-preview-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let current = dir.join("current.md");
+    fs::write(&current, "# Current").expect("current document is written");
+
+    let html = link_preview_html("gone.md", &current).unwrap_or_default();
+    assert_eq!(html, "", "a deleted target renders nothing");
+    assert_eq!(
+        link_preview_script(9, &html),
+        r#"window.leafLinkPreview(9, "");"#,
+        "the page is told the preview is empty rather than left waiting"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
 /// One code-view payload is held at a time on purpose, so a test that stages one takes this until it is done with the slot — on the harness's threads another test's staging supersedes it and the read is a 404. Poison is shrugged off so one broken test is one failure.
 static SOURCE_PAYLOAD_SLOT: std::sync::Mutex<()> = std::sync::Mutex::new(());
 

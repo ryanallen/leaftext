@@ -1062,6 +1062,48 @@ if (booted) {
     }
   });
 
+  check('a page the host cannot draw drops the picture box instead of spinning', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const kind = vm.runInContext('linkHoverTipKind', booted);
+    const detail = vm.runInContext('linkHoverTipDetail', booted);
+    const wasTimeout = booted.setTimeout;
+    const wasStyle = booted.getComputedStyle;
+    const wasSend = booted.ipc.postMessage;
+    const waiting = [];
+    const sent = [];
+    booted.setTimeout = (fn) => waiting.push(fn);
+    booted.getComputedStyle = (element) => (element === booted.document.documentElement ? { getPropertyValue: () => '300ms' } : wasStyle(element));
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    const gone = { href: 'notes/gone.md', getAttribute: (name) => (name === 'href' ? 'notes/gone.md' : null), getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }) };
+    gone.closest = () => gone;
+    try {
+      // The pointer rests, the ask goes out, and the host answers that the page is not there to draw.
+      vm.runInContext('activeHoverToken = 41; activeHoverLink = {}; linkHoverPointer = { clientX: 300, clientY: 300 }; linkHoverTip.hidden = false; showLinkHoverPreviewPlaceholder(); requestLinkPreview("notes/gone.md", 41);', booted);
+      waiting.shift()();
+      if (!sent.some((message) => message.command === 'previewLink')) throw new Error('the rested pointer never asked for the preview');
+      booted.window.leafLinkPreview(41, '');
+      if (!preview.hidden || tip.classList.contains('has-preview')) throw new Error('a page the host cannot draw left its spinner turning on the card');
+      if (previewDocument.innerHTML !== '') throw new Error('the empty answer left a box behind with nothing in it');
+      // Hovering it again reads the same answer out of the cache: no box, no second ask, and the card still says what the link is and where it points.
+      sent.length = 0;
+      vm.runInContext('activeHoverLink = null;', booted);
+      booted.__hoverEvent = { target: gone, relatedTarget: { body: true }, clientX: 240, clientY: 210 };
+      vm.runInContext('startLinkHover(__hoverEvent);', booted);
+      booted.__frames.drain();
+      if (!preview.hidden || tip.classList.contains('has-preview')) throw new Error('the second hover raised a box the host had already said it cannot fill');
+      if (sent.some((message) => message.command === 'previewLink')) throw new Error('the cached empty answer asked the host all over again');
+      if (tip.hidden || kind.textContent !== 'Another page' || detail.textContent !== 'notes/gone.md') throw new Error('the card lost the rows it can still answer');
+    } finally {
+      booted.setTimeout = wasTimeout;
+      booted.getComputedStyle = wasStyle;
+      booted.ipc.postMessage = wasSend;
+      vm.runInContext('endLinkHoverFade(); activeHoverLink = null; linkHoverPointer = null; linkHoverTip.hidden = true; linkHoverTip.classList.remove("shown"); hideLinkHoverPreview(); activeHoverToken += 1; linkPreviewCache.delete("notes/gone.md"); lineCountCache.delete("notes/gone.md");', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
   check('the preview shrink is written once and read off the box that carries it', () => {
     const preview = vm.runInContext('linkHoverTipPreview', booted);
     const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);

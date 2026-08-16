@@ -243,7 +243,7 @@ The pager is always there; it is not a [setting](05-settings.md#pager).
 
 ![A link in a paragraph being hovered, with a small tooltip beside the cursor naming it as another page, showing the href it was written with and the length of the document it leads to](../../imgs/link-hint.png)
 
-Hovering a link shows a small tooltip that names what kind of link it is and shows the exact href it was written with, so you can tell a [glossary](#glossary) term from an in-page jump from an outside site before you click. When the link opens another document, the tooltip shows that document's opening above the same detail rows, along with its length in lines. It opens with a dot-textured loading space and keeps one size while the opening arrives; website links keep the text-only tooltip, so a hover never contacts a site.
+Hovering a link shows a small tooltip that names what kind of link it is and shows the exact href it was written with, so you can tell a [glossary](#glossary) term from an in-page jump from an outside site before you click. When the link opens another document, the tooltip shows that document's opening above the same detail rows, along with its length in lines. It opens with a dot-textured loading space and keeps one size while the opening arrives; website links keep the text-only tooltip, so a hover never contacts a site. A link whose page has been deleted, renamed, or cannot be read drops that space and settles on the kind and address rows, so it never leaves you pointing at a loading mark that will not finish.
 
 | Hint | When you see it |
 | --- | --- |

@@ -905,13 +905,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     );
                 }
                 IpcCommand::PreviewLink { href, token } => {
-                    let Some(html) = reader
+                    // A page that cannot be rendered — deleted, renamed, unreadable — answers empty rather than not at all, the way countLines answers -1. Only an answer settles the card's waiting box.
+                    let html = reader
                         .workspace
                         .active_path()
                         .and_then(|current| link_preview_html(&href, current))
-                    else {
-                        return;
-                    };
+                        .unwrap_or_default();
                     run_page_script(
                         reader.page(),
                         &link_preview_script(token, &html),

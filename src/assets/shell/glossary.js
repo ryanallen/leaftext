@@ -251,6 +251,17 @@ function hideLinkHoverPreview() {
   linkHoverTip.classList.remove('has-preview');
   setLinkHoverPreview(null);
 }
+// An empty answer is the host saying it cannot draw that page, so the card drops the picture box the way a link to anything but a page never raises one.
+function applyLinkHoverPreview(html) {
+  if (typeof html === 'string' && html !== '') {
+    linkHoverTipPreview.hidden = false;
+    linkHoverTip.classList.add('has-preview');
+    setLinkHoverPreview(html);
+  } else {
+    hideLinkHoverPreview();
+  }
+  if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
+}
 function endLinkHoverFade() {
   if (linkHoverHideTimer) window.clearTimeout(linkHoverHideTimer);
   linkHoverHideTimer = 0;
@@ -342,8 +353,7 @@ function requestLinkPreview(key, token) {
     linkHoverPreviewTimer = 0;
     if (token !== activeHoverToken || linkHoverTip.hidden) return;
     if (linkPreviewCache.has(key)) {
-      setLinkHoverPreview(linkPreviewCache.get(key));
-      if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
+      applyLinkHoverPreview(linkPreviewCache.get(key));
       return;
     }
     pendingPreviewTokens.set(token, key);
@@ -357,8 +367,7 @@ window.leafLinkPreview = (token, html) => {
     if (typeof html === 'string') linkPreviewCache.set(key, html);
   }
   if (token !== activeHoverToken || linkHoverTip.hidden || typeof html !== 'string') return;
-  setLinkHoverPreview(html);
-  if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
+  applyLinkHoverPreview(html);
 };
 // The href alone, so the card, the middle click and the menu cannot answer differently about one link.
 function linkHoverInfo(rawHref) {
@@ -422,10 +431,8 @@ function startLinkHover(event) {
     // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string.
     const key = (typeof link.href === 'string' && link.href) || rawHref;
     if (linkPreviewCache.has(key)) {
-      // Seen already: straight back up rendered, so a return to a link never blinks its spinner.
-      linkHoverTipPreview.hidden = false;
-      linkHoverTip.classList.add('has-preview');
-      setLinkHoverPreview(linkPreviewCache.get(key));
+      // Seen already: straight back up rendered, so a return to a link never blinks its spinner — and a page the host could not draw raises no box at all.
+      applyLinkHoverPreview(linkPreviewCache.get(key));
     } else {
       showLinkHoverPreviewPlaceholder();
       requestLinkPreview(key, token);
