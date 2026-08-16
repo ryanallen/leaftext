@@ -1,7 +1,10 @@
 // The public release: check this app copy, then commit and tag it.
 //
 //   node --experimental-strip-types scripts/prepare-release.mts <version> [--no-sign-commit]
+//   node --experimental-strip-types scripts/prepare-release.mts --land     get the tree onto main now (`just land`)
 //   node --experimental-strip-types scripts/prepare-release.mts --check    self-test (`just check-release`)
+//
+// The landing runs first and on its own: it stages what is in the tree, commits and pushes main, with no gate, no version and no tag. A release spends an hour in docs, comments and the whole suite, and every minute of it is a minute the work sits uncommitted where another session can collide with it. So the work goes out at the start, unchecked on purpose, and the release then commits whatever the rest of it writes on top.
 //
 // The tree is dirty on purpose: the work being released was written in this checkout and never committed, so the release stages the paths that have work in them by name and commits those. A clean tree is nothing to release.
 //
@@ -118,6 +121,28 @@ function retireOldTags(host: ReleaseHost, keep: string): void {
   host.run("git", ["push", "origin", "--delete", ...others]);
 }
 
+function commitArgs(signCommit: boolean, message: string): string[] {
+  return signCommit
+    ? ["commit", "-S", "-m", message]
+    : ["-c", "commit.gpgsign=false", "commit", "--no-gpg-sign", "-m", message];
+}
+
+export const LANDING_MESSAGE = "Land the work in the tree";
+
+// The work in this checkout, onto main, now: staged by name, committed and pushed, with no gate, no version and no tag. Nothing here is checked, which is the point — the gate runs after, in the release, and until then another session can pull this and work beside it. A clean tree is not a failure: it means the last landing already took everything, and the release goes on from there.
+export function landWork(options: ReleaseOptions = { signCommit: true }): string[] {
+  const host = options.host ?? liveHost();
+  host.enterRepoRoot();
+  const changed = host.changedPaths();
+  if (!changed.length) {
+    return [];
+  }
+  required(host, "git", ["add", "--", ...changed]);
+  required(host, "git", commitArgs(options.signCommit, LANDING_MESSAGE));
+  required(host, "git", ["push", "origin", "HEAD"]);
+  return changed;
+}
+
 export function prepareRelease(version: string, options: ReleaseOptions = { signCommit: true }): string {
   const host = options.host ?? liveHost();
   const normalized = normalizeVersion(version);
@@ -126,9 +151,7 @@ export function prepareRelease(version: string, options: ReleaseOptions = { sign
   if (host.packageVersion() !== normalized) {
     throw new Error(`Cargo.toml version does not match ${normalized}.`);
   }
-  const commitArgs = options.signCommit
-    ? ["commit", "-S", "-m", `Release ${tag} [release-prep]`]
-    : ["-c", "commit.gpgsign=false", "commit", "--no-gpg-sign", "-m", `Release ${tag} [release-prep]`];
+  const releaseCommit = commitArgs(options.signCommit, `Release ${tag} [release-prep]`);
   const tagArgs = options.signCommit
     ? ["tag", "-s", tag, "-m", `Release ${tag}`]
     : ["-c", "tag.gpgSign=false", "tag", "-a", "--no-sign", tag, "-m", `Release ${tag}`];
@@ -141,7 +164,7 @@ export function prepareRelease(version: string, options: ReleaseOptions = { sign
     // Only now: a gate that stops here leaves the last released tag exactly where it was.
     retireOldTags(host, tag);
     required(host, "git", ["add", "--", ...changed]);
-    required(host, "git", commitArgs);
+    required(host, "git", releaseCommit);
     required(host, "git", tagArgs);
     host.recordTag(tag);
     required(host, "git", ["push", "origin", "HEAD"]);
@@ -218,6 +241,9 @@ function refused(run: () => void): string {
 /// What no failure may ever reach — staging included, since the index is the release's own write as much as the commit is.
 const TAG_WORK = /^git (add|commit|tag|push)|^git .*(tag -d|--delete)/;
 
+/// The half of that a landing must never do: it commits and pushes main, and it has no business anywhere near a tag or a version.
+const TAG_ONLY = /^git tag|--delete|^git push origin v/;
+
 function selfTest(): void {
   const fails: string[] = [];
 
@@ -252,6 +278,39 @@ function selfTest(): void {
   // By name, never the whole tree: a release commits the paths it read and nothing the tree happens to pick up while the gate runs.
   if (!clean.calls.includes("git add -- Cargo.toml src/lib.rs")) fails.push(`a release did not stage the paths with work in them: ${clean.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
   if (clean.calls.some((call) => /^git add (-A|--all|\.)(\s|$)/.test(call))) fails.push("a release staged the whole tree rather than the paths it read");
+
+  // The landing that goes first: the tree onto main in three writes, and nothing else at all.
+  const landed = fixture();
+  const paths = landWork({ signCommit: false, host: landed.host });
+  if (paths.join(" ") !== "Cargo.toml src/lib.rs") fails.push(`a landing answered ${paths.join(" ") || "nothing"} rather than the paths it put on main`);
+  const landedOrder: Array<[string, number]> = [
+    ["the work in the tree was read", landed.calls.indexOf("changed paths read")],
+    ["the paths were staged", landed.calls.indexOf("git add -- Cargo.toml src/lib.rs")],
+    ["the work was committed", landed.calls.findIndex((call) => call.includes("commit --no-gpg-sign"))],
+    ["main was pushed", landed.calls.indexOf("git push origin HEAD")],
+  ];
+  for (const [what, where] of landedOrder) {
+    if (where < 0) fails.push(`a landing never reached the step where ${what}`);
+  }
+  for (let i = 1; i < landedOrder.length; i += 1) {
+    const [before, beforeAt] = landedOrder[i - 1]!;
+    const [after, afterAt] = landedOrder[i]!;
+    if (beforeAt >= 0 && afterAt >= 0 && beforeAt > afterAt) fails.push(`${after} before ${before} in a landing`);
+  }
+  if (landed.calls.includes("just verify")) fails.push("a landing ran the gate, which is the hour it exists to get out in front of");
+  if (landed.calls.includes("snapshot taken")) fails.push("a landing copied the plan tree, which only the gate reads");
+  for (const call of landed.calls) {
+    if (TAG_ONLY.test(call)) fails.push(`a landing ran ${call}, and a landing is not a release`);
+  }
+  if (landed.calls.some((call) => /^git add (-A|--all|\.)(\s|$)/.test(call))) fails.push("a landing staged the whole tree rather than the paths it read");
+
+  // A landing with nothing to land: it says so by answering no paths, and it writes nothing. The release that follows carries on rather than stopping.
+  const nothingToLand = fixture(() => null, { changedPaths: () => [] });
+  const landedNothing = landWork({ signCommit: false, host: nothingToLand.host });
+  if (landedNothing.length) fails.push("a landing with a clean tree claimed to have put something on main");
+  for (const call of nothingToLand.calls) {
+    if (TAG_WORK.test(call)) fails.push(`a landing with a clean tree still ran ${call}`);
+  }
 
   // A clean tree: refused before the tag check and the gate, since the commit is otherwise the first thing to say so and it says it after the whole suite has run.
   const empty = fixture(() => null, { changedPaths: () => [] });
@@ -325,7 +384,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (one command from the gate to the push, all of it inside a still copy of the plan tree; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch)");
+  console.log("prepare-release: ok (a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch)");
 }
 
 function isMainModule(): boolean {
@@ -333,13 +392,16 @@ function isMainModule(): boolean {
 }
 
 if (isMainModule()) {
+  const signCommit = !process.argv.includes("--no-sign-commit");
   if (process.argv.includes("--check")) {
     selfTest();
+  } else if (process.argv.includes("--land")) {
+    const landed = landWork({ signCommit });
+    console.log(landed.length ? `landed on main: ${landed.join(" ")}` : "nothing to land: this checkout has no work sitting in it.");
   } else {
     const version = process.argv[2];
-    const signCommit = !process.argv.includes("--no-sign-commit");
     if (!version) {
-      throw new Error("Usage: node --experimental-strip-types scripts/prepare-release.mts <version> [--no-sign-commit]");
+      throw new Error("Usage: node --experimental-strip-types scripts/prepare-release.mts <version> [--no-sign-commit], or --land to put the tree on main first.");
     }
     prepareRelease(version, { signCommit });
   }

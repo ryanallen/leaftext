@@ -8,19 +8,21 @@ user-invocable: true
 
 # Git Release
 
-This is the only skill that commits, tags, pushes, or changes the version. Run `/sync-docs`, `/code-comments`, and `/check` before committing. App changes bump the version and tag the release; site-only changes push without a version bump. Never add assistant identity to a commit.
+This is the only skill that commits, tags, pushes, or changes the version. It commits twice: **`just land` first, before anything else**, then `/sync-docs`, `/code-comments` and `/check`, then the release itself. Never add assistant identity to a commit.
 
-An app change is one that touches `src/`, `Cargo.toml`, `Cargo.lock`, `build.rs`, `wix/`, `installer/`, `leaf.rc` or a `release-` workflow — the things that change what somebody who installed the app is running. Everything else — the README, the site, `docs/`, `design/`, `themes/`, the skills, the hooks, the checks, `scripts/`, the plan tree — is site-only: commit and push `main`, make no tag, and leave the version alone. Read that off the diff against the remote rather than off memory of what was edited.
+**The first act is `just land`.** It stages what is in the tree by name, commits it and pushes `main` — no gate, no version, no tag, nothing checked. Everything after it takes an hour or more, and every minute of that is a minute the work sits uncommitted in a checkout somebody else may be about to start a build in. So it goes out first and unproven on purpose: another session can pull it and work beside it while the rest of this one runs. A clean tree lands nothing and is not a failure. The gate has not run yet, so a break reaches `main` and the site publishes from that push — the release commit that follows is what carries the fix.
 
-**Site-only work is committed and pushed first, not last.** It goes in and out in one move, the moment it passes, before anything else in the turn — every hour it sits in the tree is an hour another session can collide with it, and a session that meets it has to work out whose it is before it can do anything at all. No batching it up with later work, no leaving it for the end of a chain.
+An app change is one that touches `src/`, `Cargo.toml`, `Cargo.lock`, `build.rs`, `wix/`, `installer/`, `leaf.rc` or a `release-` workflow — the things that change what somebody who installed the app is running. Everything else — the README, the site, `docs/`, `design/`, `themes/`, the skills, the hooks, the checks, `scripts/`, the plan tree — is site-only. Read that off the diff against the remote rather than off memory of what was edited. Site-only work is finished by the landing and the checks: `just land`, then `/sync-docs`, `/code-comments`, `/check`, then `just land` again for whatever those wrote. No tag, no version, no `just release`.
 
-**A change nobody using the app can meet is never a release.** The build's own machinery lives in the same checkout as the app, and it used to be read as an app change purely because of where its files sit — so a fix to a check, a hook, a skill or a release script cut a new version, ran the whole suite twice and published an installer identical to the one before it. Push it and stop.
+**An app change lands, then releases.** `just land` first, then the checks, then bump `Cargo.toml` and run `just release <version>` — which commits whatever the docs, the comments and the version bump added on top of what already went out. The whole gate runs there, so nothing skips it; landing early only moves when the unchecked work becomes visible, never whether it is checked.
+
+**A change nobody using the app can meet is never a release.** The build's own machinery lives in the same checkout as the app, and it used to be read as an app change purely because of where its files sit — so a fix to a check, a hook, a skill or a release script cut a new version, ran the whole suite twice and published an installer identical to the one before it. Land it and stop.
 
 Before releasing, inspect live tickets. A ticket with exactly one open box must have that box under `The owner's box`; otherwise stop. Every built phase must have its test box ticked, or struck with the reason it cannot be tested here; an open test box stops the release the same way an open work box does. Any test gap found on the way is filed as its own ticket before the release, never carried in the commit. Release the code, then set its live plan row to `Released`. Do not move it into `done/` here.
 
 ## The release runs in the checkout it is in
 
-There is no handoff and nothing to submit: the code, the plan tree and the release are all in front of you. Run the same checks first — `/sync-docs`, `/code-comments`, `/check` — then release from here.
+There is no handoff and nothing to submit: the code, the plan tree and the release are all in front of you. Land what is in the tree, run the same checks — `/sync-docs`, `/code-comments`, `/check` — then release from here.
 
 ## Which number moves
 

@@ -24,8 +24,8 @@ const TAG_READ_FLAGS = ['-l', '--list', '-n', '--contains', '--no-contains',
 const BRANCH_WRITE_FLAGS = ['-d', '-D', '--delete', '-m', '-M', '--move', '-c', '-C', '--copy'];
 // git's own options come before the subcommand and these five carry their value as the next word, so the first word without a dash is the path in `git -C . commit`, not the command.
 const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace']);
-// These commit, tag and push on their own.
-const RELEASE_COMMANDS = [/\bjust\s+release\b/i, /prepare-release/i];
+// These commit, tag and push on their own. `just land` is the release's first half — it commits and pushes main with no gate, so it is a git write with git nowhere in the command.
+const RELEASE_COMMANDS = [/\bjust\s+release\b/i, /\bjust\s+land\b/i, /prepare-release/i];
 
 function readStdin() {
   try {
@@ -145,7 +145,9 @@ function selfTest() {
     'git rm -f src/lib.rs',
     'git mv src/lib.rs src/root.rs',
     'just release 0.1.441',
+    'just land',
     'node --experimental-strip-types scripts/prepare-release.mts 0.1.441',
+    'node --experimental-strip-types scripts/prepare-release.mts --land',
     '"C:\\Program Files\\Git\\bin\\git.exe" push',
   ];
   const allowed = [

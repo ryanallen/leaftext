@@ -16,7 +16,7 @@ Work here starts as a written plan and ends as a released version, and the same 
 
 **5. Gate it.** `/check` runs `/sync-tests` and then `just verify`. Tests come first because `just verify` only runs the tests that exist — a change with no test passes it and proves nothing.
 
-**6. Ship it, then close it.** `/git-release` is the only step that writes git. `/done` retires the plan afterwards, on the owner's word alone.
+**6. Ship it, then close it.** `/git-release` is the only step that writes git, and its first act is to put the work in the tree onto `main` — unchecked, on purpose, so it stops sitting in a checkout while the docs, the comments and the whole suite run. The release commit that follows carries whatever those write. `/done` retires the plan afterwards, on the owner's word alone.
 
 ## Every phase says how it is proved
 
@@ -62,7 +62,7 @@ A test is named as a sentence about behavior — `a_staged_update_installs_itsel
 | `/sync-tests` | Names the test covering each change, writes the missing ones, says what cannot be tested |
 | `/sync-docs` | Makes these pages match the app, takes the screenshots they ask for, regenerates the crawler files |
 | `/code-comments` | A quality pass over comments only — why rather than what, and no drafting history |
-| `/git-release` | The only step that writes git: version bump, commit, tag, push |
+| `/git-release` | The only step that writes git: the tree onto `main` first, then version bump, commit, tag, push |
 | `/done` | Retires a plan on the owner's word, at any stage |
 | `/design-tokens` | Changes a color, value, icon or component in `design/` and runs the bundlers |
 | `/shell-fragment` | Adds, splits or reorders a file in `src/assets/shell/`, where order is load-bearing |
