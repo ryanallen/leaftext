@@ -1,8 +1,8 @@
 ---
 name: git-release
-description: Commit and push releases, the only skill allowed to write git. Ships built tickets for testing, sets their stage to Released, and tells the owner to run the done skill afterward. Use only when the user explicitly requests a release or git operation.
+description: Commit and push releases, the only skill allowed to write git. Ships built tickets for testing, sets their stage to Released, and tells the owner to run the done skill afterward. In a private workspace it hands the work over on a session branch instead. Use only when the user explicitly requests a release or git operation.
 disable-model-invocation: true
-argument-hint: "[version] [message]"
+argument-hint: "[private | version] [message]"
 user-invocable: true
 ---
 
@@ -13,6 +13,20 @@ This is the only skill that commits, tags, pushes, or changes the version. Run `
 An app change is one that touches `src/`, `Cargo.toml`, `Cargo.lock`, `build.rs`, `wix/`, `installer/`, `leaf.rc`, `scripts/` or a `release-` workflow. Everything else — the README, the site, `docs/`, `design/`, `themes/`, the skills, the plan tree — is site-only: commit and push `main`, make no tag, and leave the version alone. Read that off the diff against the remote rather than off memory of what was edited.
 
 Before releasing, inspect live tickets. A ticket with exactly one open box must have that box under `The owner's box`; otherwise stop. Every built phase must have its test box ticked, or struck with the reason it cannot be tested here; an open test box stops the release the same way an open work box does. Any test gap found on the way is filed as its own ticket before the release, never carried in the commit. Release the code, then set its live plan row to `Released`. Do not move it into `done/` here.
+
+## The work is in this session's own copy, so the release is a chain
+
+A hook puts every session in a private pair of worktrees before the message is read, and the work is there rather than in the copy the owner reads. **The owner types nothing; you run all three steps.** Run the same checks first — `/sync-docs`, `/code-comments`, `/check` — from inside the copy, then, from that copy:
+
+    node scripts/agent-workspace.mjs private
+
+It packages the checked app change as a patch against the revision the copy was cut from, writes that beside the private plan changes, commits the pair on this session's own branch in the private Studio repository, and pushes only that branch. **It never tags, never moves a version, and never speaks to the Leaftext remote.** Then, from the copy the owner reads:
+
+    node scripts/agent-workspace.mjs submit <session>
+
+That takes the primary reservation, checks the recorded revisions, refuses a handoff overlapping work already sitting there, and writes both halves through a recovery journal — leaving both primary copies dirty. Read what arrived, then make the public release below **from there**. `scripts/prepare-release.mts` refuses outright from a copy, so the public path cannot be taken from the wrong one by mistake.
+
+The app change travels as a patch because the two repositories are separate: the private Studio branch is the only place both halves of one session's work can sit together. The workspace skill, named with your host's own sign — `/workspace` in Claude, `$workspace` in Codex — is where the pair, the handoff and the submit are written down.
 
 ## Which number moves
 

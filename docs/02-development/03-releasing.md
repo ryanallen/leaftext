@@ -24,7 +24,7 @@ release version:
     git push origin HEAD --follow-tags
 ```
 
-1. **`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, requires a clean working tree, requires the tag not to exist yet, runs `just verify`, then creates a `Release v<version> [release-prep]` commit and an annotated git tag. It never edits `Cargo.toml` — the version bump is a manual, already-committed step.
+1. **`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, refuses to run from a session's private copy at all, requires a clean working tree, requires the tag not to exist yet, runs `just verify`, then creates a `Release v<version> [release-prep]` commit and an annotated git tag. The private-copy refusal is what keeps one public release in one place: a session hands its finished work over on a branch of its own, that result is applied to the shared copies, and the release is made there — see [Workflow](07-workflow.md#two-at-once). It never edits `Cargo.toml` — the version bump is a manual, already-committed step.
 2. **`git push origin HEAD --follow-tags`** — Pushes the commit and all reachable annotated tags to the remote. The tag push triggers CI.
 
 So the full flow is: edit `Cargo.toml` → commit → `just release <version>`.

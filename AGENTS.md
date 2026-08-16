@@ -24,6 +24,8 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 **No background tasks and no subagents.** Every command runs in the foreground, in this session, and every step is done by you.
 
+**Your work happens in this session's own copy, and the owner never types a command to put it there.** A hook makes a private pair of worktrees before every message that names a skill which changes something, and says where they are: the plan tree and the app, at the same path shape this checkout has. Open every file there by its full path and run every command with that app folder as the working directory. The copy the owner reads is changed only by a submit, which `/git-release` does at the end of the chain — hand the work over privately, submit it there, then make the public release from there. Where the hook says this session has no copy, work where you are and say so.
+
 **Never use the host's task list.** The ticket already holds every piece of work as a box, so a second list is the same work written twice and drifts the moment anything changes. Work the ticket's boxes and tick them there.
 
 **US spellings, never British.** In a reply, a comment, a ticket, a commit message — "favorite", "color", "canceled". `just check-spelling` fails on one and names the line; it reads this repo and the plan tree next door — the index, the running order, the glossary and every live ticket.

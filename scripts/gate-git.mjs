@@ -24,8 +24,8 @@ const TAG_READ_FLAGS = ['-l', '--list', '-n', '--contains', '--no-contains',
 const BRANCH_WRITE_FLAGS = ['-d', '-D', '--delete', '-m', '-M', '--move', '-c', '-C', '--copy'];
 // git's own options come before the subcommand and these five carry their value as the next word, so the first word without a dash is the path in `git -C . commit`, not the command.
 const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace']);
-// These commit, tag and push on their own.
-const RELEASE_COMMANDS = [/\bjust\s+release\b/i, /prepare-release/i];
+// These commit, tag and push on their own. Only the workspace helper's `private` is here: that one commits a handoff and pushes it, and this gate reads a command string and cannot see the git a script spawns. The rest of the helper — making a session's copy, finding it, listing them, submitting one to the primary copies, taking one down — writes worktrees and working trees and no history, and it is refused to nobody, because a hook runs it before every message and nobody types it at all.
+const RELEASE_COMMANDS = [/\bjust\s+release\b/i, /prepare-release/i, /agent-workspace\.mjs\s+private\b/i];
 
 function readStdin() {
   try {
@@ -140,6 +140,8 @@ function selfTest() {
     'git stash',
     'git stash list',
     'git worktree add ../wt main',
+    'node scripts/agent-workspace.mjs private',
+    'node scripts/agent-workspace.mjs private handed over',
     'git pull',
     'git apply fix.patch',
     'git rm -f src/lib.rs',
@@ -159,6 +161,12 @@ function selfTest() {
     'git -C . branch --show-current',
     'git show HEAD:src/lib.rs',
     'just verify',
+    'just check-workspace',
+    'node scripts/agent-workspace.mjs create',
+    'node scripts/agent-workspace.mjs path',
+    'node scripts/agent-workspace.mjs list',
+    'node scripts/agent-workspace.mjs submit aaaa-1111',
+    'node scripts/agent-workspace.mjs remove',
     'cargo test',
     'ls scripts/',
   ];

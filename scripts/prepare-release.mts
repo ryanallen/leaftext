@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isManaged } from "./agent-workspace.mjs";
 
 type ReleaseOptions = { signCommit: boolean };
 type CommandResult = { status: number; stdout: string };
@@ -46,6 +47,13 @@ function assertCleanWorkingTree(): void {
   }
 }
 
+// A public release is the primary copy's alone. A managed workspace hands its work over privately instead, or two agents tag and push over each other from copies neither of them can see.
+function assertPrimaryCheckout(): void {
+  if (isManaged(process.cwd())) {
+    throw new Error("A public release runs in the primary checkout. This is a managed workspace: hand the work over with `node scripts/agent-workspace.mjs private`, then submit the handoff from the primary copy.");
+  }
+}
+
 function assertTagDoesNotExist(tag: string): void {
   if (run("git", ["rev-parse", "--verify", "--quiet", `refs/tags/${tag}`], false).status === 0) {
     throw new Error(`Local tag ${tag} already exists.`);
@@ -59,6 +67,7 @@ export function prepareRelease(version: string, options: ReleaseOptions = { sign
   const normalized = normalizeVersion(version);
   const tag = `v${normalized}`;
   process.chdir(runRequired("git", ["rev-parse", "--show-toplevel"], false));
+  assertPrimaryCheckout();
   if (packageVersion() !== normalized) {
     throw new Error(`Cargo.toml version does not match ${normalized}.`);
   }

@@ -145,6 +145,13 @@ check-site-boot:
 check-scratch-names:
     node scripts/check-scratch-names.mjs
 
+# Self-test the private workspace helper: two throwaway repositories, two sessions,
+# and the four things a shared checkout got wrong — the plan tree, the app source,
+# the index and the build folder each belonging to one session. Offline, and it
+# never touches the real pair.
+check-workspace:
+    node scripts/agent-workspace.mjs --check
+
 # Fail if a check the Justfile defines is not in `just verify` — a rule with no check
 # in the suite holds only while someone remembers it.
 check-verify:
@@ -190,6 +197,7 @@ check-hooks:
     node scripts/gate-voice.mjs --check
     node scripts/gate-keycode.mjs --check
     node scripts/gate-checklist.mjs --check
+    node scripts/gate-workspace.mjs --check
 
 # Run the WebView front-end against a fake page: that it parses, that it boots
 # (the fragments are one script, so their order is load-bearing), and that the
@@ -328,7 +336,7 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-workspace check-verify check-justfile-quotes check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
