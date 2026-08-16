@@ -145,16 +145,9 @@ check-site-boot:
 check-scratch-names:
     node scripts/check-scratch-names.mjs
 
-# Self-test the private workspace helper: two throwaway repositories, two sessions,
-# and the four things a shared checkout got wrong — the plan tree, the app source,
-# the index and the build folder each belonging to one session. Offline, and it
-# never touches the real pair.
-check-workspace:
-    node scripts/agent-workspace.mjs --check
-
 # Self-test the public release on a fixture that runs nothing: the order it goes in, and
-# what a failed gate, a plan tree that will not hold still, a session's copy, a dirty
-# tree or a wrong version never reaches. Offline, and it touches no repository.
+# what a failed gate, a plan tree that will not hold still, a clean tree or a wrong
+# version never reaches. Offline, and it touches no repository.
 check-release:
     node --experimental-strip-types scripts/prepare-release.mts --check
 
@@ -193,17 +186,16 @@ check-hover-fills:
 check-identity:
     node scripts/check-identity.mjs
 
-# Self-test the four hooks in .claude/settings.json: that Rule 1 is still findable
+# Self-test the five hooks in .claude/settings.json: that Rule 1 is still findable
 # in AGENTS.md and written once, that a git write is refused without a license, that
-# a reply over Rule 1's ceiling, or opening with praise, is refused, and that every
-# keyed file has a keycode of its own.
+# a reply over Rule 1's ceiling, or opening with praise, is refused, that every
+# keyed file has a keycode of its own, and that a skill's own steps are readable.
 check-hooks:
     node scripts/gate-rules.mjs --check
     node scripts/gate-git.mjs --check
     node scripts/gate-voice.mjs --check
     node scripts/gate-keycode.mjs --check
     node scripts/gate-checklist.mjs --check
-    node scripts/gate-workspace.mjs --check
 
 # Run the WebView front-end against a fake page: that it parses, that it boots
 # (the fragments are one script, so their order is load-bearing), and that the
@@ -346,7 +338,7 @@ check-justfile-quotes:
 check-build-jobs:
     node scripts/check-build-jobs.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-workspace check-release check-verify check-justfile-quotes check-build-jobs check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: one command from the gate to the push, all of it inside one still copy of
 # the plan tree. It was two — check and tag, then push after that process had exited — and

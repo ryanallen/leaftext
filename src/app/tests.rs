@@ -3592,49 +3592,24 @@ fn a_path_wrapped_in_quotes_reaches_the_encoder_without_them() {
     assert_eq!(crate::unquote_path("\""), "\"");
 }
 
-/// Two private source trees still launch into one running app: the second finds the first's instance slot, hands its file over and exits, and both tools then speak to the one copy that is left. A development session gives each copy a slot and an ask pipe of its own, so both can be open and driven at once.
-///
-/// The other half is the one that matters to everybody else: a launch with no session adds nothing to any of the three names, and those names are what every installed copy is already using.
+/// The three names a launch answers to, spelled out rather than derived: these are what every installed copy is already using, so a change that moved one would leave a running app unreachable and a later launch handing its file to nobody. Still scoped per user, so two logged-in accounts stay apart.
 #[cfg(windows)]
 #[test]
-fn two_development_sessions_get_their_own_instance_slot_and_ask_pipe() {
+fn a_launch_answers_to_the_names_every_installed_copy_already_uses() {
     use crate::pipe::ask_pipe_name;
     use crate::single_instance::{instance_mutex_name, instance_pipe_name};
 
-    let suffix = |session: &str| {
-        leaftext::DevSession::parse(session)
-            .expect("a host session id names a session")
-            .name_suffix()
-    };
-    let first = suffix("a91a31cd-b8db-418d-8174-dd5517efdefb");
-    let second = suffix("0f2c77aa-1111-4222-8333-444455556666");
-
-    for name in [instance_mutex_name, instance_pipe_name, ask_pipe_name] {
-        // Two sessions running at once must not be able to claim one slot or answer each other's questions.
-        assert_ne!(name("rwall", &first), name("rwall", &second));
-        // Nor may either of them collide with the copy the owner is reading.
-        assert_ne!(name("rwall", &first), name("rwall", ""));
-        // Still per user underneath, so two logged-in accounts stay apart whether or not either is developing.
-        assert_ne!(name("rwall", &first), name("someone-else", &first));
-    }
-
-    // What a normal launch is named. Spelled out rather than derived, because these are the names every running copy already answers to and the whole of this change is that they do not move.
     assert_eq!(
-        instance_mutex_name("rwall", ""),
+        instance_mutex_name("rwall"),
         "leaftext-single-instance-rwall"
     );
     assert_eq!(
-        instance_pipe_name("rwall", ""),
+        instance_pipe_name("rwall"),
         r"\\.\pipe\leaftext-single-instance-rwall"
     );
-    assert_eq!(
-        ask_pipe_name("rwall", ""),
-        r"\\.\pipe\leaftext-journal-rwall"
-    );
-    // And this launch's names carry its own session's suffix or nothing — the test binary itself may sit inside a session's copy, so what "no session" means is asserted on the spelled-out names above, not on the ambient launch.
-    let ambient = match leaftext::dev_session() {
-        Some(session) => session.name_suffix(),
-        None => String::new(),
-    };
-    assert_eq!(leaftext::dev_name_suffix(), ambient);
+    assert_eq!(ask_pipe_name("rwall"), r"\\.\pipe\leaftext-journal-rwall");
+
+    for name in [instance_mutex_name, instance_pipe_name, ask_pipe_name] {
+        assert_ne!(name("rwall"), name("someone-else"));
+    }
 }

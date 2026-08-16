@@ -9,8 +9,6 @@ user-invocable: true
 
 [`../docs/PLAN.md`](../../../../docs/PLAN.md) is read to answer one question: what do I pick up now. Every live ticket, ranked, one line of why each row sits where it does. Rewrite it in place — git holds every older ranking, and the date at the top says when it was last ranked.
 
-**Write it under the claim, never straight over the file.** Two sessions share this one file, so `node scripts/agent-workspace.mjs plan-open` hands back a copy to edit and `plan-close` writes it back under the claim — refused where somebody else's row landed in between, so a ranking pass never takes a status another session had just set. Nothing is held while the copy is open, and a refused copy is kept where it is so the pass is redone from it rather than lost. Edit the copy it names.
-
 [`../docs/done/PLAN.md`](../../../../docs/done/PLAN.md) holds the retired rows. Moving one there is [`/done`](../done/SKILL.md)'s job, not this skill's, so a row leaves the live file the day its last box is ticked and the list gets shorter as work ships.
 
 [`../docs/canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) holds the refused ones — the third of the three, and the one nothing else writes. **Canceling is the owner's call and no skill's**, so there is no `/done` for it: a plan is moved into `../docs/canceled/` and this pass is what gives it a row, by walking that folder rather than by being told (step 9).

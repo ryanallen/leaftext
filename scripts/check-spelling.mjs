@@ -9,7 +9,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planTree } from './agent-workspace.mjs';
+import { planTree } from './plan-tree.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 

@@ -279,18 +279,18 @@ pub(crate) fn serve(proxy: EventLoopProxy<UserEvent>) {
 #[cfg(windows)]
 pub(crate) fn address() -> Option<String> {
     let user = std::env::var("USERNAME").unwrap_or_default();
-    Some(ask_pipe_name(&user, &leaftext::dev_name_suffix()))
+    Some(ask_pipe_name(&user))
 }
 
-/// Where a copy answers what it has open and takes an edit. Scoped per user so two logged-in accounts do not share one pipe, and per development session so a question meant for one private copy cannot be answered by the other — the same scoping the single-instance pipe uses. A normal launch adds nothing.
+/// Where a copy answers what it has open and takes an edit. Scoped per user so two logged-in accounts do not share one pipe, the same way the single-instance pipe is.
 #[cfg(windows)]
-pub(crate) fn ask_pipe_name(user: &str, dev_suffix: &str) -> String {
-    format!(r"\\.\pipe\leaftext-journal-{user}{dev_suffix}")
+pub(crate) fn ask_pipe_name(user: &str) -> String {
+    format!(r"\\.\pipe\leaftext-journal-{user}")
 }
 
 #[cfg(unix)]
 pub(crate) fn address() -> Option<String> {
-    // In the app's own data folder, which is already inside the user's home, so the folder's permissions are the socket's — and a development session's data folder is its own, so the socket is too.
+    // In the app's own data folder, which is already inside the user's home, so the folder's permissions are the socket's.
     Some(
         leaftext::app_data_dir()?
             .join("journal.sock")

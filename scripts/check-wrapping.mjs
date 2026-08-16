@@ -19,7 +19,7 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planTree } from './agent-workspace.mjs';
+import { planTree } from './plan-tree.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const plans = planTree(root);

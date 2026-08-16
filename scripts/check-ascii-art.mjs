@@ -9,7 +9,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import { planTree } from './agent-workspace.mjs';
+import { planTree } from './plan-tree.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const TREES = [ROOT, resolve(planTree(ROOT))];
