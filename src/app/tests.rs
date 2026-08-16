@@ -2946,6 +2946,43 @@ fn a_name_taken_back_before_the_undo_stops_the_restore() {
     let _ = fs::remove_dir_all(&folder);
 }
 
+/// A delete the app makes itself renamed the file into the home folder's Trash, and a rename cannot cross a filesystem — so a file on a plugged-in drive or a network share would not delete at all. It goes to the trash folder that volume carries instead, which is where macOS puts it and where the reader already looks.
+#[test]
+fn a_file_off_the_home_volume_is_trashed_on_the_volume_it_is_on() {
+    use crate::platform::trash_folder_for_volume;
+
+    let home = Path::new("/Users/me");
+
+    // On the home volume, today's folder, unchanged.
+    assert_eq!(
+        trash_folder_for_volume(home, 16, 16, Path::new("/"), 501),
+        PathBuf::from("/Users/me/.Trash")
+    );
+
+    // Off it, the volume's own folder, under the reader's user id — the two folders macOS itself defines.
+    assert_eq!(
+        trash_folder_for_volume(home, 16, 41, Path::new("/Volumes/BACKUP"), 501),
+        PathBuf::from("/Volumes/BACKUP/.Trashes/501")
+    );
+}
+
+/// A drive that will not take the file says so in its own name. What the reader used to be shown was the system's wording for a cross-device link, which says nothing anybody can act on.
+#[test]
+fn a_drive_that_refuses_a_delete_is_named_in_the_message() {
+    use crate::platform::drive_refused;
+
+    let said = drive_refused(
+        Path::new("/Volumes/BACKUP"),
+        "Permission denied (os error 13)",
+    );
+    assert!(said.starts_with("BACKUP would not take the file"), "{said}");
+    assert!(said.contains("Permission denied"), "{said}");
+
+    // The startup volume is mounted at the root, which names nothing — the path stands in for it rather than leaving a blank.
+    let root = drive_refused(Path::new("/"), "Read-only file system");
+    assert!(root.starts_with("/ would not take the file"), "{root}");
+}
+
 /// The undo carries the path it means. Without it a message left on screen through a second delete would put the wrong file back, and nothing on this enum would notice.
 #[test]
 fn the_undo_names_the_file_it_means_to_put_back() {

@@ -611,6 +611,40 @@ fn install(installer: &Path, relaunch: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Which folder a trashed file goes into on a Mac: the home folder's own `.Trash` when the file is on the home volume, and `.Trashes/<user id>` at the root of its own volume when it is not.
+///
+/// A rename cannot cross a filesystem, so a file on a plugged-in drive or a network share can never reach `~/.Trash` at all. macOS puts those in the trash folder the volume itself carries, which is why Finder can trash a file on a USB stick and the reader still finds it in the Trash.
+///
+/// Outside `macos_impl` on purpose: a Windows build holds nothing inside that block, so this is the only piece of the choice a test on this machine can reach.
+// Called only on macOS, and `warnings = "deny"` fails every other build on an unused function.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn trash_folder_for_volume(
+    home: &Path,
+    home_volume: u64,
+    file_volume: u64,
+    mount_point: &Path,
+    user: u32,
+) -> PathBuf {
+    if file_volume == home_volume {
+        home.join(".Trash")
+    } else {
+        mount_point.join(".Trashes").join(user.to_string())
+    }
+}
+
+/// A drive that will not take the file is named as itself. The system's own wording for this is a cross-device link, which nobody reading it can act on.
+///
+/// Outside `macos_impl` for the same reason as the folder above: it is what the reader is shown, so it is worth a test on any machine.
+// Called only on macOS, and `warnings = "deny"` fails every other build on an unused function.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn drive_refused(mount_point: &Path, error: impl std::fmt::Display) -> String {
+    let drive = mount_point
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| mount_point.display().to_string());
+    format!("{drive} would not take the file: {error}")
+}
+
 #[cfg(windows)]
 mod windows_impl {
     use super::{failed, io, Path, PathBuf, DOWNLOAD_CHUNK_BYTES};
@@ -1517,14 +1551,38 @@ mod macos_impl {
         std::fs::rename(from, original).map_err(|error| format!("move out of the Trash: {error}"))
     }
 
-    /// Fallback: rename into `~/.Trash`, uniquifying the name on collision so an existing trashed file of the same name is never clobbered. Hands back the name it wrote, which is the whole reason undo can find it again.
+    /// Fallback: rename into a trash folder, uniquifying the name on collision so an existing trashed file of the same name is never clobbered. Hands back the name it wrote, which is the whole reason undo can find it again.
+    ///
+    /// The folder is the one the file's own volume owns, so a file on a plugged-in drive or a network share is trashed there rather than dying on a rename that cannot cross a filesystem. Putting it back stays a rename inside that one volume too.
+    ///
+    /// The volume is read off the folder the file sits in, not the file: `metadata` follows a symlink, and it is the folder's filesystem the rename actually moves an entry in.
     fn move_into_trash_folder(path: &Path) -> Result<PathBuf, String> {
+        use std::os::unix::fs::MetadataExt;
+
         let home = std::env::var_os("HOME").ok_or("HOME is not set")?;
-        let trash = Path::new(&home).join(".Trash");
+        let home = Path::new(&home);
+        let home_facts =
+            std::fs::metadata(home).map_err(|error| format!("read the home folder: {error}"))?;
         let name = path
             .file_name()
             .ok_or("the path does not name a file")?
             .to_os_string();
+        let folder = path.parent().ok_or("the path does not name a folder")?;
+        let folder_facts = std::fs::metadata(folder)
+            .map_err(|error| format!("read the folder the file is in: {error}"))?;
+
+        let elsewhere = folder_facts.dev() != home_facts.dev();
+        let mount = mount_point_of(folder, folder_facts.dev());
+        let trash = super::trash_folder_for_volume(
+            home,
+            home_facts.dev(),
+            folder_facts.dev(),
+            &mount,
+            home_facts.uid(),
+        );
+        if elsewhere {
+            make_volume_trash(&trash).map_err(|error| super::drive_refused(&mount, error))?;
+        }
 
         let mut target = trash.join(&name);
         let mut attempt = 1;
@@ -1541,7 +1599,50 @@ mod macos_impl {
             attempt += 1;
         }
 
-        std::fs::rename(path, &target).map_err(|error| format!("move to Trash: {error}"))?;
+        std::fs::rename(path, &target).map_err(|error| {
+            if elsewhere {
+                super::drive_refused(&mount, error)
+            } else {
+                format!("move to Trash: {error}")
+            }
+        })?;
         Ok(target)
+    }
+
+    /// The deepest folder above `start` still on the same volume — where that volume is mounted.
+    ///
+    /// It walks one path's own ancestors and reads nothing beside them, so the rule against crawling the device holds.
+    fn mount_point_of(start: &Path, device: u64) -> PathBuf {
+        use std::os::unix::fs::MetadataExt;
+
+        let mut mount = start;
+        let mut walk = start;
+        while let Some(parent) = walk.parent() {
+            match std::fs::metadata(parent) {
+                Ok(facts) if facts.dev() == device => {
+                    mount = parent;
+                    walk = parent;
+                }
+                _ => break,
+            }
+        }
+        mount.to_path_buf()
+    }
+
+    /// Make the volume's trash folder when it has none, at the modes macOS gives it: `.Trashes` is shared by everyone with the sticky bit on, and the folder inside it is the one user's alone.
+    fn make_volume_trash(trash: &Path) -> io::Result<()> {
+        use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+
+        if let Some(trashes) = trash.parent() {
+            if !trashes.exists() {
+                std::fs::DirBuilder::new().mode(0o1333).create(trashes)?;
+                // `mkdir` is masked by the umask, which eats the group and other bits; `chmod` is not.
+                std::fs::set_permissions(trashes, std::fs::Permissions::from_mode(0o1333))?;
+            }
+        }
+        if !trash.exists() {
+            std::fs::DirBuilder::new().mode(0o700).create(trash)?;
+        }
+        Ok(())
     }
 }
