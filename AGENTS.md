@@ -146,6 +146,10 @@ A copy that is up can be asked questions and driven, so a change is proved in th
 
 Edit → `just verify` → **stop** (see git, above). Once authorized, pushing a `v*` tag runs `release-windows.yml` (MSI via cargo-wix) and `release-distributions.yml` (both chips → `lipo` → universal DMG). The packaged version must equal `Cargo.toml`'s or the scripts stop. **A push to `main` publishes the website**, tag or no tag: `publish-site.yml` builds the renderer, writes it beside the pages and deploys. A failure there leaves the last published site standing rather than taking it down, so nothing a reader touches waits on that build.
 
+**Work that is not a release goes in and out immediately.** Committed and pushed the moment it passes, as the first act rather than the last, so nothing sits in the shared tree for another session to collide with or have to identify.
+
+**Only a change somebody running the app can meet gets a version and a tag.** The build's own machinery — the skills, the hooks, the checks, `scripts/` — sits in this checkout beside the app and is not the app, so it is pushed and left there: no number moved, no tag, no installer. Cutting one anyway spends a whole gate twice and publishes a download identical to the one before it.
+
 ## Dependencies
 
 Every crate ships to users and nobody here reviews it — a security boundary, not a convenience.
