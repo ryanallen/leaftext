@@ -9,9 +9,11 @@
 //
 // The package's own guide already says a copy is replaced from its source rather than edited (`docs/learn/ticket-workflow-medium/AGENTS.md`, "Source and updates"). This enforces a written rule; it does not invent one.
 
+import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isManaged } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -47,18 +49,16 @@ function excerpt(text, column) {
   return `\`${lead}${text.slice(start, end).trim()}${tail}\``;
 }
 
-/** Every pair that is not what it claims to be. Each entry is one skill folder, with the bytes on each side or null where that file is not there. */
-export function snapshotProblems(entries) {
+/** Every pair that is not what it claims to be, kept with its name so a workspace can ask who changed it. */
+export function snapshotProblemDetails(entries) {
   const problems = [];
   for (const { name, source, copy } of entries) {
     if (source === null) {
-      problems.push(
-        `${COPY_LABEL}/${name}/SKILL.md is a copy of a skill this repo does not have — ${SOURCE_LABEL}/${name}/SKILL.md is not there. A retired or renamed skill leaves its copy behind saying the work is still done that way.`
-      );
+      problems.push({ name, message: `${COPY_LABEL}/${name}/SKILL.md is a copy of a skill this repo does not have — ${SOURCE_LABEL}/${name}/SKILL.md is not there. A retired or renamed skill leaves its copy behind saying the work is still done that way.` });
       continue;
     }
     if (copy === null) {
-      problems.push(`${COPY_LABEL}/${name}/ holds no SKILL.md, so the article cites a skill it carries no copy of.`);
+      problems.push({ name, message: `${COPY_LABEL}/${name}/ holds no SKILL.md, so the article cites a skill it carries no copy of.` });
       continue;
     }
     if (source.equals(copy)) continue;
@@ -66,9 +66,44 @@ export function snapshotProblems(entries) {
     const where = at
       ? `first differs at line ${at.line}: the skill says ${excerpt(at.source, at.column)}, the copy says ${excerpt(at.copy, at.column)}`
       : 'differs in bytes the text does not show — the copy was saved in another encoding';
-    problems.push(`${COPY_LABEL}/${name}/SKILL.md has drifted from ${SOURCE_LABEL}/${name}/SKILL.md — ${where}`);
+    problems.push({ name, message: `${COPY_LABEL}/${name}/SKILL.md has drifted from ${SOURCE_LABEL}/${name}/SKILL.md — ${where}` });
   }
   return problems;
+}
+
+/** Every pair that is not what it claims to be. */
+export function snapshotProblems(entries) {
+  return snapshotProblemDetails(entries).map((problem) => problem.message);
+}
+
+/** Whether a mismatch belongs to this session, or was already split when its workspace was cut. */
+export function pairState({ managed, sourceTouched, copyTouched }) {
+  return managed && !sourceTouched && !copyTouched ? 'cut' : 'drifted';
+}
+
+/** Keep cut mismatches visible without letting them stop a session's own gate. */
+export function splitProblems(problems, states) {
+  const cut = [];
+  const drifted = [];
+  for (const problem of problems) (states.get(problem.name) === 'cut' ? cut : drifted).push(problem);
+  return { cut, drifted };
+}
+
+/** The copies a fix may rewrite, excluding a pair the session was handed already split. */
+export function fixPlan(entries, states) {
+  const writes = [];
+  const skipped = [];
+  const unfixable = [];
+  for (const entry of entries) {
+    if (states.get(entry.name) === 'cut') {
+      skipped.push(entry.name);
+    } else if (entry.source === null) {
+      unfixable.push(entry.name);
+    } else {
+      writes.push(entry);
+    }
+  }
+  return { writes, skipped, unfixable };
 }
 
 /** One entry per folder under the copies, read off the disk. A folder is the unit because that is what both sides are laid out as. */
@@ -87,6 +122,21 @@ function fromDisk() {
       source: bytes(join(SOURCES, entry.name, 'SKILL.md')),
       copy: bytes(join(COPIES, entry.name, 'SKILL.md')),
     }));
+}
+
+/** Git answers whether this checkout changed one half, without comparing a blob through line-ending rules. */
+function touched(dir, path) {
+  try {
+    return execFileSync('git', ['-C', dir, 'status', '--porcelain', '--', path], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).length > 0;
+  } catch {
+    return true;
+  }
+}
+
+/** Read each mismatched pair only in a managed workspace, and only after the byte comparison found it. */
+function pairStates(problems) {
+  const managed = isManaged(root);
+  return new Map(problems.map(({ name }) => [name, pairState({ managed, sourceTouched: managed && touched(root, join('.agents', 'skills', name, 'SKILL.md')), copyTouched: managed && touched(COPIES, join(name, 'SKILL.md')) })]));
 }
 
 const entries = fromDisk();
@@ -108,6 +158,17 @@ if (process.argv.includes('--check')) {
   }
   const orphan = snapshotProblems([{ name: 'gone', source: null, copy: bytes('# Gone\n') }]);
   if (orphan.length !== 1) faults.push('the comparison let through a copy of a skill that does not exist, which is a retired skill still being taught');
+  const mismatch = snapshotProblemDetails([{ name: 'dev', source: bytes('# Dev\n\nOne rule.\n'), copy: bytes('# Dev\n\nAnother rule.\n') }]);
+  const primary = splitProblems(mismatch, new Map([['dev', pairState({ managed: false, sourceTouched: false, copyTouched: false })]]));
+  if (primary.cut.length || primary.drifted.length !== 1) faults.push('a primary checkout did not fail on a mismatch');
+  const cut = splitProblems(mismatch, new Map([['dev', pairState({ managed: true, sourceTouched: false, copyTouched: false })]]));
+  if (cut.cut.length !== 1 || cut.drifted.length) faults.push('a pair cut across a primary edit still stopped its session');
+  const touchedPair = splitProblems(mismatch, new Map([['dev', pairState({ managed: true, sourceTouched: true, copyTouched: false })]]));
+  if (touchedPair.cut.length || touchedPair.drifted.length !== 1) faults.push('a mismatch this session touched did not fail');
+  const both = splitProblems([...mismatch, { name: 'check', message: 'check drifted' }], new Map([['dev', 'cut'], ['check', 'drifted']]));
+  if (both.cut.map((problem) => problem.name).join() !== 'dev' || both.drifted.map((problem) => problem.name).join() !== 'check') faults.push('a mixed run did not keep a cut pair separate from a drifted one');
+  const fixed = fixPlan([{ name: 'dev', source: bytes('new'), copy: bytes('old') }, { name: 'check', source: bytes('new'), copy: bytes('old') }], new Map([['dev', 'cut'], ['check', 'drifted']]));
+  if (fixed.skipped.join() !== 'dev' || fixed.writes.map((entry) => entry.name).join() !== 'check') faults.push('a fix did not leave a cut pair alone while repairing a drifted one');
   if (faults.length) {
     console.error('the comparison is wrong, so nothing was read:');
     for (const fault of faults) console.error(`  ${fault}`);
@@ -117,30 +178,31 @@ if (process.argv.includes('--check')) {
 }
 
 if (process.argv.includes('--fix')) {
+  const problems = snapshotProblemDetails(entries);
+  const states = pairStates(problems);
+  const plan = fixPlan(entries, states);
   let written = 0;
-  const unfixable = [];
-  for (const { name, source } of entries) {
-    if (source === null) {
-      unfixable.push(name);
-      continue;
-    }
+  for (const { name, source } of plan.writes) {
     // Bytes, never decoded text: the copy has to be the source, and a re-encoded file only looks like one.
     writeFileSync(join(COPIES, name, 'SKILL.md'), source);
     written += 1;
   }
   console.log(`learn snapshots: ${written} copies rewritten from their skills`);
-  if (unfixable.length) {
-    console.error(`no skill to copy for: ${unfixable.join(', ')} — retire the copy, or bring the skill back.`);
+  if (plan.skipped.length) console.log(`learn snapshots: left ${plan.skipped.join(', ')} alone because this workspace was cut across an edit uncommitted in the primary`);
+  if (plan.unfixable.length) {
+    console.error(`no skill to copy for: ${plan.unfixable.join(', ')} — retire the copy, or bring the skill back.`);
     process.exit(1);
   }
   process.exit(0);
 }
 
-const problems = snapshotProblems(entries);
-if (problems.length) {
+const details = snapshotProblemDetails(entries);
+const { cut, drifted } = splitProblems(details, pairStates(details));
+for (const problem of cut) console.log(`${problem.message}\n  This workspace was cut across an edit uncommitted in the primary, and neither half was touched here. Fix it in the primary checkout; this session leaves the pair alone.`);
+if (drifted.length) {
   console.error('the workflow article is teaching a rule its skill no longer says:');
-  for (const problem of problems) console.error(`  ${problem}`);
-  console.error('The copies are the reader\'s evidence, so they are replaced from source rather than edited: `node scripts/check-learn-snapshots.mjs --fix`.');
+  for (const problem of drifted) console.error(`  ${problem.message}`);
+  console.error('The copies are the reader\'s evidence, so the pairs this copy changed are replaced from source rather than edited: `node scripts/check-learn-snapshots.mjs --fix`.');
   process.exit(1);
 }
-console.log(`learn snapshots: ${entries.length} copies, and every one is the skill it was taken from`);
+console.log(`learn snapshots: ${entries.length} copies, and every pair this checkout owns is the skill it was taken from`);
