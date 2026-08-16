@@ -99,6 +99,14 @@ check-docs:
 check-plan:
     node scripts/check-plan.mjs
 
+# Fail on a copy of a skill in the shared workflow article that no longer says what the
+# skill says. The article is handed on with an exact copy of every skill it cites, so the
+# copy is the reader's evidence — a drifted one is the article teaching a rule that was
+# retired, and nothing in the folder tells them which half is current. `--fix` rewrites
+# every copy from its source.
+check-learn-snapshots:
+    node scripts/check-learn-snapshots.mjs --check
+
 # Fail on a paragraph broken across lines — in Markdown, and in a comment in the code.
 # Everything that reads them reflows, so the newline inside a paragraph only costs: it
 # re-flows by hand on every edit after it, and a one-word change diffs as the whole
@@ -320,7 +328,7 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-doc-images check-plan check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-verify check-justfile-quotes check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

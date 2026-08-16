@@ -493,6 +493,8 @@ fn bundled_asset_response_serves_known_assets_and_404s_unknown() {
     let js = bundled_asset_response("leaf-asset://local/mermaid.min.js");
     assert_eq!(js.status, 200);
     assert_eq!(js.content_type, "text/javascript; charset=utf-8");
+    // The response half of the anonymous CORS pair: without it the browser masks every throw inside a bundled script as `Script error.` with no place.
+    assert_eq!(js.allow_origin, "*");
     assert!(!js.body.is_empty());
 
     let css = bundled_asset_response("http://leaf-asset.local/katex/katex.min.css");
@@ -504,8 +506,14 @@ fn bundled_asset_response_serves_known_assets_and_404s_unknown() {
     assert_eq!(font.content_type, "font/woff2");
     assert!(!font.body.is_empty());
 
+    // The URLs the desktop hands the page carry a version query, so the lookup must not read one as part of the name.
+    let versioned = bundled_asset_response("leaf-asset://local/mermaid.min.js?v=1.2.3");
+    assert_eq!(versioned.status, 200);
+    assert_eq!(versioned.allow_origin, "*");
+
     let missing = bundled_asset_response("leaf-asset://local/nope.js");
     assert_eq!(missing.status, 404);
+    assert_eq!(missing.allow_origin, "*");
 }
 
 #[test]

@@ -533,6 +533,8 @@ fn bundled_asset_protocol_handler(
         Response::builder()
             .status(asset.status)
             .header("Content-Type", asset.content_type)
+            // The scripts fetch in anonymous cross-origin mode; without this half of the pair the browser masks every throw inside one as `Script error.` with no place.
+            .header("Access-Control-Allow-Origin", asset.allow_origin)
             .header("Cache-Control", "max-age=31536000, immutable")
             .body(asset.body)
             .expect("bundled asset protocol response builds")

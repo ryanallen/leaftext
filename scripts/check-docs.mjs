@@ -39,6 +39,7 @@ const PLAN_ROLES = [
   ['done', 'shipped, kept for the reasoning (with the retired running-order rows)'],
   ['canceled', 'decided against, kept for the reasoning'],
   ['tests', 'a document to open in the app, not a plan'],
+  ['learn/ticket-workflow-medium/skills', "this repo's own skills, copied for sharing — held to their sources by `check-learn-snapshots`"],
   ['learn', "writing from elsewhere, kept to read — not about this app, so nothing here can go stale"],
   ['.', 'the ticket index, and the glossary of the words it is written in'],
 ];
@@ -121,10 +122,27 @@ function linkSelfTest() {
   return fails;
 }
 
+const DONE_REPOINTS_ADVICE = 'and /done repoints the links pointing at the ticket it moves, so this means that step was skipped; repoint it.';
+const DONE_REPOINTS_STEP = 'Take the links pointing *at* it with it: search both trees for its file name and repoint every one';
+
+function adviceSelfTest() {
+  const done = readFileSync(join(root, '.agents', 'skills', 'done', 'SKILL.md'), 'utf8');
+  return done.includes(DONE_REPOINTS_STEP)
+    ? []
+    : [`${DONE_REPOINTS_ADVICE}  ->  .agents/skills/done/SKILL.md no longer says it repoints every link pointing at the ticket it moves`];
+}
+
 const selfTestFails = linkSelfTest();
 if (selfTestFails.length) {
   console.error('links: the code strip is wrong, so nothing was read:');
   for (const line of selfTestFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
+const adviceFails = adviceSelfTest();
+if (adviceFails.length) {
+  console.error('advice: a line below no longer matches the /done step it names:');
+  for (const line of adviceFails) console.error(`  ${line}`);
   process.exit(1);
 }
 
@@ -307,7 +325,7 @@ if (dead.length) {
   console.error('these links open nothing:');
   for (const line of dead) console.error(`  ${line}`);
   console.error('point each at where the file is now. A ticket that shipped moved into ../docs/done/,');
-  console.error('and /done fixes only the links inside the ticket it moves, not the ones pointing at it.');
+  console.error(DONE_REPOINTS_ADVICE);
   process.exit(1);
 }
 

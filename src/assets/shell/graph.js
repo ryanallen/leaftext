@@ -218,6 +218,8 @@ function loadScriptOnce(src) {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = src;
+    // Anonymous mode, paired with the asset response's allow-origin header, so a throw inside Pixi, d3-force, or Monaco reaches window.onerror unmasked.
+    script.crossOrigin = 'anonymous';
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error(`Failed to load ${src}`));

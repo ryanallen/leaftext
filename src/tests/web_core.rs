@@ -239,6 +239,11 @@ fn the_desktop_answers_its_commands_through_the_host() {
         .asset_url("app.js")
         .expect("the desktop serves its own assets");
     assert!(asset.contains("app.js"), "asset url: {asset}");
+    // Versioned, so a new binary is never answered out of an old binary's year-long cache entry — the stored headers would re-mask every page error.
+    assert!(
+        asset.contains(&format!("?v={}", env!("CARGO_PKG_VERSION"))),
+        "asset url carries no version: {asset}"
+    );
 
     // The desktop compiles the highlighter in, so it has no second module to fetch.
     assert!(host.highlighter_url().is_none());

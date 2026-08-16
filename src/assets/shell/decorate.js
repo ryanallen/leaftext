@@ -8,6 +8,8 @@ function loadMermaid() {
   mermaidLoadPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = MERMAID_SCRIPT_URL;
+    // Anonymous mode, paired with the asset response's allow-origin header, so a throw inside the runtime reaches window.onerror unmasked.
+    script.crossOrigin = 'anonymous';
     script.async = true;
     script.onload = () => {
       if (window.mermaid) {
@@ -1373,6 +1375,8 @@ function loadKatex() {
   katexLoadPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = KATEX_SCRIPT_URL;
+    // Same anonymous pairing as Mermaid's tag: an unmasked throw names its place.
+    script.crossOrigin = 'anonymous';
     script.async = true;
     script.onload = () => {
       if (window.katex) {

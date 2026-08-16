@@ -185,7 +185,9 @@ fn the_front_end_is_served_beside_the_shell_not_inside_it() {
     let script = app_shell_script();
 
     assert_contains(&page, "<script src=\"");
-    assert_contains(&page, "app.js\"></script>");
+    // Anonymous mode is the request half of the CORS pair that lets a throw inside the script reach window.onerror with its place instead of the masked `Script error.`. The version query keeps a new binary out of an old binary's cache entry, whose stored headers would re-mask every throw.
+    assert_contains(&page, "app.js?v=");
+    assert_contains(&page, "\" crossorigin=\"anonymous\"></script>");
     // One tag, and no inline script: the fragments are one shared scope, so a second tag would be a second scope.
     assert_eq!(page.matches("<script src=").count(), 1);
     assert!(

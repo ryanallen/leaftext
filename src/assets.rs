@@ -115,6 +115,8 @@ pub fn source_payload_url(protocol: &str, id: u64) -> String {
 pub struct BundledAsset {
     pub status: u16,
     pub content_type: &'static str,
+    // The scripts load in anonymous cross-origin mode so a throw inside one reaches window.onerror with its message and place instead of the browser's masked `Script error.`; this is the response half of that pair. App-owned executable bytes, so the read reveals nothing the page could not already run.
+    pub allow_origin: &'static str,
     pub body: std::borrow::Cow<'static, [u8]>,
 }
 
@@ -124,11 +126,13 @@ pub fn bundled_asset_response(uri: &str) -> BundledAsset {
         Some((content_type, body)) => BundledAsset {
             status: 200,
             content_type,
+            allow_origin: "*",
             body: std::borrow::Cow::Borrowed(body),
         },
         None => BundledAsset {
             status: 404,
             content_type: "text/plain; charset=utf-8",
+            allow_origin: "*",
             body: std::borrow::Cow::Borrowed(b""),
         },
     }
@@ -164,8 +168,13 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
 }
 
 /// Webview URL for a bundled asset (mirrors the local-image URL rewrite).
+///
+/// The version rides the URL because the webview's HTTP cache keeps a response's headers with its bytes for a year (`immutable`): a copy that cached an asset before a header change would keep answering with the old headers until the entry dies — which is how the CORS pair shipped and mermaid's throws stayed masked anyway. A new binary must never be answered out of an old binary's cache entry.
 pub(crate) fn bundled_asset_url(path: &str) -> String {
-    let protocol_url = format!("{LOCAL_ASSET_PROTOCOL}://{LOCAL_IMAGE_HOST}/{path}");
+    let protocol_url = format!(
+        "{LOCAL_ASSET_PROTOCOL}://{LOCAL_IMAGE_HOST}/{path}?v={}",
+        env!("CARGO_PKG_VERSION")
+    );
     bundled_asset_webview_url_from_protocol_url(&protocol_url)
 }
 

@@ -9579,6 +9579,21 @@ check('an unhandled rejection reaches the same place', () => {
   }
 });
 
+// The request half of the CORS pair: a script fetched without anonymous mode has every throw inside it masked as `Script error.` with no place, whatever the response allows. The response half — the asset handler's allow-origin header — is held by src/tests/theme_registry.rs, and the page's own tag by src/tests/app_shell_chrome.rs.
+check('every constructed script tag asks for its errors unmasked', () => {
+  const constructors = [...source.matchAll(/document\.createElement\('script'\)/g)];
+  if (constructors.length < 3) {
+    throw new Error(`expected the Mermaid, KaTeX, and shared lazy-script constructors, found ${constructors.length}`);
+  }
+  for (const match of constructors) {
+    const appended = source.indexOf('appendChild', match.index);
+    const constructor = source.slice(match.index, appended === -1 ? match.index + 400 : appended);
+    if (!constructor.includes(".crossOrigin = 'anonymous'")) {
+      throw new Error(`a constructed script tag loads without anonymous mode: ${constructor.slice(0, 200)}`);
+    }
+  }
+});
+
 // ---- the browser's own host -------------------------------------------------
 //
 // The app and a published site are one front end with two hosts under it, and `web/preview/host.js` is the browser's half — shipped to every site the export writes, and reachable nowhere else outside a browser.
