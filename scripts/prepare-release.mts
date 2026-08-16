@@ -31,6 +31,7 @@ type ReleaseHost = {
   holdPrimary: (fn: () => void) => void;
   handoff: () => Handoff;
   clearHandoff: () => void;
+  tagsOnHead: () => string[];
 };
 type ReleaseOptions = { signCommit: boolean; host?: ReleaseHost };
 
@@ -94,6 +95,7 @@ export function liveHost(): ReleaseHost {
     clearHandoff: () => {
       clearPendingRelease(workspaceParent());
     },
+    tagsOnHead: () => required(host, "git", ["tag", "--points-at", "HEAD"], { capture: true }).split("\n").map((line) => line.trim()).filter(Boolean),
   };
   return host;
 }
@@ -113,6 +115,18 @@ function assertOnlyHandedOverWork(host: ReleaseHost): string[] {
     throw new Error(handoff.refusal);
   }
   return handoff.paths;
+}
+
+// A release carries what a submit handed over, so nothing handed over is nothing to release — and the commit is the first thing to notice it, after the whole suite has run. The tags on HEAD say which of the two states this is: none, and nobody handed anything over; one, and an earlier release committed and tagged this very commit before its push failed, which is the case where the tag must never go up again.
+function assertSomethingWasHandedOver(host: ReleaseHost, handedOver: string[]): void {
+  if (handedOver.length) {
+    return;
+  }
+  const already = host.tagsOnHead();
+  if (already.length) {
+    throw new Error(`Nothing is waiting to be released, and this commit is already tagged ${already.join(", ")} — an earlier release committed and tagged before it stopped. Never push that tag again: bump the patch in Cargo.toml and release the new number.`);
+  }
+  throw new Error("Nothing was handed over, so there is nothing to release: no work is waiting in this copy and no receipt names any. Hand a session's work over with `node scripts/agent-workspace.mjs submit <session>` first.");
 }
 
 // One public release, in one place: a session's copy hands its work over instead, or two agents tag over each other.
@@ -162,6 +176,7 @@ export function prepareRelease(version: string, options: ReleaseOptions = { sign
   // The claim is held across the whole release: what the receipt was checked against has to be what gets committed, and a submit is the one other thing that writes this tree.
   host.holdPrimary(() => {
     const handedOver = assertOnlyHandedOverWork(host);
+    assertSomethingWasHandedOver(host, handedOver);
     assertTagDoesNotExist(host, tag);
     // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
     host.withSnapshot((root) => {
@@ -241,6 +256,11 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
     clearHandoff: () => {
       record("receipt cleared");
     },
+    // A read, not tag work: it is recorded under its own name so the loops proving a refusal reached no tag can stay about the commands that write one.
+    tagsOnHead: () => {
+      record("tags on HEAD read");
+      return [];
+    },
     ...overrides,
   };
   return { host, calls, envs };
@@ -310,6 +330,27 @@ function selfTest(): void {
   }
   if (!strange.calls.includes("primary released")) fails.push("a refused release kept the primary reservation");
 
+  // Nothing handed over at all: refused before the tag check and the gate, since the commit is otherwise the first thing to say so and it says it after the whole suite has run.
+  const empty = fixture(() => null, { handoff: () => ({ refusal: "", paths: [] }) });
+  const emptyFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: empty.host }));
+  if (!emptyFailed.includes("nothing to release")) fails.push(`a release with nothing handed over was not told so: ${emptyFailed || "it passed"}`);
+  if (empty.calls.includes("just verify")) fails.push("a release with nothing handed over ran the whole gate before it could say so");
+  if (empty.calls.includes("snapshot taken")) fails.push("a release with nothing handed over copied the plan tree before being refused");
+  for (const call of empty.calls) {
+    if (TAG_WORK.test(call)) fails.push(`a release with nothing handed over still ran ${call}`);
+  }
+  if (!empty.calls.includes("primary released")) fails.push("a release with nothing handed over kept the primary reservation");
+
+  // The same empty state one step later: a release that committed and tagged, then failed its push. The tag it left is the one fact separating the two, and it must never go up again.
+  const stopped = fixture(() => null, { handoff: () => ({ refusal: "", paths: [] }), tagsOnHead: () => ["v1.2.2"] });
+  const stoppedFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: stopped.host }));
+  if (!stoppedFailed.includes("v1.2.2")) fails.push(`a release resuming after a failed push was not told which tag is already on the commit: ${stoppedFailed || "it passed"}`);
+  if (!/bump the patch/i.test(stoppedFailed)) fails.push("a release resuming after a failed push was not told to bump the patch rather than push that tag again");
+  if (stopped.calls.includes("just verify")) fails.push("a release resuming after a failed push ran the whole gate before it could say so");
+  for (const call of stopped.calls) {
+    if (TAG_WORK.test(call)) fails.push(`a release resuming after a failed push still ran ${call}`);
+  }
+
   // A commit that fails: the receipt stays, so the next attempt checks the same tree against the same bytes rather than meeting a tree it cannot account for.
   const noCommit = fixture((command, args) => (command === "git" && args.includes("commit") ? { status: 1, stdout: "" } : null));
   const commitFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: noCommit.host }));
@@ -368,7 +409,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (one command from the gate to the push, all of it inside a still copy of the plan tree and under the primary reservation; the handed-over paths are staged by name and their receipt cleared only once the commit holds them; the old tags go only after the gate passes, and a failed gate, a moving tree, a workspace, work nobody handed over or a wrong version reaches no tag cleanup, staging, commit, tag or push)");
+  console.log("prepare-release: ok (one command from the gate to the push, all of it inside a still copy of the plan tree and under the primary reservation; the handed-over paths are staged by name and their receipt cleared only once the commit holds them; the old tags go only after the gate passes, and a failed gate, a moving tree, a workspace, work nobody handed over, nothing handed over at all or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch)");
 }
 
 function isMainModule(): boolean {
