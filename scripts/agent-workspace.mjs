@@ -7,13 +7,14 @@
 //   node scripts/agent-workspace.mjs path        where this session's copy is
 //   node scripts/agent-workspace.mjs list        every managed workspace
 //   node scripts/agent-workspace.mjs private [--session <session>] [message]  hand a named session's finished work over on its own branch
+//   node scripts/agent-workspace.mjs rebase <s> replay one session's handoff onto the revision the primary copy is on
 //   node scripts/agent-workspace.mjs submit <s>  apply one session's handoff to the primary app copy
 //   node scripts/agent-workspace.mjs plan-open   take the running order to edit, holding it
 //   node scripts/agent-workspace.mjs plan-close  write it back and give it up
 //   node scripts/agent-workspace.mjs remove      take this session's copy down
 //   node scripts/agent-workspace.mjs --check     self-test (`just check-workspace`)
 //
-// A hook runs `create` before every message; nobody types it. `private` commits, so `scripts/gate-git.mjs` gates that one — the gate reads a command string and cannot see the git a script spawns.
+// A hook runs `create` before every message; nobody types it. `private` commits and `rebase` moves that commit, so `scripts/gate-git.mjs` gates those two — the gate reads a command string and cannot see the git a script spawns.
 //
 // The private parent is outside every repository: Studio work sits inside the Studio tree, which is one too, so a parent under either would be untracked noise in a third status.
 
@@ -73,6 +74,16 @@ function gitRaw(dir, args) {
 
 function git(dir, args) {
   return gitRaw(dir, args).trim();
+}
+
+/// Git with no editor to open. A replay reuses the handoff's own message, and git asks for it anyway — with nobody to answer, the command would sit there for ever.
+function gitUnattended(dir, args) {
+  return execFileSync('git', ['-C', dir, ...args], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, GIT_EDITOR: 'true', GIT_SEQUENCE_EDITOR: 'true' },
+  }).trim();
 }
 
 /// A repository's own top level, or ''. Compared rather than merely asked: a path inside one answers the top level, not itself.
@@ -325,6 +336,109 @@ export function handoffOn(appRoot, branch) {
   } catch {
     return null;
   }
+}
+
+/// The session a branch belongs to, so a refusal can name the copy rather than the ref.
+export function sessionOfBranch(branch) {
+  return sessionTag((branch || '').replace(/^agent\//, ''));
+}
+
+// ---------------------------------------------------------------------------
+// Replaying a handoff another session's release overtook.
+// ---------------------------------------------------------------------------
+
+/// Whether a replay is halfway through in a copy — what tells a fresh one from carrying on after a conflict.
+export function rebaseInProgress(dir) {
+  for (const name of ['rebase-merge', 'rebase-apply']) {
+    try {
+      const path = git(dir, ['rev-parse', '--git-path', name]);
+      if (existsSync(isAbsolute(path) ? path : join(dir, path))) return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/// The paths a stopped replay is waiting on.
+export function unmergedPaths(dir) {
+  try {
+    return git(dir, ['diff', '--name-only', '--diff-filter=U']).split('\n').filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/// Of those, the ones still carrying git's marks. Settling a conflict is editing the file, and the index goes on calling it unmerged until the replay picks it up — so the index cannot be what says whether somebody has finished, or a settled file would be refused for ever.
+export function unsettledPaths(dir) {
+  return unmergedPaths(dir).filter((path) => {
+    try {
+      return /^<{7} /m.test(readFileSync(join(dir, path), 'utf8'));
+    } catch {
+      // Gone is settled: a conflict answered by taking the file away.
+      return false;
+    }
+  });
+}
+
+/// Why a handoff may not be replayed, or ''. Pure, the way the submit refusal is.
+export function rebaseRefusal(state) {
+  const { managed, handoff, appHead, workspaceDirty = [], continuing = false, unsettled = [] } = state;
+  if (managed) return 'a handoff is replayed from the primary checkout — a workspace hands its own work over, it does not move another\'s';
+  // Carrying on says nothing about the base or the loose files: a stopped replay leaves both in a state only finishing it settles.
+  if (continuing) {
+    if (unsettled.length) return `${unsettled.join(', ')} still has git's conflict marks in it — settle every one in the session's own copy, then replay again`;
+    return '';
+  }
+  if (!handoff) return 'that branch carries no handoff';
+  if (handoff.appBase === appHead) return `the handoff is already written on app revision ${appHead.slice(0, 8)}, which is what the primary copy is on — submit it rather than replaying it`;
+  if (workspaceDirty.length) return `the session's copy has work no handoff has taken (${workspaceDirty.slice(0, 8).join(', ')}), and a replay would leave it behind — hand it over first`;
+  return '';
+}
+
+/// Replay one session's handoff onto the revision the primary copy is on, so work a release overtook can still be handed over. Run from the primary copy; the replay itself happens in the session's own, which is where a conflict is left to be settled and where the same call carries on from.
+export function rebaseHandoff({ session, parent, appRoot, from = process.cwd() }) {
+  const tag = sessionTag(session);
+  if (!tag) throw new Error('no session named, so there is no handoff to replay');
+  const managed = isManaged(from);
+  if (managed) throw new Error(rebaseRefusal({ managed }));
+  const record = manifests(parent).find((m) => m.session === tag);
+  if (!record) throw new Error(`no managed workspace for this session under ${parent}`);
+  if (!existsSync(record.app)) throw new Error(`${record.app} is not on disk any more, so a conflict would have nowhere to be settled — make that session's copy again before replaying its handoff`);
+
+  const branch = branchFor(session);
+  const appHead = baseOf(appRoot);
+  const continuing = rebaseInProgress(record.app);
+  const handoff = handoffOn(appRoot, branch);
+  const refusal = rebaseRefusal({
+    managed,
+    handoff,
+    appHead,
+    continuing,
+    unsettled: continuing ? unsettledPaths(record.app) : [],
+    workspaceDirty: continuing ? [] : dirtyPaths(record.app),
+  });
+  if (refusal) throw new Error(refusal);
+
+  try {
+    // Staged first, so a file settled by hand and one settled by deleting it both travel.
+    if (continuing) git(record.app, ['add', '-A']);
+    const replay = continuing
+      ? ['-c', 'commit.gpgsign=false', 'rebase', '--continue']
+      // Named rather than left to a merge base: the handoff's parent is the old base whether or not the branches share one.
+      : ['-c', 'commit.gpgsign=false', 'rebase', '--no-gpg-sign', '--onto', appHead, handoff.appBase, branch];
+    gitUnattended(record.app, replay);
+  } catch (error) {
+    const clash = unmergedPaths(record.app);
+    if (!clash.length) throw error;
+    throw new Error(`${branch} does not replay onto app revision ${appHead.slice(0, 8)} on its own: ${clash.join(', ')} — settle them in ${record.app}, then replay again, which carries on from where this stopped`);
+  }
+
+  const replayed = handoffOn(record.appRoot, branch);
+  if (!replayed) throw new Error('the handoff was replayed and could not be read back off the branch');
+  // The base moves with it, so the next private handoff out of that copy still amends one commit rather than stacking a second.
+  writeFileSync(join(parent, `${tag}.json`), JSON.stringify({ ...record, appBase: appHead, handoff: replayed }, null, 2) + '\n');
+  return replayed;
 }
 
 // ---------------------------------------------------------------------------
@@ -649,7 +763,8 @@ export function submitRefusal(state) {
   const { managed, handoff, appHead, appDirty = [] } = state;
   if (managed) return 'a handoff is submitted from the primary checkout — a workspace hands its work over, it does not take another\'s';
   if (!handoff) return 'that branch carries no handoff';
-  if (handoff.appBase !== appHead) return `the handoff was written on app revision ${handoff.appBase.slice(0, 8)} and the primary copy is on ${appHead.slice(0, 8)} — release it again from a fresh workspace`;
+  // Never a fresh workspace: one is cut at the primary revision, so it carries none of the finished work the refusal is standing in front of.
+  if (handoff.appBase !== appHead) return `the handoff was written on app revision ${handoff.appBase.slice(0, 8)} and the primary copy is on ${appHead.slice(0, 8)} — run agent-workspace.mjs rebase ${sessionOfBranch(handoff.branch)} to replay it onto the current revision, then submit it again`;
   const clash = (handoff.appPaths || []).filter((p) => appDirty.includes(p)).map((p) => `app: ${p}`);
   if (clash.length) return `${handoff.branch} overlaps work already sitting in the primary app copy: ${clash.join(', ')}`;
   return '';
@@ -792,6 +907,31 @@ function refusalCases() {
   ];
   for (const [name, state, want] of submits) {
     const got = submitRefusal(state);
+    if (want === '' && got) fails.push(`${name}: refused with "${got}"`);
+    if (want !== '' && !got.includes(want)) fails.push(`${name}: said "${got || 'nothing'}", wanted "${want}"`);
+  }
+  // The stale-base refusal names the way back, because a fresh workspace is cut at the new revision and carries none of the work.
+  const overtaken = submitRefusal({ ...fine, appHead: 'zzz' });
+  if (!overtaken.includes('rebase one')) fails.push(`a handoff a release overtook was not told how to come back: ${overtaken}`);
+  if (overtaken.includes('fresh workspace')) fails.push('a handoff a release overtook was still offered a copy cut without its work');
+  if (sessionOfBranch(branchFor(ok.session)) !== sessionTag(ok.session)) fails.push('a branch did not answer the session it belongs to');
+  if (sessionOfBranch('') !== '') fails.push('a nameless branch still answered a session');
+
+  const replay = { managed: false, handoff, appHead: 'zzz' };
+  const replays = [
+    ['a handoff written on an older revision', replay, ''],
+    ['a replay asked for from a workspace', { ...replay, managed: true }, 'from the primary checkout'],
+    ['a branch with no handoff on it', { ...replay, handoff: null }, 'carries no handoff'],
+    ['a handoff already on the primary revision', { ...replay, appHead: 'aaa' }, 'already written on app revision'],
+    ['loose work in the session\'s copy', { ...replay, workspaceDirty: ['src/other.rs'] }, 'work no handoff has taken'],
+    ['a conflict still carrying git\'s marks', { ...replay, continuing: true, unsettled: ['src/lib.rs'] }, 'still has git\'s conflict marks'],
+    ['a settled conflict carried on', { ...replay, continuing: true, unsettled: [] }, ''],
+    // Neither test applies halfway through a replay: the base is where it started and the copy is dirty by definition.
+    ['a settled conflict whose branch still reads current', { ...replay, continuing: true, appHead: 'aaa', unsettled: [] }, ''],
+    ['a settled conflict in a copy full of half-written files', { ...replay, continuing: true, workspaceDirty: ['src/other.rs'], unsettled: [] }, ''],
+  ];
+  for (const [name, state, want] of replays) {
+    const got = rebaseRefusal(state);
     if (want === '' && got) fails.push(`${name}: refused with "${got}"`);
     if (want !== '' && !got.includes(want)) fails.push(`${name}: said "${got || 'nothing'}", wanted "${want}"`);
   }
@@ -1181,6 +1321,129 @@ function selfTest() {
     if (Object.keys(readPendingRelease(parent).paths).length) fails.push('a cleared pending-release receipt still names paths');
     if (!pendingReleaseRefusal({ root: appRoot, dirty: dirtyPaths(appRoot), receipt: readPendingRelease(parent) })) fails.push('a released tree was allowed to release the same work twice');
 
+    // ---- Replaying a handoff another session's release overtook. ----
+    const SIX = 'aaaaaaaa-9999-9999-9999-999999999999';
+    const SEVEN = 'bbbbbbbb-9999-9999-9999-999999999999';
+    const overtaken = create({ session: SIX, appRoot, parent });
+    write(join(overtaken.app, 'src', 'finished.rs'), '// finished before the release\n');
+    const finished = releasePrivate({ session: SIX, parent, from: overtaken.app });
+
+    // The release that overtakes it: the primary copy moves on while that work sits handed over.
+    run(appRoot, ['add', '-A']);
+    run(appRoot, ['commit', '-m', 'a release from another session']);
+    const afterRelease = baseOf(appRoot);
+    if (afterRelease === finished.appBase) fails.push('the fixture release did not move the primary revision');
+
+    // The refusal names the way back rather than a fresh copy, which would carry none of this work.
+    let stranded = '';
+    try {
+      submit({ session: SIX, parent, appRoot, from: appRoot });
+    } catch (error) {
+      stranded = error.message;
+    }
+    if (!stranded.includes(`rebase ${sessionTag(SIX)}`)) fails.push(`a handoff a release overtook was not told how to come back: ${stranded || 'it was allowed'}`);
+
+    let replayedElsewhere = '';
+    try {
+      rebaseHandoff({ session: SIX, parent, appRoot, from: overtaken.app });
+    } catch (error) {
+      replayedElsewhere = error.message;
+    }
+    if (!replayedElsewhere.includes('from the primary checkout')) fails.push('a workspace was allowed to replay a handoff');
+
+    const replayed = rebaseHandoff({ session: SIX, parent, appRoot, from: appRoot });
+    if (replayed.appBase !== afterRelease) fails.push('a replayed handoff is not written on the revision the primary copy is on');
+    if (!replayed.appPaths.includes('src/finished.rs')) fails.push('a replayed handoff lost the work it was carrying');
+    if (git(appRoot, ['rev-list', '--count', `${afterRelease}..${overtaken.branch}`]) !== '1') fails.push('a replay left more than one commit on the session\'s branch');
+    if (baseOf(appRoot) !== afterRelease) fails.push('a replay committed in the primary app copy');
+    if (dirtyPaths(appRoot).length) fails.push(`a replay left work in the primary app copy: ${dirtyPaths(appRoot).join(', ')}`);
+    if (refsIn(appRemote).join(' ') !== appRefsBefore.join(' ')) fails.push('a replay pushed to the app remote');
+    if (manifests(parent).find((m) => m.session === sessionTag(SIX))?.appBase !== afterRelease) fails.push('a replay did not move the base recorded beside the session\'s copy');
+
+    // And now it submits, which is the whole point of replaying it.
+    submit({ session: SIX, parent, appRoot, from: appRoot });
+    if (read(join(appRoot, 'src', 'finished.rs')) !== '// finished before the release\n') fails.push('a replayed handoff did not reach the primary app copy');
+    let already = '';
+    try {
+      rebaseHandoff({ session: SIX, parent, appRoot, from: appRoot });
+    } catch (error) {
+      already = error.message;
+    }
+    if (!already.includes('already written on app revision')) fails.push('a handoff already on the primary revision was replayed again');
+
+    // A conflict: the session's copy and the release that overtook it both wrote one file.
+    const contest = create({ session: SEVEN, appRoot, parent });
+    write(join(contest.app, 'src', 'contested.rs'), '// the session\n');
+    releasePrivate({ session: SEVEN, parent, from: contest.app });
+    write(join(appRoot, 'src', 'contested.rs'), '// the release\n');
+    run(appRoot, ['add', '-A']);
+    run(appRoot, ['commit', '-m', 'a release touching the same file']);
+    const contested = baseOf(appRoot);
+
+    let clashed = '';
+    try {
+      rebaseHandoff({ session: SEVEN, parent, appRoot, from: appRoot });
+    } catch (error) {
+      clashed = error.message;
+    }
+    if (!clashed.includes('src/contested.rs')) fails.push(`a conflicting replay did not name the path to settle: ${clashed || 'it was allowed'}`);
+    if (!clashed.includes(contest.app)) fails.push('a conflicting replay did not say which copy to settle it in');
+    if (baseOf(appRoot) !== contested) fails.push('a conflicting replay afterRelease the primary revision');
+    if (dirtyPaths(appRoot).length) fails.push('a conflicting replay left work in the primary app copy');
+    if (!rebaseInProgress(contest.app)) fails.push('a conflicting replay did not leave itself in the session\'s copy to be settled');
+    if (!handoffOn(appRoot, contest.branch)) fails.push('a conflicting replay took the handoff off the branch');
+    if (handoffOn(appRoot, contest.branch)?.appBase !== afterRelease) fails.push('a conflicting replay afterRelease the handoff it could not replay');
+
+    // Asked again with the marks still in the file, it says so rather than committing them.
+    let unsettled = '';
+    try {
+      rebaseHandoff({ session: SEVEN, parent, appRoot, from: appRoot });
+    } catch (error) {
+      unsettled = error.message;
+    }
+    if (!unsettled.includes('conflict marks')) fails.push(`a replay carried on over git's own conflict marks: ${unsettled || 'it was allowed'}`);
+
+    // Settled in that copy, the same call carries on from where it stopped.
+    write(join(contest.app, 'src', 'contested.rs'), '// both\n');
+    const settled = rebaseHandoff({ session: SEVEN, parent, appRoot, from: appRoot });
+    if (settled.appBase !== contested) fails.push('a settled conflict did not leave the handoff on the revision the primary copy is on');
+    if (rebaseInProgress(contest.app)) fails.push('a settled conflict left the replay halfway through');
+    if (git(appRoot, ['rev-list', '--count', `${contested}..${contest.branch}`]) !== '1') fails.push('a settled conflict left more than one commit on the session\'s branch');
+    submit({ session: SEVEN, parent, appRoot, from: appRoot });
+    if (read(join(appRoot, 'src', 'contested.rs')) !== '// both\n') fails.push('a settled conflict did not reach the primary app copy');
+
+    // Loose work is left behind by a replay, so it is refused rather than lost.
+    run(appRoot, ['add', '-A']);
+    run(appRoot, ['commit', '-m', 'a third release']);
+    write(join(contest.app, 'src', 'still-going.rs'), '// not handed over\n');
+    let loose = '';
+    try {
+      rebaseHandoff({ session: SEVEN, parent, appRoot, from: appRoot });
+    } catch (error) {
+      loose = error.message;
+    }
+    if (!loose.includes('src/still-going.rs')) fails.push(`a replay was allowed over work no handoff had taken: ${loose || 'it was allowed'}`);
+    rmSync(join(contest.app, 'src', 'still-going.rs'), { force: true });
+
+    // A session nobody has a copy of, and a record pointing at a folder that is gone: both say so rather than moving a branch with nowhere to settle a conflict.
+    let unknown = '';
+    try {
+      rebaseHandoff({ session: 'dddddddd-4444-4444-4444-444444444444', parent, appRoot, from: appRoot });
+    } catch (error) {
+      unknown = error.message;
+    }
+    if (!unknown.includes('no managed workspace')) fails.push('a session with no copy was allowed to replay a handoff');
+    rmSync(contest.app, { recursive: true, force: true });
+    let retired = '';
+    try {
+      rebaseHandoff({ session: SEVEN, parent, appRoot, from: appRoot });
+    } catch (error) {
+      retired = error.message;
+    }
+    if (!retired.includes('is not on disk any more')) fails.push(`a replay into a copy that is gone was not refused: ${retired || 'it was allowed'}`);
+    if (!handoffOn(appRoot, contest.branch)) fails.push('a refused replay took the handoff off a retired copy\'s branch');
+    for (const session of [SIX, SEVEN]) remove({ session, parent });
+
     // ---- The running order, which is the one plan file two sessions write at once. ----
     const order = join(ownersPlan, 'PLAN.md');
     write(order, '| 1 | first | Designed |\n| 2 | second | Designed |\n');
@@ -1350,7 +1613,7 @@ function selfTest() {
   } catch (error) {
     fails.push(`workspace: ${error.message}`);
   } finally {
-    for (const session of [ONE, TWO, 'eeeeeeee-5555-5555-5555-555555555555', 'ffffffff-6666-6666-6666-666666666666']) {
+    for (const session of [ONE, TWO, 'eeeeeeee-5555-5555-5555-555555555555', 'ffffffff-6666-6666-6666-666666666666', 'aaaaaaaa-9999-9999-9999-999999999999', 'bbbbbbbb-9999-9999-9999-999999999999']) {
       try {
         remove({ session, parent });
       } catch {
@@ -1370,7 +1633,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log('agent-workspace: ok (private app copies keeping source, index and build apart while the plan stays the owner\'s; one-commit handoffs that reach no remote; two arriving at the primary copy, an overlap refused, and an interrupted submit put back; a receipt of the exact bytes each submit left, unchanged by a refused or interrupted one, refusing a stray path and a handed-over path edited afterwards, and cleared only by the release that commits it; two sessions writing the running order one at a time, a killed run\'s claim taken over, a session waiting out the run holding it rather than a stopwatch, two copies open at once with nothing held between them, and a copy taken before somebody else\'s row refused and kept; a release reading one still copy of the plan tree, a moving tree refused, and the copy gone on every result)');
+  console.log('agent-workspace: ok (private app copies keeping source, index and build apart while the plan stays the owner\'s; one-commit handoffs that reach no remote; two arriving at the primary copy, an overlap refused, and an interrupted submit put back; a receipt of the exact bytes each submit left, unchanged by a refused or interrupted one, refusing a stray path and a handed-over path edited afterwards, and cleared only by the release that commits it; a handoff a release overtook replayed onto the current revision and then submitted, a conflicting one left in its own copy with the paths named and its branch untouched, settled there and carried on, and a replay refused over loose work and over git\'s own marks; two sessions writing the running order one at a time, a killed run\'s claim taken over, a session waiting out the run holding it rather than a stopwatch, two copies open at once with nothing held between them, and a copy taken before somebody else\'s row refused and kept; a release reading one still copy of the plan tree, a moving tree refused, and the copy gone on every result)');
 }
 
 function main(args) {
@@ -1388,6 +1651,11 @@ function main(args) {
     const target = privateArguments(args.slice(1), session);
     const handoff = releasePrivate({ ...target, parent });
     console.log(`${sessionTag(target.session)}  ${handoff.branch}  ${handoff.appPaths.length} app paths on ${handoff.appBase.slice(0, 8)}`);
+    return;
+  }
+  if (command === 'rebase') {
+    const handoff = rebaseHandoff({ session: args[1] || '', parent, appRoot: primaryAppRoot() });
+    console.log(`${handoff.branch}  ${handoff.appPaths.length} app paths, now written on ${handoff.appBase.slice(0, 8)} — submit it`);
     return;
   }
   if (command === 'submit') {
@@ -1420,7 +1688,7 @@ function main(args) {
     console.log(record.app);
     return;
   }
-  console.error('usage: agent-workspace.mjs create | path | list | private [--session <session>] [message] | submit <session> | plan-open | plan-close | remove | --check');
+  console.error('usage: agent-workspace.mjs create | path | list | private [--session <session>] [message] | rebase <session> | submit <session> | plan-open | plan-close | remove | --check');
   process.exit(1);
 }
 

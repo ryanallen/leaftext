@@ -24,8 +24,8 @@ const TAG_READ_FLAGS = ['-l', '--list', '-n', '--contains', '--no-contains',
 const BRANCH_WRITE_FLAGS = ['-d', '-D', '--delete', '-m', '-M', '--move', '-c', '-C', '--copy'];
 // git's own options come before the subcommand and these five carry their value as the next word, so the first word without a dash is the path in `git -C . commit`, not the command.
 const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace']);
-// These commit, tag and push on their own. The workspace helper's `private` is one of them; the rest of that helper writes worktrees and no history, so it is refused to nobody.
-const RELEASE_COMMANDS = [/\bjust\s+release\b/i, /prepare-release/i, /agent-workspace\.mjs\s+private\b/i];
+// These commit, tag and push on their own. The workspace helper's `private` and `rebase` are two of them — one makes the handoff commit and the other moves it onto the revision a release left the primary copy on; the rest of that helper writes worktrees and no history, so it is refused to nobody.
+const RELEASE_COMMANDS = [/\bjust\s+release\b/i, /prepare-release/i, /agent-workspace\.mjs\s+private\b/i, /agent-workspace\.mjs\s+rebase\b/i];
 
 function readStdin() {
   try {
@@ -142,6 +142,7 @@ function selfTest() {
     'git worktree add ../wt main',
     'node scripts/agent-workspace.mjs private',
     'node scripts/agent-workspace.mjs private handed over',
+    'node scripts/agent-workspace.mjs rebase aaaa-1111',
     'git pull',
     'git apply fix.patch',
     'git rm -f src/lib.rs',

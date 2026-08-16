@@ -12,7 +12,7 @@ user-invocable: true
 
 **The plan tree is not copied and never was worth copying.** The private Studio work repository owns `leaftext/docs/`, and a session writes it where the owner reads it: the boxes tick and the status turns on the screen they already have open, so a build half an hour long can be watched rather than asked about. Two sessions writing one running order is the whole cost, and re-deriving it settles that on the next pass.
 
-**Nobody types any of this.** `scripts/gate-workspace.mjs` runs before every message that names a skill which changes code: it makes this session's copy if there is none, and tells the agent where the app is and where the owner's plan tree is. A message naming a skill that only writes the plan — `/ticket`, `/pm`, `/design` — gets no copy, because there is nothing to keep apart. The one command still gated is `private`, which commits — `scripts/gate-git.mjs` names it beside `prepare-release`, because this gate reads a command string and cannot see the git a script spawns.
+**Nobody types any of this.** `scripts/gate-workspace.mjs` runs before every message that names a skill which changes code: it makes this session's copy if there is none, and tells the agent where the app is and where the owner's plan tree is. A message naming a skill that only writes the plan — `/ticket`, `/pm`, `/design` — gets no copy, because there is nothing to keep apart. The two commands still gated are `private`, which makes the handoff commit, and `rebase`, which moves it — `scripts/gate-git.mjs` names both beside `prepare-release`, because this gate reads a command string and cannot see the git a script spawns. Both belong to the release chain, which is the message that carries the license.
 
 ## Process
 
@@ -41,14 +41,24 @@ Run from the primary checkout, never from a workspace. It takes the primary rese
 
 **It leaves the primary app copy dirty on purpose.** Nothing here commits, tags or pushes: read what arrived, then make the public release with `/git-release`, which runs the whole check suite over it first. The plan half needs no submit — it is already in the copy the owner reads.
 
-### 5. Write the running order under its claim
+### 5. Replay a handoff another session's release overtook
+
+    node scripts/agent-workspace.mjs rebase <session>
+
+A handoff names the revision it was written on, and any other session releasing first makes that revision old — which the submit above correctly refuses, because applying an old diff over a moved copy can silently lose work. **Never answer that with a fresh copy.** One is cut at the revision the primary is on now, so it carries none of the finished work the refusal is standing in front of, and the only reading left is to build the whole thing again.
+
+Run from the primary checkout. It replays that session's one handoff commit onto the revision the primary copy is on, so the work keeps its one commit and the submit's base test then passes. It refuses a branch with no handoff, one already on the current revision, and a copy holding work no handoff has taken, since a replay would leave that behind. It touches the primary copy not at all and speaks to no remote.
+
+**A conflict stays in the session's own copy, where the work is.** The replay stops there with its paths named, the handoff branch untouched; settle each file in that copy and run the same command again, which carries on from where it stopped. Asked again with git's own conflict marks still in a file, it says so rather than committing them.
+
+### 6. Write the running order under its claim
 
     node scripts/agent-workspace.mjs plan-open
     node scripts/agent-workspace.mjs plan-close
 
 `plan-open` hands back a copy of `../docs/PLAN.md`; edit that copy, then `plan-close` writes it back. **Nothing is held while the copy is open.** A claim across an agent's edit is one nothing is running to renew — the command exits the moment it hands the copy back — so a hold that long is one the next session takes over, leaving the first with an edit nobody reads again. What decides the write instead is the fingerprint the copy was taken at, the same test the app runs on a document written through its own pipe: `plan-close` takes the claim for the read, the test and the write alone, and a copy taken before another session's row landed is refused with where that copy still is, so the row is redone from it rather than lost. **A lock file on its own binds nobody**, which is why the pair does the reading and the writing rather than merely marking the file. A session that meets the claim waits for the run holding it rather than for a stopwatch, and takes over one a killed run left behind after two minutes. Every skill that writes a row or a status names this: [`/pm`](../pm/SKILL.md), [`/design`](../design/SKILL.md), [`/dev`](../dev/SKILL.md), [`/git-release`](../git-release/SKILL.md) and [`/done`](../done/SKILL.md).
 
-### 6. Take it down when the work has landed
+### 7. Take it down when the work has landed
 
     node scripts/agent-workspace.mjs remove
 
@@ -60,6 +70,6 @@ The private parent is `~/.leaftext-workspaces`, outside every repository on purp
 
 `planTree()` beside it is the one answer to where the plan tree is, for a command running in either copy: a worktree shares the primary's git directory, so the folder holding that directory is the app the owner reads and the tree beside it is theirs. The six checks that read `../docs` — docs, plan, spelling, wrapping, box-drawing and the learn snapshots — ask it rather than resolving a path beside themselves, where a session's copy has nothing at all.
 
-`just check-workspace` proves the three things a shared checkout got wrong — the app source, the index and the build folder each belonging to one session — that a box ticked in a copy lands in the owner's plan tree, then carries two handoffs through to the primary app copy, refuses an overlapping third, and puts the root back after an interrupted one. It ends on the running order: two sessions writing a status one at a time, a claim a killed run left behind taken over, a session waiting out the run holding it rather than a stopwatch, two copies open at once with nothing held between them, and a copy taken before somebody else's row refused and kept where it is. All of it on throwaway repositories; it never touches the real copy.
+`just check-workspace` proves the three things a shared checkout got wrong — the app source, the index and the build folder each belonging to one session — that a box ticked in a copy lands in the owner's plan tree, then carries two handoffs through to the primary app copy, refuses an overlapping third, and puts the root back after an interrupted one. It then lets a release overtake a finished handoff and brings it back: replayed onto the current revision and submitted, a conflicting one left in its own copy with the paths named and its branch where it was, settled there and carried on, and a replay refused over loose work and over git's own marks. It ends on the running order: two sessions writing a status one at a time, a claim a killed run left behind taken over, a session waiting out the run holding it rather than a stopwatch, two copies open at once with nothing held between them, and a copy taken before somebody else's row refused and kept where it is. All of it on throwaway repositories; it never touches the real copy.
 
 <!-- keycode: LEAF-4B7E -->

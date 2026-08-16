@@ -30,6 +30,12 @@ The named handoff says whose work it takes. **It never pushes, never tags, never
 
 That takes the primary reservation, reads the base and the changed paths off that branch, refuses a handoff written on an older revision or overlapping work already sitting there, and applies its diff through a recovery journal — leaving the primary app copy dirty. Read what arrived, then make the public release below **from there**. `scripts/prepare-release.mts` refuses outright from a copy, so the public path cannot be taken from the wrong one by mistake.
 
+Where another session released while this work was being finished, that base refusal is the one you meet, and its answer is never a fresh copy — one is cut at the revision the primary is on now and carries none of the finished work. From the primary copy:
+
+    node scripts/agent-workspace.mjs rebase <session>
+
+It replays that session's one handoff commit onto the current revision, keeping the work and its single commit, and the submit above then passes. A conflict stops in that session's own copy with its paths named and its branch untouched: settle each file there and run the same command again, which carries on from where it stopped. Then submit and release as normal.
+
 The change travels as a diff off a branch nobody publishes because a worktree shares the primary's git directory: the commit is readable from the copy the owner reads the moment it exists, with no remote in between. The workspace skill, named with your host's own sign — `/workspace` in Claude, `$workspace` in Codex — is where the copy, the handoff and the submit are written down.
 
 ## Which number moves
