@@ -1159,6 +1159,44 @@ if (booted) {
     }
   });
 
+  check('a drawing\'s link asks with its address as text, not the object its href property answers', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const written = 'TRACKS.md#links';
+    // What a linked box in a diagram answers: an SVG link's `href` is an object holding the address, never the address.
+    const link = {
+      href: { baseVal: written, animVal: written },
+      getAttribute: (name) => (name === 'href' ? written : null),
+      getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }),
+    };
+    link.closest = () => link;
+    const wasSend = booted.ipc.postMessage;
+    const wasTimeout = booted.setTimeout;
+    const wasRect = tip.getBoundingClientRect;
+    const sent = [];
+    const waiting = [];
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.setTimeout = (fn) => waiting.push(fn);
+      tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 240, bottom: 120, width: 240, height: 120 });
+      booted.__hoverEvent = { target: link, relatedTarget: { body: true }, clientX: 240, clientY: 210 };
+      vm.runInContext('activeHoverLink = null; startLinkHover(__hoverEvent);', booted);
+      waiting.forEach((fn) => fn());
+      const count = sent.find((one) => one.command === 'countLines');
+      const preview = sent.find((one) => one.command === 'previewLink');
+      if (!count || !preview) throw new Error(`a diagram link asked for ${sent.map((one) => one.command).join(', ') || 'nothing'}`);
+      for (const ask of [count, preview]) {
+        if (typeof ask.href !== 'string') throw new Error(`${ask.command} carried ${JSON.stringify(ask.href)} where the host requires text`);
+        if (ask.href !== written) throw new Error(`${ask.command} carried ${ask.href} instead of the address as written`);
+      }
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      booted.setTimeout = wasTimeout;
+      tip.getBoundingClientRect = wasRect;
+      vm.runInContext('hideLinkHoverTip(); activeHoverLink = null;', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
   check('a new link keeps its hover when an old link finishes leaving', () => {
     const { positionLinkHoverTip } = booted;
     const tip = vm.runInContext('linkHoverTip', booted);

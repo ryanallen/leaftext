@@ -419,7 +419,8 @@ function startLinkHover(event) {
   setLinkHoverLines(null);
   // Only in-app page links carry a line count; nothing else does.
   if (info.kind === 'Another page') {
-    const key = link.href || rawHref;
+    // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string.
+    const key = (typeof link.href === 'string' && link.href) || rawHref;
     if (linkPreviewCache.has(key)) {
       // Seen already: straight back up rendered, so a return to a link never blinks its spinner.
       linkHoverTipPreview.hidden = false;
