@@ -126,7 +126,7 @@ Right-click anywhere on the rendered page, including the blank space around its 
 Reveal and Properties map to each OS:
 
 - Windows: Explorer; the file Properties dialog.
-- macOS: Finder; Get Info.
+- macOS: Finder; Get Info, which brings Finder to the front so its window is the one you are looking at.
 
 Where that view will not open, a message in the bottom-right corner says so, so the menu item never just appears to do nothing.
 

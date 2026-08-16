@@ -3489,6 +3489,34 @@ fn a_source_that_keeps_refusing_is_left_alone_until_someone_asks() {
     assert!(!book.is_resting(4));
 }
 
+/// Get Info opened nothing on every file a Mac tried it on: Finder was asked for the information window of a bare `POSIX file`, which is not one of its own items, and nothing brought Finder forward, so a window that did open would have opened behind us.
+#[test]
+fn the_get_info_script_asks_finder_for_an_item_and_brings_finder_forward() {
+    let script = finder_information_window_script(Path::new("/Users/me/notes.md"));
+
+    // Coerced to an alias, which Finder resolves to an item it can open a window on.
+    assert!(
+        script.contains("open information window of (POSIX file \"/Users/me/notes.md\" as alias)"),
+        "{script}"
+    );
+
+    // Finder comes forward before the window opens, or the reader is looking at our window instead.
+    let activate = script
+        .find("activate")
+        .expect("the script activates Finder");
+    let open = script
+        .find("open information window")
+        .expect("the script opens the information window");
+    assert!(activate < open, "{script}");
+
+    // A quote or a backslash in a name would otherwise end the AppleScript string early and run whatever came next.
+    let odd = finder_information_window_script(Path::new(r#"/Users/me/od"d\name.md"#));
+    assert!(
+        odd.contains(r#"POSIX file "/Users/me/od\"d\\name.md" as alias"#),
+        "{odd}"
+    );
+}
+
 /// The documentation shot's own recipe quotes both paths, and cmd.exe hands the quotes through, so the encoder was asked for a path Windows refuses — os error 123 before a byte was read.
 #[test]
 fn a_path_wrapped_in_quotes_reaches_the_encoder_without_them() {

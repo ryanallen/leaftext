@@ -236,6 +236,20 @@ pub(crate) fn restore_from_trash(original: &Path, trashed: Option<&Path>) -> Res
     platform::restore_from_trash(original, trashed)
 }
 
+/// The line sent to Finder for Get Info. `POSIX file` alone builds a specifier Finder need not accept as one of its own items, so it is coerced to an alias; `activate` puts the window Finder opens in front of ours instead of behind it.
+// Called only on macOS, and `warnings = "deny"` fails every other build on an unused function.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn finder_information_window_script(path: &Path) -> String {
+    // Backslashes first: escaping the quotes first would then double the backslashes they were given.
+    let escaped = path
+        .to_string_lossy()
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"");
+    format!(
+        "tell application \"Finder\"\n\tactivate\n\topen information window of (POSIX file \"{escaped}\" as alias)\nend tell"
+    )
+}
+
 /// Open the OS file-properties view: the Properties dialog on Windows, Finder's Get Info on macOS.
 pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "windows")]
@@ -259,22 +273,23 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
 
     #[cfg(target_os = "macos")]
     {
-        let escaped = path
-            .to_string_lossy()
-            .replace('\\', "\\\\")
-            .replace('"', "\\\"");
-        let status = Command::new("osascript")
+        // Output rather than status: Finder's own refusal is on stderr, and an exit code alone says nothing about why.
+        let run = Command::new("osascript")
             .arg("-e")
-            .arg(format!(
-                "tell application \"Finder\" to open information window of (POSIX file \"{escaped}\")"
-            ))
-            .status()?;
-        return if status.success() {
+            .arg(finder_information_window_script(path))
+            .output()?;
+        return if run.status.success() {
             Ok(())
         } else {
+            let complaint = String::from_utf8_lossy(&run.stderr);
+            let complaint = complaint.trim();
             Err(io::Error::new(
                 io::ErrorKind::Other,
-                format!("osascript exited with status {status}"),
+                if complaint.is_empty() {
+                    format!("osascript exited with status {}", run.status)
+                } else {
+                    format!("Finder refused: {complaint}")
+                },
             ))
         };
     }
