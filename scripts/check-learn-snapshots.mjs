@@ -13,7 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isManaged, planTree } from './agent-workspace.mjs';
+import { isManaged, manifests, planTree, workspaceParent } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -76,51 +76,73 @@ export function snapshotProblems(entries) {
   return snapshotProblemDetails(entries).map((problem) => problem.message);
 }
 
-/** Whether a mismatch belongs to this session, or was already split when its workspace was cut. */
-export function pairState({ managed, sourceTouched, copyTouched }) {
-  return managed && !sourceTouched && !copyTouched ? 'cut' : 'drifted';
+/** Whether a mismatch belongs to this session, was already split when its workspace was cut, or is a session's newer rule the primary has not been handed yet. */
+export function pairState({ managed, sourceTouched, copyTouched, heldBy = '' }) {
+  if (managed) return !sourceTouched && !copyTouched ? 'cut' : 'drifted';
+  return heldBy ? 'held' : 'drifted';
 }
 
-/** Keep cut mismatches visible without letting them stop a session's own gate. */
+/** Keep cut and held mismatches visible without letting either stop a gate that cannot settle them. */
 export function splitProblems(problems, states) {
   const cut = [];
+  const held = [];
   const drifted = [];
-  for (const problem of problems) (states.get(problem.name) === 'cut' ? cut : drifted).push(problem);
-  return { cut, drifted };
+  for (const problem of problems) {
+    const state = states.get(problem.name);
+    (state === 'cut' ? cut : state === 'held' ? held : drifted).push(problem);
+  }
+  return { cut, held, drifted };
 }
 
-/** The copies a fix may rewrite, excluding a pair the session was handed already split. */
+/** The session whose private copy holds a skill that is byte-for-byte this copy, or '' where none does. A session that changes a skill regenerates the copies in the tree the owner shares, so from the primary the copy is the newer rule and the skill beside it is the older one; the match is what tells that apart from a hand edit. One named path per record, so nothing crawls. */
+export function heldBySession(name, copy, records, read) {
+  if (!copy) return '';
+  for (const record of records) {
+    if (!record.session || !record.app) continue;
+    const skill = read(join(record.app, '.agents', 'skills', name, 'SKILL.md'));
+    if (skill && skill.equals(copy)) return record.session;
+  }
+  return '';
+}
+
+/** The copies a fix may rewrite. A pair the session was handed already split is left alone, and so is one a workspace holds the newer skill for — there the copy is the newer rule, so writing the skill over it would take that session's work out of the tree everybody shares. */
 export function fixPlan(entries, states) {
   const writes = [];
   const skipped = [];
+  const held = [];
   const unfixable = [];
   for (const entry of entries) {
-    if (states.get(entry.name) === 'cut') {
+    const state = states.get(entry.name);
+    if (state === 'cut') {
       skipped.push(entry.name);
+    } else if (state === 'held') {
+      held.push(entry.name);
     } else if (entry.source === null) {
       unfixable.push(entry.name);
     } else {
       writes.push(entry);
     }
   }
-  return { writes, skipped, unfixable };
+  return { writes, skipped, held, unfixable };
+}
+
+/** A file's bytes, or null where there is nothing there. A missing half is a state both readers below have an answer for. */
+function bytesAt(path) {
+  try {
+    return readFileSync(path);
+  } catch {
+    return null;
+  }
 }
 
 /** One entry per folder under the copies, read off the disk. A folder is the unit because that is what both sides are laid out as. */
 function fromDisk() {
-  const bytes = (path) => {
-    try {
-      return readFileSync(path);
-    } catch {
-      return null;
-    }
-  };
   return readdirSync(COPIES, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => ({
       name: entry.name,
-      source: bytes(join(SOURCES, entry.name, 'SKILL.md')),
-      copy: bytes(join(COPIES, entry.name, 'SKILL.md')),
+      source: bytesAt(join(SOURCES, entry.name, 'SKILL.md')),
+      copy: bytesAt(join(COPIES, entry.name, 'SKILL.md')),
     }));
 }
 
@@ -133,10 +155,24 @@ function touched(dir, path) {
   }
 }
 
-/** Read each mismatched pair only in a managed workspace, and only after the byte comparison found it. */
-function pairStates(problems) {
+/** Where each mismatched pair came from, and who is holding the ones the primary must not touch. Git is asked only in a managed workspace and the workspace records only in the primary, and both only after the byte comparison found the pair. */
+function pairStates(problems, entries) {
   const managed = isManaged(root);
-  return new Map(problems.map(({ name }) => [name, pairState({ managed, sourceTouched: managed && touched(root, join('.agents', 'skills', name, 'SKILL.md')), copyTouched: managed && touched(COPIES, join(name, 'SKILL.md')) })]));
+  const records = managed ? [] : manifests(workspaceParent());
+  const copies = new Map(entries.map((entry) => [entry.name, entry.copy]));
+  const states = new Map();
+  const holders = new Map();
+  for (const { name } of problems) {
+    const heldBy = managed ? '' : heldBySession(name, copies.get(name), records, bytesAt);
+    states.set(name, pairState({
+      managed,
+      sourceTouched: managed && touched(root, join('.agents', 'skills', name, 'SKILL.md')),
+      copyTouched: managed && touched(COPIES, join(name, 'SKILL.md')),
+      heldBy,
+    }));
+    if (heldBy) holders.set(name, heldBy);
+  }
+  return { states, holders };
 }
 
 const entries = fromDisk();
@@ -165,10 +201,28 @@ if (process.argv.includes('--check')) {
   if (cut.cut.length !== 1 || cut.drifted.length) faults.push('a pair cut across a primary edit still stopped its session');
   const touchedPair = splitProblems(mismatch, new Map([['dev', pairState({ managed: true, sourceTouched: true, copyTouched: false })]]));
   if (touchedPair.cut.length || touchedPair.drifted.length !== 1) faults.push('a mismatch this session touched did not fail');
+  // The primary side of the same idea: a session changing a skill privately regenerates the copies here, so the copy is the newer rule and the older skill beside it must never be read as drift.
+  const heldPair = splitProblems(mismatch, new Map([['dev', pairState({ managed: false, sourceTouched: false, copyTouched: false, heldBy: 'aaaaaaaa' })]]));
+  if (heldPair.held.length !== 1 || heldPair.drifted.length || heldPair.cut.length) faults.push('a copy holding a session\'s newer skill still stopped the primary gate');
+  const handEdit = splitProblems(mismatch, new Map([['dev', pairState({ managed: false, sourceTouched: false, copyTouched: false, heldBy: '' })]]));
+  if (handEdit.drifted.length !== 1 || handEdit.held.length) faults.push('a copy edited in the plan tree alone was let past the primary gate');
+  // What decides that: the exact bytes at one named path per workspace record, never a guess from the copy being uncommitted.
+  const newer = bytes('# Dev\n\nAnother rule.\n');
+  const records = [{ session: 'aaaaaaaa', app: join('/private', 'aaaaaaaa', 'leaftext', 'app') }, { session: 'bbbbbbbb', app: join('/private', 'bbbbbbbb', 'leaftext', 'app') }];
+  const skills = new Map([[join(records[1].app, '.agents', 'skills', 'dev', 'SKILL.md'), newer]]);
+  const reader = (path) => skills.get(path) ?? null;
+  if (heldBySession('dev', newer, records, reader) !== 'bbbbbbbb') faults.push('the session whose copy holds the newer skill was not found');
+  if (heldBySession('dev', bytes('# Dev\n\nA third rule.\n'), records, reader) !== '') faults.push('a copy no session\'s skill matches was named as held anyway');
+  if (heldBySession('check', newer, records, reader) !== '') faults.push('a skill one session changed was read as holding a different skill\'s copy');
+  if (heldBySession('dev', null, records, reader) !== '') faults.push('a copy that is not there was read as held by a session');
   const both = splitProblems([...mismatch, { name: 'check', message: 'check drifted' }], new Map([['dev', 'cut'], ['check', 'drifted']]));
   if (both.cut.map((problem) => problem.name).join() !== 'dev' || both.drifted.map((problem) => problem.name).join() !== 'check') faults.push('a mixed run did not keep a cut pair separate from a drifted one');
-  const fixed = fixPlan([{ name: 'dev', source: bytes('new'), copy: bytes('old') }, { name: 'check', source: bytes('new'), copy: bytes('old') }], new Map([['dev', 'cut'], ['check', 'drifted']]));
+  const three = [{ name: 'dev', source: bytes('new'), copy: bytes('old') }, { name: 'check', source: bytes('new'), copy: bytes('old') }, { name: 'ticket', source: bytes('older'), copy: bytes('newer') }];
+  const fixed = fixPlan(three, new Map([['dev', 'cut'], ['check', 'drifted'], ['ticket', 'held']]));
   if (fixed.skipped.join() !== 'dev' || fixed.writes.map((entry) => entry.name).join() !== 'check') faults.push('a fix did not leave a cut pair alone while repairing a drifted one');
+  // The half that destroys work: the repair used to write the older skill over a copy a session had just regenerated, in the tree both sessions share.
+  if (fixed.held.join() !== 'ticket') faults.push('a fix did not name the copy it left to the session holding the newer skill');
+  if (fixed.writes.some((entry) => entry.name === 'ticket')) faults.push('a fix wrote the older skill back over a copy a session is holding');
   if (faults.length) {
     console.error('the comparison is wrong, so nothing was read:');
     for (const fault of faults) console.error(`  ${fault}`);
@@ -179,7 +233,7 @@ if (process.argv.includes('--check')) {
 
 if (process.argv.includes('--fix')) {
   const problems = snapshotProblemDetails(entries);
-  const states = pairStates(problems);
+  const { states, holders } = pairStates(problems, entries);
   const plan = fixPlan(entries, states);
   let written = 0;
   for (const { name, source } of plan.writes) {
@@ -189,6 +243,7 @@ if (process.argv.includes('--fix')) {
   }
   console.log(`learn snapshots: ${written} copies rewritten from their skills`);
   if (plan.skipped.length) console.log(`learn snapshots: left ${plan.skipped.join(', ')} alone because this workspace was cut across an edit uncommitted in the primary`);
+  for (const name of plan.held) console.log(`learn snapshots: left ${name} alone — its copy is already what ${holders.get(name)} has that skill saying in its own copy, and rewriting it from the skill here would take that session's work back out`);
   if (plan.unfixable.length) {
     console.error(`no skill to copy for: ${plan.unfixable.join(', ')} — retire the copy, or bring the skill back.`);
     process.exit(1);
@@ -197,8 +252,11 @@ if (process.argv.includes('--fix')) {
 }
 
 const details = snapshotProblemDetails(entries);
-const { cut, drifted } = splitProblems(details, pairStates(details));
+const { states, holders } = pairStates(details, entries);
+const { cut, held, drifted } = splitProblems(details, states);
 for (const problem of cut) console.log(`${problem.message}\n  This workspace was cut across an edit uncommitted in the primary, and neither half was touched here. Fix it in the primary checkout; this session leaves the pair alone.`);
+// Said out loud on a run that passes: the copy is a newer rule than the skill beside it, and a gate that only stayed quiet would hide that.
+for (const problem of held) console.log(`${problem.message}\n  ${holders.get(problem.name)} is changing that skill in its own copy, and the copy here is already exactly what that session's skill says. This checkout leaves the pair alone; it settles when that work is handed over.`);
 if (drifted.length) {
   console.error('the workflow article is teaching a rule its skill no longer says:');
   for (const problem of drifted) console.error(`  ${problem.message}`);
