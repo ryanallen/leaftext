@@ -15,6 +15,10 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 #[cfg(windows)]
 pub use windows_impl::{move_to_trash, restore_from_trash, set_clipboard_text};
 
+// The restore's exit-code reading, reached by the binary's tests the way `pipe.rs` hands one out. Nothing outside them calls it, so it is not in the line above.
+#[cfg(all(windows, test))]
+pub(crate) use windows_impl::restore_outcome;
+
 #[cfg(target_os = "macos")]
 pub use macos_impl::{move_to_trash, restore_from_trash, set_clipboard_text};
 
@@ -1142,7 +1146,12 @@ mod windows_impl {
             .creation_flags(0x0800_0000)
             .output()
             .map_err(|error| format!("could not reach the Recycle Bin: {error}"))?;
-        match output.status.code() {
+        restore_outcome(output.status.code())
+    }
+
+    /// What the restore script's exit code means to a reader. Its own, so the wording is provable without emptying somebody's Recycle Bin to make the shell return 2.
+    pub(crate) fn restore_outcome(code: Option<i32>) -> Result<(), String> {
+        match code {
             Some(0) => Ok(()),
             Some(2) => Err("that file is not in the Recycle Bin any more".to_string()),
             _ => Err("the Recycle Bin would not give the file back".to_string()),

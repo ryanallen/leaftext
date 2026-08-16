@@ -2908,31 +2908,16 @@ fn undo_restores_a_deleted_file_to_its_folder_under_its_own_name() {
     let _ = fs::remove_dir_all(&folder);
 }
 
-/// The second half of "one delete is undone once": nothing left in the bin under that name means the restore says so rather than reporting a success it did not have.
-#[test]
-#[cfg(windows)]
-fn putting_back_a_file_that_was_never_deleted_says_so() {
-    let missing = undo_dir("delete-test").join("no such note.md");
-    let error = restore_from_trash(&missing, None).expect_err("nothing to put back");
-    assert!(
-        error.contains("not in the Recycle Bin"),
-        "says what is wrong: {error}"
-    );
-}
-
-/// A name taken back before the undo. The shell's own move overwrites without asking once it is told not to confirm, so the refusal has to be the app's — losing the newer file would be a worse loss than the one being undone.
+/// A name taken back before the undo. The shell's own move overwrites without asking once it is told not to confirm, so the refusal has to be the app's — losing the newer file would be a worse loss than the one being undone. Nothing is deleted here: the refusal comes before the shell is reached, so a file sitting in the way is the whole of the setup.
 #[test]
 #[cfg(windows)]
 fn a_name_taken_back_before_the_undo_stops_the_restore() {
     let folder = undo_dir("collide-test");
     let _ = fs::create_dir_all(&folder);
     let file = folder.join("collided.md");
-    fs::write(&file, b"the first one").expect("write the fixture");
-
-    let landed = delete_to_trash(&file).expect("the delete works");
     fs::write(&file, b"a different file entirely").expect("something takes the name");
 
-    let error = restore_from_trash(&file, landed.as_deref()).expect_err("the restore refuses");
+    let error = restore_from_trash(&file, None).expect_err("the restore refuses");
     assert!(
         error.contains("something else is called"),
         "says why: {error}"
@@ -2944,6 +2929,38 @@ fn a_name_taken_back_before_the_undo_stops_the_restore() {
     );
 
     let _ = fs::remove_dir_all(&folder);
+}
+
+/// Nothing left in the bin under that name means the restore says so rather than reporting a success it did not have. Read off the exit code, so proving the wording does not need somebody's bin emptied first.
+#[test]
+#[cfg(windows)]
+fn a_missing_item_says_the_file_has_left_the_bin() {
+    use crate::platform::restore_outcome;
+
+    let error = restore_outcome(Some(2)).expect_err("nothing to put back");
+    assert!(
+        error.contains("not in the Recycle Bin"),
+        "says what is wrong: {error}"
+    );
+}
+
+/// Every other way the restore can fail says one thing, because a reader can do nothing different about a move that never landed and a shell that never started.
+#[test]
+#[cfg(windows)]
+fn any_other_failure_says_the_bin_would_not_give_it_back() {
+    use crate::platform::restore_outcome;
+
+    for code in [Some(1), Some(3), Some(-1), None] {
+        let error = restore_outcome(code).expect_err("a failure");
+        assert_eq!(
+            error, "the Recycle Bin would not give the file back",
+            "exit code {code:?}"
+        );
+    }
+    assert!(
+        restore_outcome(Some(0)).is_ok(),
+        "and zero is the file back"
+    );
 }
 
 /// A delete the app makes itself renamed the file into the home folder's Trash, and a rename cannot cross a filesystem — so a file on a plugged-in drive or a network share would not delete at all. It goes to the trash folder that volume carries instead, which is where macOS puts it and where the reader already looks.
