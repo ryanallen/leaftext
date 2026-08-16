@@ -36,6 +36,8 @@ pub(crate) enum UserEvent {
     },
     /// The sync clients whose folders are on this machine, found on the worker that stat'd them.
     CloudFoldersReady { folders: Vec<CloudFolder> },
+    /// A file Copy or Cut finished on the worker that waited on the clipboard helper. Nothing is said when it worked — the paste is its own proof — so only `error` has anywhere to go, and `cut` decides which of the two the sentence names.
+    FileClipboardDone { cut: bool, error: Option<String> },
     /// A clone finished. `folder` is where it landed, so the loop can register it as a vault; `error` is what to say instead when it failed.
     VaultCloneDone {
         folder: PathBuf,

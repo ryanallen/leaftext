@@ -339,6 +339,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::CloudFoldersReady { folders }) => {
                 deliver_cloud_folders(&vault_state, reader.page(), &folders);
             }
+            Event::UserEvent(UserEvent::FileClipboardDone { cut, error }) => {
+                if let Some(error) = error {
+                    eprintln!("{error}");
+                    report_file_action_failure(
+                        reader.page(),
+                        if cut {
+                            "the file could not be cut — try again"
+                        } else {
+                            "the file could not be copied — try again"
+                        },
+                    );
+                }
+            }
             Event::UserEvent(UserEvent::VaultCloneDone { folder, error }) => {
                 deliver_vault_clone(folder, error, &mut vault_state, &proxy, reader.page());
             }
@@ -561,15 +574,24 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             "Failed to reveal {} in the file manager: {error}",
                             path.display()
                         );
+                        // Explorer here and Finder there, so the sentence names the window rather than either of them. A reveal that says nothing reads as a slow machine, and the reader waits.
+                        report_file_action_failure(
+                            reader.page(),
+                            "the file manager window could not be opened",
+                        );
                     }
                 }
                 IpcCommand::CopyFile { path, cut } => {
-                    if let Err(error) = copy_file_to_clipboard(&path, cut) {
-                        eprintln!(
-                            "Failed to copy {} to the clipboard: {error}",
-                            path.display()
-                        );
-                    }
+                    // The helper writes the real clipboard, which another program can be holding open, so the wait for its answer happens off the loop and the window never stops for it.
+                    off_loop(&proxy, move || UserEvent::FileClipboardDone {
+                        cut,
+                        error: copy_file_to_clipboard(&path, cut).err().map(|error| {
+                            format!(
+                                "Failed to copy {} to the clipboard: {error}",
+                                path.display()
+                            )
+                        }),
+                    });
                 }
                 IpcCommand::ToggleFavorite { path, kind } => {
                     // Which vault holds it is the registry's answer, not the pane's: something opened from outside every vault belongs to none.
@@ -623,6 +645,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         eprintln!(
                             "Failed to copy the path {} to the clipboard: {error}",
                             path.display()
+                        );
+                        // A copy shows nothing of its own, so its failure is otherwise met at a paste in another app.
+                        report_file_action_failure(
+                            reader.page(),
+                            "the path could not be copied — try again",
                         );
                     }
                 }
@@ -837,6 +864,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             "Failed to reveal {} in the file manager: {error}",
                             path.display()
                         );
+                        report_file_action_failure(
+                            reader.page(),
+                            "the file manager window could not be opened",
+                        );
                     }
                 }
                 IpcCommand::CopyLinkPath { href } => {
@@ -851,6 +882,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         eprintln!(
                             "Failed to copy the path {} to the clipboard: {error}",
                             path.display()
+                        );
+                        report_file_action_failure(
+                            reader.page(),
+                            "the path could not be copied — try again",
                         );
                     }
                 }

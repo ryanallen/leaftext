@@ -128,7 +128,7 @@ Reveal and Properties map to each OS:
 - Windows: Explorer; the file Properties dialog.
 - macOS: Finder; Get Info, which brings Finder to the front so its window is the one you are looking at.
 
-Where that view will not open, a message in the bottom-right corner says so, so the menu item never just appears to do nothing.
+Where either window will not open, a message in the bottom-right corner says so, so the menu item never just appears to do nothing. **Cut, Copy and Copy path say so the same way.** A clipboard another program is holding open is an ordinary thing for a machine to be doing, and a copy that did not happen is otherwise only discovered at a paste in another app, minutes later, with nothing to connect it back.
 
 ### Deleting asks first, and can be taken back
 

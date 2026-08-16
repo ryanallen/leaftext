@@ -50,6 +50,8 @@ pub(crate) fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
 }
 
 /// Put the file on the system clipboard for pasting into the OS file manager. `cut` requests move semantics.
+///
+/// Both platforms wait on their helper, so a clipboard another program is holding open comes back as an error rather than a copy that quietly never happened. That wait is why the caller runs this off the event loop.
 pub(crate) fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
@@ -66,13 +68,20 @@ pub(crate) fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
             [System.Windows.Forms.Clipboard]::SetDataObject($data, $true)";
         use std::os::windows::process::CommandExt;
         // CREATE_NO_WINDOW keeps the helper from flashing a console window.
-        Command::new("powershell")
+        let status = Command::new("powershell")
             .args(["-NoProfile", "-NonInteractive", "-STA", "-Command", SCRIPT])
             .env("LEAF_CLIP_PATH", path)
             .env("LEAF_CLIP_EFFECT", if cut { "2" } else { "5" })
             .creation_flags(0x0800_0000)
-            .spawn()?;
-        return Ok(());
+            .status()?;
+        return if status.success() {
+            Ok(())
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("the clipboard helper exited with status {status}"),
+            ))
+        };
     }
 
     #[cfg(target_os = "macos")]
