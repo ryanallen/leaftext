@@ -43,6 +43,20 @@ export function workspacePaths(parent, session) {
   return { tag, studio, app: join(studio, 'leaftext', 'app'), manifest: join(parent, `${tag}.json`) };
 }
 
+/// The session a path belongs to, or '' for anywhere outside a workspace. Read off the path rather than the environment, because the tools that address a running copy are started by a person or a recipe rather than by the helper, and where they are is the one thing they always know.
+export function sessionInDir(dir) {
+  const parent = resolve(workspaceParent());
+  const rel = relative(parent, resolve(dir));
+  if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) return '';
+  return sessionTag(rel.split(/[\\/]/)[0]);
+}
+
+/// What a development launch's own names and folders hang off, for a command running in that copy. Empty everywhere else, which is what leaves the owner's copy and every installed copy on the names they already answer to.
+export function devSuffixInDir(dir) {
+  const tag = sessionInDir(dir);
+  return tag ? `-dev-${tag}` : '';
+}
+
 /// Whether a path really sits under a parent — outside it would mean a worktree in somebody's repository.
 export function inside(parent, child) {
   const rel = relative(resolve(parent), resolve(child));

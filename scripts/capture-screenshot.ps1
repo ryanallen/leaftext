@@ -231,13 +231,19 @@ function Take-Foreground([IntPtr]$hwnd, [int]$processId) {
 }
 
 function Find-Attached {
-  # One process name, one main window. The app is single-instance, so two windows
-  # means somebody launched a second copy against another profile — a refusal with
-  # a reason, not a guess at which one was meant.
+  # One process name, one main window. The app is single-instance per copy, so two
+  # windows means a second copy was launched against another profile.
   $copies = @(Get-Process leaftext -ErrorAction SilentlyContinue |
     Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero })
   if (-not $copies.Count) { throw 'no copy of the app is running, so there is no window to drive' }
-  if ($copies.Count -gt 1) { throw "$($copies.Count) copies are running with a window; -Attach cannot tell which one you meant" }
+  # A copy built from this checkout is the one this checkout meant. That is what
+  # keeps two development copies apart, since each is built and run under its own
+  # folder; with none of them here the answer is whatever is running, which is the
+  # installed copy the owner reads.
+  $ours = @($copies | Where-Object { $_.Path -and $_.Path.StartsWith($root, [StringComparison]::OrdinalIgnoreCase) })
+  if ($ours.Count -eq 1) { return $ours[0] }
+  if ($ours.Count -gt 1) { throw "$($ours.Count) copies built from this checkout are running with a window; -Attach cannot tell which one you meant" }
+  if ($copies.Count -gt 1) { throw "$($copies.Count) copies are running with a window and none was built from this checkout; -Attach cannot tell which one you meant" }
   return $copies[0]
 }
 

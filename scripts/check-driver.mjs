@@ -189,7 +189,17 @@ for (const [what, pattern] of PROFILE) {
   if (!pattern.test(text)) problems.push(`the shot profile no longer starts every run with ${what}`);
 }
 
+// Two development copies can be open at once, each built under its own checkout, so -Attach has to pick the one belonging to the checkout it was run from rather than refuse because it found two windows. With no copy from this checkout running it still takes whatever is up, which is the installed copy the owner reads.
+const ATTACH = [
+  ['prefer the copy built from this checkout', /\$ours = @\(\$copies \| Where-Object \{ \$_\.Path -and \$_\.Path\.StartsWith\(\$root/],
+  ['refuse two copies from this checkout rather than guess', /built from this checkout are running with a window/],
+  ['still refuse two it cannot tell apart', /none was built from this checkout/],
+];
+for (const [what, pattern] of ATTACH) {
+  if (!pattern.test(text)) problems.push(`-Attach no longer knows how to ${what}`);
+}
+
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag, the shot profile starts empty in ${PROFILE.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );

@@ -92,6 +92,12 @@ pub use updater::{
     WINDOWS_MSI_SUFFIX,
 };
 
+/// What makes one development launch a copy of its own: the only reader of the managed workspace launcher's session, and where the private folders and the process-name suffix come from.
+#[cfg(feature = "desktop")]
+mod dev_session;
+#[cfg(feature = "desktop")]
+pub use dev_session::{dev_name_suffix, dev_session, DevSession};
+
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
@@ -1170,13 +1176,24 @@ const APP_ORGANIZATION: &str = "ryanallen";
 #[cfg(feature = "desktop")]
 const APP_NAME: &str = "leaftext";
 
-/// Roaming per-user configuration root.
+/// Roaming per-user configuration root: settings and recent files.
+///
+/// A development launch gets its session's own folder instead, so two of them can be open at once without writing each other's settings. Every other launch — every installed copy — gets [`installed_config_dir`] unchanged.
+#[cfg(feature = "desktop")]
+pub fn project_config_dir() -> Option<PathBuf> {
+    match dev_session() {
+        Some(session) => dev_session::dev_config_dir(session),
+        None => installed_config_dir(),
+    }
+}
+
+/// Where an installed copy keeps its settings and recent files.
 ///
 /// Windows: `%APPDATA%\ryanallen\leaftext\config`. macOS: `~/Library/Application Support/com.ryanallen.leaftext`.
 ///
 /// These reproduce, exactly, the layout the `directories` crate produced for `ProjectDirs::from("com", "ryanallen", "leaftext")` — including the `config` leaf on Windows, which is easy to miss and would strand every existing user's settings if it were dropped. `project_dirs_match_the_documented_layout` pins both.
 #[cfg(feature = "desktop")]
-pub fn project_config_dir() -> Option<PathBuf> {
+pub(crate) fn installed_config_dir() -> Option<PathBuf> {
     #[cfg(windows)]
     {
         Some(
@@ -1192,11 +1209,22 @@ pub fn project_config_dir() -> Option<PathBuf> {
     }
 }
 
-/// Machine-local per-user data root (WebView2's cache, the vault registry, and staged updates).
+/// Machine-local per-user data root: WebView2's cache, the vault registry, staged updates and the journal.
+///
+/// A development launch gets its session's own folder, for the same reason the configuration root does.
+#[cfg(feature = "desktop")]
+pub fn project_data_local_dir() -> Option<PathBuf> {
+    match dev_session() {
+        Some(session) => dev_session::dev_data_local_dir(session),
+        None => installed_data_local_dir(),
+    }
+}
+
+/// Where an installed copy keeps that data.
 ///
 /// Windows: `%LOCALAPPDATA%\ryanallen\leaftext\data`. macOS: `~/Library/Application Support/com.ryanallen.leaftext`, which is the same folder as the config root — the platform draws no roaming distinction.
 #[cfg(feature = "desktop")]
-pub fn project_data_local_dir() -> Option<PathBuf> {
+pub(crate) fn installed_data_local_dir() -> Option<PathBuf> {
     #[cfg(windows)]
     {
         Some(
@@ -1213,7 +1241,7 @@ pub fn project_data_local_dir() -> Option<PathBuf> {
 }
 
 #[cfg(target_os = "macos")]
-fn macos_application_support_dir() -> Option<PathBuf> {
+pub(crate) fn macos_application_support_dir() -> Option<PathBuf> {
     let home = std::env::var_os("HOME").filter(|home| !home.is_empty())?;
     Some(
         PathBuf::from(home)

@@ -8,10 +8,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { devSuffixInDir, workspaceParent } from './agent-workspace.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const pipe = readFileSync(join(root, 'src/pipe.rs'), 'utf8');
 const wrapper = readFileSync(join(root, 'scripts/mcp-leaftext.mjs'), 'utf8');
+const devSource = readFileSync(join(root, 'src/dev_session.rs'), 'utf8');
 const problems = [];
 
 // ---- every ask has a tool ---------------------------------------------------
@@ -74,6 +76,25 @@ if (!pipe.includes(PIPE_NAME)) {
 // The socket half is a path, not a name, and it is built from the data folder.
 if (!wrapper.includes('journal.sock') || !pipe.includes('journal.sock')) {
   problems.push('the socket file is named differently at the two ends');
+}
+
+// ---- and which copy it is ---------------------------------------------------
+
+// Two development copies can be open at once, each with its own pipe, so a question asked inside one session's checkout must reach that session's app. Both ends work the suffix out for themselves — the app off where it was built, the wrapper off where it sits — so this holds the two rules to each other rather than trusting either.
+const DEV_MARK = '-dev-';
+if (!devSource.includes(`"${DEV_MARK}{}"`) && !devSource.includes(`{DEV_MARK}`)) {
+  problems.push(`src/dev_session.rs no longer builds a name with ${DEV_MARK}…, so this check is out of date too`);
+}
+if (!wrapper.includes('devSuffixInDir')) {
+  problems.push('the wrapper connects to one fixed pipe, so a question asked in a session’s copy would reach whatever copy is up');
+}
+for (const [what, dir, expected] of [
+  ['a session’s own checkout', join(workspaceParent(), 'a91a31cd-b8db', 'leaftext', 'app'), '-dev-a91a31cd-b8db'],
+  ['a second session, which must not be the first', join(workspaceParent(), '0f2c77aa-1111', 'leaftext', 'app'), '-dev-0f2c77aa-1111'],
+  ['the checkout the owner reads', root, ''],
+]) {
+  const found = devSuffixInDir(dir);
+  if (found !== expected) problems.push(`${what} addresses ${found || 'the ordinary pipe'} rather than ${expected || 'the ordinary pipe'}`);
 }
 
 // ---- the registration reaches the wrapper -----------------------------------

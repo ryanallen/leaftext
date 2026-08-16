@@ -628,11 +628,11 @@ fn app_data_dir_is_the_local_data_root_not_the_webview_cache() {
     assert!(!path.ends_with("webview2"));
 }
 
-/// These paths are where every installed copy already keeps its settings, recent files, and vault registry, so they are a compatibility contract, not a preference. They were captured from the `directories` crate's `ProjectDirs::from("com", "ryanallen", "leaftext")` before that dependency was replaced with the plain environment lookups in `project_config_dir` and `project_data_local_dir`. Changing either shape silently orphans user data: the app would start up looking clean, with the old settings still on disk.
+/// These paths are where every installed copy already keeps its settings, recent files, and vault registry, so they are a compatibility contract, not a preference. They were captured from the `directories` crate's `ProjectDirs::from("com", "ryanallen", "leaftext")` before that dependency was replaced with the plain environment lookups in `installed_config_dir` and `installed_data_local_dir`. Changing either shape silently orphans user data: the app would start up looking clean, with the old settings still on disk.
 #[test]
 fn project_dirs_match_the_documented_layout() {
-    let config = project_config_dir().expect("config directory is available");
-    let data = project_data_local_dir().expect("data directory is available");
+    let config = installed_config_dir().expect("config directory is available");
+    let data = installed_data_local_dir().expect("data directory is available");
 
     #[cfg(windows)]
     {
@@ -654,6 +654,95 @@ fn project_dirs_match_the_documented_layout() {
         // macOS draws no roaming/local distinction, so both roots are the one Application Support folder.
         assert_eq!(config, support);
         assert_eq!(data, support);
+    }
+}
+
+/// Two private source trees still launch into one running app, so a development launch takes its own settings, vault registry, WebView folder and journal — and the rest of the profile follows those two roots, which is why they are the only pair this has to hold apart.
+///
+/// The contract that makes it safe is the other half: no session, or a value this cannot vouch for, is no override at all, and the documented paths above are what an installed copy still gets.
+#[test]
+fn a_development_session_gets_its_own_files_while_a_normal_launch_keeps_the_documented_ones() {
+    let first = DevSession::parse("a91a31cd-b8db-418d-8174-dd5517efdefb")
+        .expect("a host session id names a session");
+    let second = DevSession::parse("0f2c77aa-1111-4222-8333-444455556666")
+        .expect("a second host session id names a second session");
+    let config = |session| dev_session::dev_config_dir(session).expect("a private config folder");
+    let data = |session| dev_session::dev_data_local_dir(session).expect("a private data folder");
+
+    // Two sessions running at once must not be able to reach each other's files at all, so neither root may sit inside the other's.
+    assert!(!config(&first).starts_with(config(&second)));
+    assert!(!config(&second).starts_with(config(&first)));
+    assert!(!data(&first).starts_with(data(&second)));
+    assert!(!data(&second).starts_with(data(&first)));
+    // And neither may land on the folders an installed copy is using.
+    assert_ne!(
+        config(&first),
+        installed_config_dir().expect("config directory is available")
+    );
+    assert_ne!(
+        data(&first),
+        installed_data_local_dir().expect("data directory is available")
+    );
+    // The session names its own folder, which is what makes a workspace's copy findable and removable.
+    assert!(config(&first).to_string_lossy().contains(first.id()));
+    assert!(data(&first).to_string_lossy().contains(first.id()));
+
+    // Anything a folder name and a Win32 object name may not both hold is refused whole rather than cleaned up: a scrubbed value would quietly point a development copy at somebody's real profile.
+    for refused in [
+        "",
+        "   ",
+        "..",
+        "../escape",
+        "a/b",
+        "a\\b",
+        "a:b",
+        "a b",
+        "a*b",
+        "session.name",
+        "sessión",
+        &"a".repeat(65),
+    ] {
+        assert!(
+            DevSession::parse(refused).is_none(),
+            "{refused:?} must not name a session"
+        );
+    }
+
+    // Nothing set this launch's session, which is every installed copy's case: the two roots answer exactly what they answered before any of this existed, and no process name gains anything.
+    assert!(dev_session().is_none());
+    assert_eq!(project_config_dir(), installed_config_dir());
+    assert_eq!(project_data_local_dir(), installed_data_local_dir());
+    assert_eq!(dev_name_suffix(), "");
+}
+
+/// Nothing opens a copy of the app, so a launch from a session's own checkout has no environment set for it and would answer on the name every other copy is using. Where it was built says which copy it is instead — and an installed copy, or an ordinary build in the owner's own checkout, sits nowhere near a session's folder and derives nothing at all.
+#[test]
+fn a_copy_built_in_a_session_folder_knows_which_session_it_is() {
+    let session =
+        |exe: &str| dev_session::session_of_exe(Path::new(exe)).map(|found| found.id().to_string());
+
+    assert_eq!(
+        session(
+            "/home/rwall/.leaftext-workspaces/a91a31cd-b8db/leaftext/app/target/debug/leaftext"
+        ),
+        Some("a91a31cd-b8db".to_string())
+    );
+    // A second session's copy is a second answer, which is the whole point.
+    assert_eq!(
+        session(
+            "/home/rwall/.leaftext-workspaces/0f2c77aa-1111/leaftext/app/target/debug/leaftext"
+        ),
+        Some("0f2c77aa-1111".to_string())
+    );
+
+    // Every launch that is not in one of those folders: an installed copy, a build in the owner's own checkout, and a folder merely named like one somewhere else.
+    for ordinary in [
+        "/c/Users/rwall/AppData/Local/Programs/leaftext/bin/leaftext.exe",
+        "/home/rwall/Desktop/Studio/work/leaftext/app/target/debug/leaftext",
+        "/Applications/Leaftext.app/Contents/MacOS/leaftext",
+        "/home/rwall/.leaftext-workspaces/leaftext",
+    ] {
+        assert_eq!(session(ordinary), None, "{ordinary}");
     }
 }
 

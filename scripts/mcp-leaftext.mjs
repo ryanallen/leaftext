@@ -11,16 +11,26 @@
 import net from 'node:net';
 import process from 'node:process';
 import readline from 'node:readline';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { devSuffixInDir, sessionInDir } from './agent-workspace.mjs';
 
 // The address the app listens on. Written in src/pipe.rs — `address()` — and the folder it sits in comes from `project_data_local_dir()` in src/lib.rs. scripts/check-mcp.mjs fails if the pipe's name here and there drift apart.
 const PIPE_NAME = 'leaftext-journal-';
 
+// Which copy this wrapper speaks to. Taken from where the wrapper itself sits rather than from anything typed: a question asked inside a session's copy must reach that copy's app and never the one somebody else is reading, and the copy is what the path already says.
+const HERE = join(dirname(fileURLToPath(import.meta.url)), '..');
+const DEV_SUFFIX = devSuffixInDir(HERE);
+const DEV_SESSION = sessionInDir(HERE);
+
 function address() {
   if (process.platform === 'win32') {
-    return `\\\\.\\pipe\\${PIPE_NAME}${process.env.USERNAME ?? ''}`;
+    return `\\\\.\\pipe\\${PIPE_NAME}${process.env.USERNAME ?? ''}${DEV_SUFFIX}`;
   }
   const home = process.env.HOME ?? '';
-  return `${home}/Library/Application Support/com.ryanallen.leaftext/journal.sock`;
+  const root = `${home}/Library/Application Support/com.ryanallen.leaftext`;
+  // A development launch keeps its whole profile in its own folder, and the socket lives in it — src/dev_session.rs.
+  return DEV_SESSION ? `${root}/dev/${DEV_SESSION}/journal.sock` : `${root}/journal.sock`;
 }
 
 /** One ask down the pipe, one reply back. */

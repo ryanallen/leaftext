@@ -16,6 +16,18 @@ pub enum Acquire {
     Forwarded,
 }
 
+/// The name of the slot itself. The user keeps two logged-in accounts off one slot; a development session keeps two private copies off each other's, which is what lets both be open at once instead of the second handing its file to the first and exiting. A normal launch adds nothing, so its name is what it always was.
+#[cfg(windows)]
+pub(crate) fn instance_mutex_name(user: &str, dev_suffix: &str) -> String {
+    format!("leaftext-single-instance-{user}{dev_suffix}")
+}
+
+/// Where a later launch hands its file over, scoped the same way — a copy that claimed its own slot must not be reachable down the slot it did not claim.
+#[cfg(windows)]
+pub(crate) fn instance_pipe_name(user: &str, dev_suffix: &str) -> String {
+    format!(r"\\.\pipe\leaftext-single-instance-{user}{dev_suffix}")
+}
+
 #[cfg(windows)]
 mod platform {
     use super::{Acquire, PathBuf};
@@ -71,11 +83,11 @@ mod platform {
     }
 
     fn mutex_name() -> String {
-        format!("leaftext-single-instance-{}", user_suffix())
+        super::instance_mutex_name(&user_suffix(), &leaftext::dev_name_suffix())
     }
 
     fn pipe_name() -> String {
-        format!(r"\\.\pipe\leaftext-single-instance-{}", user_suffix())
+        super::instance_pipe_name(&user_suffix(), &leaftext::dev_name_suffix())
     }
 
     /// Send one message to the running instance: a UTF-8 path, or empty to ask it only to focus. Retries briefly to cover the window where the primary holds the mutex but has not yet created the pipe, or the pipe is momentarily busy.
