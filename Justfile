@@ -342,7 +342,11 @@ drive-web url *steps:
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-workspace check-release check-verify check-justfile-quotes check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+# Fail if the compile share is gone, malformed or raised: every compile here is a Cargo command, so one missing setting is a machine nobody can use while the gate runs.
+check-build-jobs:
+    node scripts/check-build-jobs.mjs --check
+
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-workspace check-release check-verify check-justfile-quotes check-build-jobs check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Cut a release: one command from the gate to the push, all of it inside one still copy of
 # the plan tree. It was two — check and tag, then push after that process had exited — and

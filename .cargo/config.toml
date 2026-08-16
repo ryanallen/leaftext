@@ -1,0 +1,3 @@
+# Cargo takes every core, which leaves nobody a machine to work on while a compile runs. CARGO_BUILD_JOBS gives an idle one the lot for a single run.
+[build]
+jobs = 2
