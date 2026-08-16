@@ -62,8 +62,18 @@ fn a_workspace_restores_saved_regular_files_in_order_and_nearest_tab() {
     assert_eq!(
         workspace.tab_summaries(),
         vec![
-            ("First title".to_string(), first.display().to_string()),
-            ("Second title".to_string(), second.display().to_string()),
+            TabSummary {
+                title: "First title".to_string(),
+                path: first.display().to_string(),
+                dirty: false,
+                undoable: false,
+            },
+            TabSummary {
+                title: "Second title".to_string(),
+                path: second.display().to_string(),
+                dirty: false,
+                undoable: false,
+            },
         ]
     );
     assert_eq!(workspace.active, Some(1));
@@ -83,6 +93,116 @@ fn an_untitled_tab_is_not_saved_in_the_session() {
     assert_eq!(session.tabs.len(), 1);
     assert_eq!(session.tabs[0].path, PathBuf::from("guide.md"));
     assert_eq!(session.active, None);
+}
+
+/// A tab open on `path`, seeded from `saved` and typed on so it is dirty.
+fn dirty_tab_workspace(path: &Path, saved: &str, typed: &str) -> Workspace {
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.to_path_buf());
+    let end = saved.len();
+    workspace.tabs[0]
+        .edit_buffer(path, SourceText::utf8(saved.to_string()))
+        .replace_range(end, end, typed);
+    workspace
+}
+
+#[test]
+fn closing_with_a_dirty_tab_brings_its_words_and_its_dot_back() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("session file is written");
+    let workspace = dirty_tab_workspace(&note, "# Note\n", "\nTyped and never saved.\n");
+
+    // The mid-run saves carry none of it: typing reaches the buffer every fifth of a second, and this file would be rewritten that often.
+    assert_eq!(workspace.session().tabs[0].unsaved_text, None);
+
+    let session = workspace.closing_session();
+    assert_eq!(
+        session.tabs[0].unsaved_text.as_deref(),
+        Some("# Note\n\nTyped and never saved.\n")
+    );
+    assert_eq!(session.tabs[0].saved_text.as_deref(), Some("# Note\n"));
+
+    let restored = Workspace::from_session(&session);
+    assert_eq!(
+        restored.tabs[0]
+            .edit
+            .as_ref()
+            .expect("the unsaved buffer is put back")
+            .text(),
+        "# Note\n\nTyped and never saved.\n"
+    );
+    // The strip's own payload, which is the only thing that can light the dot on a tab the reader is not looking at.
+    assert!(restored.tab_summaries()[0].dirty);
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn a_file_changed_since_the_close_opens_as_the_disk_has_it() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("session file is written");
+    let session = dirty_tab_workspace(&note, "# Note\n", "Typed here.\n").closing_session();
+
+    // Somebody else wrote the file between the close and this launch, so the carried pair is dropped rather than spliced over their words.
+    fs::write(&note, "# Note\n\nWritten somewhere else.\n").expect("session file is rewritten");
+
+    let restored = Workspace::from_session(&session);
+    assert!(restored.tabs[0].edit.is_none());
+    assert!(!restored.tab_summaries()[0].dirty);
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn a_saved_tab_carries_no_words_out_of_the_window() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("session file is written");
+
+    // Nothing typed, so there is nothing to put back.
+    let mut clean = Workspace::default();
+    clean.open_path(note.clone());
+    assert_eq!(clean.closing_session().tabs[0].unsaved_text, None);
+
+    // And a tab saved after being restored is clean again by the next close: the session is rebuilt whole every time, so there is nothing to clear.
+    let session = dirty_tab_workspace(&note, "# Note\n", "Typed here.\n").closing_session();
+    let mut restored = Workspace::from_session(&session);
+    let edit = restored.tabs[0]
+        .edit
+        .as_mut()
+        .expect("the unsaved buffer is put back");
+    fs::write(&note, edit.text()).expect("the restored buffer is saved");
+    edit.mark_saved();
+
+    assert_eq!(restored.closing_session().tabs[0].unsaved_text, None);
+    assert!(!restored.tab_summaries()[0].dirty);
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn undo_on_a_restored_tab_is_one_step_back_to_the_saved_file() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("session file is written");
+    let session = dirty_tab_workspace(&note, "# Note\n", "Typed here.\n").closing_session();
+
+    let mut restored = Workspace::from_session(&session);
+    let edit = restored.tabs[0]
+        .edit
+        .as_mut()
+        .expect("the unsaved buffer is put back");
+
+    // Nothing pretends the old undo stack survived. There is exactly one step, and it is the file as it was last saved.
+    assert!(edit.can_undo());
+    assert!(edit.undo());
+    assert_eq!(edit.text(), "# Note\n");
+    assert!(!edit.can_undo());
+    assert!(!edit.is_dirty());
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
 }
 
 #[test]
@@ -1397,7 +1517,7 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
     let paths: Vec<String> = workspace
         .tab_summaries()
         .into_iter()
-        .map(|(_, path)| path)
+        .map(|tab| tab.path)
         .collect();
     assert_eq!(
         paths,

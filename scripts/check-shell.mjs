@@ -7704,6 +7704,29 @@ if (booted) {
     if (folder.includes('file-type-badge')) throw new Error(`a folder gained a file type badge: ${folder}`);
   });
 
+  // The page's own record of what is unsaved is empty at every launch, so a tab whose edits the last close carried out of the window would come back with no dot and no way to take the one step it holds. The host says both in the tab's own payload; the page may only ever believe it, never disbelieve it, because typing since the last pause has not reached the host yet.
+  check('a tab the host says is unsaved comes back with its dot and its Undo', () => {
+    const path = 'C:\\Notes\\restored.md';
+    vm.runInContext('dirtyByPath.clear(); undoableByPath.clear();', booted);
+    booted.leafSetState({ tabs: [{ path, dirty: true, undoable: true }], active: 0, recent: [], favorites: [], document: null });
+    if (!booted.document.getElementById('tabBar').innerHTML.includes('tab-modified')) {
+      throw new Error('a restored unsaved tab drew no dot');
+    }
+    if (vm.runInContext(`dirtyByPath.get(${JSON.stringify(path)})`, booted) !== true) {
+      throw new Error("the page did not take the host's word for what is unsaved");
+    }
+    if (vm.runInContext(`undoableByPath.get(${JSON.stringify(path)})`, booted) !== true) {
+      throw new Error('the one step a restored tab holds is unreachable, because the page will not ask for an undo it does not believe in');
+    }
+
+    // A clean answer never takes a dot away: the page is the one that is ahead between typing and the pause that reaches the host.
+    booted.leafSetState({ tabs: [{ path, dirty: false, undoable: false }], active: 0, recent: [], favorites: [], document: null });
+    if (vm.runInContext(`dirtyByPath.get(${JSON.stringify(path)})`, booted) !== true) {
+      throw new Error('a payload that had not caught up yet cleared words the reader had just typed');
+    }
+    vm.runInContext('dirtyByPath.clear(); undoableByPath.clear();', booted);
+  });
+
   check('a home row reads as a name over its folder', () => {
     const path = 'C:\\Users\\me\\Vault\\Journal\\A note.md';
     const row = homeRowMarkup(path);

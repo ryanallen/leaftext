@@ -1318,6 +1318,10 @@ pub struct SessionTab {
     pub code_view: bool,
     pub anchor: Option<ScrollAnchor>,
     pub saved_code_scroll: Option<f64>,
+    /// The unsaved buffer as it stood when the window closed, so the edits come back rather than being discarded without a word. `None` for a clean tab, and written by the close alone — a mid-run save would rewrite this file at every pause in typing.
+    pub unsaved_text: Option<String>,
+    /// The same tab's text as it was last written to disk, which is what the next launch compares the file against before it puts the buffer back. The text rather than a hash: the app's own hash is per-run, so one written here would stop matching after every app update and silently drop the edits.
+    pub saved_text: Option<String>,
 }
 
 /// The open workspace remembered in the app config. `active` is `None` when the home screen was showing.

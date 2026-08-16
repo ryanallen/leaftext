@@ -98,6 +98,11 @@ impl EditableDocument {
         self.text != self.saved
     }
 
+    /// The text as it was last written to disk. What the saved session carries beside an unsaved buffer, so the next launch can tell whether the file is still the one those edits were made against.
+    pub fn saved_text(&self) -> &str {
+        &self.saved
+    }
+
     pub fn version(&self) -> u64 {
         self.version
     }

@@ -426,6 +426,8 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
                     offset_y: -18.0,
                 }),
                 saved_code_scroll: Some(0.42),
+                unsaved_text: Some("# Guide\n\nTyped and not saved.\n".to_string()),
+                saved_text: Some("# Guide\n".to_string()),
             }],
             active: Some(0),
         },

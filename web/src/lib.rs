@@ -191,11 +191,13 @@ pub unsafe extern "C" fn leaf_document_script(
     };
     let path = borrow_str(path_ptr, path_len).unwrap_or("document.md");
     let document = opened_document_from_source_with_host(source, Path::new(path), &PageHost);
-    // The whole workspace, not just the document: the tab strip and the floating toolbar are drawn off the tabs, so a document sent without them arrives in a window with no chrome around it. Title first, then path — the order the page reads a tab in.
-    let tabs = vec![(
-        leaftext::tab_title_from_path(Path::new(path)),
-        path.to_string(),
-    )];
+    // The whole workspace, not just the document: the tab strip and the floating toolbar are drawn off the tabs, so a document sent without them arrives in a window with no chrome around it. Title first, then path — the order the page reads a tab in. A document handed over as text has no buffer behind it, so there is nothing unsaved and nothing to take back.
+    let tabs = vec![leaftext::TabSummary {
+        title: leaftext::tab_title_from_path(Path::new(path)),
+        path: path.to_string(),
+        dirty: false,
+        undoable: false,
+    }];
     into_length_prefixed(
         leaftext::workspace_state_script(
             &[],
@@ -359,13 +361,23 @@ pub extern "C" fn leaf_buffer_state(handle: u32) -> *mut u8 {
 #[cfg(feature = "shell")]
 #[no_mangle]
 pub extern "C" fn leaf_buffer_document_script(handle: u32) -> *mut u8 {
-    let Some((text, path)) =
-        with_buffer(handle, |edit| (edit.text().to_string(), edit.path.clone()))
-    else {
+    let Some((text, path, dirty, undoable)) = with_buffer(handle, |edit| {
+        (
+            edit.text().to_string(),
+            edit.path.clone(),
+            edit.is_dirty(),
+            edit.can_undo(),
+        )
+    }) else {
         return std::ptr::null_mut();
     };
     let document = opened_document_from_source_with_host(&text, &path, &PageHost);
-    let tabs = vec![(leaftext::tab_title_from_path(&path), text_path(&path))];
+    let tabs = vec![leaftext::TabSummary {
+        title: leaftext::tab_title_from_path(&path),
+        path: text_path(&path),
+        dirty,
+        undoable,
+    }];
     let state = leaftext::workspace_state_script(
         &[],
         &leaftext::Favorites::default(),

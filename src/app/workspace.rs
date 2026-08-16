@@ -67,8 +67,26 @@ pub(crate) struct Workspace {
     pub(crate) active: Option<usize>,
 }
 
+/// The unsaved buffer a close carried, put back — or `None`, which is every ordinary tab.
+///
+/// The one disk read the restore makes, and only for a tab that was left dirty. The file has to still be exactly what those edits were made against: changed underneath, the carried pair is dropped and the document opens as the disk has it, because splicing somebody's unsaved words over an edit made somewhere else is the one outcome worse than losing them.
+///
+/// The buffer is seeded from the read and the carried text goes on as one whole-buffer replacement, so the restored tab is dirty by the ordinary comparison and holds exactly one press of undo — back to the file as it was last saved, which is the only step that is still true.
+fn restored_edit_buffer(saved: &SessionTab) -> Option<EditableDocument> {
+    let unsaved = saved.unsaved_text.as_deref()?;
+    let last_saved = saved.saved_text.as_deref()?;
+    let source = read_source(&saved.path).ok()?;
+    if source.text != last_saved {
+        return None;
+    }
+    let mut edit = EditableDocument::new(saved.path.clone(), source);
+    let end = edit.text().len();
+    edit.replace_range(0, end, unsaved);
+    Some(edit)
+}
+
 impl Workspace {
-    /// Rebuild the tab strip from the last saved session without reading any documents. Missing paths are left out, and a missing front tab falls forward to the nearest remaining one.
+    /// Rebuild the tab strip from the last saved session. The only document read is a tab the last close left with unsaved edits, which [`restored_edit_buffer`] has to compare against the file. Missing paths are left out, and a missing front tab falls forward to the nearest remaining one.
     pub(crate) fn from_session(session: &Session) -> Self {
         let mut saved_indices = Vec::new();
         let mut tabs = Vec::new();
@@ -86,6 +104,7 @@ impl Workspace {
                 tab.history.stamp_current(anchor);
             }
             tab.saved_code_scroll = saved.saved_code_scroll;
+            tab.edit = restored_edit_buffer(saved);
             saved_indices.push(saved_index);
             tabs.push(tab);
         }
@@ -105,6 +124,17 @@ impl Workspace {
 
     /// The session worth saving: one current document per tab, with its strip label and view. Untitled buffers have no file to reopen, so they are left out.
     pub(crate) fn session(&self) -> Session {
+        self.build_session(false)
+    }
+
+    /// The session the window writes on its way out, which also carries every unsaved buffer so the edits are there at the next launch instead of being discarded without a word.
+    ///
+    /// Only the close builds this one. The mid-run saves keep to [`session`](Self::session): a typing pause reaches the buffer every fifth of a second, and carrying the text there would rewrite the settings file that often.
+    pub(crate) fn closing_session(&self) -> Session {
+        self.build_session(true)
+    }
+
+    fn build_session(&self, carry_unsaved: bool) -> Session {
         let mut active = None;
         let mut tabs = Vec::new();
         for (index, tab) in self.tabs.iter().enumerate() {
@@ -117,12 +147,19 @@ impl Workspace {
             if self.active == Some(index) {
                 active = Some(tabs.len());
             }
+            // Only a buffer belonging to the document this tab is showing: a tab that navigated on can still hold one for where it has been, and that is not what reopening this tab would put on screen.
+            let unsaved = carry_unsaved
+                .then(|| tab.edit.as_ref())
+                .flatten()
+                .filter(|edit| edit.is_dirty() && tab.has_edit_for(&path));
             tabs.push(SessionTab {
                 path,
                 title: tab.title.clone(),
                 code_view: tab.code_view,
                 anchor: tab.history.current_anchor(),
                 saved_code_scroll: tab.saved_code_scroll,
+                unsaved_text: unsaved.map(|edit| edit.text().to_string()),
+                saved_text: unsaved.map(|edit| edit.saved_text().to_string()),
             });
         }
         Session { tabs, active }
@@ -293,17 +330,24 @@ impl Workspace {
         self.active = None;
     }
 
-    /// `(title, path)` for each tab, in tab-bar order, for the webview state.
-    pub(crate) fn tab_summaries(&self) -> Vec<(String, String)> {
+    /// Each tab in tab-bar order, for the webview state: its label, its document, and whether that document has unsaved edits.
+    pub(crate) fn tab_summaries(&self) -> Vec<TabSummary> {
         self.tabs
             .iter()
             .map(|tab| {
-                let path = tab
-                    .history
-                    .current()
-                    .map(|path| path.display().to_string())
-                    .unwrap_or_default();
-                (tab.title.clone(), path)
+                let current = tab.history.current();
+                // Only a buffer belonging to the document this tab is showing says anything about it.
+                let edit = current
+                    .filter(|path| tab.has_edit_for(path))
+                    .and_then(|_| tab.edit.as_ref());
+                TabSummary {
+                    title: tab.title.clone(),
+                    path: current
+                        .map(|path| path.display().to_string())
+                        .unwrap_or_default(),
+                    dirty: edit.is_some_and(EditableDocument::is_dirty),
+                    undoable: edit.is_some_and(EditableDocument::can_undo),
+                }
             })
             .collect()
     }

@@ -8,11 +8,22 @@ fn call_with_json(function: &str, value: &serde_json::Value) -> String {
     format!("{function}({value});")
 }
 
+/// One tab as the strip draws it: the label, the document it stands for, whether that document has edits nobody has saved, and whether there is a step to take back.
+///
+/// Both flags travel with the tab because the page's own maps of them start empty at every launch. Without the first, a tab whose edits the session put back would show no dot unless the reader happened to be looking at it; without the second, the one step it can undo is unreachable, since the page refuses to ask for an undo it does not believe in.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TabSummary {
+    pub title: String,
+    pub path: String,
+    pub dirty: bool,
+    pub undoable: bool,
+}
+
 /// Initial workspace state as `window.__leafInitialState`. Run as an init script (before any page script) so the boot bootstrap applies it on the first render. Both lists, because the start screen draws both and a cold launch is the one render nothing else answers for.
 pub fn initial_state_script(
     recent: &[PathBuf],
     favorites: &Favorites,
-    tabs: &[(String, String)],
+    tabs: &[TabSummary],
     active: Option<usize>,
 ) -> String {
     let state = workspace_payload(recent, favorites, tabs, active, None);
@@ -184,7 +195,7 @@ pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> S
 fn workspace_payload(
     recent: &[PathBuf],
     favorites: &Favorites,
-    tabs: &[(String, String)],
+    tabs: &[TabSummary],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
 ) -> serde_json::Value {
@@ -206,7 +217,9 @@ fn workspace_payload(
         .collect();
     let tabs: Vec<serde_json::Value> = tabs
         .iter()
-        .map(|(title, path)| serde_json::json!({ "title": title, "path": path }))
+        .map(|tab| {
+            serde_json::json!({ "title": tab.title, "path": tab.path, "dirty": tab.dirty, "undoable": tab.undoable })
+        })
         .collect();
     serde_json::json!({
         "recent": recent,
@@ -221,7 +234,7 @@ fn workspace_payload(
 pub fn workspace_state_script(
     recent: &[PathBuf],
     favorites: &Favorites,
-    tabs: &[(String, String)],
+    tabs: &[TabSummary],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
 ) -> String {
@@ -235,7 +248,7 @@ pub fn workspace_state_script(
 pub fn workspace_only_script(
     recent: &[PathBuf],
     favorites: &Favorites,
-    tabs: &[(String, String)],
+    tabs: &[TabSummary],
     active: Option<usize>,
 ) -> String {
     format!(
@@ -248,7 +261,7 @@ pub fn workspace_only_script(
 pub fn workspace_reload_script(
     recent: &[PathBuf],
     favorites: &Favorites,
-    tabs: &[(String, String)],
+    tabs: &[TabSummary],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
 ) -> String {
@@ -282,7 +295,7 @@ fn scroll_anchor_json(anchor: &ScrollAnchor) -> String {
 pub fn workspace_switch_script(
     recent: &[PathBuf],
     favorites: &Favorites,
-    tabs: &[(String, String)],
+    tabs: &[TabSummary],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
     anchor: Option<&ScrollAnchor>,

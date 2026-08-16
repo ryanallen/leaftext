@@ -232,6 +232,12 @@ function renderTabs(state) {
   }
   const tabs = state.tabs || [];
   const active = state.active;
+  // The host says which documents have unsaved edits and which have a step to take back, which is the only way a tab restored from the last close gets its dot and its Undo: both maps start empty at every launch. Never cleared from here — typing since the last pause has not reached the host yet, so the page is the one that is ahead.
+  tabs.forEach((tab) => {
+    if (!tab.path) return;
+    if (tab.dirty) dirtyByPath.set(tab.path, true);
+    if (tab.undoable) undoableByPath.set(tab.path, true);
+  });
   // A pure HTML write; the strip's listeners live on the bar itself (below).
   tabBar.innerHTML = tabs.map((tab, index) => {
     const favorite = isFavoritePath(tab.path);

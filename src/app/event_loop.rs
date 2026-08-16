@@ -128,7 +128,8 @@ fn shut_down(
     windowed_size: LogicalSize<f64>,
     control_flow: &mut ControlFlow,
 ) {
-    settings.session = reader.workspace.session();
+    // The close is the one save that carries the unsaved buffers, so edits nobody saved are there at the next launch.
+    settings.session = reader.workspace.closing_session();
     settings.window_width = windowed_size.width.round() as u32;
     settings.window_height = windowed_size.height.round() as u32;
     settings.window_maximized = reader.window.is_maximized();

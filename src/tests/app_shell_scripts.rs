@@ -2,6 +2,16 @@
 
 use super::*;
 
+/// A clean tab in the strip — no unsaved edits, nothing to take back.
+fn strip_tab(title: &str, path: &str) -> TabSummary {
+    TabSummary {
+        title: title.to_string(),
+        path: path.to_string(),
+        dirty: false,
+        undoable: false,
+    }
+}
+
 #[test]
 fn navigation_state_script_updates_webview_navigation_controls() {
     assert_eq!(
@@ -30,12 +40,26 @@ fn initial_state_script_returns_reader_to_no_file_state_with_both_lists() {
 
 #[test]
 fn initial_state_script_carries_restored_tab_labels_without_a_document() {
-    let tabs = [("Guide".to_string(), "guide.md".to_string())];
+    let tabs = [strip_tab("Guide", "guide.md")];
     let script = initial_state_script(&[], &Favorites::default(), &tabs, Some(0));
 
-    assert_contains(&script, r#""tabs":[{"path":"guide.md","title":"Guide"}]"#);
+    assert_contains(
+        &script,
+        r#""tabs":[{"dirty":false,"path":"guide.md","title":"Guide","undoable":false}]"#,
+    );
     assert_contains(&script, r#""active":0"#);
     assert_contains(&script, r#""document":null"#);
+
+    // A tab the last close left unsaved says so in the same payload: the page's own map of that starts empty at launch, so a restored dot has nowhere else to come from.
+    let restored = [TabSummary {
+        dirty: true,
+        undoable: true,
+        ..strip_tab("Guide", "guide.md")
+    }];
+    assert_contains(
+        &initial_state_script(&[], &Favorites::default(), &restored, Some(0)),
+        r#""tabs":[{"dirty":true,"path":"guide.md","title":"Guide","undoable":true}]"#,
+    );
 }
 
 #[test]
@@ -57,7 +81,7 @@ fn scroll_anchor_script_restores_webview_reader_anchor() {
 
 #[test]
 fn workspace_reload_script_preserves_scroll_via_reload_entry_point() {
-    let tabs = [("Guide".to_string(), "guide.md".to_string())];
+    let tabs = [strip_tab("Guide", "guide.md")];
     let script = workspace_reload_script(
         &[PathBuf::from("guide.md")],
         &Favorites::default(),
@@ -75,7 +99,7 @@ fn workspace_reload_script_preserves_scroll_via_reload_entry_point() {
 
 #[test]
 fn workspace_payload_carries_favorites_beside_recents() {
-    let tabs = [("Guide".to_string(), "guide.md".to_string())];
+    let tabs = [strip_tab("Guide", "guide.md")];
     let mut favorites = Favorites::default();
     favorites.add(Favorite {
         vault_id: Some(4),
@@ -104,7 +128,7 @@ fn workspace_payload_carries_favorites_beside_recents() {
 
 #[test]
 fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
-    let tabs = [("Guide".to_string(), "guide.md".to_string())];
+    let tabs = [strip_tab("Guide", "guide.md")];
     let anchor = ScrollAnchor {
         section: Some("intro".to_string()),
         block: 2,
