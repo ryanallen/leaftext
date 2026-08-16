@@ -1358,7 +1358,6 @@ if (typeof MutationObserver === 'function') {
     repaintMermaidDiagrams();
     // The sweep above skips the full-window stage, so it is redrawn by name.
     repaintDiagramOverlay();
-    repaintMissingImages();
   }).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme', 'data-leaf-theme'],
@@ -1648,14 +1647,6 @@ function restoreMissingImage(img) {
   delete img.dataset.imageMissingAlt;
   delete img.dataset.imageMissingSrc;
   if (src) img.setAttribute('src', src);
-}
-// The glyph carries the ink it was painted with, so a new theme is a new glyph.
-function repaintMissingImages() {
-  if (!app) return;
-  const source = missingImageSource();
-  app.querySelectorAll('img[data-image-missing="true"]').forEach((img) => {
-    img.src = source;
-  });
 }
 // Capture phase, because `error` does not bubble — one listener covers every image, including the ones the page adds later.
 if (app) {

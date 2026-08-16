@@ -362,6 +362,8 @@ function runShell(source, extras = {}) {
   let frameId = 0;
   // Kept rather than swallowed, the way the document's are: a check raises a made-up event on the window and gets the page's own handlers. The mouse's own back button and the browser's own history both arrive this way.
   const windowListeners = new Map();
+  // Every watcher the page registered, with the element and the options it was handed, so a check can find the one guarding an attribute and run it.
+  const watchers = [];
   const address = fakeAddress('https://leaf.test/', (type, event) => {
     for (const handler of [...(windowListeners.get(type) || [])]) handler(event);
   });
@@ -389,6 +391,7 @@ function runShell(source, extras = {}) {
     // The stack itself, so a check can walk it and read back what each entry was stamped with.
     __address: address,
     __windowListeners: windowListeners,
+    __watchers: watchers,
     navigator: { userAgent: 'leaf-check', platform: 'test', clipboard: { writeText: noop } },
     performance: { now: () => 0 },
     setTimeout: () => 0,
@@ -406,9 +409,18 @@ function runShell(source, extras = {}) {
       frames.delete(id);
     },
     fetch: () => new Promise(() => {}),
+    // Kept rather than swallowed, the way a listener is: a callback registered on every boot and called on none of them is a sweep no check has ever run, which is how a retired function sat in the theme sweep throwing into the record on every theme change. A check flips the attribute and fires what was watching it.
     MutationObserver: class {
-      observe() {}
-      disconnect() {}
+      constructor(callback) {
+        this.callback = callback;
+      }
+      observe(target, options) {
+        watchers.push({ callback: this.callback, target, options: options || {} });
+      }
+      disconnect() {
+        const at = watchers.findIndex((one) => one.callback === this.callback);
+        if (at >= 0) watchers.splice(at, 1);
+      }
     },
     ResizeObserver: class {
       observe() {}
@@ -549,6 +561,22 @@ check('a malformed staging path never draws a bare v', () => {
 
 check('a launch after an install that worked growls nothing', () => {
   if (bootGrowls({ __leafUpdateFailed: null }).length !== 0) throw new Error('a null flag still growled');
+});
+
+// ---- 2c. a theme change runs the sweep it registered ------------------------
+//
+// The picker, the system's own light/dark switch and the resolution at startup all reach the page as the theme attribute changing on the root element, so one sweep answers all three — and a name retired out of it throws on every one of them. Fired here rather than read as text: running it catches any retired name in the sweep, including the ones nobody has thought of. Its own page, because the sweep empties the page-level mermaid sheet the checks below set up.
+
+check('a theme change runs the sweep to its end', () => {
+  const context = runShell(source);
+  const root = context.document.documentElement;
+  const sweeps = context.__watchers.filter(
+    (one) => one.target === root && (one.options.attributeFilter || []).includes('data-theme'),
+  );
+  if (sweeps.length === 0) throw new Error('nothing watches the theme attribute on the root element');
+  root.dataset.theme = 'forest';
+  root.dataset.leafTheme = 'forest';
+  for (const sweep of sweeps) sweep.callback([{ type: 'attributes', attributeName: 'data-theme', target: root }]);
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
