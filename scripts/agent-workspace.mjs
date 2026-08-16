@@ -6,7 +6,7 @@
 //   node scripts/agent-workspace.mjs create      make this session's copy
 //   node scripts/agent-workspace.mjs path        where this session's copy is
 //   node scripts/agent-workspace.mjs list        every managed workspace
-//   node scripts/agent-workspace.mjs private     hand this session's finished work over on its own branch
+//   node scripts/agent-workspace.mjs private [--session <session>] [message]  hand a named session's finished work over on its own branch
 //   node scripts/agent-workspace.mjs submit <s>  apply one session's handoff to the primary app copy
 //   node scripts/agent-workspace.mjs plan-open   take the running order to edit, holding it
 //   node scripts/agent-workspace.mjs plan-close  write it back and give it up
@@ -181,6 +181,24 @@ export function manifests(parent) {
   }
 }
 
+/// The loose app work one recorded copy holds. Each path comes from its record; no folder is walked.
+export function workspaceStatus(record) {
+  const appPaths = dirtyPaths(record.app);
+  return { record, appPaths, hasWork: appPaths.length > 0 };
+}
+
+/// Every recorded copy and its loose-work state, read once for one answer.
+export function workspaceStatuses(parent) {
+  return manifests(parent).map(workspaceStatus);
+}
+
+/// One list row, including the same state an empty handoff uses to suggest a target.
+export function workspaceLine(status) {
+  const { record, appPaths, hasWork } = status;
+  const state = hasWork ? `work waiting (${appPaths.length} app path${appPaths.length === 1 ? '' : 's'})` : 'clear';
+  return `${record.session}  ${record.branch}  ${record.app}  ${state}`;
+}
+
 /// Whether a repository already has a branch by that name.
 function hasBranch(root, branch) {
   try {
@@ -275,7 +293,11 @@ export function releasePrivate({ session, parent, from = process.cwd(), message 
 
   // Staged first, so a file the work added travels with the ones it changed.
   git(record.app, ['add', '-A']);
-  if (!git(record.app, ['diff', '--cached', '--name-only', record.appBase])) throw new Error('this workspace has no work in it, so there is nothing to hand over');
+  if (!git(record.app, ['diff', '--cached', '--name-only', record.appBase])) {
+    const waiting = workspaceStatuses(parent).filter((status) => status.record.session !== tag && status.hasWork);
+    const elsewhere = waiting.length ? ` Work is waiting in ${waiting.map((status) => status.record.session).join(', ')}; run private --session <session> to hand one over.` : '';
+    throw new Error(`this workspace has no work in it, so there is nothing to hand over.${elsewhere}`);
+  }
 
   // One commit on the revision the copy was cut from, however many times this runs: the submit reads the base off that commit's parent, and a second commit would hide the first one's work from it.
   const amend = baseOf(record.app) !== record.appBase ? ['--amend'] : [];
@@ -287,6 +309,12 @@ export function releasePrivate({ session, parent, from = process.cwd(), message 
   if (!handoff) throw new Error('the handoff commit was made and could not be read back off the branch');
   writeFileSync(join(parent, `${tag}.json`), JSON.stringify({ ...record, handoff }, null, 2) + '\n');
   return handoff;
+}
+
+/// The current session remains the default, and a named target is deliberate.
+export function privateArguments(args, currentSession) {
+  if (args[0] !== '--session') return { session: currentSession, message: args.join(' ') };
+  return { session: args[1] || '', message: args.slice(2).join(' ') };
 }
 
 /// Read a handoff off the branch: the base is the commit's parent and the changed paths are its own diff. A branch sitting where it was cut carries none, which is what the trailer says.
@@ -946,10 +974,17 @@ function selfTest() {
     }
     if (!stranger.includes('no managed workspace')) fails.push('a session with no workspace was allowed to release one');
 
-    const handoff = releasePrivate({ session: ONE, parent, from: one.app });
+    const named = privateArguments(['--session', ONE, 'named handoff'], TWO);
+    if (named.session !== ONE || named.message !== 'named handoff') fails.push('a named private handoff did not keep its target and message apart');
+    const ordinary = privateArguments(['ordinary handoff'], TWO);
+    if (ordinary.session !== TWO || ordinary.message !== 'ordinary handoff') fails.push('a private handoff without a target did not keep the running session and message');
+
+    const handoff = releasePrivate({ ...named, parent, from: two.app });
     if (handoff.appBase !== one.appBase) fails.push('the handoff did not carry the app revision it was written on');
     if (!handoff.appPaths.includes('src/lib.rs')) fails.push('the handoff did not name the app file the work changed');
     if (git(appRoot, ['rev-list', '--count', `${one.appBase}..${one.branch}`]) !== '1') fails.push('a private release did not leave exactly one commit on the session\'s branch');
+    if (staged(two.app) !== '') fails.push('a named private handoff staged the caller\'s copy');
+    if (read(lib(two)) !== '// two\n') fails.push('a named private handoff changed the caller\'s file');
 
     // Released twice: still one commit, so the base stays the revision the copy was cut from.
     write(lib(one), '// one again\n');
@@ -973,6 +1008,22 @@ function selfTest() {
     const assigned = assignedPaths(parent);
     if (!assigned.includes('app: src/lib.rs')) fails.push('a released handoff did not claim the app work it carries');
     if (assignedPaths(parent).length !== handoff.paths.length) fails.push('a session\'s handoff claimed work no session had released');
+    const listed = workspaceStatuses(parent);
+    const oneStatus = listed.find((status) => status.record.session === sessionTag(ONE));
+    const twoStatus = listed.find((status) => status.record.session === sessionTag(TWO));
+    if (oneStatus?.hasWork) fails.push('a clean handed-off copy was listed as holding work');
+    if (!twoStatus?.hasWork || !workspaceLine(twoStatus).includes('work waiting')) fails.push('a dirty copy was not marked as holding work');
+    const EMPTY = 'aaaaaaaa-8888-8888-8888-888888888888';
+    const empty = create({ session: EMPTY, appRoot, parent });
+    let emptyMessage = '';
+    try {
+      releasePrivate({ session: EMPTY, parent, from: empty.app });
+    } catch (error) {
+      emptyMessage = error.message;
+    }
+    if (!emptyMessage.includes(sessionTag(TWO)) || emptyMessage.includes(sessionTag(ONE))) fails.push('an empty handoff did not name only the other copy holding work');
+    if (staged(two.app) !== '' || read(lib(two)) !== '// two\n') fails.push('an empty handoff changed the suggested copy');
+    remove({ session: EMPTY, parent });
     // The overlapping half: the same file from the other session.
     releasePrivate({ session: TWO, parent, from: two.app });
 
@@ -1239,8 +1290,9 @@ function main(args) {
     return;
   }
   if (command === 'private') {
-    const handoff = releasePrivate({ session, parent, message: args.slice(1).join(' ') });
-    console.log(`${handoff.branch}  ${handoff.appPaths.length} app paths on ${handoff.appBase.slice(0, 8)}`);
+    const target = privateArguments(args.slice(1), session);
+    const handoff = releasePrivate({ ...target, parent });
+    console.log(`${sessionTag(target.session)}  ${handoff.branch}  ${handoff.appPaths.length} app paths on ${handoff.appBase.slice(0, 8)}`);
     return;
   }
   if (command === 'submit') {
@@ -1261,7 +1313,7 @@ function main(args) {
     return;
   }
   if (command === 'list') {
-    for (const record of manifests(parent)) console.log(`${record.session}  ${record.branch}  ${record.app}`);
+    for (const status of workspaceStatuses(parent)) console.log(workspaceLine(status));
     return;
   }
   if (command === 'path') {
@@ -1273,7 +1325,7 @@ function main(args) {
     console.log(record.app);
     return;
   }
-  console.error('usage: agent-workspace.mjs create | path | list | private [message] | submit <session> | plan-open | plan-close | remove | --check');
+  console.error('usage: agent-workspace.mjs create | path | list | private [--session <session>] [message] | submit <session> | plan-open | plan-close | remove | --check');
   process.exit(1);
 }
 

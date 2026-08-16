@@ -20,7 +20,11 @@ A hook puts every session in a private copy of the app before the message is rea
 
     node scripts/agent-workspace.mjs private
 
-It commits the checked app change as one commit on this session's own branch, on top of the revision the copy was cut from. **It never pushes, never tags, never moves a version, and never speaks to any remote.** Then, from the app copy the owner reads:
+It commits the checked app change as one commit on this session's own branch, on top of the revision the copy was cut from. If a cleared conversation left the checked build in another session, run `node scripts/agent-workspace.mjs list` from the new managed copy, then name that session deliberately:
+
+    node scripts/agent-workspace.mjs private --session <session>
+
+The named handoff says whose work it takes. **It never pushes, never tags, never moves a version, and never speaks to any remote.** Then, from the app copy the owner reads:
 
     node scripts/agent-workspace.mjs submit <session>
 
