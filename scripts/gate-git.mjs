@@ -5,6 +5,8 @@
 //
 // Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, checkout, switch, restore, stash, worktree, pull, apply, rm, mv, a deleted or moved branch, anything with --force, and the commands that run a release. Reading is always fine — a git write and a release are both recognized by the program a command runs, so a search, a message or a filename that merely quotes one is text.
 //
+// A segment never ends inside a quote. Never simplify `segments` back to one `split`: cutting at `&&` before anything reads a quote leaves `bash -c "cd . && git push"` as a head holding an open quote and a tail reading `git push"`, and neither of those names a write, so the write goes through.
+//
 //   node scripts/gate-git.mjs           the hook payload on stdin
 //   node scripts/gate-git.mjs --check   self-test (`just verify`)
 
@@ -34,8 +36,8 @@ const OPAQUE_RUNNERS = /^(?:bash|sh|zsh|dash|fish|wsl|env|xargs|start|eval|npm|n
 const NODE_EVAL_FLAGS = new Set(['-e', '--eval', '-p', '--print']);
 // Only for a runner that cannot be read: a command naming a release without running one is a read.
 const RELEASE_NAMES = /\bjust\s+(?:release|land)\b|prepare-release/i;
-// Git anywhere in a segment, with the rest of the segment as its arguments. Only for a runner that cannot be read, beside `RELEASE_NAMES`: a command naming a git write without running one is a read.
-const GIT_NAME = /(?:^|[\s&|;(])["']?(?:[^\s"']*[\\/])?git(?:\.exe)?["']?\s+(.+)$/i;
+// Every git in a segment, each read with whatever follows it as its arguments. Only for a runner that cannot be read, beside `RELEASE_NAMES`: a command naming a git write without running one is a read. Every one of them, because such a segment holds a whole command string — `sh -c "git status && git commit -m x"` names a read first and a write second.
+const GIT_NAME = /(?:^|[\s&|;(])["']?(?:[^\s"']*[\\/])?git(?:\.exe)?["']?(?=\s)/gi;
 // Shell punctuation standing in front of a program rather than being one.
 const PUNCTUATION = /^[&(){}]+$/;
 // A leading `NAME=value` is the shell setting a variable, not the program it then runs.
@@ -49,9 +51,51 @@ function readStdin() {
   }
 }
 
-// Everything the shell would run as its own command. A lone `&` is one of them: cmd runs what follows it whatever the first command did.
+// Everything the shell would run as its own command. A lone `&` is one of them: cmd runs what follows it whatever the first command did. The walk is the whole point — a separator inside a quoted string is text the shell hands on, so cutting there would leave `bash -c "cd . && git push"` as two halves naming nothing.
 function segments(command) {
-  return command.split(/&&|&|\|\||;|\||\n|\r/).map((s) => s.trim()).filter(Boolean);
+  const out = [];
+  let current = '';
+  let quote = '';
+  for (let at = 0; at < command.length; at += 1) {
+    const ch = command[at];
+    if (quote) {
+      current += ch;
+      if (ch === quote) quote = '';
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (command.startsWith('&&', at) || command.startsWith('||', at)) {
+      out.push(current);
+      current = '';
+      at += 1;
+      continue;
+    }
+    if (ch === '&' || ch === ';' || ch === '|' || ch === '\n' || ch === '\r') {
+      out.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  out.push(current); // An unterminated quote never closes, so the rest of the line arrives here as one segment.
+  return out.map((s) => s.trim()).filter(Boolean);
+}
+
+// A quote the line never closes. Such a line is one no parser can model — a shell would go on reading — so it is refused on the name it carries, the way a runner nothing here can read is.
+function unterminated(text) {
+  let quote = '';
+  for (const ch of text) {
+    if (quote) {
+      if (ch === quote) quote = '';
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    }
+  }
+  return quote !== '';
 }
 
 // The words a shell would see, keeping a quoted path with spaces in it whole.
@@ -94,9 +138,12 @@ function gitArguments(args) {
 
 // Only for a runner this parser cannot read: what the segment names, refused on the name rather than on a parse nobody can make. A whole-segment match is safe here and nowhere else, since a program that can run anything is the one case where the words are all there is.
 function namedWrite(segment, head) {
-  const match = segment.match(GIT_NAME);
-  const named = match ? gitArguments(words(match[1])) : '';
-  if (named) return `${head} running ${named}`;
+  for (const match of segment.matchAll(GIT_NAME)) {
+    // The quotes come out because the command string is still wrapped in them here: without this the subcommand of `bash -c "cd . && git push"` is `push"`, which is in no list.
+    const tail = segment.slice(match.index + match[0].length).replace(/["']/g, ' ');
+    const named = gitArguments(words(tail));
+    if (named) return `${head} running ${named}`;
+  }
   return RELEASE_NAMES.test(segment) ? `${head} running a release` : '';
 }
 
@@ -106,15 +153,21 @@ function segmentWrite(segment, depth = 0) {
   let start = 0; // PowerShell's call operator and its braces stand in front of the program, and a `NAME=value` is the shell setting a variable rather than running anything, so step over both to reach it.
   while (start < args.length && (PUNCTUATION.test(args[start]) || ASSIGNMENT.test(args[start]))) start += 1;
   const head = runner(args[start] ?? '');
-  const rest = args.slice(start + 1);
   if (!head) return '';
+  const write = programWrite(head, args.slice(start + 1), segment, depth);
+  if (write) return write;
+  return unterminated(segment) ? namedWrite(segment, head) : '';
+}
 
+// The write the named program performs, or '' if it performs none.
+function programWrite(head, rest, segment, depth) {
   // A shell inside a shell adds nothing: read what it really runs. The name is only the answer where the command string cannot be reached at all.
   if (NESTED_RUNNERS.test(head)) {
     let at = 0; // Past the shell's own options — `/c`, `-NoProfile`, `-Command` — to the command string itself.
     while (at < rest.length && (PUNCTUATION.test(rest[at]) || /^[-/][\w-]*$/.test(rest[at]))) at += 1;
     const inner = rest.slice(at).join(' ');
-    if (inner && depth < 3) return segmentWrite(inner, depth + 1);
+    // Split again: the command string it carries is a whole line, and `cmd /c "git status && git push"` runs two commands.
+    if (inner && depth < 3) return commandWrite(inner, depth + 1);
     return namedWrite(segment, head);
   }
   if (OPAQUE_RUNNERS.test(head) || (head === 'node' && rest.some((a) => NODE_EVAL_FLAGS.has(a)))) {
@@ -132,14 +185,18 @@ function segmentWrite(segment, depth = 0) {
   return '';
 }
 
-// The git write or release this command performs, named, or '' if it performs none.
-export function gitWrite(command) {
-  if (!command) return '';
+// The first write any command on this line performs, named, or '' if none of them does.
+function commandWrite(command, depth = 0) {
   for (const segment of segments(command)) {
-    const write = segmentWrite(segment);
+    const write = segmentWrite(segment, depth);
     if (write) return write;
   }
   return '';
+}
+
+// The git write or release this command performs, named, or '' if it performs none.
+export function gitWrite(command) {
+  return command ? commandWrite(command) : '';
 }
 
 // True only when the message being answered right now, in this session, said `/git-release` or `$git-release`. Two agents can share this checkout, and a license keyed on the machine authorizes whichever of them asks first, for four hours — which is the rule the whole repo's git safety rests on. No session id at all refuses everything: an environment that changed shape must not turn the gate off.
@@ -251,6 +308,21 @@ function selfTest() {
     // A leading shell assignment is not a program, so the program is what follows it.
     'GIT_DIR=. git commit -m x',
     'FOO=bar just land',
+    // A write inside a quoted command string. Every one of these passed while the line was cut at its separators before anything read a quote — `cd` somewhere and then do the thing is how most shell lines are written.
+    'bash -c "cd . && git push"',
+    "bash -c 'cd . && git push'",
+    'cmd /c "git status && git push"',
+    'cmd.exe /c "cd . & git push"',
+    'powershell -Command "cd repo; git push"',
+    'powershell -Command "cd .; git commit -m x"',
+    'sh -c "git status && git commit -m x"',
+    'git commit -m "a && b"',
+    // The release half, missed the same way.
+    'sh -c "just verify && just land"',
+    'cmd /c "cd . && just land"',
+    // A quote the line never closes: nothing can model what the shell does next, so it is refused on the name it carries.
+    'bash -c "cd . && git push',
+    'echo "unterminated && git push',
   ];
   const allowed = [
     'git status',
@@ -284,6 +356,11 @@ function selfTest() {
     'echo "git commit -m done"',
     'cat "notes/git commit basics.md"',
     'code scripts/gate-git.mjs',
+    // A separator inside a search pattern is text, so keeping a segment whole must not buy strictness with a refused search or a refused read.
+    'rg "a && b" scripts/',
+    'rg -n "a; b" scripts/',
+    'cmd /c "cd . && git status"',
+    'sh -c "git log && ls"',
   ];
   const fails = [];
   for (const command of denied) if (!gitWrite(command)) fails.push(`should refuse: ${command}`);
