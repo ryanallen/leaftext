@@ -5,6 +5,8 @@
 //
 // Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, checkout, switch, restore, stash, worktree, pull, apply, rm, mv, a deleted or moved branch, anything with --force, and the commands that run a release. Reading is always fine — a git write and a release are both recognized by the program a command runs, so a search, a message or a filename that merely quotes one is text.
 //
+// A program this parser has never heard of is refused on the git write or release its line names, and only a listed reader is decided as text. Never restore the empty default to quiet a refused command: the list of ways to hand a program to something else is open — `ssh`, `timeout`, `find -exec` and `docker` are four unrelated ones — so an unrecognized head that decides nothing is a commit or a discarded working tree nobody licensed. A wrongly refused reader costs one row on `READERS` and names itself in its own refusal message.
+//
 // A segment never ends inside a quote. Never simplify `segments` back to one `split`: cutting at `&&` before anything reads a quote leaves `bash -c "cd . && git push"` as a head holding an open quote and a tail reading `git push"`, and neither of those names a write, so the write goes through.
 //
 //   node scripts/gate-git.mjs           the hook payload on stdin
@@ -32,6 +34,8 @@ const RELEASE_RECIPES = new Set(['release', 'land']);
 const NESTED_RUNNERS = /^(?:cmd|powershell|pwsh|invoke-expression|iex)$/;
 // Runners this parser does not model. Each can run anything, so a git write or a release name inside one is refused rather than guessed at: a new interpreter must never become the way past the gate. The last six stand in front of another program instead of being one, and each takes options this parser does not read, so refusing on the name is the side to be wrong on.
 const OPAQUE_RUNNERS = /^(?:bash|sh|zsh|dash|fish|wsl|env|xargs|start|eval|npm|npx|pnpm|yarn|tsx|ts-node|deno|bun|sudo|doas|time|nohup|command|exec)$/;
+// Programs that read and print and cannot start another one. A head word here is decided as text and its arguments are never read, so `rg "git commit -m" scripts/` is the search it is. A launcher never joins this list however much reading it does: `find` reads a tree, and `find . -exec git commit` runs git in the middle of its own options. So the test for a row is not whether a program reads but whether it can start another, and where that is unclear the program stays off, because off is the safe side — everything not here falls to the name test.
+const READERS = /^(?:rg|grep|egrep|fgrep|cat|head|tail|echo|code)$/;
 // Node running a string instead of a file is opaque for the same reason.
 const NODE_EVAL_FLAGS = new Set(['-e', '--eval', '-p', '--print']);
 // Only for a runner that cannot be read: a command naming a release without running one is a read.
@@ -156,10 +160,11 @@ function segmentWrite(segment, depth = 0) {
   if (!head) return '';
   const write = programWrite(head, args.slice(start + 1), segment, depth);
   if (write) return write;
-  return unterminated(segment) ? namedWrite(segment, head) : '';
+  // A program named nowhere above is one this parser has never heard of, and a program it cannot model is refused on the write its line names — the rule `bash -c` and `sudo` already live by. `ssh`, `timeout`, `find -exec`, `docker` and seven more each hand a program to something else, and there is no reason to think a twelfth could be named either. An unterminated quote is the same case even where the program is known.
+  return write === null || unterminated(segment) ? namedWrite(segment, head) : '';
 }
 
-// The write the named program performs, or '' if it performs none.
+// The write the named program performs, '' where it performs none, or null where the program is one this parser has never heard of.
 function programWrite(head, rest, segment, depth) {
   // A shell inside a shell adds nothing: read what it really runs. The name is only the answer where the command string cannot be reached at all.
   if (NESTED_RUNNERS.test(head)) {
@@ -182,7 +187,8 @@ function programWrite(head, rest, segment, depth) {
   if (isReleaseScript(head) || (head === 'node' && rest.some(isReleaseScript))) {
     return rest.includes('--check') ? '' : 'prepare-release.mts';
   }
-  return '';
+  if (READERS.test(head)) return '';
+  return null;
 }
 
 // The first write any command on this line performs, named, or '' if none of them does.
@@ -323,6 +329,22 @@ function selfTest() {
     // A quote the line never closes: nothing can model what the shell does next, so it is refused on the name it carries.
     'bash -c "cd . && git push',
     'echo "unterminated && git push',
+    // A git write behind a program nobody listed. Every one was refused while a git anywhere in the line decided it, and allowed once the program did, until an unrecognized head fell to the name test.
+    'ssh host git push',
+    'timeout 5 git push',
+    'find . -exec git commit -m x ;',
+    'nice git push',
+    'watch git push',
+    'flock f git push',
+    'docker run x git push',
+    'setsid git push',
+    'stdbuf -o0 git push',
+    'ionice git push',
+    'chroot / git push',
+    // The release half behind the same prefixes, missed the same way.
+    'ssh host just release 0.1.4',
+    'timeout 5 just land',
+    'docker run x just land',
   ];
   const allowed = [
     'git status',
@@ -335,6 +357,7 @@ function selfTest() {
     'git -C . branch --show-current',
     'git show HEAD:src/lib.rs',
     'just verify',
+    // A program on neither list, naming no write: the default refuses on a name, never on the program alone.
     'cargo test',
     'ls scripts/',
     // Reading the release path. Every one of these was refused while the gate matched a release by name.
@@ -347,7 +370,7 @@ function selfTest() {
     'node --experimental-strip-types scripts/prepare-release.mts --check',
     'just check-release',
     'cmd /c node --experimental-strip-types scripts/prepare-release.mts --check',
-    // Reading the git path. A pattern of three words or more was refused before the program decided the segment; a two-word one passed only because the quote happened to land on the subcommand, and it now passes because its program is `rg`.
+    // Reading the git path. A pattern of three words or more was refused before the program decided the segment; a two-word one passed only because the quote happened to land on the subcommand, and it now passes because its program is `rg`. Every one of these is a head on the reader list, which is what the inverted default is bought back with — off that list they are refused as the write they only name.
     'rg "git commit -m" scripts/',
     'rg "git commit" scripts/',
     'grep -rn "git reset --hard" .',
