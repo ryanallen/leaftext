@@ -240,7 +240,7 @@ const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
 
 const BOX = /^\s*- \[( |x)\]\s*(.*)$/;
 
-// A strike that closes, and whatever follows it — the reason the box was retired. The closing pair is what keeps the count in step with the page: Markdown draws `~~moved` as ordinary text with two tildes in front of it, so reading the opening alone dropped a box a person can still see.
+// A strike that closes, and whatever follows it — the reason the box was retired. The closing pair keeps the count in step with the page: Markdown draws `~~moved` as ordinary text with two tildes in front of it, so reading the opening alone drops a box a person can still see.
 const STRUCK = /^~~.*?~~(.*)$/;
 
 // Striking a box retires it — the work moved or changed shape, and the line stays so nobody re-plans it — so it is neither work left nor evidence, and every count here reads it through this one function. Retired only where the strike is the first thing after the box: one part way along is a box whose wording changed, and it is still work.
@@ -252,7 +252,7 @@ function boxState(line) {
   return STRUCK.test(box[2]) ? 'retired' : 'open';
 }
 
-// A struck box is out of every count that decides when a plan is finished, so the reason written after the strike is the only record of where the work went. Anything non-whitespace counts: the tree asks for a reason in three places and none of them says how it is written, and a check cannot judge whether a sentence explains anything anyway.
+// A struck box is out of every count that decides when a plan is finished, so the reason written after the strike is the only record of where the work went. Anything non-whitespace counts: nowhere in the tree says how a reason is written, and a check cannot judge whether a sentence explains anything anyway.
 /** The one-based line number of every struck box in a document that carries no reason after the strike. */
 function strikesWithoutReason(text) {
   const out = [];
