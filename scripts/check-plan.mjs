@@ -285,7 +285,7 @@ function shippedCells(line) {
   return out;
 }
 
-// One walk answers both the shape and the count, so the two cannot disagree the way they did while the count read every line and nothing read the tables.
+// One walk, so a file whose shape is wrong fails on the shape rather than on a count that has quietly moved with it.
 function shippedProblems(text) {
   const problems = [];
   const say = (rule, subject, message) => problems.push({ rule, subject, message });
@@ -576,7 +576,7 @@ for (const folder of LIVE_PLANS) {
   for (const file of markdown(full, plans)) live.add(file);
 }
 
-// A struck first cell is a ticket that shipped; the record under the tables is prose, not rows. One walk answers the count and the shape.
+// A struck first cell is a ticket that shipped; the record under the tables is prose, not rows.
 const shippedRead = shippedProblems(readFileSync(join(plans, 'done', 'PLAN.md'), 'utf8'));
 const retired = shippedRead.retired;
 
