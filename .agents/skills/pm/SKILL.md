@@ -96,17 +96,17 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 
 ## Tier 1 — wrong today
 
-| # | Ticket | Status | Blocks | Blocked by | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Why here |
 
 ## Tier 3 — the features people would name, cheapest first
 
 ### One or two phases
 
-| # | Ticket | Status | Blocks | Blocked by | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Why here |
 
 ### Three or four phases
 
-| # | Ticket | Status | Blocks | Blocked by | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Why here |
 ```
 
 - **The number is the position**, not the ticket's identity: moving a row renumbers everything under it, and the number is never copied anywhere else. The name is what every line of prose cites.
@@ -116,7 +116,8 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 - **Every ticket name is a link**, in every cell and every line of prose, using the path from the README. A bare name is a ranking error.
 - **`Blocks` is `Blocked by` read the other way** — every live row whose `Blocked by` names this one, linked, or `—`. It carries no claim of its own: the waiting ticket's cell is the source, and this one exists so a row being weighed says what sits behind it without reading the whole file. `scripts/check-plan.mjs` holds the two columns to each other.
 - **`Blocked by` holds live blockers only**, linked, or `—`. A ticket that has shipped does not block anything, so naming one there reads as a wait that is over.
-- **A track is `TRACKS.md`'s.** A row says which step it is and nothing more, and the ranking does not import the track's order — most steps are a preference the track says so about, and only a real block moves a row. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is a track**, so a subject the ranking is carrying in three separate cells gets one written instead.
+- **`Track` names the subject order a row sits in** — the track in [`TRACKS.md`](../../../../docs/TRACKS.md), linked to its heading, with the step or steps the ticket is there as, or `—` where no track carries it. The step numbers are read out of that file in this pass, never remembered or copied from an older row, and the `Why here` cell does not repeat them: a track named in one cell is one cell to fix when its steps renumber.
+- **A track is `TRACKS.md`'s.** The `Track` cell says which step a row is and nothing more, and the ranking does not import the track's order — most steps are a preference the track says so about, and only a real block moves a row. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is a track**, so a subject the ranking is carrying in three separate cells gets one written instead.
 - **Off the list** — a sentence, with what would put it back. Off with a reason beats bottom of the list.
 - **The last line stamps the pass with the date and the time** — `**Last ranked 16 August 2026, 8:49pm.**`, then the three counts. The file is rewritten in place, so that stamp is the only thing telling a reader which pass they are holding, and a date alone cannot answer it on the one day it matters: rank twice in an afternoon and both stamps read the same. Take both off this machine's clock and write them as they come — it keeps Mountain Standard Time, which is what Arizona keeps all year, so there is no daylight saving to correct for and no zone to convert. `scripts/check-plan.mjs` refuses a stamp with no time on it.
 
@@ -136,7 +137,7 @@ If a cell needs more words, the ticket is what needs them.
 
 `../docs/done/PLAN.md` is retired rows and nothing else: one table per tier, each row struck through with the date it closed and what the build found. That is the half a later reader cannot get anywhere else. It ends with what the retired rows add up to, and what earlier rankings got wrong. A row is cited by its ticket's name in both files.
 
-**The columns are its own, not the live file's.** Tiers 1 to 3 carry `Ticket`, `Status`, what was wrong and what landed, and `Cost`; tier 0 carries `Work`, `Status` and `Why first, and what it found`. The live file's six columns do not travel: a position is dropped on the way across, and `Blocks` and `Blocked by` are questions about work that is left.
+**The columns are its own, not the live file's.** Tiers 1 to 3 carry `Ticket`, `Status`, what was wrong and what landed, and `Cost`; tier 0 carries `Work`, `Status` and `Why first, and what it found`. The live file's seven columns do not travel: a position is dropped on the way across, a track stays readable in `TRACKS.md`, and `Blocks` and `Blocked by` are questions about work that is left.
 
 **Every row sits inside one of those tables**, under the heading for the tier it was retired from. Nothing goes above the file's title — a row there belongs to no tier and sits under no header row, so the file opens as a headerless table and nothing retired can be found by where it was ranked. [`/done`](../done/SKILL.md) is what places a row; `scripts/check-plan.mjs` refuses one left outside a table or short of its header's cells.
 
