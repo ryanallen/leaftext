@@ -6524,7 +6524,7 @@ if (booted) {
     for (const rule of ['.table-sheet-grid th,', 'border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);', 'background: var(--lt-markdown-table-header-background);', '.table-sheet-grid tr:nth-child(2n) td']) {
       if (!css.includes(rule)) throw new Error(`the table sheet no longer carries the page table treatment: ${rule}`);
     }
-    // The copy takes the room the sheet has, never its content's: `width: max-content` with `max-width: none` puts the later columns past the right edge on one long cell. Only `anywhere` shrinks a column — `break-word` reads as the fix and never enters a column's smallest width.
+    // The copy takes the room the sheet has, never its content's, and only `anywhere` shrinks a column — `break-word` reads as the fix and never enters a column's smallest width.
     const sheetRule = (selector) => {
       const opened = css.indexOf(`${selector} {`);
       if (opened < 0) throw new Error(`no rule for ${selector} in the full-window table`);

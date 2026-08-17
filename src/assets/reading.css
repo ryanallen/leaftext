@@ -6365,7 +6365,7 @@ body.is-home-row-dragging .home-list-scroll li {
   border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
   padding: 0.375em 0.8125em;
 }
-/* Only `anywhere` enters a column's smallest width; `break-word` leaves the sheet scrolling sideways. Body cells only: on a heading it lets a column fall under one word, and "Ref" comes out as "R / ef". */
+/* Only `anywhere` enters a column's smallest width, so `break-word` leaves the sheet scrolling sideways. Body cells only: on a heading it drops a column under one word and "Ref" draws as "R / ef". */
 .table-sheet-grid td {
   overflow-wrap: anywhere;
 }
