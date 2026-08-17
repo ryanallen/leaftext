@@ -6524,6 +6524,28 @@ if (booted) {
     for (const rule of ['.table-sheet-grid th,', 'border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);', 'background: var(--lt-markdown-table-header-background);', '.table-sheet-grid tr:nth-child(2n) td']) {
       if (!css.includes(rule)) throw new Error(`the table sheet no longer carries the page table treatment: ${rule}`);
     }
+    // The copy takes the room the sheet has, never its content's: `width: max-content` with `max-width: none` puts the later columns past the right edge on one long cell. Only `anywhere` shrinks a column — `break-word` reads as the fix and never enters a column's smallest width.
+    const sheetRule = (selector) => {
+      const opened = css.indexOf(`${selector} {`);
+      if (opened < 0) throw new Error(`no rule for ${selector} in the full-window table`);
+      return css.slice(opened, css.indexOf('}', opened));
+    };
+    const copied = sheetRule('.table-sheet-grid > table');
+    for (const rule of ['width: fit-content;', 'max-width: 100%;']) {
+      if (!copied.includes(rule)) throw new Error(`the full-window table no longer fits the room the sheet has: ${rule}`);
+    }
+    if (/max-width:\s*none|width:\s*max-content/.test(copied)) {
+      throw new Error('the full-window table asks for its content width again, so one long cell pushes the later columns past the right edge');
+    }
+    const bodyCells = css.match(/(?<!,\n)\.table-sheet-grid td \{([^}]*)\}/);
+    if (!bodyCells || !/overflow-wrap:\s*anywhere;/.test(bodyCells[1])) {
+      throw new Error('the full-window table body cells no longer break anywhere, so an unbreakable run still widens its column past the sheet');
+    }
+    // On a heading it lets a column fall under one word, and a "Ref" column comes out reading "R / ef".
+    const everyCell = css.match(/\.table-sheet-grid th,\s*\n\.table-sheet-grid td \{([^}]*)\}/);
+    if (!everyCell || /overflow-wrap/.test(everyCell[1])) {
+      throw new Error('the full-window table headings break anywhere, so a short column falls under its own heading word');
+    }
   });
 
   // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.

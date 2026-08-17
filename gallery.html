@@ -8755,8 +8755,8 @@ body.is-home-row-dragging .home-list-scroll li {
 .table-sheet-grid > table {
   border-collapse: collapse;
   display: block;
-  width: max-content;
-  max-width: none;
+  width: fit-content;
+  max-width: 100%;
   font-family: var(--app-font);
   line-height: var(--lt-leading-1-45);
 }
@@ -8764,6 +8764,10 @@ body.is-home-row-dragging .home-list-scroll li {
 .table-sheet-grid td {
   border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
   padding: 0.375em 0.8125em;
+}
+/* Only `anywhere` enters a column's smallest width; `break-word` leaves the sheet scrolling sideways. Body cells only: on a heading it lets a column fall under one word, and "Ref" comes out as "R / ef". */
+.table-sheet-grid td {
+  overflow-wrap: anywhere;
 }
 .table-sheet-grid th {
   background: var(--lt-markdown-table-header-background);
