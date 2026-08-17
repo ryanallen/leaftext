@@ -424,24 +424,31 @@ jobs:
             "dist/leaftext-macos-universal.dmg"
           )
 
-          # Ensure the release exists; ignore failure if another job created it first.
-          gh release view "${tag}" >/dev/null 2>&1 \
-            || gh release create "${tag}" --title "${tag}" --generate-notes --verify-tag \
-            || true
-
-          # Retry upload: three parallel workflows can race on the same release,
-          # causing transient 404s from the GitHub uploads API.
-          for attempt in 1 2 3 4 5; do
+          # Making the release and uploading to it are retried together, over about five minutes in widening steps. Either half can be the one GitHub refuses and the second is worthless without the first, so this loop used to go round the upload alone and every attempt was refused for a release nobody had made: on 17 August 2026 it printed "release not found" four times and then failed.
+          waits=(15 30 60 90 120)
+          published=""
+          for attempt in $(seq 0 "${#waits[@]}"); do
+            # A release the Windows job made in between fails here and uploads fine below, which is what happens on every release.
+            gh release view "${tag}" >/dev/null 2>&1 \
+              || gh release create "${tag}" --title "${tag}" --generate-notes --verify-tag \
+              || true
             if gh release upload "${tag}" "${assets[@]}" --clobber; then
+              published="yes"
               break
             fi
-            if [ "${attempt}" = "5" ]; then
-              echo "Upload failed after 5 attempts" >&2
-              exit 1
+            if [ "${attempt}" -eq "${#waits[@]}" ]; then
+              break
             fi
-            echo "Upload attempt ${attempt} failed; retrying in $((attempt * 15))s" >&2
-            sleep $((attempt * 15))
+            echo "GitHub would not publish ${tag}; asking again in ${waits[attempt]}s" >&2
+            sleep "${waits[attempt]}"
           done
+
+          if [ -z "${published}" ]; then
+            # The one sentence that stops the next person spending a version number: everything but this step survived, and the tag is still up.
+            echo "GitHub would not publish ${tag} after $((${#waits[@]} + 1)) attempts over about five minutes." >&2
+            echo "The tag is on GitHub and both installers built, so finish this release on that tag rather than with a new version number: just publish-release ${tag#v}" >&2
+            exit 1
+          fi
 
       - name: Delete old releases
         env:

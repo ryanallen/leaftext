@@ -351,3 +351,10 @@ land:
 # the push had no copy behind it at all.
 release version:
     node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit
+
+# Finish a release on the tag it already has: start both release builds against v<version>. It makes no tag, moves none, writes no version and commits nothing — the tag is already up, so an outage is finished here rather than with a new number. The tag lookup is first, so a version with no tag on GitHub stops it before either build starts.
+publish-release version:
+    @echo Finishing v{{ version }} on the tag already on GitHub. If the next line fails there is no such tag, so this is a release to cut rather than one to finish.
+    git ls-remote --exit-code --tags origin refs/tags/v{{ version }}
+    gh workflow run release-windows.yml --ref main -f tag_name=v{{ version }}
+    gh workflow run release-distributions.yml --ref main -f tag_name=v{{ version }}

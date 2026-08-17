@@ -46,7 +46,9 @@ So the order is: check, delete the old tags, commit, make the new one, push `mai
 
 The push is the last write, but it is not the end. Read the workflow list once and confirm a run exists for the tag just pushed. Nothing here waits on a build, polls it, or re-runs it on failure — a broken build costs a patch bump. This is only the check that a build was *started*, because the failure this catches is silent: the tag is on GitHub and no run was ever created.
 
-If none exists, start the two release workflows by hand against that tag rather than pushing the tag again. Never re-push a tag.
+**A build that failed because GitHub would not answer costs no number at all.** It is the one failure where nothing needs rebuilding: the installers were made and only the release to hang them on was refused, so it is finished on the tag that is already up with `just publish-release <version>`, however long the outage lasted. A patch bump is for a build that failed on the code. v1.15.6 built both installers, published neither, and the written way forward was a new version and a second hour of checks.
+
+If no run exists at all, the same command starts both release workflows against that tag. Never re-push a tag.
 
 After the release, tell the owner to test it and run the done skill, named with your host's own sign — `/done` in Claude, `$done` in Codex. If any ticket is already `Released`, stop and tell the owner to run it before another release.
 
