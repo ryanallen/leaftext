@@ -233,7 +233,7 @@ function drawingOwed(file, text) {
   return /design\/components\.md/.test(phasesSection(text));
 }
 
-// The last box in a ticket is the owner's, unticked until they ask for `/done`, because a machine agreeing with itself is not evidence. A plan without one goes fully ticked on machine work alone, and the retirement report below then tells somebody to move it into `done/` before the owner has looked at anything. Owed from the day the plan is written: waiting for the first ticked box met the fault in the middle of somebody's phase, where the section cannot be seen and gets written by whoever was nearest the code rather than by whoever scoped the plan.
+// The last box in a ticket is the owner's, unticked until they ask for `/done`, because a machine agreeing with itself is not evidence. A plan without one goes fully ticked on machine work alone, and the retirement report below then tells somebody to move it into `done/` before the owner has looked at anything. Owed from the day the plan is written: waiting for the first ticked box meets the fault in the middle of somebody's phase, where the section cannot be seen and gets written by whoever is nearest the code rather than by whoever scoped the plan.
 //
 // The heading is matched with either apostrophe, since a ticket written in an editor that curls them is the same section.
 const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
@@ -284,7 +284,7 @@ function ownerBoxes(text) {
   return boxes;
 }
 
-/** A live plan nobody can approve, whatever state its work is in. A struck owner's box is a section that exists — the shape the ticket skill asks for where nothing is pressed. Refused from the day the plan is written rather than from the first ticked box, because the fault is in the plan and waiting for a tick meets it in the middle of somebody's phase. */
+/** A live plan nobody can approve, whatever state its work is in. A struck owner's box is a section that exists — the shape the ticket skill asks for where nothing is pressed. */
 function ownerBoxOwed(file, text) {
   if (!livePlan(file)) return false;
   return ownerBoxes(text).length === 0;
