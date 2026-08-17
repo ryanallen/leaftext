@@ -3,7 +3,7 @@
 //
 // One license file per session, because two agents can work this checkout at once and a license keyed on the machine is a license the other agent can spend.
 //
-// Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, checkout, switch, restore, stash, worktree, pull, apply, rm, mv, a deleted or moved branch, anything with --force, and the commands that run a release. Reading is always fine — a release is recognized by what a command runs, so a search or a reader that merely names one is not a write.
+// Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, checkout, switch, restore, stash, worktree, pull, apply, rm, mv, a deleted or moved branch, anything with --force, and the commands that run a release. Reading is always fine — a git write and a release are both recognized by the program a command runs, so a search, a message or a filename that merely quotes one is text.
 //
 //   node scripts/gate-git.mjs           the hook payload on stdin
 //   node scripts/gate-git.mjs --check   self-test (`just verify`)
@@ -28,14 +28,18 @@ const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--na
 const RELEASE_RECIPES = new Set(['release', 'land']);
 // Shells that run another command string and can be unwrapped, so a release inside one is refused exactly as a bare one is.
 const NESTED_RUNNERS = /^(?:cmd|powershell|pwsh|invoke-expression|iex)$/;
-// Runners this parser does not model. Each can run anything, so a release name inside one is refused rather than guessed at: a new interpreter must never become the way past the gate.
-const OPAQUE_RUNNERS = /^(?:bash|sh|zsh|dash|fish|wsl|env|xargs|start|eval|npm|npx|pnpm|yarn|tsx|ts-node|deno|bun)$/;
+// Runners this parser does not model. Each can run anything, so a git write or a release name inside one is refused rather than guessed at: a new interpreter must never become the way past the gate. The last six stand in front of another program instead of being one, and each takes options this parser does not read, so refusing on the name is the side to be wrong on.
+const OPAQUE_RUNNERS = /^(?:bash|sh|zsh|dash|fish|wsl|env|xargs|start|eval|npm|npx|pnpm|yarn|tsx|ts-node|deno|bun|sudo|doas|time|nohup|command|exec)$/;
 // Node running a string instead of a file is opaque for the same reason.
 const NODE_EVAL_FLAGS = new Set(['-e', '--eval', '-p', '--print']);
 // Only for a runner that cannot be read: a command naming a release without running one is a read.
 const RELEASE_NAMES = /\bjust\s+(?:release|land)\b|prepare-release/i;
+// Git anywhere in a segment, with the rest of the segment as its arguments. The git branch used to decide every command on this; it is now only the other half of that name test.
+const GIT_NAME = /(?:^|[\s&|;(])["']?(?:[^\s"']*[\\/])?git(?:\.exe)?["']?\s+(.+)$/i;
 // Shell punctuation standing in front of a program rather than being one.
 const PUNCTUATION = /^[&(){}]+$/;
+// A leading `NAME=value` is the shell setting a variable, not the program it then runs.
+const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 
 function readStdin() {
   try {
@@ -48,10 +52,6 @@ function readStdin() {
 // Everything the shell would run as its own command. A lone `&` is one of them: cmd runs what follows it whatever the first command did.
 function segments(command) {
   return command.split(/&&|&|\|\||;|\||\n|\r/).map((s) => s.trim()).filter(Boolean);
-}
-
-function tokens(rest) {
-  return rest.split(/\s+/).filter(Boolean);
 }
 
 // The words a shell would see, keeping a quoted path with spaces in it whole.
@@ -69,11 +69,42 @@ function isReleaseScript(word) {
   return /(?:^|[\\/])prepare-release\.mts$/i.test(word.replace(/["']/g, ''));
 }
 
-// The release this one command runs, named, or '' if it runs none. Text naming a release is not one: a search for it, a read of this rule and the release fixture's own `--check` all reach here and all come back empty.
-function releaseWrite(segment, depth = 0) {
+// Where the subcommand sits, having walked past git's own options and whatever they carry. It stops at the first plain word, so a `-c` after that is `git branch`'s copy flag rather than git's config option.
+function subcommandAt(args) {
+  let at = 0;
+  while (at < args.length && args[at].startsWith('-')) {
+    at += GIT_VALUE_OPTIONS.has(args[at]) ? 2 : 1;
+  }
+  return at;
+}
+
+// The git write these arguments perform, named, or '' if they perform none. Only ever git's own words — the caller has already established that git is what runs.
+function gitArguments(args) {
+  const at = subcommandAt(args);
+  const sub = args[at]?.toLowerCase() ?? '';
+  const flags = args.slice(at).filter((a) => a.startsWith('-'));
+  if (flags.some((f) => f === '--force' || f.startsWith('--force-with-lease') || f === '--force-if-includes')) {
+    return `git ${sub} --force`.trim();
+  }
+  if (WRITE_SUBCOMMANDS.has(sub)) return `git ${sub}`;
+  if (sub === 'tag' && !flags.some((f) => TAG_READ_FLAGS.includes(f))) return 'git tag';
+  if (sub === 'branch' && flags.some((f) => BRANCH_WRITE_FLAGS.includes(f))) return 'git branch';
+  return '';
+}
+
+// Only for a runner this parser cannot read: what the segment names, refused on the name rather than on a parse nobody can make. This is the whole-segment match every command used to be decided on, kept where it is the only thing left.
+function namedWrite(segment, head) {
+  const match = segment.match(GIT_NAME);
+  const named = match ? gitArguments(words(match[1])) : '';
+  if (named) return `${head} running ${named}`;
+  return RELEASE_NAMES.test(segment) ? `${head} running a release` : '';
+}
+
+// The write this one command performs, named, or '' if it performs none. The program decides it, so text naming a write is not one: a search for it, a message quoting it, a filename carrying it, a read of this rule and the release fixture's own `--check` all reach here and all come back empty.
+function segmentWrite(segment, depth = 0) {
   const args = words(segment);
-  let start = 0; // PowerShell's call operator and its braces stand in front of the program, so step over them to reach it.
-  while (start < args.length && PUNCTUATION.test(args[start])) start += 1;
+  let start = 0; // PowerShell's call operator and its braces stand in front of the program, and a `NAME=value` is the shell setting a variable rather than running anything, so step over both to reach it.
+  while (start < args.length && (PUNCTUATION.test(args[start]) || ASSIGNMENT.test(args[start]))) start += 1;
   const head = runner(args[start] ?? '');
   const rest = args.slice(start + 1);
   if (!head) return '';
@@ -83,12 +114,13 @@ function releaseWrite(segment, depth = 0) {
     let at = 0; // Past the shell's own options — `/c`, `-NoProfile`, `-Command` — to the command string itself.
     while (at < rest.length && (PUNCTUATION.test(rest[at]) || /^[-/][\w-]*$/.test(rest[at]))) at += 1;
     const inner = rest.slice(at).join(' ');
-    if (inner && depth < 3) return releaseWrite(inner, depth + 1);
-    return RELEASE_NAMES.test(segment) ? `${head} running a release` : '';
+    if (inner && depth < 3) return segmentWrite(inner, depth + 1);
+    return namedWrite(segment, head);
   }
   if (OPAQUE_RUNNERS.test(head) || (head === 'node' && rest.some((a) => NODE_EVAL_FLAGS.has(a)))) {
-    return RELEASE_NAMES.test(segment) ? `${head} running a release` : '';
+    return namedWrite(segment, head);
   }
+  if (head === 'git') return gitArguments(rest);
   if (head === 'just') {
     const recipe = (rest.find((a) => !a.startsWith('-')) ?? '').toLowerCase();
     return RELEASE_RECIPES.has(recipe) ? `just ${recipe}` : '';
@@ -100,33 +132,12 @@ function releaseWrite(segment, depth = 0) {
   return '';
 }
 
-// Where the subcommand sits, having walked past git's own options and whatever they carry. It stops at the first plain word, so a `-c` after that is `git branch`'s copy flag rather than git's config option.
-function subcommandAt(args) {
-  let at = 0;
-  while (at < args.length && args[at].startsWith('-')) {
-    at += GIT_VALUE_OPTIONS.has(args[at]) ? 2 : 1;
-  }
-  return at;
-}
-
-// The git write this command performs, named, or '' if it performs none.
+// The git write or release this command performs, named, or '' if it performs none.
 export function gitWrite(command) {
   if (!command) return '';
   for (const segment of segments(command)) {
-    const release = releaseWrite(segment);
-    if (release) return release;
-    const match = segment.match(/(?:^|[\s&|;(])["']?(?:[^\s"']*[\\/])?git(?:\.exe)?["']?\s+(.+)$/i);
-    if (!match) continue;
-    const args = tokens(match[1]);
-    const at = subcommandAt(args);
-    const sub = args[at]?.toLowerCase() ?? '';
-    const flags = args.slice(at).filter((a) => a.startsWith('-'));
-    if (flags.some((f) => f === '--force' || f.startsWith('--force-with-lease') || f === '--force-if-includes')) {
-      return `git ${sub} --force`.trim();
-    }
-    if (WRITE_SUBCOMMANDS.has(sub)) return `git ${sub}`;
-    if (sub === 'tag' && !flags.some((f) => TAG_READ_FLAGS.includes(f))) return 'git tag';
-    if (sub === 'branch' && flags.some((f) => BRANCH_WRITE_FLAGS.includes(f))) return 'git branch';
+    const write = segmentWrite(segment);
+    if (write) return write;
   }
   return '';
 }
@@ -223,6 +234,23 @@ function selfTest() {
     'sh -c "node --experimental-strip-types scripts/prepare-release.mts 0.1.441"',
     'npx tsx scripts/prepare-release.mts 0.1.441',
     'node -e "execSync(\'just release 0.1.441\')"',
+    // A git write inside a shell this parser can read, reached through the same unwrap the release half uses.
+    'cmd /c git commit -m x',
+    'cmd.exe /c "git push"',
+    'powershell -Command "git push origin main"',
+    'iex "git reset --hard origin/main"',
+    // A git write behind a runner this parser cannot read: refused on the name the segment carries.
+    'bash -c "git commit -m x"',
+    'sudo git push',
+    'doas git push',
+    'time git commit -m x',
+    'nohup git push',
+    'command git push',
+    'exec git push',
+    'xargs git rm',
+    // A leading shell assignment is not a program, so the program is what follows it.
+    'GIT_DIR=. git commit -m x',
+    'FOO=bar just land',
   ];
   const allowed = [
     'git status',
@@ -247,6 +275,15 @@ function selfTest() {
     'node --experimental-strip-types scripts/prepare-release.mts --check',
     'just check-release',
     'cmd /c node --experimental-strip-types scripts/prepare-release.mts --check',
+    // Reading the git path. A pattern of three words or more was refused before the program decided the segment; a two-word one passed only because the quote happened to land on the subcommand, and it now passes because its program is `rg`.
+    'rg "git commit -m" scripts/',
+    'rg "git commit" scripts/',
+    'grep -rn "git reset --hard" .',
+    'rg -n "git worktree add" AGENTS.md',
+    'rg "git tag" scripts/',
+    'echo "git commit -m done"',
+    'cat "notes/git commit basics.md"',
+    'code scripts/gate-git.mjs',
   ];
   const fails = [];
   for (const command of denied) if (!gitWrite(command)) fails.push(`should refuse: ${command}`);
