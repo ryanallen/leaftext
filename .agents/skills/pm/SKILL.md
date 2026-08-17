@@ -7,7 +7,7 @@ user-invocable: true
 
 # Build the running order
 
-[`../docs/PLAN.md`](../../../../docs/PLAN.md) is read to answer one question: what do I pick up now. Every live ticket, ranked, one line of why each row sits where it does. Rewrite it in place — git holds every older ranking, and the date at the top says when it was last ranked.
+[`../docs/PLAN.md`](../../../../docs/PLAN.md) is read to answer one question: what do I pick up now. Every live ticket, ranked, one line of why each row sits where it does. Rewrite it in place — git holds every older ranking, and the last line of the file stamps when this one was ranked, to the minute.
 
 [`../docs/done/PLAN.md`](../../../../docs/done/PLAN.md) holds the retired rows. Moving one there is [`/done`](../done/SKILL.md)'s job, not this skill's, so a row leaves the live file the day its last box is ticked and the list gets shorter as work ships.
 
@@ -118,6 +118,7 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 - **`Blocked by` holds live blockers only**, linked, or `—`. A ticket that has shipped does not block anything, so naming one there reads as a wait that is over.
 - **A track is `TRACKS.md`'s.** A row says which step it is and nothing more, and the ranking does not import the track's order — most steps are a preference the track says so about, and only a real block moves a row. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is a track**, so a subject the ranking is carrying in three separate cells gets one written instead.
 - **Off the list** — a sentence, with what would put it back. Off with a reason beats bottom of the list.
+- **The last line stamps the pass with the date and the time** — `**Last ranked 16 August 2026, 8:49pm.**`, then the three counts. The file is rewritten in place, so that stamp is the only thing telling a reader which pass they are holding, and a date alone cannot answer it on the one day it matters: rank twice in an afternoon and both stamps read the same. Take both off this machine's clock and write them as they come — it keeps Mountain Standard Time, which is what Arizona keeps all year, so there is no daylight saving to correct for and no zone to convert. `scripts/check-plan.mjs` refuses a stamp with no time on it.
 
 If a cell needs more words, the ticket is what needs them.
 

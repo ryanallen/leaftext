@@ -3,7 +3,7 @@
 //
 //   node scripts/check-plan.mjs   fail on a running order that has stopped ranking every live ticket
 //
-// Ten rules, every one arithmetic. Whether a row is ranked well is the ranker's judgment and no script's.
+// Eleven rules, every one read straight off the page. Whether a row is ranked well is the ranker's judgment and no script's.
 //
 // Size is not a test: a band holding most of the rows is what a tree of mostly-features looks like, and no count makes a definition wrong. What makes one wrong is asking for two unrelated things at once, or asking for something no row can satisfy — read the words of a definition, never the count under it.
 //
@@ -101,6 +101,10 @@ function count(text, label) {
   return found ? Number(found[1]) : null;
 }
 
+// The file is rewritten in place, so its stamp is the only thing saying which pass a reader is holding — and a date alone cannot answer that on the day it matters, since two rankings in one afternoon leave the same six words.
+const STAMP = /\*\*Last ranked ([^*]+?)\.?\*\*/;
+const STAMP_TIME = /\d{1,2}:\d{2}/;
+
 // `tree` is `{ live, retired, turnedDown, phases }` — the live ticket paths, the two retired counts, and what each ticket costs.
 function shapeProblems(text, tree) {
   const problems = [];
@@ -156,6 +160,10 @@ function shapeProblems(text, tree) {
     if (said === null) say('count', label, `the foot of the file gives no ${label} count`);
     else if (said !== want) say('count', label, `the foot says ${label}: ${said}, and the tree holds ${want}`);
   }
+
+  const stamp = STAMP.exec(text);
+  if (!stamp) say('stamp', 'the foot of the file', 'nothing says when this was ranked, so a rerank and the one before it read the same');
+  else if (!STAMP_TIME.test(stamp[1])) say('stamp', stamp[1].trim(), `the stamp says "${stamp[1].trim()}" and gives no time, so two rankings on one day cannot be told apart`);
 
   // A shipped blocker reads as a wait that is over, so that cell holds live tickets only.
   for (const row of rows) {
@@ -283,7 +291,7 @@ function plan(t, ...tiers) {
     if (!open) out += TABLE;
     return out;
   });
-  return `${TITLE}\n\n${bands.join('\n')}\n## Off the list\n\n**Last ranked 9 August 2026.** Live: ${t.live.size}. Retired: ${t.retired}. Turned down: ${t.turnedDown}.\n`;
+  return `${TITLE}\n\n${bands.join('\n')}\n## Off the list\n\n**Last ranked 9 August 2026, 4:07pm.** Live: ${t.live.size}. Retired: ${t.retired}. Turned down: ${t.turnedDown}.\n`;
 }
 
 const PAIR = tree(['refactor/a/one.md', 'refactor/b/two.md']);
@@ -385,7 +393,7 @@ const CASES = [
   ['words after the link still name the ticket',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) **phases 1–4** | Ready | — | — | first |'], [3, TWO]), PAIR, []],
   ['a row outside any tier heading is not a row',
-    `${TITLE}\n\n## Off the list\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026.** Live: 2. Retired: 0. Turned down: 0.\n`,
+    `${TITLE}\n\n## Off the list\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 2. Retired: 0. Turned down: 0.\n`,
     PAIR, ['ticket refactor/a/one.md', 'ticket refactor/b/two.md']],
   ['a fixes ticket ranked below tier 1 is refused',
     plan(MIXED, [1, '| 1 | [two](refactor/b/two.md) | Ready | — | — | first |'], [3, '| 2 | [f](fixes/a/f.md) | Ready | — | — | second |']),
@@ -405,6 +413,12 @@ const CASES = [
     `\n\n${plan(PAIR, [1, ONE], [3, TWO])}`, PAIR, []],
   ['a file opening on its first work table rather than its title is refused, and the line it opens on is named',
     plan(PAIR, [1, ONE], [3, TWO]).replace(`${TITLE}\n\n`, ''), PAIR, ['title ## Tier 1 — a band']],
+  ['a stamp giving the day and no time is refused, and quoted back',
+    plan(PAIR, [1, ONE], [3, TWO]).replace(', 4:07pm', ''), PAIR, ['stamp 9 August 2026']],
+  ['a file with no stamp at all is refused',
+    plan(PAIR, [1, ONE], [3, TWO]).replace('**Last ranked 9 August 2026, 4:07pm.**', ''), PAIR, ['stamp the foot of the file']],
+  ['a stamp written round the clock is a time too',
+    plan(PAIR, [1, ONE], [3, TWO]).replace('4:07pm', '16:07'), PAIR, []],
 ];
 
 function selfTest() {
@@ -473,4 +487,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, and no feature in tier 1`);
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, and a stamp naming the day and the time it was ranked`);
