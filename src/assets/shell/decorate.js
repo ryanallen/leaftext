@@ -1682,6 +1682,12 @@ function legacyCopy(text) {
   area.style.top = '-1000px';
   area.style.opacity = '0';
   appSurface.appendChild(area);
+  // The old copy reads whatever is selected, so the box has to take the selection off the reader for one call — and every app leaves a copy's highlight exactly where it was, so each range is put back the moment the call is done.
+  const selection = window.getSelection();
+  const held = [];
+  if (selection) {
+    for (let index = 0; index < selection.rangeCount; index += 1) held.push(selection.getRangeAt(index).cloneRange());
+  }
   area.select();
   let copied = false;
   try {
@@ -1689,7 +1695,12 @@ function legacyCopy(text) {
   } catch (error) {
     copied = false;
   }
-  document.body.removeChild(area);
+  // Out of whatever is holding it, never out of a parent named here: the box goes on the app surface, so asking the body to remove it threw and took the restore below with it.
+  area.remove();
+  if (selection && held.length) {
+    selection.removeAllRanges();
+    for (const range of held) selection.addRange(range);
+  }
   return copied;
 }
 // Briefly show the check mark and a "Copied" label, then revert.

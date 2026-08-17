@@ -166,6 +166,7 @@ function fakeElement(id = '') {
     focus() {},
     blur() {},
     click() {},
+    select() {},
     scrollIntoView() {},
     closest: () => null,
     matches: () => false,
@@ -7517,6 +7518,106 @@ if (booted) {
       booted.getSelection = wasSelection;
       readingApp.querySelector = wasQuery;
       booted.hideContextMenu();
+    }
+  });
+
+  // Both gestures write through one clipboard pair, so the old path has to answer both — the reader who lost the highlight was on the key, and the menu's Copy would have lost it the same way.
+  check('both gestures land the words through the old clipboard path and keep the highlight', () => {
+    const surface = booted.document.getElementById('appSurface');
+    const wasSelection = booted.getSelection;
+    const wasQuery = readingApp.querySelector;
+    const wasClipboard = booted.navigator.clipboard;
+    const wasExec = booted.document.execCommand;
+    const WORDS = 'a sentence to keep';
+
+    const body = { offsetParent: {}, contains: (node) => !!node && node.inReadingBody === true };
+    const range = { commonAncestorContainer: { inReadingBody: true }, cloneRange() { return this; } };
+    let restored = 0;
+    const selection = {
+      isCollapsed: false,
+      rangeCount: 1,
+      getRangeAt: () => range,
+      removeAllRanges: () => {},
+      addRange: () => { restored += 1; },
+      toString: () => WORDS,
+    };
+
+    try {
+      readingApp.querySelector = (selector) => (String(selector) === '.document-body' ? body : null);
+      booted.getSelection = () => selection;
+      booted.navigator.clipboard = null;
+      let copiedText = null;
+      booted.document.execCommand = () => { copiedText = surface.children.map((child) => child.value).find(Boolean) || null; return true; };
+      const target = Object.assign(new FakeElement(), { closest: () => null });
+
+      for (const gesture of ['key', 'menu']) {
+        copiedText = null;
+        restored = 0;
+        if (gesture === 'key') {
+          for (const handler of booted.__windowListeners.get('keydown') || []) {
+            handler({ ctrlKey: false, metaKey: true, altKey: false, shiftKey: false, key: 'c', target, preventDefault: () => {} });
+          }
+        } else {
+          openPageMenu();
+          const row = contextMenuElement().children.find((one) => String(one.textContent) === 'Copy');
+          if (!row) throw new Error('the menu has no Copy over a highlighted sentence');
+          for (const handler of row.listeners.get('click') || []) handler();
+        }
+        if (copiedText !== WORDS) throw new Error(`the ${gesture} copied ${JSON.stringify(copiedText)} through the old path`);
+        if (!restored) throw new Error(`the ${gesture} left the highlight taken`);
+        if (surface.children.some((child) => String(child.value || '') === WORDS)) {
+          throw new Error(`the ${gesture} left the hidden box standing on the page`);
+        }
+      }
+    } finally {
+      booted.getSelection = wasSelection;
+      readingApp.querySelector = wasQuery;
+      booted.navigator.clipboard = wasClipboard;
+      booted.document.execCommand = wasExec;
+      booted.hideContextMenu();
+      for (const child of [...surface.children]) if (String(child.value || '') === WORDS) child.remove();
+    }
+  });
+
+  // A Mac's web view refuses the modern clipboard call, so a copy there goes down the old path — which reads whatever is selected, and so has to take the reader's highlight for one call. Held here because losing it is invisible in the code and the first thing anybody notices in the window.
+  check('a copy through the old clipboard path leaves the highlight exactly where it was', () => {
+    const surface = booted.document.getElementById('appSurface');
+    const wasSelection = booted.getSelection;
+    const wasClipboard = booted.navigator.clipboard;
+    const wasExec = booted.document.execCommand;
+    const standing = () => surface.children.filter((child) => String(child.value || '') === 'two paragraphs of it').length;
+
+    // Two ranges, which is what selecting across blocks leaves, so a restore that only puts the first one back fails here.
+    const ranges = ['first', 'second'].map((name) => ({ name, cloneRange() { return this; } }));
+    const added = [];
+    let cleared = 0;
+    const selection = {
+      isCollapsed: false,
+      get rangeCount() { return added.length ? added.length : ranges.length; },
+      getRangeAt: (index) => (added.length ? added[index] : ranges[index]),
+      removeAllRanges: () => { cleared += 1; added.length = 0; },
+      addRange: (range) => added.push(range),
+      toString: () => 'two paragraphs of it',
+    };
+
+    try {
+      booted.getSelection = () => selection;
+      // A web view that refuses the modern call is the only way the old path runs at all.
+      booted.navigator.clipboard = null;
+      let copiedText = null;
+      booted.document.execCommand = () => { copiedText = surface.children.map((child) => child.value).find(Boolean) || null; return true; };
+
+      if (booted.legacyCopy('two paragraphs of it') !== true) throw new Error('the old path reported no copy');
+      if (copiedText !== 'two paragraphs of it') throw new Error(`the old path copied ${JSON.stringify(copiedText)}`);
+      if (!cleared) throw new Error('the highlight was never put back, only taken');
+      if (added.length !== 2) throw new Error(`${added.length} of the two highlighted ranges came back`);
+      if (added[0].name !== 'first' || added[1].name !== 'second') throw new Error('the ranges came back in the wrong order');
+      if (standing()) throw new Error('the hidden box was left standing on the page');
+    } finally {
+      booted.getSelection = wasSelection;
+      booted.navigator.clipboard = wasClipboard;
+      booted.document.execCommand = wasExec;
+      for (const child of [...surface.children]) if (String(child.value || '') === 'two paragraphs of it') child.remove();
     }
   });
 
