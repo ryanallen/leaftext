@@ -1,8 +1,10 @@
 # Releasing
 
-> Bump `Cargo.toml` and commit it first, then run `just release <version>` to verify, tag, and push. CI automatically builds the Windows MSI and the macOS DMG.
+> Bump `Cargo.toml`, leave it in the working tree, then run `just release <version>` to verify, commit, tag, and push. CI automatically builds the Windows MSI and the macOS DMG.
 
-Leaftext releases are managed with a single `just release <version>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and commit it first; `just release <version>` then verifies that `Cargo.toml` already matches the version you pass, runs the whole check suite against a still copy of the plan tree, retires the older tags, commits, tags, and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
+Leaftext releases are managed with a single `just release <version>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and leave it uncommitted; `just release <version>` then verifies that `Cargo.toml` already matches the version you pass, runs the whole check suite against a still copy of the plan tree, retires the older tags, and commits the work sitting in the tree, tags it and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
+
+**The tree is dirty on purpose.** A release commits the work written in this checkout and not yet committed, so a clean tree is nothing to release and is refused before the suite runs. `just land` is the separate command that puts the tree on `main` immediately with no gate, no version and no tag, so work stops sitting uncommitted while the checks run; the release then commits whatever the docs, the comments and the version bump add on top.
 
 ## Release command
 
@@ -23,13 +25,15 @@ release version:
     node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit
 ```
 
-**`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release, from the check suite to the last push. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, requires the tree to have work in it at all, and requires the tag not to exist yet. It then takes a still copy of the plan tree next door, runs `just verify` against that copy, and — only if the suite passed — deletes every older tag here and on the remote, stages the paths with work in them by name, creates the release commit and an annotated tag, pushes `main`, and pushes the tag on its own. The copy is removed whichever way the release ends.
+**`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release, from the check suite to the last push. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, requires the tree to have work in it at all, and requires the tag not to exist yet. It then takes a still copy of the plan tree next door, runs `just verify` against that copy, and — only if the suite passed — reads the work in the tree again, deletes every older tag here and on the remote, stages that second list of paths by name, creates the release commit and an annotated tag, pushes `main`, and pushes the tag on its own. The copy is removed whichever way the release ends.
 
-It was two commands, the second of which pushed after the first had exited. Two things came out of that: a plan edit landing mid-check stopped a release the release had not caused, and the push ran with no checked plan state behind it at all. It never edits `Cargo.toml` — the version bump is a manual, already-committed step.
+**The list of paths to commit is read twice on purpose.** The first read is what refuses a release with a clean tree, before an hour of checks rather than after; the second decides what is staged, and it has to come after the suite because the suite compiles and a compile rewrites `Cargo.lock` with the package's own version in it. Staging the earlier list committed a version bump with a lockfile still naming the version before it, and both release builds pass `--locked`, so they refused to update one and died on their first command with the tag already on GitHub and no installer under it.
+
+It was two commands, the second of which pushed after the first had exited. Two things came out of that: a plan edit landing mid-check stopped a release the release had not caused, and the push ran with no checked plan state behind it at all. It never edits `Cargo.toml` — the version bump is yours to make, and it is one of the paths the release commits.
 
 The plan copy exists because the owner writes the plan tree next door while a release runs. Six of the suite's checks read it, and they ask one resolver where it is; during a release that resolver answers the copy, so all six read the same complete state whatever else is being written at the time. A tree that changes while it is being copied is copied again, and a tree that will not settle stops the release before any tag is touched.
 
-So the full flow is: edit `Cargo.toml` → commit → `just release <version>`.
+So the full flow is: `just land` → edit `Cargo.toml` → `just release <version>`.
 
 ## What CI builds
 
@@ -63,7 +67,7 @@ Always run the full verification suite before cutting a release to confirm forma
 just verify
 ```
 
-This runs `cargo fmt --check`, `cargo check --all-targets`, `cargo test`, and a vendored-asset drift check (`just check-vendor`) in sequence. A clean `just verify` is required before invoking `just release` — and `just release` runs it again itself, so a failing check will stop the release.
+That is the whole suite — formatting, `cargo check --all-targets`, the browser build, the tests, and every `check-` recipe the `Justfile` defines, each of them listed in [Building](02-building.md#individual-tasks). A clean `just verify` is required before invoking `just release` — and `just release` runs it again itself, so a failing check will stop the release.
 
 ## Version format
 
@@ -72,11 +76,11 @@ Use [semantic versioning](https://semver.org/): `MAJOR.MINOR.PATCH`. The current
 ```toml
 [package]
 name = "leaftext"
-version = "1.11.7"
+version = "1.15.5"
 edition = "2021"
 ```
 
-You edit this field and commit it before running `just release`; the release script then verifies it matches, and commits and tags. The packaged version must equal the `Cargo.toml` version or the platform build scripts stop with an error, and a version tag is never re-pushed — a failed build means bumping to the next patch and starting over.
+You edit this field and leave it in the working tree before running `just release`; the release script then verifies it matches, and commits and tags. The packaged version must equal the `Cargo.toml` version or the platform build scripts stop with an error, and a version tag is never re-pushed — a failed build means bumping to the next patch and starting over.
 
 > [!NOTE]
-> The release script uses `--no-sign-commit`, so no GPG key is required to cut a release. Tags are pushed by `--follow-tags`, which pushes all local annotated tags that are reachable from the pushed commits — so only the new release tag travels with the push, not any older unrelated tags.
+> The release script uses `--no-sign-commit`, so no GPG key is required to cut a release. `main` and the tag are pushed as two separate commands, with the tag going last and on its own: GitHub creates no push event at all for a push carrying more than three tags, so a push carrying several starts no build and publishes nothing while the tag sits there looking shipped. That is also why the older tags are deleted before the new one is made.

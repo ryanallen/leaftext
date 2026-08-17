@@ -60,7 +60,7 @@
 ## Releasing
 - Page: https://leaftext.com/docs/02-development/03-releasing.md
 - Markdown: https://leaftext.com/docs/02-development/03-releasing.md
-- Summary: Leaftext releases are managed with a single just release command — but it does not bump the version for you. You edit version in Cargo.toml to the new value and commit it first; just release then v...
+- Summary: Leaftext releases are managed with a single just release command — but it does not bump the version for you. You edit version in Cargo.toml to the new value and leave it uncommitted; just release t...
 
 ## Theming
 - Page: https://leaftext.com/docs/02-development/04-theming.md

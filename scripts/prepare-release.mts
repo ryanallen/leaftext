@@ -162,7 +162,7 @@ export function prepareRelease(version: string, options: ReleaseOptions = { sign
   // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
   host.withSnapshot((root) => {
     required(host, "just", ["verify"], { env: { ...process.env, [PLAN_ROOT_ENV]: root } });
-    // The list is read again, because the gate compiles and a compile rewrites `Cargo.lock`: staging the earlier list shipped a version bump with a lockfile naming the version before it, and the release builds pass `--locked`, so they die on their first command with the tag already up. The gate is the only thing between the two reads and every file it writes into this checkout is one the release is supposed to carry.
+    // Read again, because the gate compiles and a compile rewrites `Cargo.lock` with the package's own version in it: staging the earlier list commits a bump whose lockfile still names the version before it, and both release builds pass `--locked`, so they die on their first command with the tag already up and nothing published under it. v1.15.4 went out that way. The gate is the only thing between the two reads, and every file it writes into this checkout is one the release is supposed to carry.
     const staging = host.changedPaths();
     // Only now: a gate that stops here leaves the last released tag exactly where it was.
     retireOldTags(host, tag);
