@@ -7370,6 +7370,213 @@ if (booted) {
   });
 }
 
+// ---- 3b. copying what is highlighted in the reading view --------------------
+//
+// Neither gesture can be read off the source: the menu is drawn from a list filtered at the moment it opens, and what reaches the clipboard is whatever was saved before the focus moved. Held here because a Copy that quietly writes the wrong words, or an item that appears over a selection nobody made, both look right in the file.
+
+if (booted) {
+  const readingApp = booted.document.getElementById('app');
+
+  /** A selection of `text`, inside the reading document unless `outside`, over a document body that is on screen unless `hidden`. */
+  function highlight({ text, outside = false, hidden = false } = {}) {
+    const body = {
+      offsetParent: hidden ? null : {},
+      contains: (node) => !!node && node.inReadingBody === true,
+    };
+    readingApp.querySelector = (selector) => (String(selector) === '.document-body' ? body : null);
+    booted.getSelection = () => {
+      if (text === null) return null;
+      return {
+        isCollapsed: text === '',
+        rangeCount: text === '' ? 0 : 1,
+        getRangeAt: () => ({ commonAncestorContainer: { inReadingBody: !outside } }),
+        toString: () => text,
+      };
+    };
+  }
+
+  function contextMenuElement() {
+    const surface = booted.document.getElementById('appSurface');
+    const menu = surface.children.find((child) => String(child.className || '') === 'context-menu');
+    if (!menu) throw new Error('the right-click menu is not on the app surface');
+    return menu;
+  }
+
+  /** Open the page menu at the pointer. The rows of the last one are dropped first: the stand-in page keeps a container's children when the app empties its textContent, so two opens would otherwise read as one long menu. */
+  function openPageMenu() {
+    contextMenuElement().children.length = 0;
+    booted.showContextMenu(120, 300, NOTE, 'page');
+  }
+
+  /** The rows of the menu that opened, in the order they are drawn, with a separator as a dash. */
+  function menuRows() {
+    const menu = contextMenuElement();
+    if (menu.hidden) return [];
+    return menu.children.map((row) => (String(row.className || '').includes('separator') ? '—' : String(row.textContent)));
+  }
+
+  /** Take `label` off the menu that is open and answer what it put on the clipboard. */
+  function pickRow(label) {
+    const row = contextMenuElement().children.find((one) => String(one.textContent) === label);
+    if (!row) throw new Error(`the menu has no ${label}`);
+    const written = [];
+    const wasClipboard = booted.navigator.clipboard;
+    booted.navigator.clipboard = { writeText: (text) => { written.push(text); return Promise.resolve(); } };
+    try {
+      for (const handler of row.listeners.get('click') || []) handler();
+    } finally {
+      booted.navigator.clipboard = wasClipboard;
+    }
+    return written;
+  }
+
+  const NOTE = 'C:\\notes\\one.md';
+  // What the menu holds today, so a reader who has highlighted nothing meets exactly the menu they always have.
+  const FILE_ROWS = ['Favorite', '—', 'Copy path', 'Reveal file', 'Properties', '—', 'Delete'];
+
+  check('the page menu offers Copy over a highlighted sentence and copies those words', () => {
+    const wasSelection = booted.getSelection;
+    const wasQuery = readingApp.querySelector;
+    try {
+      highlight({ text: 'a sentence  worth keeping' });
+      openPageMenu();
+      const rows = menuRows();
+      if (rows[0] !== 'Copy') throw new Error(`the menu opened with ${JSON.stringify(rows[0])} rather than Copy`);
+      if (rows.indexOf('Copy') > rows.indexOf('Favorite')) throw new Error('Copy sits below Favorite');
+      if (rows[1] !== '—') throw new Error('Copy is not divided from the items about the file');
+      // Exactly what was highlighted, spacing and all: the reader is copying what is on screen, not a tidied version of it.
+      const written = pickRow('Copy');
+      if (written.length !== 1 || written[0] !== 'a sentence  worth keeping') {
+        throw new Error(`Copy wrote ${JSON.stringify(written)}`);
+      }
+    } finally {
+      booted.getSelection = wasSelection;
+      readingApp.querySelector = wasQuery;
+      booted.hideContextMenu();
+    }
+  });
+
+  check('a menu over a document with nothing highlighted is the one that opens today', () => {
+    const wasSelection = booted.getSelection;
+    const wasQuery = readingApp.querySelector;
+    try {
+      const same = (what) => {
+        openPageMenu();
+        const rows = menuRows();
+        if (rows.join(' ') !== FILE_ROWS.join(' ')) throw new Error(`${what}: the menu became ${rows.join(' ')}`);
+        booted.hideContextMenu();
+      };
+      highlight({ text: '' });
+      same('a caret with nothing selected');
+      highlight({ text: null });
+      same('a page with no selection at all');
+      highlight({ text: 'words in the pane', outside: true });
+      same('a selection outside the document');
+      highlight({ text: 'words behind the graph', hidden: true });
+      same('a document body standing behind another view');
+    } finally {
+      booted.getSelection = wasSelection;
+      readingApp.querySelector = wasQuery;
+      booted.hideContextMenu();
+    }
+  });
+
+  check('the words are saved when the menu opens, not read when Copy runs', () => {
+    const wasSelection = booted.getSelection;
+    const wasQuery = readingApp.querySelector;
+    try {
+      highlight({ text: 'the words that were highlighted' });
+      openPageMenu();
+      // Opening a menu for the keyboard takes the focus, which collapses the selection before the item runs.
+      highlight({ text: '' });
+      const written = pickRow('Copy');
+      if (written[0] !== 'the words that were highlighted') throw new Error(`Copy wrote ${JSON.stringify(written)}`);
+    } finally {
+      booted.getSelection = wasSelection;
+      readingApp.querySelector = wasQuery;
+      booted.hideContextMenu();
+    }
+  });
+
+  check('a right-click in a field or a block being typed in keeps its own menu', () => {
+    const wasSelection = booted.getSelection;
+    const wasQuery = readingApp.querySelector;
+    try {
+      highlight({ text: 'typed words' });
+      let prevented = false;
+      const target = Object.assign(new FakeElement(), {
+        // A field, or a block that has been clicked into: the only selector it answers is the editable one, so every other branch of the handler passes over it.
+        closest: (selector) => (String(selector).includes('contenteditable') ? target : null),
+      });
+      for (const handler of booted.document.listeners.get('contextmenu') || []) {
+        handler({ target, clientX: 10, clientY: 10, preventDefault: () => { prevented = true; } });
+      }
+      if (prevented) throw new Error('a right-click in a field lost the menu the web view gives it');
+      if (menuRows().length) throw new Error('a right-click in a field opened the page menu');
+    } finally {
+      booted.getSelection = wasSelection;
+      readingApp.querySelector = wasQuery;
+      booted.hideContextMenu();
+    }
+  });
+
+  check('the copy key writes a reading-view selection and leaves every other surface alone', () => {
+    const wasSelection = booted.getSelection;
+    const wasQuery = readingApp.querySelector;
+    const somewhere = Object.assign(new FakeElement(), { closest: () => null });
+    // A field, or a block that has been clicked into, which is an editing host with the browser's own copy.
+    const typing = Object.assign(new FakeElement(), { closest: () => typing });
+
+    /** Hold the copy key over `target` and answer whether the page claimed it and what it wrote. */
+    const press = ({ target = somewhere, mac = false } = {}) => {
+      let prevented = false;
+      const written = [];
+      const wasClipboard = booted.navigator.clipboard;
+      booted.navigator.clipboard = { writeText: (text) => { written.push(text); return Promise.resolve(); } };
+      try {
+        for (const handler of booted.__windowListeners.get('keydown') || []) {
+          handler({ ctrlKey: !mac, metaKey: mac, altKey: false, shiftKey: false, key: 'c', target, preventDefault: () => { prevented = true; } });
+        }
+      } finally {
+        booted.navigator.clipboard = wasClipboard;
+      }
+      return { prevented, written };
+    };
+
+    try {
+      highlight({ text: 'words on the page' });
+      // Both spellings of the gesture: Cmd on a Mac, Ctrl everywhere else.
+      for (const mac of [false, true]) {
+        const { prevented, written } = press({ mac });
+        if (!prevented) throw new Error(`the ${mac ? 'Mac' : 'Windows'} copy key was left to the web view`);
+        if (written.length !== 1 || written[0] !== 'words on the page') {
+          throw new Error(`the ${mac ? 'Mac' : 'Windows'} copy key wrote ${JSON.stringify(written)}`);
+        }
+      }
+
+      // The source view is an editor with its own copy.
+      vm.runInContext('codeViewActive = true;', booted);
+      if (press().prevented) throw new Error('the source view lost the editor’s own copy');
+      vm.runInContext('codeViewActive = false;', booted);
+
+      // So is a field, and so is a block that has been clicked into.
+      if (press({ target: typing }).prevented) throw new Error('a field being typed in lost the copy it already has');
+
+      // Nothing qualifying highlighted: the key is left exactly as it arrived.
+      for (const nothing of [{ text: '' }, { text: null }, { text: 'words in the pane', outside: true }, { text: 'words behind the graph', hidden: true }]) {
+        highlight(nothing);
+        const { prevented, written } = press();
+        if (prevented) throw new Error('the copy key was claimed with nothing in the document highlighted');
+        if (written.length) throw new Error(`the copy key wrote ${JSON.stringify(written)} with nothing highlighted`);
+      }
+    } finally {
+      booted.getSelection = wasSelection;
+      readingApp.querySelector = wasQuery;
+      vm.runInContext('codeViewActive = false;', booted);
+    }
+  });
+}
+
 // ---- 4. the first-run bubble ------------------------------------------------
 
 // Two things nothing else can catch: a hint that keeps coming back after it was met (the fatigue the whole thing exists to avoid), and a bubble placed off the window. Both are arithmetic and flags, so both are reachable here.

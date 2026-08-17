@@ -9,6 +9,8 @@ let contextMenuPath = null;
 let contextMenuTargetKind = 'file';
 // The link element itself when the menu is a link's, so Open runs the same path a plain click on it does rather than a second reading of the href.
 let contextMenuLink = null;
+// The words that were highlighted when this menu opened. Saved rather than reread at the moment Copy runs, because opening a menu for the keyboard moves the focus and can collapse the selection out from under it.
+let contextMenuSelectionText = '';
 const CONTEXT_MENU_ITEMS = [
   { action: 'open', label: 'Open' },
   { action: 'favorite', label: 'Favorite' },
@@ -47,7 +49,22 @@ const LINK_MENU_ITEMS = [
   { action: 'revealLink', label: 'Reveal file', pageOnly: true },
   { action: 'copyLinkPath', label: 'Copy path', pageOnly: true },
 ];
+// The words highlighted in the rendered document, exactly as they were selected, or nothing at all. A selection reaching outside the document being read is not what a reader means by copy, and a document body standing behind another view is not on screen to have been highlighted. The key and the right-click menu both read this, so the two can never disagree about which words belong on the clipboard.
+function selectionTextInReadingView() {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return '';
+  const body = app.querySelector('.document-body');
+  // offsetParent is null while another view (the graph) sits in its place.
+  if (!body || body.offsetParent === null) return '';
+  for (let index = 0; index < selection.rangeCount; index += 1) {
+    if (!body.contains(selection.getRangeAt(index).commonAncestorContainer)) return '';
+  }
+  return selection.toString();
+}
 const PAGE_MENU_ITEMS = [
+  // The only item in this menu about the words rather than the file, so it leads — and with nothing highlighted it is left out entirely, the way Paste is left out of the folder menu with nothing cut, so the menu is the one that opens today.
+  { action: 'copySelection', label: 'Copy', selectionOnly: true },
+  'separator',
   { action: 'favorite', label: 'Favorite' },
   'separator',
   { action: 'copyPath', label: 'Copy path' },
@@ -63,12 +80,15 @@ function hideContextMenu() {
   contextMenu.hidden = true;
   contextMenuPath = null;
   contextMenuLink = null;
+  contextMenuSelectionText = '';
 }
 // What Cut or Copy last put down, so Paste has something to act on. The page holds it because the page is where it was chosen; it is not the system clipboard, so pasting here moves what you cut *here*, and a file copied in Explorer is not it.
 let libraryTransfer = null;
-function runContextAction(action, path, link) {
+function runContextAction(action, path, link, selected) {
   switch (action) {
     case 'open': send({ command: 'openRecent', path }); break;
+    // The words as they were highlighted, unaltered — this item exists because the rest of the page menu is about the file.
+    case 'copySelection': copyPlainText(selected); break;
     case 'openLink': if (link) sendDocumentLink(link, false); break;
     case 'openLinkInNewPage': if (link) sendDocumentLink(link, true); break;
     // The href as it is written, not the resolved one — Copy path is the item for the file on disk.
@@ -130,6 +150,7 @@ function contextMenuEntries() {
       .filter((entry) => {
         if (entry === 'separator') return true;
         if (entry.action === 'paste') return !!libraryTransfer;
+        if (entry.selectionOnly) return !!contextMenuSelectionText;
         if (entry.folderOnly) return contextMenuTargetKind === 'folder';
         return true;
       })
@@ -180,8 +201,9 @@ function buildContextMenu() {
     item.addEventListener('click', () => {
       const path = contextMenuPath;
       const link = contextMenuLink;
+      const selected = contextMenuSelectionText;
       hideContextMenu();
-      if (path) runContextAction(entry.action, path, link);
+      if (path) runContextAction(entry.action, path, link, selected);
     });
     contextMenu.appendChild(item);
   }
@@ -198,6 +220,7 @@ function showContextMenu(x, y, path, kind, link) {
   contextMenuPath = path;
   contextMenuTargetKind = kind || 'file';
   contextMenuLink = link || null;
+  contextMenuSelectionText = contextMenuTargetKind === 'page' ? selectionTextInReadingView() : '';
   // Nothing to offer — an empty pane with nothing cut — so no empty box either.
   if (!contextMenuEntries().some((entry) => entry !== 'separator')) {
     return;

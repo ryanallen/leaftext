@@ -88,7 +88,7 @@ A GitHub-style name between colons — `:rocket:` — rendered as the emoji.
 
 ## File actions
 
-The right-click menu in the [library pane](GLOSSARY.md#library-pane) and on a page being read. On a file: Open, Cut, Copy, Copy path, Rename, Reveal file, Properties, Delete. On the page: Favorite, Copy path, Reveal file, Properties, Delete. On a folder or the empty space around it: Open folder, Paste, Reveal folder, Properties. Delete goes to the Recycle Bin or Trash, not away for good, and it asks first — see [Confirmation](GLOSSARY.md#confirmation).
+The right-click menu in the [library pane](GLOSSARY.md#library-pane) and on a page being read. On a file: Open, Cut, Copy, Copy path, Rename, Reveal file, Properties, Delete. On the page: Copy where words are highlighted, then Favorite, Copy path, Reveal file, Properties, Delete. On a folder or the empty space around it: Open folder, Paste, Reveal folder, Properties. Delete goes to the Recycle Bin or Trash, not away for good, and it asks first — see [Confirmation](GLOSSARY.md#confirmation).
 
 ## Confirmation
 

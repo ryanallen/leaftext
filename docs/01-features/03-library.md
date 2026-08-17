@@ -121,7 +121,7 @@ Right-click a file row for a context menu of file actions:
 | Properties | Opens the OS file-properties view |
 | Delete | Asks first, then moves the file to the Recycle Bin / Trash — and offers it back |
 
-Right-click anywhere on the rendered page, including the blank space around its text, for the actions about the document you are reading: **Favorite** or **Unfavorite**, **Copy path**, **Reveal file**, **Properties**, and **Delete**. **Open**, **Cut**, **Copy**, and **Rename** stay on a file row because they act on a row in a folder. A link inside a document has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), and a block being typed in keeps its text menu.
+Right-click anywhere on the rendered page, including the blank space around its text, for the actions about the document you are reading: **Favorite** or **Unfavorite**, **Copy path**, **Reveal file**, **Properties**, and **Delete**. With words highlighted, **Copy** leads the menu and puts exactly those words on the clipboard — `Ctrl+C`, or `Cmd+C` on a Mac, does the same thing without the menu. **Open**, **Cut**, **Copy** and **Rename** stay on a file row because they act on a row in a folder. A link inside a document has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), and a block being typed in keeps its text menu.
 
 Reveal and Properties map to each OS:
 
