@@ -73,7 +73,7 @@ A test is named as a sentence about behavior — `a_staged_update_installs_itsel
 | `/add-format` | Teaches the app another readable file type from the one table of formats |
 | `/add-dependency` | Weighs a crate before it ships: what it drags in, and what the platform already offers |
 
-Five hooks back the parts of this that are worth failing rather than remembering — they print the standing rules before each message, write down the steps of the skill a message names, refuse a git write without an explicit release, hold a reply to the repo's own rules about how it is written, and prove those rules were read rather than recalled. `just verify` self-tests all five. Each record they keep belongs to one session, so a machine running two at once cannot spend the other's release, clear what the other has read, or hold it to the other's steps; a machine where no session can be identified is refused every git write rather than let through.
+Five hooks back the parts of this that are worth failing rather than remembering — they print the standing rules before each message, write down the steps of the skill a message names, refuse a git write — and anything that puts the installers out — without an explicit release, hold a reply to the repo's own rules about how it is written, and prove those rules were read rather than recalled. `just verify` self-tests all five. Each record they keep belongs to one session, so a machine running two at once cannot spend the other's release, clear what the other has read, or hold it to the other's steps; a machine where no session can be identified is refused every git write rather than let through.
 
 ## One at a time
 

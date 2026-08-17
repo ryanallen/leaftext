@@ -65,7 +65,7 @@ Everything but the last step survives an outage: the suite ran, the commit is on
 just publish-release <version>
 ```
 
-It starts both release builds against `v<version>` and refuses a version whose tag is not on GitHub. It makes no tag, moves none, touches no version and commits nothing, so it is neither a re-push nor a second release — the builds check out the tag they are handed, which is what their by-hand trigger is for. It needs GitHub's own `gh` command, which is the one tool here that can start a build. A tag left stranded needs no cleaning up by hand either: the next release deletes every tag but its own.
+It starts both release builds against `v<version>` and refuses a version whose tag is not on GitHub. It makes no tag, moves none, touches no version and commits nothing, so it is neither a re-push nor a second release — the builds check out the tag they are handed, which is what their by-hand trigger is for. It needs GitHub's own `gh` command, which is the one tool here that can start a build. It is a release even though it writes nothing, so the gate asks for the same explicit release a commit needs — and `gh` itself is refused off a short list of reads for the same reason, since starting a build and creating, uploading to or deleting a release are all one command away. A tag left stranded needs no cleaning up by hand either: the next release deletes every tag but its own.
 
 **A new version number is for a build that failed on the code.** Cutting one for a refused publish spends the whole suite again and produces an identical installer, and it is what the written path used to say: v1.15.6 built both installers, published neither, and left v1.15.5 as the newest thing anybody could download.
 

@@ -144,6 +144,10 @@ function selfTest() {
   if ((agents.match(/^#+\s+Rule 1\b/gm) || []).length !== 1) {
     fails.push('AGENTS.md: Rule 1 is written more than once');
   }
+  // The hand-back test is prose only the printed rule enforces, so an edit that moves its paragraph out of the section must fail here rather than silently drop it from every turn.
+  if (!rule.includes('A fact the owner cannot act on')) {
+    fails.push('AGENTS.md: the printed Rule 1 no longer carries the hand-back test');
+  }
   if (!reminders('editing src/assets/reading.css').length) fails.push('reminders: reading.css matched nothing');
   if (reminders('hello').length) fails.push('reminders: fired on a message that touches nothing');
   if (!context('hello', rule).includes('refused')) fails.push('context: missing the git refusal');
