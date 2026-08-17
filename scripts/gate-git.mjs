@@ -7,6 +7,8 @@
 //
 // A program this parser has never heard of is refused on the git write or release its line names, and only a listed reader is decided as text. Never restore the empty default to quiet a refused command: the list of ways to hand a program to something else is open — `ssh`, `timeout`, `find -exec` and `docker` are four unrelated ones — so an unrecognized head that decides nothing is a commit or a discarded working tree nobody licensed. A wrongly refused reader costs one row on `READERS` and names itself in its own refusal message.
 //
+// A `just` release word is refused anywhere after `just`, never only as the first plain word, so an option nobody here models cannot hide one — `just -f justfile land` reads the file name as the recipe otherwise. `just --command` is not a recipe at all: it runs an arbitrary program, so its words are read as the command line they are.
+//
 // A segment never ends inside a quote. Never simplify `segments` back to one `split`: cutting at `&&` before anything reads a quote leaves `bash -c "cd . && git push"` as a head holding an open quote and a tail reading `git push"`, and neither of those names a write, so the write goes through.
 //
 //   node scripts/gate-git.mjs           the hook payload on stdin
@@ -30,6 +32,8 @@ const BRANCH_WRITE_FLAGS = ['-d', '-D', '--delete', '-m', '-M', '--move', '-c', 
 const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace']);
 // The recipes that commit, tag and push on their own. `land` is the release's first half — it commits and pushes main with no gate, so it is a git write with git nowhere in the command.
 const RELEASE_RECIPES = new Set(['release', 'land']);
+// `just --command` runs an arbitrary program with the justfile's environment rather than a recipe, so what follows it is a command line and is read as one.
+const JUST_COMMAND_FLAGS = new Set(['-c', '--command']);
 // Shells that run another command string and can be unwrapped, so a release inside one is refused exactly as a bare one is.
 const NESTED_RUNNERS = /^(?:cmd|powershell|pwsh|invoke-expression|iex)$/;
 // Runners this parser does not model. Each can run anything, so a git write or a release name inside one is refused rather than guessed at: a new interpreter must never become the way past the gate. The last six stand in front of another program instead of being one, and each takes options this parser does not read, so refusing on the name is the side to be wrong on.
@@ -38,8 +42,8 @@ const OPAQUE_RUNNERS = /^(?:bash|sh|zsh|dash|fish|wsl|env|xargs|start|eval|npm|n
 const READERS = /^(?:rg|grep|egrep|fgrep|cat|head|tail|echo|code)$/;
 // Node running a string instead of a file is opaque for the same reason.
 const NODE_EVAL_FLAGS = new Set(['-e', '--eval', '-p', '--print']);
-// Only for a runner that cannot be read: a command naming a release without running one is a read.
-const RELEASE_NAMES = /\bjust\s+(?:release|land)\b|prepare-release/i;
+// Only for a runner that cannot be read: a command naming a release without running one is a read. A release word anywhere in `just`'s own words, the same decision the recognized branch makes, so `bash -c "just -f justfile land"` is refused too; it stops at a separator, which is where `just`'s words end.
+const RELEASE_NAMES = /\bjust\b[^\n;&|]*\b(?:release|land)\b|prepare-release/i;
 // Every git in a segment, each read with whatever follows it as its arguments. Only for a runner that cannot be read, beside `RELEASE_NAMES`: a command naming a git write without running one is a read. Every one of them, because such a segment holds a whole command string — `sh -c "git status && git commit -m x"` names a read first and a write second.
 const GIT_NAME = /(?:^|[\s&|;(])["']?(?:[^\s"']*[\\/])?git(?:\.exe)?["']?(?=\s)/gi;
 // Shell punctuation standing in front of a program rather than being one.
@@ -160,7 +164,7 @@ function segmentWrite(segment, depth = 0) {
   if (!head) return '';
   const write = programWrite(head, args.slice(start + 1), segment, depth);
   if (write) return write;
-  // A program named nowhere above is one this parser has never heard of, and a program it cannot model is refused on the write its line names — the rule `bash -c` and `sudo` already live by. `ssh`, `timeout`, `find -exec`, `docker` and seven more each hand a program to something else, and there is no reason to think a twelfth could be named either. An unterminated quote is the same case even where the program is known.
+  // A program named nowhere above is one this parser cannot model, so it is refused on the write its line names — the rule `bash -c` and `sudo` already live by. An unterminated quote is the same case even where the program is known.
   return write === null || unterminated(segment) ? namedWrite(segment, head) : '';
 }
 
@@ -180,8 +184,17 @@ function programWrite(head, rest, segment, depth) {
   }
   if (head === 'git') return gitArguments(rest);
   if (head === 'just') {
-    const recipe = (rest.find((a) => !a.startsWith('-')) ?? '').toLowerCase();
-    return RELEASE_RECIPES.has(recipe) ? `just ${recipe}` : '';
+    // A release word anywhere after `just`, never only the first plain word: `-f`, `-d`, `--set` and the rest carry a value, so the first plain word in `just -f justfile land` is the file. Reading which options take a value would need a second command-line grammar that moves with `just`, and an unmodeled one is a hole, so a release word used as a value — `just --set MODE release verify` — is refused on purpose.
+    const recipe = rest.find((a) => RELEASE_RECIPES.has(a.toLowerCase()));
+    if (recipe) return `just ${recipe.toLowerCase()}`;
+    // `just --command` runs an arbitrary program with the justfile's environment, so the words after it are a command line and are read as one — `just --command git push` pushes.
+    const at = rest.findIndex((a) => JUST_COMMAND_FLAGS.has(a));
+    if (at >= 0) {
+      const inner = rest.slice(at + 1).join(' ');
+      if (inner && depth < 3) return commandWrite(inner, depth + 1);
+      return namedWrite(segment, head);
+    }
+    return '';
   }
   // The fixture self-test records its release calls on a fixture host and starts none, which is the one form of this script that reads. `--check` wins over a version in the script itself, so it wins here too.
   if (isReleaseScript(head) || (head === 'node' && rest.some(isReleaseScript))) {
@@ -292,6 +305,20 @@ function selfTest() {
     'powershell -Command "& { just release 0.1.441 }"',
     '& just release 0.1.441',
     'echo hi & just land',
+    // A release word behind `just`'s own options, whose value the first-plain-word rule read as the recipe. The last one is a release word used as a value, refused on purpose: reading which options carry a value would need a grammar that moves with `just`, and an unmodeled option is a hole.
+    'just -f justfile land',
+    'just --justfile ./justfile release 1.0.0',
+    'just -d . land',
+    'just --working-directory . land',
+    'just --set FOO bar land',
+    'bash -c "just -f justfile land"',
+    'just --set MODE release verify',
+    // `just --command` is a runner, not a recipe: what follows it is read as the command line it is.
+    'just --command git push',
+    'just -c git push',
+    'just --command git commit -m x',
+    'just --command cmd /c git push', // A shell inside the option, unwrapped by the same depth limit.
+    'just land --command ls', // The release word is read first, so a harmless inner command cannot answer for a recipe that still runs.
     // A runner the parser cannot read carrying a release name: refused rather than guessed at.
     'bash -c "just release 0.1.441"',
     'sh -c "node --experimental-strip-types scripts/prepare-release.mts 0.1.441"',
@@ -329,7 +356,7 @@ function selfTest() {
     // A quote the line never closes: nothing can model what the shell does next, so it is refused on the name it carries.
     'bash -c "cd . && git push',
     'echo "unterminated && git push',
-    // A git write behind a program nobody listed. Every one was refused while a git anywhere in the line decided it, and allowed once the program did, until an unrecognized head fell to the name test.
+    // A git write behind a program nobody listed. Each is refused by a gate that decides a segment on a git anywhere in its line and allowed by one that decides it on the program, which is why an unrecognized head falls to the name test.
     'ssh host git push',
     'timeout 5 git push',
     'find . -exec git commit -m x ;',
@@ -357,6 +384,13 @@ function selfTest() {
     'git -C . branch --show-current',
     'git show HEAD:src/lib.rs',
     'just verify',
+    'just check-hooks',
+    // A recipe that is not a release keeps passing behind the same options.
+    'just -f justfile verify',
+    'just --set MODE preview verify',
+    // The command that option carries is read, so one that writes nothing is left alone rather than refused on sight.
+    'just --command ls',
+    'just --command cargo test',
     // A program on neither list, naming no write: the default refuses on a name, never on the program alone.
     'cargo test',
     'ls scripts/',
