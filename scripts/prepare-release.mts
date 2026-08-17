@@ -155,15 +155,18 @@ export function prepareRelease(version: string, options: ReleaseOptions = { sign
   const tagArgs = options.signCommit
     ? ["tag", "-s", tag, "-m", `Release ${tag}`]
     : ["-c", "tag.gpgSign=false", "tag", "-a", "--no-sign", tag, "-m", `Release ${tag}`];
-  const changed = host.changedPaths();
-  assertSomethingToRelease(host, changed);
+  // Read before the gate for one job only: a clean tree is refused here, rather than an hour later by the commit.
+  const waiting = host.changedPaths();
+  assertSomethingToRelease(host, waiting);
   assertTagDoesNotExist(host, tag);
   // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
   host.withSnapshot((root) => {
     required(host, "just", ["verify"], { env: { ...process.env, [PLAN_ROOT_ENV]: root } });
+    // The list is read again, because the gate compiles and a compile rewrites `Cargo.lock`: staging the earlier list shipped a version bump with a lockfile naming the version before it, and the release builds pass `--locked`, so they die on their first command with the tag already up. The gate is the only thing between the two reads and every file it writes into this checkout is one the release is supposed to carry.
+    const staging = host.changedPaths();
     // Only now: a gate that stops here leaves the last released tag exactly where it was.
     retireOldTags(host, tag);
-    required(host, "git", ["add", "--", ...changed]);
+    required(host, "git", ["add", "--", ...staging]);
     required(host, "git", releaseCommit);
     required(host, "git", tagArgs);
     host.recordTag(tag);
@@ -184,6 +187,7 @@ type Fixture = { host: ReleaseHost; calls: string[]; envs: Array<Record<string, 
 function fixture(answer: (command: string, args: string[]) => CommandResult | null = () => null, overrides: Partial<ReleaseHost> = {}): Fixture {
   const calls: string[] = [];
   const envs: Array<Record<string, string | undefined> | undefined> = [];
+  let treeReads = 0;
   // Both lists stay the same length, so the environment a call carried is read at that call's own place.
   const record = (line: string, env?: Record<string, string | undefined>) => {
     calls.push(line);
@@ -214,10 +218,11 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
     recordTag: (tag) => {
       record(`record ${tag}`);
     },
-    // Work sitting in the checkout, waiting to be released: two paths.
+    // Work sitting in the checkout, waiting to be released: two paths, and a third once the gate has compiled. The lockfile carries the package's own version, so the tree a release stages is never the tree it was refused for being clean — a fixture answering the same list twice cannot tell whether the list was read again.
     changedPaths: () => {
       record("changed paths read");
-      return ["Cargo.toml", "src/lib.rs"];
+      treeReads += 1;
+      return treeReads > 1 ? ["Cargo.toml", "src/lib.rs", "Cargo.lock"] : ["Cargo.toml", "src/lib.rs"];
     },
     // A read, not tag work: it is recorded under its own name so the loops proving a refusal reached no tag can stay about the commands that write one.
     tagsOnHead: () => {
@@ -294,6 +299,7 @@ function selfTest(): void {
     ["the work in the tree was read", clean.calls.indexOf("changed paths read")],
     ["the plan tree was copied", clean.calls.indexOf("snapshot taken")],
     ["the check suite ran", clean.calls.indexOf("just verify")],
+    ["the tree was read again, now the gate has written its lockfile into it", clean.calls.lastIndexOf("changed paths read")],
     ["the old tags went", at("git tag -d")],
     ["the changed paths were staged", at("git add --")],
     ["the release was committed", at("commit --no-gpg-sign")],
@@ -313,8 +319,11 @@ function selfTest(): void {
   if (!clean.calls.some((call) => call.includes("push origin --delete"))) fails.push("the old tags were left on the remote, so they come back on the next push carrying tags");
   const held = clean.envs[clean.calls.indexOf("just verify")];
   if (held?.[PLAN_ROOT_ENV] !== "/snapshot/docs") fails.push("the check suite was not pointed at the plan copy");
-  // By name, never the whole tree: a release commits the paths it read and nothing the tree happens to pick up while the gate runs.
-  if (!clean.calls.includes("git add -- Cargo.toml src/lib.rs")) fails.push(`a release did not stage the paths with work in them: ${clean.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
+  // What the gate wrote is staged with the work it belongs to: the list read before the gate has no lockfile in it, so a release staging that one puts the bump on main with a lockfile naming the version before it and both builds refuse it.
+  const treeReads = clean.calls.filter((call) => call === "changed paths read").length;
+  if (treeReads !== 2) fails.push(`a release read the work in the tree ${treeReads} time(s): it is read once to refuse a clean tree and again after the gate to decide what to commit`);
+  // By name, never the whole tree: a release commits the paths with work in them and nothing else the tree happens to be carrying.
+  if (!clean.calls.includes("git add -- Cargo.toml src/lib.rs Cargo.lock")) fails.push(`a release did not stage the paths the gate left behind it: ${clean.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
   if (clean.calls.some((call) => /^git add (-A|--all|\.)(\s|$)/.test(call))) fails.push("a release staged the whole tree rather than the paths it read");
 
   // The landing that goes first: the tree onto main in three writes, and nothing else at all.
@@ -422,7 +431,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
+  console.log("prepare-release: ok (a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean one and again after the gate, so the lockfile a compile rewrote is committed with the bump that moved it; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
 }
 
 function isMainModule(): boolean {
