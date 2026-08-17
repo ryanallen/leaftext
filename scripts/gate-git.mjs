@@ -184,10 +184,10 @@ function programWrite(head, rest, segment, depth) {
   }
   if (head === 'git') return gitArguments(rest);
   if (head === 'just') {
-    // A release word anywhere after `just`, never only the first plain word: `-f`, `-d`, `--set` and the rest carry a value, so the first plain word in `just -f justfile land` is the file. Reading which options take a value would need a second command-line grammar that moves with `just`, and an unmodeled one is a hole, so a release word used as a value — `just --set MODE release verify` — is refused on purpose.
+    // Anywhere after `just`, because `-f`, `-d` and `--set` carry a value: the first plain word in `just -f justfile land` is the file. Reading which options take one needs a grammar moving with `just`, so a release word used as a value is refused instead.
     const recipe = rest.find((a) => RELEASE_RECIPES.has(a.toLowerCase()));
     if (recipe) return `just ${recipe.toLowerCase()}`;
-    // `just --command` runs an arbitrary program with the justfile's environment, so the words after it are a command line and are read as one — `just --command git push` pushes.
+    // Not a recipe: the words after it are the command line it runs, so `just --command git push` pushes.
     const at = rest.findIndex((a) => JUST_COMMAND_FLAGS.has(a));
     if (at >= 0) {
       const inner = rest.slice(at + 1).join(' ');
