@@ -134,7 +134,11 @@ If a cell needs more words, the ticket is what needs them.
 
 ## 8. The shipped file
 
-`../docs/done/PLAN.md` is retired rows and nothing else: one table per tier, the live file's own columns, each row struck through with the date it closed and what the build found. That is the half a later reader cannot get anywhere else. It ends with what the retired rows add up to, and what earlier rankings got wrong. A row is cited by its ticket's name in both files.
+`../docs/done/PLAN.md` is retired rows and nothing else: one table per tier, each row struck through with the date it closed and what the build found. That is the half a later reader cannot get anywhere else. It ends with what the retired rows add up to, and what earlier rankings got wrong. A row is cited by its ticket's name in both files.
+
+**The columns are its own, not the live file's.** Tiers 1 to 3 carry `Ticket`, `Status`, what was wrong and what landed, and `Cost`; tier 0 carries `Work`, `Status` and `Why first, and what it found`. The live file's six columns do not travel: a position is dropped on the way across, and `Blocks` and `Blocked by` are questions about work that is left.
+
+**Every row sits inside one of those tables**, under the heading for the tier it was retired from. Nothing goes above the file's title — a row there belongs to no tier and sits under no header row, so the file opens as a headerless table and nothing retired can be found by where it was ranked. [`/done`](../done/SKILL.md) is what places a row; `scripts/check-plan.mjs` refuses one left outside a table or short of its header's cells.
 
 ## 9. The canceled file
 

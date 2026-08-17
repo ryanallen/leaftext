@@ -3,7 +3,9 @@
 //
 //   node scripts/check-plan.mjs   fail on a running order that has stopped ranking every live ticket
 //
-// Eleven rules, every one read straight off the page. Whether a row is ranked well is the ranker's judgment and no script's.
+// Twelve rules, every one read straight off the page. Whether a row is ranked well is the ranker's judgment and no script's.
+//
+// The last of them is about the shipped log next door: 30 retired rows once sat above its title, under no header row and inside no tier table, and the count that would have caught it read a struck line wherever it sat. One walk answers the count and the shape so the two cannot drift apart again.
 //
 // Size is not a test: a band holding most of the rows is what a tree of mostly-features looks like, and no count makes a definition wrong. What makes one wrong is asking for two unrelated things at once, or asking for something no row can satisfy — read the words of a definition, never the count under it.
 //
@@ -258,6 +260,82 @@ function shapeProblems(text, tree) {
   return problems;
 }
 
+// The shipped log is read by the tier a row was retired from, so its headings are what a row is found under.
+const SHIPPED_TIER = /^##(?!#)\s+Retired from tier\s+(\d+)\b/;
+
+// A row writes `\|` in its own prose, so splitting on every pipe reads four cells as seven.
+function shippedCells(line) {
+  const trimmed = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+  const out = [];
+  let cell = '';
+  for (let at = 0; at < trimmed.length; at += 1) {
+    if (trimmed[at] === '\\') {
+      cell += trimmed[at] + (trimmed[at + 1] ?? '');
+      at += 1;
+      continue;
+    }
+    if (trimmed[at] === '|') {
+      out.push(cell.trim());
+      cell = '';
+      continue;
+    }
+    cell += trimmed[at];
+  }
+  out.push(cell.trim());
+  return out;
+}
+
+// One walk answers both the shape and the count, so the two cannot disagree the way they did while the count read every line and nothing read the tables.
+function shippedProblems(text) {
+  const problems = [];
+  const say = (rule, subject, message) => problems.push({ rule, subject, message });
+  let tier = null;
+  let header = null;
+  let started = false;
+  let retired = 0;
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    const heading = SHIPPED_TIER.exec(line);
+    if (heading) {
+      tier = Number(heading[1]);
+      header = null;
+      started = true;
+      continue;
+    }
+    if (/^##(?!#)\s/.test(line)) {
+      tier = null;
+      header = null;
+      continue;
+    }
+    if (!line.startsWith('|')) continue;
+    const cells = shippedCells(line);
+    if (cells.every((c) => /^:?-{3,}:?$/.test(c))) continue;
+    if (!cells[0].includes('~~')) {
+      if (tier !== null && header === null) header = cells.length;
+      continue;
+    }
+    retired += 1;
+    const named = links(cells[0])[0] ?? cells[0].replace(/\s+/g, ' ');
+    if (!started) {
+      say('shipped', named, `line ${i + 1}: ${named} is struck through above the first \`## Retired from tier\` heading, so it belongs to no tier and sits under no header row`);
+      continue;
+    }
+    if (tier === null) {
+      say('shipped', named, `line ${i + 1}: ${named} sits under a heading that is not a tier, so nobody finds it by where it was ranked`);
+      continue;
+    }
+    if (header === null) {
+      say('shipped', named, `line ${i + 1}: ${named} sits in tier ${tier} with no header row above it`);
+      continue;
+    }
+    if (cells.length !== header) {
+      say('shipped', named, `line ${i + 1}: ${named} carries ${cells.length} cells and the tier ${tier} header names ${header}`);
+    }
+  }
+  return { problems, retired };
+}
+
 // Every refusal is proved on made-up files before the real one is opened. Each case is a fault that has happened.
 const TABLE = '| # | Ticket | Status | Blocks | Blocked by | Why here |\n|---|---|---|---|---|---|\n';
 
@@ -421,6 +499,35 @@ const CASES = [
     plan(PAIR, [1, ONE], [3, TWO]).replace('4:07pm', '16:07'), PAIR, []],
 ];
 
+// `shipped([1, row, row], ...)` — one entry per tier heading, each row under the four columns the shipped tiers carry. It opens with the shipped log's own title, so only a case about a row above that title has to disagree with it.
+const SHIPPED_TITLE = '# What was built, in the order it was built';
+const SHIPPED_TABLE = '| Ticket | Status | What was wrong, and what landed | Cost |\n|---|---|---|---|\n';
+
+function shipped(...tiers) {
+  const bands = tiers.map(([n, ...rows]) => `## Retired from tier ${n} — a band\n\n${SHIPPED_TABLE}${rows.map((r) => `${r}\n`).join('')}`);
+  return `${SHIPPED_TITLE}\n\n${bands.join('\n')}\n## What the retired rows add up to\n\nOne of them.\n`;
+}
+
+const SHIPPED_ONE = '| ~~[one](reading/one.md)~~ | Done 16 August 2026, v1.0.0 | what landed | One phase |';
+const SHIPPED_TWO = '| ~~[two](repo/two.md)~~ | Done 15 August 2026 | what landed | Two phases |';
+// The row that broke a naive cell count: `\|` inside the prose is one character, not a column boundary.
+const SHIPPED_PIPES = '| ~~[three](repo/three.md)~~ | Done 15 August 2026 | it read `&&`, `\\|\\|` and `\\|` alike | One phase |';
+const SHORT = '| ~~[short](workflow/short.md)~~ | Done 15 August 2026 | what landed |';
+
+const SHIPPED_CASES = [
+  ['a shipped log with every row inside its tier table passes', shipped([1, SHIPPED_ONE, SHIPPED_PIPES], [3, SHIPPED_TWO]), [], 3],
+  ['a struck row above the first tier heading is refused, and named',
+    `${SHIPPED_ONE}\n${shipped([1, SHIPPED_TWO])}`, ['shipped reading/one.md'], 2],
+  ['a struck row short of its header\'s cells is refused',
+    shipped([1, SHIPPED_ONE, SHORT]), ['shipped workflow/short.md'], 2],
+  ['a struck row under a heading that is not a tier is refused',
+    `${shipped([1, SHIPPED_ONE])}\n${SHIPPED_TABLE}${SHIPPED_TWO}\n`, ['shipped repo/two.md'], 2],
+  ['a tier table with no header row above its rows is refused',
+    `${SHIPPED_TITLE}\n\n## Retired from tier 1 — a band\n\n${SHIPPED_ONE}\n`, ['shipped reading/one.md'], 1],
+  ['the count is the struck rows the walk found, wherever they sit',
+    shipped([0, SHIPPED_ONE], [1, SHIPPED_TWO, SHIPPED_PIPES]), [], 3],
+];
+
 function selfTest() {
   const fails = [];
   for (const [name, text, t, want] of CASES) {
@@ -428,6 +535,14 @@ function selfTest() {
     if (got.join(', ') !== [...want].sort().join(', ')) {
       fails.push(`${name}: got [${got}], want [${want}]`);
     }
+  }
+  for (const [name, text, want, count] of SHIPPED_CASES) {
+    const read = shippedProblems(text);
+    const got = read.problems.map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+    if (read.retired !== count) fails.push(`${name}: counted ${read.retired} retired rows, want ${count}`);
   }
   return fails;
 }
@@ -461,10 +576,9 @@ for (const folder of LIVE_PLANS) {
   for (const file of markdown(full, plans)) live.add(file);
 }
 
-// A struck first cell is a ticket that shipped; the record under the tables is prose, not rows.
-const retired = readFileSync(join(plans, 'done', 'PLAN.md'), 'utf8')
-  .split('\n')
-  .filter((line) => line.trim().startsWith('|') && line.split('|')[1]?.includes('~~')).length;
+// A struck first cell is a ticket that shipped; the record under the tables is prose, not rows. One walk answers the count and the shape.
+const shippedRead = shippedProblems(readFileSync(join(plans, 'done', 'PLAN.md'), 'utf8'));
+const retired = shippedRead.retired;
 
 // `canceled/` holds that folder's own ranking file as well as the refused plans.
 const turnedDown = markdown(join(plans, 'canceled'), plans).filter((f) => f !== 'canceled/PLAN.md').length;
@@ -477,14 +591,15 @@ for (const ticket of live) {
 }
 
 const text = readFileSync(join(plans, 'PLAN.md'), 'utf8');
-const problems = shapeProblems(text, { live, retired, turnedDown, phases });
+const problems = [...shapeProblems(text, { live, retired, turnedDown, phases }), ...shippedRead.problems];
 
 if (problems.length) {
   console.error('the running order has stopped ranking every live ticket:');
   for (const { message } of problems) console.error(`  ${message}`);
   console.error('Run /pm: it re-derives every row off the tree, so a ticket with no row gets one and');
   console.error('the counts at the foot are rewritten from what is actually on disk.');
+  console.error('A row named above is in done/PLAN.md: /done puts one in the table for the tier it was retired from.');
   process.exit(1);
 }
 
-console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, and a stamp naming the day and the time it was ranked`);
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, and every retired row inside the tier table it was retired from, square with that table's header`);
