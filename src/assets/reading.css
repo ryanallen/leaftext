@@ -6368,7 +6368,7 @@ body.is-home-row-dragging .home-list-scroll li {
 /* Only `anywhere` enters a column's smallest width, so `break-word` leaves the sheet scrolling sideways. Body cells only: on a heading it drops a column under one word and "Ref" draws as "R / ef". */
 .table-sheet-grid td {
   overflow-wrap: anywhere;
-  /* Which drops that width to one character, so a short column stops at its heading and "Mon" draws on two lines. Border-box, so 7ch is 4.3 characters of content past the padding — under the floor any five-letter heading already sets. */
+  /* Which drops a body cell's smallest width to one character, so without a floor a short column stops at its own heading and cuts "Mon" in two. Border-box, so 7ch leaves 4.3 characters of content and stays under the floor any five-letter heading already sets. */
   min-width: 7ch;
 }
 .table-sheet-grid th {
