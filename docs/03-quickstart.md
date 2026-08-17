@@ -104,6 +104,7 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | [Italic](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
 | [Link](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |
 | Select the page — or [the block, its section, the page](01-features/07-editing.md#deleting) with the caret in one | `Ctrl+A` | `Cmd+A` |
+| Copy the words highlighted in the document | `Ctrl+C` | `Cmd+C` |
 | [Open a link in a new page](01-features/02-navigation.md#opening-a-link-in-a-new-page) | `Ctrl`+click | `Cmd`+click |
 | [Find](01-features/02-navigation.md#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |
 | [Find and replace](01-features/02-navigation.md#find-in-this-document) | `Ctrl+H` | `Cmd+H` |

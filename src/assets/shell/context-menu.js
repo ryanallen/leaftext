@@ -49,7 +49,7 @@ const LINK_MENU_ITEMS = [
   { action: 'revealLink', label: 'Reveal file', pageOnly: true },
   { action: 'copyLinkPath', label: 'Copy path', pageOnly: true },
 ];
-// The words highlighted in the rendered document, exactly as they were selected, or nothing at all. A selection reaching outside the document being read is not what a reader means by copy, and a document body standing behind another view is not on screen to have been highlighted. The key and the right-click menu both read this, so the two can never disagree about which words belong on the clipboard.
+// The words highlighted in the rendered document, exactly as selected, or nothing — a selection reaching outside it, or over a body standing behind another view, is not what a reader means by copy. The copy key reads this too, so the two gestures cannot disagree about which words go on the clipboard.
 function selectionTextInReadingView() {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || !selection.rangeCount) return '';
@@ -87,7 +87,7 @@ let libraryTransfer = null;
 function runContextAction(action, path, link, selected) {
   switch (action) {
     case 'open': send({ command: 'openRecent', path }); break;
-    // The words as they were highlighted, unaltered — this item exists because the rest of the page menu is about the file.
+    // What was saved when the menu opened, unaltered.
     case 'copySelection': copyPlainText(selected); break;
     case 'openLink': if (link) sendDocumentLink(link, false); break;
     case 'openLinkInNewPage': if (link) sendDocumentLink(link, true); break;

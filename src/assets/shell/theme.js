@@ -254,7 +254,7 @@ window.addEventListener('keydown', (event) => {
     selection.addRange(range);
     return;
   }
-  // Copy in the reading view means the words highlighted in the document, which the web view answers on Windows and not at all on a Mac. The page owns it either way, reading the same selection the right-click menu's own Copy does, so the two gestures cannot disagree about which words land on the clipboard.
+  // Copy in the reading view means the words highlighted in the document, and the page owns the gesture rather than leaving it to the web view, which does nothing with it on a Mac. It reads the same selection the right-click menu's own Copy does, so the two cannot disagree about which words land on the clipboard.
   //
   // Anything with a copy of its own keeps it: the source view has the editor's, and a field or a block being typed in has the browser's. With nothing qualifying highlighted the key is left untouched, so the web view does whatever it would have done.
   if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'c') {
