@@ -6,7 +6,7 @@ function tableSheetOverlayElement() {
 function closeTableSheet() {
   const overlay = tableSheetOverlayElement();
   if (!overlay) return;
-  // A term is only ever raised from a word inside this table, so it leaves with it rather than standing over a page it never came from. Before the removal, so the focus the term hands back is a link about to go and the opener below has the last word.
+  // A term is only ever raised from a word inside this table, so it leaves with it. Before the removal, so the opener below has the last word on focus.
   dismissGlossary();
   const opener = overlay.__tableSheetOpener;
   const scrim = overlay.__tableSheetScrim;

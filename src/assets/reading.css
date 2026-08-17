@@ -4971,7 +4971,7 @@ body.is-home-row-dragging .home-list-scroll li {
 #flowBackdrop {
   z-index: var(--lt-z-42);
 }
-/* A term rises over the full-window table, which is itself a sheet, so its scrim takes the layer above — at the shared 40 it painted under the table and the press that closes it landed on the table instead. */
+/* A term rises over the full-window table, which is itself a sheet, so its scrim takes the layer above: at the sheets' own 40 it paints under the table and the press outside the term lands on the table instead. */
 #glossaryBackdrop {
   z-index: var(--lt-z-42);
 }
