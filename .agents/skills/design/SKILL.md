@@ -98,6 +98,8 @@ grep -rn "<the behavior>" src/tests/ src/app/tests.rs src/store/tests.rs scripts
 
 **A test gap this reading turns up outside the ticket is its own ticket** — the commonest case of step 5b, and the one this pass hits most, because opening every citation walks a lot of code.
 
+**A ticket with no `### The owner's box` is one this pass writes it into**, on the same reasoning as a missing test box: it is describing the same work more honestly, so it does not wait on a question. It is the last box in the file, under its own heading, unticked, holding the gesture the owner makes to see the thing in what they will look at — [ticket](../ticket/SKILL.md) holds the shape, and a subject with genuinely nothing to press gets the box struck with that reason. Without it the plan goes fully ticked on machine work alone, which is a machine agreeing with itself.
+
 ## 5b. What this pass finds beside the work is its own ticket
 
 **This is the reading most likely to turn up something nobody was looking for**, because every citation is opened and every node in every drawing is chased into the code. A fault beside the one being planned, a rule nothing enforces, a check that would have caught it, a second copy of something that already has one source: none of it survives the session any other way, and it must not become a box in the ticket in front of you. A plan that grows a fix for something else is one the owner cannot read against what they asked for.

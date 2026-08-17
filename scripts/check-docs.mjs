@@ -233,6 +233,115 @@ function drawingOwed(file, text) {
   return /design\/components\.md/.test(phasesSection(text));
 }
 
+// The last box in a ticket is the owner's, unticked until they ask for `/done`, because a machine agreeing with itself is not evidence. Nothing used to write one and nothing refused its absence, so a plan went fully ticked on machine work alone and the retirement report below then told somebody to move it into `done/` before the owner had looked at anything.
+//
+// The heading is matched with either apostrophe, since a ticket written in an editor that curls them is the same section.
+const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
+
+/** Every box under the owner's own heading, ticked or not. Empty where the section is missing or carries none, which approves nothing either way. */
+function ownerBoxes(text) {
+  const lines = text.split('\n');
+  const at = lines.findIndex((line) => OWNER_HEADING.test(line));
+  if (at === -1) return [];
+  const boxes = [];
+  for (let i = at + 1; i < lines.length; i += 1) {
+    if (/^#{1,6}[ \t]/.test(lines[i])) break;
+    const box = /^\s*- \[( |x)\]/.exec(lines[i]);
+    if (box) boxes.push(box[1] === 'x');
+  }
+  return boxes;
+}
+
+/** A live plan a machine has started ticking that nobody can approve. */
+function ownerBoxOwed(file, text) {
+  if (!livePlan(file)) return false;
+  if (ownerBoxes(text).length) return false;
+  return /^\s*- \[x\]/m.test(text);
+}
+
+/** A live plan that is genuinely done: every box ticked, and the owner's own among them. */
+function retirementReady(file, text) {
+  if (!livePlan(file)) return false;
+  const ticked = (text.match(/^\s*- \[x\]/gm) || []).length;
+  const open = (text.match(/^\s*- \[ \]/gm) || []).length;
+  const owner = ownerBoxes(text);
+  return ticked > 0 && open === 0 && owner.length > 0 && owner.every(Boolean);
+}
+
+const OWNER_CASES = [
+  [
+    'a started plan with no owner\'s box is refused, and is not retirement',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n',
+    { owed: true, ready: false },
+  ],
+  [
+    'the same plan with an open owner\'s box passes, and is not retirement',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [ ] Open a file and confirm the line wraps\n',
+    { owed: false, ready: false },
+  ],
+  [
+    'an owner\'s box ticked with every other box is the plan that shipped',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [x] Open a file and confirm the line wraps\n',
+    { owed: false, ready: true },
+  ],
+  [
+    'a fully ticked plan with no owner\'s box is refused rather than reported as shipped',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n- [x] Test: it wraps\n',
+    { owed: true, ready: false },
+  ],
+  [
+    'a heading with nothing under it approves nothing',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n- [x] Built\n\n### The owner\'s box\n\n## What an earlier draft got wrong\n',
+    { owed: true, ready: false },
+  ],
+  [
+    'the owner\'s box is read out of its own section, never the phase above it',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n- [ ] Not built yet\n\n### The owner\'s box\n\n- [x] Confirmed\n',
+    { owed: false, ready: false },
+  ],
+  [
+    'a curled apostrophe is the same heading',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n- [x] Built\n\n### The owner’s box\n\n- [ ] Confirm it\n',
+    { owed: false, ready: false },
+  ],
+  [
+    'a plan nobody has started owes nothing yet',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n- [ ] Build it\n',
+    { owed: false, ready: false },
+  ],
+  [
+    'a shipped plan is not held to either rule',
+    '../docs/done/app/a.md',
+    '## Phases\n\n- [x] Built\n',
+    { owed: false, ready: false },
+  ],
+];
+
+function ownerSelfTest() {
+  const fails = [];
+  for (const [name, file, text, want] of OWNER_CASES) {
+    const owed = ownerBoxOwed(file, text);
+    const ready = retirementReady(file, text);
+    if (owed !== want.owed) fails.push(`${name}: owed ${owed}, want ${want.owed}`);
+    if (ready !== want.ready) fails.push(`${name}: retirement ${ready}, want ${want.ready}`);
+  }
+  return fails;
+}
+
+const OWNER_ADVICE = [
+  'the last box in a ticket is the owner\'s, unticked until they say the thing works — a machine agreeing with itself is not evidence.',
+  'Write `### The owner\'s box` as the last heading in each, with one box holding the gesture the owner makes to see the thing,',
+  'in what they will look at — see the "ticket" skill. Where the subject genuinely has nothing to press, strike the box with that reason.',
+];
+
 const DRAWING_CASES = [
   [
     'phases naming the component table with no drawn section is refused',
@@ -300,6 +409,13 @@ if (drawingFails.length) {
   process.exit(1);
 }
 
+const ownerFails = ownerSelfTest();
+if (ownerFails.length) {
+  console.error('the owner\'s box: the matcher is wrong, so nothing was read:');
+  for (const line of ownerFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 const rows = [];
 const orphans = [];
 const scanned = [];
@@ -335,15 +451,16 @@ if (orphans.length) {
   process.exit(1);
 }
 
-// Every phase ticked and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question, so each live ticket is read once.
+// Every box ticked, the owner's among them, and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question and the owner's-box question, so each live ticket is read once.
 const finished = [];
 const undrawn = [];
+const unapprovable = [];
 for (const file of rows.map(([f]) => f)) {
   if (!livePlan(file)) continue;
   const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
   const ticked = (text.match(/^\s*- \[x\]/gm) || []).length;
-  const open = (text.match(/^\s*- \[ \]/gm) || []).length;
-  if (ticked > 0 && open === 0) finished.push(`${file} (${ticked} ${ticked === 1 ? 'box' : 'boxes'}, all ticked)`);
+  if (retirementReady(file, text)) finished.push(`${file} (${ticked} ${ticked === 1 ? 'box' : 'boxes'}, all ticked)`);
+  if (ownerBoxOwed(file, text)) unapprovable.push(file);
   if (drawingOwed(file, text)) undrawn.push(file);
 }
 
@@ -354,6 +471,13 @@ if (undrawn.length) {
   console.error('Draw it: write the sketch as HTML in ../docs/imgs/wireframes/<ticket>.html, photograph it with');
   console.error('node scripts/wireframe.mjs, and embed the picture under that heading — see the "ticket" skill.');
   console.error('If nothing new is drawn, the section is one sentence saying so and why.');
+  process.exit(1);
+}
+
+if (unapprovable.length) {
+  console.error('these live plans have work ticked and no box the owner can tick:');
+  for (const file of unapprovable) console.error(`  ${file}  ->  no "### The owner's box" section`);
+  for (const line of OWNER_ADVICE) console.error(line);
   process.exit(1);
 }
 
@@ -398,4 +522,4 @@ if (dead.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live ticket that adds a control saying what it looks like, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every started plan carrying a box only the owner can tick, every live ticket that adds a control saying what it looks like, ${links}`);

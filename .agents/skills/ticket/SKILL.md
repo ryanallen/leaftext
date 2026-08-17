@@ -143,6 +143,20 @@ End the phase list with the block that closes every phase:
 
 Drop the bundler line when the work is nowhere near `design/`.
 
+## The last box in the file is the owner's
+
+**Every ticket ends with one more heading, and nothing follows it:**
+
+```markdown
+### The owner's box
+
+- [ ] Open a table with a short column on the whole window and confirm the cell reads as one word
+```
+
+**It holds the gesture, never a stock line.** What the owner does to see the thing, written in what they will look at — the line above, never "confirm it works". A ticket whose subject genuinely has nothing to press writes the box and [strikes it](../../../../docs/GLOSSARY.md#struck-through) with that reason, the way a test box that cannot be built here is struck.
+
+**It stays unticked while a machine works the file.** [`/dev`](../dev/SKILL.md) stops there and hands back the gestures for it, [`/git-release`](../git-release/SKILL.md) refuses a ticket whose one open box sits anywhere else, and `scripts/check-docs.mjs` refuses a live plan with work ticked and no such heading. Without the heading a plan goes fully ticked on machine work alone, and a machine agreeing with itself is not evidence — which is the whole of why the glossary calls the last box the owner's.
+
 ## Every phase says how it is proved
 
 **Every phase carries at least one test box, and the box names where the test goes.** `just verify` runs the tests that exist and nothing asks whether the change made one necessary, so a phase with no test box is code shipped with nothing that would have caught it going wrong. [`/sync-tests`](../sync-tests/SKILL.md) holds the table of where a test lives and the naming rule; the short version is `src/tests/`, one file per subject, for library code, `src/app/tests.rs` for the binary, and `scripts/check-shell.mjs` for anything in `src/assets/shell/`, which boots the fragments in order rather than reading them.
