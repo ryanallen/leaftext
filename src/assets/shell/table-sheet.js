@@ -15,7 +15,7 @@ function closeTableSheet() {
 
 function tableSheetGrid(table) {
   const grid = document.createElement('div');
-  // The document's own scope, so the copy's links keep the theme's link color and a glossary word its dotted underline — every one of those rules is written behind `.document-body`, and the glossary sheet's body already borrows the class the same way.
+  // `document-body` as well, because the theme's link color and a glossary word's dotted underline are only written behind that class.
   grid.className = 'table-sheet-grid document-body';
   const copy = table.cloneNode(true);
   copy.classList.add('table-sheet-table');
