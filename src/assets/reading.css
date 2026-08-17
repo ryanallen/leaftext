@@ -6346,9 +6346,13 @@ body.is-home-row-dragging .home-list-scroll li {
   font-weight: var(--lt-weight-700);
   line-height: var(--lt-leading-1-2);
 }
+/* The grid also wears `.document-body`, which is what puts the copy inside the document scope the link color and the dotted glossary underline are written behind. These three take back what that class brings that the sheet is not: the reading measure it holds a document to, the negative margin that hangs a document off the scroll origin, and the page's own text size, which the cells' `em` padding and `ch` floor below are all measured against. */
 .table-sheet-grid {
   flex: 1 1 auto;
   min-height: 0;
+  width: auto;
+  margin: 0;
+  font-size: inherit;
   padding: var(--lt-space-16);
   overflow: auto;
 }
@@ -6357,6 +6361,9 @@ body.is-home-row-dragging .home-list-scroll li {
   display: block;
   width: fit-content;
   max-width: 100%;
+  /* The document hands a table its own scroll box and a gap under it, both wrong here: the grid is the scroll box the sideways wheel reads, and the sheet ends at its own padding. */
+  margin: 0;
+  overflow: visible;
   font-family: var(--app-font);
   line-height: var(--lt-leading-1-45);
 }

@@ -8746,9 +8746,13 @@ body.is-home-row-dragging .home-list-scroll li {
   font-weight: var(--lt-weight-700);
   line-height: var(--lt-leading-1-2);
 }
+/* The grid also wears `.document-body`, which is what puts the copy inside the document scope the link color and the dotted glossary underline are written behind. These three take back what that class brings that the sheet is not: the reading measure it holds a document to, the negative margin that hangs a document off the scroll origin, and the page's own text size, which the cells' `em` padding and `ch` floor below are all measured against. */
 .table-sheet-grid {
   flex: 1 1 auto;
   min-height: 0;
+  width: auto;
+  margin: 0;
+  font-size: inherit;
   padding: var(--lt-space-16);
   overflow: auto;
 }
@@ -8757,6 +8761,9 @@ body.is-home-row-dragging .home-list-scroll li {
   display: block;
   width: fit-content;
   max-width: 100%;
+  /* The document hands a table its own scroll box and a gap under it, both wrong here: the grid is the scroll box the sideways wheel reads, and the sheet ends at its own padding. */
+  margin: 0;
+  overflow: visible;
   font-family: var(--app-font);
   line-height: var(--lt-leading-1-45);
 }
@@ -9741,7 +9748,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </section>
 <section class="part">
 <header><h3>Full-window table</h3><code class="built">.table-sheet</code><span class="built">table-sheet.js</span></header>
-<div class="stage"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td>North</td><td>Q1</td></tr></tbody></table><button type="button" class="table-sheet-open" style="opacity:1"><span class="lt-icon lt-icon-expand"></span></button></div><section class="table-sheet-overlay open" style="position:static;height:150px"><header class="table-sheet-head"><h2 class="table-sheet-title">Table</h2><button type="button" class="leaf-sheet-close table-sheet-close"><span class="lt-icon lt-icon-close"></span></button></header><div class="table-sheet-grid"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td>North</td><td>Q1</td></tr></tbody></table></div></section></div>
+<div class="stage"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td>North</td><td>Q1</td></tr></tbody></table><button type="button" class="table-sheet-open" style="opacity:1"><span class="lt-icon lt-icon-expand"></span></button></div><section class="table-sheet-overlay open" style="position:static;height:150px"><header class="table-sheet-head"><h2 class="table-sheet-title">Table</h2><button type="button" class="leaf-sheet-close table-sheet-close"><span class="lt-icon lt-icon-close"></span></button></header><div class="table-sheet-grid document-body"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td><a href="../north.md">North</a></td><td><a href="glossary:quarter">Q1</a></td></tr></tbody></table></div></section></div>
 </section>
 <section class="part">
 <header><h3>Editable fields</h3><code class="built">.frontmatter-input</code><span class="built">frontmatter-fields.js</span></header>

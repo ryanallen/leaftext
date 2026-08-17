@@ -6553,6 +6553,21 @@ if (booted) {
     if (/min-width/.test(everyCell[1])) {
       throw new Error('the floor sits on the full-window table headings too, so it widens a column that already reads correctly');
     }
+    // The theme's link color and a glossary word's dotted underline are both written behind `.document-body`, so the copy reads as the web view's stock blue-purple until the grid holding it wears that class.
+    const held = booted.tableSheetGrid({ cloneNode: () => ({ classList: { add() {} }, removeAttribute() {}, querySelectorAll: () => [] }) });
+    const worn = String(held.className || '').split(/\s+/).filter(Boolean);
+    for (const name of ['table-sheet-grid', 'document-body']) {
+      if (!worn.includes(name)) throw new Error(`the full-window table's grid is not drawn as ${name}, so its links leave the theme`);
+    }
+    // What that class brings that the sheet is not: a document's reading measure, the negative margin hanging it off the scroll origin, and the page's text size the cells' own padding and floor are measured against.
+    const gridRule = sheetRule('.table-sheet-grid');
+    for (const rule of ['width: auto;', 'margin: 0;', 'font-size: inherit;', 'padding: var(--lt-space-16);', 'overflow: auto;']) {
+      if (!gridRule.includes(rule)) throw new Error(`the full-window table's grid took a document's own shape: ${rule}`);
+    }
+    // The document hands a table its own scroll box, which would take the sideways wheel off the grid, and a gap under it the sheet's padding already gives.
+    for (const rule of ['margin: 0;', 'overflow: visible;']) {
+      if (!copied.includes(rule)) throw new Error(`the copied table kept a document rule the sheet cannot carry: ${rule}`);
+    }
   });
 
   // A plan's table is mostly links, and the copy on the whole window sits beside the document rather than inside it — so a click the delegated handler does not claim is the web view's, and the re-render a finished load brings rewrites `#app` with the table in it. That made every link a trap in the one place a wide table reads.
