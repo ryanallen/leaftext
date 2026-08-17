@@ -89,9 +89,11 @@ Tier 0 comes first, because the list is only as good as the statuses under it. *
 
 ## 5. The live file is a table
 
-It opens with the first work table. Title, counts and anything off the list go after every table.
+It opens with its title, `# Leaftext Plan Log`, and the first work table is the first thing under it. Counts and anything off the list go after every table.
 
 ```markdown
+# Leaftext Plan Log
+
 ## Tier 1 — wrong today
 
 | # | Ticket | Status | Blocks | Blocked by | Why here |

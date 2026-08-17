@@ -3,7 +3,7 @@
 //
 //   node scripts/check-plan.mjs   fail on a running order that has stopped ranking every live ticket
 //
-// Nine rules, every one arithmetic. Whether a row is ranked well is the ranker's judgment and no script's.
+// Ten rules, every one arithmetic. Whether a row is ranked well is the ranker's judgment and no script's.
 //
 // Size is not a test: a band holding most of the rows is what a tree of mostly-features looks like, and no count makes a definition wrong. What makes one wrong is asking for two unrelated things at once, or asking for something no row can satisfy — read the words of a definition, never the count under it.
 //
@@ -19,6 +19,9 @@ const plans = planTree(root);
 
 // Every file in these is a ticket — none of them holds an index.
 const LIVE_PLANS = ['features', 'refactor', 'fixes'];
+
+// The running order is a named document, so its name comes before its ranked work.
+const TITLE = '# Leaftext Plan Log';
 
 const LINK = /\[[^\]]*\]\(\s*([^)\s]+)\)/g;
 
@@ -104,6 +107,11 @@ function shapeProblems(text, tree) {
   // `subject` is what the refusal is about — the self-test reads it, so a rule firing on the wrong row is caught rather than counted as a pass.
   const say = (rule, subject, message) => problems.push({ rule, subject, message });
   const rows = planRows(text);
+
+  // A title after the ranked tables is the headerless opening `done/PLAN.md` shipped, so the name comes first and the first work table sits under it.
+  const opening = text.split('\n').map((line) => line.trim()).find((line) => line !== '');
+  if (opening === undefined) say('title', 'an empty file', `the file holds nothing, so it does not open with \`${TITLE}\``);
+  else if (opening !== TITLE) say('title', opening, `the file opens on "${opening}", and a running order opens with \`${TITLE}\``);
 
   // Positions run 1 to N once each, so a row cut or inserted mid-pass cannot leave a gap or a repeat.
   for (const row of rows.filter((r) => r.position === null)) {
@@ -255,7 +263,7 @@ function tree(live, retired = 0, turnedDown = 0, phases = null) {
   return { live: new Set(live), retired, turnedDown, phases: counts };
 }
 
-// `plan(t, [3, row, row], ...)` — one entry per tier heading, each with its rows. An entry starting `###` is a sub-band heading, and the rows after it get their own table. The foot is written from the tree, so only a case testing the counts has to disagree with it.
+// `plan(t, [3, row, row], ...)` — one entry per tier heading, each with its rows. An entry starting `###` is a sub-band heading, and the rows after it get their own table. It opens with the title every running order opens with, and the foot is written from the tree, so only a case testing one of those has to disagree with it.
 function plan(t, ...tiers) {
   const bands = tiers.map(([n, ...items]) => {
     let out = n === 'hold' ? '## Hold — parked by the owner\n\n' : `## Tier ${n} — a band\n\n`;
@@ -275,7 +283,7 @@ function plan(t, ...tiers) {
     if (!open) out += TABLE;
     return out;
   });
-  return `${bands.join('\n')}\n## Off the list\n\n**Last ranked 9 August 2026.** Live: ${t.live.size}. Retired: ${t.retired}. Turned down: ${t.turnedDown}.\n`;
+  return `${TITLE}\n\n${bands.join('\n')}\n## Off the list\n\n**Last ranked 9 August 2026.** Live: ${t.live.size}. Retired: ${t.retired}. Turned down: ${t.turnedDown}.\n`;
 }
 
 const PAIR = tree(['refactor/a/one.md', 'refactor/b/two.md']);
@@ -377,7 +385,7 @@ const CASES = [
   ['words after the link still name the ticket',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) **phases 1–4** | Ready | — | — | first |'], [3, TWO]), PAIR, []],
   ['a row outside any tier heading is not a row',
-    `## Off the list\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026.** Live: 2. Retired: 0. Turned down: 0.\n`,
+    `${TITLE}\n\n## Off the list\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026.** Live: 2. Retired: 0. Turned down: 0.\n`,
     PAIR, ['ticket refactor/a/one.md', 'ticket refactor/b/two.md']],
   ['a fixes ticket ranked below tier 1 is refused',
     plan(MIXED, [1, '| 1 | [two](refactor/b/two.md) | Ready | — | — | first |'], [3, '| 2 | [f](fixes/a/f.md) | Ready | — | — | second |']),
@@ -393,6 +401,10 @@ const CASES = [
     plan(FIX, ['hold', FIX_ROW]), FIX, []],
   ['a row whose only home is the Hold band is still counted as ranked',
     plan(PAIR, [1, ONE], ['hold', TWO]), PAIR, []],
+  ['a title reached past blank lines still opens the file, so the rule reads the first line with something on it',
+    `\n\n${plan(PAIR, [1, ONE], [3, TWO])}`, PAIR, []],
+  ['a file opening on its first work table rather than its title is refused, and the line it opens on is named',
+    plan(PAIR, [1, ONE], [3, TWO]).replace(`${TITLE}\n\n`, ''), PAIR, ['title ## Tier 1 — a band']],
 ];
 
 function selfTest() {
@@ -461,4 +473,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`plan: ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, and no feature in tier 1`);
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, and no feature in tier 1`);
