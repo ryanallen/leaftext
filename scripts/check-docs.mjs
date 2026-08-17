@@ -233,7 +233,7 @@ function drawingOwed(file, text) {
   return /design\/components\.md/.test(phasesSection(text));
 }
 
-// The last box in a ticket is the owner's, unticked until they ask for `/done`, because a machine agreeing with itself is not evidence. Nothing used to write one and nothing refused its absence, so a plan went fully ticked on machine work alone and the retirement report below then told somebody to move it into `done/` before the owner had looked at anything.
+// The last box in a ticket is the owner's, unticked until they ask for `/done`, because a machine agreeing with itself is not evidence. A plan without one goes fully ticked on machine work alone, and the retirement report below then tells somebody to move it into `done/` before the owner has looked at anything.
 //
 // The heading is matched with either apostrophe, since a ticket written in an editor that curls them is the same section.
 const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
