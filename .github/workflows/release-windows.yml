@@ -74,7 +74,7 @@ jobs:
           $missing = @($assets | Where-Object { -not (Test-Path $_) })
           if ($missing.Count -gt 0) { throw "Not built: $($missing -join ', ')" }
 
-          # Making the release and uploading to it are retried together, over about five minutes in widening steps. Either half can be the one GitHub refuses and the second is worthless without the first, so a loop around the upload alone is refused every attempt for a release nobody made. This asked once: v1.15.6 built both installers, was refused its release, and published nothing.
+          # Making the release and uploading to it are retried together, over about five minutes in widening steps. Either half can be the one GitHub refuses and the second is worthless without the first, so a loop around the upload alone is refused every attempt for a release nobody made. Asking once is what cost v1.15.6, which built both installers, was refused its release, and published nothing.
           $waits = @(15, 30, 60, 90, 120)
           # A refused gh has to reach the retry rather than end the step, whatever the runner's native-error settings are that day.
           $ErrorActionPreference = 'Continue'

@@ -296,8 +296,9 @@ Other [`Justfile`](Justfile) tasks:
 | Task | Command |
 |:--|:--|
 | Cut a release | `just release <version>` |
+| Finish a release GitHub would not publish | `just publish-release <version>` |
 
-`just release` commits the version bump, tags, and pushes — CI builds the two Windows installers and the macOS DMG.
+`just release` commits the version bump, tags, and pushes — CI builds the two Windows installers and the macOS DMG. `just publish-release` starts those builds again against a tag that is already up, for the case where the installers were built and only the release to hang them on was refused; it writes nothing, so no second version number is spent. See [Releasing](docs/02-development/03-releasing.md#finishing-a-release-github-refused).
 
 ### Every written file in the repo
 

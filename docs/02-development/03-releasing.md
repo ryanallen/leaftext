@@ -55,6 +55,20 @@ Every artifact is automatically attached to the GitHub Release at [github.com/ry
 
 **Only the newest release is kept.** Each platform job deletes every older release and its tag once its own upload succeeds, so the releases page holds exactly one version — the current one. That cleanup runs after publishing and can never fail the build: both jobs race to do it, so whichever finishes second routinely finds the release, or its tag, already gone.
 
+**Each job asks GitHub again when it will not publish.** Making the release and uploading the installers to it are retried together, six attempts over about five minutes in widening steps, because either half can be the one refused and an upload to a release nobody made is refused every time. Whichever job gets there first makes the release and the other uploads to it, which is what happens on every release. A job that runs out of attempts fails, before its cleanup step, so the last download stays where it is — and it says the tag is still up and names the command below, since nothing about the build needs doing again.
+
+## Finishing a release GitHub refused
+
+Everything but the last step survives an outage: the suite ran, the commit is on `main`, the tag is on GitHub and both installers built. Only asking for a release to hang them on failed. That is finished on the tag that is already up, however long the outage lasted:
+
+```sh
+just publish-release <version>
+```
+
+It starts both release builds against `v<version>` and refuses a version whose tag is not on GitHub. It makes no tag, moves none, touches no version and commits nothing, so it is neither a re-push nor a second release — the builds check out the tag they are handed, which is what their by-hand trigger is for. It needs GitHub's own `gh` command, which is the one tool here that can start a build. A tag left stranded needs no cleaning up by hand either: the next release deletes every tag but its own.
+
+**A new version number is for a build that failed on the code.** Cutting one for a refused publish spends the whole suite again and produces an identical installer, and it is what the written path used to say: v1.15.6 built both installers, published neither, and left v1.15.5 as the newest thing anybody could download.
+
 A third workflow runs on the same tag and **publishes nothing**: it installs the `wasm32` target and runs `just build-web`, so a break that only appears when the renderer is built for a browser is caught by the release rather than by whoever next builds it by hand. It holds read-only permissions and is deliberately not a step inside either job above — both of those can write and delete releases, and a tag can never be re-pushed, so a failure there would cost a version number instead of a message. That is the same shape as the installer check, which compiles the MSI on a branch push and inspects it without publishing.
 
 **The website publishes on a push to `main` rather than on a tag**, through a fourth workflow that is nothing to do with a release. It builds the renderer, writes it beside the pages under `assets/leaftext/`, and deploys — so a compiled module never enters the tree, and the site and the app cannot drift apart. It refuses to deploy a build that produced no working module, and GitHub Pages keeps serving the last successful deployment, so a failure means the site stops updating rather than going dark.
@@ -76,11 +90,11 @@ Use [semantic versioning](https://semver.org/): `MAJOR.MINOR.PATCH`. The current
 ```toml
 [package]
 name = "leaftext"
-version = "1.15.5"
+version = "1.15.6"
 edition = "2021"
 ```
 
-You edit this field and leave it in the working tree before running `just release`; the release script then verifies it matches, and commits and tags. The packaged version must equal the `Cargo.toml` version or the platform build scripts stop with an error, and a version tag is never re-pushed — a failed build means bumping to the next patch and starting over.
+You edit this field and leave it in the working tree before running `just release`; the release script then verifies it matches, and commits and tags. The packaged version must equal the `Cargo.toml` version or the platform build scripts stop with an error, and a version tag is never re-pushed — a build that failed on the code means bumping to the next patch and starting over, while one GitHub refused to publish is finished on the tag it already has, as above.
 
 > [!NOTE]
 > The release script uses `--no-sign-commit`, so no GPG key is required to cut a release. `main` and the tag are pushed as two separate commands, with the tag going last and on its own: GitHub creates no push event at all for a push carrying more than three tags, so a push carrying several starts no build and publishes nothing while the tag sits there looking shipped. That is also why the older tags are deleted before the new one is made.

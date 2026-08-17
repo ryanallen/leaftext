@@ -424,7 +424,7 @@ jobs:
             "dist/leaftext-macos-universal.dmg"
           )
 
-          # Making the release and uploading to it are retried together, over about five minutes in widening steps. Either half can be the one GitHub refuses and the second is worthless without the first, so this loop used to go round the upload alone and every attempt was refused for a release nobody had made: on 17 August 2026 it printed "release not found" four times and then failed.
+          # Making the release and uploading to it are retried together, over about five minutes in widening steps. Either half can be the one GitHub refuses and the second is worthless without the first, so a loop around the upload alone is refused every attempt for a release nobody made: on 17 August 2026 this one printed "release not found" four times and then failed.
           waits=(15 30 60 90 120)
           published=""
           for attempt in $(seq 0 "${#waits[@]}"); do
