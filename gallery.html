@@ -7371,6 +7371,10 @@ body.is-home-row-dragging .home-list-scroll li {
 #flowBackdrop {
   z-index: var(--lt-z-42);
 }
+/* A term rises over the full-window table, which is itself a sheet, so its scrim takes the layer above — at the shared 40 it painted under the table and the press that closes it landed on the table instead. */
+#glossaryBackdrop {
+  z-index: var(--lt-z-42);
+}
 /* The one question the app asks, on the scrim the sheets already throw. Centered rather than slid up from the bottom: a sheet is somewhere you go, and this is something standing in your way until you answer it. */
 .confirm-dialog {
   position: fixed;
@@ -7668,9 +7672,10 @@ body.is-home-row-dragging .home-list-scroll li {
 .document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-corner {
   background: transparent;
 }
+/* The one sheet that can stand on another sheet, so it rides one rung above its own scrim at 42 rather than beside the sheets at 41. */
 .glossary-sheet {
   position: fixed;
-  z-index: var(--lt-z-41);
+  z-index: var(--lt-z-43);
   background: var(--lt-background);
   color: var(--lt-foreground);
 }

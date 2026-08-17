@@ -6709,6 +6709,103 @@ if (booted) {
     }
   });
 
+  // The term is the app's one sheet that can stand on another, and its scrim was painted at the layer every first scrim takes — so over the full-window table it dimmed nothing and the press that closes it landed on the table underneath.
+  check('the term’s dim falls over the full-window table, and a press on it closes the term', () => {
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const tokens = readFileSync(join(root, 'src/assets/tokens.css'), 'utf8');
+    // The named token rather than the number in the rule: a layer written by hand is what `check-literals` refuses, so a rule that stopped naming one must fail here rather than be read.
+    const layerOf = (selector) => {
+      const opened = css.indexOf(`${selector} {`);
+      if (opened < 0) throw new Error(`no rule for ${selector}`);
+      const named = /z-index:\s*var\((--lt-z-[\w-]+)\)/.exec(css.slice(opened, css.indexOf('}', opened)));
+      if (!named) throw new Error(`${selector} takes no named layer`);
+      const value = new RegExp(`${named[1]}:\\s*(-?\\d+);`).exec(tokens);
+      if (!value) throw new Error(`${named[1]} is not a layer the token file names`);
+      return Number(value[1]);
+    };
+    const scrim = layerOf('#glossaryBackdrop');
+    if (!(scrim > layerOf('.table-sheet-overlay'))) {
+      throw new Error('the term’s dim is painted under the full-window table, so the table stands at full brightness and a press outside the term lands on it');
+    }
+    if (!(layerOf('.glossary-sheet') > scrim)) throw new Error('the term sits under its own dim');
+
+    const app = booted.document.getElementById('app');
+    const glossarySheet = booted.document.getElementById('glossarySheet');
+    const glossaryBackdrop = booted.document.getElementById('glossaryBackdrop');
+    const wasQuery = app.querySelector;
+    const wasHidden = glossarySheet.hidden;
+    let removed = false;
+    const overlay = {
+      remove: () => {
+        removed = true;
+      },
+      __tableSheetOpener: null,
+      __tableSheetScrim: null,
+    };
+    try {
+      app.querySelector = (selector) =>
+        String(selector) === '.table-sheet-overlay' ? overlay : wasQuery.call(app, selector);
+      glossarySheet.hidden = false;
+      glossarySheet.classList.add('open');
+      const pressed = glossaryBackdrop.listeners.get('click') || [];
+      if (!pressed.length) throw new Error('nothing hears a press on the term’s dim');
+      for (const handler of pressed) handler({});
+      if (glossarySheet.classList.contains('open')) throw new Error('a press on the term’s dim left the term standing');
+      if (removed) throw new Error('a press on the term’s dim took the table down with it');
+    } finally {
+      app.querySelector = wasQuery;
+      glossarySheet.classList.remove('open');
+      glossarySheet.hidden = wasHidden;
+    }
+  });
+
+  // A term is only ever raised from a word inside the table, so a table closing under it left it standing over an ordinary page with no way back to what it came from.
+  check('closing the full-window table takes a raised term with it, and closing the term leaves the table', () => {
+    const app = booted.document.getElementById('app');
+    const glossarySheet = booted.document.getElementById('glossarySheet');
+    const wasQuery = app.querySelector;
+    const wasHidden = glossarySheet.hidden;
+    let removed = false;
+    const overlay = {
+      remove: () => {
+        removed = true;
+      },
+      __tableSheetOpener: null,
+      __tableSheetScrim: null,
+    };
+    try {
+      app.querySelector = (selector) =>
+        String(selector) === '.table-sheet-overlay' ? overlay : wasQuery.call(app, selector);
+
+      glossarySheet.hidden = false;
+      glossarySheet.classList.add('open');
+      booted.closeTableSheet();
+      if (!removed) throw new Error('the full-window table no longer closes');
+      if (glossarySheet.classList.contains('open')) throw new Error('closing the table left the term standing over a page it never came from');
+
+      // The other direction, which is what shipped: the term goes and the table it was raised from stays where it was.
+      removed = false;
+      glossarySheet.hidden = false;
+      glossarySheet.classList.add('open');
+      booted.dismissGlossary();
+      if (glossarySheet.classList.contains('open')) throw new Error('the term no longer closes on its own');
+      if (removed) throw new Error('closing the term took the table it was raised from down with it');
+    } finally {
+      app.querySelector = wasQuery;
+      glossarySheet.classList.remove('open');
+      glossarySheet.hidden = wasHidden;
+    }
+
+    // Every way the table closes is that one call: its cross, a press on its own dim, and the key. Read as text because opening the sheet for real needs a laid-out page to copy a table out of.
+    const fragment = readFileSync(join(root, 'src/assets/shell/table-sheet.js'), 'utf8');
+    for (const bound of ["scrim.addEventListener('click', closeTableSheet)", "close.addEventListener('click', closeTableSheet)"]) {
+      if (!fragment.includes(bound)) throw new Error(`a way out of the full-window table stopped going through the one close: ${bound}`);
+    }
+    const key = fragment.slice(fragment.indexOf('function onTableSheetKey('));
+    if (!key.includes('closeTableSheet()')) throw new Error('the key closes the full-window table by some other path than the one close');
+    if (!fragment.includes('dismissGlossary();')) throw new Error('closing the full-window table says nothing about the term raised from it');
+  });
+
   // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.
   const tableLaneRule = () => {
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
