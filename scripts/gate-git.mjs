@@ -51,7 +51,7 @@ function readStdin() {
   }
 }
 
-// Everything the shell would run as its own command. A lone `&` is one of them: cmd runs what follows it whatever the first command did. The walk is the whole point — a separator inside a quoted string is text the shell hands on, so cutting there would leave `bash -c "cd . && git push"` as two halves naming nothing.
+// Everything the shell would run as its own command. A lone `&` is one of them: cmd runs what follows it whatever the first command did. It is a walk rather than a `split` because a separator inside a quoted string is text the shell hands on, never a cut.
 function segments(command) {
   const out = [];
   let current = '';
@@ -308,7 +308,7 @@ function selfTest() {
     // A leading shell assignment is not a program, so the program is what follows it.
     'GIT_DIR=. git commit -m x',
     'FOO=bar just land',
-    // A write inside a quoted command string. Every one of these passed while the line was cut at its separators before anything read a quote — `cd` somewhere and then do the thing is how most shell lines are written.
+    // A write inside a quoted command string. Every one goes through where the line is cut at its separators before anything reads a quote, and `cd` somewhere and then do the thing is how most shell lines are written.
     'bash -c "cd . && git push"',
     "bash -c 'cd . && git push'",
     'cmd /c "git status && git push"',
