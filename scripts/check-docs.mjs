@@ -238,13 +238,31 @@ function drawingOwed(file, text) {
 // The heading is matched with either apostrophe, since a ticket written in an editor that curls them is the same section.
 const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
 
+const BOX = /^\s*- \[( |x)\]\s*(.*)$/;
+
+// A strike that closes, and whatever follows it — the reason the box was retired. The closing pair is what keeps the count in step with the page: Markdown draws `~~moved` as ordinary text with two tildes in front of it, so reading the opening alone dropped a box a person can still see.
+const STRUCK = /^~~.*?~~(.*)$/;
+
 // Striking a box retires it — the work moved or changed shape, and the line stays so nobody re-plans it — so it is neither work left nor evidence, and every count here reads it through this one function. Retired only where the strike is the first thing after the box: one part way along is a box whose wording changed, and it is still work.
 /** `ticked`, `open` or `retired` for a box line; null for anything else. */
 function boxState(line) {
-  const box = /^\s*- \[( |x)\]\s*(.*)$/.exec(line);
+  const box = BOX.exec(line);
   if (!box) return null;
   if (box[1] === 'x') return 'ticked';
-  return box[2].startsWith('~~') ? 'retired' : 'open';
+  return STRUCK.test(box[2]) ? 'retired' : 'open';
+}
+
+// A struck box is out of every count that decides when a plan is finished, so the reason written after the strike is the only record of where the work went. Anything non-whitespace counts: the tree asks for a reason in three places and none of them says how it is written, and a check cannot judge whether a sentence explains anything anyway.
+/** The one-based line number of every struck box in a document that carries no reason after the strike. */
+function strikesWithoutReason(text) {
+  const out = [];
+  text.split('\n').forEach((line, i) => {
+    const box = BOX.exec(line);
+    if (!box || box[1] === 'x') return;
+    const struck = STRUCK.exec(box[2]);
+    if (struck && !struck[1].trim()) out.push(i + 1);
+  });
+  return out;
 }
 
 /** Every box in a document, in order, as its state. */
@@ -376,6 +394,68 @@ function ownerSelfTest() {
   return fails;
 }
 
+const STRIKE_CASES = [
+  [
+    'a struck box with nothing after the strike is refused, and its line is named',
+    '## Phases\n\n- [ ] ~~Moved to tags.md~~\n',
+    [3],
+    ['retired'],
+  ],
+  [
+    'a struck box carrying its reason passes',
+    '## Phases\n\n- [ ] ~~Moved to tags.md~~ — the pager owns it now\n',
+    [],
+    ['retired'],
+  ],
+  [
+    'a reason written without an em dash passes, since nothing says how one is written',
+    '## Phases\n\n- [ ] ~~Moved to tags.md~~: the pager owns it now\n',
+    [],
+    ['retired'],
+  ],
+  [
+    'a strike that never closes is work left, which is what the page draws',
+    '## Phases\n\n- [ ] ~~Moved to tags.md\n',
+    [],
+    ['open'],
+  ],
+  [
+    'whitespace after the strike is not a reason',
+    '## Phases\n\n- [ ] ~~Moved to tags.md~~   \n',
+    [3],
+    ['retired'],
+  ],
+  [
+    'a box struck part way along is still work, and is never asked for a reason',
+    '## Phases\n\n- [ ] The pane and ~~the pager~~\n',
+    [],
+    ['open'],
+  ],
+  [
+    'a ticked box is untouched',
+    '## Phases\n\n- [x] Built\n',
+    [],
+    ['ticked'],
+  ],
+  [
+    'a struck owner\'s box is held to the same rule as any other',
+    '### The owner\'s box\n\n- [ ] ~~Press something in the app~~\n',
+    [3],
+    ['retired'],
+  ],
+];
+
+function strikeSelfTest() {
+  const fails = [];
+  for (const [name, text, wantLines, wantStates] of STRIKE_CASES) {
+    const lines = strikesWithoutReason(text);
+    const states = boxStates(text);
+    if (lines.join(',') !== wantLines.join(',')) fails.push(`${name}: refused ${lines.join(',') || 'nothing'}, want ${wantLines.join(',') || 'nothing'}`);
+    if (states.join(',') !== wantStates.join(',')) fails.push(`${name}: read as ${states.join(',')}, want ${wantStates.join(',')}`);
+  }
+  return fails;
+}
+
 const OWNER_ADVICE = [
   'the last box in a ticket is the owner\'s, unticked until they say the thing works — a machine agreeing with itself is not evidence.',
   'Write `### The owner\'s box` as the last heading in each, with one box holding the gesture the owner makes to see the thing,',
@@ -456,6 +536,13 @@ if (ownerFails.length) {
   process.exit(1);
 }
 
+const strikeFails = strikeSelfTest();
+if (strikeFails.length) {
+  console.error('struck boxes: the reader is wrong, so nothing was read:');
+  for (const line of strikeFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 const rows = [];
 const orphans = [];
 const scanned = [];
@@ -491,13 +578,15 @@ if (orphans.length) {
   process.exit(1);
 }
 
-// Nothing left open, the owner's own box answered, and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question and the owner's-box question, so each live ticket is read once.
+// Nothing left open, the owner's own box answered, and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question, the owner's-box question and the struck-box question, so each live ticket is read once.
 const finished = [];
 const undrawn = [];
 const unapprovable = [];
+const reasonless = [];
 for (const file of rows.map(([f]) => f)) {
   if (!livePlan(file)) continue;
   const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
+  for (const at of strikesWithoutReason(text)) reasonless.push(`${file}:${at}`);
   const states = boxStates(text);
   const ticked = states.filter((state) => state === 'ticked').length;
   const retired = states.filter((state) => state === 'retired').length;
@@ -521,6 +610,15 @@ if (unapprovable.length) {
   console.error('these live plans have work ticked and no box the owner can tick:');
   for (const file of unapprovable) console.error(`  ${file}  ->  no "### The owner's box" section`);
   for (const line of OWNER_ADVICE) console.error(line);
+  process.exit(1);
+}
+
+if (reasonless.length) {
+  console.error('these live plans strike a box through and never say where the work went:');
+  for (const at of reasonless) console.error(`  ${at}`);
+  console.error('a struck box is out of every count that decides when a plan is finished, so the reason');
+  console.error('written after the strike is the only record the work existed. Put it on the same line —');
+  console.error('what moved it, or what it became. See "Struck through" in ../docs/GLOSSARY.md.');
   process.exit(1);
 }
 
@@ -565,4 +663,4 @@ if (dead.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every started plan carrying a box only the owner can tick, every live ticket that adds a control saying what it looks like, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every started plan carrying a box only the owner can tick, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, ${links}`);
