@@ -1695,7 +1695,7 @@ function legacyCopy(text) {
   } catch (error) {
     copied = false;
   }
-  // Out of whatever is holding it, never out of a parent named here: the box goes on the app surface, so asking the body to remove it threw and took the restore below with it.
+  // Out of whatever is holding it, never out of a parent named here: the box goes on the app surface, so asking the body to remove it throws and takes the restore below with it.
   area.remove();
   if (selection && held.length) {
     selection.removeAllRanges();
