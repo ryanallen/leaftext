@@ -238,7 +238,21 @@ function drawingOwed(file, text) {
 // The heading is matched with either apostrophe, since a ticket written in an editor that curls them is the same section.
 const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
 
-/** Every box under the owner's own heading, ticked or not. Empty where the section is missing or carries none, which approves nothing either way. */
+// Striking a box is how this tree retires one: the work moved to another plan, or it changed shape, and the line stays so nobody re-plans it. So a struck box is neither work left nor work done, and every count here reads it through this one function. Retired only where the strike is the first thing after the box — a strike part way along is a box whose wording changed, and it is still work.
+/** `ticked`, `open` or `retired` for a box line; null for anything else. */
+function boxState(line) {
+  const box = /^\s*- \[( |x)\]\s*(.*)$/.exec(line);
+  if (!box) return null;
+  if (box[1] === 'x') return 'ticked';
+  return box[2].startsWith('~~') ? 'retired' : 'open';
+}
+
+/** Every box in a document, in order, as its state. */
+function boxStates(text) {
+  return text.split('\n').map(boxState).filter(Boolean);
+}
+
+/** Every box under the owner's own heading, as its state. Empty where the section is missing or carries none, which approves nothing either way. */
 function ownerBoxes(text) {
   const lines = text.split('\n');
   const at = lines.findIndex((line) => OWNER_HEADING.test(line));
@@ -246,26 +260,28 @@ function ownerBoxes(text) {
   const boxes = [];
   for (let i = at + 1; i < lines.length; i += 1) {
     if (/^#{1,6}[ \t]/.test(lines[i])) break;
-    const box = /^\s*- \[( |x)\]/.exec(lines[i]);
-    if (box) boxes.push(box[1] === 'x');
+    const state = boxState(lines[i]);
+    if (state) boxes.push(state);
   }
   return boxes;
 }
 
-/** A live plan a machine has started ticking that nobody can approve. */
+/** A live plan a machine has started ticking that nobody can approve. A struck owner's box is a section that exists — the shape the ticket skill asks for where nothing is pressed. */
 function ownerBoxOwed(file, text) {
   if (!livePlan(file)) return false;
   if (ownerBoxes(text).length) return false;
-  return /^\s*- \[x\]/m.test(text);
+  return boxStates(text).includes('ticked');
 }
 
-/** A live plan that is genuinely done: every box ticked, and the owner's own among them. */
+/** A live plan that is genuinely done: nothing left open, and the owner's own box ticked or struck. */
 function retirementReady(file, text) {
   if (!livePlan(file)) return false;
-  const ticked = (text.match(/^\s*- \[x\]/gm) || []).length;
-  const open = (text.match(/^\s*- \[ \]/gm) || []).length;
+  const states = boxStates(text);
   const owner = ownerBoxes(text);
-  return ticked > 0 && open === 0 && owner.length > 0 && owner.every(Boolean);
+  return states.includes('ticked')
+    && !states.includes('open')
+    && owner.length > 0
+    && owner.every((state) => state !== 'open');
 }
 
 const OWNER_CASES = [
@@ -321,6 +337,30 @@ const OWNER_CASES = [
     'a shipped plan is not held to either rule',
     '../docs/done/app/a.md',
     '## Phases\n\n- [x] Built\n',
+    { owed: false, ready: false },
+  ],
+  [
+    'a plan whose last unticked box is struck through is ready to retire',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n- [ ] ~~Moved to tags.md~~\n\n### The owner\'s box\n\n- [x] Confirmed\n',
+    { owed: false, ready: true },
+  ],
+  [
+    'a struck owner\'s box is a section that exists and an owner who answered',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [ ] ~~Nothing to press; this changes how a plan is counted~~\n',
+    { owed: false, ready: true },
+  ],
+  [
+    'a plan of nothing but struck boxes is nobody\'s work, so it stays live',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [ ] ~~Moved to tags.md~~\n\n### The owner\'s box\n\n- [ ] ~~Nothing to press~~\n',
+    { owed: false, ready: false },
+  ],
+  [
+    'a box struck part way along is a box whose wording changed, and it is still work',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n- [ ] The pane and ~~the pager~~\n\n### The owner\'s box\n\n- [x] Confirmed\n',
     { owed: false, ready: false },
   ],
 ];
@@ -451,15 +491,18 @@ if (orphans.length) {
   process.exit(1);
 }
 
-// Every box ticked, the owner's among them, and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question and the owner's-box question, so each live ticket is read once.
+// Nothing left open, the owner's own box answered, and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question and the owner's-box question, so each live ticket is read once.
 const finished = [];
 const undrawn = [];
 const unapprovable = [];
 for (const file of rows.map(([f]) => f)) {
   if (!livePlan(file)) continue;
   const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
-  const ticked = (text.match(/^\s*- \[x\]/gm) || []).length;
-  if (retirementReady(file, text)) finished.push(`${file} (${ticked} ${ticked === 1 ? 'box' : 'boxes'}, all ticked)`);
+  const states = boxStates(text);
+  const ticked = states.filter((state) => state === 'ticked').length;
+  const retired = states.filter((state) => state === 'retired').length;
+  const count = `${ticked} ${ticked === 1 ? 'box' : 'boxes'} ticked${retired ? `, ${retired} struck through` : ''}`;
+  if (retirementReady(file, text)) finished.push(`${file} (${count})`);
   if (ownerBoxOwed(file, text)) unapprovable.push(file);
   if (drawingOwed(file, text)) undrawn.push(file);
 }
