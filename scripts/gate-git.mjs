@@ -30,8 +30,11 @@ const TAG_READ_FLAGS = ['-l', '--list', '-n', '--contains', '--no-contains',
 const BRANCH_WRITE_FLAGS = ['-d', '-D', '--delete', '-m', '-M', '--move', '-c', '-C', '--copy'];
 // git's own options come before the subcommand and these five carry their value as the next word, so the first word without a dash is the path in `git -C . commit`, not the command.
 const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace']);
-// The recipes that commit, tag and push on their own. `land` is the release's first half — it commits and pushes main with no gate, so it is a git write with git nowhere in the command.
-const RELEASE_RECIPES = new Set(['release', 'land']);
+// The recipes only the owner may run. `release` commits, tags and pushes; `land` is its first half, committing and pushing main with no gate, so it is a git write with git nowhere in the command. `publish-release` writes no git at all — it starts both release builds against a tag already up, which makes the GitHub release and hangs the installers on it, so it is the outward half of a release and the only half a reader ever meets.
+const RELEASE_RECIPES = new Set(['release', 'land', 'publish-release']);
+// The only gh lines that read. Everything else gh can do is refused without a license, because gh is what starts a release build and what creates, uploads to and deletes a release — the outward half of a release, with no git in it. Read with the gate's own inverted default: modeling which of gh's verbs mutate is a grammar that moves with gh, and an unmodeled verb is a hole, so off this list is refused. A read wrongly refused costs one row here and names itself in its own refusal message. `gh api` stays off on purpose — it carries arbitrary requests.
+const GH_READS = new Set(['run list', 'run view', 'run watch',
+  'release view', 'release list', 'workflow list', 'workflow view']);
 // `just --command` runs an arbitrary program with the justfile's environment rather than a recipe, so what follows it is a command line and is read as one.
 const JUST_COMMAND_FLAGS = new Set(['-c', '--command']);
 // Shells that run another command string and can be unwrapped, so a release inside one is refused exactly as a bare one is.
@@ -44,6 +47,8 @@ const READERS = /^(?:rg|grep|egrep|fgrep|cat|head|tail|echo|code)$/;
 const NODE_EVAL_FLAGS = new Set(['-e', '--eval', '-p', '--print']);
 // Only for a runner that cannot be read: a command naming a release without running one is a read. A release word anywhere in `just`'s own words, the same decision the recognized branch makes, so `bash -c "just -f justfile land"` is refused too; it stops at a separator, which is where `just`'s words end.
 const RELEASE_NAMES = /\bjust\b[^\n;&|]*\b(?:release|land)\b|prepare-release/i;
+// The same reading of gh, coarse on purpose: a runner nothing can model gets the family rather than the verb, so a read named inside one is refused with the publishes it cannot be told apart from. A search quoting a gh line is untouched — a reader's program decides its segment before any name is looked at.
+const PUBLISH_NAMES = /\bgh\b[^\n;&|]*\b(?:workflow|release|run|api)\b/i;
 // Every git in a segment, each read with whatever follows it as its arguments. Only for a runner that cannot be read, beside `RELEASE_NAMES`: a command naming a git write without running one is a read. Every one of them, because such a segment holds a whole command string — `sh -c "git status && git commit -m x"` names a read first and a write second.
 const GIT_NAME = /(?:^|[\s&|;(])["']?(?:[^\s"']*[\\/])?git(?:\.exe)?["']?(?=\s)/gi;
 // Shell punctuation standing in front of a program rather than being one.
@@ -152,7 +157,8 @@ function namedWrite(segment, head) {
     const named = gitArguments(words(tail));
     if (named) return `${head} running ${named}`;
   }
-  return RELEASE_NAMES.test(segment) ? `${head} running a release` : '';
+  if (RELEASE_NAMES.test(segment)) return `${head} running a release`;
+  return PUBLISH_NAMES.test(segment) ? `${head} running a publish` : '';
 }
 
 // The write this one command performs, named, or '' if it performs none. The program decides it, so text naming a write is not one: a search for it, a message quoting it, a filename carrying it, a read of this rule and the release fixture's own `--check` all reach here and all come back empty.
@@ -183,6 +189,12 @@ function programWrite(head, rest, segment, depth) {
     return namedWrite(segment, head);
   }
   if (head === 'git') return gitArguments(rest);
+  // The first two plain words are the command, the way gh's own help writes it. An option carrying a value would shift them, which is the hole `just` is refused on too, so an unrecognized pair is refused rather than guessed at.
+  if (head === 'gh') {
+    const plain = rest.filter((a) => !a.startsWith('-')).map((a) => a.toLowerCase());
+    const pair = plain.slice(0, 2).join(' ');
+    return GH_READS.has(pair) ? '' : `gh ${pair}`.trim();
+  }
   if (head === 'just') {
     // Anywhere after `just`, because `-f`, `-d` and `--set` carry a value: the first plain word in `just -f justfile land` is the file. Reading which options take one needs a grammar moving with `just`, so a release word used as a value is refused instead.
     const recipe = rest.find((a) => RELEASE_RECIPES.has(a.toLowerCase()));
@@ -249,8 +261,8 @@ function deny(write, session) {
       permissionDecision: 'deny',
       permissionDecisionReason: [
         session
-          ? `Refused: ${write} is a git write and this message does not say \`/git-release\` (Claude) or \`$git-release\` (Codex).`
-          : `Refused: ${write} is a git write and nothing here can tell which session asked, so no license can be found.`,
+          ? `Refused: ${write} writes git or puts the installers out, and this message does not say \`/git-release\` (Claude) or \`$git-release\` (Codex).`
+          : `Refused: ${write} writes git or puts the installers out, and nothing here can tell which session asked, so no license can be found.`,
         'AGENTS.md: only a `/git-release` or `$git-release` in the message being answered right now authorizes one, and only in the session it was said in.',
         'A dirty tree is the correct end state — say what changed and stop. Do not offer to push.',
       ].join(' '),
@@ -313,12 +325,40 @@ function selfTest() {
     'just --set FOO bar land',
     'bash -c "just -f justfile land"',
     'just --set MODE release verify',
+    // Finishing a stranded release. It writes no git — it starts both builds against a tag already up — so every one of these reaches the gate through the recipe name alone.
+    'just publish-release 1.15.6',
+    '"C:\\Users\\me\\.cargo\\bin\\just.exe" publish-release 1.15.6',
+    'cmd /c just publish-release 1.15.6',
+    'just verify && just publish-release 1.15.6',
+    'just -f justfile publish-release 1.15.6',
+    'just --set FOO bar publish-release 1.15.6',
+    'bash -c "just publish-release 1.15.6"',
     // `just --command` is a runner, not a recipe: what follows it is read as the command line it is.
     'just --command git push',
     'just -c git push',
     'just --command git commit -m x',
     'just --command cmd /c git push', // A shell inside the option, unwrapped by the same depth limit.
     'just land --command ls', // The release word is read first, so a harmless inner command cannot answer for a recipe that still runs.
+    // The recipe's own body, which a reader can copy out of the justfile and run bare. Refusing the recipe while these stayed free would be a door locked beside an open window.
+    'gh workflow run release-windows.yml --ref main -f tag_name=v1.15.6',
+    'gh workflow run release-distributions.yml --ref main -f tag_name=v1.15.6',
+    // The rest of what gh does to a release, and the arbitrary request that can do all of it again.
+    'gh release create v1.15.6',
+    'gh release upload v1.15.6 leaftext.msi',
+    'gh release delete v1.15.5 --yes',
+    'gh release edit v1.15.6 --draft=false',
+    'gh run rerun 32061500129',
+    'gh run cancel 32061500129',
+    'gh api repos/ryanallen/leaftext/releases -X POST',
+    // Off the read list is refused, because modeling which of gh's verbs mutate is a grammar that moves with gh.
+    'gh auth login',
+    'gh repo delete ryanallen/leaftext',
+    // A gh line behind a runner this parser cannot read, or an option carrying a value that would shift the two words the pair is read from.
+    'bash -c "gh workflow run release-windows.yml"',
+    'cmd /c gh release delete v1.15.5 --yes',
+    'sudo gh release create v1.15.6',
+    'ssh host gh workflow run release-windows.yml',
+    'gh -R ryanallen/leaftext run list',
     // A runner the parser cannot read carrying a release name: refused rather than guessed at.
     'bash -c "just release 0.1.441"',
     'sh -c "node --experimental-strip-types scripts/prepare-release.mts 0.1.441"',
@@ -400,6 +440,20 @@ function selfTest() {
     'grep -rn "just land" AGENTS.md',
     'node scripts/check-justfile-quotes.mjs',
     'code scripts/prepare-release.mts',
+    'rg "just publish-release" .agents/skills',
+    'grep -rn "publish-release" AGENTS.md',
+    // Watching a build that is already running, and reading what was published. Every one of these is asked after a release rather than to make one.
+    'gh run list --limit 6',
+    'gh run view 32061500129',
+    'gh run watch 32061500129',
+    'gh release list --limit 5',
+    'gh release view v1.15.7',
+    'gh workflow list',
+    'gh workflow view release-windows.yml',
+    // Reading about the publish path, which stays text because a reader's program decides its segment before any name is looked at.
+    'rg "gh workflow run" justfile',
+    'grep -rn "gh release delete" .github/',
+    'cat "notes/gh release notes.md"',
     // The fixture self-test: it records its release calls on a fixture host and starts none.
     'node --experimental-strip-types scripts/prepare-release.mts --check',
     'just check-release',
