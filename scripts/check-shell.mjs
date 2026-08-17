@@ -6541,10 +6541,17 @@ if (booted) {
     if (!bodyCells || !/overflow-wrap:\s*anywhere;/.test(bodyCells[1])) {
       throw new Error('the full-window table body cells no longer break anywhere, so an unbreakable run still widens its column past the sheet');
     }
+    // Breaking anywhere is what drops a body cell's smallest width to one character, so without the floor a column headed by a short word stops at that heading.
+    if (!/min-width:\s*7ch;/.test(bodyCells[1])) {
+      throw new Error('the full-window table has no floor under its narrowest column, so a three-letter cell under a three-letter heading draws on two lines');
+    }
     // On a heading it lets a column fall under one word, and a "Ref" column comes out reading "R / ef".
     const everyCell = css.match(/\.table-sheet-grid th,\s*\n\.table-sheet-grid td \{([^}]*)\}/);
     if (!everyCell || /overflow-wrap/.test(everyCell[1])) {
       throw new Error('the full-window table headings break anywhere, so a short column falls under its own heading word');
+    }
+    if (/min-width/.test(everyCell[1])) {
+      throw new Error('the floor sits on the full-window table headings too, so it widens a column that already reads correctly');
     }
   });
 
