@@ -34,7 +34,7 @@ const OPAQUE_RUNNERS = /^(?:bash|sh|zsh|dash|fish|wsl|env|xargs|start|eval|npm|n
 const NODE_EVAL_FLAGS = new Set(['-e', '--eval', '-p', '--print']);
 // Only for a runner that cannot be read: a command naming a release without running one is a read.
 const RELEASE_NAMES = /\bjust\s+(?:release|land)\b|prepare-release/i;
-// Git anywhere in a segment, with the rest of the segment as its arguments. The git branch used to decide every command on this; it is now only the other half of that name test.
+// Git anywhere in a segment, with the rest of the segment as its arguments. Only for a runner that cannot be read, beside `RELEASE_NAMES`: a command naming a git write without running one is a read.
 const GIT_NAME = /(?:^|[\s&|;(])["']?(?:[^\s"']*[\\/])?git(?:\.exe)?["']?\s+(.+)$/i;
 // Shell punctuation standing in front of a program rather than being one.
 const PUNCTUATION = /^[&(){}]+$/;
@@ -92,7 +92,7 @@ function gitArguments(args) {
   return '';
 }
 
-// Only for a runner this parser cannot read: what the segment names, refused on the name rather than on a parse nobody can make. This is the whole-segment match every command used to be decided on, kept where it is the only thing left.
+// Only for a runner this parser cannot read: what the segment names, refused on the name rather than on a parse nobody can make. A whole-segment match is safe here and nowhere else, since a program that can run anything is the one case where the words are all there is.
 function namedWrite(segment, head) {
   const match = segment.match(GIT_NAME);
   const named = match ? gitArguments(words(match[1])) : '';
