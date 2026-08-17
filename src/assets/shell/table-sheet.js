@@ -95,6 +95,8 @@ function bindTableSheet() {
 
 function onTableSheetKey(event) {
   if (event.key !== 'Escape' || !tableSheetOverlayElement()) return;
+  // A term raised over the table takes Escape first. This hears the key in the capture phase and the term's own listener waits in the bubble phase, so without the yield Escape closed the table underneath and left the term over the bare document.
+  if (!glossarySheet.hidden) return;
   event.preventDefault();
   event.stopPropagation();
   closeTableSheet();

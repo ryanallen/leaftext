@@ -517,10 +517,11 @@ window.leafShowGlossary = (html, anchor) => {
 };
 // One delegated click listener for every document link, bound once — binding each link separately costs a major slice of open time on large documents. Delegation also handles links added later (the async pager) with no rebinding.
 let documentLinksBound = false;
-// A link the app itself follows: one inside the document being read. The minimap's clone keeps the class but has its hrefs stripped and takes no pointer events.
+// A link the app itself follows: one inside the document being read, or one inside the copy of a table put on the whole window. That copy sits beside the document in `#app` rather than inside it, so without the second test the web view takes the click, a finished load makes the host re-render, and the render rewrites `#app` — which is what "the table closed and nothing opened" was. The minimap's clone keeps the class but has its hrefs stripped and takes no pointer events.
 function documentLinkFor(target) {
   const link = target && target.closest ? target.closest('a[href]') : null;
-  return link && app.contains(link) && link.closest('.document-body') ? link : null;
+  if (!link || !app.contains(link)) return null;
+  return link.closest('.document-body') || link.closest('.table-sheet-overlay') ? link : null;
 }
 // Hold this and the link opens as a page behind the one you are reading: Cmd on a Mac, where Ctrl is already the right-click, and Ctrl everywhere else.
 function newPageModifierHeld(event) {
@@ -579,6 +580,8 @@ function sendDocumentLink(link, newPage) {
     send({ command: 'openGlossary', href: rawHref });
     return;
   }
+  // A term rises over the full-window table, so the table stays. Everything else leaves it behind — even a jump inside this document, which scrolls a page nobody can see under the sheet — so the table goes first, the way "Open the full glossary" drops its own sheet. A page opened behind is the reader choosing to stay here, so the table stays with them.
+  if (!newPage) closeTableSheet();
   const fragmentHref = sameDocumentFragmentHref(rawHref);
   if (fragmentHref) {
     send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });

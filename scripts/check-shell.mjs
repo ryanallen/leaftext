@@ -6555,6 +6555,145 @@ if (booted) {
     }
   });
 
+  // A plan's table is mostly links, and the copy on the whole window sits beside the document rather than inside it — so the page heard none of their clicks, the web view took the address, a finished load made the host re-render, and the render rewrote `#app` with the table in it. Every link was a trap in the one place a wide table reads.
+  check('a link in the full-window table is the app’s to follow, and a term rises without taking the table down', () => {
+    const { bindDocumentLinks } = booted;
+    const app = booted.document.getElementById('app');
+    const glossarySheet = booted.document.getElementById('glossarySheet');
+    const wasContains = app.contains;
+    const wasQuery = app.querySelector;
+    const wasHidden = glossarySheet.hidden;
+    const wasIpc = booted.ipc;
+    const posted = [];
+    // The binding is once-per-page, so a run where a render already did it would leave nothing to raise.
+    const wasBound = vm.runInContext('documentLinksBound', booted);
+    vm.runInContext('documentLinksBound = false;', booted);
+    const WATCHED = ['click', 'auxclick', 'mousedown'];
+    const before = new Map(WATCHED.map((type) => [type, (app.listeners.get(type) || []).length]));
+    let removed = false;
+    const overlay = {
+      remove: () => {
+        removed = true;
+      },
+      __tableSheetOpener: null,
+      __tableSheetScrim: null,
+    };
+    // A link in the copy: inside the overlay and inside no document body, which is the whole difference from a link in the page.
+    const inCopy = (written) => {
+      const link = {
+        getAttribute: (name) => (name === 'href' ? written : null),
+        closest: (selector) =>
+          selector === '.table-sheet-overlay' ? overlay : selector === '.document-body' ? null : link,
+      };
+      return link;
+    };
+    let canceled = 0;
+    const clickOn = (link, held = {}) => {
+      posted.length = 0;
+      removed = false;
+      for (const handler of (app.listeners.get('click') || []).slice(before.get('click'))) {
+        handler({
+          target: link,
+          button: 0,
+          defaultPrevented: false,
+          ctrlKey: false,
+          metaKey: false,
+          altKey: false,
+          shiftKey: false,
+          preventDefault() {
+            canceled += 1;
+          },
+          ...held,
+        });
+      }
+      return posted.slice();
+    };
+    try {
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+      app.contains = () => true;
+      app.querySelector = (selector) =>
+        String(selector) === '.table-sheet-overlay' ? overlay : wasQuery.call(app, selector);
+      bindDocumentLinks();
+
+      const term = clickOn(inCopy('glossary:vault'));
+      if (!canceled) throw new Error('a click in the table copy was left for the web view to follow');
+      if (!term.some((one) => one.command === 'openGlossary' && one.href === 'glossary:vault')) {
+        throw new Error(`a glossary word in the table copy sent ${JSON.stringify(term)}`);
+      }
+      if (removed) throw new Error('the term the reader asked for took the table down with it');
+      booted.dismissGlossary();
+
+      const page = clickOn(inCopy('../two.md'));
+      if (!page.some((one) => one.command === 'openLink' && one.href === '../two.md')) {
+        throw new Error(`a page link in the table copy sent ${JSON.stringify(page)}`);
+      }
+      if (!removed) throw new Error('the table stayed up over a document it no longer belongs to');
+
+      // A jump inside this document scrolls a page nobody can see under the sheet, so it leaves too.
+      const within = clickOn(inCopy('#how-it-ranks'));
+      if (!within.some((one) => one.command === 'openLink')) throw new Error('a jump inside the document sent nothing');
+      if (!removed) throw new Error('the table stayed up over a jump nobody could watch land');
+
+      // Held, the reader chose to stay where they are, so the table stays with them.
+      const behind = clickOn(inCopy('../two.md'), booted.isMacPlatform ? { metaKey: true } : { ctrlKey: true });
+      if (!behind.some((one) => one.command === 'openLink' && one.newPage)) {
+        throw new Error(`a link opened behind sent ${JSON.stringify(behind)}`);
+      }
+      if (removed) throw new Error('a page opened behind still took the table the reader stayed on');
+    } finally {
+      booted.ipc = wasIpc;
+      app.contains = wasContains;
+      app.querySelector = wasQuery;
+      glossarySheet.hidden = wasHidden;
+      for (const type of WATCHED) {
+        const held = app.listeners.get(type);
+        if (held) held.length = before.get(type);
+      }
+      vm.runInContext(`documentLinksBound = ${wasBound ? 'true' : 'false'};`, booted);
+    }
+  });
+
+  // The table sheet hears Escape on the document in the capture phase and the term's own Escape waits in the bubble phase, so the key closed the table underneath and left the term standing over the bare document.
+  check('Escape over the term closes the term and leaves the full-window table where it was', () => {
+    const app = booted.document.getElementById('app');
+    const glossarySheet = booted.document.getElementById('glossarySheet');
+    const wasQuery = app.querySelector;
+    const wasHidden = glossarySheet.hidden;
+    let removed = false;
+    const overlay = {
+      remove: () => {
+        removed = true;
+      },
+      __tableSheetOpener: null,
+      __tableSheetScrim: null,
+    };
+    let stopped = 0;
+    const escape = () => ({
+      key: 'Escape',
+      preventDefault() {},
+      stopPropagation() {
+        stopped += 1;
+      },
+    });
+    try {
+      app.querySelector = (selector) =>
+        String(selector) === '.table-sheet-overlay' ? overlay : wasQuery.call(app, selector);
+
+      glossarySheet.hidden = false;
+      booted.onTableSheetKey(escape());
+      if (removed) throw new Error('Escape closed the table under the term standing over it');
+      if (stopped) throw new Error('the table sheet swallowed the key the term was waiting for');
+
+      glossarySheet.hidden = true;
+      booted.onTableSheetKey(escape());
+      if (!removed) throw new Error('Escape no longer closes the full-window table on its own');
+      if (!stopped) throw new Error('the table sheet stopped claiming the key it answers');
+    } finally {
+      app.querySelector = wasQuery;
+      glossarySheet.hidden = wasHidden;
+    }
+  });
+
   // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.
   const tableLaneRule = () => {
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
