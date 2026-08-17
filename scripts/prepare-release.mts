@@ -238,14 +238,52 @@ function refused(run: () => void): string {
   return "";
 }
 
-/// What no failure may ever reach — staging included, since the index is the release's own write as much as the commit is.
-const TAG_WORK = /^git (add|commit|tag|push)|^git .*(tag -d|--delete)/;
+// git's own options come before the verb and these five carry their value as the next word, so the first plain word is the verb rather than the value. The same reading as the git gate's, for the same reason.
+const GIT_VALUE_OPTIONS = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace"]);
+const RELEASE_WRITES = new Set(["add", "commit", "tag", "push"]);
+
+/// What no failure may ever reach — staging included, since the index is the release's own write as much as the commit is. A release writes its commit and tag behind `-c`, so nothing here may read the first word.
+function isTagWork(call: string): boolean {
+  const words = call.split(/\s+/).filter(Boolean);
+  if (words[0] !== "git") return false;
+  let at = 1;
+  while (at < words.length && words[at]!.startsWith("-")) {
+    at += GIT_VALUE_OPTIONS.has(words[at]!) ? 2 : 1;
+  }
+  return RELEASE_WRITES.has(words[at] ?? "");
+}
 
 /// The half of that a landing must never do: it commits and pushes main, and it has no business anywhere near a tag or a version.
 const TAG_ONLY = /^git tag|--delete|^git push origin v/;
 
 function selfTest(): void {
   const fails: string[] = [];
+
+  // What every refusal below spends, proved on its own first: the public release is the unsigned form, and its commit and tag put `-c` in front of the verb.
+  const writes = [
+    "git add -- Cargo.toml src/lib.rs",
+    "git -c commit.gpgsign=false commit --no-gpg-sign -m Release v1.2.3",
+    "git commit -S -m Release v1.2.3",
+    "git -c tag.gpgSign=false tag -a --no-sign v1.2.3 -m Release v1.2.3",
+    "git tag -s v1.2.3 -m Release v1.2.3",
+    "git tag -d v1.0.0",
+    "git push origin HEAD",
+    "git push origin v1.2.3",
+    "git push origin --delete v1.0.0",
+  ];
+  for (const call of writes) {
+    if (!isTagWork(call)) fails.push(`a refusal would not have noticed ${call}`);
+  }
+  const reads = [
+    "git rev-parse --verify --quiet refs/tags/v1.2.3",
+    "git ls-remote --exit-code --tags origin refs/tags/v1.2.3",
+    "just verify",
+    "changed paths read",
+    "record v1.2.3",
+  ];
+  for (const call of reads) {
+    if (isTagWork(call)) fails.push(`${call} was read as tag work, so a refusal fails on something that writes nothing`);
+  }
 
   // A release that passes, in the order it is documented in: gate, then the old tags, then the commit, the tag, main, and the tag on its own.
   const clean = fixture((_command, args) => (args[0] === "tag" && args[1] === "-l" ? { status: 0, stdout: "v1.0.0\nv1.1.0\n" } : null));
@@ -309,7 +347,7 @@ function selfTest(): void {
   const landedNothing = landWork({ signCommit: false, host: nothingToLand.host });
   if (landedNothing.length) fails.push("a landing with a clean tree claimed to have put something on main");
   for (const call of nothingToLand.calls) {
-    if (TAG_WORK.test(call)) fails.push(`a landing with a clean tree still ran ${call}`);
+    if (isTagWork(call)) fails.push(`a landing with a clean tree still ran ${call}`);
   }
 
   // A clean tree: refused before the tag check and the gate, since the commit is otherwise the first thing to say so and it says it after the whole suite has run.
@@ -319,7 +357,7 @@ function selfTest(): void {
   if (empty.calls.includes("just verify")) fails.push("a release with a clean tree ran the whole gate before it could say so");
   if (empty.calls.includes("snapshot taken")) fails.push("a release with a clean tree copied the plan tree before being refused");
   for (const call of empty.calls) {
-    if (TAG_WORK.test(call)) fails.push(`a release with a clean tree still ran ${call}`);
+    if (isTagWork(call)) fails.push(`a release with a clean tree still ran ${call}`);
   }
 
   // The same empty state one step later: a release that committed and tagged, then failed its push. The tag it left is the one fact separating the two, and it must never go up again.
@@ -329,7 +367,7 @@ function selfTest(): void {
   if (!/bump the patch/i.test(stoppedFailed)) fails.push("a release resuming after a failed push was not told to bump the patch rather than push that tag again");
   if (stopped.calls.includes("just verify")) fails.push("a release resuming after a failed push ran the whole gate before it could say so");
   for (const call of stopped.calls) {
-    if (TAG_WORK.test(call)) fails.push(`a release resuming after a failed push still ran ${call}`);
+    if (isTagWork(call)) fails.push(`a release resuming after a failed push still ran ${call}`);
   }
 
   // A commit that fails: the release stops there, with nothing tagged and nothing pushed.
@@ -343,7 +381,7 @@ function selfTest(): void {
   const gateFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: broken.host }));
   if (!gateFailed.includes("just verify")) fails.push(`a failed gate did not stop the release: ${gateFailed || "it passed"}`);
   for (const call of broken.calls) {
-    if (TAG_WORK.test(call)) fails.push(`a failed gate still ran ${call}`);
+    if (isTagWork(call)) fails.push(`a failed gate still ran ${call}`);
   }
   if (broken.calls.some((call) => call.includes("tag -d") || call.includes("--delete"))) fails.push("a failed gate took down the last released tag");
   if (!broken.calls.includes("snapshot removed")) fails.push("a failed gate left its copy of the plan tree behind");
@@ -351,7 +389,7 @@ function selfTest(): void {
   // Nothing the release does may outlive the plan copy the gate read: the old path was two processes, and the push in the second one had no copy behind it at all.
   const outside = clean.calls.indexOf("snapshot removed");
   for (let i = outside + 1; i < clean.calls.length; i += 1) {
-    if (TAG_WORK.test(clean.calls[i]!)) fails.push(`${clean.calls[i]} ran after the plan copy had gone`);
+    if (isTagWork(clean.calls[i]!)) fails.push(`${clean.calls[i]} ran after the plan copy had gone`);
   }
 
   // A plan tree that will not hold still: the gate never runs, so no tag work can follow it.
@@ -364,7 +402,7 @@ function selfTest(): void {
   if (!movingFailed.includes("changed every time")) fails.push(`a moving plan tree did not stop the release: ${movingFailed || "it passed"}`);
   if (moving.calls.includes("just verify")) fails.push("a release checked itself against a plan tree that would not hold still");
   for (const call of moving.calls) {
-    if (TAG_WORK.test(call)) fails.push(`a release with no plan copy still ran ${call}`);
+    if (isTagWork(call)) fails.push(`a release with no plan copy still ran ${call}`);
   }
 
   // The refusals that come before any of it.
@@ -374,7 +412,7 @@ function selfTest(): void {
   }
   if (mismatched.calls.includes("snapshot taken")) fails.push("a wrong version copied the plan tree before being refused");
   for (const call of mismatched.calls) {
-    if (TAG_WORK.test(call)) fails.push(`a wrong version still ran ${call}`);
+    if (isTagWork(call)) fails.push(`a wrong version still ran ${call}`);
   }
 
   if (refused(() => normalizeVersion("not-a-version")) === "") fails.push("a version that is not one was accepted");
@@ -384,7 +422,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch)");
+  console.log("prepare-release: ok (a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
 }
 
 function isMainModule(): boolean {
