@@ -238,7 +238,7 @@ function drawingOwed(file, text) {
 // The heading is matched with either apostrophe, since a ticket written in an editor that curls them is the same section.
 const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
 
-// Striking a box is how this tree retires one: the work moved to another plan, or it changed shape, and the line stays so nobody re-plans it. So a struck box is neither work left nor work done, and every count here reads it through this one function. Retired only where the strike is the first thing after the box — a strike part way along is a box whose wording changed, and it is still work.
+// Striking a box retires it — the work moved or changed shape, and the line stays so nobody re-plans it — so it is neither work left nor evidence, and every count here reads it through this one function. Retired only where the strike is the first thing after the box: one part way along is a box whose wording changed, and it is still work.
 /** `ticked`, `open` or `retired` for a box line; null for anything else. */
 function boxState(line) {
   const box = /^\s*- \[( |x)\]\s*(.*)$/.exec(line);
