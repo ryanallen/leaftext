@@ -233,7 +233,7 @@ function drawingOwed(file, text) {
   return /design\/components\.md/.test(phasesSection(text));
 }
 
-// The last box in a ticket is the owner's, unticked until they ask for `/done`, because a machine agreeing with itself is not evidence. A plan without one goes fully ticked on machine work alone, and the retirement report below then tells somebody to move it into `done/` before the owner has looked at anything.
+// The last box in a ticket is the owner's, unticked until they ask for `/done`, because a machine agreeing with itself is not evidence. A plan without one goes fully ticked on machine work alone, and the retirement report below then tells somebody to move it into `done/` before the owner has looked at anything. Owed from the day the plan is written: waiting for the first ticked box met the fault in the middle of somebody's phase, where the section cannot be seen and gets written by whoever was nearest the code rather than by whoever scoped the plan.
 //
 // The heading is matched with either apostrophe, since a ticket written in an editor that curls them is the same section.
 const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
@@ -284,11 +284,10 @@ function ownerBoxes(text) {
   return boxes;
 }
 
-/** A live plan a machine has started ticking that nobody can approve. A struck owner's box is a section that exists — the shape the ticket skill asks for where nothing is pressed. */
+/** A live plan nobody can approve, whatever state its work is in. A struck owner's box is a section that exists — the shape the ticket skill asks for where nothing is pressed. Refused from the day the plan is written rather than from the first ticked box, because the fault is in the plan and waiting for a tick meets it in the middle of somebody's phase. */
 function ownerBoxOwed(file, text) {
   if (!livePlan(file)) return false;
-  if (ownerBoxes(text).length) return false;
-  return boxStates(text).includes('ticked');
+  return ownerBoxes(text).length === 0;
 }
 
 /** A live plan that is genuinely done: nothing left open, and the owner's own box ticked or struck. */
@@ -346,10 +345,10 @@ const OWNER_CASES = [
     { owed: false, ready: false },
   ],
   [
-    'a plan nobody has started owes nothing yet',
+    'a plan nobody has started is refused too, so the fault is met while it is being written',
     '../docs/features/reading/a.md',
     '## Phases\n\n- [ ] Build it\n',
-    { owed: false, ready: false },
+    { owed: true, ready: false },
   ],
   [
     'a shipped plan is not held to either rule',
@@ -458,7 +457,7 @@ function strikeSelfTest() {
 
 const OWNER_ADVICE = [
   'the last box in a ticket is the owner\'s, unticked until they say the thing works — a machine agreeing with itself is not evidence.',
-  'Write `### The owner\'s box` as the last heading in each, with one box holding the gesture the owner makes to see the thing,',
+  'Write `### The owner\'s box` at the end of the phases in each, with one box holding the gesture the owner makes to see the thing,',
   'in what they will look at — see the "ticket" skill. Where the subject genuinely has nothing to press, strike the box with that reason.',
 ];
 
@@ -607,7 +606,7 @@ if (undrawn.length) {
 }
 
 if (unapprovable.length) {
-  console.error('these live plans have work ticked and no box the owner can tick:');
+  console.error('these live plans have no box the owner can tick:');
   for (const file of unapprovable) console.error(`  ${file}  ->  no "### The owner's box" section`);
   for (const line of OWNER_ADVICE) console.error(line);
   process.exit(1);
@@ -663,4 +662,4 @@ if (dead.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every started plan carrying a box only the owner can tick, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan carrying a box only the owner can tick, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, ${links}`);
