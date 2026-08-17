@@ -517,7 +517,7 @@ window.leafShowGlossary = (html, anchor) => {
 };
 // One delegated click listener for every document link, bound once — binding each link separately costs a major slice of open time on large documents. Delegation also handles links added later (the async pager) with no rebinding.
 let documentLinksBound = false;
-// A link the app itself follows: one inside the document being read, or one inside the copy of a table put on the whole window. That copy sits beside the document in `#app` rather than inside it, so without the second test the web view takes the click, a finished load makes the host re-render, and the render rewrites `#app` — which is what "the table closed and nothing opened" was. The minimap's clone keeps the class but has its hrefs stripped and takes no pointer events.
+// A link the app itself follows: one inside the document being read, or one inside the copy of a table put on the whole window. That copy sits beside the document in `#app` rather than inside it, so a click the second test misses is the web view's — and the re-render a finished load brings then rewrites `#app`, taking the sheet with it. The minimap's clone keeps the class but has its hrefs stripped and takes no pointer events.
 function documentLinkFor(target) {
   const link = target && target.closest ? target.closest('a[href]') : null;
   if (!link || !app.contains(link)) return null;

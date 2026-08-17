@@ -6555,7 +6555,7 @@ if (booted) {
     }
   });
 
-  // A plan's table is mostly links, and the copy on the whole window sits beside the document rather than inside it — so the page heard none of their clicks, the web view took the address, a finished load made the host re-render, and the render rewrote `#app` with the table in it. Every link was a trap in the one place a wide table reads.
+  // A plan's table is mostly links, and the copy on the whole window sits beside the document rather than inside it — so a click the delegated handler does not claim is the web view's, and the re-render a finished load brings rewrites `#app` with the table in it. That made every link a trap in the one place a wide table reads.
   check('a link in the full-window table is the app’s to follow, and a term rises without taking the table down', () => {
     const { bindDocumentLinks } = booted;
     const app = booted.document.getElementById('app');
