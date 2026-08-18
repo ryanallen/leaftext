@@ -414,6 +414,103 @@ fn closing_with_a_dirty_tab_brings_its_words_and_its_dot_back() {
 }
 
 #[test]
+fn a_tab_that_followed_a_link_out_of_its_unsaved_words_comes_back_sitting_on_them() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("session file is written");
+    let guide = dir.join("guide.md");
+    fs::write(&guide, "# Guide\n").expect("session file is written");
+    let mut workspace = dirty_tab_workspace(&note, "# Note\n", "\nTyped and never saved.\n");
+    // What a link click does to the tab: the place on the page is stamped, the history moves on, and the buffer stays behind it with the dot out.
+    workspace.tabs[0].history.stamp_current(test_anchor(7));
+    workspace.tabs[0].history.record(guide.clone());
+    workspace.tabs[0].history.stamp_current(test_anchor(31));
+    assert!(!workspace.tab_summaries()[0].dirty);
+
+    // The entry names the document the words belong to, because a restored tab has no Back to press — and the place is the one out of the tab's visit to that document, not the page it walked to.
+    let session = workspace.closing_session();
+    assert_eq!(session.tabs[0].path, note);
+    assert_eq!(session.tabs[0].title, "note");
+    assert_eq!(session.tabs[0].anchor, Some(test_anchor(7)));
+
+    let restored = Workspace::from_session(&session);
+    assert_eq!(
+        restored.tab_summaries(),
+        vec![TabSummary {
+            title: "note".to_string(),
+            path: note.display().to_string(),
+            dirty: true,
+            undoable: true,
+        }]
+    );
+    assert_eq!(
+        restored.tabs[0]
+            .edit
+            .as_ref()
+            .expect("the unsaved buffer is put back")
+            .text(),
+        "# Note\n\nTyped and never saved.\n"
+    );
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn a_note_a_tab_followed_a_link_out_of_comes_back_as_a_note_with_its_words() {
+    let mut workspace = Workspace::default();
+    workspace.open_untitled();
+    type_into_front_note(&mut workspace, "Typed into a new note.\n");
+    // What a link click does to the tab: the history moves on and the no-file buffer stays behind it.
+    workspace.tabs[0].history.record(PathBuf::from("guide.md"));
+
+    // Carried exactly as a note closed in front of its tab is: its name, its words, the flag saying there is nothing to reopen, and no baseline.
+    let session = workspace.closing_session();
+    assert_eq!(session.tabs.len(), 1);
+    assert!(session.tabs[0].untitled);
+    assert_eq!(session.tabs[0].path, PathBuf::from("Untitled.md"));
+    assert_eq!(session.tabs[0].title, "Untitled");
+    assert_eq!(session.tabs[0].saved_text, None);
+
+    let restored = Workspace::from_session(&session);
+    assert_eq!(
+        restored.tab_summaries(),
+        vec![TabSummary {
+            title: "Untitled".to_string(),
+            path: "Untitled.md".to_string(),
+            dirty: true,
+            undoable: true,
+        }]
+    );
+    assert_eq!(
+        restored.tabs[0]
+            .edit
+            .as_ref()
+            .expect("the note is put back")
+            .text(),
+        "Typed into a new note.\n"
+    );
+}
+
+#[test]
+fn a_tab_showing_a_file_keeps_its_entry_with_a_notes_buffer_behind_it() {
+    let mut workspace = Workspace::default();
+    workspace.open_untitled();
+    let guide = PathBuf::from("guide.md");
+    workspace.tabs[0].history.record(guide.clone());
+
+    // The flag says what the entry describes rather than what the buffer is, so this tab reopens on the file it is showing instead of vanishing with the empty note behind it.
+    let mid_run = workspace.session();
+    assert_eq!(mid_run.tabs.len(), 1);
+    assert_eq!(mid_run.tabs[0].path, guide);
+    assert!(!mid_run.tabs[0].untitled);
+
+    let closing = workspace.closing_session();
+    assert_eq!(closing.tabs.len(), 1);
+    assert_eq!(closing.tabs[0].path, guide);
+    assert!(!closing.tabs[0].untitled);
+}
+
+#[test]
 fn a_file_changed_since_the_close_opens_as_the_disk_has_it() {
     let dir = session_fixture_dir();
     fs::create_dir_all(&dir).expect("session fixture directory is created");

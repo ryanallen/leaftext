@@ -188,15 +188,26 @@ impl Workspace {
         let mut active = None;
         let mut tabs = Vec::new();
         for (index, tab) in self.tabs.iter().enumerate() {
-            let Some(path) = tab.history.current().cloned() else {
+            let Some(showing) = tab.history.current().cloned() else {
                 continue;
             };
-            // Only a buffer belonging to the document this tab is showing: a tab that navigated on can still hold one for where it has been, and that is not what reopening this tab would put on screen.
             let unsaved = carry_unsaved
                 .then(|| tab.edit.as_ref())
                 .flatten()
-                .filter(|edit| edit.is_dirty() && tab.has_edit_for(&path));
-            let untitled = tab.edit.as_ref().is_some_and(|edit| edit.untitled);
+                .filter(|edit| edit.is_dirty());
+            // The entry names the document the words belong to, not the one the tab has since followed a link to: an entry is one document with no Back list, so words carried under the page the reader walked on to would land where nothing on the window could reach them.
+            let path = unsaved.map_or(showing.clone(), |edit| edit.path.clone());
+            let moved_on = !paths_refer_to_same_document(&path, &showing);
+            // A tab's cached label is for the document it is showing, so an entry written on one behind it takes that document's own name.
+            let title = if moved_on {
+                leaftext::tab_title_from_path(&path)
+            } else {
+                tab.title.clone()
+            };
+            // What the entry describes, not what the buffer is: a note's buffer sitting behind a tab says nothing about the file that tab is showing.
+            let untitled = tab.edit.as_ref().is_some_and(|edit| {
+                edit.untitled && paths_refer_to_same_document(&edit.path, &path)
+            });
             // A note with no file is only worth an entry where the entry carries its own words: there is nothing to reopen. That is one test, not two — an untitled buffer's saved baseline is the empty note it opened as, so dirty on one means exactly that something was typed into it.
             if untitled && unsaved.is_none() {
                 continue;
@@ -204,11 +215,12 @@ impl Workspace {
             if self.active == Some(index) {
                 active = Some(tabs.len());
             }
+            let anchor = tab.history.anchor_for(&path);
             tabs.push(SessionTab {
                 path,
-                title: tab.title.clone(),
+                title,
                 code_view: tab.code_view,
-                anchor: tab.history.current_anchor(),
+                anchor,
                 saved_code_scroll: tab.saved_code_scroll,
                 untitled,
                 unsaved_text: unsaved.map(|edit| edit.text().to_string()),

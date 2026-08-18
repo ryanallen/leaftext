@@ -67,6 +67,17 @@ impl DocumentHistory {
             .and_then(|entry| entry.anchor.clone())
     }
 
+    /// Where the reader was on `path`, out of this tab's latest visit to it — asked by the close when a tab's unsaved words belong to a document it has since followed a link out of. Searched back from the document showing, so a tab that was on one document twice keeps the later place.
+    pub(crate) fn anchor_for(&self, path: &Path) -> Option<ScrollAnchor> {
+        let index = self.index?;
+        self.entries
+            .get(..=index)?
+            .iter()
+            .rev()
+            .find(|entry| paths_refer_to_same_document(&entry.path, path))
+            .and_then(|entry| entry.anchor.clone())
+    }
+
     /// Remember where the reader was on the document now showing, before a navigation takes them off it. The one place a position is written, so every navigation stamps the same thing.
     pub(crate) fn stamp_current(&mut self, anchor: ScrollAnchor) {
         if let Some(entry) = self.index.and_then(|index| self.entries.get_mut(index)) {
