@@ -18,8 +18,8 @@ One scale every surface pulls from, so rounding swaps in a single place. The siz
 | lt-radius-sm | 4px | A chip, a badge, a small field. |
 | lt-radius-md | 6px | A button, a menu row. |
 | lt-radius-lg | 8px | A card, a panel, a code block. |
-| lt-radius-xl | 10px | A tab's flare, where the curve has to read at a glance. |
-| lt-radius-2xl | 14px | The reader frame's top corners, the largest curve in the app. |
+| lt-radius-xl | 10px | A floating panel or a hover tip. |
+| lt-radius-2xl | 14px | The largest curve in the app: the reader frame's top corners, and the selected tab's flare into the page. |
 | lt-radius-pill | 999px | A fully rounded end, whatever the height. |
 | lt-radius-full | 50% | A circle. |
 

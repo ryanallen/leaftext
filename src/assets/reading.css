@@ -238,7 +238,7 @@ body.mac-frame.is-fullscreen::before {
   /* The header's left zone, sized to the library rail so the tab strip begins at the library's right edge and is pushed when the pane is resized. No right border: the top bar reads as one continuous surface, with only the library pane below carrying the rail's vertical stroke. */
   display: flex;
   align-items: center;
-  /* The bar runs on one gap from the leaf through the window buttons, so the row reads as one sequence rather than as clusters. */
+  /* The bar runs on one gap from the leaf through the trailing actions, so the row reads as one sequence rather than as clusters. The window buttons close up below: they are one control set, not another stop along the row. */
   gap: var(--lt-space-16);
   align-self: stretch;
   box-sizing: border-box;
@@ -289,7 +289,7 @@ body.mac-frame.is-fullscreen::before {
   align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
-  /* The side insets are the bar's own gap, so the space beside the first and last tab matches every other space in the row. No bottom inset — the tabs have to reach the divider. */
+  /* The side insets are the bar's own gap, so the space beside the first and last tab matches every other space in the row. They also cap --tab-flare: this box scrolls, so a flare wider than the inset is clipped flat and the first tab's corner draws as a straight run. No bottom inset — the tabs have to reach the divider. */
   padding: var(--lt-space-4) var(--lt-space-16) 0;
 }
 .tab-bar::-webkit-scrollbar {
@@ -554,7 +554,7 @@ body.mac-frame.is-fullscreen::before {
   gap: var(--lt-space-4);
   margin-left: 0;
 }
-/* Custom window controls for frameless windows (Windows). Hidden until the frontend reveals them; they act as the native minimize/maximize/close buttons, since there's no OS title bar. */
+/* Custom window controls for frameless windows (Windows). Hidden until the frontend reveals them; they act as the native minimize/maximize/close buttons, since there's no OS title bar. Tight against each other rather than on the bar's gap, so the three read as one set. */
 .window-controls {
   display: flex;
   align-items: center;
@@ -599,7 +599,7 @@ body.is-maximized #winMaximize .wc-restore {
   border-color: var(--lt-window-close);
   color: var(--lt-window-close-foreground);
 }
-/* A Mac's three, at the bar's left end. Ours rather than Apple's because a native view is pinned to the window and cannot fold into the chevron menu, which meant the bar reserving room for them whether it had any or not. Centered by the zone's own rule instead of inset into the top corner. */
+/* A Mac's three, at the bar's left end. Ours rather than Apple's because a native view is pinned to the window and cannot fold into the chevron menu, which meant the bar reserving room for them whether it had any or not. Centered by the zone's own rule instead of inset into the top corner, and closed up like the Windows three above. */
 .mac-frame .window-controls {
   gap: var(--lt-space-4);
   margin-left: 0;

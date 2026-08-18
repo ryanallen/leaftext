@@ -465,7 +465,7 @@ fn app_shell_styles_history_controls_with_neutral_icon_treatment() {
 
 #[test]
 fn app_bar_keeps_one_gap_between_visible_groups() {
-    // The bar is one sequence of places to go, so every space it declares from the leaf through the tabs and into the trailing actions is the same 8px. Unequal gaps made the same row read as loosely assembled clusters.
+    // The bar is one sequence of places to go, so every space it declares from the leaf through the tabs and into the trailing actions is the same 16px. Unequal gaps made the same row read as loosely assembled clusters, and anything tighter left the active tab's join curve no room to draw. The window buttons are the one exception, below: three of them read as one control set rather than three more stops along the row.
     let css = reading_mode_css();
 
     for selector in [
@@ -474,11 +474,10 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         "\n.tab-bar {",
         "\n.app-trailing-items {",
         "\n.app-actions-items {",
-        "\n.window-controls {",
     ] {
         let body = rule_body(css, selector);
         assert!(
-            body.contains("gap: var(--lt-space-8);"),
+            body.contains("gap: var(--lt-space-16);"),
             "{selector} must run on the bar's one gap: {body}"
         );
     }
@@ -486,7 +485,7 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
     // Each end of the strip is that same gap and nothing else: the strip carries it, and the two zones either side add none.
     let strip = rule_body(css, "\n.tab-bar {");
     assert!(
-        strip.contains("padding: var(--lt-space-4) var(--lt-space-8) 0;"),
+        strip.contains("padding: var(--lt-space-4) var(--lt-space-16) 0;"),
         "the strip's side insets are the bar's own gap: {strip}"
     );
     let lead = rule_body(css, "\n.app-bar-lead {");
@@ -494,9 +493,12 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         lead.contains("padding: 0 0 0 var(--lt-space-12);"),
         "the lead keeps its logo-aligning left inset and adds no right one: {lead}"
     );
-    // The window buttons sat 2px further out than the row beside them.
+    // The window buttons close up to 4px instead of taking the row's gap, so the three read as one set, and they add no lead-in of their own.
     let controls = rule_body(css, "\n.window-controls {");
-    assert!(controls.contains("margin-left: 0;"), "{controls}");
+    assert!(
+        controls.contains("gap: var(--lt-space-4);") && controls.contains("margin-left: 0;"),
+        "the window buttons sit tight against each other: {controls}"
+    );
 
     // The close chip's own distance from the window edge is not part of the rhythm and does not move: 4px on a frameless window, matching the 4px the chip leaves above it.
     let trailing = rule_body(css, "\n.app-trailing {");
@@ -510,18 +512,20 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         frameless.contains("padding-right: var(--lt-space-4);"),
         "the close chip stays 4px off the window corner: {frameless}"
     );
-    // A Mac's dots were already on the bar's gap with no lead-in, so nothing about them moves.
+    // A Mac's dots are the same control set, so they close up the same way rather than sitting far apart.
     let mac = rule_body(css, "\n.mac-frame .window-controls {");
     assert!(
-        mac.contains("gap: var(--lt-space-8);") && mac.contains("margin-left: 0;"),
-        "the Mac's dots keep the spacing they already had: {mac}"
+        mac.contains("gap: var(--lt-space-4);") && mac.contains("margin-left: 0;"),
+        "the Mac's dots sit close rather than far apart: {mac}"
     );
 
-    // The gap has to clear the active tab's flare on both sides, so the curve steps down with it: 6px is the largest radius on the scale that leaves daylight inside an 8px gap.
+    // The gap has to clear the active tab's flare on both sides, and the strip scrolls, so a flare wider than the strip's own side inset is clipped flat rather than drawn: 14px is the largest radius on the scale that still leaves daylight inside a 16px gap. Pinned by the declaration because the stylesheet opens .tab-active twice and a lookup by selector finds the wrong block.
     assert!(
-        css.contains("--tab-flare: var(--lt-radius-md);")
+        css.contains("--tab-flare: var(--lt-radius-2xl);")
+            && !css.contains("--tab-flare: var(--lt-radius-md);")
+            && !css.contains("--tab-flare: var(--lt-radius-lg);")
             && !css.contains("--tab-flare: var(--lt-radius-xl);"),
-        "the join curve must fit inside the tighter gap"
+        "the join curve must be the largest that clears the bar's gap"
     );
 }
 
