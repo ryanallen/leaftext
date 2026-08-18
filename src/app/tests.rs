@@ -331,6 +331,45 @@ fn a_notes_tab_that_followed_a_link_is_still_the_tab_showing_that_document() {
     assert_eq!(workspace.active_path(), Some(guide.as_path()));
 }
 
+#[test]
+fn a_change_to_a_file_the_note_is_named_after_is_not_a_change_to_the_note() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let readers_file = dir.join("Untitled.md");
+    fs::write(&readers_file, "# The reader's own file\n").expect("the reader's file is written");
+    let workspace = note_wearing_a_real_files_name(&readers_file);
+
+    // The comparison the watcher, the pager and a link click all make, with the change already in hand. What it guards — the reload, and the two arms that write into the page — is inline in the event loop or behind the window, so the fault is proved where the decision is made.
+    let is_active_document = workspace
+        .active_file()
+        .is_some_and(|current| paths_refer_to_same_document(&readers_file, current));
+
+    assert!(!is_active_document);
+    // The note still wears the name, so nothing that reads it for the session, the strip or the render changed; the words in it are the ones that were typed.
+    assert_eq!(workspace.active_path(), Some(readers_file.as_path()));
+    assert_eq!(
+        workspace
+            .active_edit()
+            .expect("the note is still there")
+            .text(),
+        "Typed into a new note.\n"
+    );
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn a_notes_tab_that_followed_a_link_shows_that_document_as_the_file_on_screen() {
+    let mut workspace = Workspace::default();
+    workspace.open_untitled();
+    type_into_front_note(&mut workspace, "Typed into a new note.\n");
+    // What a link click does to the tab: the history moves on and the no-file buffer stays behind it.
+    let guide = PathBuf::from("guide.md");
+    workspace.tabs[0].history.record(guide.clone());
+
+    // The question reads what the tab is showing, never the flag alone, so a change to that document really is a change to what is on screen.
+    assert_eq!(workspace.active_file(), Some(guide.as_path()));
+}
+
 /// A tab open on `path`, seeded from `saved` and typed on so it is dirty.
 fn dirty_tab_workspace(path: &Path, saved: &str, typed: &str) -> Workspace {
     let mut workspace = Workspace::default();

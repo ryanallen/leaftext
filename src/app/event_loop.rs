@@ -303,7 +303,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 // The active document live-reloads; a sibling change instead refreshes the pane and the corpus so both stay in sync without a full rescan.
                 let is_active_document = reader
                     .workspace
-                    .active_path()
+                    .active_file()
                     .is_some_and(|current| paths_refer_to_same_document(&changed, current));
                 // Above the split, or it misses the commonest change of all — saving the document you are reading takes the other branch. Unfiltered on purpose: a containment check here compares the watcher's canonicalised path against the registry's plain one and so discards every event. One `git status`, off the loop, on an already-debounced event, is cheaper than being wrong.
                 if vault_state.active != 0 {
@@ -413,7 +413,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::PagerLoaded { path, html }) => {
                 let is_active_document = reader
                     .workspace
-                    .active_path()
+                    .active_file()
                     .is_some_and(|current| paths_refer_to_same_document(&path, current));
                 if is_active_document {
                     run_page_script(
@@ -805,7 +805,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         }
                         LinkTarget::LocalDocument(target) => {
                             let path = path_from_local_link(&target, &current_path);
-                            if paths_refer_to_same_document(&path, &current_path) {
+                            // What the tab is showing, never the name it wears: a note wears a bare name, so comparing against that name sends a link naming the reader's own file of that name to a scroll on the note instead of opening the file.
+                            let stays_on_this_page =
+                                reader.workspace.active_file().is_some_and(|current| {
+                                    paths_refer_to_same_document(&path, current)
+                                });
+                            if stays_on_this_page {
                                 if let Some(fragment) = fragment_from_href(&target) {
                                     reader.workspace.tabs[active]
                                         .scroll_history

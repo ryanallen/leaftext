@@ -224,6 +224,14 @@ impl Workspace {
             .map(PathBuf::as_path)
     }
 
+    /// The file the active tab is showing: nothing on the home screen, and nothing while the tab is showing its no-file buffer's name. The one question every comparison that decides a path is the document on screen asks — the watcher, the pager and a link click — so a note's bare name never answers for a reader's own file of that name sitting in the folder the app was started in. [`Self::active_path`] stays beside it and stays the name the note wears, which the session, the strip and the render read.
+    pub(crate) fn active_file(&self) -> Option<&Path> {
+        if self.active_shows_untitled_buffer() {
+            return None;
+        }
+        self.active_path()
+    }
+
     /// Whether the active tab is showing its no-file buffer's name. See [`Tab::shows_untitled_buffer`].
     pub(crate) fn active_shows_untitled_buffer(&self) -> bool {
         self.active
