@@ -21,6 +21,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Picking a section](#deleting) | `Ctrl+A` with the caret in a block widens a step per press: the block, then the heading and everything under it, then the page |
 | [The fields at the top](#the-fields-at-the-top-of-a-note) | Click a value in a note's field block and change it, pick a date, tick a box, add and drop tag chips, rename a key, add a field or take one away — and start a block on a note that has none |
 | [Renaming from the heading](#renaming-from-the-heading) | A document that names no title of its own is headed with its file name; press that heading to rename the file |
+| [The title a data file names](#editing-data-files) | A [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file that names its own title heads the page with it; press that heading and the value itself opens for editing, quotes and all |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
@@ -82,7 +83,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 
 A document that names no title of its own — a sitemap, a feed, a `package.json`, an [email](01-rendering.md#email-eml) with no subject — is headed with its file name, because there is nothing else to head it with. That heading is the file's name, so pressing it opens the same rename box the [library pane](03-library.md#file-actions) opens, anchored over the heading and holding the real file name with everything before the extension already selected. `Enter` renames the file; `Escape` leaves it alone. An empty name, one already taken, and one carrying a folder separator are all refused, exactly as they are in the pane.
 
-The heading, the tab and the pane all move to the new name, unsaved typing stays where it was, and every [history step](02-navigation.md#history) standing on that file follows it too. A heading the document does write for itself — an XML `<title>`, a message's `Subject` — is not a file name, so it takes a caret and types instead of opening the rename box.
+The heading, the tab and the pane all move to the new name, unsaved typing stays where it was, and every [history step](02-navigation.md#history) standing on that file follows it too. A heading the document does write for itself — an XML `<title>`, a message's `Subject`, a [JSON or YAML](#editing-data-files) `title` or `name` key — is not a file name, so pressing it edits that value instead of opening the rename box. The XML and email ones take a caret in the words; a data file's opens the value's own source, the way every other value in one does.
 
 ### Editing an email
 
@@ -399,6 +400,8 @@ What the *reading view* offers differs by format, because a block can only be ed
 ### Editing data files
 
 A data file is edited as *source*, never as rendered text. Click a JSON value in the reading view and you get the real thing — `"0.1.380"` with its quotes — which is what keeps an edit from turning a string into something the file no longer parses as.
+
+The big heading is one of those values wherever the file names its own title with a root `title` or `name` key. That key is left out of the body, so the heading is the only place its value appears, and pressing it opens that value's source exactly as pressing a field does. A YAML title written in quotes proves no range, so its heading stays read-only like every other quoted value, and a heading standing in for a file that names no title of its own is the file's name instead — pressing that one [renames the file](#renaming-from-the-heading).
 
 That only works where the byte range is certain, so Leaftext offers it only where it is:
 
