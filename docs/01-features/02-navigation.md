@@ -130,6 +130,8 @@ While the [library sheet](03-library.md#narrow-windows) is up it covers the page
 
 **Jumps.** Jump from `#intro` to `#api` inside the same document. Back returns to the earlier reading position instead of switching files.
 
+**A renamed file.** [Rename a file](03-library.md#file-actions) and every step that was standing on it follows the new name, in every tab and forward as well as back — so pressing Back onto a document you had already read once lands on it rather than on a message saying it could not be opened. Each step keeps the place you were reading at.
+
 That second case is why Leaftext keeps scroll history separately from file history.
 
 ### Restore

@@ -297,7 +297,7 @@ impl Workspace {
                 .is_some_and(|current| paths_refer_to_same_document(current, from));
             // A tab can hold a buffer for one document while showing another it followed a link to, so the two move independently.
             let holds_buffer = tab.has_edit_for(from);
-            // Before the guard below, and on every tab: a tab that visited the file and followed a link out of it is neither showing it nor holding its buffer, and that is exactly the tab whose Back would land on a name nothing is at any more. A buried step is not a redraw, so this tab changes nothing else and does not count as followed.
+            // Before the guard below, on every tab: a tab that visited the file and left is skipped there, and that is the tab whose Back lands on a name nothing is at. A buried step is not a redraw, so such a tab changes nothing else and does not count as followed.
             tab.history.rename_visits(from, to);
             if !showing && !holds_buffer {
                 continue;

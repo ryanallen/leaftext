@@ -223,7 +223,7 @@ Key `IpcCommand` variants include:
 | `revealFile`           | File row or page context menu: reveal in file manager |
 | `copyFile`             | File row context menu: cut/copy the file to the clipboard |
 | `copyPath`             | File row or page context menu: copy the file path as text |
-| `renameFile`           | File row context menu: inline rename |
+| `renameFile`           | File row context menu: inline rename, and the same box over a page headed with its own file name. Every tab sitting on the file follows, along with every back and forward step naming it |
 | `deleteFile`           | File row or page context menu: move to Recycle Bin / Trash, once the confirmation is answered |
 | `undoDelete`           | Put the last deleted file back where it came from. Carries the path, so a stale offer cannot restore something else |
 | `showProperties`       | File, folder, or page context menu: OS properties view |

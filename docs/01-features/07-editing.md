@@ -20,6 +20,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Taking several away](#deleting) | Highlight across blocks and `Delete` removes the lot; whatever survives at each end joins into one block |
 | [Picking a section](#deleting) | `Ctrl+A` with the caret in a block widens a step per press: the block, then the heading and everything under it, then the page |
 | [The fields at the top](#the-fields-at-the-top-of-a-note) | Click a value in a note's field block and change it, pick a date, tick a box, add and drop tag chips, rename a key, add a field or take one away — and start a block on a note that has none |
+| [Renaming from the heading](#renaming-from-the-heading) | A document that names no title of its own is headed with its file name; press that heading to rename the file |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
@@ -76,6 +77,12 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way — from your first keystroke, without clicking out of what you are typing in. **Save**, **Undo** and `Ctrl+S` all act on the words on screen, and the typing itself reaches the document at every pause, so an outside change arriving mid-sentence no longer takes it away.
 - The reading view opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
+
+### Renaming from the heading
+
+A document that names no title of its own — a sitemap, a feed, a `package.json`, an [email](01-rendering.md#email-eml) with no subject — is headed with its file name, because there is nothing else to head it with. That heading is the file's name, so pressing it opens the same rename box the [library pane](03-library.md#file-actions) opens, anchored over the heading and holding the real file name with everything before the extension already selected. `Enter` renames the file; `Escape` leaves it alone. An empty name, one already taken, and one carrying a folder separator are all refused, exactly as they are in the pane.
+
+The heading, the tab and the pane all move to the new name, unsaved typing stays where it was, and every [history step](02-navigation.md#history) standing on that file follows it too. A heading the document does write for itself — an XML `<title>`, a message's `Subject` — is not a file name, so it takes a caret and types instead of opening the rename box.
 
 ### Editing an email
 

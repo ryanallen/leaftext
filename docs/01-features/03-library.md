@@ -116,7 +116,7 @@ Right-click a file row for a context menu of file actions:
 | Cut | Puts the file on the system clipboard to move on paste |
 | Copy | Puts the file on the system clipboard to copy on paste |
 | Copy path | Copies the file's full path as text |
-| Rename | Edits the name inline; press Enter to apply, Escape to cancel |
+| Rename | Edits the name inline; press Enter to apply, Escape to cancel. The same box opens over a page [headed with its own file name](07-editing.md#renaming-from-the-heading) |
 | Reveal file | Shows the file in your OS file manager |
 | Properties | Opens the OS file-properties view |
 | Delete | Asks first, then moves the file to the Recycle Bin / Trash — and offers it back |
