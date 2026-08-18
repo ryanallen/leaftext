@@ -4339,3 +4339,63 @@ fn a_launch_answers_to_the_names_every_installed_copy_already_uses() {
         assert_ne!(name("rwall"), name("someone-else"));
     }
 }
+
+/// The tail below the match persists the session and re-points the watcher, so it must run after anything an arm answered and after nothing else. Written as a skip list on purpose: an event this test does not name still reaches the tail, which is what keeps a new one from being dropped in silence. A drag is the gesture that made it matter — four of these a mouse move, each rebuilding the session from every open tab.
+#[test]
+fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
+    use tao::dpi::{PhysicalPosition, PhysicalSize};
+    use tao::event::StartCause;
+    use tao::window::WindowId;
+
+    for event in [
+        Event::NewEvents(StartCause::Poll),
+        Event::MainEventsCleared,
+        Event::RedrawEventsCleared,
+        Event::RedrawRequested(unsafe { WindowId::dummy() }),
+    ] {
+        assert!(
+            !could_have_changed_anything(&event),
+            "{event:?} is answered by no arm, so the tail has nothing to do"
+        );
+    }
+
+    for event in [
+        Event::UserEvent(UserEvent::WebviewReady),
+        Event::Suspended,
+        Event::Resumed,
+        Event::LoopDestroyed,
+    ] {
+        assert!(
+            could_have_changed_anything(&event),
+            "{event:?} is not on the skip list, so the tail still runs"
+        );
+    }
+
+    // The window half is asked on its own because the event that wraps it cannot be built outside the window library.
+    assert!(!window_event_could_have_changed_anything(
+        &WindowEvent::Moved(PhysicalPosition::new(0, 0))
+    ));
+    for event in [
+        WindowEvent::Resized(PhysicalSize::new(800, 600)),
+        WindowEvent::CloseRequested,
+        WindowEvent::Focused(true),
+    ] {
+        assert!(
+            window_event_could_have_changed_anything(&event),
+            "{event:?} has an arm, so the tail still runs"
+        );
+    }
+}
+
+/// The two commands a press on the app bar can send. The page decides which by the click count and whether the window stayed put; the host only has to tell them apart, and nothing else covers that it can.
+#[test]
+fn the_app_bar_sends_a_drag_and_a_maximize_under_the_names_the_page_uses() {
+    assert!(matches!(
+        serde_json::from_str::<IpcCommand>(r#"{"command":"windowDrag"}"#),
+        Ok(IpcCommand::WindowDrag)
+    ));
+    assert!(matches!(
+        serde_json::from_str::<IpcCommand>(r#"{"command":"windowToggleMaximize"}"#),
+        Ok(IpcCommand::WindowToggleMaximize)
+    ));
+}

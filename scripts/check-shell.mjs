@@ -8159,6 +8159,43 @@ check('a published site draws no Back, no Forward, no Open, no New document, no 
   }
 });
 
+// Where the platform's title bar is gone the app bar is it, so a press on the bare part of the bar hands the window to the host's own move loop and a press on anything standing on it belongs to that control. Both halves come off one listener, which is why one check asks for both. Booted frameless because that is the only build where the bar is a title bar at all.
+check('a press on the app bar asks for a window drag, and a press on a control asks for nothing', () => {
+  const framed = runShell(source, { __leafFrameless: true });
+  const sent = [];
+  framed.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+  const bar = framed.document.getElementById('appBar');
+  const pressed = (target) => {
+    sent.length = 0;
+    for (const handler of [...(bar.listeners.get('mousedown') || [])]) {
+      handler({ button: 0, detail: 1, target });
+    }
+    return sent.map((message) => message.command);
+  };
+
+  const onTheBar = pressed({ closest: () => null });
+  if (onTheBar.join() !== 'windowDrag') {
+    throw new Error(`a press on the app bar sent ${JSON.stringify(onTheBar)} rather than a window drag`);
+  }
+
+  // Whatever the press landed on answers for itself: a tab switches, a button runs its command, and neither is a gesture to move the window.
+  for (const control of ['a tab', 'a button']) {
+    const onAControl = pressed({ closest: () => ({ id: control }) });
+    if (onAControl.length) {
+      throw new Error(`a press on ${control} sent ${JSON.stringify(onAControl)} instead of leaving the press to it`);
+    }
+  }
+
+  // The right-hand button never drags: that press is the context menu's.
+  sent.length = 0;
+  for (const handler of [...(bar.listeners.get('mousedown') || [])]) {
+    handler({ button: 2, detail: 1, target: { closest: () => null } });
+  }
+  if (sent.length) {
+    throw new Error(`a right-hand press on the app bar sent ${JSON.stringify(sent)}`);
+  }
+});
+
 // A folder on a disk is not a browser's to pick, which is why both hosts refuse the command that makes a vault. Drawing the button anyway would be a control whose only possible answer is no.
 check('neither browser host invites a reader to add a folder it cannot reach', () => {
   const hosts = [

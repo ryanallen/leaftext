@@ -165,6 +165,25 @@ pub(crate) fn startup_restore_intent(
         })
 }
 
+/// Whether an arm below could have answered this event, which is what says whether the tail after the match has anything left to do. A skip list rather than a list of what counts, so an event this does not recognize still runs the tail and nothing new is quietly dropped.
+///
+/// It is here because a window drag hands the loop four events per mouse move and no arm answers one of them, while the tail rebuilds the saved session out of every open tab. A two-second drag rebuilt it 1,015 times, which was four fifths of what the gesture cost with ten tabs open.
+pub(crate) fn could_have_changed_anything(event: &Event<UserEvent>) -> bool {
+    match event {
+        Event::NewEvents(_)
+        | Event::MainEventsCleared
+        | Event::RedrawRequested(_)
+        | Event::RedrawEventsCleared => false,
+        Event::WindowEvent { event, .. } => window_event_could_have_changed_anything(event),
+        _ => true,
+    }
+}
+
+/// See [`could_have_changed_anything`]. Its own function because a `WindowEvent` can be built in a test and the event that wraps it cannot.
+pub(crate) fn window_event_could_have_changed_anything(event: &WindowEvent) -> bool {
+    !matches!(event, WindowEvent::Moved(_))
+}
+
 /// Runs until the window closes, which ends the process — hence the `!`.
 pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> ! {
     // Unpacked straight back into locals: the arms mutate most of these and read them constantly, and `ctx.` at every use would bury the event handling.
@@ -193,6 +212,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
+        // Read here because the match below takes the event by value.
+        let anything_to_persist = could_have_changed_anything(&event);
 
         match event {
             Event::WindowEvent {
@@ -1481,6 +1502,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             },
             _ => {}
+        }
+
+        if !anything_to_persist {
+            return;
         }
 
         persist_workspace_session(&reader.workspace, &mut settings, settings_path.as_ref());
