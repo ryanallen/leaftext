@@ -311,7 +311,7 @@ function ownerHeadingPlaces(text) {
   return { at, lastPhaseHeading, copies };
 }
 
-// The section has one place: the last `###` inside `## Phases`, which is where every live plan carrying it already keeps it. One question catches every way it can move — below the record, left in the middle of the phases, written under no `## Phases` heading at all, or a second copy further down that the reader above walks straight past.
+// The section has one place: the last `###` inside `## Phases`, which is where every live plan carrying it already keeps it. One question catches every way it can move — below the record, left in the middle of the phases, written under no `## Phases` heading at all, or a second copy further down, which `ownerBoxes` never reads because it takes the first.
 //
 // Silent where there is no section at all: that is `ownerBoxOwed`'s refusal, and naming one plan twice teaches nobody anything.
 function ownerSectionMisplaced(file, text) {
