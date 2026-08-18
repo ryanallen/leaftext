@@ -290,6 +290,58 @@ function ownerBoxOwed(file, text) {
   return ownerBoxes(text).length === 0;
 }
 
+// Where the section sits, so the two rules below can ask. `at` is the heading `ownerBoxes` reads — the first one anywhere in the file — and `copies` says whether that is the only one.
+function ownerHeadingPlaces(text) {
+  const lines = text.split('\n');
+  let inPhases = false;
+  let lastPhaseHeading = -1;
+  let at = -1;
+  let copies = 0;
+  lines.forEach((line, i) => {
+    if (/^##(?!#)\s/.test(line)) {
+      inPhases = /^##\s+Phases\s*$/.test(line);
+      return;
+    }
+    if (OWNER_HEADING.test(line)) {
+      copies += 1;
+      if (at === -1) at = i;
+    }
+    if (inPhases && /^###(?!#)\s/.test(line)) lastPhaseHeading = i;
+  });
+  return { at, lastPhaseHeading, copies };
+}
+
+// The section has one place: the last `###` inside `## Phases`, which is where every live plan carrying it already keeps it. One question catches every way it can move — below the record, left in the middle of the phases, written under no `## Phases` heading at all, or a second copy further down that the reader above walks straight past.
+//
+// Silent where there is no section at all: that is `ownerBoxOwed`'s refusal, and naming one plan twice teaches nobody anything.
+function ownerSectionMisplaced(file, text) {
+  if (!livePlan(file)) return false;
+  const { at, lastPhaseHeading, copies } = ownerHeadingPlaces(text);
+  if (at === -1) return false;
+  return copies > 1 || at !== lastPhaseHeading;
+}
+
+// The gesture written loose is the expensive one: 21 live plans carried it as a box under `### Every phase ends the same way`, which is the line every phase ends with rather than a section anybody looks in, and a release refuses a plan whose one open box sits outside the section — so each of them would have stopped a release at the end of its last phase.
+//
+// Narrow on purpose. Every one of those 21 boxes opened with these three words, and a plan that genuinely needs the word owner inside a phase writes it anywhere but the front of a box.
+const LOOSE_GESTURE = /^The owner /;
+
+/** The one-based line of every box outside the owner's section that opens as the owner's gesture. */
+function looseOwnerBoxes(file, text) {
+  if (!livePlan(file)) return [];
+  const lines = text.split('\n');
+  const { at } = ownerHeadingPlaces(text);
+  let end = at === -1 ? -1 : at + 1;
+  while (end > -1 && end < lines.length && !/^#{1,6}[ \t]/.test(lines[end])) end += 1;
+  const out = [];
+  lines.forEach((line, i) => {
+    if (at !== -1 && i > at && i < end) return;
+    const box = BOX.exec(line);
+    if (box && LOOSE_GESTURE.test(box[2])) out.push(i + 1);
+  });
+  return out;
+}
+
 /** A live plan that is genuinely done: nothing left open, and the owner's own box ticked or struck. */
 function retirementReady(file, text) {
   if (!livePlan(file)) return false;
@@ -306,79 +358,121 @@ const OWNER_CASES = [
     'a started plan with no owner\'s box is refused, and is not retirement',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [x] Built\n',
-    { owed: true, ready: false },
+    { owed: true, ready: false, misplaced: false, loose: [] },
   ],
   [
     'the same plan with an open owner\'s box passes, and is not retirement',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [ ] Open a file and confirm the line wraps\n',
-    { owed: false, ready: false },
+    { owed: false, ready: false, misplaced: false, loose: [] },
   ],
   [
     'an owner\'s box ticked with every other box is the plan that shipped',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [x] Open a file and confirm the line wraps\n',
-    { owed: false, ready: true },
+    { owed: false, ready: true, misplaced: false, loose: [] },
   ],
   [
     'a fully ticked plan with no owner\'s box is refused rather than reported as shipped',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [x] Built\n- [x] Test: it wraps\n',
-    { owed: true, ready: false },
+    { owed: true, ready: false, misplaced: false, loose: [] },
   ],
   [
     'a heading with nothing under it approves nothing',
     '../docs/features/reading/a.md',
     '## Phases\n\n- [x] Built\n\n### The owner\'s box\n\n## What an earlier draft got wrong\n',
-    { owed: true, ready: false },
+    { owed: true, ready: false, misplaced: false, loose: [] },
   ],
   [
     'the owner\'s box is read out of its own section, never the phase above it',
     '../docs/features/reading/a.md',
     '## Phases\n\n- [ ] Not built yet\n\n### The owner\'s box\n\n- [x] Confirmed\n',
-    { owed: false, ready: false },
+    { owed: false, ready: false, misplaced: false, loose: [] },
   ],
   [
     'a curled apostrophe is the same heading',
     '../docs/features/reading/a.md',
     '## Phases\n\n- [x] Built\n\n### The owner’s box\n\n- [ ] Confirm it\n',
-    { owed: false, ready: false },
+    { owed: false, ready: false, misplaced: false, loose: [] },
   ],
   [
     'a plan nobody has started is refused too, so the fault is met while it is being written',
     '../docs/features/reading/a.md',
     '## Phases\n\n- [ ] Build it\n',
-    { owed: true, ready: false },
+    { owed: true, ready: false, misplaced: false, loose: [] },
   ],
   [
     'a shipped plan is not held to either rule',
     '../docs/done/app/a.md',
     '## Phases\n\n- [x] Built\n',
-    { owed: false, ready: false },
+    { owed: false, ready: false, misplaced: false, loose: [] },
   ],
   [
     'a plan whose last unticked box is struck through is ready to retire',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [x] Built\n- [ ] ~~Moved to tags.md~~\n\n### The owner\'s box\n\n- [x] Confirmed\n',
-    { owed: false, ready: true },
+    { owed: false, ready: true, misplaced: false, loose: [] },
   ],
   [
     'a struck owner\'s box is a section that exists and an owner who answered',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [ ] ~~Nothing to press; this changes how a plan is counted~~\n',
-    { owed: false, ready: true },
+    { owed: false, ready: true, misplaced: false, loose: [] },
   ],
   [
     'a plan of nothing but struck boxes is nobody\'s work, so it stays live',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [ ] ~~Moved to tags.md~~\n\n### The owner\'s box\n\n- [ ] ~~Nothing to press~~\n',
-    { owed: false, ready: false },
+    { owed: false, ready: false, misplaced: false, loose: [] },
   ],
   [
     'a box struck part way along is a box whose wording changed, and it is still work',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [x] Built\n- [ ] The pane and ~~the pager~~\n\n### The owner\'s box\n\n- [x] Confirmed\n',
-    { owed: false, ready: false },
+    { owed: false, ready: false, misplaced: false, loose: [] },
+  ],
+  [
+    'a section written below the record is not where every other plan keeps it',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n\n## What an earlier draft got wrong\n\n### The owner\'s box\n\n- [ ] Confirm it\n',
+    { owed: false, ready: false, misplaced: true, loose: [] },
+  ],
+  [
+    'a section left in the middle of the phases is the same fault',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [ ] Confirm it\n\n### Phase 2\n\n- [ ] Build the rest\n',
+    { owed: false, ready: false, misplaced: true, loose: [] },
+  ],
+  [
+    'a section under no phases heading at all is not at the end of the phases',
+    '../docs/features/reading/a.md',
+    '## How it is built\n\n### The owner\'s box\n\n- [ ] Confirm it\n',
+    { owed: false, ready: false, misplaced: true, loose: [] },
+  ],
+  [
+    'a second copy further down is refused, since the reader takes the first and nobody reads the other',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [ ] Confirm it\n\n## What an earlier draft got wrong\n\n### The owner\'s box\n\n- [ ] Confirm it again\n',
+    { owed: false, ready: false, misplaced: true, loose: [] },
+  ],
+  [
+    'a gesture written as a loose box under the line every phase ends with is named by its line',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### Every phase ends the same way\n\n- [ ] The owner says it works\n\n### The owner\'s box\n\n- [ ] Confirm it\n',
+    { owed: false, ready: false, misplaced: false, loose: [9] },
+  ],
+  [
+    'a phase that says owner mid-sentence is left alone, since only the front of a box is read',
+    '../docs/features/reading/a.md',
+    '## Phases\n\n### Phase 1\n\n- [x] The pane opens the folder the owner last chose\n\n### The owner\'s box\n\n- [ ] Confirm it\n',
+    { owed: false, ready: false, misplaced: false, loose: [] },
+  ],
+  [
+    'a shipped plan is held to neither, so the record it is stays the record it is',
+    '../docs/done/app/a.md',
+    '## Phases\n\n### Phase 1\n\n- [ ] The owner says it works\n\n### The owner\'s box\n\n- [ ] Confirm it\n\n## What an earlier draft got wrong\n\n### The owner\'s box\n\n- [ ] Again\n',
+    { owed: false, ready: false, misplaced: false, loose: [] },
   ],
 ];
 
@@ -387,8 +481,12 @@ function ownerSelfTest() {
   for (const [name, file, text, want] of OWNER_CASES) {
     const owed = ownerBoxOwed(file, text);
     const ready = retirementReady(file, text);
+    const misplaced = ownerSectionMisplaced(file, text);
+    const loose = looseOwnerBoxes(file, text);
     if (owed !== want.owed) fails.push(`${name}: owed ${owed}, want ${want.owed}`);
     if (ready !== want.ready) fails.push(`${name}: retirement ${ready}, want ${want.ready}`);
+    if (misplaced !== want.misplaced) fails.push(`${name}: placement ${misplaced}, want ${want.misplaced}`);
+    if (loose.join(',') !== want.loose.join(',')) fails.push(`${name}: loose ${loose.join(',') || 'nothing'}, want ${want.loose.join(',') || 'nothing'}`);
   }
   return fails;
 }
@@ -459,6 +557,18 @@ const OWNER_ADVICE = [
   'the last box in a ticket is the owner\'s, unticked until they say the thing works — a machine agreeing with itself is not evidence.',
   'Write `### The owner\'s box` at the end of the phases in each, with one box holding the gesture the owner makes to see the thing,',
   'in what they will look at — see the "ticket" skill. Where the subject genuinely has nothing to press, strike the box with that reason.',
+];
+
+const PLACEMENT_ADVICE = [
+  'the section is the last `###` inside `## Phases` — below every phase and above the record, which is where',
+  'every other plan keeps it and where the next reader looks. Move it there, and where there are two copies,',
+  'keep the one at the end of the phases: the reader takes the first, so the other is a gesture nobody sees.',
+];
+
+const LOOSE_ADVICE = [
+  'a box opening "The owner " is the gesture only the owner makes, and it belongs under `### The owner\'s box`.',
+  'Left in a phase it is work a build ticks off, and left under the line every phase ends with it is the one open',
+  'box a release finds outside the section — which stops that release at the end of the last phase. Move it in.',
 ];
 
 const DRAWING_CASES = [
@@ -581,11 +691,15 @@ if (orphans.length) {
 const finished = [];
 const undrawn = [];
 const unapprovable = [];
+const misplaced = [];
+const loose = [];
 const reasonless = [];
 for (const file of rows.map(([f]) => f)) {
   if (!livePlan(file)) continue;
   const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
   for (const at of strikesWithoutReason(text)) reasonless.push(`${file}:${at}`);
+  for (const at of looseOwnerBoxes(file, text)) loose.push(`${file}:${at}`);
+  if (ownerSectionMisplaced(file, text)) misplaced.push(file);
   const states = boxStates(text);
   const ticked = states.filter((state) => state === 'ticked').length;
   const retired = states.filter((state) => state === 'retired').length;
@@ -609,6 +723,20 @@ if (unapprovable.length) {
   console.error('these live plans have no box the owner can tick:');
   for (const file of unapprovable) console.error(`  ${file}  ->  no "### The owner's box" section`);
   for (const line of OWNER_ADVICE) console.error(line);
+  process.exit(1);
+}
+
+if (misplaced.length) {
+  console.error('these live plans keep the owner\'s box where the next reader will not look:');
+  for (const file of misplaced) console.error(`  ${file}  ->  "### The owner's box" is not the last ### inside ## Phases`);
+  for (const line of PLACEMENT_ADVICE) console.error(line);
+  process.exit(1);
+}
+
+if (loose.length) {
+  console.error('these live plans write the owner\'s gesture as a box outside the owner\'s section:');
+  for (const at of loose) console.error(`  ${at}`);
+  for (const line of LOOSE_ADVICE) console.error(line);
   process.exit(1);
 }
 
@@ -662,4 +790,4 @@ if (dead.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan carrying a box only the owner can tick, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, ${links}`);
