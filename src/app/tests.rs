@@ -339,7 +339,7 @@ fn a_change_to_a_file_the_note_is_named_after_is_not_a_change_to_the_note() {
     fs::write(&readers_file, "# The reader's own file\n").expect("the reader's file is written");
     let workspace = note_wearing_a_real_files_name(&readers_file);
 
-    // The comparison the watcher, the pager and a link click all make, with the change already in hand. What it guards — the reload, and the two arms that write into the page — is inline in the event loop or behind the window, so the fault is proved where the decision is made.
+    // The comparison the watcher, the pager and a link click all make, with the change already in hand. What it guards sits inline in the event loop or behind the window, so the fault is proved where the decision is made.
     let is_active_document = workspace
         .active_file()
         .is_some_and(|current| paths_refer_to_same_document(&readers_file, current));
@@ -884,7 +884,7 @@ fn reading_a_vaults_git_state_is_itself_a_change_the_watcher_would_report() {
             .expect("the .git folder has a modified time")
     };
     let before = modified();
-    // Exactly what every filesystem event under an active vault used to run.
+    // Exactly what a filesystem event under an active vault must not run.
     inspect_vault_repo(&dir);
     assert!(
         modified() > before,
@@ -1817,7 +1817,7 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
 
 #[test]
 fn a_browsed_folder_is_watched_one_level_deep_not_recursively() {
-    // Browsing into `C:\` in the library used to hand the watcher a recursive subscription to the whole drive. Every change on the machine then arrived as an event, and the pane rebuilt against each one — the window stopped answering, and switching vaults never got processed.
+    // Browsing into `C:\` in the library must not hand the watcher a recursive subscription to the whole drive: every change on the machine then arrives as an event, the pane rebuilds against each one, the window stops answering, and switching vaults never gets processed.
     //
     // A vault is the user's own choice of folder and stays recursive; a folder the pane merely browsed to gets one level, which is all the pane shows.
     let dir = std::env::temp_dir().join(format!(
@@ -3069,7 +3069,7 @@ fn the_mac_window_is_the_app_bar_with_our_own_three_dots() {
         .split("#[cfg(target_os = \"macos\")]")
         .find(|arm| arm.contains("with_titlebar_buttons_hidden"))
         .expect("main.rs has a macOS window arm");
-    // Nothing insets Apple's dots any more, because there are none to inset — the page's own fold into the chevron menu, which a native view pinned to the window never could.
+    // Nothing insets Apple's dots: there are none to inset — the page's own fold into the chevron menu, which a native view pinned to the window never could.
     assert!(
         !source.contains("with_traffic_light_inset"),
         "the dots are ours now, so there is nothing to inset"
@@ -3398,7 +3398,7 @@ fn a_file_off_the_home_volume_is_trashed_on_the_volume_it_is_on() {
     );
 }
 
-/// A drive that will not take the file says so in its own name. What the reader used to be shown was the system's wording for a cross-device link, which says nothing anybody can act on.
+/// A drive that will not take the file says so in its own name, never the system's wording for a cross-device link, which says nothing anybody can act on.
 #[test]
 fn a_drive_that_refuses_a_delete_is_named_in_the_message() {
     use crate::platform::drive_refused;

@@ -366,6 +366,7 @@ Saving is always explicit.
 The [live reload](02-navigation.md#reload) watcher keeps working alongside editing:
 
 - With a **clean** buffer, an outside change reloads as usual — and if the code view is open, the source refreshes in place.
+- A **[new document](#new-document)** has no file, so no change on disk is a change to it — including a change to a file of the same name in the folder Leaftext was started in.
 - With **unsaved edits**, an outside change never clobbers the buffer: your edits stay, and saving writes them over the file. Typing in the page is an unsaved edit as you type it, so a change landing mid-sentence leaves your words alone.
 
 ## Formats

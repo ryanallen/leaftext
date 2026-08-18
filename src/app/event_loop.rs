@@ -805,7 +805,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         }
                         LinkTarget::LocalDocument(target) => {
                             let path = path_from_local_link(&target, &current_path);
-                            // What the tab is showing, never the name it wears: a note wears a bare name, so comparing against that name sends a link naming the reader's own file of that name to a scroll on the note instead of opening the file.
+                            // What the tab is showing, never the name it wears: a note wears a bare name, so comparing against that name scrolls the note instead of opening a file of that name.
                             let stays_on_this_page =
                                 reader.workspace.active_file().is_some_and(|current| {
                                     paths_refer_to_same_document(&path, current)
