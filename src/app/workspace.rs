@@ -42,7 +42,7 @@ impl Tab {
             .is_some_and(|edit| paths_refer_to_same_document(&edit.path, path))
     }
 
-    /// Whether this tab is showing its own no-file buffer's name rather than any document on disk. A note wears a bare relative name, so resolving it lands on whatever folder the app was started in — and a reader with a file of that name sitting there would be handed the blank note instead of their file. The one test both matches that decide a document is already open ask, so the two cannot drift.
+    /// Whether this tab is showing its own no-file buffer's name rather than any document on disk. A note wears a bare relative name, so resolving it lands on whatever folder the app was started in — and a reader with a file of that name sitting there must get their file rather than the blank note. The one test both matches that decide a document is already open ask, so the two cannot drift.
     ///
     /// The flag alone is not the test: a note's tab can follow a link to a real document and keep its no-file buffer, and that tab really is showing that document.
     pub(crate) fn shows_untitled_buffer(&self) -> bool {

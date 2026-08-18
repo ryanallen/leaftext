@@ -303,7 +303,7 @@ fn the_pipe_opens_a_file_the_note_at_the_front_is_named_after() {
     fs::write(&readers_file, "# The reader's own file\n").expect("the reader's file is written");
     let mut workspace = note_wearing_a_real_files_name(&readers_file);
 
-    // The pipe asks its own copy of the question first, so with the note at the front it used to answer that the reader's file was already showing.
+    // The pipe asks its own copy of the question before it opens anything, so with the note at the front that answer alone decides whether the file ever opens.
     let moved = pipe_bring_to_front(&mut workspace, &readers_file)
         .expect("the file is on disk, so the ask is answerable");
 
