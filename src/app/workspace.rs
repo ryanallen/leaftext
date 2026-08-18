@@ -110,19 +110,44 @@ fn restored_untitled_buffer(saved: &SessionTab) -> EditableDocument {
     edit
 }
 
+/// The words typed into a file that has since left the disk, put back as a note with no file wearing the name it had: the carried last-saved text as the baseline, the carried words applied on top as one whole-buffer replacement. `None` where the entry carries no words, which is the ordinary stale tab and drops.
+///
+/// The app is holding the only copy, so the alternative is discarding it. The raised flag is what keeps that safe: nothing is written to the old path unless the reader picks a place, so a deleted file, a renamed one and a drive nobody mounted all land here together and none of them can be written over — a reassigned drive letter is a different disk, and the first save asks rather than guessing.
+///
+/// The baseline is the last-saved text rather than the empty note [`restored_untitled_buffer`] opens with, because an empty baseline would make one habitual press of undo empty the whole document. That text is the one earlier state that was ever true of this document, and the close writes it beside the words for exactly this entry.
+fn restored_orphaned_buffer(saved: &SessionTab) -> Option<EditableDocument> {
+    let unsaved = saved.unsaved_text.as_deref()?;
+    let last_saved = saved.saved_text.as_deref()?;
+    let mut edit =
+        EditableDocument::new(saved.path.clone(), SourceText::utf8(last_saved.to_string()));
+    // The words are all that is left of the document, so they answer for it as a note rather than as the file that is gone.
+    edit.untitled = true;
+    let end = edit.text().len();
+    edit.replace_range(0, end, unsaved);
+    Some(edit)
+}
+
 impl Workspace {
-    /// Rebuild the tab strip from the last saved session. The only document read is a tab the last close left with unsaved edits, which [`restored_edit_buffer`] has to compare against the file. Missing paths are left out, and a missing front tab falls forward to the nearest remaining one.
+    /// Rebuild the tab strip from the last saved session. The only document read is a tab the last close left with unsaved edits, which [`restored_edit_buffer`] has to compare against the file. A missing path is left out unless its entry carries words, and a missing front tab falls forward to the nearest remaining one.
     pub(crate) fn from_session(session: &Session) -> Self {
         let mut saved_indices = Vec::new();
         let mut tabs = Vec::new();
         for (saved_index, saved) in session.tabs.iter().enumerate() {
-            // A note with no file is never asked whether it is one, and `restored_untitled_buffer` says why.
-            if !saved.untitled && !saved.path.is_file() {
-                continue;
-            }
+            // What the entry comes back holding, decided before anything else because it also decides whether it comes back at all. A note with no file is never asked about the disk, and `restored_untitled_buffer` says why; a file that has left the disk comes back as a note where its entry carries words, and drops where it carries none.
+            let edit = if saved.untitled {
+                Some(restored_untitled_buffer(saved))
+            } else if saved.path.is_file() {
+                restored_edit_buffer(saved)
+            } else {
+                match restored_orphaned_buffer(saved) {
+                    Some(edit) => Some(edit),
+                    None => continue,
+                }
+            };
             let mut tab = Tab {
                 title: saved.title.clone(),
                 code_view: saved.code_view,
+                edit,
                 ..Tab::default()
             };
             tab.history.record(saved.path.clone());
@@ -130,11 +155,6 @@ impl Workspace {
                 tab.history.stamp_current(anchor);
             }
             tab.saved_code_scroll = saved.saved_code_scroll;
-            tab.edit = if saved.untitled {
-                Some(restored_untitled_buffer(saved))
-            } else {
-                restored_edit_buffer(saved)
-            };
             saved_indices.push(saved_index);
             tabs.push(tab);
         }

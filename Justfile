@@ -346,15 +346,17 @@ verify: format-check check check-web check-installer check-web-commands test che
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
-# in a shared tree for the hour the docs, the comments and the whole suite take.
-land:
-    node --experimental-strip-types scripts/prepare-release.mts --land --no-sign-commit
+# in a shared tree for the hour the docs, the comments and the whole suite take. The message
+# is the commit's title — the ticket name in plain words — and a blank one is refused.
+land *message:
+    node --experimental-strip-types scripts/prepare-release.mts --land --no-sign-commit {{ message }}
 
 # Cut a release: one command from the gate to the push, all of it inside one still copy of
 # the plan tree. It was two — check and tag, then push after that process had exited — and
-# the push had no copy behind it at all.
-release version:
-    node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit
+# the push had no copy behind it at all. The message names the work the release ships and
+# lands in the commit after the version; a blank one is refused.
+release version *message:
+    node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit {{ message }}
 
 # Finish a release on the tag it already has: start both release builds against v<version>. It makes no tag, moves none, writes no version and commits nothing — the tag is already up, so an outage is finished here rather than with a new number. The tag lookup is first, so a version with no tag on GitHub stops it before either build starts.
 publish-release version:

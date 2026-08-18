@@ -1,8 +1,10 @@
 // The public release: check this app copy, then commit and tag it.
 //
-//   node --experimental-strip-types scripts/prepare-release.mts <version> [--no-sign-commit]
-//   node --experimental-strip-types scripts/prepare-release.mts --land     get the tree onto main now (`just land`)
-//   node --experimental-strip-types scripts/prepare-release.mts --check    self-test (`just check-release`)
+//   node --experimental-strip-types scripts/prepare-release.mts <version> <message...> [--no-sign-commit]
+//   node --experimental-strip-types scripts/prepare-release.mts --land <message...>    get the tree onto main now (`just land`)
+//   node --experimental-strip-types scripts/prepare-release.mts --check                self-test (`just check-release`)
+//
+// Every commit names its work — the ticket in plain words, or what changed where no ticket carries it. A history that says one repeated title cannot answer which commit brought what, so a blank message is refused before anything is read rather than filled in with a placeholder.
 //
 // The landing runs first and on its own: it stages what is in the tree, commits and pushes main, with no gate, no version and no tag. A release spends an hour in docs, comments and the whole suite, and every minute of it is a minute the work sits uncommitted where another session can collide with it. So the work goes out at the start, unchecked on purpose, and the release then commits whatever the rest of it writes on top.
 //
@@ -127,10 +129,18 @@ function commitArgs(signCommit: boolean, message: string): string[] {
     : ["-c", "commit.gpgsign=false", "commit", "--no-gpg-sign", "-m", message];
 }
 
-export const LANDING_MESSAGE = "Land the work in the tree";
+// The message is the commit's whole answer to "what is this", so an empty one is refused up front — before the repository is even entered, so nothing is staged for a commit that cannot be written.
+function requireMessage(message: string, what: string): string {
+  const named = message.trim();
+  if (!named) {
+    throw new Error(`A ${what} needs a message naming the work — the ticket name in plain words.`);
+  }
+  return named;
+}
 
 // The work in this checkout, onto main, now: staged by name, committed and pushed, with no gate, no version and no tag. Nothing here is checked, which is the point — the gate runs after, in the release, and until then another session can pull this and work beside it. A clean tree is not a failure: it means the last landing already took everything, and the release goes on from there.
-export function landWork(options: ReleaseOptions = { signCommit: true }): string[] {
+export function landWork(message: string, options: ReleaseOptions = { signCommit: true }): string[] {
+  const named = requireMessage(message, "landing");
   const host = options.host ?? liveHost();
   host.enterRepoRoot();
   const changed = host.changedPaths();
@@ -138,12 +148,13 @@ export function landWork(options: ReleaseOptions = { signCommit: true }): string
     return [];
   }
   required(host, "git", ["add", "--", ...changed]);
-  required(host, "git", commitArgs(options.signCommit, LANDING_MESSAGE));
+  required(host, "git", commitArgs(options.signCommit, named));
   required(host, "git", ["push", "origin", "HEAD"]);
   return changed;
 }
 
-export function prepareRelease(version: string, options: ReleaseOptions = { signCommit: true }): string {
+export function prepareRelease(version: string, message: string, options: ReleaseOptions = { signCommit: true }): string {
+  const named = requireMessage(message, "release");
   const host = options.host ?? liveHost();
   const normalized = normalizeVersion(version);
   const tag = `v${normalized}`;
@@ -151,7 +162,7 @@ export function prepareRelease(version: string, options: ReleaseOptions = { sign
   if (host.packageVersion() !== normalized) {
     throw new Error(`Cargo.toml version does not match ${normalized}.`);
   }
-  const releaseCommit = commitArgs(options.signCommit, `Release ${tag} [release-prep]`);
+  const releaseCommit = commitArgs(options.signCommit, `Release ${tag}: ${named}`);
   const tagArgs = options.signCommit
     ? ["tag", "-s", tag, "-m", `Release ${tag}`]
     : ["-c", "tag.gpgSign=false", "tag", "-a", "--no-sign", tag, "-m", `Release ${tag}`];
@@ -292,7 +303,7 @@ function selfTest(): void {
 
   // A release that passes, in the order it is documented in: gate, then the old tags, then the commit, the tag, main, and the tag on its own.
   const clean = fixture((_command, args) => (args[0] === "tag" && args[1] === "-l" ? { status: 0, stdout: "v1.0.0\nv1.1.0\n" } : null));
-  const tag = prepareRelease("1.2.3", { signCommit: false, host: clean.host });
+  const tag = prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: clean.host });
   if (tag !== "v1.2.3") fails.push(`a passing release answered ${tag} rather than its tag`);
   const at = (want: string) => clean.calls.findIndex((call) => call.includes(want));
   const order: Array<[string, number]> = [
@@ -325,10 +336,12 @@ function selfTest(): void {
   // By name, never the whole tree: a release commits the paths with work in them and nothing else the tree happens to be carrying.
   if (!clean.calls.includes("git add -- Cargo.toml src/lib.rs Cargo.lock")) fails.push(`a release did not stage the paths the gate left behind it: ${clean.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
   if (clean.calls.some((call) => /^git add (-A|--all|\.)(\s|$)/.test(call))) fails.push("a release staged the whole tree rather than the paths it read");
+  // The commit says which version and which work, so the history answers what each release brought without opening it.
+  if (!clean.calls.includes("git -c commit.gpgsign=false commit --no-gpg-sign -m Release v1.2.3: The find bar ships")) fails.push("a release commit did not carry the version and the name of the work");
 
   // The landing that goes first: the tree onto main in three writes, and nothing else at all.
   const landed = fixture();
-  const paths = landWork({ signCommit: false, host: landed.host });
+  const paths = landWork("Fix the find bar", { signCommit: false, host: landed.host });
   if (paths.join(" ") !== "Cargo.toml src/lib.rs") fails.push(`a landing answered ${paths.join(" ") || "nothing"} rather than the paths it put on main`);
   const landedOrder: Array<[string, number]> = [
     ["the work in the tree was read", landed.calls.indexOf("changed paths read")],
@@ -350,10 +363,22 @@ function selfTest(): void {
     if (TAG_ONLY.test(call)) fails.push(`a landing ran ${call}, and a landing is not a release`);
   }
   if (landed.calls.some((call) => /^git add (-A|--all|\.)(\s|$)/.test(call))) fails.push("a landing staged the whole tree rather than the paths it read");
+  // The landing commit is the message it was handed, so the history names the work rather than repeating one title.
+  if (!landed.calls.includes("git -c commit.gpgsign=false commit --no-gpg-sign -m Fix the find bar")) fails.push("a landing commit did not carry the name of the work");
+
+  // A landing or a release with no message: refused before the repository is touched, so a placeholder title can never reach the history.
+  const unnamedLanding = fixture();
+  const unnamedLandingFailed = refused(() => landWork("  ", { signCommit: false, host: unnamedLanding.host }));
+  if (!unnamedLandingFailed.includes("naming the work")) fails.push(`a landing with no message was not refused: ${unnamedLandingFailed || "it passed"}`);
+  if (unnamedLanding.calls.length) fails.push(`a landing with no message still ran ${unnamedLanding.calls.join(", ")}`);
+  const unnamedRelease = fixture();
+  const unnamedReleaseFailed = refused(() => prepareRelease("1.2.3", "", { signCommit: false, host: unnamedRelease.host }));
+  if (!unnamedReleaseFailed.includes("naming the work")) fails.push(`a release with no message was not refused: ${unnamedReleaseFailed || "it passed"}`);
+  if (unnamedRelease.calls.length) fails.push(`a release with no message still ran ${unnamedRelease.calls.join(", ")}`);
 
   // A landing with nothing to land: it says so by answering no paths, and it writes nothing. The release that follows carries on rather than stopping.
   const nothingToLand = fixture(() => null, { changedPaths: () => [] });
-  const landedNothing = landWork({ signCommit: false, host: nothingToLand.host });
+  const landedNothing = landWork("Fix the find bar", { signCommit: false, host: nothingToLand.host });
   if (landedNothing.length) fails.push("a landing with a clean tree claimed to have put something on main");
   for (const call of nothingToLand.calls) {
     if (isTagWork(call)) fails.push(`a landing with a clean tree still ran ${call}`);
@@ -361,7 +386,7 @@ function selfTest(): void {
 
   // A clean tree: refused before the tag check and the gate, since the commit is otherwise the first thing to say so and it says it after the whole suite has run.
   const empty = fixture(() => null, { changedPaths: () => [] });
-  const emptyFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: empty.host }));
+  const emptyFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: empty.host }));
   if (!emptyFailed.includes("nothing to release")) fails.push(`a release with a clean tree was not told so: ${emptyFailed || "it passed"}`);
   if (empty.calls.includes("just verify")) fails.push("a release with a clean tree ran the whole gate before it could say so");
   if (empty.calls.includes("snapshot taken")) fails.push("a release with a clean tree copied the plan tree before being refused");
@@ -371,7 +396,7 @@ function selfTest(): void {
 
   // The same empty state one step later: a release that committed and tagged, then failed its push. The tag it left is the one fact separating the two, and it must never go up again.
   const stopped = fixture(() => null, { changedPaths: () => [], tagsOnHead: () => ["v1.2.2"] });
-  const stoppedFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: stopped.host }));
+  const stoppedFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: stopped.host }));
   if (!stoppedFailed.includes("v1.2.2")) fails.push(`a release resuming after a failed push was not told which tag is already on the commit: ${stoppedFailed || "it passed"}`);
   if (!/bump the patch/i.test(stoppedFailed)) fails.push("a release resuming after a failed push was not told to bump the patch rather than push that tag again");
   if (stopped.calls.includes("just verify")) fails.push("a release resuming after a failed push ran the whole gate before it could say so");
@@ -381,13 +406,13 @@ function selfTest(): void {
 
   // A commit that fails: the release stops there, with nothing tagged and nothing pushed.
   const noCommit = fixture((command, args) => (command === "git" && args.includes("commit") ? { status: 1, stdout: "" } : null));
-  const commitFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: noCommit.host }));
+  const commitFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: noCommit.host }));
   if (!commitFailed.includes("commit")) fails.push(`a failed commit did not stop the release: ${commitFailed || "it passed"}`);
   if (noCommit.calls.some((call) => /^git (tag -a|push)/.test(call))) fails.push("a release whose commit failed still tagged or pushed");
 
   // A gate that fails: nothing is committed, tagged or pushed, and the copy still goes.
   const broken = fixture((command) => (command === "just" ? { status: 1, stdout: "" } : null));
-  const gateFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: broken.host }));
+  const gateFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: broken.host }));
   if (!gateFailed.includes("just verify")) fails.push(`a failed gate did not stop the release: ${gateFailed || "it passed"}`);
   for (const call of broken.calls) {
     if (isTagWork(call)) fails.push(`a failed gate still ran ${call}`);
@@ -407,7 +432,7 @@ function selfTest(): void {
       throw new Error("the plan tree changed every time it was copied");
     },
   });
-  const movingFailed = refused(() => prepareRelease("1.2.3", { signCommit: false, host: moving.host }));
+  const movingFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: moving.host }));
   if (!movingFailed.includes("changed every time")) fails.push(`a moving plan tree did not stop the release: ${movingFailed || "it passed"}`);
   if (moving.calls.includes("just verify")) fails.push("a release checked itself against a plan tree that would not hold still");
   for (const call of moving.calls) {
@@ -416,7 +441,7 @@ function selfTest(): void {
 
   // The refusals that come before any of it.
   const mismatched = fixture(() => null, { packageVersion: () => "9.9.9" });
-  if (!refused(() => prepareRelease("1.2.3", { signCommit: false, host: mismatched.host })).includes("does not match")) {
+  if (!refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: mismatched.host })).includes("does not match")) {
     fails.push("a release ran with a version the package does not carry");
   }
   if (mismatched.calls.includes("snapshot taken")) fails.push("a wrong version copied the plan tree before being refused");
@@ -431,7 +456,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean one and again after the gate, so the lockfile a compile rewrote is committed with the bump that moved it; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
+  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean one and again after the gate, so the lockfile a compile rewrote is committed with the bump that moved it; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
 }
 
 function isMainModule(): boolean {
@@ -440,16 +465,18 @@ function isMainModule(): boolean {
 
 if (isMainModule()) {
   const signCommit = !process.argv.includes("--no-sign-commit");
+  // The message arrives as the plain words after the flags — `just` hands each word through on its own, so they are joined back here rather than asked for as one quoted value.
+  const words = process.argv.slice(2).filter((word) => !word.startsWith("--"));
   if (process.argv.includes("--check")) {
     selfTest();
   } else if (process.argv.includes("--land")) {
-    const landed = landWork({ signCommit });
+    const landed = landWork(words.join(" "), { signCommit });
     console.log(landed.length ? `landed on main: ${landed.join(" ")}` : "nothing to land: this checkout has no work sitting in it.");
   } else {
-    const version = process.argv[2];
+    const [version, ...rest] = words;
     if (!version) {
-      throw new Error("Usage: node --experimental-strip-types scripts/prepare-release.mts <version> [--no-sign-commit], or --land to put the tree on main first.");
+      throw new Error("Usage: node --experimental-strip-types scripts/prepare-release.mts <version> <message> [--no-sign-commit], or --land <message> to put the tree on main first.");
     }
-    prepareRelease(version, { signCommit });
+    prepareRelease(version, rest.join(" "), { signCommit });
   }
 }

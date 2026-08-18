@@ -431,6 +431,59 @@ fn a_file_changed_since_the_close_opens_as_the_disk_has_it() {
 }
 
 #[test]
+fn a_file_gone_from_the_disk_brings_its_words_back_as_a_note_wearing_the_name_it_had() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("session file is written");
+    let session =
+        dirty_tab_workspace(&note, "# Note\n", "\nTyped and never saved.\n").closing_session();
+
+    // The file leaves the disk between the close and this launch. Deleted, renamed, or sitting on a drive nobody mounted all answer the same way, and in every one of them the app is holding the only copy of what was typed.
+    fs::remove_file(&note).expect("the session file is deleted");
+
+    let restored = Workspace::from_session(&session);
+    assert_eq!(
+        restored.tab_summaries(),
+        vec![TabSummary {
+            title: "note".to_string(),
+            path: note.display().to_string(),
+            dirty: true,
+            undoable: true,
+        }]
+    );
+    let edit = restored.tabs[0].edit.as_ref().expect("the words come back");
+    assert_eq!(edit.text(), "# Note\n\nTyped and never saved.\n");
+    // No file behind them any more: this is the flag a save reads to ask where the words go rather than write to a path that may now be a different disk.
+    assert!(edit.untitled);
+    assert_eq!(edit.path, note);
+    assert!(restored.active_file().is_none());
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn undo_on_a_gone_files_restored_words_is_one_step_back_to_the_file_as_it_was_last_saved() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("session file is written");
+    let session =
+        dirty_tab_workspace(&note, "# Note\n", "\nTyped and never saved.\n").closing_session();
+    fs::remove_file(&note).expect("the session file is deleted");
+
+    let mut restored = Workspace::from_session(&session);
+    let edit = restored.tabs[0].edit.as_mut().expect("the words come back");
+
+    // One step, and it is the file as it was last saved rather than an empty page: that text is the one earlier state this document was ever in, so a habitual press of undo cannot wipe it.
+    assert!(edit.can_undo());
+    assert!(edit.undo());
+    assert_eq!(edit.text(), "# Note\n");
+    assert!(!edit.can_undo());
+    assert!(!edit.is_dirty());
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
 fn a_saved_tab_carries_no_words_out_of_the_window() {
     let dir = session_fixture_dir();
     fs::create_dir_all(&dir).expect("session fixture directory is created");

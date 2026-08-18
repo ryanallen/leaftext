@@ -1,28 +1,30 @@
 # Releasing
 
-> Bump `Cargo.toml`, leave it in the working tree, then run `just release <version>` to verify, commit, tag, and push. CI automatically builds the Windows MSI and the macOS DMG.
+> Bump `Cargo.toml`, leave it in the working tree, then run `just release <version> <message>` to verify, commit, tag, and push. CI automatically builds the Windows MSI and the macOS DMG.
 
-Leaftext releases are managed with a single `just release <version>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and leave it uncommitted; `just release <version>` then verifies that `Cargo.toml` already matches the version you pass, runs the whole check suite against a still copy of the plan tree, retires the older tags, and commits the work sitting in the tree, tags it and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
+Leaftext releases are managed with a single `just release <version> <message>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and leave it uncommitted; `just release` then verifies that `Cargo.toml` already matches the version you pass, runs the whole check suite against a still copy of the plan tree, retires the older tags, and commits the work sitting in the tree, tags it and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
 
-**The tree is dirty on purpose.** A release commits the work written in this checkout and not yet committed, so a clean tree is nothing to release and is refused before the suite runs. `just land` is the separate command that puts the tree on `main` immediately with no gate, no version and no tag, so work stops sitting uncommitted while the checks run; the release then commits whatever the docs, the comments and the version bump add on top.
+**The tree is dirty on purpose.** A release commits the work written in this checkout and not yet committed, so a clean tree is nothing to release and is refused before the suite runs. `just land <message>` is the separate command that puts the tree on `main` immediately with no gate, no version and no tag, so work stops sitting uncommitted while the checks run; the release then commits whatever the docs, the comments and the version bump add on top.
+
+**Every commit names its work.** The message is the plain words after the command — no quotes needed, `just` passes them through — and it should name the ticket the work belongs to. Both commands refuse a blank message, so the history never fills up with one repeated title; the release commit comes out as `Release v<version>: <message>`.
 
 ## Release command
 
 ```sh
-just release <version>
+just release <version> <message>
 ```
 
 Example:
 
 ```sh
-just release 0.2.0
+just release 0.2.0 Vault search ships
 ```
 
 This executes one step as defined in the `Justfile`:
 
 ```text
-release version:
-    node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit
+release version *message:
+    node --experimental-strip-types scripts/prepare-release.mts {{ version }} --no-sign-commit {{ message }}
 ```
 
 **`prepare-release.mts`** — A TypeScript script (run directly by Node.js via `--experimental-strip-types`) that guards and finalizes the release, from the check suite to the last push. It reads `Cargo.toml` and throws if the version does not already equal the one you passed, requires the tree to have work in it at all, and requires the tag not to exist yet. It then takes a still copy of the plan tree next door, runs `just verify` against that copy, and — only if the suite passed — reads the work in the tree again, deletes every older tag here and on the remote, stages that second list of paths by name, creates the release commit and an annotated tag, pushes `main`, and pushes the tag on its own. The copy is removed whichever way the release ends.
@@ -33,7 +35,7 @@ It was two commands, the second of which pushed after the first had exited. Two 
 
 The plan copy exists because the owner writes the plan tree next door while a release runs. Six of the suite's checks read it, and they ask one resolver where it is; during a release that resolver answers the copy, so all six read the same complete state whatever else is being written at the time. A tree that changes while it is being copied is copied again, and a tree that will not settle stops the release before any tag is touched.
 
-So the full flow is: `just land` → edit `Cargo.toml` → `just release <version>`.
+So the full flow is: `just land <message>` → edit `Cargo.toml` → `just release <version> <message>`.
 
 ## What CI builds
 
