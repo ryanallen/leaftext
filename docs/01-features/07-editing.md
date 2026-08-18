@@ -51,7 +51,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 The **+** beside Open in the app bar starts a blank document in a new tab. The home screen carries the same button beside **Choose file**.
 
 - It opens in the reading view, whose [padlock](#the-padlock) is turned off for you, with the caret on the first line — there is nothing to click before you type. `Enter` starts the next paragraph, as it does anywhere else in the reading view.
-- It has **no file** yet. The tab is called *Untitled* (*Untitled 2*, and so on, when one is already open), and nothing is written anywhere until you say so.
+- It has **no file** yet. The tab is called *Untitled* (*Untitled 2*, and so on, when one is already open), and nothing reaches your folders until you say so. Closing the window with words in it keeps them in the [saved session](05-settings.md#unsaved-edits) rather than losing them, and the next launch puts the note back under the same name with its dot lit; a note you never typed into does not come back, because there is nothing in it to keep.
 - The first **Save** opens your operating system's Save dialog: choose a folder and a name, and from then on it saves like any other document. Close the dialog without choosing and nothing is written.
 - Once it is saved, the tab, the window title, and [Recent files](02-navigation.md#recent-files) all take the real name, and you can keep typing — the padlock is a setting, not something the new name resets.
 
@@ -318,7 +318,7 @@ The code view is a real editor surface: unlock it with the [padlock](#the-padloc
 - Color follows your typing: the source is tokenized as you go, so a construct takes its color the moment you finish typing it.
 - A multi-megabyte file types and scrolls like a short one, because only the lines on screen are ever drawn. Earlier versions carried a hand-built surface to manage that; the editor does it now.
 - What reaches the host is the edit, not the file: the offset, how much was removed, and what was typed. Sending a multi-megabyte buffer on every pause in typing cost a fifth of a second of it. The message carries the buffer's new length too, so if the host's copy ever disagreed it would ask for the whole text again rather than splice into a buffer it no longer understood.
-- Each tab keeps its own edit buffer: switching tabs, toggling back to the reading view, or closing the window never loses unsaved work. Closing carries the words into the [saved session](05-settings.md#example) and the next launch puts them back, with one press of undo standing between them and the file as you last saved it.
+- Each tab keeps its own edit buffer: switching tabs, toggling back to the reading view, or closing the window never loses unsaved work. Closing carries the words into the [saved session](05-settings.md#example) and the next launch puts them back, with one press of undo standing between them and the file as you last saved it. A [new document](#new-document) that never got a file comes back the same way, and its one press of undo takes it back to the empty page it started as.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.
 
 ### Pinned headings

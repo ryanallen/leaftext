@@ -103,7 +103,7 @@ impl Workspace {
         let mut saved_indices = Vec::new();
         let mut tabs = Vec::new();
         for (saved_index, saved) in session.tabs.iter().enumerate() {
-            // A note with no file is never asked whether it is one: see [`restored_untitled_buffer`].
+            // A note with no file is never asked whether it is one, and `restored_untitled_buffer` says why.
             if !saved.untitled && !saved.path.is_file() {
                 continue;
             }

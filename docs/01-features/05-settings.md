@@ -54,7 +54,8 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
 {
   "session": {
     "tabs": [
-      { "path": "/Users/alice/notes/daily.md", "title": "Daily notes", "code_view": false, "anchor": { "section": "tasks", "block": 1, "offsetY": -18.0 }, "saved_code_scroll": null, "unsaved_text": null, "saved_text": null }
+      { "path": "/Users/alice/notes/daily.md", "title": "Daily notes", "code_view": false, "anchor": { "section": "tasks", "block": 1, "offsetY": -18.0 }, "saved_code_scroll": null, "untitled": false, "unsaved_text": null, "saved_text": null },
+      { "path": "Untitled.md", "title": "Untitled", "code_view": false, "anchor": null, "saved_code_scroll": null, "untitled": true, "unsaved_text": "Notes from the call\n", "saved_text": null }
     ],
     "active": 0
   },
@@ -179,6 +180,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Closing the window with [unsaved edits](07-editing.md#save) writes them here rather than discarding them, and the next launch puts them back in their [tabs](02-navigation.md#tabs) with the dot lit
 - Saved on the tab as `unsaved_text` (the words as they stood) and `saved_text` (the same document as it was last written to disk), both `null` for a tab with nothing unsaved
 - The second is what the next launch compares the file against: matched, the words go back; changed underneath, the file wins and both are dropped
+- A [new document](07-editing.md#new-document) with words in it is carried too, marked `untitled` and with no `saved_text`, since there is no file to compare against. It comes back as the note it was — the name it was wearing, its words, its dot, and its first save still asking where it goes — and a note nobody typed into is not written here at all
 - Only closing writes them. A window left open saves nothing of what you have typed, and what has been typed in the last fraction of a second before the close is not carried
 
 ### First-launch bubble
