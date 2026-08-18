@@ -2638,15 +2638,15 @@ body.mac-frame.is-fullscreen::before {
   /* The header's left zone, sized to the library rail so the tab strip begins at the library's right edge and is pushed when the pane is resized. No right border: the top bar reads as one continuous surface, with only the library pane below carrying the rail's vertical stroke. */
   display: flex;
   align-items: center;
-  /* Same 10px the trailing group runs on, so both shoulders of the tab strip space their icons identically. */
-  gap: var(--lt-space-10);
+  /* The bar runs on one gap from the leaf through the window buttons, so the row reads as one sequence rather than as clusters. */
+  gap: var(--lt-space-8);
   align-self: stretch;
   box-sizing: border-box;
   width: var(--library-rail-width, 240px);
   /* Never let the rail clip the brand + history controls: floor the zone at their natural width. A second floor behind the closed-state width below, not the only one — alone it lets a Mac squeeze the library button out under the tab strip. */
   min-width: fit-content;
-  /* Left inset matches the library header's 12px so the logo lines up with the GRAPH/search controls directly below it. */
-  padding: 0 var(--lt-space-16) 0 var(--lt-space-12);
+  /* Left inset matches the library header's 12px so the logo lines up with the GRAPH/search controls directly below it. No right inset: the strip's own gap is the whole space before the first tab. */
+  padding: 0 0 0 var(--lt-space-12);
 }
 /* No rail: size the zone from the buttons it holds, so it shrinks behind any that fold away and never squeezes the ones that stay. It lands after the close motion's transitions have come off, so the flip is never animated. */
 .app-bar:not(.has-rail) .app-bar-lead {
@@ -2681,16 +2681,16 @@ body.mac-frame.is-fullscreen::before {
 }
 .tab-bar {
   display: flex;
-  /* Must clear the active tab's --tab-flare on both sides, or a flare reaches an inactive neighbor and the two tabs read as fused. Raise it with the flare. */
-  gap: var(--lt-space-14);
+  /* The bar's one gap, and it must clear the active tab's --tab-flare on both sides, or a flare reaches an inactive neighbor and the two tabs read as fused. Move the two together. */
+  gap: var(--lt-space-8);
   min-width: 0;
   /* Full header height, but the tabs hang from the bar's bottom edge (where the active one covers the reader divider) under a shoulder of chrome — which is what gives their top corners room to round. */
   align-self: stretch;
   align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
-  /* Space the first tab off the rail stroke and hold a gap before the app actions. No bottom inset — the tabs have to reach the divider. */
-  padding: var(--lt-space-4) var(--lt-space-12) 0;
+  /* The side insets are the bar's own gap, so the space beside the first and last tab matches every other space in the row. No bottom inset — the tabs have to reach the divider. */
+  padding: var(--lt-space-4) var(--lt-space-8) 0;
 }
 .tab-bar::-webkit-scrollbar {
   height: 0;
@@ -2741,8 +2741,8 @@ body.mac-frame.is-fullscreen::before {
 .tab-active {
   /* Drop the bottom stroke so the page-colored fill flows over the reader divider and the tab looks joined to the document below. The other three strokes are the selection cue — only the active tab frames itself. The fill is a variable because the flares below have to match it. */
   --tab-fill: var(--lt-background);
-  /* Bigger than the top corners: these carry the fill out over the divider rather than just turning a stroke. Capped by the tab-bar's gap, which it grows into. */
-  --tab-flare: var(--lt-radius-xl);
+  /* These carry the fill out over the divider rather than just turning a stroke. Capped by the tab-bar's gap, which it grows into: at the bar's 8px gap the largest radius that still leaves daylight is 6px. */
+  --tab-flare: var(--lt-radius-md);
   background: var(--tab-fill);
   border-top-color: var(--lt-border);
   border-left-color: var(--lt-border);
@@ -2892,7 +2892,7 @@ body.mac-frame.is-fullscreen::before {
 }
 .history-actions {
   display: flex;
-  gap: var(--lt-space-10);
+  gap: var(--lt-space-8);
   align-items: center;
 }
 /* The trailing group: the action buttons plus the window controls. Anchors the collapsed overflow dropdown; padded off the window edge (frameless windows let the flush window controls own that edge instead — see below). */
@@ -2901,8 +2901,8 @@ body.mac-frame.is-fullscreen::before {
   align-items: center;
   align-self: stretch;
   position: relative;
-  /* Mirrors .app-bar-lead's right inset, so a tab comes no closer to the actions than the first one comes to the history buttons. Without it the strip's own 12px is all that stands between a title and the toolbar. */
-  padding-left: var(--lt-space-16);
+  /* Mirrors .app-bar-lead's right inset at zero, so each end of the strip is its own gap and a tab comes no closer to the actions than the first one comes to the history buttons. */
+  padding-left: 0;
   padding-right: var(--lt-space-24);
 }
 .app-trailing-items {
@@ -2913,7 +2913,7 @@ body.mac-frame.is-fullscreen::before {
 }
 .app-actions-items {
   display: flex;
-  gap: var(--lt-space-10);
+  gap: var(--lt-space-8);
   align-items: center;
 }
 /* Overflow chevron: hidden inline (the `.app-trailing` prefix outranks the later `.icon-button { display: inline-grid }`), shown only once something has actually folded. Rests muted, greens on hover like the other toolbar icons. */
@@ -2958,8 +2958,8 @@ body.mac-frame.is-fullscreen::before {
 .window-controls {
   display: flex;
   align-items: center;
-  gap: var(--lt-space-10);
-  margin-left: var(--lt-space-2);
+  gap: var(--lt-space-8);
+  margin-left: 0;
 }
 /* The same chip as every other toolbar icon button: three square full-height fills in a row read as a different control set from the icons beside them. */
 .window-control {

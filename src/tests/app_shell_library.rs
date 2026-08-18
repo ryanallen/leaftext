@@ -116,19 +116,19 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet folds the window controls");
     assert_contains(folded_controls, "flex-direction: column;");
-    // The tab strip's two shoulders have to match: the lead's right inset and the trailing group's left one are what keep a tab from crowding the actions while the first tab sits well clear of the history buttons.
+    // The tab strip's two shoulders have to match: both are zero, so each end of the strip is the strip's own gap and a tab comes no closer to the actions than the first one comes to the history buttons.
     let lead_inset = css
         .split(".app-bar-lead {")
         .nth(1)
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines .app-bar-lead")
-        .contains("padding: 0 var(--lt-space-16) 0 var(--lt-space-12);");
+        .contains("padding: 0 0 0 var(--lt-space-12);");
     let trailing_inset = css
         .split(".app-trailing {")
         .nth(1)
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines .app-trailing")
-        .contains("padding-left: var(--lt-space-16);");
+        .contains("padding-left: 0;");
     assert!(
         lead_inset && trailing_inset,
         "the tab strip's shoulders must stay symmetric"
