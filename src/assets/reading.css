@@ -4967,7 +4967,7 @@ body.is-home-row-dragging .home-list-scroll li {
   opacity: 1;
   transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);
 }
-/* The flowchart editor's shape picker opens over the flow sheet rather than over the page, so its scrim takes the layer above. */
+/* The flowchart editor is a full-window view of its own rather than a sheet over the page, so the scrim it opens with takes the layer above those views: at the sheets' own 40 it would paint under them. A press on it closes the editor. The shape picker inside the editor throws no scrim at all. */
 #flowBackdrop {
   z-index: var(--lt-z-42);
 }

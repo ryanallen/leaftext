@@ -263,8 +263,8 @@ function shapeProblems(text, tree) {
 // The shipped log is read by the tier a row was retired from, so its headings are what a row is found under.
 const SHIPPED_TIER = /^##(?!#)\s+Retired from tier\s+(\d+)\b/;
 
-// A row writes `\|` in its own prose, so splitting on every pipe reads four cells as seven.
-function shippedCells(line) {
+// A row writes `\|` in its own prose, so splitting on every pipe reads four cells as seven. Both files next door are read with it.
+function rowCells(line) {
   const trimmed = line.trim().replace(/^\|/, '').replace(/\|$/, '');
   const out = [];
   let cell = '';
@@ -309,7 +309,7 @@ function shippedProblems(text) {
       continue;
     }
     if (!line.startsWith('|')) continue;
-    const cells = shippedCells(line);
+    const cells = rowCells(line);
     if (cells.every((c) => /^:?-{3,}:?$/.test(c))) continue;
     if (!cells[0].includes('~~')) {
       if (tier !== null && header === null) header = cells.length;
@@ -334,6 +334,36 @@ function shippedProblems(text) {
     }
   }
   return { problems, retired };
+}
+
+// The index next door is what every ticket skill says to read before writing a word. A ticket with two rows in it describes itself twice, and the older one describes the work as it was before it was designed; a ticket with none is invisible to the one pass that stops the tree planning the same thing twice. Three carried two.
+//
+// Only the first cell counts. A ticket is linked from other rows on purpose — what it replaces, what it rides on — so reading every link would fail on the cross-references the tree is built out of. The row a ticket owns is the one whose first cell opens the line, and only paths in `live` are counted, so a shipped or refused row is never held to the live set.
+function indexProblems(text, live) {
+  const problems = [];
+  const say = (subject, message) => problems.push({ rule: 'index', subject, message });
+  const owned = new Map();
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line.startsWith('|')) continue;
+    const path = links(rowCells(line)[0] ?? '')[0];
+    if (!path || !live.has(path)) continue;
+    if (!owned.has(path)) owned.set(path, []);
+    owned.get(path).push(i + 1);
+  }
+  for (const ticket of [...owned.keys()].sort()) {
+    const at = owned.get(ticket);
+    if (at.length > 1) {
+      say(ticket, `${ticket} opens ${at.length} rows, at lines ${at.join(', ')}: whoever reads the older one is planning against the ticket as it was before it was designed`);
+    }
+  }
+  for (const ticket of [...live].sort()) {
+    if (!owned.has(ticket)) {
+      say(ticket, `${ticket} opens no row, so it is invisible to the one pass that stops the tree planning the same thing twice`);
+    }
+  }
+  return problems;
 }
 
 // Every refusal is proved on made-up files before the real one is opened. Each case is a fault that has happened.
@@ -528,6 +558,34 @@ const SHIPPED_CASES = [
     shipped([0, SHIPPED_ONE], [1, SHIPPED_TWO, SHIPPED_PIPES]), [], 3],
 ];
 
+// `index(row, row)` — the index next door opens with its own title and one table of tickets, so the first row lands on line 5 and every row after it one line lower.
+const INDEX_TABLE = '| ticket | what it is |\n| --- | --- |\n';
+
+function index(...rows) {
+  return `# The ticket README\n\n${INDEX_TABLE}${rows.map((r) => `${r}\n`).join('')}`;
+}
+
+const INDEX_ONE = '| [one](refactor/a/one.md) | what it is |';
+const INDEX_ONE_AGAIN = '| [one](refactor/a/one.md) | what it was before it was designed |';
+const INDEX_TWO = '| [two](refactor/b/two.md) | what it is |';
+// The row that must not count as an owned row: `two` is named inside `one`'s prose as the work it rides on.
+const INDEX_CROSS = '| [one](refactor/a/one.md) | rides on [two](refactor/b/two.md) |';
+const INDEX_SHIPPED = '| [gone](done/c/gone.md) | what shipped |';
+
+const INDEX_LIVE = new Set(['refactor/a/one.md', 'refactor/b/two.md']);
+
+const INDEX_CASES = [
+  ['an index with one row per live ticket passes', index(INDEX_ONE, INDEX_TWO), INDEX_LIVE, [], ''],
+  ['a ticket opening two rows is refused, and both lines are named',
+    index(INDEX_ONE, INDEX_TWO, INDEX_ONE_AGAIN), INDEX_LIVE, ['index refactor/a/one.md'], 'lines 5, 7'],
+  ['a ticket opening no row is refused, and named',
+    index(INDEX_ONE), INDEX_LIVE, ['index refactor/b/two.md'], 'opens no row'],
+  ['a link later in a row is a cross-reference, not an owned row',
+    index(INDEX_CROSS, INDEX_TWO), INDEX_LIVE, [], ''],
+  ['a row for a ticket that shipped is never held to the live set',
+    index(INDEX_ONE, INDEX_TWO, INDEX_SHIPPED), INDEX_LIVE, [], ''],
+];
+
 function selfTest() {
   const fails = [];
   for (const [name, text, t, want] of CASES) {
@@ -543,6 +601,16 @@ function selfTest() {
       fails.push(`${name}: got [${got}], want [${want}]`);
     }
     if (read.retired !== count) fails.push(`${name}: counted ${read.retired} retired rows, want ${count}`);
+  }
+  for (const [name, text, live, want, said] of INDEX_CASES) {
+    const found = indexProblems(text, live);
+    const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+    if (said && !found.some((p) => p.message.includes(said))) {
+      fails.push(`${name}: no message said \`${said}\``);
+    }
   }
   return fails;
 }
@@ -593,13 +661,24 @@ for (const ticket of live) {
 const text = readFileSync(join(plans, 'PLAN.md'), 'utf8');
 const problems = [...shapeProblems(text, { live, retired, turnedDown, phases }), ...shippedRead.problems];
 
+// The same walk answers the index, so the two cannot disagree about what is live.
+const indexFails = indexProblems(readFileSync(join(plans, 'README.md'), 'utf8'), live);
+
 if (problems.length) {
   console.error('the running order has stopped ranking every live ticket:');
   for (const { message } of problems) console.error(`  ${message}`);
   console.error('Run /pm: it re-derives every row off the tree, so a ticket with no row gets one and');
   console.error('the counts at the foot are rewritten from what is actually on disk.');
   console.error('A row named above is in done/PLAN.md: /done puts one in the table for the tier it was retired from.');
-  process.exit(1);
 }
 
-console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, and every retired row inside the tier table it was retired from, square with that table's header`);
+if (indexFails.length) {
+  console.error('the index every ticket is written against has stopped holding one row per live ticket:');
+  for (const { message } of indexFails) console.error(`  ${message}`);
+  console.error('Run /ticket: a ticket added, renamed or moved between folders is not finished until the one row');
+  console.error('it opens matches. A ticket named in another row stays a cross-reference and keeps its own row.');
+}
+
+if (problems.length || indexFails.length) process.exit(1);
+
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per live ticket in the index beside it`);
