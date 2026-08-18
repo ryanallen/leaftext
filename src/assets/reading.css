@@ -3166,7 +3166,7 @@ body:has(#readerToolbar:not([hidden])) {
   width: 18px;
   height: 18px;
 }
-/* Scoped like `.block-gutter button` above, or that rule's pointer outweighs the grab whatever the order. The handle is for carrying, not for clicking. */
+/* The handle is for carrying, not for clicking. */
 .block-gutter .block-grip {
   width: 22px;
   height: 30px;

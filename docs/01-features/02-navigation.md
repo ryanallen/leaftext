@@ -20,6 +20,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, and the opening of a linked note |
+| [The pointer](#the-pointer) | The arrow stays the arrow over every control, and turns into the hand only over a link |
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the page's own dot texture under the pointer |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
@@ -261,6 +262,10 @@ Hovering a link shows a small tooltip that names what kind of link it is and sho
 This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll, when the window loses focus, or the moment a new page renders — clicking the link it describes included. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the document name printed on it.
 
 The hint also tells you where a click will land. A link to a document Leaftext reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet) is handed to your operating system to open in whatever owns that type.
+
+### The pointer
+
+The pointer keeps the arrow over everything you can press — buttons, tabs, menu rows, files in the [library](03-library.md#browsing) pane, the steps of the folder path, the window's own three dots. It turns into the hand only over a link in the document you are reading, so the shape says one thing: this goes somewhere else. Every other shape still does its own work — the caret over words you can [type in](07-editing.md#inline-editing-the-reading-view), the open hand over a block you can drag, the double arrow over a [column edge](01-rendering.md#tables) you can widen, the cross over a picture you are cropping.
 
 ### Opening a link in a new page
 

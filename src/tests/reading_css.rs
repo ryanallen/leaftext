@@ -258,7 +258,7 @@ fn the_hand_is_left_to_links_alone() {
         );
     }
 
-    // And no fragment may hand one out from the script either, which is where the map's nodes used to take theirs.
+    // And no fragment may hand one out from the script either: the map draws its nodes on a canvas, where a cursor is a property on the shape rather than a rule.
     assert!(
         !app_shell_script().contains("'pointer'") && !app_shell_script().contains("\"pointer\""),
         "the front end must not set a pointer cursor"
