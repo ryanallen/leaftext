@@ -424,9 +424,50 @@ fn untitled_xml_is_headed_by_its_file_name() {
 
     assert_eq!(document.format, DocumentFormat::Xml);
     assert_eq!(document.title, "Sitemap");
-    assert_contains(&document.html, "<h1 id=\"sitemap\">Sitemap</h1>");
+    assert_contains(
+        &document.html,
+        "<h1 data-borrowed-title id=\"sitemap\">Sitemap</h1>",
+    );
     // The reading view can still edit the exact source it came from.
     assert_eq!(document.source, xml);
+}
+
+#[test]
+fn a_heading_lent_by_the_file_name_is_marked_and_one_the_document_owns_is_not() {
+    // The two are drawn identically, so the mark is the only thing that tells them apart — and it is what lets the app offer a rename on one of them and nothing on the other.
+    let borrowed_xml =
+        opened_document_from_xml("<urlset><url><loc>a</loc></url></urlset>", "sitemap.xml");
+    assert_contains(
+        &borrowed_xml.html,
+        "<h1 data-borrowed-title id=\"sitemap\">Sitemap</h1>",
+    );
+
+    let owned_xml = opened_document_from_xml(
+        "<feed><title>Daily notes</title><entry><id>1</id></entry></feed>",
+        "sitemap.xml",
+    );
+    assert_contains(&owned_xml.html, ">Daily notes</h1>");
+    assert!(
+        !owned_xml.html.contains("data-borrowed-title"),
+        "{}",
+        owned_xml.html
+    );
+
+    // A data document's heading carries no source range either way, so the mark is the renderer stating the fact rather than anything the anchor could be read for.
+    let borrowed_json = opened_document_from_json("{\"version\": 1}", "package.json");
+    assert_contains(&borrowed_json.html, "data-borrowed-title");
+    assert_contains(&borrowed_json.html, ">Package</h1>");
+
+    let owned_json = opened_document_from_json(
+        "{\"title\": \"Daily notes\", \"version\": 1}",
+        "package.json",
+    );
+    assert_contains(&owned_json.html, ">Daily notes</h1>");
+    assert!(
+        !owned_json.html.contains("data-borrowed-title"),
+        "{}",
+        owned_json.html
+    );
 }
 
 #[test]

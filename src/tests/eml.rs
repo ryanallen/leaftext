@@ -180,7 +180,21 @@ fn the_file_name_titles_a_message_with_no_subject() {
     let message = "From: a@example.com\nContent-Type: text/plain\n\nBody.\n";
     let (title, html, _) = render_eml_document(message, Some("Saved message"));
     assert_eq!(title, None);
-    assert_contains(&html, "<h1 id=\"saved-message\">Saved message</h1>");
+    // Marked as the file's name rather than the message's own words, which is what the app offers a rename on.
+    assert_contains(
+        &html,
+        "<h1 id=\"saved-message\" data-borrowed-title>Saved message</h1>",
+    );
+}
+
+#[test]
+fn a_subject_of_its_own_heads_the_message_unmarked() {
+    let message = "From: a@example.com\nSubject: Lunch\nContent-Type: text/plain\n\nBody.\n";
+    let (title, html, _) = render_eml_document(message, Some("Saved message"));
+    assert_eq!(title.as_deref(), Some("Lunch"));
+    assert_contains(&html, ">Lunch</h1>");
+    // The words are the message's, so pressing the heading edits the Subject line rather than renaming the file.
+    assert!(!html.contains("data-borrowed-title"), "{html}");
 }
 
 #[test]

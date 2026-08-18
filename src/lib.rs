@@ -561,6 +561,9 @@ pub fn opened_document_from_eml(eml: &str, path: impl AsRef<Path>) -> OpenedDocu
     )
 }
 
+/// The mark a tree renderer puts on the page's heading where it took the words from the file's name rather than from anything the document says. A fact about the document, stated wherever it is drawn — the invitation to rename it is the app shell's alone, since a published site cannot rename anything.
+pub(crate) const BORROWED_TITLE_ATTR: &str = " data-borrowed-title";
+
 /// Render a document that is a tree rather than prose — XML, JSON, YAML — into an `OpenedDocument`. They differ only in the reader that turns source into HTML; the shell around it is the same, and none of them can be reconstructed from the DOM, so each sends its `source` along.
 fn opened_document_from_tree(
     source: &str,

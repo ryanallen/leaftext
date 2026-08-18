@@ -522,7 +522,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "scholar-rich-document",
-        "6fae0843eeda7ac3962ee6db4c30be87608a4785fa53953ca87b1629766e3a8c",
+        "9b70d0338a0b8a2a5bdda49c4f6d468ae24ba3523e60afd5e84cd87dacbc7f4e",
     ),
     (
         "yaml",

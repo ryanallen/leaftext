@@ -1355,7 +1355,7 @@ fn library_row_context_menu_offers_file_actions() {
     assert!(html.contains("send({ command: 'renameFile', path, newName })"));
 
     // The inline rename box and the new menu labels are present.
-    assert!(html.contains("function openRenameBox(path)"));
+    assert!(html.contains("function openRenameBox(path, anchor)"));
     assert!(html.contains("{ action: 'delete', label: 'Delete', danger: true }"));
 }
 

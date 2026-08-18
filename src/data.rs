@@ -740,13 +740,17 @@ impl DataCtx {
         slug
     }
 
-    fn heading(&mut self, level: usize, text: &str, span: Option<Range<usize>>) {
+    /// `borrowed` where the words are the file's name standing in for a title the document has not got, which is a heading the app lets the reader rename the file by.
+    fn heading(&mut self, level: usize, text: &str, span: Option<Range<usize>>, borrowed: bool) {
         // A YAML mapping may be keyed by a collection rather than a name, which leaves nothing to head the section with. An empty heading is worse than none, so the section's contents just follow what came before.
         if text.trim().is_empty() {
             return;
         }
         let id = self.unique_slug(text);
-        let attrs = self.block_attrs("data_heading", span);
+        let mut attrs = self.block_attrs("data_heading", span);
+        if borrowed {
+            attrs.push_str(BORROWED_TITLE_ATTR);
+        }
         self.push(&format!(
             "<h{level}{attrs} id=\"{}\">{}</h{level}>\n",
             encode_double_quoted_attribute(&id),
@@ -777,7 +781,7 @@ fn render_data_document(
         .clone()
         .or_else(|| fallback_title.and_then(plain_document_title));
     if let Some(heading) = heading {
-        ctx.heading(1, &heading, None);
+        ctx.heading(1, &heading, None, title.is_none());
     }
 
     match &root.value {
@@ -839,7 +843,7 @@ fn render_mapping(pairs: &[(String, DataNode)], ctx: &mut DataCtx, depth: usize)
         if depth >= MAX_DEPTH {
             render_prose(&flatten_text(value), value.span.clone(), ctx);
         } else {
-            ctx.heading((2 + depth).min(6), &friendly_label(key), None);
+            ctx.heading((2 + depth).min(6), &friendly_label(key), None, false);
             render_node(value, ctx, depth + 1);
         }
         index += 1;
@@ -863,7 +867,7 @@ fn render_sequence(items: &[DataNode], ctx: &mut DataCtx, depth: usize) {
         }
         // Only a record that names itself gets a heading; there is nothing truthful to call the others, and an invented "Item 3" is noise.
         if let Some(label) = record_label(item) {
-            ctx.heading((2 + depth).min(6), &label, None);
+            ctx.heading((2 + depth).min(6), &label, None, false);
         }
         render_node(item, ctx, depth + 1);
     }

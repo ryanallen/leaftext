@@ -285,6 +285,38 @@ impl Workspace {
             .and_then(|tab| tab.edit.as_mut())
     }
 
+    /// Move every tab sitting on `from` across to `to`, after the file itself has been renamed, and rename every back and forward step naming it in every tab. Answers whether any tab followed.
+    ///
+    /// Without this a rename leaves whoever is reading the file pointed at a path that is not there any more, and the next render fails to open it. The buffer is never touched, only the path it wears, so unsaved typing survives — and the format follows the new name, which is the answer reopening the file would give. Every step is renamed in place rather than gaining one: Back must not offer a name nothing was ever at.
+    pub(crate) fn follow_rename(&mut self, from: &Path, to: &Path) -> bool {
+        let mut followed = false;
+        for tab in &mut self.tabs {
+            let showing = tab
+                .history
+                .current()
+                .is_some_and(|current| paths_refer_to_same_document(current, from));
+            // A tab can hold a buffer for one document while showing another it followed a link to, so the two move independently.
+            let holds_buffer = tab.has_edit_for(from);
+            // Before the guard below, and on every tab: a tab that visited the file and followed a link out of it is neither showing it nor holding its buffer, and that is exactly the tab whose Back would land on a name nothing is at any more. A buried step is not a redraw, so this tab changes nothing else and does not count as followed.
+            tab.history.rename_visits(from, to);
+            if !showing && !holds_buffer {
+                continue;
+            }
+            if holds_buffer {
+                if let Some(edit) = tab.edit.as_mut() {
+                    edit.adopt_path(to.to_path_buf());
+                }
+            }
+            if showing {
+                tab.title = leaftext::tab_title_from_path(to);
+            }
+            // Cached under the old name.
+            tab.rendered = None;
+            followed = true;
+        }
+        followed
+    }
+
     /// Open `path` as a tab. If a tab is already showing that document, just activate it; otherwise append a new tab seeded with that document.
     pub(crate) fn open_path(&mut self, path: PathBuf) {
         if let Some(index) = self.tab_showing(&path) {

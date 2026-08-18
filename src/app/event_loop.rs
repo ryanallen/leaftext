@@ -655,7 +655,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::RenameFile { path, new_name } => match rename_file(&path, &new_name) {
-                    Ok(_) => refresh_library_folder(reader.page()),
+                    Ok(renamed) => {
+                        // The file moved under whatever tab is sitting on it, so the tab moves with it and redraws under the new name. The watcher re-aims itself at the active document every turn and needs nothing here.
+                        if reader.workspace.follow_rename(&path, &renamed) {
+                            reader.record_recent(renamed);
+                            reader.render(ScrollIntent::Preserve);
+                        }
+                        refresh_library_folder(reader.page());
+                    }
                     Err(error) => {
                         eprintln!("Failed to rename {}: {error}", path.display());
                         report_file_action_failure(reader.page(), &error.to_string());

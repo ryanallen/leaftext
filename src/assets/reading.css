@@ -2661,6 +2661,10 @@ body:has(#readerToolbar:not([hidden])) {
   line-height: var(--type-h1-line);
   padding-bottom: 0.3em;
 }
+/* A heading the page borrowed from the file's name renames the file when pressed, and only here: the same document on a published site draws the same mark, whose host can rename nothing. */
+.app-surface .document-body [data-borrowed-title] {
+  cursor: text;
+}
 .document-body h1:first-of-type {
   font-size: var(--type-display-size);
   font-weight: var(--type-display-weight);

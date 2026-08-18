@@ -310,18 +310,21 @@ function commitRename() {
     send({ command: 'renameFile', path, newName });
   }
 }
-function openRenameBox(path) {
+function openRenameBox(path, anchor) {
   renamePath = path;
   renameSettled = false;
   const name = fileBaseName(path);
   renameInput.value = name;
   renameBox.hidden = false;
-  // Anchor over the row if it is on screen, otherwise near the top of the pane.
+  // Over whatever was pressed where the caller names it, else over the pane row if that is on screen, else near the top of the pane.
   let row = null;
-  libraryTree.querySelectorAll('[data-reveal-path]').forEach((el) => {
-    if (el.getAttribute('data-reveal-path') === path) row = el;
-  });
-  const rect = row ? row.getBoundingClientRect() : null;
+  if (!anchor) {
+    libraryTree.querySelectorAll('[data-reveal-path]').forEach((el) => {
+      if (el.getAttribute('data-reveal-path') === path) row = el;
+    });
+  }
+  const anchored = anchor || row;
+  const rect = anchored ? anchored.getBoundingClientRect() : null;
   const left = rect ? rect.left : 16;
   const top = rect ? rect.top : 80;
   const at = leafClampToApp(left, top, 240, 40, 8);
@@ -349,6 +352,16 @@ renameInput.addEventListener('keydown', (event) => {
 renameInput.addEventListener('blur', () => {
   commitRename();
 });
+// The big heading over a file that names no title of its own is the file's name, not the document's words, so pressing it renames the file through the same box a pane row opens. The renderer only states the fact; the tooltip and the press are the app's, because a published site draws the same document and can rename nothing. Called per render, so the listener dies with the heading it was put on.
+function bindBorrowedTitleRename() {
+  const heading = app.querySelector('.document-body [data-borrowed-title]');
+  if (!heading) return;
+  heading.title = 'Rename file';
+  heading.addEventListener('click', () => {
+    const path = activeDocumentPath();
+    if (path) openRenameBox(path, heading);
+  });
+}
 // The one question the app asks, and the only thing in it that stands in your way until you answer. The frame is declared in the boot HTML; what is asked is the caller's, so a second thing worth confirming needs no second dialog.
 const confirmBackdrop = document.getElementById('confirmBackdrop');
 const confirmDialog = document.getElementById('confirmDialog');

@@ -828,6 +828,167 @@ fn rename_file_rejects_path_traversal_and_empty_names() {
 }
 
 #[test]
+fn renaming_the_open_document_moves_the_tab_with_it() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let before = dir.join("notes.yaml");
+    fs::write(&before, "title: Notes\n").expect("fixture file is written");
+
+    let mut workspace = dirty_tab_workspace(&before, "title: Notes\n", "body: typed\n");
+    let steps = workspace.tabs[0].history.entries.len();
+
+    let after = rename_file(&before, "pages.json").expect("rename succeeds");
+    assert!(workspace.follow_rename(&before, &after));
+
+    assert_eq!(workspace.active_path(), Some(after.as_path()));
+    assert_eq!(workspace.tabs[0].title, "pages");
+    // Renamed in place: Back must not gain a step to a name nothing was ever at.
+    assert_eq!(workspace.tabs[0].history.entries.len(), steps);
+    // Nothing is re-read, so the render cannot answer out of a cache made under the old name.
+    assert!(workspace.tabs[0].rendered.is_none());
+
+    let edit = workspace.tabs[0].edit.as_ref().expect("the buffer is kept");
+    assert_eq!(edit.path, after);
+    // The words are untouched — only the path the buffer wears moved.
+    assert_eq!(edit.text(), "title: Notes\nbody: typed\n");
+    // The format follows the new name, the same answer reopening the file would give.
+    assert_eq!(edit.format, DocumentFormat::Json);
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn renaming_the_open_document_moves_an_earlier_visit_to_it_too() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let notes = dir.join("notes.md");
+    fs::write(&notes, "# Notes\n").expect("fixture file is written");
+    let linked = dir.join("linked.md");
+    fs::write(&linked, "# Linked\n").expect("fixture file is written");
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(notes.clone());
+    // Out to the linked document and back in by another link, so the file is the step showing and a step buried under it at once.
+    workspace.tabs[0].history.stamp_current(test_anchor(7));
+    workspace.tabs[0].history.record(linked.clone());
+    workspace.tabs[0].history.record(notes.clone());
+    let steps = workspace.tabs[0].history.entries.len();
+
+    let renamed = rename_file(&notes, "pages.md").expect("rename succeeds");
+    assert!(workspace.follow_rename(&notes, &renamed));
+
+    // Renamed in place, both of them: Back must not gain a step to a name nothing was ever at.
+    assert_eq!(workspace.tabs[0].history.entries.len(), steps);
+    assert_eq!(
+        workspace.tabs[0]
+            .history
+            .entries
+            .iter()
+            .map(|entry| entry.path.clone())
+            .collect::<Vec<_>>(),
+        vec![renamed.clone(), linked.clone(), renamed.clone()]
+    );
+    // The path alone was written, so the buried step keeps the place the reader was at on it.
+    assert_eq!(
+        workspace.tabs[0].history.entries[0].anchor,
+        Some(test_anchor(7))
+    );
+
+    // Two presses of Back land on the file under its new name rather than on a name nothing is at.
+    workspace.tabs[0].history.go_back();
+    workspace.tabs[0].history.go_back();
+    assert_eq!(workspace.tabs[0].history.current(), Some(&renamed));
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn renaming_a_file_a_tab_has_left_moves_its_buried_step_and_nothing_else() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let notes = dir.join("notes.md");
+    fs::write(&notes, "# Notes\n").expect("fixture file is written");
+    let linked = dir.join("linked.md");
+    fs::write(&linked, "# Linked\n").expect("fixture file is written");
+
+    // The tab visited the file, followed a link out of it and never came back, so it is neither showing it nor holding its buffer.
+    let mut workspace = Workspace::default();
+    workspace.open_path(notes.clone());
+    workspace.tabs[0].history.record(linked.clone());
+    workspace.tabs[0].title = String::from("linked");
+    let text = "# Linked\n";
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: linked.clone(),
+        hash: content_hash(text),
+        document: opened_document_from_source_with_host(text, &linked, &DesktopHost::default()),
+    });
+
+    let renamed = rename_file(&notes, "pages.md").expect("rename succeeds");
+    assert!(!workspace.follow_rename(&notes, &renamed));
+
+    assert_eq!(workspace.tabs[0].history.entries[0].path, renamed);
+    assert_eq!(workspace.tabs[0].history.current(), Some(&linked));
+    // A buried step is not a redraw: the tab keeps its title and the render it is showing.
+    assert_eq!(workspace.tabs[0].title, "linked");
+    assert!(workspace.tabs[0]
+        .rendered
+        .as_ref()
+        .is_some_and(|cache| cache.answers_for(&linked, content_hash(text))));
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn renaming_a_file_leaves_a_step_naming_another_file_alone() {
+    let mut history = DocumentHistory::default();
+    history.record(PathBuf::from("one.md"));
+    history.stamp_current(test_anchor(4));
+    history.record(PathBuf::from("two.md"));
+    history.record(PathBuf::from("three.md"));
+    // Back onto the first, so the other two are forward steps and the one walk has to reach them.
+    history.go_back();
+    history.go_back();
+
+    history.rename_visits(Path::new("three.md"), Path::new("renamed.md"));
+
+    assert_eq!(
+        history
+            .entries
+            .iter()
+            .map(|entry| entry.path.clone())
+            .collect::<Vec<_>>(),
+        vec![
+            PathBuf::from("one.md"),
+            PathBuf::from("two.md"),
+            PathBuf::from("renamed.md")
+        ],
+        "only the file that moved is renamed, and a forward step moves with the rest"
+    );
+    // A step left alone keeps the place it remembers.
+    assert_eq!(history.entries[0].anchor, Some(test_anchor(4)));
+}
+
+#[test]
+fn renaming_a_file_no_tab_holds_changes_no_tab() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let open = dir.join("open.md");
+    fs::write(&open, "# Open\n").expect("fixture file is written");
+    let other = dir.join("other.md");
+    fs::write(&other, "# Other\n").expect("fixture file is written");
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(open.clone());
+
+    let renamed = rename_file(&other, "renamed.md").expect("rename succeeds");
+    assert!(!workspace.follow_rename(&other, &renamed));
+
+    assert_eq!(workspace.active_path(), Some(open.as_path()));
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
 fn startup_failure_message_includes_recovery_hint() {
     let error = io::Error::new(io::ErrorKind::NotFound, "webview runtime missing");
     let message = startup_failure_message(&error);

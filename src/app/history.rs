@@ -97,6 +97,15 @@ impl DocumentHistory {
         self.index = Some(self.entries.len() - 1);
     }
 
+    /// Rename every step naming `from` across to `to`, in place, after the file itself has been renamed. Back and forward steps alike, since both live in this one list. A step is a pointer to the document the reader was on, and the document moved, so a step left wearing the old name can only fail when they press onto it. The path alone is written, so each step keeps the place it remembers, and no step is added or removed.
+    pub(crate) fn rename_visits(&mut self, from: &Path, to: &Path) {
+        for entry in &mut self.entries {
+            if paths_refer_to_same_document(&entry.path, from) {
+                entry.path = to.to_path_buf();
+            }
+        }
+    }
+
     /// Rename the current entry in place — the untitled document that has just been given a file. Not a navigation: Back must not gain a step to a name nothing was ever at.
     pub(crate) fn replace_current(&mut self, path: PathBuf) {
         if let Some(entry) = self.index.and_then(|index| self.entries.get_mut(index)) {

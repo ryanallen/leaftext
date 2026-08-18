@@ -187,6 +187,8 @@ fn render_generic_document<'a>(
         // Anchor the heading to source only when it *is* an element's text.
         let attrs = match (title.is_some(), title_node) {
             (true, Some(node)) => ctx.block_attrs("heading", node),
+            // The heading is the file's name standing in for a title the document has not got.
+            (false, _) => BORROWED_TITLE_ATTR.to_string(),
             _ => String::new(),
         };
         ctx.push(&format!(

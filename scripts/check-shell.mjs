@@ -163,6 +163,11 @@ function fakeElement(id = '') {
     hasAttribute: () => false,
     setPointerCapture() {},
     releasePointerCapture() {},
+    // The rename box preselects the stem and leaves the extension standing, so the range is kept rather than dropped: a stand-in that swallowed it would let a box that selected the whole name pass.
+    setSelectionRange(start, end) {
+      this.selectionStart = start;
+      this.selectionEnd = end;
+    },
     focus() {},
     blur() {},
     click() {},
@@ -7518,6 +7523,41 @@ if (booted) {
       booted.getSelection = wasSelection;
       readingApp.querySelector = wasQuery;
       booted.hideContextMenu();
+    }
+  });
+
+  // A file that names no title of its own is headed with its own name, drawn exactly like a heading the document owns. The renderer marks that one; pressing it is the only way to rename the file without leaving the page, and what is typed is the real file name rather than the word on screen — the heading says `Sitemap` and the box has to say `sitemap.xml`.
+  check('pressing the heading a file lent renames the file', () => {
+    const path = 'C:\\Notes\\sitemap.xml';
+    const wasQuery = readingApp.querySelector;
+    const wasSend = booted.ipc.postMessage;
+    const sent = [];
+    const heading = fakeElement('h1');
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.leafSetState({ recent: [], favorites: [], tabs: [{ path, title: 'Sitemap' }], active: 0, document: null });
+      readingApp.querySelector = (selector) => (String(selector).includes('data-borrowed-title') ? heading : wasQuery(selector));
+      booted.bindBorrowedTitleRename();
+      if (heading.title !== 'Rename file') throw new Error(`the borrowed heading says ${heading.title || 'nothing'} rather than what pressing it does`);
+      const press = (heading.listeners.get('click') || [])[0];
+      if (!press) throw new Error('the heading the file lent takes no press');
+      press({});
+
+      const box = vm.runInContext('renameBox', booted);
+      const input = vm.runInContext('renameInput', booted);
+      if (box.hidden) throw new Error('the press opened no rename box');
+      if (input.value !== 'sitemap.xml') throw new Error(`the box holds ${input.value} rather than the file's real name`);
+      if (input.selectionStart !== 0 || input.selectionEnd !== 7) throw new Error(`the box preselected ${input.selectionStart}..${input.selectionEnd} rather than the stem alone`);
+
+      input.value = 'pages.xml';
+      for (const handler of input.listeners.get('keydown') || []) handler({ key: 'Enter', preventDefault: () => {} });
+      const rename = sent.find((message) => message.command === 'renameFile');
+      if (!rename) throw new Error(`Enter sent ${sent.map((one) => one.command).join(', ') || 'nothing'}`);
+      if (rename.path !== path || rename.newName !== 'pages.xml') throw new Error(`the rename asks for ${rename.path} -> ${rename.newName}`);
+      if (!box.hidden) throw new Error('the box stayed open over the document after it committed');
+    } finally {
+      readingApp.querySelector = wasQuery;
+      booted.ipc.postMessage = wasSend;
     }
   });
 

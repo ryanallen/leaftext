@@ -62,13 +62,14 @@ pub(crate) fn render_eml_document(
         .clone()
         .or_else(|| fallback_title.and_then(plain_document_title));
     if let Some(heading) = &heading {
-        // Only where the heading is the message's own subject: a file name standing in for a missing one is not a line of the file.
+        // Only where the heading is the message's own subject: a file name standing in for a missing one is not a line of the file, and it is marked as the file's instead.
         let attrs = match title
             .as_ref()
-            .and_then(|_| plain_header_span(&message, source, "Subject"))
+            .map(|_| plain_header_span(&message, source, "Subject"))
         {
-            Some((start, end)) => blocks.attrs("email_header", start, end),
-            None => String::new(),
+            Some(Some((start, end))) => blocks.attrs("email_header", start, end),
+            Some(None) => String::new(),
+            None => BORROWED_TITLE_ATTR.to_string(),
         };
         out.push_str(&format!(
             "<h1 id=\"{}\"{attrs}>{}</h1>\n",
