@@ -9,11 +9,13 @@ user-invocable: true
 
 Retire a ticket on the owner's word. **Closing is the owner's call.** Never refuse and never infer it. Any status closes, open boxes and all.
 
+**A struck owner's box is that word, given when the strike and its reason were written.** Where a subject has genuinely nothing to press, the strike says so and says why, so a build that ticks the last phase box of such a ticket is acting on an answer already in the file rather than inferring one — [`/dev`](../dev/SKILL.md) runs this skill itself at that point, because the plan is finished the moment that box closes and `/check` refuses a finished plan still filed as live work.
+
 With no argument, take a live ticket at `Released`.
 
 1. Add the shipped note and keep the dated `Designed` line.
 2. Move the ticket into the matching folder under `../docs/done/` and fix its relative links. Take the links pointing *at* it with it: search both trees for its file name and repoint every one, or `/check` fails naming each.
-3. Rewrite its README row to say what shipped.
+3. Rewrite its README row to say what shipped, and **move it out of the live half into the `## Shipped` table for its subject** — the index is navigated by heading, so a row left where it was reads as work that is waiting however its words are rewritten. Seven sat that way at once. `scripts/check-plan.mjs` refuses one now, naming the heading it belongs under.
 4. Remove its live row from `../docs/PLAN.md` and move it into `../docs/done/PLAN.md`, its `Status` cell rewritten to the date it closed. **It lands inside the `## Retired from tier N` table for the tier its live row sat in**, in that table's own closing order and with a cell for every column that table's header names — a tier with no table there yet gets one. Never above the file's title: that file is read by the tier a row was retired from, and a row dropped at the top belongs to no tier and sits under no header, which is how 30 of them once came to open it. Empty a tier that its going leaves with no rows. Keep the live file starting with its title, `# Leaftext Plan Log`, and its first work table the first thing under it; put its count line, summary, and other notes after the work tables.
 5. Sync any published pages made false by the change — the development pages included, when the work added a test subject file, a check, or changed how a skill works.
 

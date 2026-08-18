@@ -262,13 +262,13 @@ A ticket nobody can find is a ticket nobody builds, so finishing one is: write t
 
 ## Working a ticket later
 
-That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box**. Shipping is [git-release](../git-release/SKILL.md)'s; closing is [done](../done/SKILL.md)'s, on the owner's word alone: the shipped note at the top, the move into the right subject folder under `../docs/done/`, the README row rewritten to say what shipped, and the running-order row moved into `../docs/done/PLAN.md`.
+That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box while that box is open**. Shipping is [git-release](../git-release/SKILL.md)'s; closing is [done](../done/SKILL.md)'s, on the owner's word alone — and a struck owner's box is that word, written in advance by whoever struck it, so `/dev` closes such a ticket itself the moment its last phase box is ticked: the shipped note at the top, the move into the right subject folder under `../docs/done/`, the README row rewritten to say what shipped, and the running-order row moved into `../docs/done/PLAN.md`.
 
 ## Reference
 
 - `/pm` — ranks every ticket in the tree into one running order.
 - `/design` — checks a written ticket against the code before anyone builds it.
-- `/dev` — builds one and stops at the owner's box; `/git-release` ships it; `/done` moves it to `done/`.
+- `/dev` — builds one and stops at an open owner's box, or runs `/done` itself where that box is struck; `/git-release` ships it; `/done` moves it to `done/`.
 - `/sync-tests` — where a test goes, how it is named, and the pass that writes the ones a phase asked for.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
 - `../docs/imgs/` — every picture the owner has handed over, named after the ticket that uses it.

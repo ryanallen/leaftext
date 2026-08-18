@@ -61,7 +61,7 @@ A test is named as a sentence about behavior — `a_staged_update_installs_itsel
 | `/ticket` | Writes a plan, files it under the right subject, and adds its row to the index |
 | `/design` | Reads a plan against the code, fixes it, dates it, and records what was wrong |
 | `/pm` | Ranks every live plan into one running order |
-| `/dev` | Builds a plan's phases in order and stops at the owner's own box |
+| `/dev` | Builds a plan's phases in order and stops at the owner's own box, retiring the plan itself where that box is struck for having nothing to press |
 | `/check` | The gate: tests first, then `just verify`. A failure is fixed and re-run, never explained past |
 | `/sync-tests` | Names the test covering each change, writes the missing ones, says what cannot be tested |
 | `/sync-docs` | Makes these pages match the app, takes the screenshots they ask for, regenerates the crawler files |
