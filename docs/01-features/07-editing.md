@@ -22,6 +22,8 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [The fields at the top](#the-fields-at-the-top-of-a-note) | Click a value in a note's field block and change it, pick a date, tick a box, add and drop tag chips, rename a key, add a field or take one away — and start a block on a note that has none |
 | [Renaming from the heading](#renaming-from-the-heading) | A document that names no title of its own is headed with its file name; press that heading to rename the file |
 | [The title a data file names](#editing-data-files) | A [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file that names its own title heads the page with it; press that heading and the value itself opens for editing, quotes and all |
+| [A quoted YAML value](#editing-data-files) | A value written in quotes opens its own source at a press, quotes and all, the way the same value in JSON does |
+| [A press that cannot open says why](#editing-data-files) | Where a data file is written a way the page cannot place exactly, pressing it raises a line naming the source view rather than answering with nothing |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
@@ -391,9 +393,9 @@ What the *reading view* offers differs by format, because a block can only be ed
 | XML blocks whose drawn words are the file's own bytes | Type on the words where they are drawn; the edit is spliced between the element's own tags. A comment is the same, between its `<!--` marks. [Block gutter](#the-block-gutter) |
 | Every other XML block | Edit its exact source in place, with a line saying why the markup appeared. [Block gutter](#the-block-gutter) |
 | JSON | Edit their exact source in place |
-| YAML plain values | Edit their exact source in place |
-| YAML lists, tables, quoted strings, block scalars | Read-only; edited in the code view |
-| YAML aliases (`*name`) and keys with no value | Read-only; edited in the code view |
+| YAML plain and quoted values | Edit their exact source in place — a quoted one with its quotes, the way a JSON string opens |
+| YAML lists, tables, block scalars, and a quoted value the file spells another way | Read-only, and a press says why; edited in the code view |
+| YAML aliases (`*name`) and keys with no value | Read-only, and a press says why; edited in the code view |
 | Email lines and paragraphs the page can write back byte for byte | Type on the words where they are drawn |
 | Every other part of a message — a packed body, a folded or coded header line | Read-only in the page, and a press says so; edited in the code view |
 
@@ -401,14 +403,15 @@ What the *reading view* offers differs by format, because a block can only be ed
 
 A data file is edited as *source*, never as rendered text. Click a JSON value in the reading view and you get the real thing — `"0.1.380"` with its quotes — which is what keeps an edit from turning a string into something the file no longer parses as.
 
-The big heading is one of those values wherever the file names its own title with a root `title` or `name` key. That key is left out of the body, so the heading is the only place its value appears, and pressing it opens that value's source exactly as pressing a field does. A YAML title written in quotes proves no range, so its heading stays read-only like every other quoted value, and a heading standing in for a file that names no title of its own is the file's name instead — pressing that one [renames the file](#renaming-from-the-heading).
+The big heading is one of those values wherever the file names its own title with a root `title` or `name` key. That key is left out of the body, so the heading is the only place its value appears, and pressing it opens that value's source exactly as pressing a field does. A YAML title written in quotes opens the same way, quotes and all; one written as a block scalar stays read-only, like the value itself. A heading standing in for a file that names no title of its own is the file's name instead — pressing that one [renames the file](#renaming-from-the-heading).
 
 That only works where the byte range is certain, so Leaftext offers it only where it is:
 
 - **JSON** — everywhere. The reader knows precisely where each value begins and ends, so every value is click-to-edit.
-- **YAML plain values** — where proven. A plain scalar's source text is checked character-for-character against the value it parsed to; when they match, the range is exact and the value is editable.
-- **Everything else in YAML** — read-only in the reading view. A quoted string or a block scalar (`|`, `>`) carries quotes or an indicator that its value does not, and nothing can prove where a YAML list or mapping *ends* — its closing position points at whatever token came next. Rather than splice an edit over a guessed range and corrupt the file, Leaftext offers no inline editor and leaves these to the code view.
+- **YAML plain and quoted values** — where proven. A scalar's source text is checked character-for-character against the value it parsed to — for a quoted one, against the value with its own quotes around it; when they match, the range is exact and the value is editable. The quotes are part of what opens, exactly as they are for a JSON string.
+- **Everything else in YAML** — read-only in the reading view. A block scalar (`|`, `>`) carries an indicator and an indent its value does not; a quoted value holding an escape, a doubled quote, or a run of lines is spelled differently in the file from the value it means; and nothing can prove where a YAML list or mapping *ends* — its closing position points at whatever token came next. Rather than splice an edit over a guessed range and corrupt the file, Leaftext offers no inline editor and leaves these to the code view.
 - **An alias, and a key with nothing after it** — read-only for the same reason. `b: *x` shows the value written up at `&x`, so the only text an edit could replace is on the anchor's line, not the alias's. And a key with no value has no text at all: typing into the gap after `key:` would write `key:x`, which is one scalar rather than a key and a value.
+- **A press on any of those says why.** Rather than answering with nothing, the page raises a line naming the source view: that the file does not say where a list or table ends, that a heading's words come from the file, or that a value is written a way the page cannot place. A value written as two quotes with nothing between them is not drawn at all, the way every empty value is, so there is nothing there to press.
 - **No [block gutter](#the-block-gutter) in either.** A data range covers a value, not the key naming it, so dragging one would leave its key behind and inserting between two would land outside the syntax that gives them meaning.
 
 > [!NOTE]

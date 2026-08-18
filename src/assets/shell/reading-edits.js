@@ -1293,7 +1293,7 @@ function handleWysiwygKeydown(el, event) {
   }
 }
 
-// Mark `el` editable — the class and the checkbox islands, not `contenteditable`. **A block is not an editing host until it is clicked into.** A host confines a selection to itself, so making every block one meant a drag could never leave the block it started in and there was nothing to select, copy or delete across two of them. The page is plain text until you point at a line, which is also why nothing is written per block at unlock any more.
+// Mark `el` editable — the class and the checkbox islands, not `contenteditable`. **A block is not an editing host until it is clicked into.** A host confines a selection to itself, so making every block one meant a drag could never leave the block it started in and there was nothing to select, copy or delete across two of them. The page is plain text until you point at a line, which is also why nothing is written per block at unlock.
 function markMarkdownEditable(el) {
   el.querySelectorAll('input[type="checkbox"]').forEach((box) => box.setAttribute('contenteditable', 'false'));
 }
