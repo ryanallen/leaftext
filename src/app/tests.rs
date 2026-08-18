@@ -439,7 +439,7 @@ fn a_file_gone_from_the_disk_brings_its_words_back_as_a_note_wearing_the_name_it
     let session =
         dirty_tab_workspace(&note, "# Note\n", "\nTyped and never saved.\n").closing_session();
 
-    // The file leaves the disk between the close and this launch. Deleted, renamed, or sitting on a drive nobody mounted all answer the same way, and in every one of them the app is holding the only copy of what was typed.
+    // Deleted, renamed, or on a drive nobody mounted all answer the same way, and in every one the app holds the only copy of what was typed.
     fs::remove_file(&note).expect("the session file is deleted");
 
     let restored = Workspace::from_session(&session);

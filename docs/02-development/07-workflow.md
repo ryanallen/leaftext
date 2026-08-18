@@ -16,7 +16,7 @@ Work here starts as a written plan and ends as a released version, and the same 
 
 **5. Gate it.** `/check` runs `/sync-tests` and then `just verify`. Tests come first because `just verify` only runs the tests that exist — a change with no test passes it and proves nothing.
 
-**6. Ship it, then close it.** `/git-release` is the only step that writes git, and its first act is to put the work in the tree onto `main` — unchecked, on purpose, so it stops sitting in a checkout while the docs, the comments and the whole suite run. The release commit that follows carries whatever those write. **Only a change somebody running the app can meet gets a version number and a tag** — the skills, the hooks, the checks and every script but one sit in the same checkout as the app and are not the app, so they land and stop. The exception is the script that builds the release binary and packages both Windows installers: a reader runs what it made, so it takes a number like the code inside it. A release workflow holds both kinds at once and is read by which step moved: every step up to and including the one that makes the installers takes a number, and every step after the installers exist — making the release, uploading them, clearing the old ones — takes none. `/done` retires the plan afterwards, on the owner's word alone.
+**6. Ship it, then close it.** `/git-release` is the only step that writes git, and its first act is to put the work in the tree onto `main` — unchecked, on purpose, so it stops sitting in a checkout while the docs, the comments and the whole suite run. Both that landing and the release itself are named for the work they carry and refuse a blank name, so the history answers which commit brought what. The release commit that follows carries whatever those write. **Only a change somebody running the app can meet gets a version number and a tag** — the skills, the hooks, the checks and every script but one sit in the same checkout as the app and are not the app, so they land and stop. The exception is the script that builds the release binary and packages both Windows installers: a reader runs what it made, so it takes a number like the code inside it. A release workflow holds both kinds at once and is read by which step moved: every step up to and including the one that makes the installers takes a number, and every step after the installers exist — making the release, uploading them, clearing the old ones — takes none. `/done` retires the plan afterwards, on the owner's word alone.
 
 ## Every phase says how it is proved
 
@@ -66,7 +66,7 @@ A test is named as a sentence about behavior — `a_staged_update_installs_itsel
 | `/sync-tests` | Names the test covering each change, writes the missing ones, says what cannot be tested |
 | `/sync-docs` | Makes these pages match the app, takes the screenshots they ask for, regenerates the crawler files |
 | `/code-comments` | A quality pass over comments only — why rather than what, and no drafting history |
-| `/git-release` | The only step that writes git: the tree onto `main` first, then version bump, commit, tag, push |
+| `/git-release` | The only step that writes git: the tree onto `main` first, then version bump, commit, tag, push, each commit named for the work it carries |
 | `/done` | Retires a plan on the owner's word, at any stage |
 | `/design-tokens` | Changes a color, value, icon or component in `design/` and runs the bundlers |
 | `/shell-fragment` | Adds, splits or reorders a file in `src/assets/shell/`, where order is load-bearing |

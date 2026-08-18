@@ -179,7 +179,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 - Closing the window with [unsaved edits](07-editing.md#save) writes them here rather than discarding them, and the next launch puts them back in their [tabs](02-navigation.md#tabs) with the dot lit
 - Saved on the tab as `unsaved_text` (the words as they stood) and `saved_text` (the same document as it was last written to disk), both `null` for a tab with nothing unsaved
-- The second is what the next launch compares the file against: matched, the words go back; changed underneath, the file wins and both are dropped
+- The second is what the next launch compares the file against: matched, the words go back; changed underneath, the file wins and both are dropped; gone from the disk, the words come back as a note with no file wearing the name it had, since nothing is left to compare them with
 - A [new document](07-editing.md#new-document) with words in it is carried too, marked `untitled` and with no `saved_text`, since there is no file to compare against. It comes back as the note it was — the name it was wearing, its words, its dot, and its first save still asking where it goes — and a note nobody typed into is not written here at all
 - Only closing writes them. A window left open saves nothing of what you have typed, and what has been typed in the last fraction of a second before the close is not carried
 

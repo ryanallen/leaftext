@@ -133,7 +133,7 @@ impl Workspace {
         let mut saved_indices = Vec::new();
         let mut tabs = Vec::new();
         for (saved_index, saved) in session.tabs.iter().enumerate() {
-            // What the entry comes back holding, decided before anything else because it also decides whether it comes back at all. A note with no file is never asked about the disk, and `restored_untitled_buffer` says why; a file that has left the disk comes back as a note where its entry carries words, and drops where it carries none.
+            // The buffer is decided first because it also decides whether the entry comes back at all: a file that has left the disk keeps its tab only where its words came with it. A note with no file is never asked about the disk, and `restored_untitled_buffer` says why.
             let edit = if saved.untitled {
                 Some(restored_untitled_buffer(saved))
             } else if saved.path.is_file() {
