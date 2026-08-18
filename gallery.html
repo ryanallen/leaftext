@@ -3442,7 +3442,7 @@ body.is-embedded .library-divider,
 body.is-embedded .reader-toolbar {
   display: none;
 }
-/* Not a grid any more, so the rail track cannot hold a column open beside the page: the pane's width is written onto the root element by the front end, and an inline property there wins over any rule here. With the pane and the handle gone the reader is the only child left, so a block gives it the whole frame. */
+/* Not a grid here, so the rail track cannot hold a column open beside the page: the pane's width is written onto the root element by the front end, and an inline property there wins over any rule here. With the pane and the handle gone the reader is the only child left, so a block gives it the whole frame. */
 body.is-embedded .library-shell {
   display: block;
 }
@@ -7367,7 +7367,7 @@ body.is-home-row-dragging .home-list-scroll li {
   opacity: 1;
   transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);
 }
-/* The flowchart editor is a full-window view of its own rather than a sheet over the page, so the scrim it opens with takes the layer above those views: at the sheets' own 40 it would paint under them. A press on it closes the editor. The shape picker inside the editor throws no scrim at all. */
+/* The flowchart editor is a full-window view rather than a sheet over the page, so the scrim it opens with — the press that closes the editor — takes the layer above those views: at the sheets' own 40 it would paint under them. The shape picker inside throws none. */
 #flowBackdrop {
   z-index: var(--lt-z-42);
 }
