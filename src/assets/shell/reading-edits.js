@@ -1569,6 +1569,31 @@ function wireEmailClosedParts(body) {
   });
 }
 
+// The data half of the same answer. A JSON or YAML block with no proven range is drawn exactly like the ones beside it that open, so silence reads as the page being broken rather than as the file being written a way nothing can place. The two lines split on what could not be proved: where a collection ends, or how a single value is spelled.
+function wireDataClosedParts(body) {
+  body.addEventListener('pointerdown', (event) => {
+    const target = event.target;
+    if (!target || !target.closest) return;
+    // Something with a range under the pointer is a block that opens; it answers for itself.
+    if (target.closest('[data-src-start]')) return;
+    // The big heading over a file that names no title of its own is the file's name, and pressing it opens the rename box. It is answered, so it is not silent.
+    if (target.closest('[data-borrowed-title]')) return;
+    const block = target.closest('[data-block-id]');
+    if (!block) return;
+    const kind = block.dataset.blockKind;
+    if (kind === 'data_table' || kind === 'data_list') {
+      leafToast('The page cannot tell where this ends in the file. Edit it in the source view.');
+      return;
+    }
+    // A heading is a key's name as often as it is a value, and the page anchors none of the names — so it says where the words came from rather than claiming something about how a value is spelled.
+    if (kind === 'data_heading') {
+      leafToast('This heading comes from the file. Edit it in the source view.');
+      return;
+    }
+    leafToast('This value is written a way the page cannot place in the file. Edit it in the source view.');
+  });
+}
+
 // Land the caret carried across a structural edit's re-render: focus the destination block (by its post-splice offset) and restore the position, or open the chained empty insert paragraph. A missing target degrades to nothing.
 function placePendingCaret(body) {
   const pending = pendingCaret;
@@ -1624,6 +1649,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
     if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
+    if (currentDocumentFormat === 'json' || currentDocumentFormat === 'yaml') wireDataClosedParts(body);
+
     // An unlocked document with no blocks in it -- a new one -- has nothing to click into. Open its first line, or the page is unlocked and untypable.
     if (currentDocumentFormat === 'markdown' && !pendingCaret && !body.querySelector('[data-src-start]')) {
       setPendingCaret({ emptyDocument: true });

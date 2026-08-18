@@ -632,13 +632,19 @@ version: 1.0
         .expect("an anchored title heading");
     assert_eq!(&yaml[heading.start..heading.end], "Release notes");
 
-    // A quoted YAML scalar proves no range, so its heading stays unanchored rather than pointing at bytes nothing checked.
-    let (_title, html, blocks) = render_yaml_document(
-        "title: \"Release notes\"
-version: 1.0
-",
-        Some("Notes"),
-    );
+    // A quoted YAML title anchors on its quoted run, the way a JSON one does — the heading opens exactly the bytes the file holds.
+    let quoted = "title: \"Release notes\"\nversion: 1.0\n";
+    let (_title, html, blocks) = render_yaml_document(quoted, Some("Notes"));
+    assert_contains(&html, ">Release notes</h1>");
+    let heading = blocks
+        .iter()
+        .find(|block| block.kind == "data_heading")
+        .expect("an anchored title heading");
+    assert_eq!(&quoted[heading.start..heading.end], "\"Release notes\"");
+
+    // A block scalar carries an indicator its value does not, so that heading stays unanchored rather than pointing at bytes nothing checked.
+    let (_title, html, blocks) =
+        render_yaml_document("title: |\n  Release notes\nversion: 1.0\n", Some("Notes"));
     assert_contains(&html, ">Release notes</h1>");
     assert!(
         !blocks.iter().any(|block| block.kind == "data_heading"),
@@ -846,17 +852,46 @@ fn an_alias_to_a_mapping_claims_nothing_the_anchor_already_holds() {
 
 #[test]
 fn yaml_anchors_only_the_scalars_whose_range_it_can_prove() {
-    let yaml = "plain: bash\nquoted: \"bash\"\nblock: |\n  two\n  lines\n";
+    let yaml = "plain: bash\nquoted: \"bash\"\nsingle: 'bash'\nblock: |\n  two\n  lines\n";
 
     let (_title, _html, blocks) = render_yaml_document(yaml, None);
 
-    // A plain scalar's source is character-for-character its value, so it gets a range. A quoted or block scalar's source carries quotes or a `|` that the value does not, so it gets none — an approximate range is worse than one that is simply absent.
-    assert_eq!(blocks.len(), 1, "{blocks:?}");
-    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "bash");
+    // A plain scalar's source is character-for-character its value, and a quoted one is that with its own quotes around it, so both get a range — the quotes are part of it, exactly as they are for a JSON string. A block scalar's source carries a `|` and an indent the value does not, so it gets none: an approximate range is worse than one that is simply absent.
+    let sliced: Vec<&str> = blocks
+        .iter()
+        .map(|block| &yaml[block.start..block.end])
+        .collect();
+    assert_eq!(sliced, vec!["bash", "\"bash\"", "'bash'"], "{blocks:?}");
     assert_eq!(
         blocks[0].start,
         yaml.find("bash").expect("the plain scalar")
     );
+}
+
+#[test]
+fn a_quoted_scalar_the_file_spells_another_way_keeps_no_range() {
+    // The proof is one equality: the bytes between the quotes must be the value itself. An escape, a doubled quote and a fold across lines each break it, so every one is refused without being looked for — a range over an escape would splice a typed newline in where the file holds a backslash and an n.
+    let ranged = |yaml: &str| {
+        let (_title, html, blocks) = render_yaml_document(yaml, None);
+        assert!(!html.contains("parse error"), "{html}");
+        blocks.len()
+    };
+    // Written as a raw string so the backslash reaches YAML as one: the file holds a backslash and an n where the value holds a newline.
+    let escaped = r#"escape: "a\nb"
+"#;
+    assert_eq!(ranged(escaped), 0);
+    assert_eq!(ranged("doubled: 'it''s'\n"), 0);
+    assert_eq!(ranged("folded:\n  \"one\n  two\"\n"), 0);
+
+    // A value written as two quotes with nothing between them is not drawn at all, the way every empty value is, so its range never reaches the page and there is nothing there to press.
+    let (_title, html, blocks) = render_yaml_document(
+        "blank: \"\"
+full: bash
+",
+        None,
+    );
+    assert!(!html.contains("<dt>Blank</dt>"), "{html}");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
 }
 
 #[test]

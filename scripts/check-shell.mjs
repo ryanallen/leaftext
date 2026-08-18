@@ -4438,6 +4438,78 @@ if (booted) {
     }
   });
 
+  // The data half of the same fault: a JSON or YAML block with no proven range is drawn exactly like the ones beside it that open, so a press on one used to answer with nothing at all and read as the page being broken. A press on a block that opens still says nothing, because it is about to open.
+  check('a data block that cannot open says why when it is pressed', () => {
+    const { wireDataClosedParts } = booted;
+    const said = [];
+    const wasToast = booted.leafToast;
+    let press = null;
+    const body = {
+      addEventListener: (type, handler) => {
+        if (type === 'pointerdown') press = handler;
+      },
+    };
+    // `closest` answers for whichever ancestors this element is said to have; a block answers with its own kind.
+    const at = (held, kind) => ({
+      closest: (selector) => (held.includes(selector) ? (selector === '[data-block-id]' ? { dataset: { blockKind: kind } } : {}) : null),
+    });
+    try {
+      booted.leafToast = (message) => said.push(message);
+      wireDataClosedParts(body);
+      if (!press) throw new Error('nothing listens for a press on the page');
+
+      press({ target: at(['[data-block-id]'], 'data_field') });
+      if (said.length !== 1 || !said[0].includes('source view')) {
+        throw new Error(`a value nothing could place did not say where to edit it: ${JSON.stringify(said)}`);
+      }
+      // A list and a table could not be placed for a different reason — where they end — so they say that instead.
+      press({ target: at(['[data-block-id]'], 'data_list') });
+      if (said.length !== 2 || !said[1].includes('where this ends')) {
+        throw new Error(`a list did not say why it could not open: ${JSON.stringify(said)}`);
+      }
+
+      // A heading is a key's name as often as it is a value, so it says where its words came from rather than claiming how a value is spelled.
+      press({ target: at(['[data-block-id]'], 'data_heading') });
+      if (said.length !== 3 || !said[2].includes('comes from the file')) {
+        throw new Error(`a heading was told it was a value: ${JSON.stringify(said)}`);
+      }
+
+      // A block that opens answers for itself, the big heading over a file with no title of its own opens the rename box, and a press on nothing at all is not a block.
+      press({ target: at(['[data-src-start]', '[data-block-id]'], 'data_field') });
+      press({ target: at(['[data-borrowed-title]', '[data-block-id]'], 'data_heading') });
+      press({ target: at([], null) });
+      if (said.length !== 3) throw new Error(`a block that answers was growled at: ${JSON.stringify(said)}`);
+      // And the page wires it: a data document reaching the reading editor gets the same answer, or the lines above are a function nothing ever calls.
+      const read = (expression) => vm.runInContext(expression, booted);
+      const inApp = read('app');
+      const wasQuery = inApp.querySelector;
+      const wasUnlocked = read('readingUnlocked');
+      let bound = null;
+      const page = {
+        addEventListener: (type, handler) => {
+          if (type === 'pointerdown') bound = handler;
+        },
+        querySelectorAll: () => [],
+        querySelector: () => null,
+      };
+      try {
+        read('readingUnlocked = true;');
+        inApp.querySelector = (selector) => (selector === '.document-body' ? page : wasQuery(selector));
+        booted.bindReadingEditor({ format: 'yaml', blocks: [], source: 'title: |\n  words\n' }, { deferCaret: true });
+        if (!bound) throw new Error('a data document reaching the reading editor listens for no press');
+        said.length = 0;
+        bound({ target: at(['[data-block-id]'], 'data_heading') });
+        if (said.length !== 1) throw new Error(`the page wired no answer for a block that cannot open: ${JSON.stringify(said)}`);
+      } finally {
+        inApp.querySelector = wasQuery;
+        read(`readingUnlocked = ${wasUnlocked};`);
+        read("currentDocumentFormat = 'markdown'; currentDocumentSource = ''; currentDocumentBindsAnything = true;");
+      }
+    } finally {
+      booted.leafToast = wasToast;
+    }
+  });
+
   // The gutter works over the blocks standing in the page, and a message is the first document whose blocks are not all children of it — its paragraphs stand inside the body section. Two symptoms fell out of the one line: the gutter vanished the moment the pointer left the words for the margin, and the last paragraph never had a space under it for the plus.
   check('the gutter sees a message’s paragraphs, not the section around them', () => {
     const { blockGutterOccupants, aimBlockGutterBelow } = booted;

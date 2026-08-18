@@ -2,7 +2,7 @@
 //!
 //! Both formats are ordered trees of mappings, sequences and scalars, so both parse into one [`DataNode`] tree and render through [`crate::xml`]'s shape rules and label helpers — a sitemap and the JSON beside it read alike.
 //!
-//! **A block's range is a promise.** Outside Markdown, the reading view turns a block carrying `data-src-*` into a *source* editor: it shows the raw slice those offsets cut and splices what is typed back over exactly that range. An end offset off by a byte corrupts the file, so a range is stamped only where it is proved — every JSON node, and YAML plain scalars verified against the source ([`plain_scalar_span`]). Everything else is edited in the code view.
+//! **A block's range is a promise.** Outside Markdown, the reading view turns a block carrying `data-src-*` into a *source* editor: it shows the raw slice those offsets cut and splices what is typed back over exactly that range. An end offset off by a byte corrupts the file, so a range is stamped only where it is proved — every JSON node, and the YAML scalars whose own bytes are checked against the source ([`scalar_span`]). Everything else is edited in the code view.
 //!
 //! `BlockSpan::editable` stays false regardless; it gates the Markdown WYSIWYG path, which the `data_*` block kinds also keep these blocks out of.
 
@@ -433,7 +433,7 @@ impl<'a> CharCursor<'a> {
     }
 }
 
-/// A scalar held back one event, so the marker of whatever follows can bound its source text (see [`plain_scalar_span`]).
+/// A scalar held back one event, so the marker of whatever follows can bound its source text (see [`scalar_span`]).
 struct PendingScalar {
     text: String,
     style: TScalarStyle,
@@ -503,7 +503,7 @@ impl<'a> YamlBuilder<'a> {
         let Some(pending) = self.pending.take() else {
             return;
         };
-        let span = plain_scalar_span(
+        let span = scalar_span(
             self.source,
             pending.start,
             bound,
@@ -633,21 +633,29 @@ fn merge_into(pairs: &mut Vec<(String, DataNode)>, node: DataNode) {
     }
 }
 
-/// The source range of a plain scalar, when it can be *proved*: the text lies in `start..bound` followed by whitespace or structure, so the slice is trimmed and checked against the value the parser reported. Quoted, block, and folded multi-line scalars carry characters their value does not, so none match and each correctly gets `None` — an approximate range is worse than none.
-fn plain_scalar_span(
+/// The source range of a scalar, when it can be *proved*: the text lies in `start..bound` followed by whitespace or structure, so the slice is trimmed and held against the value the parser reported. A block or folded scalar carries an indicator and indentation its value does not, so neither matches and each correctly gets `None` — an approximate range is worse than none.
+fn scalar_span(
     source: &str,
     start: usize,
     bound: usize,
     text: &str,
     style: TScalarStyle,
 ) -> Option<Range<usize>> {
-    if style != TScalarStyle::Plain {
-        return None;
-    }
+    let quote = match style {
+        TScalarStyle::Plain => None,
+        TScalarStyle::SingleQuoted => Some('\''),
+        TScalarStyle::DoubleQuoted => Some('"'),
+        _ => return None,
+    };
     let slice = source.get(start..bound.min(source.len()))?;
     let trimmed = slice.trim_end();
-    // A range of width nothing is not a range. `key:` with no value has no text to show or replace, and splicing `x` into the gap writes `key:x` — one scalar, not a key and a value.
-    (trimmed == text && !trimmed.is_empty()).then(|| start..start + trimmed.len())
+    let Some(mark) = quote else {
+        // A range of width nothing is not a range. `key:` with no value has no text to show or replace, and splicing `x` into the gap writes `key:x` — one scalar, not a key and a value.
+        return (trimmed == text && !trimmed.is_empty()).then(|| start..start + trimmed.len());
+    };
+    // The same equality, against the quotes the value is written in: an escape, a doubled quote and a fold across lines each make the raw bytes differ from the text, so every one of them fails this and keeps `None` without being looked for. A quoted empty has two bytes to show and replace, so it is a range where a bare `key:` is not.
+    let inner = trimmed.strip_prefix(mark)?.strip_suffix(mark)?;
+    (inner == text).then(|| start..start + trimmed.len())
 }
 
 // ---------------------------------------------------------------------------
