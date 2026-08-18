@@ -338,7 +338,11 @@ check-justfile-quotes:
 check-build-jobs:
     node scripts/check-build-jobs.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+# Fail when the repo guide’s version rule and the release skill’s app-change list name different scripts: a path on one list only is a diff that releases or does not depending which file was read first.
+check-version-rule:
+    node scripts/check-version-rule.mjs --check
+
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
