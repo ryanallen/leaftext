@@ -461,7 +461,8 @@ pub(crate) fn pipe_bring_to_front(workspace: &mut Workspace, path: &Path) -> Res
     if !path.is_file() {
         return Err(format!("there is no file at {}", path.display()));
     }
-    if front_document(workspace, path).is_ok() {
+    // A front tab showing its no-file buffer's name is showing no file, however that name resolves — the same test the open match asks, so the reader's file is opened rather than answered for by the note wearing its name.
+    if !workspace.active_shows_untitled_buffer() && front_document(workspace, path).is_ok() {
         return Ok(false);
     }
     workspace.open_path(path.to_path_buf());

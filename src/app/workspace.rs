@@ -42,6 +42,19 @@ impl Tab {
             .is_some_and(|edit| paths_refer_to_same_document(&edit.path, path))
     }
 
+    /// Whether this tab is showing its own no-file buffer's name rather than any document on disk. A note wears a bare relative name, so resolving it lands on whatever folder the app was started in — and a reader with a file of that name sitting there would be handed the blank note instead of their file. The one test both matches that decide a document is already open ask, so the two cannot drift.
+    ///
+    /// The flag alone is not the test: a note's tab can follow a link to a real document and keep its no-file buffer, and that tab really is showing that document.
+    pub(crate) fn shows_untitled_buffer(&self) -> bool {
+        self.edit.as_ref().is_some_and(|edit| {
+            edit.untitled
+                && self
+                    .history
+                    .current()
+                    .is_some_and(|current| current == &edit.path)
+        })
+    }
+
     /// Whether starting an edit of `path` needs the file read from disk first: true when there is no buffer, or the buffer is for a different document.
     pub(crate) fn needs_edit_seed(&self, path: &Path) -> bool {
         !self.has_edit_for(path)
@@ -211,6 +224,13 @@ impl Workspace {
             .map(PathBuf::as_path)
     }
 
+    /// Whether the active tab is showing its no-file buffer's name. See [`Tab::shows_untitled_buffer`].
+    pub(crate) fn active_shows_untitled_buffer(&self) -> bool {
+        self.active
+            .and_then(|index| self.tabs.get(index))
+            .is_some_and(Tab::shows_untitled_buffer)
+    }
+
     /// The active tab's edit buffer, when one exists.
     pub(crate) fn active_edit(&self) -> Option<&EditableDocument> {
         self.active
@@ -241,12 +261,14 @@ impl Workspace {
         }
     }
 
-    /// The tab already showing `path`, if one is.
+    /// The tab already showing `path`, if one is. A tab showing its no-file buffer's name is showing no file at all, so it never answers for one.
     fn tab_showing(&self, path: &Path) -> Option<usize> {
         self.tabs.iter().position(|tab| {
-            tab.history
-                .current()
-                .is_some_and(|current| paths_refer_to_same_document(current, path))
+            !tab.shows_untitled_buffer()
+                && tab
+                    .history
+                    .current()
+                    .is_some_and(|current| paths_refer_to_same_document(current, path))
         })
     }
 

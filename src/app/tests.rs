@@ -252,6 +252,85 @@ fn an_entry_with_no_file_is_never_put_back_from_a_file_of_that_name() {
     fs::remove_dir_all(&dir).expect("session fixture directory is removed");
 }
 
+/// A note put back from the saved session wearing the name of `path`, which is a file that really is on disk.
+///
+/// The one way to stand a note on a name that already resolves to a real file: moving the folder the app was started in would move it for every test in the run. The app writes only bare names into that entry, so this one is the test's own — and the comparison it exercises is the same comparison on the same evidence.
+fn note_wearing_a_real_files_name(path: &Path) -> Workspace {
+    let session = Session {
+        tabs: vec![SessionTab {
+            path: path.to_path_buf(),
+            title: "Untitled".to_string(),
+            untitled: true,
+            unsaved_text: Some("Typed into a new note.\n".to_string()),
+            ..SessionTab::default()
+        }],
+        active: Some(0),
+    };
+    Workspace::from_session(&session)
+}
+
+#[test]
+fn a_file_named_untitled_opens_in_its_own_tab_rather_than_the_note_wearing_that_name() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let readers_file = dir.join("Untitled.md");
+    fs::write(&readers_file, "# The reader's own file\n").expect("the reader's file is written");
+    let mut workspace = note_wearing_a_real_files_name(&readers_file);
+
+    workspace.open_path(readers_file.clone());
+
+    // The note is showing no file, so it never answers for one: the reader's file opens beside it and is brought forward.
+    assert_eq!(workspace.tabs.len(), 2);
+    assert_eq!(workspace.active, Some(1));
+    assert_eq!(workspace.active_path(), Some(readers_file.as_path()));
+    assert!(workspace.tabs[1].edit.is_none());
+    assert_eq!(
+        workspace.tabs[0]
+            .edit
+            .as_ref()
+            .expect("the note is still there")
+            .text(),
+        "Typed into a new note.\n"
+    );
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn the_pipe_opens_a_file_the_note_at_the_front_is_named_after() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let readers_file = dir.join("Untitled.md");
+    fs::write(&readers_file, "# The reader's own file\n").expect("the reader's file is written");
+    let mut workspace = note_wearing_a_real_files_name(&readers_file);
+
+    // The pipe asks its own copy of the question first, so with the note at the front it used to answer that the reader's file was already showing.
+    let moved = pipe_bring_to_front(&mut workspace, &readers_file)
+        .expect("the file is on disk, so the ask is answerable");
+
+    assert!(moved);
+    assert_eq!(workspace.tabs.len(), 2);
+    assert_eq!(workspace.active, Some(1));
+    assert_eq!(workspace.active_path(), Some(readers_file.as_path()));
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn a_notes_tab_that_followed_a_link_is_still_the_tab_showing_that_document() {
+    let mut workspace = Workspace::default();
+    workspace.open_untitled();
+    type_into_front_note(&mut workspace, "Typed into a new note.\n");
+    // What a link click does to the tab: the history moves on and the no-file buffer stays behind it.
+    let guide = PathBuf::from("guide.md");
+    workspace.tabs[0].history.record(guide.clone());
+
+    workspace.open_path(guide.clone());
+
+    // The skip reads what the tab is showing, never the flag alone, so this tab still answers for the document it followed the link to.
+    assert_eq!(workspace.tabs.len(), 1);
+    assert_eq!(workspace.active, Some(0));
+    assert_eq!(workspace.active_path(), Some(guide.as_path()));
+}
+
 /// A tab open on `path`, seeded from `saved` and typed on so it is dirty.
 fn dirty_tab_workspace(path: &Path, saved: &str, typed: &str) -> Workspace {
     let mut workspace = Workspace::default();
