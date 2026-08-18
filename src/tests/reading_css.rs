@@ -230,6 +230,42 @@ fn every_hover_fills_with_the_one_wash() {
 }
 
 #[test]
+fn the_hand_is_left_to_links_alone() {
+    // The arrow is what a desktop control shows; the hand says "this goes somewhere else". A plain link takes the hand from the browser with no rule at all, so every rule that writes one has to sit on something drawn as a link — otherwise the next control brings it back and the hand marks nothing again.
+    let css = reading_mode_css();
+
+    // The last compound of the selector names an anchor: `a`, `a[href]`, `a:not(...)`.
+    let names_an_anchor = |selector: &str| {
+        selector.split_whitespace().last().is_some_and(|last| {
+            last.strip_prefix('a').is_some_and(|rest| {
+                !rest.starts_with(|c: char| c.is_alphanumeric() || c == '-' || c == '_')
+            })
+        })
+    };
+
+    let mut cut = 0usize;
+    while let Some(found) = css[cut..].find("cursor: pointer") {
+        let at = cut + found;
+        cut = at + 1;
+        // The selector this declaration sits under: back past the rule's own brace, then back to the end of whatever came before it.
+        let open = css[..at].rfind('{').expect("the rule opens");
+        let start = css[..open].rfind(['}', '/']).map_or(0, |i| i + 1);
+        let selector = css[start..open].trim();
+        assert!(
+            // "Open the full glossary" is a button drawn as a plain link, link color included, so it is read as one.
+            names_an_anchor(selector) || selector.contains(".glossary-sheet-fulllink"),
+            "only something drawn as a link may write the hand, and `{selector}` is not"
+        );
+    }
+
+    // And no fragment may hand one out from the script either, which is where the map's nodes used to take theirs.
+    assert!(
+        !app_shell_script().contains("'pointer'") && !app_shell_script().contains("\"pointer\""),
+        "the front end must not set a pointer cursor"
+    );
+}
+
+#[test]
 fn reading_mode_css_keeps_one_name_per_color() {
     // A property whose whole value is one var() over a contract token is a second name for that color. Four such layers over 112 tokens is what this replaced, so the rule is: every rule reads the contract name.
     let css = reading_mode_css();

@@ -270,7 +270,6 @@ body.mac-frame.is-fullscreen::before {
   border: var(--lt-stroke-1) solid transparent;
   border-radius: var(--lt-radius-lg);
   background: transparent;
-  cursor: pointer;
 }
 /* It navigates home, so it has to answer the pointer — as the logomark, not as another toolbar chip. Full contrast against the bar: white on the dark themes, darkest ink on the light ones, where a literal white would vanish. */
 .brand-button:hover {
@@ -574,7 +573,6 @@ body.mac-frame.is-fullscreen::before {
   border-radius: var(--lt-radius-lg);
   background: transparent;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .window-control .lt-icon {
   width: 12px;
@@ -688,7 +686,6 @@ body.mac-frame.is-fullscreen .window-controls {
   font-weight: var(--lt-weight-600);
   line-height: var(--lt-leading-1-2);
   text-align: left;
-  cursor: pointer;
 }
 .context-menu-item:hover,
 .context-menu-item:focus-visible {
@@ -752,7 +749,6 @@ body.mac-frame.is-fullscreen .window-controls {
   border: var(--lt-stroke-1) solid transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
   font-family: var(--app-font);
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-700);
@@ -929,7 +925,6 @@ button {
   border-radius: var(--lt-radius-md);
   background: var(--lt-primary);
   color: var(--lt-primary-foreground);
-  cursor: pointer;
   font-family: var(--app-font);
   font-size: var(--lt-text-14);
   font-weight: var(--lt-weight-600);
@@ -1359,7 +1354,6 @@ body.library-resizing {
   background: transparent;
   color: inherit;
   font-family: inherit;
-  cursor: pointer;
 }
 .library-hit:hover {
   background: var(--lt-wash-hover);
@@ -1440,7 +1434,6 @@ body.library-resizing {
   border-radius: var(--lt-radius-sm);
   background: transparent;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .library-search-clear:hover {
   background: var(--lt-wash-hover);
@@ -1480,7 +1473,6 @@ body.library-resizing {
   font-family: var(--app-font);
   font-size: var(--lt-text-11);
   text-align: left;
-  cursor: pointer;
 }
 .filter-menu-item.is-active,
 .filter-menu-item:hover {
@@ -1547,7 +1539,6 @@ body.library-resizing {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  cursor: pointer;
 }
 /* The vault's own name, and the right half of the open pill (see the switcher below): the pill's outside edge, then its inside joint. Unconditional, open or closed — this crumb has a hover pill of its own, and paying the room all the time is what stops the name moving as the list opens. */
 .library-crumb:first-child {
@@ -1573,7 +1564,6 @@ body.library-resizing {
 /* The "…" standing in for the folders that didn't fit. A real button: it opens a menu of what it swallowed (see .crumb-menu). */
 .library-crumb.is-elided {
   padding: var(--lt-space-1) var(--lt-space-4);
-  cursor: pointer;
 }
 .library-crumb.is-elided[aria-expanded="true"] {
   background: var(--lt-wash-hover);
@@ -1598,7 +1588,6 @@ body.library-resizing {
   border-radius: var(--lt-radius-sm);
   background: transparent;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .library-vault-switch .lt-icon {
   width: 15px;
@@ -1674,7 +1663,6 @@ body.library-resizing {
   transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease);
   color: color-mix(in srgb, var(--lt-muted-foreground) 75%, transparent);
-  cursor: pointer;
 }
 .crumb-menu-edit .lt-icon {
   width: 14px;
@@ -1780,7 +1768,6 @@ body.library-resizing {
   background: transparent;
   color: inherit;
   font: inherit;
-  cursor: pointer;
 }
 .library-file:hover,
 .library-nav-folder:hover {
@@ -2024,7 +2011,6 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: 999px;
   background: color-mix(in srgb, var(--lt-accent) 16%, transparent);
   color: var(--lt-accent);
-  cursor: pointer;
   font-size: var(--lt-text-11);
   font-variant-numeric: tabular-nums;
 }
@@ -2153,7 +2139,6 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: 6px;
   background: transparent;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
   /* Switching this on lights a fill, an ink and a hairline together, and the shared rule at the top of the file carries no shadow — so all three are named here rather than putting a shadow transition on every button in the app to time one chip. */
   transition: background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease),
     box-shadow var(--lt-duration-120) var(--lt-ease);
@@ -2203,7 +2188,6 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: var(--lt-radius-md);
   background: transparent;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .reader-tool .lt-icon {
   width: 17px;
@@ -2250,7 +2234,6 @@ body:has(#readerToolbar:not([hidden])) {
   font-family: inherit;
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);
-  cursor: pointer;
 }
 .reader-tool-save:hover {
   filter: brightness(1.08);
@@ -2490,7 +2473,6 @@ body:has(#readerToolbar:not([hidden])) {
   background: var(--lt-surface);
   color: var(--lt-foreground);
   font: inherit;
-  cursor: pointer;
 }
 .app-toast-action:hover {
   border-color: var(--lt-border-strong);
@@ -2771,7 +2753,8 @@ body:has(#readerToolbar:not([hidden])) {
   /* An atomic inline box keeps a vertical margin, so a run of buttons that wraps has room between its lines rather than two fills meeting. None on the left, so the first button stays on the text column. */
   margin: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) 0;
   text-decoration: none;
-  cursor: pointer;
+  /* The arrow, because a reader reads the drawing and this is drawn as a button. Written rather than left off: an anchor's hand is the browser's own, so nothing here would take it away. */
+  cursor: default;
 }
 .document-body a.leaf-md-button:hover {
   background: var(--lt-navigation-button-hover-background);
@@ -2812,7 +2795,6 @@ body:has(#readerToolbar:not([hidden])) {
   background: var(--lt-editor-code-background);
 }
 .document-body .document-outline-summary {
-  cursor: pointer;
   padding: 0.5em 0.9em;
   font-weight: var(--lt-weight-600);
   color: var(--lt-markdown-foreground);
@@ -2886,7 +2868,8 @@ body:has(#readerToolbar:not([hidden])) {
   background: var(--lt-editor-code-background);
 }
 .document-body .tei-front-summary {
-  cursor: pointer;
+  /* The arrow: a control is not a link. Written rather than left off, because an unlocked block says `cursor: text` and this would inherit it. */
+  cursor: default;
   padding: 0.5em 0.9em;
   font-weight: var(--lt-weight-600);
   color: var(--lt-markdown-foreground);
@@ -2966,7 +2949,8 @@ body:has(#readerToolbar:not([hidden])) {
   margin: var(--type-spacing) 0;
 }
 .document-body .xml-comment-summary {
-  cursor: pointer;
+  /* The arrow, for the reason on .tei-front-summary above: an unlocked block's caret would land here. */
+  cursor: default;
   font-weight: var(--lt-weight-600);
   list-style: none;
   user-select: none;
@@ -3099,9 +3083,9 @@ body:has(#readerToolbar:not([hidden])) {
   accent-color: var(--lt-checkbox-accent);
   margin-right: 0.4em;
 }
-/* A task checkbox the reading view has made interactive (its `disabled` attribute removed) reads as clickable. */
+/* A task checkbox the reading view has made interactive (its `disabled` attribute removed). The arrow: a control is not a link. Written rather than left off, because an unlocked block says `cursor: text` and this would inherit it. */
 .document-body input[type="checkbox"]:not([disabled]) {
-  cursor: pointer;
+  cursor: default;
 }
 /* Live editing affordances: text caret on hover, a focus ring while editing, and the monospace source font for XML blocks edited as raw source. */
 .document-body .leaf-editable {
@@ -3137,8 +3121,8 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body h2.leaf-insert-block[data-blank="true"] {
   border-bottom-color: transparent;
 }
-/* Links inside an editable block keep the pointer cursor, not the text caret. */
-.document-body .leaf-editable a {
+/* Links inside an editable block keep the hand, not the block's text caret. Never the ones drawn as buttons: this rule comes later at equal specificity, so without the exception it would put the hand back on them. */
+.document-body .leaf-editable a:not(.leaf-md-button) {
   cursor: pointer;
 }
 
@@ -3173,7 +3157,6 @@ body:has(#readerToolbar:not([hidden])) {
   border: 0;
   background: none;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .block-gutter button[hidden] {
   display: none;
@@ -3235,7 +3218,6 @@ body:has(#readerToolbar:not([hidden])) {
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);
   line-height: var(--lt-leading-1-2);
-  cursor: pointer;
 }
 .block-insert-choose:hover {
   border-color: var(--lt-accent, var(--lt-border));
@@ -3407,7 +3389,6 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-sm);
   background: none;
   color: var(--lt-foreground);
-  cursor: pointer;
 }
 .selection-format[hidden] {
   display: none;
@@ -3643,7 +3624,8 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-md);
   background: color-mix(in srgb, var(--lt-editor-code-background) 65%, transparent);
   color: var(--lt-muted-foreground);
-  cursor: pointer;
+  /* The arrow: a control is not a link. Written rather than left off, because a code block is always source-editable and unlocked it says `cursor: text`. */
+  cursor: default;
   opacity: var(--lt-opacity-50);
   transition: opacity var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease), background var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease);
@@ -3934,7 +3916,6 @@ body.is-block-dragging .document-body [data-src-start] {
   left: 0;
   right: 0;
   white-space: pre;
-  cursor: pointer;
 }
 .code-sticky-row:hover {
   background: var(--lt-navigation-button-hover-background);
@@ -4034,7 +4015,8 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
-  cursor: pointer;
+  /* The arrow: a control is not a link. Written rather than left off, because both ride inside a block that says `cursor: text` when unlocked. */
+  cursor: default;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--lt-duration-120) var(--lt-ease);
@@ -4186,8 +4168,9 @@ body.is-block-dragging .document-body [data-src-start] {
   font-size: 0.8em;
   padding: 0.08em 0.32em;
 }
+/* Every other folded block, the outline included. The arrow: a control is not a link. Written rather than left off, because an unlocked block says `cursor: text` and this would inherit it. */
 .document-body summary {
-  cursor: pointer;
+  cursor: default;
   font-family: var(--app-font);
   font-weight: var(--lt-weight-700);
 }
@@ -4269,7 +4252,6 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-sm);
   background: none;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
   opacity: 0;
 }
 .document-body .frontmatter tr:hover .frontmatter-remove,
@@ -4296,7 +4278,6 @@ body.is-block-dragging .document-body [data-src-start] {
   background: none;
   color: var(--lt-muted-foreground);
   font: inherit;
-  cursor: pointer;
 }
 /* The fill has to be named here, not merely cleared above: `button:hover` is a pseudo-class and an element, so it outranks one class on its own and paints this the app's primary purple with the quiet label left unreadable on it. */
 .frontmatter-add-button:hover {
@@ -4330,7 +4311,6 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-sm);
   background: none;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 /* The one that is not inside a chip stands on the page beside them, so it carries its own room the way the add button does. */
 .frontmatter-chip-add {
@@ -5019,7 +4999,6 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-foreground);
   font: inherit;
   font-size: var(--lt-text-13);
-  cursor: pointer;
 }
 .confirm-dialog-button:hover {
   border-color: var(--lt-border-strong);
@@ -5161,7 +5140,6 @@ body.is-home-row-dragging .home-list-scroll li {
   border-radius: var(--lt-radius-lg);
   background: none;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .leaf-sheet-close:hover {
   background: var(--lt-wash-hover);
@@ -5359,7 +5337,6 @@ body.is-home-row-dragging .home-list-scroll li {
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);
   line-height: var(--lt-leading-1-2);
-  cursor: pointer;
 }
 .theme-mode-btn:hover {
   background: var(--lt-wash-hover);
@@ -5407,7 +5384,6 @@ body.is-home-row-dragging .home-list-scroll li {
   font-weight: var(--lt-weight-700);
   line-height: var(--lt-leading-1-2);
   text-align: left;
-  cursor: pointer;
   overflow: hidden;
 }
 /* The stroke rides a pseudo-element above the swatches; drawn on the card itself the opaque swatch block would paint over it everywhere but the name band. */
@@ -5498,7 +5474,6 @@ body.is-home-row-dragging .home-list-scroll li {
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);
   text-decoration: none;
-  cursor: pointer;
 }
 .theme-sheet-browse:hover {
   color: var(--lt-link-hover);
@@ -5714,7 +5689,6 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-foreground);
   font: inherit;
   font-size: var(--lt-text-13);
-  cursor: pointer;
 }
 .flow-sheet-save {
   border-color: transparent;
@@ -5786,7 +5760,6 @@ body.is-home-row-dragging .home-list-scroll li {
   border-radius: var(--lt-radius-md);
   background: transparent;
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .flow-steps button:hover:not(:disabled) {
   background: var(--lt-wash-hover);
@@ -5846,7 +5819,6 @@ body.is-home-row-dragging .home-list-scroll li {
   border-radius: 0;
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .flow-zoom .lt-icon {
   width: 16px;
@@ -6096,7 +6068,6 @@ body.is-home-row-dragging .home-list-scroll li {
   font: inherit;
   text-align: left;
   white-space: nowrap;
-  cursor: pointer;
 }
 .flow-menu-item:hover,
 .flow-menu-item:focus-visible {
@@ -6199,7 +6170,6 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-danger);
   font: inherit;
   font-size: var(--lt-text-12);
-  cursor: pointer;
 }
 /* What Save will do to the text below it. Muted and one line: it is a fact to have read once, not a warning to be argued with every time. */
 .flow-code-note {
@@ -6269,7 +6239,6 @@ body.is-home-row-dragging .home-list-scroll li {
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
-  cursor: pointer;
 }
 .mermaid-tool,
 .mermaid-zoom button {
@@ -6611,7 +6580,6 @@ body.is-home-row-dragging .home-list-scroll li {
   color: inherit;
   font-family: inherit;
   font-size: var(--lt-text-12);
-  cursor: pointer;
 }
 /* Text, not masks: .icon-button sets a width as well as a min-width, and 32px clips `ab|`. */
 .find-flag {

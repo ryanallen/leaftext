@@ -513,7 +513,6 @@ async function buildGraphScene() {
       gfx.circle(0, 0, graphNodeRadius(node.degree)).fill(0xffffff);
     }
     gfx.eventMode = 'static';
-    gfx.cursor = 'pointer';
     gfx.hitArea = new PIXI.Circle(0, 0, graphNodeRadius(node.degree) + 3);
     gfx.on('pointerover', () => {
       scene.hoverNode = node;
