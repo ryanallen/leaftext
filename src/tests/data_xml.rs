@@ -604,6 +604,57 @@ fn json_blocks_anchor_to_the_exact_source_they_came_from() {
 }
 
 #[test]
+fn a_data_documents_own_title_heading_anchors_to_the_value_it_came_from() {
+    // The title-ish key is left out of the body, so the heading is that value's only appearance on the page. Without a range on it, the one value a reader most wants to correct is the one thing on the page that answers a press with nothing.
+    let json = r#"{"title": "Release notes", "version": "1.0"}"#;
+    let (_title, html, blocks) = render_json_document(json, Some("Notes"));
+    let heading = blocks
+        .iter()
+        .find(|block| block.kind == "data_heading")
+        .expect("an anchored title heading");
+    // A JSON string's range takes in its quotes, which is what a press on a JSON field opens today.
+    assert_eq!(&json[heading.start..heading.end], "\"Release notes\"");
+    let open = &html[html.find("<h1").expect("a heading")..];
+    let open = &open[..open.find('>').expect("a closed tag")];
+    assert!(
+        open.contains(&format!("data-src-start=\"{}\"", heading.start)),
+        "{open}"
+    );
+
+    // A YAML plain scalar proves its own words and nothing around them.
+    let yaml = "title: Release notes
+version: 1.0
+";
+    let (_title, _html, blocks) = render_yaml_document(yaml, Some("Notes"));
+    let heading = blocks
+        .iter()
+        .find(|block| block.kind == "data_heading")
+        .expect("an anchored title heading");
+    assert_eq!(&yaml[heading.start..heading.end], "Release notes");
+
+    // A quoted YAML scalar proves no range, so its heading stays unanchored rather than pointing at bytes nothing checked.
+    let (_title, html, blocks) = render_yaml_document(
+        "title: \"Release notes\"
+version: 1.0
+",
+        Some("Notes"),
+    );
+    assert_contains(&html, ">Release notes</h1>");
+    assert!(
+        !blocks.iter().any(|block| block.kind == "data_heading"),
+        "{blocks:?}"
+    );
+
+    // A heading standing in for a title the document has not got names no value in the file, so it carries no range either.
+    let (_title, html, blocks) = render_json_document(r#"{"version": "1.0"}"#, Some("Notes"));
+    assert_contains(&html, ">Notes</h1>");
+    assert!(
+        !blocks.iter().any(|block| block.kind == "data_heading"),
+        "{blocks:?}"
+    );
+}
+
+#[test]
 fn a_grouped_block_gets_a_range_only_when_every_member_has_one() {
     // A range narrower than the block it is stamped on is the dangerous case: the source editor would show one item, splice the edit over that item alone, and leave the reader thinking they had edited the whole list. A YAML flow sequence proves `macos` but not `windows,` (the comma trails it), so the list must carry no range at all.
     let yaml = "os: [windows, macos]\n";

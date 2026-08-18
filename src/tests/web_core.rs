@@ -518,7 +518,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "json",
-        "a9276f215a8059b7d367f6da5ac042474431c799f6de33aa7f899a7181141640",
+        "47f8f7036d49abdecb5e773f14665c62acc2c558a6f2464660c064f6f84bb178",
     ),
     (
         "scholar-rich-document",
@@ -526,7 +526,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "yaml",
-        "2b47c9f8b49f33476a3ee52ded06a49b46516924ad0881fa08464f227aced98a",
+        "224b68c108e537159e17bf5aa80f6cae1b94f79a9ff61185aa0751448cb7d6e6",
     ),
     (
         "eml",

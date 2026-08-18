@@ -768,20 +768,24 @@ fn render_data_document(
 
     // A title-ish key at the root titles the document, and is then left out of the body so it isn't said twice.
     let title_key = title_key_of(root);
-    let title = title_key
-        .as_deref()
-        .and_then(|key| match &root.value {
-            DataValue::Mapping(pairs) => pairs.iter().find(|(name, _)| name.as_str() == key),
-            _ => None,
-        })
+    let title_pair = title_key.as_deref().and_then(|key| match &root.value {
+        DataValue::Mapping(pairs) => pairs.iter().find(|(name, _)| name.as_str() == key),
+        _ => None,
+    });
+    let title = title_pair
         .and_then(|(_, node)| node.as_scalar())
         .and_then(plain_document_title);
 
+    // The heading is the value's only appearance on the page, so it carries the value's own range and the reader edits it there. A heading standing in for a title the document has not got names no value, so it carries none.
+    let title_span = title
+        .is_some()
+        .then(|| title_pair.and_then(|(_, node)| node.span.clone()))
+        .flatten();
     let heading = title
         .clone()
         .or_else(|| fallback_title.and_then(plain_document_title));
     if let Some(heading) = heading {
-        ctx.heading(1, &heading, None, title.is_none());
+        ctx.heading(1, &heading, title_span, title.is_none());
     }
 
     match &root.value {

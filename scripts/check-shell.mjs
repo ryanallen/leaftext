@@ -3158,6 +3158,58 @@ if (booted) {
     }
   });
 
+  // A JSON or YAML file naming its own title draws it as the big heading and leaves the pair out of the body, so the heading is the only place that value appears on the page. The wiring above runs for XML alone, so nothing here proved a data block ever reaches the in-place source editor — which is how the one value a reader most wants to correct stayed the one thing on the page answering a press with nothing.
+  check('a data document’s own title heading opens the value’s own bytes where it is drawn', () => {
+    const { bindEditableBlocks } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source = '{"title": "Release notes", "version": "1.0"}';
+    const value = '"Release notes"';
+    const at = source.indexOf(value);
+    const heading = fakeElement('title');
+    heading.tagName = 'H1';
+    heading.dataset = { blockKind: 'data_heading', srcStart: String(at), srcEnd: String(at + value.length) };
+    heading.textContent = 'Release notes';
+    const body = { querySelectorAll: () => [heading] };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    try {
+      read(`currentDocumentFormat = 'json'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      bindEditableBlocks('json');
+
+      if (!heading.classList.contains('leaf-editable')) {
+        throw new Error('the title heading was left out of the editable pass');
+      }
+      const press = (heading.listeners.get('pointerdown') || [])[0];
+      if (!press) throw new Error('the title heading answers a press with nothing');
+
+      press({ target: null, preventDefault() {} });
+      if (heading.dataset.editingSource !== 'true') throw new Error('pressing the title heading opened no editor');
+      // The drawn title is whitespace-collapsed and entity-decoded; what opens is the file's own bytes, quotes and all, exactly as a press on a field opens them.
+      if (heading.textContent !== value) {
+        throw new Error(`the title heading opened ${JSON.stringify(heading.textContent)}`);
+      }
+
+      // And a heading standing in for a title the document has not got names no value, so it is stamped with no range and stays what it is: a name to rename the file by.
+      const borrowed = fakeElement('borrowed');
+      borrowed.tagName = 'H1';
+      borrowed.dataset = { blockKind: 'data_heading' };
+      borrowed.textContent = 'Notes';
+      inApp.querySelector = (selector) =>
+        selector === '.document-body' ? { querySelectorAll: () => [borrowed] } : wasQuery(selector);
+      bindEditableBlocks('json');
+      if (borrowed.listeners.size || borrowed.classList.contains('leaf-editable')) {
+        throw new Error('a heading borrowed from the file name was wired to type over bytes it does not name');
+      }
+    } finally {
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
   // Enter was refused in a tree document at first, and a refused Enter reads as a bug rather than as a rule. A newline written inside the element would draw as a space the moment the page redrew, so the new line is another element of the same name — the words on both sides of the caret survive it, the tags on both halves are the element's own, and the caret lands in the second.
   check('Enter in an element of a tree document carries on in another of the same element', () => {
     const { handleWysiwygKeydown } = booted;
