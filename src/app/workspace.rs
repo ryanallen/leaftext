@@ -85,13 +85,26 @@ fn restored_edit_buffer(saved: &SessionTab) -> Option<EditableDocument> {
     Some(edit)
 }
 
+/// A note that never got a file, put back: an empty buffer wearing the name it was saved under, with the carried words applied as one whole-buffer replacement. So the tab is dirty by the ordinary comparison and holds exactly one press of undo — back to the empty note it was, which is the only step that was ever true of it.
+///
+/// Nothing is read and nothing on disk is consulted. The entry says it has no file, and that is the whole test: the name is a bare relative one, so a file of that name beside the app is somebody else's document, not this note.
+fn restored_untitled_buffer(saved: &SessionTab) -> EditableDocument {
+    let mut edit = EditableDocument::untitled(saved.path.clone());
+    if let Some(unsaved) = saved.unsaved_text.as_deref() {
+        let end = edit.text().len();
+        edit.replace_range(0, end, unsaved);
+    }
+    edit
+}
+
 impl Workspace {
     /// Rebuild the tab strip from the last saved session. The only document read is a tab the last close left with unsaved edits, which [`restored_edit_buffer`] has to compare against the file. Missing paths are left out, and a missing front tab falls forward to the nearest remaining one.
     pub(crate) fn from_session(session: &Session) -> Self {
         let mut saved_indices = Vec::new();
         let mut tabs = Vec::new();
         for (saved_index, saved) in session.tabs.iter().enumerate() {
-            if !saved.path.is_file() {
+            // A note with no file is never asked whether it is one: see [`restored_untitled_buffer`].
+            if !saved.untitled && !saved.path.is_file() {
                 continue;
             }
             let mut tab = Tab {
@@ -104,7 +117,11 @@ impl Workspace {
                 tab.history.stamp_current(anchor);
             }
             tab.saved_code_scroll = saved.saved_code_scroll;
-            tab.edit = restored_edit_buffer(saved);
+            tab.edit = if saved.untitled {
+                Some(restored_untitled_buffer(saved))
+            } else {
+                restored_edit_buffer(saved)
+            };
             saved_indices.push(saved_index);
             tabs.push(tab);
         }
@@ -122,12 +139,12 @@ impl Workspace {
         Self { tabs, active }
     }
 
-    /// The session worth saving: one current document per tab, with its strip label and view. Untitled buffers have no file to reopen, so they are left out.
+    /// The session worth saving: one current document per tab, with its strip label and view. A note that never got a file is left out entirely, because this session carries no words and an entry without them would come back at the next launch as a blank note nobody opened.
     pub(crate) fn session(&self) -> Session {
         self.build_session(false)
     }
 
-    /// The session the window writes on its way out, which also carries every unsaved buffer so the edits are there at the next launch instead of being discarded without a word.
+    /// The session the window writes on its way out, which also carries every unsaved buffer so the edits are there at the next launch instead of being discarded without a word. This is the only session a note with no file appears in, and only where something was typed into it.
     ///
     /// Only the close builds this one. The mid-run saves keep to [`session`](Self::session): a typing pause reaches the buffer every fifth of a second, and carrying the text there would rewrite the settings file that often.
     pub(crate) fn closing_session(&self) -> Session {
@@ -138,28 +155,34 @@ impl Workspace {
         let mut active = None;
         let mut tabs = Vec::new();
         for (index, tab) in self.tabs.iter().enumerate() {
-            if tab.edit.as_ref().is_some_and(|edit| edit.untitled) {
-                continue;
-            }
             let Some(path) = tab.history.current().cloned() else {
                 continue;
             };
-            if self.active == Some(index) {
-                active = Some(tabs.len());
-            }
             // Only a buffer belonging to the document this tab is showing: a tab that navigated on can still hold one for where it has been, and that is not what reopening this tab would put on screen.
             let unsaved = carry_unsaved
                 .then(|| tab.edit.as_ref())
                 .flatten()
                 .filter(|edit| edit.is_dirty() && tab.has_edit_for(&path));
+            let untitled = tab.edit.as_ref().is_some_and(|edit| edit.untitled);
+            // A note with no file is only worth an entry where the entry carries its own words: there is nothing to reopen. That is one test, not two — an untitled buffer's saved baseline is the empty note it opened as, so dirty on one means exactly that something was typed into it.
+            if untitled && unsaved.is_none() {
+                continue;
+            }
+            if self.active == Some(index) {
+                active = Some(tabs.len());
+            }
             tabs.push(SessionTab {
                 path,
                 title: tab.title.clone(),
                 code_view: tab.code_view,
                 anchor: tab.history.current_anchor(),
                 saved_code_scroll: tab.saved_code_scroll,
+                untitled,
                 unsaved_text: unsaved.map(|edit| edit.text().to_string()),
-                saved_text: unsaved.map(|edit| edit.saved_text().to_string()),
+                // No baseline for a note with no file: there is nothing on disk for the next launch to compare, which is what a baseline is for.
+                saved_text: unsaved
+                    .filter(|_| !untitled)
+                    .map(|edit| edit.saved_text().to_string()),
             });
         }
         Session { tabs, active }

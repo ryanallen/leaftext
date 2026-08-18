@@ -82,17 +82,174 @@ fn a_workspace_restores_saved_regular_files_in_order_and_nearest_tab() {
     fs::remove_dir_all(&dir).expect("session fixture directory is removed");
 }
 
+/// Type `typed` into the front tab's own buffer. A new note has its buffer from the start, which is what keeps every reader of that tab off a file that does not exist.
+fn type_into_front_note(workspace: &mut Workspace, typed: &str) {
+    let edit = workspace
+        .active_edit_mut()
+        .expect("a new note has its buffer from the start");
+    let end = edit.text().len();
+    edit.replace_range(end, end, typed);
+}
+
+/// One new note, typed into, and nothing else open.
+fn new_note_workspace(typed: &str) -> Workspace {
+    let mut workspace = Workspace::default();
+    workspace.open_untitled();
+    type_into_front_note(&mut workspace, typed);
+    workspace
+}
+
 #[test]
-fn an_untitled_tab_is_not_saved_in_the_session() {
+fn the_mid_run_session_skips_a_new_note_and_the_close_carries_it() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("guide.md"));
+    workspace.open_untitled();
+    type_into_front_note(&mut workspace, "Typed into a new note.\n");
+
+    // The mid-run saves carry no words at all, and an entry for a note with no file and no words in it would come back at the next launch as a blank note nobody opened.
+    let mid_run = workspace.session();
+    assert_eq!(mid_run.tabs.len(), 1);
+    assert_eq!(mid_run.tabs[0].path, PathBuf::from("guide.md"));
+    assert!(!mid_run.tabs[0].untitled);
+    assert_eq!(mid_run.active, None);
+
+    // The close carries it: the name it is wearing, its words, the flag saying there is nothing to reopen, and no baseline.
+    let closing = workspace.closing_session();
+    assert_eq!(closing.tabs.len(), 2);
+    let note = &closing.tabs[1];
+    assert!(note.untitled);
+    assert_eq!(note.path, PathBuf::from("Untitled.md"));
+    assert_eq!(note.title, "Untitled");
+    assert_eq!(
+        note.unsaved_text.as_deref(),
+        Some("Typed into a new note.\n")
+    );
+    assert_eq!(note.saved_text, None);
+    assert_eq!(closing.active, Some(1));
+}
+
+#[test]
+fn a_new_note_nobody_typed_into_is_not_carried_out_of_the_window() {
     let mut workspace = Workspace::default();
     workspace.open_path(PathBuf::from("guide.md"));
     workspace.open_untitled();
 
-    let session = workspace.session();
+    // No new rule: the close carries a buffer only where it is dirty, and an untitled buffer's baseline is the empty note it opened as.
+    let closing = workspace.closing_session();
+    assert_eq!(closing.tabs.len(), 1);
+    assert_eq!(closing.tabs[0].path, PathBuf::from("guide.md"));
+    assert_eq!(closing.active, None);
+}
 
-    assert_eq!(session.tabs.len(), 1);
-    assert_eq!(session.tabs[0].path, PathBuf::from("guide.md"));
-    assert_eq!(session.active, None);
+#[test]
+fn a_new_note_comes_back_with_its_words_its_name_its_place_and_its_dot() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let guide = dir.join("guide.md");
+    fs::write(&guide, "# Guide\n").expect("session file is written");
+    let mut workspace = Workspace::default();
+    workspace.open_path(guide.clone());
+    workspace.open_untitled();
+    type_into_front_note(&mut workspace, "Typed into a new note.\n");
+    let session = workspace.closing_session();
+
+    let restored = Workspace::from_session(&session);
+
+    assert_eq!(
+        restored.tab_summaries(),
+        vec![
+            TabSummary {
+                title: "guide".to_string(),
+                path: guide.display().to_string(),
+                dirty: false,
+                undoable: false,
+            },
+            TabSummary {
+                title: "Untitled".to_string(),
+                path: "Untitled.md".to_string(),
+                dirty: true,
+                undoable: true,
+            },
+        ]
+    );
+    assert_eq!(restored.active, Some(1));
+    assert_eq!(
+        restored.tabs[1]
+            .edit
+            .as_ref()
+            .expect("the note is put back")
+            .text(),
+        "Typed into a new note.\n"
+    );
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
+}
+
+#[test]
+fn undo_on_a_restored_note_is_one_step_back_to_the_empty_note() {
+    let session = new_note_workspace("Typed into a new note.\n").closing_session();
+
+    let mut restored = Workspace::from_session(&session);
+    let edit = restored.tabs[0]
+        .edit
+        .as_mut()
+        .expect("the note is put back");
+
+    // One step, and it is the empty note the reader started with, which is the only state this document was ever in besides the one it is in.
+    assert!(edit.can_undo());
+    assert!(edit.undo());
+    assert_eq!(edit.text(), "");
+    assert!(!edit.can_undo());
+    assert!(!edit.is_dirty());
+}
+
+#[test]
+fn a_restored_note_still_has_no_file_so_the_first_save_is_the_one_that_asks() {
+    let session = new_note_workspace("Typed into a new note.\n").closing_session();
+
+    let restored = Workspace::from_session(&session);
+    let edit = restored.tabs[0]
+        .edit
+        .as_ref()
+        .expect("the note is put back");
+
+    // The flag `name_untitled_document` reads to decide whether a save has to ask where the note goes.
+    assert!(edit.untitled);
+    assert_eq!(edit.path, PathBuf::from("Untitled.md"));
+    assert_eq!(edit.saved_text(), "");
+}
+
+#[test]
+fn an_entry_with_no_file_is_never_put_back_from_a_file_of_that_name() {
+    let dir = session_fixture_dir();
+    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let decoy = dir.join("Untitled.md");
+    fs::write(&decoy, "# Somebody else's file\n").expect("the decoy file is written");
+
+    // A name a note wears is a bare relative one, so a path test resolves it against whatever folder the app was started in. Here the entry names a file that really is on disk: the flag is the only thing that decides, so the file is never read and its words never appear.
+    let session = Session {
+        tabs: vec![SessionTab {
+            path: decoy.clone(),
+            title: "Untitled".to_string(),
+            untitled: true,
+            unsaved_text: Some("Typed into a new note.\n".to_string()),
+            ..SessionTab::default()
+        }],
+        active: Some(0),
+    };
+
+    let restored = Workspace::from_session(&session);
+    let edit = restored.tabs[0]
+        .edit
+        .as_ref()
+        .expect("the note is put back");
+    assert!(edit.untitled);
+    assert_eq!(edit.text(), "Typed into a new note.\n");
+    assert_eq!(edit.saved_text(), "");
+    assert_eq!(
+        fs::read_to_string(&decoy).expect("the decoy file is still there"),
+        "# Somebody else's file\n"
+    );
+    fs::remove_dir_all(&dir).expect("session fixture directory is removed");
 }
 
 /// A tab open on `path`, seeded from `saved` and typed on so it is dirty.
