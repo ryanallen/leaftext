@@ -186,7 +186,20 @@ pub(crate) fn name_untitled_document(
     reader: &mut Reader,
     ask: impl FnOnce(&Path) -> Option<PathBuf>,
 ) -> SaveReady {
-    let Some(edit) = reader.workspace.active_edit() else {
+    let ready = name_untitled_in_workspace(&mut reader.workspace, &mut reader.recent, ask);
+    if matches!(ready, SaveReady::Named) {
+        reader.save_recent();
+    }
+    ready
+}
+
+/// The state half of [`name_untitled_document`]: everything the naming changes, with the window and the dialog left outside so each outcome can be tested.
+pub(crate) fn name_untitled_in_workspace(
+    workspace: &mut Workspace,
+    recent: &mut RecentFiles,
+    ask: impl FnOnce(&Path) -> Option<PathBuf>,
+) -> SaveReady {
+    let Some(edit) = workspace.active_edit() else {
         return SaveReady::Ready;
     };
     if !edit.untitled {
@@ -195,10 +208,10 @@ pub(crate) fn name_untitled_document(
     let Some(chosen) = ask(&edit.path) else {
         return SaveReady::Canceled;
     };
-    let Some(index) = reader.workspace.active else {
+    let Some(index) = workspace.active else {
         return SaveReady::Canceled;
     };
-    if let Some(tab) = reader.workspace.tabs.get_mut(index) {
+    if let Some(tab) = workspace.tabs.get_mut(index) {
         if let Some(edit) = tab.edit.as_mut() {
             edit.adopt_path(chosen.clone());
         }
@@ -208,7 +221,7 @@ pub(crate) fn name_untitled_document(
         tab.rendered = None;
     }
     // No unlock to carry onto the new name: the padlock is a setting, not a fact about a path.
-    reader.record_recent(chosen);
+    recent.record(chosen);
     SaveReady::Named
 }
 

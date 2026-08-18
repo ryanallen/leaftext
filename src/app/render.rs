@@ -36,7 +36,7 @@ impl Reader {
     }
 
     /// Save the recents list, if there is a file to save it to.
-    fn save_recent(&self) {
+    pub(crate) fn save_recent(&self) {
         if let Some(config_path) = self.config_path.as_ref() {
             if let Err(error) = save_recent_files(config_path, &self.recent) {
                 eprintln!("Failed to save recent files: {error}");

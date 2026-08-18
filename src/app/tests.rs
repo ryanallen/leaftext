@@ -4399,3 +4399,135 @@ fn the_app_bar_sends_a_drag_and_a_maximize_under_the_names_the_page_uses() {
         Ok(IpcCommand::WindowToggleMaximize)
     ));
 }
+
+/// The one gesture that changes what a tab is: five pieces of state move together, and two of them - the history entry renamed rather than visited, the render dropped with its name - carry a rule that would otherwise go without failing anything.
+#[test]
+fn naming_a_new_note_gives_it_a_file_a_label_and_the_front_of_recent() {
+    let dir = std::env::temp_dir().join(format!("leaf-first-save-{}", std::process::id()));
+    let chosen = dir.join("recipe.json");
+
+    let mut workspace = Workspace::default();
+    let wearing = workspace.open_untitled();
+    workspace
+        .active_edit_mut()
+        .expect("a new note has a buffer")
+        .replace_range(0, 0, "# Typed before it was named\n");
+    // Rendered under the name it was wearing, which is the name that is about to stop existing.
+    let drawn = "# Typed before it was named\n";
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: wearing.clone(),
+        hash: content_hash(drawn),
+        document: opened_document_from_source_with_host(drawn, &wearing, &DesktopHost::default()),
+    });
+    let steps_before = workspace.tabs[0].history.entries.len();
+
+    let mut recent = RecentFiles::default();
+    let already = dir.join("older.md");
+    recent.record(already.clone());
+
+    let named = name_untitled_in_workspace(&mut workspace, &mut recent, |asking_about| {
+        assert_eq!(
+            asking_about,
+            wearing.as_path(),
+            "the dialog opens on the name the note is wearing"
+        );
+        Some(chosen.clone())
+    });
+
+    assert!(matches!(named, SaveReady::Named));
+    let edit = workspace.active_edit().expect("the buffer is still there");
+    assert_eq!(edit.path, chosen);
+    assert!(!edit.untitled, "it has a file now");
+    assert_eq!(
+        edit.format,
+        DocumentFormat::Json,
+        "whoever chose where it goes chose what it is"
+    );
+    assert_eq!(
+        edit.text(),
+        "# Typed before it was named\n",
+        "naming a note does not touch what was typed into it"
+    );
+
+    let tab = &workspace.tabs[0];
+    assert_eq!(tab.history.current(), Some(&chosen));
+    assert_eq!(
+        tab.history.entries.len(),
+        steps_before,
+        "the entry is renamed in place, so Back does not gain a step to a name nothing was ever at"
+    );
+    assert_eq!(tab.history.back_target(), None);
+    assert_eq!(tab.title, "recipe", "the strip shows the new name");
+    assert!(
+        tab.rendered.is_none(),
+        "the cached render was keyed on the old name"
+    );
+
+    assert_eq!(
+        recent.files,
+        vec![chosen, already],
+        "the file joins Recent at the front"
+    );
+}
+
+/// Closing the dialog is an answer of its own, and the note must be exactly where it was left.
+#[test]
+fn closing_the_name_dialog_leaves_a_new_note_exactly_as_it_was() {
+    let mut workspace = Workspace::default();
+    let wearing = workspace.open_untitled();
+    workspace
+        .active_edit_mut()
+        .expect("a new note has a buffer")
+        .replace_range(0, 0, "# Not going anywhere\n");
+    let drawn = "# Not going anywhere\n";
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: wearing.clone(),
+        hash: content_hash(drawn),
+        document: opened_document_from_source_with_host(drawn, &wearing, &DesktopHost::default()),
+    });
+    let mut recent = RecentFiles::default();
+
+    let answer = name_untitled_in_workspace(&mut workspace, &mut recent, |_| None);
+
+    assert!(matches!(answer, SaveReady::Canceled));
+    let edit = workspace.active_edit().expect("the buffer is still there");
+    assert_eq!(edit.path, wearing);
+    assert!(edit.untitled, "it still has no file");
+    assert_eq!(edit.text(), "# Not going anywhere\n");
+    let tab = &workspace.tabs[0];
+    assert_eq!(tab.history.current(), Some(&wearing));
+    assert_eq!(tab.title, leaftext::tab_title_from_path(&wearing));
+    assert!(
+        tab.rendered.is_some(),
+        "nothing was renamed, so the render still answers"
+    );
+    assert!(recent.files.is_empty(), "nothing was written to ask about");
+}
+
+/// Every save after the first walks straight past the naming, and must never open a dialog to do it.
+#[test]
+fn a_note_that_already_has_a_file_is_saved_without_being_asked_where() {
+    let mut workspace = Workspace::default();
+    let note = PathBuf::from("notes/kept.md");
+    workspace.open_path(note.clone());
+    workspace.tabs[0].edit = Some(EditableDocument::new(
+        note.clone(),
+        SourceText::utf8("# Kept\n".to_string()),
+    ));
+    let mut recent = RecentFiles::default();
+
+    let answer = name_untitled_in_workspace(&mut workspace, &mut recent, |_| {
+        panic!("a document that already has a file is never asked where it goes")
+    });
+
+    assert!(matches!(answer, SaveReady::Ready));
+    assert!(recent.files.is_empty());
+
+    // A tab with no buffer at all has nothing to name either, and the ask stays shut.
+    let mut unedited = Workspace::default();
+    unedited.open_path(note);
+    let answer = name_untitled_in_workspace(&mut unedited, &mut recent, |_| {
+        panic!("a tab with no buffer is never asked where it goes")
+    });
+    assert!(matches!(answer, SaveReady::Ready));
+}
