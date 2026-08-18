@@ -2901,7 +2901,7 @@ body.mac-frame.is-fullscreen::before {
   align-items: center;
   align-self: stretch;
   position: relative;
-  /* Mirrors .app-bar-lead's right inset at zero, so each end of the strip is its own gap and a tab comes no closer to the actions than the first one comes to the history buttons. */
+  /* No left inset, matching the lead zone's right one, so each end of the strip is the strip's own gap and a tab comes no closer to the actions than the first one comes to the history buttons. */
   padding-left: 0;
   padding-right: var(--lt-space-24);
 }
