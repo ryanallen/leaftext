@@ -607,9 +607,9 @@ body.is-maximized #winMaximize .wc-restore {
   border-color: var(--lt-window-close);
   color: var(--lt-window-close-foreground);
 }
-/* A Mac's three, at the bar's left end. Ours rather than Apple's because a native view is pinned to the window and cannot fold into the chevron menu, which meant the bar reserving room for them whether it had any or not. Centered by the zone's own rule instead of inset into the top corner, and closed up like the Windows three above. */
+/* A Mac's three, at the bar's left end. Ours rather than Apple's because a native view is pinned to the window and cannot fold into the chevron menu, which meant the bar reserving room for them whether it had any or not. Centered by the zone's own rule instead of inset into the top corner. Twice the Windows gap because the dot is a quarter of the button: 4px between 32px buttons is an eighth of one, while 4px between 12px dots is a third of one and the three run together as a blob. */
 .mac-frame .window-controls {
-  gap: var(--lt-space-4);
+  gap: var(--lt-space-8);
   margin-left: 0;
 }
 /* The theme's stop, careful and good, rather than three fixed hex values — Apple's dots ignoring the theme was the one real complaint against them. Minimize takes the middle one here; the two either side name their own below. */
@@ -631,6 +631,10 @@ body.mac-frame.is-fullscreen .window-controls {
 .mac-frame .window-control-close {
   order: -1;
   background: var(--lt-danger);
+}
+/* The stacked copy is the same three dots on the same gap turned on its side, so it takes the row's 8px too and the fix does not disappear the moment the window is narrow enough to fold. Windows keeps the shared column's 4px. */
+.mac-frame .app-overflow-panel .window-controls {
+  gap: var(--lt-space-8);
 }
 /* Stacked in the menu the three read top to bottom, so the row's order is upside down there: zoom at the top, close at the foot and farthest from the pointer that opened it. */
 .mac-frame .app-overflow-panel #winMaximize {

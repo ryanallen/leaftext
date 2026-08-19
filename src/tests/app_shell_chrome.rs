@@ -512,11 +512,22 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         frameless.contains("padding-right: var(--lt-space-4);"),
         "the close chip stays 4px off the window corner: {frameless}"
     );
-    // A Mac's dots are the same control set, so they close up the same way rather than sitting far apart.
+    // A Mac's dot is a quarter of a Windows button, so the same 4px reads as a third of a dot and the three run together: they take twice the gap while the Windows three above keep theirs.
     let mac = rule_body(css, "\n.mac-frame .window-controls {");
     assert!(
-        mac.contains("gap: var(--lt-space-4);") && mac.contains("margin-left: 0;"),
-        "the Mac's dots sit close rather than far apart: {mac}"
+        mac.contains("gap: var(--lt-space-8);") && mac.contains("margin-left: 0;"),
+        "the Mac's dots take twice the Windows gap: {mac}"
+    );
+    // Folded into the chevron's menu the same three stack, still 12px on the same gap, so the Mac column follows the row and the shared column stays where Windows needs it.
+    let mac_panel = rule_body(css, "\n.mac-frame .app-overflow-panel .window-controls {");
+    assert!(
+        mac_panel.contains("gap: var(--lt-space-8);"),
+        "the Mac's stacked dots take the same widened gap: {mac_panel}"
+    );
+    let shared_panel = rule_body(css, "\n.app-overflow-panel .window-controls {");
+    assert!(
+        shared_panel.contains("gap: var(--lt-space-4);"),
+        "the shared stacked column keeps the Windows gap: {shared_panel}"
     );
 
     // The gap has to clear the active tab's flare on both sides, and the strip scrolls, so a flare wider than the strip's own side inset is clipped flat rather than drawn: 14px is the largest radius on the scale that still leaves daylight inside a 16px gap. Pinned by the declaration because the stylesheet opens .tab-active twice and a lookup by selector finds the wrong block.
