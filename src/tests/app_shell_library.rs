@@ -237,7 +237,7 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
         "if (libraryWidth === DEFAULT_PANE_WIDTH) libraryWidth = openPaneFloor(libraryWidth);",
     );
     assert_contains(&html, "libraryWidth = openPaneFloor(DEFAULT_PANE_WIDTH);");
-    // And nowhere else: flooring the drag at that zone was built once and thrown out, for taking every narrow pane away from a platform that never had the fault. The drag reads the plain clamp, and the snap is the snap.
+    // And nowhere else: flooring the drag at that zone takes every narrow pane away from a platform that never had the fault, so the drag reads the plain clamp and the snap is the snap.
     assert_contains(&html, "dividerDrag.pendingWidth = clampOpenPaneWidth(raw);");
     assert!(!html.contains("openPaneFloor(raw)"));
 

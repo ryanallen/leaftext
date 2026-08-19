@@ -13,11 +13,11 @@ function maxOpenPaneWidth() {
 function clampOpenPaneWidth(width) {
   return Math.min(Math.max(width, SNAP_SHUT), maxOpenPaneWidth());
 }
-// A pane never opens narrower than the bar's left zone, because that zone is sized to the pane so the tabs begin at the pane's edge and floored at the buttons it holds — so a pane opening inside it leaves the tabs hanging over the page with nothing pressed. The floor is measured off the zone rather than written down again: on a Mac the window's own three dots stand there and make it wider than the 240px the pane opens at, on Windows it is 53px inside that and this changes nothing. Opening only — a drag still reaches every width it ever did, and flooring the drag here is what was built once and thrown out.
+// A pane never opens narrower than the bar's left zone: that zone is sized to the pane so the tabs begin at the pane's edge and floored at the buttons it holds, so a pane opening inside it leaves the tabs over the page with nothing pressed. Measured off the zone rather than written down again — on a Mac the window's own three dots stand there and take it past the 240px a pane opens at, on Windows it is 53px inside that. Opening only: flooring the drag as well takes away every width under the zone, on a platform that never had the fault.
 function openPaneFloor(width) {
   return Math.max(width, appBarLeadWidth());
 }
-// The width the pane comes back at, raised on the way in — but only where it is still the width a pane opens at on its own. A Mac that has been run before has 240px written down and would otherwise stay adrift for good, with no migration to raise it; a width a reader dragged to is theirs at any size, and raising that would take the narrow pane away one restart later, which is the whole reason the first design was thrown out.
+// The width the pane comes back at, raised on the way in — only where it is still the width a pane opens at on its own. A Mac that has been run before has 240px written down and no migration to raise it; a width a reader dragged to is theirs at any size, and raising that takes the narrow pane away one restart later.
 if (libraryWidth === DEFAULT_PANE_WIDTH) libraryWidth = openPaneFloor(libraryWidth);
 // A window too narrow for both reader and pane shows the pane closed regardless of preference — a display fallback, not a saved state.
 function libraryTooNarrow() {
