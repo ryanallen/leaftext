@@ -73,7 +73,7 @@ use tao::window::Icon;
 use tao::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy},
+    event_loop::{ControlFlow, DeviceEventFilter, EventLoopBuilder, EventLoopProxy},
     window::WindowBuilder,
 };
 use wry::{
@@ -274,6 +274,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     }
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
+    // The window library registers every mouse and keyboard for raw input and hands the loop one device event per hardware packet while focused — up to a thousand a second on a gaming mouse, and no arm reads one. Windows-only by tao's own doc, so the skip in `could_have_changed_anything` stays: it is the half a Mac runs.
+    event_loop.set_device_event_filter(DeviceEventFilter::Always);
     // `mut` is used only by the non-Windows icon block below.
     #[allow(unused_mut)]
     let mut window_builder = WindowBuilder::new()

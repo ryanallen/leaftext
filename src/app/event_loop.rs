@@ -168,12 +168,15 @@ pub(crate) fn startup_restore_intent(
 /// Whether an arm below could have answered this event, which is what says whether the tail after the match has anything left to do. A skip list rather than a list of what counts, so an event this does not recognize still runs the tail and nothing new is quietly dropped.
 ///
 /// It is here because a window drag hands the loop four events per mouse move and no arm answers one of them, while the tail rebuilds the saved session out of every open tab: 1,015 rebuilds across a two-second drag, four fifths of what that gesture costs with ten tabs open.
+///
+/// A device event is one raw input packet — up to a thousand a second on a gaming mouse, delivered per hardware report while focused. It carries raw pointer deltas no arm reads, and letting it run the tail froze a twenty-tab window solid under a fast hand: 4 landed positions across a throw where skipping lands 204.
 pub(crate) fn could_have_changed_anything(event: &Event<UserEvent>) -> bool {
     match event {
         Event::NewEvents(_)
         | Event::MainEventsCleared
         | Event::RedrawRequested(_)
         | Event::RedrawEventsCleared => false,
+        Event::DeviceEvent { event, .. } => device_event_could_have_changed_anything(event),
         Event::WindowEvent { event, .. } => window_event_could_have_changed_anything(event),
         _ => true,
     }
@@ -182,6 +185,11 @@ pub(crate) fn could_have_changed_anything(event: &Event<UserEvent>) -> bool {
 /// See `could_have_changed_anything`. Its own function because a `WindowEvent` can be built in a test and the event that wraps it cannot.
 pub(crate) fn window_event_could_have_changed_anything(event: &WindowEvent) -> bool {
     !matches!(event, WindowEvent::Moved(_))
+}
+
+/// See `could_have_changed_anything`. Its own function for the same reason as the window half: a `DeviceEvent` can be built in a test and the event that wraps it cannot. Always the skip — whatever the packet carries, no arm reads it.
+pub(crate) fn device_event_could_have_changed_anything(_event: &tao::event::DeviceEvent) -> bool {
+    false
 }
 
 // TEMPORARY — phase 0 of ../docs/fixes/reading/dragging-the-window-is-still-slow-with-tabs-open.md. Counts what the loop is handed, and how much of it reaches the tail, while a pointer crosses the window. Off unless `LEAF_EVENT_PROBE` names a file to write. Taken back out by that phase's fourth box.

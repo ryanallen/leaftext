@@ -4413,7 +4413,8 @@ fn a_launch_answers_to_the_names_every_installed_copy_already_uses() {
 #[test]
 fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
     use tao::dpi::{PhysicalPosition, PhysicalSize};
-    use tao::event::StartCause;
+    use tao::event::{DeviceEvent, ElementState, RawKeyEvent, StartCause};
+    use tao::keyboard::KeyCode;
     use tao::window::WindowId;
 
     for event in [
@@ -4437,6 +4438,20 @@ fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
         assert!(
             could_have_changed_anything(&event),
             "{event:?} is not on the skip list, so the tail still runs"
+        );
+    }
+
+    // The device half is asked on its own for the same reason as the window half below: one raw input packet — the mouse hands the loop up to a thousand a second while focused — and no arm reads one, mouse or keyboard alike.
+    for event in [
+        DeviceEvent::Added,
+        DeviceEvent::Key(RawKeyEvent {
+            physical_key: KeyCode::KeyA,
+            state: ElementState::Pressed,
+        }),
+    ] {
+        assert!(
+            !device_event_could_have_changed_anything(&event),
+            "{event:?} is a raw input packet no arm reads, so the tail has nothing to do"
         );
     }
 
