@@ -53,7 +53,7 @@ function undoLastEdit() {
   });
 }
 
-// The same trip in the other direction. Words under the caret are committed first here too: a commit is a fresh edit, which ends the future, so it has to happen before the ask rather than after the answer has already put a version back.
+// The same trip in the other direction. Words under the caret are committed first here too, because a commit is a fresh edit and ends the future.
 function redoLastEdit() {
   const path = activeDocumentPath();
   if (!path) return;

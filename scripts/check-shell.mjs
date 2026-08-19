@@ -2618,7 +2618,7 @@ if (booted) {
     }
   });
 
-  // The other half of the same hand-over: with a block's own forward steps spent, both spellings of the key mean one committed edit forward. Swallowed there, a reader who pressed undo once too many would have a key that does nothing and a button they never found.
+  // The other half of the hand-over: with a block's own forward steps spent, both spellings of the key mean one committed edit forward. Swallowed there, a press too many is words nobody can get back.
   check('the last group spent hands Ctrl+Y and Ctrl+Shift+Z to the app’s own redo', () => {
     const posted = [];
     const wasIpc = booted.ipc;
@@ -2669,7 +2669,7 @@ if (booted) {
     }
   });
 
-  // The button is the discoverable half of the pair, so it answers the host's own account of the history rather than anything the page guessed. A resync that moves Redo alone moves neither the dirty flag nor Undo, which is exactly the case a bar refreshed only on dirty would miss.
+  // A resync that moves Redo alone moves neither the dirty flag nor Undo, which is the case a bar refreshed only on dirty would miss.
   check('the Redo button follows what the host says the history holds', () => {
     try {
       openTyping('# Title\n\nA paragraph.\n');

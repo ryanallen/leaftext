@@ -215,6 +215,7 @@ Key `IpcCommand` variants include:
 | `pickImage`            | The insert row's [image box](../01-features/07-editing.md#images): show the file picker and answer with a destination for the document to hold |
 | `toggleTask`           | A reading-view [task checkbox](../01-features/07-editing.md#inline-editing-the-reading-view) click: flip the Nth `[ ]`/`[x]` marker |
 | `undoEdit`             | The [Undo](../01-features/07-editing.md#undo) button or `Ctrl+Z` / `Cmd+Z`: revert the most recent reading-view edit |
+| `redoEdit`             | The [Redo](../01-features/07-editing.md#undo) button, `Ctrl+Y` or `Ctrl+Shift+Z`: bring back the reading-view edit the last undo displaced |
 | `exportDiagram`        | The flowchart sheet's [Export](../01-features/07-editing.md#export): Markdown arrives as text, a picture as base64 pixels with its width and height, and the host encodes it (`src/png.rs`) and asks where the file goes |
 | `search`               | Library search box query, over the active vault's text |
 | `logError`             | Anything the page threw: `window.onerror`, a rejected promise, or a `console.error`, on its way to the log file. Carries how many times that same text has been seen, because `journal.js` collapses a repeat rather than sending every one |

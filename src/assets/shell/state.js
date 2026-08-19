@@ -57,7 +57,7 @@ const undoButton = document.getElementById('undoButton');
 const redoButton = document.getElementById('redoButton');
 // Whether each document has a reading-view edit to undo. Set optimistically when an edit is sent, then overwritten by the host's authoritative answer in leafBlocksResynced and cleared on save. The host owns the undo stack, so the button can never linger after undoing all the way back or saving a baseline.
 const undoableByPath = new Map();
-// Whether each document has an undone edit waiting to be brought back. Never set optimistically: only an undo creates one, and the same answer that reports it also reports the undo that made it, so the host is the only writer worth trusting. A fresh edit ends it, here as in the buffer.
+// Whether each document has an undone edit waiting to be brought back. Only an undo creates one and the host is the only thing that knows, so this is never set ahead of an answer the way the undo map is. A fresh edit ends it, here as in the buffer.
 const redoableByPath = new Map();
 // Whether the reader is currently showing raw source instead of the rendered document. Reset by renderState(), set by leafShowCodeView().
 let codeViewActive = false;
