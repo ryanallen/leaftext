@@ -124,7 +124,7 @@ Each step in the verification pipeline can also be run on its own:
 | Site boot    | `just check-site-boot`      | Boot the code that draws the published pages — both entry readers and every helper they pull in — against a stand-in page, fetch and renderer module, and read the finished page each one drew |
 | Front end    | `just check-shell`          | Run the page's script against a stand-in page: it parses, it boots, and its edit offsets are right |
 | Identity     | `just check-identity`       | Fail on an assistant credited in the repo or its history |
-| Hooks        | `just check-hooks`          | Self-test the five hooks |
+| Hooks        | `just check-hooks`          | Self-test the six hooks |
 | Release package | `just check-release-package` | Fail when the release workflows could no longer find the app's binary among the workspace's packages, when the command that finishes a stranded tag stops naming both builds or starts writing, or when either job stops asking again for the making of its release |
 | Workflow installs | `just check-workflow-installs` | Fail when a workflow caches a directory `cargo install` writes to and installs into it with nothing to stop the install running twice |
 | Ask pipe     | `just check-mcp`            | Fail when the MCP wrapper, its registration and `src/pipe.rs` disagree about what can be asked, or where |
