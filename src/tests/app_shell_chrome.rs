@@ -465,13 +465,12 @@ fn app_shell_styles_history_controls_with_neutral_icon_treatment() {
 
 #[test]
 fn app_bar_keeps_one_gap_between_visible_groups() {
-    // The bar is one sequence of places to go, so every space it declares from the leaf through the tabs and into the trailing actions is the same 16px. Unequal gaps made the same row read as loosely assembled clusters, and anything tighter left the active tab's join curve no room to draw. The window buttons are the one exception, below: three of them read as one control set rather than three more stops along the row.
+    // The bar is one sequence of places to go, so every space it declares between the leaf, the history pair and the two trailing rows is the same 16px. Unequal gaps made the same row read as loosely assembled clusters. Two groups are the exceptions: the window buttons, below, where three read as one control set rather than three more stops along the row, and the tab strip, which is a list of open documents rather than a run of unrelated controls.
     let css = reading_mode_css();
 
     for selector in [
         "\n.app-bar-lead {",
         "\n.history-actions {",
-        "\n.tab-bar {",
         "\n.app-trailing-items {",
         "\n.app-actions-items {",
     ] {
@@ -482,11 +481,26 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         );
     }
 
-    // Each end of the strip is that same gap and nothing else: the strip carries it, and the two zones either side add none.
+    // Inside the strip the tabs close up to 4px so they read as one set, while each end of the strip keeps the row's 16px: that inset is what the flares below are capped by, and the strip carries it while the two zones either side add none.
     let strip = rule_body(css, "\n.tab-bar {");
     assert!(
+        strip.contains("gap: var(--lt-space-4);"),
+        "the tabs sit tight against each other rather than on the row's gap: {strip}"
+    );
+    assert!(
         strip.contains("padding: var(--lt-space-4) var(--lt-space-16) 0;"),
-        "the strip's side insets are the bar's own gap: {strip}"
+        "the strip's side insets stay on the bar's own gap: {strip}"
+    );
+    // The tighter gap takes 12px off each side of the active tab's flare, so the tab buys it back itself. Without that margin the flare's page-colored fill runs onto the neighbor and the three tabs read as one block; without it in the transition, every tab to the right jumps the moment the selection moves.
+    let active = rule_body(css, "\n.tab-active {");
+    assert!(
+        active.contains("margin: 0 var(--lt-space-12);"),
+        "the active tab buys back the room its flare turns in: {active}"
+    );
+    let tab = rule_body(css, "\n.tab {");
+    assert!(
+        tab.contains("margin var(--lt-duration-120) var(--lt-ease-emphasized)"),
+        "the tabs slide as that margin arrives and leaves: {tab}"
     );
     let lead = rule_body(css, "\n.app-bar-lead {");
     assert!(
@@ -530,7 +544,7 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         "the shared stacked column keeps the Windows gap: {shared_panel}"
     );
 
-    // The gap has to clear the active tab's flare on both sides, and the strip scrolls, so a flare wider than the strip's own side inset is clipped flat rather than drawn: 14px is the largest radius on the scale that still leaves daylight inside a 16px gap. Pinned by the declaration because the stylesheet opens .tab-active twice and a lookup by selector finds the wrong block.
+    // The room beside the active tab has to clear its flare on both sides — the strip's 4px gap plus the 12px margin above — and the strip scrolls, so a flare wider than the strip's own 16px side inset is clipped flat rather than drawn: 14px is the largest radius on the scale that still leaves daylight inside that 16px. Pinned by the declaration because the stylesheet opens .tab-active twice and a lookup by selector finds the wrong block.
     assert!(
         css.contains("--tab-flare: var(--lt-radius-2xl);")
             && !css.contains("--tab-flare: var(--lt-radius-md);")
