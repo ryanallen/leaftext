@@ -1842,6 +1842,63 @@ fn an_ask_left_waiting_by_a_vault_switch_is_owed_a_read() {
 }
 
 #[test]
+fn re_picking_the_folder_the_pane_is_already_in_is_not_a_move() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.active = 7;
+    state.root = Some(root.clone());
+
+    // The two slips this exists for: New vault… on a folder already registered, and Change folder… accepting the folder the vault already shows. Both arrive as this same id and this same folder.
+    assert!(
+        !pointing_here_is_a_move(&state, 7, Some(&root)),
+        "re-picking the folder the pane is already in was read as leaving it, so a whole vault's text went with it"
+    );
+
+    // A real switch, and each half of one on its own.
+    assert!(
+        pointing_here_is_a_move(&state, 9, Some(Path::new("/another-vault"))),
+        "switching to another vault kept text read under the one we left"
+    );
+    assert!(
+        pointing_here_is_a_move(&state, 7, Some(Path::new("/moved-vault"))),
+        "moving a vault to a folder it was not in kept text read under the old one"
+    );
+    assert!(
+        pointing_here_is_a_move(&state, 0, None),
+        "going out to the whole library kept text read under the vault we left"
+    );
+}
+
+#[test]
+fn both_ways_of_pointing_at_a_vault_ask_whether_the_folder_moved_first() {
+    // Both arms take an `EventLoopProxy` and nothing in this suite has one, so they are held as source the way the loop's own arms are.
+    let source = include_str!("vaults.rs");
+    for arm in [
+        "fn apply_active_vault(",
+        "pub(crate) fn change_vault_folder(",
+    ] {
+        let at = source.find(arm).unwrap_or_else(|| {
+            panic!("{arm} is one of the two ways the pane is pointed at a vault")
+        });
+        let body = &source[at..source.len().min(at + 1500)];
+        let asked = body.find("pointing_here_is_a_move(").unwrap_or_else(|| {
+            panic!("{arm} forgets a vault's text without asking whether its folder moved")
+        });
+        let forgotten = body.find("state.drop_corpus();").unwrap_or_else(|| {
+            panic!("{arm} no longer forgets the text of a vault somebody really did leave")
+        });
+        assert!(
+            asked < forgotten,
+            "{arm} forgets the text first and asks whether the folder moved afterwards"
+        );
+        assert!(
+            body[asked..forgotten].contains("if moved {"),
+            "{arm} asks whether the folder moved and forgets the text whatever the answer"
+        );
+    }
+}
+
+#[test]
 fn nothing_is_owed_while_a_read_is_still_running() {
     let mut state = VaultState::load(None);
     state.root = Some(PathBuf::from("/vault"));

@@ -98,6 +98,8 @@ impl VaultState {
     }
 
     /// Forget the vault's text and anything waiting on it. Called whenever the root moves: what was read is about somewhere else now.
+    ///
+    /// Its callers ask [`pointing_here_is_a_move`] first, because the folder you are already in is not one you left — re-picking it would otherwise throw away a whole vault's text and the read still filling it.
     pub(crate) fn drop_corpus(&mut self) {
         self.corpus = None;
         self.corpus_generation += 1;
@@ -229,9 +231,13 @@ pub(crate) fn change_vault_folder(
         return;
     }
     if state.active == id {
+        // Accepting the folder the vault already shows is the same slip as picking it again from scratch, so it is the same rule: asked before the root is overwritten.
+        let moved = pointing_here_is_a_move(state, id, Some(folder));
         state.root = Some(folder.to_path_buf());
         state.folder.clear();
-        state.drop_corpus();
+        if moved {
+            state.drop_corpus();
+        }
         request_folder(state, proxy, String::new());
     }
     push_vaults(webview, state);
@@ -284,15 +290,21 @@ fn apply_active_vault(
     if let Err(error) = set_active_vault_id(conn, id) {
         eprintln!("Could not remember the active vault: {error}");
     }
-    state.root = find_vault(conn, id)
+    let root = find_vault(conn, id)
         .ok()
         .flatten()
         .map(|vault| PathBuf::from(vault.root_path));
     // An id we cannot find a folder for is no vault at all. Keeping the two in step matters because the page is told the id and decides what to offer from it, while search and the graph need the folder — set one without the other and the interface offers a vault nothing can read.
-    state.active = if state.root.is_some() { id } else { 0 };
+    let active = if root.is_some() { id } else { 0 };
+    // Asked before either is overwritten, because the answer is what they were against what they are becoming.
+    let moved = pointing_here_is_a_move(state, active, root.as_deref());
+    state.root = root;
+    state.active = active;
     // A new root, so the pane starts at the top of it rather than in a folder that belonged to whatever was showing before, and everything read under the old one is about somewhere else.
     state.folder.clear();
-    state.drop_corpus();
+    if moved {
+        state.drop_corpus();
+    }
     push_vaults(webview, state);
     request_folder(state, proxy, String::new());
 }
@@ -576,6 +588,11 @@ pub(crate) fn read_is_owed(state: &VaultState) -> bool {
     !state.corpus_loading
         && state.root.is_some()
         && (state.pending_search.is_some() || state.pending_graph.is_some())
+}
+
+/// Whether pointing the pane at `id` and `root` moves it anywhere at all. A no means the vault's text is still about that same folder, so it is kept: re-picking the folder you are already in is not leaving it. State alone and no worker, which is what lets a test ask it.
+pub(crate) fn pointing_here_is_a_move(state: &VaultState, id: i64, root: Option<&Path>) -> bool {
+    state.active != id || state.root.as_deref() != root
 }
 
 /// A slice of the read landed. The vault's text grows by it, and anything parked on the read is answered again — so a search fills in while the rest of the vault is still being opened. Whatever it starts runs on a worker, not here.
