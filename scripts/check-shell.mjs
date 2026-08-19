@@ -7862,7 +7862,7 @@ check('a pane left at the width it opens at is raised on the way back in, and a 
 });
 
 check('a drag still reaches every width it reached before, and still snaps shut, and never takes the zone under its own buttons', () => {
-  // Flooring the pane at the zone instead slams it shut while it is still a fifth of the window wide, so the drag's own range is held here. The zone underneath it is the other half: dragged inside the zone's own width, the zone holds at its buttons rather than following the pane down — which is what a Mac was not doing, drawing the tab strip over the leaf, the library button and both arrows.
+  // Flooring the pane at the zone instead slams it shut while it is still a fifth of the window wide, so the drag's own range is held here. The zone underneath it is the other half: dragged inside the zone's own width, the zone holds at its buttons rather than following the pane down — which a Mac does not do on its own, drawing the tab strip over the leaf, the library button and both arrows instead.
   for (const [leadWidth, platform] of [[WINDOWS_LEAD, 'Windows'], [MAC_LEAD, 'a Mac']]) {
     const context = bootWithLead(leadWidth);
     const lead = context.document.querySelector('.app-bar-lead');
@@ -7878,7 +7878,7 @@ check('a drag still reaches every width it reached before, and still snaps shut,
     raise('pointermove', pointer({ clientX: 96 }));
     context.__frames.drain();
     if (railWidth(context) !== '96px') throw new Error(`on ${platform} a pane dragged to 96px came to rest at ${railWidth(context)}`);
-    // A number, never `fit-content`: the keyword is the one thing in the rule the two web views do not answer alike, and it is why a Mac gave the zone up.
+    // A number, never `fit-content`: the keyword is the one thing in the rule the two web views do not answer alike, and it is why a Mac gives the zone up.
     if (lead.style.minWidth !== `${leadWidth}px`) {
       throw new Error(`on ${platform} a pane dragged to 96px left the zone floored at ${lead.style.minWidth || 'nothing'} rather than its own ${leadWidth}px`);
     }

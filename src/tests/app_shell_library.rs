@@ -169,7 +169,7 @@ fn a_shut_pane_leaves_the_bars_left_zone_sized_by_its_own_buttons() {
         .expect("stylesheet defines .app-bar-lead");
     // Open, the zone still follows the rail so the tabs begin at the pane's edge.
     assert_contains(lead, "width: var(--library-rail-width, 240px);");
-    // Shut, it sizes from content instead. The keyword is the floor only until the front end has measured the zone and written that number over it: a Mac reads `fit-content` as no floor at all and squeezed the library button out under the tab strip, and the button is the only way back to the pane.
+    // Shut, it sizes from content instead. The keyword is the floor only until the front end has measured the zone and written that number over it: a Mac reads `fit-content` as no floor at all and squeezes the library button out under the tab strip, and the button is the only way back to the pane.
     assert_contains(lead, "min-width: fit-content;");
     assert_contains(
         css,
