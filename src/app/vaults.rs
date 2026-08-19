@@ -24,7 +24,7 @@ pub(crate) struct VaultState {
     pub(crate) corpus_generation: u64,
     /// A read is in flight, so a second request waits rather than starting one.
     pub(crate) corpus_loading: bool,
-    /// Which vault's read is wanted. Claimed when one starts and bumped when the vault is left, so the thread stops between documents instead of walking a folder nobody is in — its own counter rather than [`Self::corpus_generation`], which every slice bumps and would cancel the read that sent it.
+    /// Which vault's read is wanted. Claimed when one starts and bumped when the vault is left, so the thread stops between documents instead of walking a folder nobody is in — its own counter rather than `corpus_generation`, which every slice bumps and would cancel the read that sent it.
     pub(crate) corpus_read: WorkGeneration,
     /// The text above is part of a vault, not all of it: the read has handed over some slices and not the last. An answer scanned over it is true of what has been read and no more, so it is never kept, and the pane keeps its ring.
     pub(crate) corpus_partial: bool,
@@ -563,6 +563,15 @@ pub(crate) fn absorb_corpus_slice(
     })
 }
 
+/// Whether the open vault is owed a read: nothing is running, there is a vault, and a search or a map is waiting on text that will never arrive on its own. True after a slice of the vault somebody left clears the one-at-a-time guard, which is the moment an ask made in the vault they switched *to* stops being refused and starts being forgotten.
+///
+/// Keyed on the guard rather than on the slice being the last one, so which slice frees a read stays written in the one place that owns it. State alone and no worker, which is what lets a test ask it.
+pub(crate) fn read_is_owed(state: &VaultState) -> bool {
+    !state.corpus_loading
+        && state.root.is_some()
+        && (state.pending_search.is_some() || state.pending_graph.is_some())
+}
+
 /// A slice of the read landed. The vault's text grows by it, and anything parked on the read is answered again — so a search fills in while the rest of the vault is still being opened. Whatever it starts runs on a worker, not here.
 pub(crate) fn deliver_corpus(
     state: &mut VaultState,
@@ -574,7 +583,15 @@ pub(crate) fn deliver_corpus(
     first: bool,
     last: bool,
 ) -> Option<FilterHints> {
-    let absorbed = absorb_corpus_slice(state, &root, documents, truncated, skipped, first, last)?;
+    let Some(absorbed) =
+        absorb_corpus_slice(state, &root, documents, truncated, skipped, first, last)
+    else {
+        // The slice belonged to a vault nobody is in any more, and it is what let go of the one read. Anything asked for since the switch was turned away by that read and has been sitting there ever since, so this is where it gets its own.
+        if read_is_owed(state) {
+            read_corpus(state, proxy);
+        }
+        return None;
+    };
     if let Some(request) = absorbed.graph {
         build_vault_graph_off_thread(proxy, root, Arc::clone(&absorbed.corpus), request);
     }

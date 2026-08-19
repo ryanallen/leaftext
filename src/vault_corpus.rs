@@ -697,7 +697,7 @@ pub(crate) fn collect_documents(
     left_out: &mut Vec<PathBuf>,
     overtaken: &dyn Fn() -> bool,
 ) {
-    // Beside the document cap rather than deeper in, so a walk of a folder nobody is in any more unwinds at the next folder instead of at the next document. It cannot say it stopped — the recursion hands nothing back — so the caller asks again once this returns.
+    // Beside the document cap, so a walk of a folder nobody is in unwinds at the next folder. The recursion hands nothing back, so the caller asks again once this returns.
     if depth >= MAX_DEPTH || out.len() > MAX_CORPUS_DOCUMENTS || overtaken() {
         return;
     }

@@ -1589,7 +1589,7 @@ fn a_stopped_read_s_last_slice_still_frees_the_next_vault_to_be_read() {
     state.root = Some(PathBuf::from("/another-vault"));
     assert!(!state.corpus_read.is_current(reading));
 
-    // The stopped read still sends the slice that says it is over. Its text is thrown away — it is about somewhere we have left — and letting the next vault start is the whole of what it is for. A read that returned instead of breaking would never send it, and no vault could be read again for the rest of the session.
+    // The stopped read still sends the slice that says it is over: its text is thrown away, and freeing the next vault is the whole of what it is for. A read that returned instead of breaking would never send one, and no vault could be read again for the session.
     assert!(
         absorb_corpus_slice(&mut state, &left, Vec::new(), false, Vec::new(), true, true).is_none()
     );
@@ -1715,6 +1715,74 @@ fn a_read_of_a_vault_nobody_is_in_any_more_is_thrown_away() {
         "a slice read under a vault we have left was taken as this one's text"
     );
     assert!(state.corpus.is_none());
+}
+
+#[test]
+fn an_ask_left_waiting_by_a_vault_switch_is_owed_a_read() {
+    let mut state = VaultState::load(None);
+    state.root = Some(PathBuf::from("/vault"));
+
+    // Somebody switched vaults, then searched in the one they switched to. The read they were turned away by has just let go.
+    state.pending_search = Some(typed("dharma"));
+    assert!(
+        read_is_owed(&state),
+        "a search left waiting by a vault switch was never given a read"
+    );
+
+    // A map does the same, and nothing brings it back on its own: the page is already showing its waiting state.
+    state.pending_search = None;
+    state.pending_graph = Some(GraphRequest::default());
+    assert!(
+        read_is_owed(&state),
+        "a map left waiting by a vault switch was never given a read"
+    );
+}
+
+#[test]
+fn nothing_is_owed_while_a_read_is_still_running() {
+    let mut state = VaultState::load(None);
+    state.root = Some(PathBuf::from("/vault"));
+    state.pending_search = Some(typed("dharma"));
+    // A slice thrown away mid-read is an ordinary thing, and it must not put a second read of the same folder on the machine.
+    state.corpus_loading = true;
+    assert!(
+        !read_is_owed(&state),
+        "a slice given up mid-read started a second read beside the one still going"
+    );
+}
+
+#[test]
+fn nothing_is_owed_with_nobody_waiting() {
+    let mut state = VaultState::load(None);
+    state.root = Some(PathBuf::from("/vault"));
+    assert!(
+        !read_is_owed(&state),
+        "a vault nobody has asked anything of was read anyway"
+    );
+
+    // And with no vault at all there is nothing to read, whoever is waiting.
+    state.root = None;
+    state.pending_search = Some(typed("dharma"));
+    assert!(!read_is_owed(&state), "a read started with no vault open");
+}
+
+#[test]
+fn giving_up_a_stale_slice_starts_the_read_the_open_vault_is_owed() {
+    // The arm takes an `EventLoopProxy` and nothing in this suite has one, so it is held as source the way the loop's own arms are.
+    let source = include_str!("vaults.rs");
+    let at = source
+        .find("pub(crate) fn deliver_corpus(")
+        .expect("a slice of a read is delivered");
+    let body = &source[at..source.len().min(at + 1200)];
+
+    assert!(
+        body.contains("if read_is_owed(state) {"),
+        "the arm that gives up a stale slice never asks whether the open vault is owed a read"
+    );
+    assert!(
+        body.contains("read_corpus(state, proxy);"),
+        "the arm that gives up a stale slice asks the question and then does nothing with the answer"
+    );
 }
 
 #[test]
