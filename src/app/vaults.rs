@@ -99,7 +99,7 @@ impl VaultState {
 
     /// Forget the vault's text and anything waiting on it. Called whenever the root moves: what was read is about somewhere else now.
     ///
-    /// Its callers ask [`pointing_here_is_a_move`] first, because the folder you are already in is not one you left — re-picking it would otherwise throw away a whole vault's text and the read still filling it.
+    /// Its callers ask `pointing_here_is_a_move` first, because the folder you are already in is not one you left — re-picking it would otherwise throw away a whole vault's text and the read still filling it.
     pub(crate) fn drop_corpus(&mut self) {
         self.corpus = None;
         self.corpus_generation += 1;
@@ -296,7 +296,7 @@ fn apply_active_vault(
         .map(|vault| PathBuf::from(vault.root_path));
     // An id we cannot find a folder for is no vault at all. Keeping the two in step matters because the page is told the id and decides what to offer from it, while search and the graph need the folder — set one without the other and the interface offers a vault nothing can read.
     let active = if root.is_some() { id } else { 0 };
-    // Asked before either is overwritten, because the answer is what they were against what they are becoming.
+    // Asked before either is overwritten, since the answer is about what is held against what is arriving.
     let moved = pointing_here_is_a_move(state, active, root.as_deref());
     state.root = root;
     state.active = active;

@@ -197,7 +197,7 @@ Asking the same thing twice costs nothing: the last answer is kept and handed st
 
 To search **inside** the document you are reading rather than across the vault, see [Find in this document](02-navigation.md#find-in-this-document).
 
-The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you switch vaults or quit. A read still running is stopped at the same moment, so leaving a big folder hands the machine straight back rather than finishing a pass nobody is waiting on, and the vault you switched to starts reading right away. There is no index on disk, so nothing can go stale relative to your files.
+The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you move to a different folder or quit. A read still running is stopped at the same moment, so leaving a big folder hands the machine straight back rather than finishing a pass nobody is waiting on, and the vault you switched to starts reading right away. Naming the folder you are already in — **New vault…** on a folder that is already a vault, or **Change folder…** accepting the folder it already shows — is not moving, so that vault keeps what it has read and a read still running carries on. There is no index on disk, so nothing can go stale relative to your files.
 
 The first search after you open a vault is the one that pays for that pass, and how long it takes is your disk rather than the matching — a vault read once already answers in milliseconds, and the same vault untouched since the machine started can take a minute. So the first one answers as it reads. A line above the results carries a turning ring while the vault is still being read, matches appear underneath as batches of documents land, and the count says what it has so far. Rows already on screen keep their place and stay clickable while more arrive; the ranking is settled once, on the last answer, which is when the ring goes. A search you run while an older query's results are still up is marked the same way, so the pane never shows you an answer to a question you have moved on from. The [map](#graph) still waits for the whole read, because a picture redrawn three times a second is not one anybody can look at.
 
@@ -407,7 +407,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | Item | Value |
 | --- | --- |
 | Vault registry | `manifest.db` — the vaults you have named, and which one is active |
-| Vault text | Held in memory for the active vault only; dropped on a switch and on quit |
+| Vault text | Held in memory for the active vault only; dropped when the folder you are in changes, and on quit |
 | Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, smallest documents first |
 | Folders not read | A folder that declares itself a cache, and eleven names a build tool picks. See [Skipped folders](#skipped-folders) |
 | Search results | Top 50 |
