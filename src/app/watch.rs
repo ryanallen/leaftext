@@ -56,11 +56,11 @@ impl FileWatch {
         }
     }
 
-    /// Point the watcher at the active document's folder and, when given, the library pane's folder (recursively). Cheap after every event: returns before touching the disk when the three inputs have not moved, and otherwise diffs the desired set against what's watched.
+    /// Point the watcher at the active document's folder and, when given, the library pane's folder (recursively). Returns before touching the disk when the three inputs have not moved, and otherwise diffs the desired set against what's watched.
     ///
-    /// The three inputs are the whole of what the desired set is built from, so a file changing on disk moves none of them — which is every watcher event, and the loop runs this after each one. Building the set asks the disk three times (an `is_dir` and two canonicalizations), then almost always throws the answer away as equal; measured at 91µs an event, half the cost of the loop's whole tail.
+    /// The three inputs are the whole of what the set is built from, so a file changing on disk moves none of them — and the loop runs this after every event. Building it anyway asks the disk three times and throws the answer away as equal: 116µs an event before the gate, 0.7µs after.
     ///
-    /// Two edges the gate has to leave open. A folder that is not there yet produces no watch, so the inputs are remembered only where every one that named something did — otherwise a vault created after it was pointed at would never be watched. And [`Self::release`] drops watches mid-turn expecting the sync at the end of that turn to put back what is still wanted, so it clears what is remembered here.
+    /// Two edges the gate leaves open. A folder that is not there yet produces no watch, so the inputs are remembered only where every one that named something did — otherwise a vault created after it was pointed at is never watched. And [`Self::release`] drops watches mid-turn for the sync at the end of that turn to put back, so it clears what is remembered here.
     pub(crate) fn sync(
         &mut self,
         active_path: Option<&Path>,
