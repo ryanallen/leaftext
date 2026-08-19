@@ -8663,7 +8663,7 @@ if (booted) {
   });
 
   check('the strip the arrows leave behind holds no element, and holds both again once the bar widens', () => {
-    // The condition the stylesheet keys on: `.history-actions:not(:has(*))` stops the strip being drawn, so the lead's 16px gap has nothing to land against. There is no layout engine here, so what is proved is that the fold really reaches that state and really comes out of it — the 16px itself is the owner's press.
+    // The condition the stylesheet keys on: `.history-actions:not(:has(*))` stops the strip being drawn, so the lead's 16px gap has nothing to land against. Nothing here lays anything out, so what is proved is that the fold reaches that state and comes back out of it.
     const bar = measuredAppBar();
     const strip = booted.document.querySelector('.history-actions');
     try {
