@@ -546,6 +546,22 @@ fn an_emptied_history_strip_stops_taking_a_gap() {
 }
 
 #[test]
+fn an_emptied_actions_group_stops_taking_a_gap() {
+    // The trailing zone's gap lands between the actions group and the window buttons, so the group the fold empties first is 16px spent on nothing at the one moment the bar has no room. The child combinator and the attribute are both load-bearing: the update bell stays in the group hidden, and its own summary and panel are descendants nothing marks hidden, so `:empty`, `:has(*)` and `:has(*:not([hidden]))` all fail to see the emptied group.
+    let css = reading_mode_css();
+
+    let emptied = rule_body(css, "\n.app-actions-items:not(:has(> *:not([hidden]))) {");
+    assert!(
+        emptied.contains("display: none;"),
+        "an actions group with nothing drawn in it is not drawn: {emptied}"
+    );
+    assert!(
+        !css.contains(".app-actions-items:empty") && !css.contains(".app-actions-items:not(:has(*))"),
+        "the emptied group must be found by drawn child, not by `:empty` or a bare `:has()`, which the hidden update bell defeats"
+    );
+}
+
+#[test]
 fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
     let css = reading_mode_css();
 

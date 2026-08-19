@@ -520,6 +520,10 @@ body.mac-frame.is-fullscreen::before {
   gap: var(--lt-space-16);
   align-items: center;
 }
+/* Once the fold has taken the theme, open and new buttons into the chevron menu, the group is a zero-wide box the trailing zone still spends a 16px gap on beside the window buttons — at the one moment there is no room, so it can cost a further button. Asked of children only, and by the attribute the fold and the updater already write: the update bell stays inside the group hidden, and its own summary and panel are descendants nothing marks hidden, so a bare `:has(*)` never fires here. */
+.app-actions-items:not(:has(> *:not([hidden]))) {
+  display: none;
+}
 /* Overflow chevron: hidden inline (the `.app-trailing` prefix outranks the later `.icon-button { display: inline-grid }`), shown only once something has actually folded. Rests muted, greens on hover like the other toolbar icons. */
 .app-trailing .overflow-toggle {
   display: none;

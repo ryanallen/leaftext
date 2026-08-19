@@ -8684,6 +8684,33 @@ if (booted) {
       bar.done();
     }
   });
+
+  check('the group the actions leave behind holds only the hidden update bell, and holds all four again once the bar widens', () => {
+    // The condition the stylesheet keys on: `.app-actions-items:not(:has(> *:not([hidden])))` stops the group being drawn, so the trailing zone's 16px gap has nothing to land against beside the window buttons. The bell never folds, so what has to be proved is that the group is left holding it alone and hidden — which is the state a bare `:has()` cannot tell from a full group.
+    const bar = measuredAppBar();
+    const group = booted.document.querySelector('.app-actions-items');
+    try {
+      // Narrow past every candidate, so all three actions are certainly in the menu rather than only the one the bar's own width happened to buy.
+      bar.bar.clientWidth = 0;
+      booted.refitAppBar();
+      const left = group.children.map((el) => el.id);
+      if (left.join(',') !== 'updateMenu') {
+        throw new Error(`the emptied group holds ${left.join(',') || 'nothing'}, expected the bell alone`);
+      }
+      if (!group.children[0].hidden) {
+        throw new Error('the bell left in the group was drawn, so the group is not the emptied case at all');
+      }
+
+      bar.bar.clientWidth = 900;
+      booted.refitAppBar();
+      const backOn = group.children.map((el) => el.id);
+      if (backOn.join(',') !== 'updateMenu,themeSheetOpen,openButton,newButton') {
+        throw new Error(`a wide bar put the group back as ${backOn.join(',') || 'empty'}`);
+      }
+    } finally {
+      bar.done();
+    }
+  });
 }
 
 // ---- 4b. a published site is not an install ---------------------------------
