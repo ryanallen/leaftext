@@ -1766,7 +1766,7 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
     for hover in [
         ".block-gutter .block-insert-option {",
         ".document-body pre > .code-copy {",
-        ".mermaid-zoom {",
+        ".mermaid-view-controls {",
     ] {
         assert_contains(rule_body(css, hover), "var(--lt-ease)");
     }
