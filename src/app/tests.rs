@@ -1142,6 +1142,65 @@ fn a_write_inside_git_is_not_a_change_the_app_can_act_on() {
 }
 
 #[test]
+fn a_write_under_a_folder_that_holds_generated_files_is_refused_at_the_boundary() {
+    // A vault that is also a folder somebody builds in raises an event per file, and each one costs the loop's whole tail as well as an arm. Nothing is open, so the one exception below does not apply.
+    let nothing_open: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(None));
+    assert!(is_generated_output(
+        Path::new("/vault/app/target/debug/deps/unit.rlib"),
+        &nothing_open
+    ));
+    assert!(is_generated_output(
+        Path::new("/vault/site/node_modules/pkg/index.js"),
+        &nothing_open
+    ));
+    // The watcher reports in the form the watch was registered with, which on Windows is verbatim.
+    #[cfg(windows)]
+    assert!(is_generated_output(
+        Path::new(r"\\?\C:\vault\target\debug\x.rlib"),
+        &nothing_open
+    ));
+
+    // Beside it, and not under it: the notes somebody keeps, a folder whose name merely starts with the same word, and the build folder itself appearing — which is a row the pane has to draw.
+    assert!(!is_generated_output(
+        Path::new("/vault/notes/mail.md"),
+        &nothing_open
+    ));
+    assert!(!is_generated_output(
+        Path::new("/vault/build-notes/plan.md"),
+        &nothing_open
+    ));
+    assert!(!is_generated_output(
+        Path::new("/vault/app/target"),
+        &nothing_open
+    ));
+}
+
+#[test]
+fn the_document_being_read_out_of_a_generated_folder_still_reloads() {
+    // A README opened out of `node_modules`, or generated documentation opened out of `build`, is a document somebody is looking at. The folder is the exception, not the file, so a sibling changing still refreshes the pane.
+    let open_in = PathBuf::from("/vault/node_modules/pkg");
+    let reading_in: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(Some(open_in.clone())));
+
+    assert!(!is_generated_output(
+        &open_in.join("readme.md"),
+        &reading_in
+    ));
+    assert!(!is_generated_output(
+        &open_in.join("changes.md"),
+        &reading_in
+    ));
+    // One folder further in is not the folder being read.
+    assert!(is_generated_output(
+        &open_in.join("docs/guide.md"),
+        &reading_in
+    ));
+    assert!(is_generated_output(
+        Path::new("/vault/node_modules/other/index.js"),
+        &reading_in
+    ));
+}
+
+#[test]
 fn a_dot_folder_in_the_shown_folder_looks_exactly_like_a_document_to_the_pane_test() {
     // Held as its own claim so the trap cannot come back. This is not the bug pinned: the pane's test compares a path against the folder on screen and cannot tell a dot folder from a document — which is the whole argument for refusing `.git` at the watcher instead of narrowing this.
     let folder = PathBuf::from("/vault/notes");
@@ -1324,6 +1383,7 @@ fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
 
     // A running scan reads the same number between documents, so it stops instead of finishing an answer nobody will read.
     let corpus = VaultCorpus {
+        skipped: Vec::new(),
         root: PathBuf::from("/vault"),
         documents: vec![CorpusDocument {
             path: "/vault/note.md".to_string(),
@@ -1373,6 +1433,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
         &root,
         vec![slice_document("one")],
         false,
+        Vec::new(),
         true,
         false,
     )
@@ -1402,6 +1463,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
         &root,
         vec![slice_document("two")],
         false,
+        Vec::new(),
         false,
         false,
     )
@@ -1417,6 +1479,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
         &root,
         vec![slice_document("three")],
         false,
+        Vec::new(),
         false,
         true,
     )
@@ -1453,6 +1516,7 @@ fn a_read_of_a_vault_nobody_is_in_any_more_is_thrown_away() {
             &elsewhere,
             vec![slice_document("one")],
             false,
+            Vec::new(),
             true,
             false
         )
@@ -1472,6 +1536,7 @@ fn a_fresh_read_replaces_the_text_it_finds_rather_than_growing_it() {
         &root,
         vec![slice_document("one")],
         false,
+        Vec::new(),
         true,
         true,
     );
@@ -1481,6 +1546,7 @@ fn a_fresh_read_replaces_the_text_it_finds_rather_than_growing_it() {
         &root,
         vec![slice_document("two")],
         false,
+        Vec::new(),
         true,
         true,
     )
@@ -1509,6 +1575,7 @@ fn one_search_answer() -> SearchResults {
         truncated: false,
         understood: String::new(),
         unknown_fields: Vec::new(),
+        skipped: Vec::new(),
         matched: vec!["/vault/note.md".to_string()],
     }
 }
@@ -1568,6 +1635,7 @@ fn the_same_query_over_unchanged_text_is_answered_from_the_last_one() {
         truncated: false,
         understood: String::new(),
         unknown_fields: Vec::new(),
+        skipped: Vec::new(),
         matched: vec!["/vault/note.md".to_string()],
     };
     let corpus = state.corpus_generation;
@@ -1597,6 +1665,7 @@ fn one_more_letter_scans_what_the_last_letter_matched() {
         truncated: false,
         understood: String::new(),
         unknown_fields: Vec::new(),
+        skipped: Vec::new(),
         matched: vec!["/vault/one.md".to_string(), "/vault/two.md".to_string()],
     };
     let corpus = state.corpus_generation;

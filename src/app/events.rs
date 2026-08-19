@@ -49,6 +49,8 @@ pub(crate) enum UserEvent {
         documents: Box<Vec<CorpusDocument>>,
         /// The read hit a cap, so the vault holds more than this will.
         truncated: bool,
+        /// Folders the walk did not go into because they hold generated files. Known in full before the first slice, since the walk runs whole before anything is opened.
+        skipped: Vec<String>,
         /// The first slice of a fresh read: what this vault held is replaced rather than grown.
         first: bool,
         /// The last slice. Until it lands the vault's text is partial.

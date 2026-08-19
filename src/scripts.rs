@@ -110,6 +110,7 @@ pub fn search_results_script(query: &str, results: &SearchResults, partial: bool
         "truncated": results.truncated,
         "understood": results.understood,
         "unknownFields": results.unknown_fields,
+        "skipped": results.skipped,
         "partial": partial,
         "error": serde_json::Value::Null,
     });

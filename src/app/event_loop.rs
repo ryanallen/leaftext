@@ -384,6 +384,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 root,
                 documents,
                 truncated,
+                skipped,
                 first,
                 last,
             }) => {
@@ -394,6 +395,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     root,
                     *documents,
                     truncated,
+                    skipped,
                     first,
                     last,
                 );

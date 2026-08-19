@@ -63,7 +63,156 @@ fn synthetic_corpus(count: usize) -> VaultCorpus {
         root: PathBuf::from("/vault"),
         documents,
         truncated: false,
+        skipped: Vec::new(),
     }
+}
+
+/// A vault that is also a folder somebody builds in was 98.7% build output on this repo, and every file of it was listed. The folder is not descended into now, so nothing under it reaches the corpus and nothing under it is opened.
+#[test]
+fn a_folder_of_build_output_is_not_walked() {
+    let root = corpus_dir("generated-walk");
+    write(&root.join("notes/keep.md"), "# Keep\n");
+    write(&root.join("target/debug/deps/unit.md"), "# Generated\n");
+    write(&root.join("target/notes.md"), "# Also generated\n");
+    // Its own top level holds JSON, which the app opens — so a folder judged on one level of its own contents would pass as a folder of documents.
+    write(&root.join("target/.rustc_info.json"), "{}\n");
+
+    let mut found = Vec::new();
+    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new());
+    let names: Vec<String> = found
+        .iter()
+        .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
+        .collect();
+    assert_eq!(names, vec!["keep.md".to_string()]);
+
+    fs::remove_dir_all(&root).ok();
+}
+
+/// Two halves of one rule. A folder is skipped for saying it holds generated files, whatever it is called; and for carrying a name a build tool picks, whether or not it said anything.
+#[test]
+fn a_cache_tag_and_a_known_name_each_skip_a_folder_on_their_own() {
+    let root = corpus_dir("generated-rule");
+    write(&root.join("notes/keep.md"), "# Keep\n");
+    // A name nothing lists, saying for itself that a machine filled it.
+    write(
+        &root.join("scratch/CACHEDIR.TAG"),
+        "Signature: 8a477f597d28d172789f06886806bc55\n# made by a tool\n",
+    );
+    write(&root.join("scratch/made.md"), "# Generated\n");
+    // A listed name with nothing in it that says so.
+    write(&root.join("node_modules/pkg/readme.md"), "# Dependency\n");
+    // The same word inside a longer name is a folder somebody made.
+    write(&root.join("build-notes/plan.md"), "# Mine\n");
+    // And a file called `CACHEDIR.TAG` that is not one leaves its folder alone.
+    write(&root.join("diary/CACHEDIR.TAG"), "not a cache tag at all\n");
+    write(&root.join("diary/monday.md"), "# Monday\n");
+
+    let mut found = Vec::new();
+    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new());
+    let mut names: Vec<String> = found
+        .iter()
+        .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
+        .collect();
+    names.sort();
+    assert_eq!(
+        names,
+        vec![
+            "keep.md".to_string(),
+            "monday.md".to_string(),
+            "plan.md".to_string()
+        ]
+    );
+
+    fs::remove_dir_all(&root).ok();
+}
+
+/// What `collect_documents` was written not to do, and the skip must not take back: a vault whose notes live under a dotted folder otherwise reads as empty.
+#[test]
+fn a_vault_whose_notes_live_under_a_dotted_folder_still_reads_them() {
+    let root = corpus_dir("generated-dotted");
+    write(&root.join(".notes/one.md"), "# One\n");
+    write(&root.join(".notes/deeper/two.md"), "# Two\n");
+
+    let mut found = Vec::new();
+    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new());
+    let mut names: Vec<String> = found
+        .iter()
+        .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
+        .collect();
+    names.sort();
+    assert_eq!(names, vec!["one.md".to_string(), "two.md".to_string()]);
+
+    fs::remove_dir_all(&root).ok();
+}
+
+/// A vault that quietly reads three quarters of itself is worse than one that reads all of it slowly, so the read says what it did not go into — named from the root down, since four folders called `target` would otherwise read as one.
+#[test]
+fn a_read_says_which_folders_it_did_not_go_into() {
+    let root = corpus_dir("generated-said");
+    write(&root.join("notes/keep.md"), "# Keep\n");
+    write(&root.join("app/target/debug/unit.rlib"), "x\n");
+    write(&root.join("site/node_modules/pkg/index.js"), "x\n");
+
+    let corpus = VaultCorpus::read(&root);
+    assert_eq!(
+        corpus.skipped,
+        vec!["app/target".to_string(), "site/node_modules".to_string()]
+    );
+    // And it rides every answer, so the line above the rows can say it.
+    assert_eq!(corpus.search("keep").skipped, corpus.skipped);
+
+    fs::remove_dir_all(&root).ok();
+}
+
+/// The other half of the same claim: a vault of nothing but notes reports nothing, so the line above the rows is silent where there is nothing to say.
+#[test]
+fn a_read_of_a_vault_with_nothing_generated_in_it_reports_nothing() {
+    let root = corpus_dir("generated-quiet");
+    write(&root.join("notes/keep.md"), "# Keep\n");
+    write(&root.join("build-notes/plan.md"), "# Mine\n");
+
+    let corpus = VaultCorpus::read(&root);
+    assert!(corpus.skipped.is_empty(), "{:?}", corpus.skipped);
+    assert!(corpus.search("keep").skipped.is_empty());
+
+    fs::remove_dir_all(&root).ok();
+}
+
+/// The walk and the watcher have to answer the same way, or the vault reports a folder it is still paying for — or worse, pays for one it says it left out. One rule asked both ways over the same tree.
+#[test]
+fn the_walk_and_a_changed_path_agree_about_every_folder() {
+    let root = corpus_dir("generated-agree");
+    write(&root.join("notes/keep.md"), "# Keep\n");
+    write(&root.join("target/debug/deps/unit.rlib"), "x\n");
+    write(
+        &root.join("scratch/CACHEDIR.TAG"),
+        "Signature: 8a477f597d28d172789f06886806bc55\n",
+    );
+    write(&root.join("scratch/deep/made.txt"), "x\n");
+    write(&root.join("build-notes/plan.md"), "# Mine\n");
+
+    for (file, skipped) in [
+        ("notes/keep.md", false),
+        ("build-notes/plan.md", false),
+        ("target/debug/deps/unit.rlib", true),
+        ("scratch/deep/made.txt", true),
+    ] {
+        let path = root.join(file);
+        assert_eq!(
+            crate::path_holds_generated_files(&path),
+            skipped,
+            "the watcher's answer for {file}"
+        );
+        let folder = path.parent().expect("a folder above the file");
+        // The walk's answer for the folder itself, or for whichever folder above it the walk stopped at.
+        let walk_stops = folder
+            .ancestors()
+            .take_while(|dir| dir.starts_with(&root))
+            .any(crate::folder_holds_generated_files);
+        assert_eq!(walk_stops, skipped, "the walk's answer for {file}");
+    }
+
+    fs::remove_dir_all(&root).ok();
 }
 
 /// Phase 0 of `../docs/fixes/library/search-waiting.md`: which part of the one read the reader is waiting on. Ignored because it is a measurement against a real folder — run it with `cargo test --release -- --ignored --nocapture reading_a_vault_is_timed`, and point it somewhere else with `LEAF_VAULT_ROOT`.
@@ -86,7 +235,7 @@ fn reading_a_vault_is_timed_in_its_parts() {
 
     let started = std::time::Instant::now();
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found);
+    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new());
     found.sort_by_key(|(size, _)| *size);
     let walk = started.elapsed();
     println!(
@@ -265,7 +414,8 @@ fn a_note_in_a_folder_whose_name_starts_with_a_dot_is_found_and_drawn() {
         &root.join(".notes").join("refuge.md"),
         "# Refuge\n\nOn taking refuge, and [[vows]].\n",
     );
-    write(&root.join("target").join("vows.md"), "# Vows\n");
+    // Any ordinary folder. Not one a build tool would pick: those are skipped, which is what `a_folder_of_build_output_is_not_walked` is about.
+    write(&root.join("teachings").join("vows.md"), "# Vows\n");
     write(&root.join("plain.md"), "# Plain\n");
 
     let corpus = VaultCorpus::read(&root);

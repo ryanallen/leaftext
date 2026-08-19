@@ -4120,6 +4120,128 @@ if (booted) {
     });
   });
 
+  // The other five of the plus's nine options have no line to type on: each splices its own source straight into a file nobody has saved, at an offset worked out from the block beside it. A wrong offset writes a table into the middle of the paragraph above it.
+  check('each thing the plus writes at once lands in the gap under a block', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const end = note.indexOf('A paragraph.') + 'A paragraph.'.length;
+    const wants = {
+      code: { text: '\n\n```\n\n```', caret: null },
+      // The one of the five that asks for a caret, and it lands one separator past the offset — inside what it wrote, not on the blank line in front of it.
+      table: { text: '\n\n|  |  |\n| --- | --- |\n|  |  |', caret: end + 2 },
+      divider: { text: '\n\n---', caret: null },
+    };
+    for (const [id, want] of Object.entries(wants)) {
+      noteGutter(note, ({ block, sent, option, caret }) => {
+        const above = block(9, end);
+        booted.runGapInsert({ after: above, before: null }, option(id));
+        const edits = sent.filter((one) => one.command === 'editBlock');
+        if (edits.length !== 1 || edits[0].text !== want.text) {
+          throw new Error(`the ${id} wrote ${JSON.stringify(edits)}`);
+        }
+        // The end of the block above and a blank line down: a byte short of it eats the last letter of the sentence.
+        if (edits[0].start !== end || edits[0].end !== end) {
+          throw new Error(`the ${id} landed at ${edits[0].start}..${edits[0].end}`);
+        }
+        // The source is the whole of what these options are, so nothing is opened to type in beside it.
+        if (above.placed) throw new Error(`the ${id} opened a line as well as writing one`);
+        const asked = caret();
+        if (want.caret === null ? !!asked : !asked || asked.srcStart !== want.caret) {
+          throw new Error(`the ${id} asked for a caret at ${JSON.stringify(asked)}`);
+        }
+      });
+    }
+  });
+
+  // The offset for that gap is not the block's own end. A block being typed in is saved first and the new one goes past what was written — splice at the stale end and it lands inside the sentence, or the sentence is thrown away.
+  check('the gap under a block being typed in saves it before it writes past it', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const start = note.indexOf('A paragraph.');
+    const stale = start + 'A paragraph.'.length;
+    const typed = 'A much longer paragraph than it was.';
+    noteGutter(note, ({ block, sent, option }) => {
+      const after = block(start, stale);
+      after.textContent = typed;
+      after.childNodes = [{ nodeType: 3, nodeValue: typed }];
+      after.__editingActive = true;
+      after.__editBaseline = 'A paragraph.';
+      booted.runGapInsert({ after, before: null }, option('divider'));
+      const edits = sent.filter((one) => one.command === 'editBlock');
+      if (edits.length !== 2) throw new Error(`the gap under a block being typed in sent ${JSON.stringify(edits)}`);
+      if (edits[0].start !== start || edits[0].end !== stale || edits[0].text !== typed) {
+        throw new Error(`it saved the block as ${JSON.stringify(edits[0])}`);
+      }
+      const past = start + typed.length;
+      if (edits[1].start !== past || edits[1].end !== past) {
+        throw new Error(`the rule landed at ${edits[1].start}, not past what was just written`);
+      }
+      if (edits[1].text !== '\n\n---') throw new Error(`the rule wrote ${JSON.stringify(edits[1].text)}`);
+    });
+  });
+
+  // Above the first block there is nothing to hang a blank line off, so the separator changes ends: the source first and the break after it. The only splice in the gutter written back to front.
+  check('the gap above the first block puts the break after what it wrote', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    noteGutter(note, ({ block, sent, option, caret }) => {
+      booted.runGapInsert({ after: null, before: block(0, 7) }, option('code'));
+      const edits = sent.filter((one) => one.command === 'editBlock');
+      if (edits.length !== 1 || edits[0].text !== '```\n\n```\n\n') {
+        throw new Error(`the gap above the first block wrote ${JSON.stringify(edits)}`);
+      }
+      if (edits[0].start !== 0 || edits[0].end !== 0) {
+        throw new Error(`it landed at ${edits[0].start}..${edits[0].end}`);
+      }
+      if (caret()) throw new Error(`a code block up there asked for a caret at ${JSON.stringify(caret())}`);
+    });
+
+    // And the caret goes to the block's own start up here rather than a separator past it, since the break is on the far side.
+    noteGutter(note, ({ block, option, caret }) => {
+      booted.runGapInsert({ after: null, before: block(0, 7) }, option('table'));
+      const asked = caret();
+      if (!asked || asked.srcStart !== 0) {
+        throw new Error(`the table above the first block asked for a caret at ${JSON.stringify(asked)}`);
+      }
+    });
+  });
+
+  // The one splice in the gutter that overwrites rather than adds: the plus pressed on a line already in the file writes over that line's own range. Which is why the refusal is asked again here rather than trusted from the draw — a drifted button is a paragraph deleted.
+  check("the plus on an empty line writes over that line's own range", () => {
+    const note = '# Title\n\n>\n\nA paragraph.\n';
+    const at = note.indexOf('>');
+    // The stand-in page answers every element query with an element, so an emptiness test that asks a line what it is holding can never pass on one that is not told.
+    const holdingNothing = (el) => {
+      el.querySelector = () => null;
+      return el;
+    };
+    noteGutter(note, ({ block, sent, option, caret }) => {
+      const empty = holdingNothing(block(at, at + 1));
+      empty.dataset.blockKind = 'block_quote';
+      booted.runBlockInsert(empty, option('table'));
+      const edits = sent.filter((one) => one.command === 'editBlock');
+      if (edits.length !== 1 || edits[0].text !== '|  |  |\n| --- | --- |\n|  |  |') {
+        throw new Error(`the plus on an empty line wrote ${JSON.stringify(edits)}`);
+      }
+      // Over the line, not beside it: a splice at one point would leave the empty quote standing above the table.
+      if (edits[0].start !== at || edits[0].end !== at + 1) {
+        throw new Error(`it landed at ${edits[0].start}..${edits[0].end}`);
+      }
+      const asked = caret();
+      if (!asked || asked.srcStart !== at) {
+        throw new Error(`the table on an empty line asked for a caret at ${JSON.stringify(asked)}`);
+      }
+    });
+
+    // What stands between that splice and somebody's sentence.
+    noteGutter(note, ({ block, sent, option }) => {
+      const start = note.indexOf('A paragraph.');
+      const says = holdingNothing(block(start, start + 'A paragraph.'.length));
+      says.textContent = 'A paragraph.';
+      booted.runBlockInsert(says, option('divider'));
+      if (sent.some((one) => one.command === 'editBlock')) {
+        throw new Error(`the plus wrote over a line that says something: ${JSON.stringify(sent)}`);
+      }
+    });
+  });
+
   // The file dialog is built with no parent window, so the app stays clickable under it: the box the picture was headed for can be folded by hand, or swept away by a render, while somebody is still choosing a file. Dropping that answer is right — the line it was aimed at may be gone — and the word is what was missing, without which a reader picks a file and watches the page do nothing.
   check('a picture answered after its box closed says so, and one a newer box replaced stays silent', () => {
     const read = (expression) => vm.runInContext(expression, booted);
@@ -4176,6 +4298,180 @@ if (booted) {
       read('blockGutterRow = null;');
       booted.leafToast = wasToast;
     }
+  });
+
+  /** The insert row as the plus really opens it, over the gap under `after` on a note. Every button comes back carrying the closure the app wired it with rather than one written here, which is what makes the two options that ask before they write readable at all: neither one calls that closure, they hand it away. */
+  function openedInsertRow(after) {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const wasUnlocked = read('readingUnlocked');
+    read('readingUnlocked = true;');
+    booted.bindBlockControls();
+    read('blockGutterTarget = null; blockGutterGap = { after: null, before: null };');
+    read('blockGutterGap').after = after;
+    booted.expandBlockInsertRow();
+    const ids = booted.blockInsertOptions(null).map((one) => one.id);
+    const inRow = (className) =>
+      read('blockGutterRow').children.find((child) => String(child.className || '').includes(className));
+    return {
+      press: (id) => {
+        const button = read('blockGutterRow').children[ids.indexOf(id)];
+        if (!button) throw new Error(`the insert row has no ${id}`);
+        for (const handler of button.listeners.get('click') || []) handler({});
+      },
+      // The other way into the picture: an address typed where the box asks for one.
+      address: (typed) => {
+        const field = inRow('block-insert-url');
+        if (!field) throw new Error('the picture box drew no address field');
+        field.value = typed;
+        for (const handler of field.listeners.get('keydown') || []) handler({ key: 'Enter', preventDefault() {} });
+      },
+      done: () => {
+        booted.collapseBlockInsertRow();
+        read(`readingUnlocked = ${JSON.stringify(wasUnlocked)}; blockGutterTarget = null; blockGutterGap = null;`);
+        booted.bindBlockControls();
+      },
+    };
+  }
+
+  // The picture is the first of the two options with nothing to write when it is chosen: it hands the insert row's own write closure to a box and is written whenever the answer comes back. Both ways of answering land as the same splice the five immediate ones make.
+  check('the picture the box was answered with is written as one image', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const end = note.indexOf('A paragraph.') + 'A paragraph.'.length;
+    const read = (expression) => vm.runInContext(expression, booted);
+    noteGutter(note, ({ block, sent, caret }) => {
+      const row = openedInsertRow(block(9, end));
+      try {
+        row.press('image');
+        // Choosing it writes nothing: the box is the whole of what the press does.
+        if (sent.some((one) => one.command === 'editBlock')) {
+          throw new Error(`choosing a picture wrote ${JSON.stringify(sent)}`);
+        }
+        booted.leafImagePicked(read('blockImageToken'), 'shots/leaf.png', 'A leaf');
+        const edits = sent.filter((one) => one.command === 'editBlock');
+        if (edits.length !== 1 || edits[0].text !== '\n\n![A leaf](shots/leaf.png)') {
+          throw new Error(`the answered box wrote ${JSON.stringify(edits)}`);
+        }
+        if (edits[0].start !== end || edits[0].end !== end) {
+          throw new Error(`it landed at ${edits[0].start}..${edits[0].end}`);
+        }
+        // A picture edits as raw source and has no caret to take until it is clicked.
+        if (caret()) throw new Error(`a picture asked for a caret at ${JSON.stringify(caret())}`);
+      } finally {
+        row.done();
+      }
+    });
+
+    // An address typed into the box rather than a file chosen through the dialog: the same splice, with no alt text to put in the brackets.
+    noteGutter(note, ({ block, sent }) => {
+      const row = openedInsertRow(block(9, end));
+      try {
+        row.press('image');
+        row.address('https://example.com/leaf.png');
+        const edits = sent.filter((one) => one.command === 'editBlock');
+        if (edits.length !== 1 || edits[0].text !== '\n\n![](https://example.com/leaf.png)') {
+          throw new Error(`a typed address wrote ${JSON.stringify(edits)}`);
+        }
+      } finally {
+        row.done();
+      }
+    });
+  });
+
+  // The answer can come back long after the row it was headed for has gone — the dialog has no parent window, so the app stays clickable under it. Both guards are read here for what they keep out of the file rather than for what they hand back: an answer that lands anyway is a picture spliced at offsets belonging to a document nobody is looking at.
+  check('an answer from a box that has closed is dropped', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const end = note.indexOf('A paragraph.') + 'A paragraph.'.length;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const wasToast = booted.leafToast;
+    const said = [];
+    try {
+      booted.leafToast = (message) => said.push(message);
+
+      // Folded by hand under the dialog, or swept away by the render that rebuilds the gutter: the writer itself is let go.
+      for (const [how, close] of [
+        ['folded by hand', () => booted.collapseBlockInsertRow()],
+        ['swept away by a render', () => booted.bindBlockControls()],
+      ]) {
+        said.length = 0;
+        noteGutter(note, ({ block, sent }) => {
+          const row = openedInsertRow(block(9, end));
+          try {
+            row.press('image');
+            close();
+            booted.leafImagePicked(read('blockImageToken'), 'shots/leaf.png', 'A leaf');
+            if (sent.some((one) => one.command === 'editBlock')) {
+              throw new Error(`a box ${how} still wrote ${JSON.stringify(sent)}`);
+            }
+            if (said.length !== 1 || !said[0].includes('went nowhere')) {
+              throw new Error(`a box ${how} said ${JSON.stringify(said)}`);
+            }
+          } finally {
+            row.done();
+          }
+        });
+      }
+
+      // A newer box has since been opened, so the older answer belongs to somebody who has already moved on: dropped, and no word chases them.
+      said.length = 0;
+      noteGutter(note, ({ block, sent }) => {
+        const row = openedInsertRow(block(9, end));
+        try {
+          row.press('image');
+          const old = read('blockImageToken');
+          row.press('image');
+          booted.leafImagePicked(old, 'shots/leaf.png', 'A leaf');
+          if (sent.some((one) => one.command === 'editBlock')) {
+            throw new Error(`a stale token still wrote ${JSON.stringify(sent)}`);
+          }
+          if (said.length) throw new Error(`a stale token said ${JSON.stringify(said)}`);
+        } finally {
+          row.done();
+        }
+      });
+    } finally {
+      booted.leafToast = wasToast;
+    }
+  });
+
+  // The other option that asks first, and the one held open longest: the sheet stays up across every render for as long as somebody takes to draw, and Save writes one fenced block through the same splice. Driven through the save the sheet was opened with rather than the sheet's own button, which flushes and re-fits a canvas the stand-in page has no size for.
+  check("the diagram sheet's Save writes one fenced mermaid block", () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const end = note.indexOf('A paragraph.') + 'A paragraph.'.length;
+    const wasSheet = booted.openFlowSheet;
+    noteGutter(note, ({ block, sent, caret }) => {
+      const after = block(9, end);
+      const row = openedInsertRow(after);
+      let save = null;
+      booted.openFlowSheet = (opened) => {
+        save = opened.save;
+      };
+      try {
+        row.press('flow');
+        if (!save) throw new Error('choosing a flowchart opened no sheet');
+        if (sent.some((one) => one.command === 'editBlock')) {
+          throw new Error(`opening the sheet wrote ${JSON.stringify(sent)}`);
+        }
+        if (save('graph TD\n  a-->b') !== true) throw new Error('the sheet was told its Save had nowhere to land');
+        const edits = sent.filter((one) => one.command === 'editBlock');
+        if (edits.length !== 1 || edits[0].text !== '\n\n```mermaid\ngraph TD\n  a-->b\n```') {
+          throw new Error(`Save wrote ${JSON.stringify(edits)}`);
+        }
+        if (edits[0].start !== end || edits[0].end !== end) {
+          throw new Error(`it landed at ${edits[0].start}..${edits[0].end}`);
+        }
+        if (caret()) throw new Error(`a diagram asked for a caret at ${JSON.stringify(caret())}`);
+
+        // What the plus was standing on is asked again at Save, since the sheet outlives every render: a block that has left the page takes the write with it and the sheet is told to stay open.
+        after.isConnected = false;
+        if (save('graph TD\n  a-->c') !== false) throw new Error('a Save with nowhere to land said it landed');
+        if (sent.filter((one) => one.command === 'editBlock').length !== 1) {
+          throw new Error('a Save with nowhere to land wrote anyway');
+        }
+      } finally {
+        booted.openFlowSheet = wasSheet;
+        row.done();
+      }
+    });
   });
 
   // The space above the first block used to be built, offered the plus, and then called gone in the next statement — the standing test wanted something above to measure from, when that space measures off the block below. So the plus was hidden the moment it was drawn, and the field block it starts up there could never be started.
@@ -10093,6 +10389,45 @@ if (booted) {
     booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
     if (waitingMarks() !== 0) throw new Error('a host that never streams left the ring turning for ever');
     if (vm.runInContext('librarySearchPartial', booted)) throw new Error('an answer with no word on it was taken as part of one');
+  });
+
+  // A vault that quietly read three quarters of itself is worse than one that read all of it slowly, so the line above the rows says what the walk did not go into — and says nothing where it went into everything.
+  check('the count line says how many folders of generated files went unread', () => {
+    showingLibrarySearch();
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('A note')],
+      truncated: false,
+      skipped: ['app/target', 'site/node_modules'],
+    });
+    // The count line alone: the rows under it carry titles of their own.
+    const countLine = () => (searchPane().innerHTML.match(/<p class="library-results-count"[^>]*>.*?<\/p>/) || [''])[0];
+    const drawn = countLine();
+    if (!drawn.includes('2 folders of generated files not read')) {
+      throw new Error(`the count line did not say what was left out: ${drawn}`);
+    }
+    // The names ride on the element's own title rather than on a control of their own.
+    if (!drawn.includes('app/target, site/node_modules')) {
+      throw new Error('the count line did not carry the folder names');
+    }
+    if (!drawn.includes('1 results')) throw new Error('the clause replaced the count instead of joining it');
+
+    // One folder reads as one, not as "1 folders".
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('A note')],
+      truncated: false,
+      skipped: ['app/target'],
+    });
+    if (!searchPane().innerHTML.includes('1 folder of generated files not read')) {
+      throw new Error('one folder was counted in the plural');
+    }
+
+    // And a vault with nothing left out says nothing at all.
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
+    const clean = countLine();
+    if (clean.includes('generated files')) throw new Error('a vault that was read whole still said something was left out');
+    if (clean.includes('title=')) throw new Error('a vault with nothing left out still carried a title');
   });
 
   check('a search that fails clears the waiting mark with its message', () => {

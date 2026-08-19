@@ -118,6 +118,8 @@ pub struct SearchResults {
     pub understood: String,
     /// Field names the query used that no document in the vault sets. Such a filter can only ever match nothing, so the box says which name it did not know rather than showing an empty list.
     pub unknown_fields: Vec<String>,
+    /// Folders under the vault the read did not descend into because they hold generated files, named from the root down. The count line says how many and carries the names, so a vault that read three quarters of itself says so.
+    pub skipped: Vec<String>,
 }
 
 // ---------------------------------------------------------------------------

@@ -21,17 +21,6 @@ const CLONE_TIMEOUT: Duration = Duration::from_secs(600);
 /// How deep below a vault to look for repositories that would end up inside a new one. Three is enough for `leaftext/app`, and for a nested clone one level further down; past that the scan costs more than the warning is worth.
 const NESTED_SCAN_DEPTH: usize = 3;
 
-/// Directories never worth descending into while looking for nested repos. Deliberately short: this is a bounded scan of a folder the user pointed at, never a crawl of the device.
-const SCAN_SKIPS: &[&str] = &[
-    "node_modules",
-    "target",
-    "dist",
-    "build",
-    "vendor",
-    "__pycache__",
-    ".venv",
-];
-
 /// Something git (or gh) was asked to do and would not.
 #[derive(Debug)]
 pub struct GitError {
@@ -339,10 +328,14 @@ fn scan_nested(root: &Path, dir: &Path, depth: usize, found: &mut Vec<String>) {
             continue;
         }
         let name = entry.file_name().to_string_lossy().to_string();
-        if name.starts_with('.') || SCAN_SKIPS.contains(&name.as_str()) {
+        if name.starts_with('.') {
             continue;
         }
         let path = entry.path();
+        // The same rule the vault's walk stops at, so there is one list of the folders a machine fills rather than two that drift apart.
+        if crate::vault_corpus::folder_holds_generated_files(&path) {
+            continue;
+        }
         if path.join(".git").exists() {
             if let Some(relative) = relative_label(root, &path) {
                 found.push(relative);

@@ -65,16 +65,27 @@ function searchCountHtml(hits) {
   // Rows are counted only where they answer the query in the box. While one is still being read for, what is drawn otherwise belongs to the query before it.
   const answering = librarySearchHitsQuery === librarySearchQuery && hits.length;
   const count = librarySearchLoading && !answering ? 'Searching…' : searchCountText(hits);
-  return `<p class="library-results-count">${ring}${escapeText(count)}</p>`;
+  // The names ride on the element's own title, the way a result row already carries its path. No new class, so nothing else on screen moves.
+  const names = librarySearchSkipped.length
+    ? ` title="${escapeText(librarySearchSkipped.join(', '))}"`
+    : '';
+  return `<p class="library-results-count"${names}>${ring}${escapeText(count)}</p>`;
 }
 // A row is a match and one file can hold three, so a cut list says what it was cut to in files, counted off the rows rather than kept as a second copy of the host's cap. While the vault is still being read, both counts say so: the cap is over what has been read, not over the vault.
 function searchCountText(hits) {
   if (!librarySearchTruncated) {
-    return `${formatCount(hits.length)} results${librarySearchPartial ? ' so far' : ''}`;
+    return `${formatCount(hits.length)} results${librarySearchPartial ? ' so far' : ''}${skippedClause()}`;
   }
   const files = new Set(hits.map((hit) => (hit && hit.absPath) || '')).size;
   const read = librarySearchPartial ? ' read so far' : '';
-  return `${formatCount(hits.length)} results in the first ${formatCount(files)} files${read}`;
+  return `${formatCount(hits.length)} results in the first ${formatCount(files)} files${read}${skippedClause()}`;
+}
+// What the walk did not go into, joined to the sentence that already says what was cut. A vault that read three quarters of itself and said nothing is the worse bug of the two, so this is not optional: the count says how many folders and the element's title says which.
+function skippedClause() {
+  const count = librarySearchSkipped.length;
+  if (!count) return '';
+  const folders = count === 1 ? 'folder' : 'folders';
+  return ` · ${formatCount(count)} ${folders} of generated files not read`;
 }
 // What the box made of what was typed. A plain word query says nothing — it would only repeat the field back — so this appears the moment there is syntax in it, and names a field the vault has never set rather than leaving an empty list to be read as "nothing matches".
 function searchNoteHtml() {
@@ -186,6 +197,7 @@ window.leafSetSearchResults = (payload) => {
     librarySearchTruncated = !!data.truncated;
     librarySearchUnderstood = typeof data.understood === 'string' ? data.understood : '';
     librarySearchUnknownFields = Array.isArray(data.unknownFields) ? data.unknownFields : [];
+    librarySearchSkipped = Array.isArray(data.skipped) ? data.skipped : [];
   }
   renderLibrarySearch();
 };

@@ -226,6 +226,8 @@ let librarySearchHitsQuery = '';
 // The filter read back in words, and any field name the vault has never set. Shown under the box so a mistyped field is visible instead of silently matching nothing. Empty for a query of plain words, which needs no explaining.
 let librarySearchUnderstood = '';
 let librarySearchUnknownFields = [];
+// Folders under the vault the read did not go into because they hold generated files. The count line says how many and carries their names, because a vault that quietly read three quarters of itself is worse than one that read all of it slowly.
+let librarySearchSkipped = [];
 // The vault's field names and the values each holds, pushed once when its text is read. What the completion menu offers; empty until a vault is open.
 let filterHintFields = [];
 // What the completion menu is offering under the search box, and which row is picked.

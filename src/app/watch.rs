@@ -11,10 +11,14 @@ pub(crate) struct FileWatch {
     pub(crate) watched: HashMap<PathBuf, RecursiveMode>,
     /// Hash of the contents last rendered for the active document, so a reload skips redundant work when a spurious event arrives for unchanged content.
     pub(crate) active_hash: Option<u64>,
+    /// The folder the open document sits in, in the form the watcher reports paths in. Shared with the handler thread because that is the one exception to the generated-folder refusal: a README read out of `node_modules` is still a document somebody is looking at.
+    pub(crate) reading_in: Arc<Mutex<Option<PathBuf>>>,
 }
 
 impl FileWatch {
     pub(crate) fn new(proxy: EventLoopProxy<UserEvent>) -> Self {
+        let reading_in: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(None));
+        let handler_reading_in = Arc::clone(&reading_in);
         // A short debounce coalesces a save's burst of events into one reload; kept small so the reload still feels immediate.
         let debouncer = new_debouncer(
             Duration::from_millis(200),
@@ -22,6 +26,9 @@ impl FileWatch {
                 if let Ok(events) = result {
                     for event in events {
                         if is_git_bookkeeping(&event.path) {
+                            continue;
+                        }
+                        if is_generated_output(&event.path, &handler_reading_in) {
                             continue;
                         }
                         let _ =
@@ -42,6 +49,7 @@ impl FileWatch {
             last_active: None,
             watched: HashMap::new(),
             active_hash: None,
+            reading_in,
         }
     }
 
@@ -56,6 +64,10 @@ impl FileWatch {
             // Active document changed, so the stored hash is stale; force a render.
             self.active_hash = None;
             self.last_active = active_path.map(Path::to_path_buf);
+            // And the handler's one exception moves with it. Canonicalized and then put back in plain form, because that is how an event's path reaches the handler.
+            if let Ok(mut reading_in) = self.reading_in.lock() {
+                *reading_in = active_path.and_then(watch_dir_for).map(plain_event_path);
+            }
         }
 
         let desired = desired_watches(active_path, project_dir, mode);
@@ -123,6 +135,22 @@ impl FileWatch {
 pub(crate) fn is_git_bookkeeping(path: &Path) -> bool {
     path.components()
         .any(|component| component.as_os_str() == ".git")
+}
+
+/// Whether a change is one a machine wrote into a folder that says so — build output, a package cache, a virtual environment.
+///
+/// Refused here beside git's own bookkeeping and for the same reason: a recursive watch cannot be told to leave a subtree out, `notify` offers no exclusion and neither does the Windows call under it, so the events arrive whatever the walk decided and the only place to stop them costing anything is the boundary. Every one that gets past here runs the loop's whole tail as well as an arm — measured at 236µs of that tail plus 106µs of arm, per event, with one tab open.
+///
+/// **The document being read is the exception.** A README opened out of `node_modules`, or generated documentation opened out of `build`, is a document somebody is looking at, and live reload has to keep working for it. The folder is compared rather than the file, so a sibling changing still refreshes the pane the way it does anywhere else.
+pub(crate) fn is_generated_output(path: &Path, reading_in: &Arc<Mutex<Option<PathBuf>>>) -> bool {
+    if !leaftext::path_holds_generated_files(path) {
+        return false;
+    }
+    let plain = plain_event_path(path.to_path_buf());
+    let reading_in = reading_in.lock().ok();
+    !reading_in
+        .and_then(|open| open.clone())
+        .is_some_and(|open| plain.parent() == Some(open.as_path()))
 }
 
 /// An event's path in the plain form the rest of the app compares against.

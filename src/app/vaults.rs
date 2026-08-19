@@ -482,6 +482,7 @@ pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEve
                 root: root.clone(),
                 documents: Box::new(slice.documents),
                 truncated: slice.truncated,
+                skipped: slice.skipped,
                 first,
                 last: slice.last,
             });
@@ -510,6 +511,7 @@ pub(crate) fn absorb_corpus_slice(
     root: &Path,
     documents: Vec<CorpusDocument>,
     truncated: bool,
+    skipped: Vec<String>,
     first: bool,
     last: bool,
 ) -> Option<AbsorbedSlice> {
@@ -525,12 +527,15 @@ pub(crate) fn absorb_corpus_slice(
             let held = Arc::make_mut(held);
             held.documents.extend(documents);
             held.truncated |= truncated;
+            // Every slice carries the same list, so this is the walk's one answer restated rather than a set growing.
+            held.skipped = skipped;
         }
         None => {
             state.corpus = Some(Arc::new(VaultCorpus {
                 root: root.to_path_buf(),
                 documents,
                 truncated,
+                skipped,
             }))
         }
     }
@@ -558,10 +563,11 @@ pub(crate) fn deliver_corpus(
     root: PathBuf,
     documents: Vec<CorpusDocument>,
     truncated: bool,
+    skipped: Vec<String>,
     first: bool,
     last: bool,
 ) -> Option<FilterHints> {
-    let absorbed = absorb_corpus_slice(state, &root, documents, truncated, first, last)?;
+    let absorbed = absorb_corpus_slice(state, &root, documents, truncated, skipped, first, last)?;
     if let Some(request) = absorbed.graph {
         build_vault_graph_off_thread(proxy, root, Arc::clone(&absorbed.corpus), request);
     }

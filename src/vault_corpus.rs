@@ -30,6 +30,75 @@ const MAX_DOCUMENT_BYTES: usize = 2 * 1024 * 1024;
 /// How deep the walk goes.
 const MAX_DEPTH: usize = 24;
 
+/// Folder names a build tool picks for what it generates. Short on purpose: every name here costs somebody who keeps notes in a folder called that, which is why a vault says what it left out rather than going quiet about it.
+///
+/// Matched without case, because both platforms this ships to hold their filenames that way — a folder called `Target` is the same folder to the reader as `target`.
+const GENERATED_FOLDER_NAMES: &[&str] = &[
+    "target",
+    "node_modules",
+    "build",
+    "dist",
+    "vendor",
+    "venv",
+    ".venv",
+    "__pycache__",
+    ".next",
+    ".gradle",
+    "Pods",
+];
+
+/// The file a folder carries to say a machine filled it — the [cache directory tagging](https://bford.info/cachedir/) convention, which cargo and a dozen other tools write. The half of the rule that needs no list, and the half that answers this repo's own `app/target/`.
+const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
+
+/// What that file has to start with. The convention is a signature line and nothing else is promised, so only the first line is read.
+const CACHE_TAG_SIGNATURE: &[u8] = b"Signature: 8a477f597d28d172789f06886806bc55";
+
+/// Whether a folder says it holds generated files: it declares itself a cache, or it carries one of the names above.
+///
+/// One rule for two halves that must never part company. The vault's walk stops descending here, and the watcher drops this folder's events at the same boundary git's own bookkeeping is dropped at — a vault that is also a folder somebody builds in was 98.7% build output on this repo, and every file of it was listed, opened and answered for.
+///
+/// The name is asked first, because that is free and it is the case this exists for; the tag costs one look at the disk and is only reached where the name says nothing.
+pub fn folder_holds_generated_files(dir: &Path) -> bool {
+    if dir.file_name().is_some_and(is_generated_name) {
+        return true;
+    }
+    carries_cache_tag(dir)
+}
+
+/// The same rule asked of something that changed rather than of a folder being walked: whether anything it sits under holds generated files.
+///
+/// The path's own name is never the question — a folder called `target` appearing is news for the pane, and the file inside it is not.
+pub fn path_holds_generated_files(path: &Path) -> bool {
+    let mut above = path.components();
+    above.next_back();
+    // Every name first, so a path under a folder the list knows costs no look at the disk at all.
+    if above.any(|part| is_generated_name(part.as_os_str())) {
+        return true;
+    }
+    path.ancestors()
+        .skip(1)
+        // An empty ancestor is what a relative path ends on, and joining a file name to it would ask about the working directory.
+        .filter(|dir| !dir.as_os_str().is_empty())
+        .any(carries_cache_tag)
+}
+
+fn is_generated_name(name: &std::ffi::OsStr) -> bool {
+    name.to_str().is_some_and(|name| {
+        GENERATED_FOLDER_NAMES
+            .iter()
+            .any(|known| known.eq_ignore_ascii_case(name))
+    })
+}
+
+fn carries_cache_tag(dir: &Path) -> bool {
+    use std::io::Read;
+    let Ok(mut tag) = fs::File::open(dir.join(CACHE_TAG_FILE)) else {
+        return false;
+    };
+    let mut head = [0u8; CACHE_TAG_SIGNATURE.len()];
+    tag.read_exact(&mut head).is_ok() && head.as_slice() == CACHE_TAG_SIGNATURE
+}
+
 /// Cap on returned hits: past this, a query is one to narrow rather than scroll.
 const SEARCH_LIMIT: usize = 50;
 
@@ -87,6 +156,8 @@ pub struct VaultCorpus {
     pub documents: Vec<CorpusDocument>,
     /// Set when the read hit either limit, so the graph can say the picture is partial.
     pub truncated: bool,
+    /// Folders the walk did not descend into because they hold generated files, named from the vault root down. A vault that quietly read three quarters of itself would be worse than one that read all of it slowly, so this is what the count line above the rows says out loud.
+    pub skipped: Vec<String>,
 }
 
 /// One slice of a read, as it lands. `documents` are the new ones only, so whoever is collecting them grows what it holds rather than replacing it.
@@ -94,9 +165,14 @@ pub struct CorpusSlice {
     pub documents: Vec<CorpusDocument>,
     /// Whether either cap has been hit so far. The last slice carries the final answer.
     pub truncated: bool,
+    /// What the walk left out. Known in full before the first slice, because the walk runs whole before anything is opened — so it rides every slice rather than waiting for the last.
+    pub skipped: Vec<String>,
     /// Nothing more is coming. Always sent, even for a vault of nothing: it is what says the read is over.
     pub last: bool,
 }
+
+/// How many folders the count line will name. Past this the sentence is longer than the answer it is a footnote to, and the number in front of it still says how many there were.
+const SKIPPED_FOLDERS_NAMED: usize = 20;
 
 /// How many documents one slice carries. A file nobody has opened since the machine started costs about 6 ms whatever is in it, so this is roughly a third of a second of reading — long enough that the answers behind it do not crowd each other, short enough that somebody is reading matches while the rest of the vault is still being opened.
 pub const CORPUS_SLICE_DOCUMENTS: usize = 50;
@@ -106,14 +182,17 @@ impl VaultCorpus {
     pub fn read(root: &Path) -> Self {
         let mut documents = Vec::new();
         let mut truncated = false;
+        let mut skipped = Vec::new();
         Self::read_in_slices(root, usize::MAX, |slice| {
             documents.extend(slice.documents);
             truncated |= slice.truncated;
+            skipped = slice.skipped;
         });
         Self {
             root: root.to_path_buf(),
             documents,
             truncated,
+            skipped,
         }
     }
 
@@ -122,7 +201,9 @@ impl VaultCorpus {
     /// The walk runs whole before anything is opened, and that order is load-bearing: the byte budget is spent smallest-first, which is what buys the whole of a vault of notes rather than as much as fits of a folder of generated ones. So a slice is a prefix of the sorted list, and nothing can be handed over until every path under the vault has been listed.
     pub fn read_in_slices(root: &Path, size: usize, mut deliver: impl FnMut(CorpusSlice)) {
         let mut found = Vec::new();
-        collect_documents(root, 0, &mut found);
+        let mut left_out = Vec::new();
+        collect_documents(root, 0, &mut found, &mut left_out);
+        let skipped = skipped_folder_labels(root, left_out);
         // Smallest first, so the byte budget buys as many documents as it can. The sizes came back off the same directory entries the walk had already read, so this costs no second look at the disk.
         found.sort_by_key(|(size, _)| *size);
         let mut truncated = found.len() > MAX_CORPUS_DOCUMENTS;
@@ -145,6 +226,7 @@ impl VaultCorpus {
                 deliver(CorpusSlice {
                     documents: std::mem::take(&mut documents),
                     truncated,
+                    skipped: skipped.clone(),
                     last: false,
                 });
             }
@@ -152,6 +234,7 @@ impl VaultCorpus {
         deliver(CorpusSlice {
             documents,
             truncated,
+            skipped,
             last: true,
         });
     }
@@ -281,6 +364,8 @@ impl VaultCorpus {
                 query.describe()
             },
             unknown_fields: self.unknown_fields(query),
+            // Every answer carries it, not just a cut one: a vault whose search finds everything it looked at still did not look at all of it.
+            skipped: self.skipped.clone(),
         })
     }
 
@@ -592,8 +677,13 @@ fn scan_term(text: &str, term: &Needle) -> TermScan {
     scan
 }
 
-/// Every document under one folder, each with its size. No folder is skipped for its name: a vault whose notes live under a dotted folder otherwise reads as empty.
-pub(crate) fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<(u64, PathBuf)>) {
+/// Every document under one folder, each with its size, and every folder left out on the way. A dotted folder is not one of them: a vault whose notes live under one otherwise reads as empty. What is left out is a folder that says it holds generated files — see [`folder_holds_generated_files`].
+pub(crate) fn collect_documents(
+    dir: &Path,
+    depth: usize,
+    out: &mut Vec<(u64, PathBuf)>,
+    left_out: &mut Vec<PathBuf>,
+) {
     if depth >= MAX_DEPTH || out.len() > MAX_CORPUS_DOCUMENTS {
         return;
     }
@@ -611,6 +701,11 @@ pub(crate) fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<(u64, Pa
             if crate::store::is_dir_reparse(&path) {
                 continue;
             }
+            // Above the descent, not below it beside the document test: the test per file saves a read and never the walk, and it is the walk that costs — 440,034 files under one folder on this repo, every one of them listed before the first was refused.
+            if folder_holds_generated_files(&path) {
+                left_out.push(path);
+                continue;
+            }
             subfolders.push(path);
         } else if file_type.is_file() && crate::is_supported_document_path(&path) {
             // The size is already in the directory entry, so this is not a second look at the disk.
@@ -618,8 +713,26 @@ pub(crate) fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<(u64, Pa
         }
     }
     for folder in subfolders {
-        collect_documents(&folder, depth + 1, out);
+        collect_documents(&folder, depth + 1, out, left_out);
     }
+}
+
+/// What the count line names the left-out folders by: their place under the vault, so `app/target` says which one rather than leaving four folders called `target` reading as the same folder. Sorted, and capped — past [`SKIPPED_FOLDERS_NAMED`] the sentence is longer than the answer it is a footnote to, and the number in front of it still says how many there were.
+fn skipped_folder_labels(root: &Path, left_out: Vec<PathBuf>) -> Vec<String> {
+    let mut labels: Vec<String> = left_out
+        .iter()
+        .map(|folder| {
+            folder
+                .strip_prefix(root)
+                .unwrap_or(folder)
+                .to_string_lossy()
+                .replace('\\', "/")
+        })
+        .collect();
+    labels.sort();
+    labels.dedup();
+    labels.truncate(SKIPPED_FOLDERS_NAMED);
+    labels
 }
 
 /// Read one document. `None` when it is gone or unreadable, which is how a deleted file leaves the corpus.
