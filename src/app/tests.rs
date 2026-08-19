@@ -129,6 +129,54 @@ fn the_mid_run_session_skips_a_new_note_and_the_close_carries_it() {
 }
 
 #[test]
+fn the_mid_run_session_names_the_document_a_tab_followed_a_link_to_with_that_tabs_label() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("guide.md"));
+    // What a link click does to a clean tab: the history moves on, and the strip is relabeled for the document now on screen.
+    workspace.tabs[0]
+        .history
+        .record(PathBuf::from("reference.md"));
+    workspace.tabs[0].title = "reference".to_string();
+
+    // The identity the same-document test rests on. Mid-run there are no unsaved words to name a document behind the one being read, so the entry is the tab's own path and the tab's own label — the two sides compared are one path and a clone of it.
+    let mid_run = workspace.session();
+    assert_eq!(mid_run.tabs.len(), 1);
+    assert_eq!(mid_run.tabs[0].path, PathBuf::from("reference.md"));
+    assert_eq!(mid_run.tabs[0].title, "reference");
+    assert!(!mid_run.tabs[0].untitled);
+    assert_eq!(mid_run.active, Some(0));
+}
+
+#[test]
+fn a_tab_needs_no_seed_for_its_own_buffers_document_with_nothing_on_disk() {
+    let dir = session_fixture_dir();
+    let path = dir.join("guide.md");
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].edit_buffer(
+        &path,
+        SourceText::utf8(
+            "# Guide
+"
+            .to_string(),
+        ),
+    );
+
+    // What every editing command asks through needs_edit_seed while somebody types: the buffer's path against the front tab's own, byte for byte. Nothing of that name is on disk, so an answer that went there would be answering off a failed read.
+    let showing = workspace.tabs[0]
+        .history
+        .current()
+        .cloned()
+        .expect("the tab is showing the document it was opened on");
+    assert_eq!(showing, path);
+    assert!(!workspace.tabs[0].needs_edit_seed(&showing));
+    assert!(workspace.tabs[0].has_edit_for(&showing));
+
+    // And a different document in the same tab still has to be read.
+    assert!(workspace.tabs[0].needs_edit_seed(&dir.join("reference.md")));
+}
+
+#[test]
 fn a_new_note_nobody_typed_into_is_not_carried_out_of_the_window() {
     let mut workspace = Workspace::default();
     workspace.open_path(PathBuf::from("guide.md"));
@@ -1056,7 +1104,7 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
 
     // A document inside the project folder is already covered by the recursive watch, so the project folder is the only directory watched.
     let inside_doc = project.join("notes.md");
-    let watches = desired_watches(Some(&inside_doc), Some(&project), RecursiveMode::Recursive);
+    let (watches, _) = desired_watches(Some(&inside_doc), Some(&project), RecursiveMode::Recursive);
     assert_eq!(watches.len(), 1);
     assert_eq!(
         watches.get(&canon(&project)),
@@ -1065,7 +1113,8 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
 
     // A document outside the project folder adds its own non-recursive watch.
     let outside_doc = outside.join("loose.md");
-    let watches = desired_watches(Some(&outside_doc), Some(&project), RecursiveMode::Recursive);
+    let (watches, _) =
+        desired_watches(Some(&outside_doc), Some(&project), RecursiveMode::Recursive);
     assert_eq!(
         watches.get(&canon(&project)),
         Some(&RecursiveMode::Recursive)
@@ -1076,7 +1125,7 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
     );
 
     // No project folder: only the document's folder is watched, non-recursively.
-    let watches = desired_watches(Some(&outside_doc), None, RecursiveMode::Recursive);
+    let (watches, _) = desired_watches(Some(&outside_doc), None, RecursiveMode::Recursive);
     assert_eq!(watches.len(), 1);
     assert_eq!(
         watches.get(&canon(&outside)),
@@ -1085,9 +1134,123 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
 
     // A stale (nonexistent) project path is not watched.
     let missing = root.join("does-not-exist");
-    assert!(desired_watches(None, Some(&missing), RecursiveMode::Recursive).is_empty());
+    let (watches, all_resolved) = desired_watches(None, Some(&missing), RecursiveMode::Recursive);
+    assert!(watches.is_empty());
+    // And the folder having been named and produced nothing is said so, which is what stops the sync gate closing over it.
+    assert!(!all_resolved);
 
     fs::remove_dir_all(&root).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_second_sync_with_the_same_inputs_leaves_the_watched_set_alone() {
+    let dir = std::env::temp_dir().join(format!("leaf-watch-gate-fixture-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let document = dir.join("notes.md");
+    fs::write(&document, "# Notes").expect("fixture document is written");
+    let watched_dir = fs::canonicalize(&dir).unwrap_or_else(|_| dir.clone());
+
+    let mut watch = FileWatch::default();
+    watch.sync(Some(&document), Some(&dir), RecursiveMode::Recursive);
+    assert_eq!(
+        watch.watched.get(&watched_dir),
+        Some(&RecursiveMode::Recursive)
+    );
+
+    // The disk is the instrument. The folder goes while the three inputs stay exactly as they were, so a second look would find nothing to watch and empty the set; the set standing is the proof nothing looked.
+    fs::remove_file(&document).expect("fixture document is removed");
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+    watch.sync(Some(&document), Some(&dir), RecursiveMode::Recursive);
+    assert_eq!(watch.watched.len(), 1);
+    assert_eq!(
+        watch.watched.get(&watched_dir),
+        Some(&RecursiveMode::Recursive)
+    );
+}
+
+#[test]
+fn switching_vault_browsing_a_folder_and_opening_a_document_each_move_the_watched_set() {
+    let root =
+        std::env::temp_dir().join(format!("leaf-watch-moves-fixture-{}", std::process::id()));
+    let vault = root.join("vault");
+    let browsed = root.join("browsed");
+    let elsewhere = root.join("elsewhere");
+    for dir in [&vault, &browsed, &elsewhere] {
+        fs::create_dir_all(dir).expect("fixture directory is created");
+    }
+    let canon = |path: &Path| fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+
+    let mut watch = FileWatch::default();
+    watch.sync(None, Some(&vault), RecursiveMode::Recursive);
+    assert_eq!(
+        watch.watched.get(&canon(&vault)),
+        Some(&RecursiveMode::Recursive)
+    );
+
+    // A vault closed and a folder browsed to instead: one level, and the vault's watch comes off.
+    watch.sync(None, Some(&browsed), RecursiveMode::NonRecursive);
+    assert_eq!(watch.watched.len(), 1);
+    assert_eq!(
+        watch.watched.get(&canon(&browsed)),
+        Some(&RecursiveMode::NonRecursive)
+    );
+
+    // A document opened outside that folder brings its own folder with it.
+    let document = elsewhere.join("notes.md");
+    fs::write(&document, "# Notes").expect("fixture document is written");
+    watch.sync(Some(&document), Some(&browsed), RecursiveMode::NonRecursive);
+    assert_eq!(watch.watched.len(), 2);
+    assert_eq!(
+        watch.watched.get(&canon(&elsewhere)),
+        Some(&RecursiveMode::NonRecursive)
+    );
+
+    fs::remove_dir_all(&root).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_released_watch_comes_back_on_the_next_sync_with_unchanged_inputs() {
+    let dir =
+        std::env::temp_dir().join(format!("leaf-watch-release-fixture-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let watched_dir = fs::canonicalize(&dir).unwrap_or_else(|_| dir.clone());
+
+    let mut watch = FileWatch::default();
+    watch.sync(None, Some(&dir), RecursiveMode::Recursive);
+    assert!(watch.watched.contains_key(&watched_dir));
+
+    // The vault folder is about to be deleted, so the watch comes off mid-turn and the sync at the end of that same turn is what puts it back.
+    watch.release(&dir);
+    assert!(watch.watched.is_empty());
+    watch.sync(None, Some(&dir), RecursiveMode::Recursive);
+    assert_eq!(
+        watch.watched.get(&watched_dir),
+        Some(&RecursiveMode::Recursive)
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_folder_that_does_not_exist_yet_is_watched_once_it_appears() {
+    let dir =
+        std::env::temp_dir().join(format!("leaf-watch-appears-fixture-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+
+    let mut watch = FileWatch::default();
+    watch.sync(None, Some(&dir), RecursiveMode::Recursive);
+    assert!(watch.watched.is_empty());
+
+    // The same folder, the same inputs, and now it is there: an input that named something and produced no watch is never taken as settled.
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    watch.sync(None, Some(&dir), RecursiveMode::Recursive);
+    let watched_dir = fs::canonicalize(&dir).unwrap_or_else(|_| dir.clone());
+    assert_eq!(
+        watch.watched.get(&watched_dir),
+        Some(&RecursiveMode::Recursive)
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
 }
 
 #[test]
@@ -2210,13 +2373,13 @@ fn a_browsed_folder_is_watched_one_level_deep_not_recursively() {
     let browsed = dir.join("browsed");
     fs::create_dir_all(&browsed).expect("test directory is created");
 
-    let shallow = desired_watches(None, Some(&browsed), RecursiveMode::NonRecursive);
+    let (shallow, _) = desired_watches(None, Some(&browsed), RecursiveMode::NonRecursive);
     assert_eq!(shallow.len(), 1);
     assert!(shallow
         .values()
         .all(|mode| matches!(mode, RecursiveMode::NonRecursive)));
 
-    let deep = desired_watches(None, Some(&browsed), RecursiveMode::Recursive);
+    let (deep, _) = desired_watches(None, Some(&browsed), RecursiveMode::Recursive);
     assert!(deep
         .values()
         .all(|mode| matches!(mode, RecursiveMode::Recursive)));

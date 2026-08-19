@@ -192,7 +192,7 @@ pub(crate) fn device_event_could_have_changed_anything(_event: &tao::event::Devi
     false
 }
 
-// TEMPORARY — phase 0 of ../docs/fixes/reading/dragging-the-window-is-still-slow-with-tabs-open.md. Counts what the loop is handed, and how much of it reaches the tail, while a pointer crosses the window. Off unless `LEAF_EVENT_PROBE` names a file to write. Taken back out by that phase's fourth box.
+// TEMPORARY — phase 0 of ../docs/done/reading/dragging-the-window-is-still-slow-with-tabs-open.md. Counts what the loop is handed, and how much of it reaches the tail, while a pointer crosses the window. Off unless `LEAF_EVENT_PROBE` names a file to write. Taken back out by that phase's fourth box.
 mod probe {
     use super::*;
     use std::collections::BTreeMap;

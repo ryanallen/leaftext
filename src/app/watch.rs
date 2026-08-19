@@ -9,6 +9,8 @@ pub(crate) struct FileWatch {
     pub(crate) last_active: Option<PathBuf>,
     /// Directories currently registered with the watcher and their recursive mode; the diff against the desired set on each `sync` is (un)watched.
     pub(crate) watched: HashMap<PathBuf, RecursiveMode>,
+    /// The three inputs [`Self::watched`] was last built from, held only where every one of them that named something produced a watch. `None` means the desired set has to be built from the disk again.
+    built_from: Option<(Option<PathBuf>, Option<PathBuf>, RecursiveMode)>,
     /// Hash of the contents last rendered for the active document, so a reload skips redundant work when a spurious event arrives for unchanged content.
     pub(crate) active_hash: Option<u64>,
     /// The folder the open document sits in, in the form the watcher reports paths in. Shared with the handler thread because that is the one exception to the generated-folder refusal: a README read out of `node_modules` is still a document somebody is looking at.
@@ -48,12 +50,17 @@ impl FileWatch {
             debouncer,
             last_active: None,
             watched: HashMap::new(),
+            built_from: None,
             active_hash: None,
             reading_in,
         }
     }
 
-    /// Point the watcher at the active document's folder and, when given, the library pane's folder (recursively). Cheap after every event: diffs the desired set against what's watched and no-ops when nothing changed.
+    /// Point the watcher at the active document's folder and, when given, the library pane's folder (recursively). Cheap after every event: returns before touching the disk when the three inputs have not moved, and otherwise diffs the desired set against what's watched.
+    ///
+    /// The three inputs are the whole of what the desired set is built from, so a file changing on disk moves none of them — which is every watcher event, and the loop runs this after each one. Building the set asks the disk three times (an `is_dir` and two canonicalizations), then almost always throws the answer away as equal; measured at 91µs an event, half the cost of the loop's whole tail.
+    ///
+    /// Two edges the gate has to leave open. A folder that is not there yet produces no watch, so the inputs are remembered only where every one that named something did — otherwise a vault created after it was pointed at would never be watched. And [`Self::release`] drops watches mid-turn expecting the sync at the end of that turn to put back what is still wanted, so it clears what is remembered here.
     pub(crate) fn sync(
         &mut self,
         active_path: Option<&Path>,
@@ -70,7 +77,27 @@ impl FileWatch {
             }
         }
 
-        let desired = desired_watches(active_path, project_dir, mode);
+        let unmoved = self
+            .built_from
+            .as_ref()
+            .is_some_and(|(active, project, built_mode)| {
+                active.as_deref() == active_path
+                    && project.as_deref() == project_dir
+                    && *built_mode == mode
+            });
+        if unmoved {
+            return;
+        }
+
+        let (desired, all_resolved) = desired_watches(active_path, project_dir, mode);
+        self.built_from = all_resolved.then(|| {
+            (
+                active_path.map(Path::to_path_buf),
+                project_dir.map(Path::to_path_buf),
+                mode,
+            )
+        });
+
         if desired == self.watched {
             return;
         }
@@ -105,6 +132,8 @@ impl FileWatch {
     ///
     /// A recursive watch reports every file in a folder as it goes: 2,000 files measured as 2,020 events, and every one of them reaches the loop, where a vault being active spends a thread on `git status` before the active-document split. None of it is news — the folder is going — so the watch comes off first and [`Self::sync`] puts back whatever is still wanted at the end of the same turn.
     pub(crate) fn release(&mut self, folder: &Path) {
+        // The watched set is about to stop matching the inputs it was built from, so [`Self::sync`] must build it again rather than recognize them and return.
+        self.built_from = None;
         // Watches are registered canonicalized, so the plain path a vault row carries has to be put in the same form before it can be compared with one.
         let folder = fs::canonicalize(folder).unwrap_or_else(|_| folder.to_path_buf());
         let leaving: Vec<PathBuf> = self
@@ -170,16 +199,23 @@ pub(crate) fn plain_event_path(path: PathBuf) -> PathBuf {
 /// The directories to watch and each one's mode: the pane's root in `mode`, plus the active document's folder when not already covered.
 ///
 /// `mode` is the caller's, not a constant, and the distinction is load-bearing. A vault is watched **recursively** — the user chose that folder, so its size is their business, and the corpus underneath it has to stay live. A folder the pane merely browsed to is watched **non-recursively**: the pane shows one level, so one level is all it needs, and browsing to `C:\` must not subscribe to every change on the drive.
+///
+/// Answers with the set and whether every input that named something produced a watch. A folder that is not there yet produces none, and [`FileWatch::sync`] must not take such inputs as settled or a vault created after it was pointed at would never be watched. The flag rides along because it is free here and costs the disk a second look anywhere else.
 pub(crate) fn desired_watches(
     active_path: Option<&Path>,
     project_dir: Option<&Path>,
     mode: RecursiveMode,
-) -> HashMap<PathBuf, RecursiveMode> {
+) -> (HashMap<PathBuf, RecursiveMode>, bool) {
+    let project_watch = project_dir.and_then(watch_folder);
+    let active_dir = active_path.and_then(watch_dir_for);
+    let all_resolved = project_watch.is_some() == project_dir.is_some()
+        && active_dir.is_some() == active_path.is_some();
+
     let mut desired = HashMap::new();
-    if let Some(dir) = project_dir.and_then(watch_folder) {
+    if let Some(dir) = project_watch {
         desired.insert(dir, mode);
     }
-    if let Some(dir) = active_path.and_then(watch_dir_for) {
+    if let Some(dir) = active_dir {
         let covered = desired.iter().any(|(watched, mode)| {
             matches!(mode, RecursiveMode::Recursive) && dir.starts_with(watched)
         });
@@ -187,7 +223,7 @@ pub(crate) fn desired_watches(
             desired.entry(dir).or_insert(RecursiveMode::NonRecursive);
         }
     }
-    desired
+    (desired, all_resolved)
 }
 
 /// The directory to watch for a document: its parent, canonicalized. `None` when the path has no usable parent (never falls back to a huge ancestor).

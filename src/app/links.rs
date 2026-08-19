@@ -123,7 +123,13 @@ pub(crate) fn normalize_path_lexically(path: PathBuf) -> PathBuf {
     normalized
 }
 
+/// Whether two paths name one document. Canonicalized, so a relative path, a `..` and a Windows short name all land on the same file — two disk reads, and 22 call sites reach this.
+///
+/// The same bytes are answered without either. Exact, not an approximation: canonicalizing a path twice cannot make it differ from itself. It is what the mid-run session walk asks for every open tab, where the two sides are one path and a clone of it, and what every editing command asks through `needs_edit_seed`, where they are the buffer's path against the front tab's — byte-identical while somebody types.
 pub(crate) fn paths_refer_to_same_document(left: &Path, right: &Path) -> bool {
+    if left == right {
+        return true;
+    }
     let left =
         fs::canonicalize(left).unwrap_or_else(|_| normalize_path_lexically(left.to_path_buf()));
     let right =
