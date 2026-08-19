@@ -571,7 +571,7 @@ fn a_drawn_diagram_opens_on_the_whole_window() {
     for expected in [
         // The fourth button sits with the zoom group, so a locked document gets it too, and only the block in the page carries it.
         "const MERMAID_FULL_BUTTON = ['full', 'Open it on the whole window', `<span class=\"lt-icon lt-icon-expand\"></span>`];",
-        "diagram.appendChild(mermaidZoomGroup(MERMAID_ZOOM_BUTTONS.concat([MERMAID_FULL_BUTTON]), 'Diagram view'));",
+        "row.appendChild(mermaidZoomGroup(MERMAID_ZOOM_BUTTONS.concat([MERMAID_FULL_BUTTON]), 'Diagram view'));",
         "if (step === 'full') openDiagramOverlay(diagram, zoomButton);",
         "function openDiagramOverlay(diagram, opener) {",
         "function closeDiagramOverlay() {",

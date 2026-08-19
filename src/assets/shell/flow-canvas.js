@@ -1417,7 +1417,8 @@ function openFlowMenu(x, y, spot) {
   openFlowMenuWith(x, y, flowMenuItems(spot));
 }
 
-function openFlowMenuWith(x, y, items) {
+// `host` is what the menu hangs off and is clamped inside. The editor's own menus leave it alone and get the sheet; a diagram in the page passes `appSurface`, because the reader that holds the block scrolls and would clip it, and the full-window view passes its own overlay.
+function openFlowMenuWith(x, y, items, host) {
   closeFlowMenu();
   flowMenuAt = { x, y };
   const menu = document.createElement('div');
@@ -1447,9 +1448,10 @@ function openFlowMenuWith(x, y, items) {
     });
     menu.appendChild(button);
   }
-  flowSheet.appendChild(menu);
-  // Kept inside the sheet: a menu opened near the right edge would otherwise hang off it, and the sheet is the whole window.
-  const sheet = flowSheet.getBoundingClientRect();
+  const holder = host || flowSheet;
+  holder.appendChild(menu);
+  // Kept inside its host: a menu opened near the right edge would otherwise hang off it.
+  const sheet = holder.getBoundingClientRect();
   const size = menu.getBoundingClientRect();
   const left = Math.min(x - sheet.left, sheet.width - size.width - 8);
   const top = Math.min(y - sheet.top, sheet.height - size.height - 8);
@@ -1810,30 +1812,30 @@ function flowPickerChoices(caption, options, current, chip, apply) {
 
 // ---- taking the diagram out ------------------------------------------------
 
-// Two files, one diagram: the mermaid text as a Markdown document of its own, or the drawing as a picture. Nothing here touches the document the sheet was opened from — an export is a file beside it, and Save is still the only thing that writes into the page.
+// Two files, one diagram: the mermaid text as a Markdown document of its own, or the drawing as a picture. Nothing here touches the document the diagram came out of — an export is a file beside it, and Save is still the only thing that writes into the page.
 //
 // The drawing is always asked for again rather than lifted off the stage: what is on screen carries the zoom, the selection ring and our handles.
 //
 // **Don't add SVG.** Mermaid's SVG is a web page in an SVG's clothing — a stylesheet keyed to a generated id, labels that are HTML, a font list full of CSS keywords no font is named after — and a drawing program reads those as instructions it cannot follow.
 
 // Twice life size, so a picture pasted somewhere and scaled up still reads.
-const FLOW_PNG_SCALE = 2;
+const DIAGRAM_PNG_SCALE = 2;
 
-const FLOW_EXPORTS = [
+const DIAGRAM_EXPORTS = [
   { id: 'md', label: 'Markdown', hint: 'The mermaid text, in a document of its own' },
   { id: 'png', label: 'PNG', hint: 'The drawing as a picture, to paste anywhere' },
 ];
 
-let flowExportSeq = 0;
+let diagramExportSeq = 0;
 
 // The page color behind the diagram. A drawing on its own has no page to sit on, and a pale-ink theme on nothing is a file that looks blank.
-function flowExportBackground() {
+function diagramExportBackground() {
   const style = window.getComputedStyle(document.documentElement);
   return (style.getPropertyValue('--lt-surface') || '').trim() || '#ffffff';
 }
 
 // Text as base64, through its own bytes: `btoa` takes one character per byte, so a label with an accent or an emoji in it has to be encoded first.
-function flowBase64(text) {
+function diagramBase64(text) {
   const bytes = new TextEncoder().encode(text);
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -1841,17 +1843,17 @@ function flowBase64(text) {
 }
 
 // The room around the drawing, so the picture is not the boxes cropped to their own edges. The reading view pays the same in padding.
-const FLOW_EXPORT_MARGIN = 24;
+const DIAGRAM_EXPORT_MARGIN = 24;
 
 // The drawing on its way to becoming pixels, and no further: a web view will only rasterize an SVG by loading it as an image, so one has to exist for a moment. It is never written to a file — see the header. `htmlLabels` off because an image-loaded SVG drops a `<foreignObject>`, leaving shapes with no text in them.
-async function flowDrawingSvg() {
-  if (!flowSession || !flowSession.text) return null;
+async function diagramDrawingSvg(source) {
+  if (!source) return null;
   const mermaid = await loadMermaid();
   mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));
-  const name = 'leafFlowExport' + (flowExportSeq += 1);
+  const name = 'leafFlowExport' + (diagramExportSeq += 1);
   let drawn;
   try {
-    drawn = (await mermaid.render(name, flowSession.text)).svg;
+    drawn = (await mermaid.render(name, source)).svg;
   } catch (error) {
     // Mermaid leaves the element it was drawing into behind when it throws.
     const orphan = document.getElementById('d' + name);
@@ -1863,10 +1865,10 @@ async function flowDrawingSvg() {
   // Anything unexpected and the drawing goes out exactly as mermaid wrote it, rather than half-edited by us.
   if (root.tagName !== 'svg' || box.length !== 4 || !(box[2] > 0)) return drawn;
   // The drawing keeps its own coordinates and the view widens around it, which is what puts the margin outside every box rather than moving anything.
-  const left = box[0] - FLOW_EXPORT_MARGIN;
-  const top = box[1] - FLOW_EXPORT_MARGIN;
-  const width = box[2] + FLOW_EXPORT_MARGIN * 2;
-  const height = box[3] + FLOW_EXPORT_MARGIN * 2;
+  const left = box[0] - DIAGRAM_EXPORT_MARGIN;
+  const top = box[1] - DIAGRAM_EXPORT_MARGIN;
+  const width = box[2] + DIAGRAM_EXPORT_MARGIN * 2;
+  const height = box[3] + DIAGRAM_EXPORT_MARGIN * 2;
   root.setAttribute('viewBox', left + ' ' + top + ' ' + width + ' ' + height);
   root.setAttribute('width', width);
   root.setAttribute('height', height);
@@ -1876,26 +1878,26 @@ async function flowDrawingSvg() {
   behind.setAttribute('y', top);
   behind.setAttribute('width', width);
   behind.setAttribute('height', height);
-  behind.setAttribute('fill', flowExportBackground());
+  behind.setAttribute('fill', diagramExportBackground());
   root.insertBefore(behind, root.firstChild);
   return new XMLSerializer().serializeToString(root);
 }
 
 // The drawing, as pixels. The markup goes in as a data URL, which is why the page's img-src allows `data:`.
-function flowExportPngBase64(svgText) {
+function diagramPngBase64(svgText) {
   return new Promise((resolve, reject) => {
     const picture = new Image();
     picture.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(picture.naturalWidth * FLOW_PNG_SCALE));
-      canvas.height = Math.max(1, Math.round(picture.naturalHeight * FLOW_PNG_SCALE));
+      canvas.width = Math.max(1, Math.round(picture.naturalWidth * DIAGRAM_PNG_SCALE));
+      canvas.height = Math.max(1, Math.round(picture.naturalHeight * DIAGRAM_PNG_SCALE));
       const ink = canvas.getContext('2d');
       if (!ink) {
         reject(new Error('This window cannot make a picture.'));
         return;
       }
       // Painted again here: a PNG has no transparency to fall back on once it is dropped into something with a page color of its own.
-      ink.fillStyle = flowExportBackground();
+      ink.fillStyle = diagramExportBackground();
       ink.fillRect(0, 0, canvas.width, canvas.height);
       ink.drawImage(picture, 0, 0, canvas.width, canvas.height);
       // The pixels go to the host, not a PNG. `toDataURL` writes 32-bit color with a per-row filter, and a diagram of flat fills is the one shape both choices cost on — the host's encoder palettes it instead. See src/png.rs.
@@ -1907,24 +1909,22 @@ function flowExportPngBase64(svgText) {
       resolve({ width: canvas.width, height: canvas.height, pixels: btoa(text) });
     };
     picture.onerror = () => reject(new Error('The drawing could not be turned into a picture.'));
-    picture.src = 'data:image/svg+xml;base64,' + flowBase64(svgText);
+    picture.src = 'data:image/svg+xml;base64,' + diagramBase64(svgText);
   });
 }
 
-// The host is handed finished bytes and asked only where they go: it shows the Save dialog, writes the file, and says how it went.
-async function exportFlowDiagram(kind) {
-  if (!flowSession) return;
-  closeFlowLabelBox(true);
+// The host is handed finished bytes and asked only where they go: it shows the Save dialog, writes the file, and says how it went. The source is passed in, because the same two exports serve the editor's own session and a diagram drawn in the page, which has no session at all.
+async function exportDiagramAs(kind, source) {
+  if (!source) return;
   closeFlowMenu();
-  flushFlowCode();
   try {
     if (kind === 'md') {
-      send({ command: 'exportDiagram', format: 'md', data: '```mermaid\n' + flowSession.text + '\n```\n' });
+      send({ command: 'exportDiagram', format: 'md', data: '```mermaid\n' + source + '\n```\n' });
       return;
     }
-    const drawing = await flowDrawingSvg();
+    const drawing = await diagramDrawingSvg(source);
     if (!drawing) return;
-    const picture = await flowExportPngBase64(drawing);
+    const picture = await diagramPngBase64(drawing);
     send({
       command: 'exportDiagram',
       format: 'png',
@@ -1937,18 +1937,37 @@ async function exportFlowDiagram(kind) {
   }
 }
 
+// The two-row menu, on any diagram: the corner of a drawn block in the page, the full-window view, or the editor's own bar below. Its rows only ever need the text, which is why one menu serves all three.
+function openDiagramExportMenu(x, y, source, host) {
+  openFlowMenuWith(
+    x,
+    y,
+    DIAGRAM_EXPORTS.map((kind) => ({
+      label: kind.label,
+      hint: kind.hint,
+      run: () => exportDiagramAs(kind.id, source),
+    })),
+    host,
+  );
+}
+
 if (flowSheetExport) {
   flowSheetExport.addEventListener('click', () => {
     const spot = flowSheetExport.getBoundingClientRect();
     openFlowMenuWith(
       spot.left,
       spot.bottom + 6,
-      FLOW_EXPORTS.map((kind) => ({
+      DIAGRAM_EXPORTS.map((kind) => ({
         label: kind.label,
         hint: kind.hint,
-        run: () => exportFlowDiagram(kind.id),
+        // Flushed at the press, not at the click that opened the menu: the code pane's last keystroke is still unparsed until it is, and the session's text is what gets written out.
+        run: () => {
+          if (!flowSession) return;
+          closeFlowLabelBox(true);
+          flushFlowCode();
+          exportDiagramAs(kind.id, flowSession.text);
+        },
       })),
-      false,
     );
   });
 }

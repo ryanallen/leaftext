@@ -2211,6 +2211,10 @@
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg class='library-folder-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg class='library-folder-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'/%3E%3C/svg%3E");
 }
+.lt-icon-export {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 13v8l-4-4'/%3E%3Cpath d='m12 21 4-4'/%3E%3Cpath d='M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 13v8l-4-4'/%3E%3Cpath d='m12 21 4-4'/%3E%3Cpath d='M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284'/%3E%3C/svg%3E");
+}
 .lt-icon-computer {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg class='library-folder-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg class='library-folder-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25'/%3E%3C/svg%3E");
@@ -8627,7 +8631,7 @@ body.is-home-row-dragging .home-list-scroll li {
   position: relative;
 }
 .mermaid-tools,
-.mermaid-zoom {
+.mermaid-view-controls {
   position: absolute;
   right: 6px;
   display: flex;
@@ -8638,15 +8642,21 @@ body.is-home-row-dragging .home-list-scroll li {
   bottom: 6px;
   gap: var(--lt-space-6);
 }
-.mermaid-zoom {
+/* Keeping a diagram sits beside looking at one, in one row, so the space between them is a gap rather than an offset somebody measured against the corner. */
+.mermaid-view-controls {
   top: 6px;
+  gap: var(--lt-space-6);
+}
+.mermaid-zoom {
+  display: flex;
 }
 .document-body pre.mermaid:hover .mermaid-tools,
-.document-body pre.mermaid:hover .mermaid-zoom,
+.document-body pre.mermaid:hover .mermaid-view-controls,
 .mermaid-tools:focus-within,
-.mermaid-zoom:focus-within {
+.mermaid-view-controls:focus-within {
   opacity: 1;
 }
+.mermaid-export,
 .mermaid-tool,
 .mermaid-zoom button {
   display: grid;
@@ -8658,16 +8668,19 @@ body.is-home-row-dragging .home-list-scroll li {
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
 }
+.mermaid-export,
 .mermaid-tool,
 .mermaid-zoom button {
   width: 28px;
 }
+.mermaid-export:hover,
 .mermaid-tool:hover,
 .mermaid-zoom button:hover {
   border-color: var(--lt-border-strong);
   background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
+.mermaid-export .lt-icon,
 .mermaid-tool .lt-icon,
 .mermaid-zoom .lt-icon {
   width: 16px;
@@ -8859,7 +8872,7 @@ body.is-home-row-dragging .home-list-scroll li {
   max-height: 100%;
 }
 /* The window is the box now, so nothing here is something to go hunting for. */
-.diagram-stage .mermaid-zoom,
+.diagram-stage .mermaid-view-controls,
 .diagram-stage .mermaid-tools {
   opacity: 1;
 }
@@ -8868,8 +8881,8 @@ body.is-home-row-dragging .home-list-scroll li {
   top: 6px;
   right: 6px;
 }
-/* The zoom keeps the top right it has in the page, moved left of the X, which is the one corner the overlay owns. Centered against it: the X is 32px tall and these are 28. The edit pair stays bottom right, as on the block. */
-.diagram-stage .mermaid-zoom {
+/* The view controls keep the top right they have in the page, moved left of the X, which is the one corner the overlay owns. Centered against it: the X is 32px tall and these are 28. The edit pair stays bottom right, as on the block. */
+.diagram-stage .mermaid-view-controls {
   top: 8px;
   right: 44px;
 }
@@ -9090,7 +9103,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 162 values that do not change with the theme, all 62 icons, and all 67 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 162 values that do not change with the theme, all 63 icons, and all 67 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -9111,7 +9124,7 @@ body.is-home-row-dragging .home-list-scroll li {
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>162</b></button>
-<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>62</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>63</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>67</b></button>
 </div>
 </header>
@@ -9414,7 +9427,7 @@ body.is-home-row-dragging .home-list-scroll li {
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
-<p class="lead">62 icons. Each takes the color of whatever it sits in, which is why they follow the theme.</p><div class="wall">
+<p class="lead">63 icons. Each takes the color of whatever it sits in, which is why they follow the theme.</p><div class="wall">
 <div class="glyph"><span class="lt-icon lt-icon-back"></span><code>back</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-forward"></span><code>forward</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-settings"></span><code>settings</code></div>
@@ -9432,6 +9445,7 @@ body.is-home-row-dragging .home-list-scroll li {
 <div class="glyph"><span class="lt-icon lt-icon-speed-reader-off"></span><code>speed-reader-off</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-wand"></span><code>wand</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-cloud"></span><code>cloud</code></div>
+<div class="glyph"><span class="lt-icon lt-icon-export"></span><code>export</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-computer"></span><code>computer</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-package-open"></span><code>package-open</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-package"></span><code>package</code></div>
@@ -9731,11 +9745,11 @@ body.is-home-row-dragging .home-list-scroll li {
 </section>
 <section class="part">
 <header><h3>Diagram controls</h3><code class="built">.mermaid-tool</code><span class="built">decorate.js</span></header>
-<div class="stage"><div class="mermaid-tools" style="opacity:1"><button type="button" class="mermaid-tool"><span class="lt-icon lt-icon-fit"></span></button></div><div class="mermaid-zoom" style="opacity:1"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></div>
+<div class="stage"><div class="mermaid-tools" style="opacity:1"><button type="button" class="mermaid-tool"><span class="lt-icon lt-icon-fit"></span></button></div><div class="mermaid-view-controls" style="position:static;opacity:1"><button type="button" class="mermaid-export"><span class="lt-icon lt-icon-export"></span></button><div class="mermaid-zoom"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Full-window diagram</h3><code class="built">.diagram</code><span class="built">diagram-view.js</span></header>
-<div class="stage"><div class="diagram-overlay open" style="position:static;height:150px"><pre class="mermaid diagram-stage" data-processed="true"><svg viewBox="0 0 220 60" width="220" height="60"><rect x="1" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><rect x="133" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><path d="M87 30h46" fill="none" stroke="currentColor"></path></svg><button type="button" class="leaf-sheet-close diagram-close"><span class="lt-icon lt-icon-close"></span></button><div class="mermaid-zoom" role="group"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-fit"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></pre></div></div>
+<div class="stage"><div class="diagram-overlay open" style="position:static;height:150px"><pre class="mermaid diagram-stage" data-processed="true"><svg viewBox="0 0 220 60" width="220" height="60"><rect x="1" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><rect x="133" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><path d="M87 30h46" fill="none" stroke="currentColor"></path></svg><button type="button" class="leaf-sheet-close diagram-close"><span class="lt-icon lt-icon-close"></span></button><div class="mermaid-view-controls"><button type="button" class="mermaid-export"><span class="lt-icon lt-icon-export"></span></button><div class="mermaid-zoom" role="group"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-fit"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></div></pre></div></div>
 </section>
 <section class="part">
 <header><h3>Full-window table</h3><code class="built">.table-sheet</code><span class="built">table-sheet.js</span></header>

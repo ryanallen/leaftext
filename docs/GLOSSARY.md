@@ -212,7 +212,7 @@ An `@name` in your text, highlighted; inside a Git repository it links to the pe
 
 ## Mermaid diagram
 
-A `mermaid` fenced [code block](GLOSSARY.md#code-block), drawn as a diagram by the bundled Mermaid runtime — fully offline, in your [theme's](GLOSSARY.md#theme-family) own colors and body font. Drag the drawing to move it inside its cell, and zoom with `Ctrl` and the wheel or the buttons in its corner. On an unlocked page two more buttons appear: one opens its text to edit, the other the [flowchart editor](GLOSSARY.md#flowchart-editor).
+A `mermaid` fenced [code block](GLOSSARY.md#code-block), drawn as a diagram by the bundled Mermaid runtime — fully offline, in your [theme's](GLOSSARY.md#theme-family) own colors and body font. Drag the drawing to move it inside its cell, and zoom with `Ctrl` and the wheel or the buttons in its corner, where a button beside them saves the diagram as its own Markdown file or picture. On an unlocked page two more buttons appear: one opens its text to edit, the other the [flowchart editor](GLOSSARY.md#flowchart-editor).
 
 ## Minimap
 

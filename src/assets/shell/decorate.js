@@ -1067,7 +1067,7 @@ function drawMermaidBatches(diagrams, generation, warming) {
 
 // A drawn diagram gets its corner controls. The drawing itself is dragged to move it, so the source opens from a button here rather than from a press anywhere on the block — see wireSourceEditable, which stands aside for these.
 function addMermaidControls(diagram) {
-  addMermaidZoomControls(diagram);
+  addMermaidViewControls(diagram);
   addMermaidEditButtons(diagram);
 }
 
@@ -1118,9 +1118,36 @@ function mermaidZoomGroup(buttons, label) {
   }
   return group;
 }
-function addMermaidZoomControls(diagram) {
-  if (diagram.querySelector('.mermaid-zoom')) return;
-  diagram.appendChild(mermaidZoomGroup(MERMAID_ZOOM_BUTTONS.concat([MERMAID_FULL_BUTTON]), 'Diagram view'));
+// Its own rounded control rather than a fifth segment of the zoom: keeping a diagram is not a way of looking at one. No listener of its own — the click is delegated off `app`, the way the zoom's is.
+function mermaidExportButton() {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'mermaid-export';
+  const label = 'Save this diagram as a file';
+  button.title = label;
+  button.setAttribute('aria-label', label);
+  button.innerHTML = `<span class="lt-icon lt-icon-export"></span>`;
+  return button;
+}
+
+// The top-right row: how the diagram is looked at, and taking a copy of it out. Neither is editing, so nothing here asks the padlock — addMermaidEditButtons above is the one that does.
+function addMermaidViewControls(diagram) {
+  if (diagram.querySelector('.mermaid-view-controls')) return;
+  const row = document.createElement('div');
+  row.className = 'mermaid-view-controls';
+  row.appendChild(mermaidExportButton());
+  row.appendChild(mermaidZoomGroup(MERMAID_ZOOM_BUTTONS.concat([MERMAID_FULL_BUTTON]), 'Diagram view'));
+  diagram.appendChild(row);
+}
+
+// The menu the flowchart editor's Export button drops, opened on a diagram anywhere. The text is the block's own — an overlay is a second drawing of a block still in the page, so it exports what that block holds. The host is what the menu hangs off: the page's block sits in the reader, which scrolls and would clip it.
+function openMermaidExportMenu(button) {
+  const overlay = button.closest('.diagram-overlay');
+  const block = overlay ? overlay.__diagramBlock : button.closest('pre.mermaid');
+  const source = block ? block.__mermaidSource : null;
+  if (!source) return;
+  const spot = button.getBoundingClientRect();
+  openDiagramExportMenu(spot.left, spot.bottom + 6, source, overlay || appSurface);
 }
 
 // ---- the drawing inside its box --------------------------------------------
@@ -1231,7 +1258,7 @@ if (app) {
   app.addEventListener(
     'pointerdown',
     (event) => {
-      const control = event.target && event.target.closest ? event.target.closest('.mermaid-tool, .mermaid-zoom button, .diagram-close') : null;
+      const control = event.target && event.target.closest ? event.target.closest('.mermaid-tool, .mermaid-zoom button, .mermaid-export, .diagram-close') : null;
       if (control) event.stopPropagation();
     },
     true,
@@ -1241,7 +1268,7 @@ if (app) {
     if (event.button !== 0 && event.button !== 1) return;
     const diagram = mermaidDiagramFor(event.target);
     if (!diagram) return;
-    if (event.target.closest('.mermaid-tools, .mermaid-zoom, .diagram-close, a')) return;
+    if (event.target.closest('.mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close, a')) return;
     // Keeps the drag from selecting the labels it passes over. It holds focus where it was too, so a block being edited elsewhere is closed by hand.
     if (document.activeElement && document.activeElement.isContentEditable) document.activeElement.blur();
     event.preventDefault();
@@ -1303,6 +1330,12 @@ if (app) {
       else mermaidCenterZoom(diagram, step === 'in' ? 1.25 : 1 / 1.25);
       return;
     }
+    const exportButton = event.target.closest('.mermaid-export');
+    if (exportButton) {
+      event.preventDefault();
+      openMermaidExportMenu(exportButton);
+      return;
+    }
     const tool = event.target.closest('.mermaid-tool');
     if (!tool) return;
     event.preventDefault();
@@ -1314,7 +1347,7 @@ if (app) {
   // Double-click puts it back where it started, so there is a way out of a pan that went too far without reaching for the Fit button.
   app.addEventListener('dblclick', (event) => {
     const diagram = mermaidDiagramFor(event.target);
-    if (!diagram || event.target.closest('.mermaid-tools, .mermaid-zoom, .diagram-close, a')) return;
+    if (!diagram || event.target.closest('.mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close, a')) return;
     setMermaidView(diagram, { zoom: 1, x: 0, y: 0 });
   });
   // Otherwise the middle button opens the web view's own scroll-anywhere puck over a diagram already being dragged with it.

@@ -92,7 +92,7 @@ function drawDiagramStage(stage) {
 
 // After the drawing, always: mermaid replaces the stage's contents with the SVG it made, error and all, so anything put in first is gone.
 function addDiagramStageControls(stage) {
-  if (!stage.isConnected || stage.querySelector('.mermaid-zoom')) return;
+  if (!stage.isConnected || stage.querySelector('.mermaid-view-controls')) return;
   const close = document.createElement('button');
   close.type = 'button';
   close.className = 'leaf-sheet-close diagram-close';
@@ -101,7 +101,12 @@ function addDiagramStageControls(stage) {
   close.innerHTML = `<span class="lt-icon lt-icon-close"></span>`;
   close.addEventListener('click', closeDiagramOverlay);
   stage.appendChild(close);
-  stage.appendChild(mermaidZoomGroup(MERMAID_ZOOM_BUTTONS, 'Zoom'));
+  // The page's row, minus the fourth view button: a diagram already on the whole window has nothing to expand into. The export chip is the same one, and its menu belongs to the overlay so it draws above the drawing.
+  const row = document.createElement('div');
+  row.className = 'mermaid-view-controls';
+  row.appendChild(mermaidExportButton());
+  row.appendChild(mermaidZoomGroup(MERMAID_ZOOM_BUTTONS, 'Zoom'));
+  stage.appendChild(row);
   addDiagramStageTools(stage);
 }
 

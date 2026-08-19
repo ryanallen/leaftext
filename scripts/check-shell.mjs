@@ -190,6 +190,12 @@ function fakeElement(id = '') {
     }),
     getContext: () => null,
   });
+  // The other name for the same holder, and it has to be defined rather than assigned: Object.assign copies a getter's value once. A menu takes itself out of the page through this one, and a stand-in without it left every menu it ever opened standing.
+  Object.defineProperty(element, 'parentNode', {
+    get: () => element.parentElement,
+    configurable: true,
+    enumerable: true,
+  });
   // A raw-source block is read back through innerText and written through textContent, so a stand-in keeping the two apart would say the block is empty while showing a file's own bytes.
   Object.defineProperty(element, 'innerText', {
     get: () => element.textContent,
@@ -6807,6 +6813,182 @@ if (booted) {
     }
   });
 
+  // ---- taking a diagram out of the page --------------------------------------
+  //
+  // Both exports were written for the flowchart editor and reachable only from inside it — an editor a shut padlock will not open, and one that only opens flowcharts. The chip in the diagram's own corner is the way in for a reader, so what is driven below is the page's own builder and the page's own menu rather than the two helpers under them.
+
+  // A block that answers only for what has really been put in it. The stand-in page answers every element query with an element, which would tell the builder its row was already there.
+  const drawnDiagram = (source) => {
+    const block = booted.document.createElement('pre');
+    block.className = 'mermaid';
+    block.__mermaidSource = source;
+    const wearing = (node, name) => String(node.className || '').split(/\s+/).includes(name);
+    const findIn = (node, name) => {
+      for (const child of node.children) {
+        if (wearing(child, name)) return child;
+        const deeper = findIn(child, name);
+        if (deeper) return deeper;
+      }
+      return null;
+    };
+    block.querySelector = (selector) => findIn(block, String(selector).replace(/^\./, ''));
+    block.__find = (name) => findIn(block, name);
+    return block;
+  };
+
+  // The walk up from the button, which the stand-in cannot do: the page asks the chip what block it is in and whether it is inside the full-window view. Its corner is put 2000px out, so where the menu lands says whether it was clamped.
+  const exportChipOn = (block) => {
+    const chip = block.__find('mermaid-export');
+    if (!chip) throw new Error('the diagram carries no export button');
+    chip.closest = (selector) => (String(selector) === 'pre.mermaid' ? block : null);
+    chip.getBoundingClientRect = () => ({ left: 2000, top: 40, right: 2028, bottom: 68, width: 28, height: 28 });
+    return chip;
+  };
+
+  const exportMenuOn = (host) => host.children.find((child) => String(child.className || '') === 'flow-menu');
+  const exportRow = (host, label) => {
+    const menu = exportMenuOn(host);
+    if (!menu) throw new Error('no menu was opened');
+    const row = menu.children.find((child) => (child.children[0] || {}).textContent === label);
+    if (!row) throw new Error(`the menu has no ${label} row`);
+    return row;
+  };
+  const press = (row) => (row.listeners.get('click') || []).forEach((handler) => handler());
+  // The press hands off to a chain of promises, so the check waits for it to reach an answer rather than for a number of turns somebody counted.
+  const settle = async (answered, turns = 40) => {
+    for (let at = 0; at < turns && !answered(); at += 1) await Promise.resolve();
+  };
+
+  check('a diagram on a locked page carries the export button and no editing buttons', () => {
+    // The page boots locked, which is the state this whole subject exists for.
+    if (booted.readerEditingAllowed()) throw new Error('the page under test was not locked');
+    const block = drawnDiagram('flowchart TD\n  X1 --> X2');
+    booted.addMermaidControls(block);
+    const chip = block.__find('mermaid-export');
+    if (!chip) throw new Error('a locked page lost the export button along with the editing pair');
+    if (!String(chip.innerHTML).includes('lt-icon-export')) throw new Error('the export button wears no icon');
+    if (block.__find('mermaid-tools')) throw new Error('the editing pair came through the padlock');
+    const row = block.__find('mermaid-view-controls');
+    if (!row) throw new Error('the top-right controls are not one row');
+    // Export first: its own rounded control, left of the segmented four.
+    if (row.children[0] !== chip || !String(row.children[1].className).includes('mermaid-zoom')) {
+      throw new Error('the export chip is not left of the zoom group');
+    }
+    if (row.children[1].children.length !== 4) throw new Error('the four view buttons did not stay one group');
+    // Built once, however many times the page redraws around it.
+    booted.addMermaidControls(block);
+    if (block.children.filter((child) => String(child.className).includes('mermaid-view-controls')).length !== 1) {
+      throw new Error('a second pass built the row all over again');
+    }
+  });
+
+  // Neither export reads a flowchart model — mermaid is handed a string — so the kinds that could never open in the editor at all are the ones this reaches first.
+  check('a pie chart and a sequence diagram each carry the export button', () => {
+    for (const source of ['pie title Pets\n  "Dogs" : 6\n  "Cats" : 4', 'sequenceDiagram\n  A->>B: hello']) {
+      const block = drawnDiagram(source);
+      booted.addMermaidControls(block);
+      if (!block.__find('mermaid-export')) throw new Error(`a ${source.split(/\s/)[0]} diagram was left with no way out`);
+    }
+  });
+
+  check('the export menu belongs to the app surface, clamped there, and the editor keeps the sheet', () => {
+    const surface = booted.document.getElementById('appSurface');
+    const wasRect = surface.getBoundingClientRect;
+    surface.getBoundingClientRect = () => ({ left: 0, top: 0, right: 900, bottom: 700, width: 900, height: 700 });
+    try {
+      const block = drawnDiagram('flowchart TD\n  X3 --> X4');
+      booted.addMermaidControls(block);
+      booted.openMermaidExportMenu(exportChipOn(block));
+      // Not the reader, which is the scrolling box: a menu hung inside it is cut off at its edge.
+      const menu = exportMenuOn(surface);
+      if (!menu) throw new Error('the page menu was not put on the app surface');
+      if (menu.style.left !== '892px') throw new Error(`the menu sits at ${menu.style.left} rather than clamped inside the surface`);
+      booted.closeFlowMenu();
+
+      // The editor asks for no host and keeps the one it always had.
+      booted.openFlowMenuWith(10, 10, [{ label: 'Markdown', run: () => {} }]);
+      const sheet = booted.document.getElementById('flowSheet');
+      if (!exportMenuOn(sheet)) throw new Error('the flowchart editor’s own menu left the sheet');
+      if (exportMenuOn(surface)) throw new Error('the editor’s menu was put on the page instead');
+    } finally {
+      booted.closeFlowMenu();
+      surface.getBoundingClientRect = wasRect;
+    }
+  });
+
+  check('Markdown sends the block’s own text in a mermaid fence', () => {
+    const surface = booted.document.getElementById('appSurface');
+    const wasSend = booted.ipc.postMessage;
+    const sent = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      const first = drawnDiagram('flowchart TD\n  M1 --> M2');
+      booted.addMermaidControls(first);
+      booted.openMermaidExportMenu(exportChipOn(first));
+      press(exportRow(surface, 'Markdown'));
+      if (sent.length !== 1 || sent[0].command !== 'exportDiagram' || sent[0].format !== 'md') {
+        throw new Error(`pressing Markdown sent ${sent.map((one) => one.command).join(', ') || 'nothing'}`);
+      }
+      if (sent[0].data !== '```mermaid\nflowchart TD\n  M1 --> M2\n```\n') {
+        throw new Error(`the file would hold ${JSON.stringify(sent[0].data)}`);
+      }
+
+      // The second diagram in the page exports its own text, not the first one's: the chip holds nothing, and the source is read off the block it was pressed on.
+      const second = drawnDiagram('sequenceDiagram\n  M3->>M4: hello');
+      booted.addMermaidControls(second);
+      booted.openMermaidExportMenu(exportChipOn(second));
+      press(exportRow(surface, 'Markdown'));
+      if (sent.length !== 2 || !sent[1].data.includes('M3->>M4')) {
+        throw new Error('the second diagram exported the first one’s text');
+      }
+    } finally {
+      booted.closeFlowMenu();
+      booted.ipc.postMessage = wasSend;
+    }
+  });
+
+  // The picture itself cannot be proved here — this window has no canvas, which is exactly the branch the refusal is written for. What is held is that it refuses out loud and writes nothing: a row that failed quietly would leave a reader waiting on a Save dialog that never opens. The drawing step stands in, because what is under test is everything after it.
+  checkSettled('the picture refuses in a toast when the window cannot draw one, and sends nothing', async () => {
+    const surface = booted.document.getElementById('appSurface');
+    const was = {
+      send: booted.ipc.postMessage,
+      toast: booted.leafToast,
+      drawing: booted.diagramDrawingSvg,
+      image: booted.Image,
+      btoa: booted.btoa,
+    };
+    const sent = [];
+    const said = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.leafToast = (words) => said.push(words);
+    booted.diagramDrawingSvg = async () => '<svg viewBox="0 0 200 100"></svg>';
+    booted.btoa = (binary) => Buffer.from(binary, 'binary').toString('base64');
+    // The markup loads as a picture, so the refusal below is the canvas and nothing before it.
+    booted.Image = class {
+      set src(unused) {
+        this.naturalWidth = 200;
+        this.naturalHeight = 100;
+        Promise.resolve().then(() => this.onload && this.onload());
+      }
+    };
+    try {
+      const block = drawnDiagram('flowchart TD\n  N1 --> N2');
+      booted.addMermaidControls(block);
+      booted.openMermaidExportMenu(exportChipOn(block));
+      press(exportRow(surface, 'PNG'));
+      await settle(() => said.length || sent.length);
+      if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('a window that cannot draw a picture asked for a file anyway');
+      if (said.length !== 1 || !/picture/i.test(said[0])) throw new Error(`it said ${said.join(' / ') || 'nothing'}`);
+    } finally {
+      booted.closeFlowMenu();
+      booted.ipc.postMessage = was.send;
+      booted.leafToast = was.toast;
+      booted.diagramDrawingSvg = was.drawing;
+      booted.Image = was.image;
+      booted.btoa = was.btoa;
+    }
+  });
+
   // v0.1.468: one line in a document took the whole interface away. Mermaid draws `click A "…"` as a real anchor even at its strict level, and writes only `xlink:href` — which `documentLinkFor` does not match, so the click belonged to the web view and the app page navigated to the site with no tabs, no bar and no way back.
   check('a box wired to a link is the app’s click, not the web view’s', () => {
     const { claimMermaidLinks } = booted;
@@ -6951,7 +7133,7 @@ if (booted) {
     if (unreached.dataset.mermaidRender !== 'failed') throw new Error('a block with neither an error nor a drawing was left spinning');
     if (good.dataset.mermaidRender) throw new Error('a diagram that drew fine was marked failed beside its neighbor');
     if (good.dataset.diagramWait) throw new Error('a diagram that drew fine never reached finish');
-    if (!good.children.some((child) => child.className === 'mermaid-zoom')) throw new Error('a diagram that drew fine got no toolbar');
+    if (!good.children.some((child) => child.className === 'mermaid-view-controls')) throw new Error('a diagram that drew fine got no toolbar');
     if (bad.children.length) throw new Error('the broken diagram was given a toolbar');
 
     // The memo is the other half of finishing: the drawing comes straight back on the next pass, where a block that was wrongly marked has nothing to come back to.
@@ -7015,6 +7197,52 @@ if (booted) {
     // Which is why the overlay is found by query, and what it has to put back is held on the element.
     if (!fragment.includes("app.querySelector('.diagram-overlay')")) {
       throw new Error('nothing finds the overlay in the page');
+    }
+  });
+
+  // The same corner as the page's, minus the fourth view button — a diagram already on the whole window has nothing to expand into — and its menu belongs to the overlay rather than to the surface underneath it, which is what keeps it above the drawing.
+  check('the full-window view carries the export button and no fifth view button', () => {
+    const overlay = booted.document.createElement('div');
+    overlay.className = 'diagram-overlay';
+    overlay.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
+    const block = drawnDiagram('flowchart TD\n  F1 --> F2');
+    overlay.__diagramBlock = block;
+
+    const stage = drawnDiagram('flowchart TD\n  F1 --> F2');
+    stage.className = 'mermaid diagram-stage';
+    overlay.appendChild(stage);
+    booted.addDiagramStageControls(stage);
+
+    const row = stage.__find('mermaid-view-controls');
+    if (!row) throw new Error('the full-window view has no controls row');
+    const chip = row.children[0];
+    if (!String(chip.className).includes('mermaid-export')) throw new Error('the export chip is not first in the row');
+    const zoom = row.children[1];
+    if (!String(zoom.className).includes('mermaid-zoom')) throw new Error('the zoom group did not follow the chip');
+    if (zoom.children.length !== 3) throw new Error(`the full-window view carries ${zoom.children.length} view buttons`);
+    // The X is the one thing further right, and it is put in first so the row lands left of it.
+    if (stage.children.indexOf(row) < stage.children.indexOf(stage.__find('diagram-close'))) {
+      throw new Error('the row was put in ahead of the close cross');
+    }
+    // Built once, so a redraw of the stage does not stack a second row on it.
+    booted.addDiagramStageControls(stage);
+    if (stage.children.filter((child) => String(child.className).includes('mermaid-view-controls')).length !== 1) {
+      throw new Error('drawing the stage again built the row all over again');
+    }
+
+    chip.closest = (selector) => (String(selector) === '.diagram-overlay' ? overlay : null);
+    chip.getBoundingClientRect = () => ({ left: 700, top: 40, right: 728, bottom: 68, width: 28, height: 28 });
+    try {
+      booted.openMermaidExportMenu(chip);
+      const surface = booted.document.getElementById('appSurface');
+      if (!overlay.children.some((child) => String(child.className || '') === 'flow-menu')) {
+        throw new Error('the full-window menu was not put on the overlay');
+      }
+      if (surface.children.some((child) => String(child.className || '') === 'flow-menu')) {
+        throw new Error('the full-window menu went to the surface under the overlay');
+      }
+    } finally {
+      booted.closeFlowMenu();
     }
   });
 
