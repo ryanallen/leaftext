@@ -2643,7 +2643,7 @@ body.mac-frame.is-fullscreen::before {
   align-self: stretch;
   box-sizing: border-box;
   width: var(--library-rail-width, 240px);
-  /* Never let the rail clip the brand + history controls: floor the zone at their natural width. A second floor behind the closed-state width below, not the only one — alone it lets a Mac squeeze the library button out under the tab strip. */
+  /* Never let the rail clip the brand + history controls: floor the zone at their natural width. The front end writes that width here as a plain number as soon as it has measured it, because the keyword below is the one thing in this rule that is not a value — a Mac reads it as no floor at all and squeezes the library button out under the tab strip. */
   min-width: fit-content;
   /* Left inset matches the library header's 12px so the logo lines up with the GRAPH/search controls directly below it. No right inset: the strip's own gap is the whole space before the first tab. */
   padding: 0 0 0 var(--lt-space-12);

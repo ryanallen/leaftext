@@ -64,19 +64,28 @@ function foldAppBar() {
   if (!folded) closeOverflowMenu();
   return raisedTheChevron;
 }
-// The bar's left zone measured on its own buttons, with the pane's width out of it: an open pane pins the zone to the rail, so a plain read answers the pane rather than what is standing in the zone. `width: auto` is the value the closed state already asks for, taken for one read and put straight back. Held between reads because reading it forces a layout and the answer only moves when the zone's contents do.
+// The bar's left zone measured on its own buttons, with both the pane's width and the zone's own floor out of it: an open pane pins the zone to the rail and the floor below holds it at the last answer, so a plain read gives back one of those rather than what is standing in the zone. `width: auto` is the value the closed state already asks for, taken for one read and put straight back. Held between reads because reading it forces a layout and the answer only moves when the zone's contents do.
 let appBarLeadOwnWidth = 0;
 function appBarLeadWidth() {
   if (appBarLeadOwnWidth) return appBarLeadOwnWidth;
   if (!appBarLead) return 0;
   const pinned = appBarLead.style.width || '';
+  const floored = appBarLead.style.minWidth || '';
   appBarLead.style.width = 'auto';
+  appBarLead.style.minWidth = '0px';
   appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;
   appBarLead.style.width = pinned;
+  appBarLead.style.minWidth = floored;
   return appBarLeadOwnWidth;
 }
 function forgetAppBarLeadWidth() {
   appBarLeadOwnWidth = 0;
+}
+// The zone's floor, written as the number just measured. The stylesheet asks for `fit-content` and the two web views do not answer it alike: Windows holds the zone at its buttons, a Mac gives it up to the pane and draws the tab strip over the leaf, the library button and both arrows — the button that closes the pane being dragged. A plain pixel value floors identically in every web view there is.
+function floorAppBarLead() {
+  if (!appBarLead) return;
+  const width = appBarLeadWidth();
+  if (width) appBarLead.style.minWidth = `${width}px`;
 }
 function refitAppBar() {
   // Moving the buttons relayouts the bar, which is what the ResizeObserver watches; without this the first fold would trigger the next.
@@ -87,8 +96,9 @@ function refitAppBar() {
     if (foldAppBar()) foldAppBar();
   } finally {
     refittingAppBar = false;
-    // A fold takes buttons out of the left zone and an unfold puts them back, so whatever was measured of it is stale.
+    // A fold takes buttons out of the left zone and an unfold puts them back, so whatever was measured of it is stale — and the floor written from it with it. These are the only moments the zone's own width can move, so re-flooring here needs nothing new watching the bar.
     forgetAppBarLeadWidth();
+    floorAppBarLead();
   }
 }
 overflowToggle.addEventListener('click', (event) => {

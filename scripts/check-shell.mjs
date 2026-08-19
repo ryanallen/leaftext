@@ -367,7 +367,23 @@ function runShell(source, extras = {}) {
   const lead = document.querySelector('.app-bar-lead');
   if (lead) {
     const leadWidth = typeof extras.__leafLeadWidth === 'number' ? extras.__leafLeadWidth : 0;
-    lead.getBoundingClientRect = () => ({ left: 0, top: 0, right: leadWidth, bottom: 0, width: leadWidth, height: 0 });
+    // What is standing in the zone decides its width, because the zone's floor is written from this and a fixed answer would let a floor written once pass as one that follows the buttons. One share each: what the zone comes to is the platform's own number, and nothing here turns on which of them went.
+    const leadButtons = [];
+    (function collectLeadButtons(node) {
+      for (const child of node.children) {
+        if (String(child.className || '').includes('button') || child.id === 'windowControls') leadButtons.push(child);
+        else collectLeadButtons(child);
+      }
+    })(lead);
+    const standsInLead = (el) => {
+      for (let node = el.parentElement; node; node = node.parentElement) if (node === lead) return true;
+      return false;
+    };
+    lead.getBoundingClientRect = () => {
+      const standing = leadButtons.filter(standsInLead).length;
+      const width = leadButtons.length ? (leadWidth * standing) / leadButtons.length : leadWidth;
+      return { left: 0, top: 0, right: width, bottom: 0, width, height: 0 };
+    };
   }
   const noop = () => {};
   const frames = new Map();
@@ -7845,25 +7861,75 @@ check('a pane left at the width it opens at is raised on the way back in, and a 
   }
 });
 
-check('a drag still reaches every width it reached before, and still snaps shut', () => {
-  // Flooring the pane at the zone instead slams it shut while it is still a fifth of the window wide. Run against a Mac's zone, which is the widest floor there is.
-  const context = bootWithLead(MAC_LEAD);
-  const divider = context.document.getElementById('libraryDivider');
-  const shell = context.document.getElementById('libraryShell');
-  shell.getBoundingClientRect = () => ({ left: 0, top: 0, right: VIEW_WIDTH, bottom: VIEW_HEIGHT, width: VIEW_WIDTH, height: VIEW_HEIGHT });
-  const pointer = (extra) => ({ pointerId: 7, button: 0, buttons: 1, clientY: 300, target: divider, preventDefault() {}, stopPropagation() {}, ...extra });
-  // Every handler the page registered, in the order it registered them — the same walk the real page makes, so a drag here is a drag there.
-  const raise = (type, event) => {
-    for (const handler of [...(context.document.listeners.get(type) || [])]) handler(event);
-  };
-  for (const handler of [...(divider.listeners.get('pointerdown') || [])]) handler(pointer({ clientX: 247 }));
-  raise('pointermove', pointer({ clientX: 96 }));
-  context.__frames.drain();
-  if (railWidth(context) !== '96px') throw new Error(`a pane dragged to 96px came to rest at ${railWidth(context)}`);
-  // Past the snap: the pane closes, exactly as a drag to 40px always did.
-  raise('pointermove', pointer({ clientX: 20 }));
-  context.__frames.drain();
-  if (railWidth(context) !== '0px') throw new Error(`a drag past the snap left the pane at ${railWidth(context)}`);
+check('a drag still reaches every width it reached before, and still snaps shut, and never takes the zone under its own buttons', () => {
+  // Flooring the pane at the zone instead slams it shut while it is still a fifth of the window wide, so the drag's own range is held here. The zone underneath it is the other half: dragged inside the zone's own width, the zone holds at its buttons rather than following the pane down — which is what a Mac was not doing, drawing the tab strip over the leaf, the library button and both arrows.
+  for (const [leadWidth, platform] of [[WINDOWS_LEAD, 'Windows'], [MAC_LEAD, 'a Mac']]) {
+    const context = bootWithLead(leadWidth);
+    const lead = context.document.querySelector('.app-bar-lead');
+    const divider = context.document.getElementById('libraryDivider');
+    const shell = context.document.getElementById('libraryShell');
+    shell.getBoundingClientRect = () => ({ left: 0, top: 0, right: VIEW_WIDTH, bottom: VIEW_HEIGHT, width: VIEW_WIDTH, height: VIEW_HEIGHT });
+    const pointer = (extra) => ({ pointerId: 7, button: 0, buttons: 1, clientY: 300, target: divider, preventDefault() {}, stopPropagation() {}, ...extra });
+    // Every handler the page registered, in the order it registered them — the same walk the real page makes, so a drag here is a drag there.
+    const raise = (type, event) => {
+      for (const handler of [...(context.document.listeners.get(type) || [])]) handler(event);
+    };
+    for (const handler of [...(divider.listeners.get('pointerdown') || [])]) handler(pointer({ clientX: 247 }));
+    raise('pointermove', pointer({ clientX: 96 }));
+    context.__frames.drain();
+    if (railWidth(context) !== '96px') throw new Error(`on ${platform} a pane dragged to 96px came to rest at ${railWidth(context)}`);
+    // A number, never `fit-content`: the keyword is the one thing in the rule the two web views do not answer alike, and it is why a Mac gave the zone up.
+    if (lead.style.minWidth !== `${leadWidth}px`) {
+      throw new Error(`on ${platform} a pane dragged to 96px left the zone floored at ${lead.style.minWidth || 'nothing'} rather than its own ${leadWidth}px`);
+    }
+    // Past the snap: the pane closes, exactly as a drag to 40px always did.
+    raise('pointermove', pointer({ clientX: 20 }));
+    context.__frames.drain();
+    if (railWidth(context) !== '0px') throw new Error(`on ${platform} a drag past the snap left the pane at ${railWidth(context)}`);
+  }
+});
+
+check('the zone floor follows the buttons out of the bar and back in', () => {
+  // One write is only enough because the floor is rewritten wherever the measurement behind it is thrown away. A fold takes two arrows out of the zone and the floor has to come down with them, or a narrow window keeps holding space for buttons that are in the chevron menu.
+  const context = bootWithLead(MAC_LEAD, { libraryClosed: true });
+  const lead = context.document.querySelector('.app-bar-lead');
+  const bar = context.document.getElementById('appBar');
+  const tabBar = context.document.getElementById('tabBar');
+  const panel = context.document.getElementById('appOverflowPanel');
+  // The fold leaves an open pane's zone whole, since folding out of a zone pinned to the rail frees nothing — so this is the closed bar, which is the only one that folds out of it.
+  context.applyPaneLayout();
+  const whole = lead.style.minWidth;
+  if (whole !== `${MAC_LEAD}px`) throw new Error(`the zone booted floored at ${whole || 'nothing'} rather than its own ${MAC_LEAD}px`);
+  // A bar that cannot fit, so the fold reaches past the trailing actions and into the zone's own arrows.
+  tabBar.scrollWidth = 900;
+  tabBar.clientWidth = 100;
+  bar.scrollWidth = 900;
+  bar.clientWidth = 100;
+  context.refitAppBar();
+  const folded = panel.children.map((el) => el.id);
+  if (!folded.includes('backButton')) throw new Error(`the fold never reached the zone: it folded ${folded.join(',') || 'nothing'}`);
+  if (!lead.style.minWidth || parseFloat(lead.style.minWidth) >= MAC_LEAD) {
+    throw new Error(`two arrows folded out and the zone stayed floored at ${lead.style.minWidth || 'nothing'}`);
+  }
+  // And back: a widening window puts them where they were standing, and the floor with them.
+  tabBar.scrollWidth = 0;
+  tabBar.clientWidth = 900;
+  bar.scrollWidth = 0;
+  bar.clientWidth = 900;
+  context.refitAppBar();
+  if (lead.style.minWidth !== whole) throw new Error(`the arrows came back and the zone stayed floored at ${lead.style.minWidth || 'nothing'}`);
+});
+
+check('a shut pane leaves the zone sized by its own buttons', () => {
+  // The claim the change must not break: with no pane to match, the zone takes its width from what is standing in it and the stylesheet's own `width: auto` is the whole of that. So the floor is the same number and nothing pins a width over it.
+  const context = bootWithLead(WINDOWS_LEAD, { libraryClosed: true });
+  const lead = context.document.querySelector('.app-bar-lead');
+  context.applyPaneLayout();
+  context.refitAppBar();
+  if (lead.style.width) throw new Error(`a shut pane left the zone pinned to ${lead.style.width}`);
+  if (lead.style.minWidth !== `${WINDOWS_LEAD}px`) {
+    throw new Error(`a shut pane left the zone floored at ${lead.style.minWidth || 'nothing'} rather than its own ${WINDOWS_LEAD}px`);
+  }
 });
 
 // ---- 3b. copying what is highlighted in the reading view --------------------

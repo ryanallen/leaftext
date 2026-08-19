@@ -199,9 +199,9 @@ A file is carrying two when its summary sentence needs an *and* to stay true, wh
 - **The trigger is the same as any other fix**: something was missed, went wrong twice, or has to be remembered. What the rule prevents goes in the file, in the words of what went wrong.
 - **A rule that already cost a version number belongs in `AGENTS.md` as well** — the ticket says why it was added; that file says what to do.
 
-## A picture the owner hands over goes in the tree, not in the chat
+## What the owner hands over goes in the ticket, not in the chat
 
-**Every image the owner sends is saved to `../docs/imgs/` and embedded in the ticket it is about, in the same pass.** One folder at the top of the plan tree, so every ticket points at the same copies and a picture outlives the conversation it arrived in. Without this it is gone the moment the session ends, and the next reader — or the next agent — goes and takes it again, which is somebody's window and somebody's time.
+**Copy every owner prompt into the ticket where it supplies intent: `## Why` for the request, or its round in `## Phases` for later direction. Save every image to `../docs/imgs/` and embed it inline where it is evidence.** A supplied screenshot is the picture for the state it shows: use it, never draw an equivalent wireframe.
 
 - **Name it after the ticket**, `theme-palette-icon.png`, and add a number when a ticket has more than one: `-2`, `-3`. Never `1.png`, never a name off the host's cache.
 - **Embed it where it is evidence**, under the line it backs, with alt text saying what it shows: `![The palette icon the owner supplied, in a small box](../../imgs/theme-palette-icon.png)`. From a subject folder that is two levels up.
@@ -210,7 +210,7 @@ A file is carrying two when its summary sentence needs an *and* to stay true, wh
 
 ## Anything the reader will see gets drawn before it gets built
 
-**A ticket that adds, moves or restyles one thing in the window carries a `## What it looks like` section, and no phase may build a control that is not in it.** Without one the builder invents the interface, and the owner finds out by looking at their own app. v0.1.479's filter work put a second search box, a `?` button and a popup panel into the pane, none of them named in the plan; all three came straight back out.
+**A ticket that adds, moves or restyles one thing in the window carries a `## What it looks like` section, and no phase may build a control that is not in it.** A supplied screenshot satisfies the picture for its state; do not replace it with a wireframe. Without either, the builder invents the interface, and the owner finds out by looking at their own app. v0.1.479's filter work put a second search box, a `?` button and a popup panel into the pane, none of them named in the plan; all three came straight back out.
 
 That section holds three things, and a box in a phase that has no counterpart here is a box to cut:
 

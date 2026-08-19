@@ -30,6 +30,7 @@ Never trust the cell. `Ready` — no dated [`/design`](../design/SKILL.md) line.
 Then check in the code, not in the file:
 
 - Does the status match the app? A ticket claiming a feature that ships, or the reverse, poisons every row resting on it.
+- Does it preserve the owner’s prompts and supplied images inline where they are evidence? A supplied screenshot is its visual record for that state, not a missing wireframe.
 - Is what it waits on real? Read the ticket doing the waiting — a dependency taken from one ticket's own account of another is how a plan goes circular.
 - Do its citations still land?
 - Does every phase say how it is proved?

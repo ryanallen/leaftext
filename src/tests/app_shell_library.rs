@@ -169,7 +169,7 @@ fn a_shut_pane_leaves_the_bars_left_zone_sized_by_its_own_buttons() {
         .expect("stylesheet defines .app-bar-lead");
     // Open, the zone still follows the rail so the tabs begin at the pane's edge.
     assert_contains(lead, "width: var(--library-rail-width, 240px);");
-    // Shut, it sizes from content instead. `fit-content` alone was not enough: a Mac squeezed the library button out from under the tab strip, and the button is the only way back to the pane.
+    // Shut, it sizes from content instead. The keyword is the floor only until the front end has measured the zone and written that number over it: a Mac reads `fit-content` as no floor at all and squeezed the library button out under the tab strip, and the button is the only way back to the pane.
     assert_contains(lead, "min-width: fit-content;");
     assert_contains(
         css,
@@ -230,7 +230,18 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
         &html,
         "function openPaneFloor(width) {\n  return Math.max(width, appBarLeadWidth());\n}",
     );
-    assert_contains(&html, "  appBarLead.style.width = 'auto';\n  appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;\n  appBarLead.style.width = pinned;");
+    // The zone's own floor comes off for that read beside the pane's pin: with a pixel floor standing, a zone that had just lost a button would measure its own stale floor and never come back down.
+    assert_contains(&html, "  appBarLead.style.width = 'auto';\n  appBarLead.style.minWidth = '0px';\n  appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;\n  appBarLead.style.width = pinned;\n  appBarLead.style.minWidth = floored;");
+    // And that measurement is written back as the zone's own floor, because `fit-content` is the one thing in the stylesheet's rule that is not a value — a Mac reads it as no floor at all and draws the tab strip over the leaf, the library button and both arrows.
+    assert_contains(
+        &html,
+        "  if (width) appBarLead.style.minWidth = `${width}px`;",
+    );
+    // Rewritten wherever the measurement behind it is thrown away, so a fold takes the floor down with the buttons and an unfold brings it back.
+    assert_contains(
+        &html,
+        "    forgetAppBarLeadWidth();\n    floorAppBarLead();",
+    );
     // Both paths a pane opens through: the width it comes back at, and the width the toggle opens it at.
     assert_contains(
         &html,

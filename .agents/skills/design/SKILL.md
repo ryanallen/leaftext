@@ -9,7 +9,7 @@ user-invocable: true
 
 A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this reads the file against the code, decides between the researched options, fixes what is wrong in the plan, draws it, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
 
-**Every ticket comes out of this pass with a picture in it** — step 6a. A plan handed on as prose alone is one where whoever builds it draws it in their own head instead.
+**Every ticket comes out of this pass with a picture in it** — step 6a. A plan handed on as prose alone is one where whoever builds it draws it in their own head instead. A supplied screenshot is that picture for the state it shows: keep it inline and do not redraw it.
 
 **Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug in its own subject, it stays a box in the ticket — fixing it is a separate job with its own `/check`. **A fault this pass finds beside that one, which no phase in the file would build anyway, is its own ticket** — step 5b.
 
@@ -121,9 +121,9 @@ Then check the three middle headings answer one question each and stop. A paragr
 
 ## 6a. Every ticket leaves this pass with a picture in it, and the owner says yes to a drawn interface
 
-**No ticket this skill touches ends without a drawing.** A plan is read months later by somebody who will not rebuild it out of prose, and the picture is the part they trust, so it is drawn while the code is open rather than left to whoever builds it. Where the phases touch the window that drawing is a photographed wireframe under `## What it looks like`, below; where they touch nothing a reader sees, it is the flow in step 6b — a Mermaid block in `## How it is built`. One of the two, every time. A ticket that arrives already carrying one still has it opened against the code here rather than taken on trust, and a ticket carrying neither is one this pass draws before it signs the top.
+**No ticket this skill touches ends without a picture.** A supplied screenshot stays inline and is used as the visual record for its state; never draw an equivalent wireframe. Otherwise, where the phases touch the window, photograph a wireframe under `## What it looks like`; where they touch nothing a reader sees, draw the flow in step 6b — a Mermaid block in `## How it is built`. A ticket carrying a picture still has it opened against the code here rather than taken on trust.
 
-**A ticket whose phases touch the window and has no `## What it looks like` section is one this pass draws.** Sketch it as HTML under `../docs/imgs/wireframes/` and photograph it with `node scripts/wireframe.mjs`, with the markup and the `design/components.md` row each new control will take. Never box characters — `just check-ascii-art` fails on one anywhere in the tree. See [ticket](../ticket/SKILL.md) for the command and the shape of a sketch.
+**A ticket whose phases touch the window and has neither a supplied screenshot nor `## What it looks like` is one this pass draws.** Sketch it as HTML under `../docs/imgs/wireframes/` and photograph it with `node scripts/wireframe.mjs`, with the markup and the `design/components.md` row each new control will take. Never box characters — `just check-ascii-art` fails on one anywhere in the tree. See [ticket](../ticket/SKILL.md) for the command and the shape of a sketch.
 
 **Every position in the drawing is traced, never invented.** Before a line of the sketch is written, read where each control actually sits — the markup in `src/assets/app-shell.html`, the zones in `reading.css`, and, when a copy is up, `leaftext_eval` for the real rectangles. Then draw at those numbers and say on the picture that they are measured. A drawing that puts an existing control somewhere it does not live is worse than no drawing: it reads as a decision somebody made, so the next person builds the move as if it were the fix. A sketch drawn from memory of what the bar "looks like" is the same fault with a nicer excuse.
 
