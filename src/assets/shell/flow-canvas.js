@@ -1814,7 +1814,7 @@ function flowPickerChoices(caption, options, current, chip, apply) {
 
 // Two files, one diagram: the mermaid text as a Markdown document of its own, or the drawing as a picture. Nothing here touches the document the diagram came out of — an export is a file beside it, and Save is still the only thing that writes into the page.
 //
-// The drawing is always asked for again rather than lifted off the stage: what is on screen carries the zoom, the selection ring and our handles.
+// The drawing is always asked for again rather than lifted off the page: what is on screen carries whatever it has been zoomed and dragged to, and in the editor its selection ring and handles as well.
 //
 // **Don't add SVG.** Mermaid's SVG is a web page in an SVG's clothing — a stylesheet keyed to a generated id, labels that are HTML, a font list full of CSS keywords no font is named after — and a drawing program reads those as instructions it cannot follow.
 

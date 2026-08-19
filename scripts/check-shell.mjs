@@ -190,7 +190,7 @@ function fakeElement(id = '') {
     }),
     getContext: () => null,
   });
-  // The other name for the same holder, and it has to be defined rather than assigned: Object.assign copies a getter's value once. A menu takes itself out of the page through this one, and a stand-in without it left every menu it ever opened standing.
+  // The other name for the same holder, defined rather than assigned because Object.assign copies a getter's value once. A menu takes itself out of the page through this one, and a stand-in without it leaves every menu it opens standing.
   Object.defineProperty(element, 'parentNode', {
     get: () => element.parentElement,
     configurable: true,
@@ -6815,7 +6815,7 @@ if (booted) {
 
   // ---- taking a diagram out of the page --------------------------------------
   //
-  // Both exports were written for the flowchart editor and reachable only from inside it — an editor a shut padlock will not open, and one that only opens flowcharts. The chip in the diagram's own corner is the way in for a reader, so what is driven below is the page's own builder and the page's own menu rather than the two helpers under them.
+  // The chip in a diagram's own corner is a reader's way to the two exports, which a shut padlock and a flowchart-only editor otherwise keep. So what is driven below is the page's own builder and the page's own menu, never the helpers under them.
 
   // A block that answers only for what has really been put in it. The stand-in page answers every element query with an element, which would tell the builder its row was already there.
   const drawnDiagram = (source) => {
@@ -6947,7 +6947,7 @@ if (booted) {
     }
   });
 
-  // The picture itself cannot be proved here — this window has no canvas, which is exactly the branch the refusal is written for. What is held is that it refuses out loud and writes nothing: a row that failed quietly would leave a reader waiting on a Save dialog that never opens. The drawing step stands in, because what is under test is everything after it.
+  // This window has no canvas, which is the branch the refusal is written for, so what is held is that it refuses out loud and writes nothing — a row failing quietly leaves a reader waiting on a Save dialog that never opens. The drawing step stands in: everything after it is what is under test.
   checkSettled('the picture refuses in a toast when the window cannot draw one, and sends nothing', async () => {
     const surface = booted.document.getElementById('appSurface');
     const was = {
