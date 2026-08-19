@@ -353,6 +353,54 @@ function retirementReady(file, text) {
     && owner.every((state) => state !== 'open');
 }
 
+// This tree fills a whole day in a day — 257 of its lines say `15 August 2026` — so a date on its own is not an answer to when: two stamps written the same day cannot be put in order, and neither can be told from twelve hours old. Every date the workflow writes carries the time beside it, off this machine's clock.
+//
+// **The cutoff is what makes the rule shippable.** The 1,600 dates already in the tree were written by passes that never recorded a time, and a time nobody wrote down cannot be invented — `/pm` already refuses a guessed date in the refused log. So this holds what is written from here rather than lying about what is behind it.
+const DATED_FROM = 20260819;
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// `D Month YYYY`, which is how every stamp in the plan tree is written. `2026-08-19` is a different shape and is left alone, which is also how the cutoff is written wherever a page names it: a boundary is not a stamp, and nothing recorded a time for it.
+const DATED = new RegExp(`\\b(\\d{1,2}) (${MONTHS.join('|')}) (\\d{4})`, 'g');
+
+// A time straight after the date, in either clock: `, 9:11pm`, ` 9:11 pm`, `, 21:11`.
+const TIME_AFTER = /^,?\s*\d{1,2}:\d{2}/;
+
+/** The one-based line number of every date written on or after the cutoff that carries no time after it. */
+export function datesWithoutTime(text) {
+  const out = [];
+  text.split('\n').forEach((line, i) => {
+    for (const found of line.matchAll(DATED)) {
+      const on = Number(found[3]) * 10000 + (MONTHS.indexOf(found[2]) + 1) * 100 + Number(found[1]);
+      if (on < DATED_FROM) continue;
+      if (TIME_AFTER.test(line.slice(found.index + found[0].length))) continue;
+      out.push(i + 1);
+    }
+  });
+  return out;
+}
+
+const DATE_CASES = [
+  ['a date before the cutoff is left where it is', 'Found 15 August 2026 while building.', []],
+  ['a date on the cutoff with no time is refused', '> **Not built.** A plan. Asked for 19 August 2026.', [1]],
+  ['a date after the cutoff with no time is refused', 'Shipped 3 September 2026, v1.30.0.', [1]],
+  ['the same date with a time passes', '> **Not built.** A plan. Asked for 19 August 2026, 9:11pm.', []],
+  ['a time on the round clock is a time too', '**Last ranked 19 August 2026, 21:11.** Live: 4.', []],
+  ['a time with a space before it is a time too', 'Designed 19 August 2026 9:11 am.', []],
+  ['every date on a line is read, not just the first', 'Found 19 August 2026, 9:11pm, and again 20 August 2026.', [1]],
+  ['an ISO date is a different shape and is not read', 'The 2026-08-19 sweep found five.', []],
+  ['the line number is the one a reader opens', 'a\nb\nAsked for 19 August 2026.\n', [3]],
+];
+
+function dateSelfTest() {
+  const fails = [];
+  for (const [name, text, want] of DATE_CASES) {
+    const got = datesWithoutTime(text);
+    if (got.join(',') !== want.join(',')) fails.push(`${name}: got [${got}], want [${want}]`);
+  }
+  return fails;
+}
+
 const OWNER_CASES = [
   [
     'a started plan with no owner\'s box is refused, and is not retirement',
@@ -645,6 +693,13 @@ if (ownerFails.length) {
   process.exit(1);
 }
 
+const dateFails = dateSelfTest();
+if (dateFails.length) {
+  console.error('dates: the reader is wrong, so nothing was read:');
+  for (const line of dateFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 const strikeFails = strikeSelfTest();
 if (strikeFails.length) {
   console.error('struck boxes: the reader is wrong, so nothing was read:');
@@ -694,6 +749,15 @@ const unapprovable = [];
 const misplaced = [];
 const loose = [];
 const reasonless = [];
+
+// Every file in the plan tree, not only the live half: a shipped note, a retired row and a refused row each carry a date, and each is written after the cutoff by a pass that has to read the clock for it.
+const dayOnly = [];
+for (const file of rows.map(([f]) => f)) {
+  if (!file.startsWith('../docs/')) continue;
+  const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
+  for (const at of datesWithoutTime(text)) dayOnly.push(`${file}:${at}`);
+}
+
 for (const file of rows.map(([f]) => f)) {
   if (!livePlan(file)) continue;
   const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
@@ -707,6 +771,16 @@ for (const file of rows.map(([f]) => f)) {
   if (retirementReady(file, text)) finished.push(`${file} (${count})`);
   if (ownerBoxOwed(file, text)) unapprovable.push(file);
   if (drawingOwed(file, text)) undrawn.push(file);
+}
+
+if (dayOnly.length) {
+  console.error('these dates say what day it was and not what time:');
+  for (const at of dayOnly) console.error(`  ${at}`);
+  console.error('this tree fills a whole day in a day, so a date on its own cannot say which of two');
+  console.error('stamps came first or whether one is twelve minutes old. Write the time beside it —');
+  console.error('18 August 2026, 9:11pm — off this machine\'s clock (Get-Date), which keeps Arizona');
+  console.error('time all year. See "Every date carries the time beside it" in AGENTS.md.');
+  process.exit(1);
 }
 
 if (undrawn.length) {
@@ -790,4 +864,4 @@ if (dead.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every date written since 19 August 2026 saying what time it was, ${links}`);

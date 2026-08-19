@@ -162,12 +162,14 @@ A plan is read as a file, so how it sits on the page is part of whether it is fo
 **Say on the file that this ran, and when.** One short line, directly under the `> **Not built.**` note:
 
 ```markdown
-> **Designed 3 August 2026.** Citations opened; plan held against `AGENTS.md`; the interface drawn and approved.
+> **Designed 3 August 2026, 4:12pm.** Citations opened; plan held against `AGENTS.md`; the interface drawn and approved.
 ```
 
 The last clause is the drawing step 6a asked for, named so a reader can see at the top that there is one — `the mechanism drawn` where the picture is a flow rather than a wireframe. A dated line that claims neither is a ticket with no picture in it, which is the thing this pass exists to stop shipping. That is the whole line. It is a date and a scope, not a summary — what the reading *found* is the record at the bottom, and a paragraph here is a paragraph between the reader and the ticket.
 
 It goes at the top because that is where somebody decides whether to trust the file, and it carries a date because a plan designed in March against code that moved in August is a plan nobody has read. Designing it again replaces the line rather than stacking another one.
+
+**The date carries the time beside it**, read off this machine's clock (`Get-Date`) at the moment the line is written. A ticket designed at nine in the morning and one designed at nine at night read the same when only the day is written, and this tree builds several tickets between them — so the day alone cannot say which reading is the newer one, or whether the code has moved since. `AGENTS.md` holds the rule for every date the workflow writes; `just check-docs` refuses one written from `2026-08-19` on with no time after it.
 
 It is also the flag [dev](../dev/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
 

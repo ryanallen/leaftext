@@ -66,7 +66,7 @@ The evidence and options go in the file; the decision belongs to `/design`. A ti
 ```markdown
 # What it does, in the owner's words
 
-> **Not built.** A plan.
+> **Not built.** A plan. Asked for 18 August 2026, 9:11pm.
 
 **One sentence, and it names who, what and why it will work:** *enable* <who>
 *to* <do the thing> *by* <the change>, *which works because* <the evidence>.
@@ -93,6 +93,8 @@ Only when the reader will see a difference — drawn, not described. See below.
 
 ## What an earlier draft got wrong
 ```
+
+**The not-built note says when the ticket was asked for, and it says the time as well as the day.** So does the found line where this ticket came out of another pass — `Found 18 August 2026, 9:11pm while designing …`. Read both off this machine's clock (`Get-Date`), never off memory and never off the last date you saw written down: the tree fills a whole day in a day, so a date on its own cannot say whether a ticket is twelve minutes old or twelve hours, and after a shuffle of the running order that is the only question anybody is asking about the names in front of them. `AGENTS.md` carries the rule, and `just check-docs` refuses a date written from `2026-08-19` on with no time after it.
 
 ### The one-sentence summary
 
