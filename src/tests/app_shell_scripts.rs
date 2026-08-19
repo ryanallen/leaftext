@@ -9,6 +9,7 @@ fn strip_tab(title: &str, path: &str) -> TabSummary {
         path: path.to_string(),
         dirty: false,
         undoable: false,
+        redoable: false,
     }
 }
 
@@ -45,20 +46,21 @@ fn initial_state_script_carries_restored_tab_labels_without_a_document() {
 
     assert_contains(
         &script,
-        r#""tabs":[{"dirty":false,"path":"guide.md","title":"Guide","undoable":false}]"#,
+        r#""tabs":[{"dirty":false,"path":"guide.md","redoable":false,"title":"Guide","undoable":false}]"#,
     );
     assert_contains(&script, r#""active":0"#);
     assert_contains(&script, r#""document":null"#);
 
-    // A tab the last close left unsaved says so in the same payload: the page's own map of that starts empty at launch, so a restored dot has nowhere else to come from.
+    // A tab the last close left unsaved says so in the same payload, and so does one whose reader undid a step and can bring it back: the page's own maps of both start empty at launch, so a restored dot and a restored Redo button have nowhere else to come from.
     let restored = [TabSummary {
         dirty: true,
         undoable: true,
+        redoable: true,
         ..strip_tab("Guide", "guide.md")
     }];
     assert_contains(
         &initial_state_script(&[], &Favorites::default(), &restored, Some(0)),
-        r#""tabs":[{"dirty":true,"path":"guide.md","title":"Guide","undoable":true}]"#,
+        r#""tabs":[{"dirty":true,"path":"guide.md","redoable":true,"title":"Guide","undoable":true}]"#,
     );
 }
 

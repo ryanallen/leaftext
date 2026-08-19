@@ -240,6 +240,8 @@ function pinnedEdit(step, text, blocks) {
     }
     case 'undo':
       return { edit: 'undo' };
+    case 'redo':
+      return { edit: 'redo' };
     default:
       return { edit: 'unknown' };
   }

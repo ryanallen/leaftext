@@ -101,6 +101,7 @@ export const COMMANDS = {
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
   exportDiagram: [LATER, 'web-export'],
   undoEdit: [ANSWERED],
+  redoEdit: [ANSWERED],
   updateChecked: [REFUSED, 'an embed is whatever version the product shipped'],
   updateDownload: [REFUSED, 'an embed is whatever version the product shipped'],
   applyUpdate: [REFUSED, 'there is nothing installed here to replace'],
@@ -188,6 +189,7 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
     renameField: (command) => apply({ edit: 'field', key: command.key, rename: command.to }),
     moveBlock: (command) => apply({ edit: 'move', ranges: command.ranges || [], from: command.from, to: command.to }),
     undoEdit: () => apply({ edit: 'undo' }),
+    redoEdit: () => apply({ edit: 'redo' }),
     // The code view's typing. No re-render: the source view is what is on screen, and the reading view is redrawn when it comes back.
     spliceSource: (command) => {
       const state = module.buffer.edit(held, { edit: 'splice', start: command.start, removed: command.removed, inserted: command.inserted });

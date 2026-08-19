@@ -464,6 +464,7 @@ impl Workspace {
                         .unwrap_or_default(),
                     dirty: edit.is_some_and(EditableDocument::is_dirty),
                     undoable: edit.is_some_and(EditableDocument::can_undo),
+                    redoable: edit.is_some_and(EditableDocument::can_redo),
                 }
             })
             .collect()

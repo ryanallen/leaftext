@@ -67,12 +67,14 @@ fn a_workspace_restores_saved_regular_files_in_order_and_nearest_tab() {
                 path: first.display().to_string(),
                 dirty: false,
                 undoable: false,
+                redoable: false,
             },
             TabSummary {
                 title: "Second title".to_string(),
                 path: second.display().to_string(),
                 dirty: false,
                 undoable: false,
+                redoable: false,
             },
         ]
     );
@@ -211,12 +213,14 @@ fn a_new_note_comes_back_with_its_words_its_name_its_place_and_its_dot() {
                 path: guide.display().to_string(),
                 dirty: false,
                 undoable: false,
+                redoable: false,
             },
             TabSummary {
                 title: "Untitled".to_string(),
                 path: "Untitled.md".to_string(),
                 dirty: true,
                 undoable: true,
+                redoable: false,
             },
         ]
     );
@@ -490,6 +494,7 @@ fn a_tab_that_followed_a_link_out_of_its_unsaved_words_comes_back_sitting_on_the
             path: note.display().to_string(),
             dirty: true,
             undoable: true,
+            redoable: false,
         }]
     );
     assert_eq!(
@@ -527,6 +532,7 @@ fn a_note_a_tab_followed_a_link_out_of_comes_back_as_a_note_with_its_words() {
             path: "Untitled.md".to_string(),
             dirty: true,
             undoable: true,
+            redoable: false,
         }]
     );
     assert_eq!(
@@ -595,6 +601,7 @@ fn a_file_gone_from_the_disk_brings_its_words_back_as_a_note_wearing_the_name_it
             path: note.display().to_string(),
             dirty: true,
             undoable: true,
+            redoable: false,
         }]
     );
     let edit = restored.tabs[0].edit.as_ref().expect("the words come back");

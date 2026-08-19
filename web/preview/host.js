@@ -147,6 +147,7 @@ export const COMMANDS = {
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
   exportDiagram: [LATER, 'web-export'],
   undoEdit: [LATER, 'web-app-commands'],
+  redoEdit: [LATER, 'web-app-commands'],
   updateChecked: [REFUSED, 'a published site is already the version it serves'],
   updateDownload: [REFUSED, 'a published site is already the version it serves'],
   applyUpdate: [REFUSED, 'there is nothing installed here to replace'],

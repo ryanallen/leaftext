@@ -17,6 +17,7 @@ pub struct TabSummary {
     pub path: String,
     pub dirty: bool,
     pub undoable: bool,
+    pub redoable: bool,
 }
 
 /// Initial workspace state as `window.__leafInitialState`. Run as an init script (before any page script) so the boot bootstrap applies it on the first render. Both lists, because the start screen draws both and a cold launch is the one render nothing else answers for.
@@ -219,7 +220,7 @@ fn workspace_payload(
     let tabs: Vec<serde_json::Value> = tabs
         .iter()
         .map(|tab| {
-            serde_json::json!({ "title": tab.title, "path": tab.path, "dirty": tab.dirty, "undoable": tab.undoable })
+            serde_json::json!({ "title": tab.title, "path": tab.path, "dirty": tab.dirty, "undoable": tab.undoable, "redoable": tab.redoable })
         })
         .collect();
     serde_json::json!({
@@ -415,17 +416,19 @@ pub fn source_updated_script(dirty: bool) -> String {
     format!("window.leafSourceUpdated({});", state)
 }
 
-/// Re-sync the reading view's editing state from the buffer: task-marker offsets in document order, dirty state, whether an undo step exists, and optionally the buffer text for block editors. Pass `source: None` when a full re-render already delivered the same text, to avoid shipping it twice.
+/// Re-sync the reading view's editing state from the buffer: task-marker offsets in document order, dirty state, whether a step exists in either direction of the history, and optionally the buffer text for block editors. Pass `source: None` when a full re-render already delivered the same text, to avoid shipping it twice.
 pub fn blocks_resynced_script(
     tasks: &[usize],
     dirty: bool,
     can_undo: bool,
+    can_redo: bool,
     source: Option<&str>,
 ) -> String {
     let state = serde_json::json!({
         "tasks": tasks,
         "dirty": dirty,
         "canUndo": can_undo,
+        "canRedo": can_redo,
         "source": source,
     });
     format!("window.leafBlocksResynced({});", state)

@@ -7,7 +7,7 @@ function setPendingCaret(next) {
   pendingCaret = next ? { ...next, path: activeDocumentPath() } : null;
 }
 
-// What the tab's dot, Save and Undo said before a typing session raised them, and which document it was. Null while nothing is raised on typing alone. The three are raised at the first keystroke, since words on screen have to be savable and undoable before anything is clicked out of; this is what puts them back where the host had them if the session ends up writing nothing.
+// What the tab's dot, Save, Undo and Redo said before a typing session raised them, and which document it was. Null while nothing is raised on typing alone. The four are moved at the first keystroke, since words on screen have to be savable and undoable before anything is clicked out of and the future a press too many left standing is about to end; this is what puts them back where the host had them if the session ends up writing nothing.
 let chromeBeforeTyping = null;
 
 // The first keystroke of a typing session: promise the save and the undo the actions make good on. Silent after the first, and silent once a commit has gone out, which is when the promise stops being local.
@@ -18,19 +18,23 @@ function raiseTypingChrome() {
     path,
     dirty: isDocumentDirty(path),
     undoable: undoableByPath.get(path) === true,
+    redoable: redoableByPath.get(path) === true,
   };
   undoableByPath.set(path, true);
+  redoableByPath.delete(path);
   setDirtyState(path, true);
   updateEditingChrome();
 }
 
-// A session that wrote nothing — typed and taken back to where it started, or abandoned — puts the three back to the host's own answer. A document that was already dirty stays dirty.
+// A session that wrote nothing — typed and taken back to where it started, or abandoned — puts the four back to the host's own answer. A document that was already dirty stays dirty, and a future nothing ended is still there.
 function lowerTypingChrome() {
   const held = chromeBeforeTyping;
   chromeBeforeTyping = null;
   if (!held) return;
   if (held.undoable) undoableByPath.set(held.path, true);
   else undoableByPath.delete(held.path);
+  if (held.redoable) redoableByPath.set(held.path, true);
+  else redoableByPath.delete(held.path);
   setDirtyState(held.path, held.dirty);
   updateEditingChrome();
 }
@@ -60,10 +64,12 @@ function sendEditCommand(message) {
     // The session has written something, so the raise is no longer a promise to take back.
     chromeBeforeTyping = null;
     undoableByPath.set(path, true);
+    // A fresh edit ends whatever the last undo left standing, in the buffer and so on the button.
+    redoableByPath.delete(path);
     setDirtyState(path, true);
     // The toggle's saved pixels no longer describe this text.
     forgetViewHandoff();
-    // Undo just became available, which setDirtyState only reflects when the dirty flag itself changed — on the second and later edits it has not.
+    // Undo just became available and Redo just went, which setDirtyState only reflects when the dirty flag itself changed — on the second and later edits it has not.
     updateEditingChrome();
   }
   send(message);
@@ -1673,7 +1679,14 @@ window.leafBlocksResynced = (state) => {
   if (typeof state.source === 'string') currentDocumentSource = state.source;
   const path = activeDocumentPath();
   if (path) {
+    const wasUndoable = undoableByPath.get(path) === true;
+    const wasRedoable = redoableByPath.get(path) === true;
     if (typeof state.canUndo === 'boolean') undoableByPath.set(path, state.canUndo);
+    if (typeof state.canRedo === 'boolean') redoableByPath.set(path, state.canRedo);
     setDirtyState(path, !!state.dirty);
+    // setDirtyState only refreshes the bar when the dirty flag itself moved, and an undo in the middle of a run moves neither it nor Undo — the button that changes there is Redo.
+    if ((undoableByPath.get(path) === true) !== wasUndoable || (redoableByPath.get(path) === true) !== wasRedoable) {
+      updateEditingChrome();
+    }
   }
 };

@@ -405,11 +405,12 @@ pub(crate) fn toggle_task_marker(
     let tasks = edit.task_offsets();
     let dirty = edit.is_dirty();
     let can_undo = edit.can_undo();
+    let can_redo = edit.can_redo();
 
     // A toggle doesn't re-render, so carry the toggled source for the reader's raw-source editors to slice from.
     run_page_script(
         webview,
-        &blocks_resynced_script(&tasks, dirty, can_undo, Some(&text)),
+        &blocks_resynced_script(&tasks, dirty, can_undo, can_redo, Some(&text)),
         "Toggle task: failed to resync reading view",
     );
 }
@@ -559,14 +560,20 @@ pub(crate) fn pipe_save_document(
     }))
 }
 
-/// Push the buffer's editing state (task offsets, dirty, undo availability) back to the reading view. The source is omitted since the caller's re-render already delivered it.
+/// Push the buffer's editing state (task offsets, dirty, whether the history has a step in either direction) back to the reading view. The source is omitted since the caller's re-render already delivered it.
 pub(crate) fn resync_editing_state(webview: Option<&WebView>, workspace: &Workspace) {
     let Some(edit) = workspace.active_edit() else {
         return;
     };
     run_page_script(
         webview,
-        &blocks_resynced_script(&edit.task_offsets(), edit.is_dirty(), edit.can_undo(), None),
+        &blocks_resynced_script(
+            &edit.task_offsets(),
+            edit.is_dirty(),
+            edit.can_undo(),
+            edit.can_redo(),
+            None,
+        ),
         "Editing: failed to resync reading view",
     );
 }

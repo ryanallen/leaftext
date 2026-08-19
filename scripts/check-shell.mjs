@@ -1762,7 +1762,7 @@ if (booted) {
   // The open document, the page's own record of it, and a clean slate to send into.
   const openTyping = (source, format = 'markdown') => {
     vm.runInContext(`currentState = { tabs: [{ path: 'notes.md' }], active: 0 };`, booted);
-    vm.runInContext('pendingCaret = null; dirtyByPath.clear(); undoableByPath.clear();', booted);
+    vm.runInContext('pendingCaret = null; chromeBeforeTyping = null; dirtyByPath.clear(); undoableByPath.clear(); redoableByPath.clear();', booted);
     vm.runInContext(`currentDocumentFormat = ${JSON.stringify(format)};`, booted);
     // No caret to carry unless a check draws one: the stand-in page has no selection of its own.
     booted.getSelection = () => null;
@@ -1770,7 +1770,7 @@ if (booted) {
   };
   const restTyping = () => {
     booted.getSelection = () => null;
-    vm.runInContext('currentState = null; pendingCaret = null; dirtyByPath.clear(); undoableByPath.clear();', booted);
+    vm.runInContext('currentState = null; pendingCaret = null; chromeBeforeTyping = null; dirtyByPath.clear(); undoableByPath.clear(); redoableByPath.clear();', booted);
     vm.runInContext("currentDocumentFormat = 'markdown';", booted);
     booted.window.leafBlocksResynced({ source: '' });
   };
@@ -2614,6 +2614,74 @@ if (booted) {
     } finally {
       booted.ipc = wasIpc;
       booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // The other half of the same hand-over: with a block's own forward steps spent, both spellings of the key mean one committed edit forward. Swallowed there, a reader who pressed undo once too many would have a key that does nothing and a button they never found.
+  check('the last group spent hands Ctrl+Y and Ctrl+Shift+Z to the app’s own redo', () => {
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    const openBlock = () => {
+      openTyping('# Title\n\nA\n');
+      const block = wordsFollowMarkup(typedBlock({ start: 9, end: 10, typed: 'A', baseline: 'A' }));
+      booted.wireMarkdownEditable(block);
+      booted.document.activeElement = block;
+      block.__editingActive = false;
+      for (const handler of [...(block.listeners.get('focusin') || [])]) handler({});
+      return block;
+    };
+    try {
+      for (const how of [{ key: 'y' }, { shift: true }]) {
+        const block = openBlock();
+        // Nothing typed in it, so the block has no step of its own to walk to — and the host says a version is waiting.
+        vm.runInContext("redoableByPath.set('notes.md', true);", booted);
+        posted.length = 0;
+        withPageTimers((drain) => {
+          if (!pressUndoKey(block, how)) throw new Error(`${JSON.stringify(how)} was handed to the web view`);
+          drain();
+        });
+        if (!posted.some((message) => message.command === 'redoEdit')) {
+          throw new Error(`${JSON.stringify(how)} was swallowed instead of reaching the app’s redo`);
+        }
+      }
+
+      // With a group still ahead of it the key stays the block's: the words come forward and the document's own history is left where it is.
+      const block = openBlock();
+      typeInto(block, ' one');
+      pressUndoKey(block);
+      const walkedBack = block.textContent;
+      vm.runInContext("redoableByPath.set('notes.md', true);", booted);
+      posted.length = 0;
+      withPageTimers((drain) => {
+        pressUndoKey(block, { key: 'y' });
+        drain();
+      });
+      if (posted.some((message) => message.command === 'redoEdit')) {
+        throw new Error('a block with a step ahead of it stepped the document instead of walking its own words forward');
+      }
+      if (block.textContent === walkedBack) throw new Error('the words never came forward');
+    } finally {
+      booted.ipc = wasIpc;
+      booted.document.activeElement = null;
+      restTyping();
+    }
+  });
+
+  // The button is the discoverable half of the pair, so it answers the host's own account of the history rather than anything the page guessed. A resync that moves Redo alone moves neither the dirty flag nor Undo, which is exactly the case a bar refreshed only on dirty would miss.
+  check('the Redo button follows what the host says the history holds', () => {
+    try {
+      openTyping('# Title\n\nA paragraph.\n');
+      booted.window.leafBlocksResynced({ dirty: true, canUndo: true, canRedo: true });
+      if (vm.runInContext('redoButton.hidden', booted) !== false) {
+        throw new Error('an undone edit left the Redo button hidden');
+      }
+      booted.window.leafBlocksResynced({ dirty: true, canUndo: true, canRedo: false });
+      if (vm.runInContext('redoButton.hidden', booted) !== true) {
+        throw new Error('Redo was left offered with nothing to bring back');
+      }
+    } finally {
       restTyping();
     }
   });
@@ -11980,6 +12048,7 @@ const EMBED_EDITS = [
   [{ command: 'renameField', key: 'title', to: 'heading' }, { edit: 'field', key: 'title', rename: 'heading' }],
   [{ command: 'moveBlock', ranges: [[0, 7], [9, 20]], from: 1, to: 0 }, { edit: 'move', ranges: [[0, 7], [9, 20]], from: 1, to: 0 }],
   [{ command: 'undoEdit' }, { edit: 'undo' }],
+  [{ command: 'redoEdit' }, { edit: 'redo' }],
   [{ command: 'updateSource', text: '# Whole\n' }, { edit: 'text', text: '# Whole\n' }],
 ];
 

@@ -1298,6 +1298,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
+                IpcCommand::RedoEdit => {
+                    // The other direction of the same history, ending in the same resync: a redo that spends the last future step has to take the Redo button away with it.
+                    let redone = reader
+                        .workspace
+                        .active_edit_mut()
+                        .is_some_and(EditableDocument::redo);
+                    if redone {
+                        reader.render(ScrollIntent::Preserve);
+                        resync_editing_state(reader.page(), &reader.workspace);
+                    }
+                }
                 // The persisted toggles, applied in one place and saved once.
                 command @ (IpcCommand::SetSpeedReaderEnabled { .. }
                 | IpcCommand::SetCodeIntelEnabled { .. }

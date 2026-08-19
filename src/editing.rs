@@ -20,6 +20,8 @@ pub struct EditableDocument {
     version: u64,
     /// Buffer snapshots taken before each reading-view edit, newest last. The browser's native undo can't cross the re-render an edit triggers, so inline-edit undo lives here. Code-view typing is not snapshotted — the editor's own undo covers it.
     undo_stack: Vec<String>,
+    /// What each undo displaced, newest last, so a press too many can be walked forward again. A fresh undoable edit drops it: the future those snapshots belonged to no longer exists.
+    redo_stack: Vec<String>,
 }
 
 impl EditableDocument {
@@ -36,6 +38,7 @@ impl EditableDocument {
             text,
             version: 0,
             undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
         }
     }
 
@@ -54,22 +57,37 @@ impl EditableDocument {
         self.untitled = false;
     }
 
-    /// Record `before` as an undo point if the buffer actually changed, keeping the stack bounded.
+    /// Record `before` as an undo point if the buffer actually changed, keeping the stack bounded. A new edit ends whatever future the last undo left standing.
     fn push_undo(&mut self, before: String) {
         if before == self.text {
             return;
         }
+        self.redo_stack.clear();
         self.undo_stack.push(before);
         if self.undo_stack.len() > UNDO_STACK_CAP {
             self.undo_stack.remove(0);
         }
     }
 
-    /// Revert the most recent reading-view edit; returns whether anything was undone. A successful save clears the stack, so undo only covers edits made since the last saved baseline.
+    /// Revert the most recent reading-view edit; returns whether anything was undone. A successful save clears the stack, so undo only covers edits made since the last saved baseline. What it displaces is kept, so the press can be walked forward again.
     pub fn undo(&mut self) -> bool {
         match self.undo_stack.pop() {
             Some(previous) => {
-                self.text = previous;
+                let displaced = std::mem::replace(&mut self.text, previous);
+                self.redo_stack.push(displaced);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Restore the version the last undo displaced; returns whether anything came back. The text it displaces in turn goes back on the undo stack, so the two walk one history in either direction.
+    pub fn redo(&mut self) -> bool {
+        match self.redo_stack.pop() {
+            Some(later) => {
+                let displaced = std::mem::replace(&mut self.text, later);
+                // No cap check: this only ever puts back an entry undo took off, so the stack cannot grow past where it already was.
+                self.undo_stack.push(displaced);
                 true
             }
             None => false,
@@ -79,6 +97,11 @@ impl EditableDocument {
     /// Whether there is a reading-view edit to undo.
     pub fn can_undo(&self) -> bool {
         !self.undo_stack.is_empty()
+    }
+
+    /// Whether an undo left a version to bring back.
+    pub fn can_redo(&self) -> bool {
+        !self.redo_stack.is_empty()
     }
 
     /// The live buffer contents.
@@ -107,10 +130,11 @@ impl EditableDocument {
         self.version
     }
 
-    /// Record that the current buffer was written to disk: the buffer becomes the saved baseline (so dirty clears), reader-edit undo history resets, and the version advances.
+    /// Record that the current buffer was written to disk: the buffer becomes the saved baseline (so dirty clears), reader-edit history resets in both directions, and the version advances.
     pub fn mark_saved(&mut self) {
         self.saved = self.text.clone();
         self.undo_stack.clear();
+        self.redo_stack.clear();
         self.version += 1;
     }
 
@@ -120,6 +144,9 @@ impl EditableDocument {
         self.spelling = spelling;
         self.saved = text.clone();
         self.text = text;
+        // Both histories are snapshots of a document this one has replaced, so stepping into either would put somebody else's file back.
+        self.undo_stack.clear();
+        self.redo_stack.clear();
     }
 
     /// Splice `replacement` into the buffer over byte range `[start, end)` — the core of source-anchored in-viewer editing. The range is clamped to the buffer and snapped outward to char boundaries so a bad offset can't panic or corrupt UTF-8; start past end is an insertion at `start`. Returns whether the dirty state changed.

@@ -196,13 +196,14 @@ fn moving_a_field_in_a_structured_file_keeps_its_commas_in_place() {
 }
 
 #[test]
-fn undo_reverts_reading_view_edits_newest_first() {
+fn undo_and_redo_walk_one_reading_view_history_in_both_directions() {
     let markdown = "# Title\n\nBody.\n\n- [ ] task\n";
     let mut edit = EditableDocument::new(
         PathBuf::from("doc.md"),
         SourceText::utf8(markdown.to_string()),
     );
     assert!(!edit.can_undo());
+    assert!(!edit.can_redo());
 
     // An identity splice changes nothing and records no undo point.
     edit.replace_range(0, 7, "# Title");
@@ -210,14 +211,18 @@ fn undo_reverts_reading_view_edits_newest_first() {
 
     edit.replace_range(0, 7, "# Renamed");
     edit.toggle_task(0);
+    let both_edits = edit.text().to_string();
     assert!(edit.text().contains("# Renamed"));
     assert!(edit.text().contains("[x]"));
     assert!(edit.can_undo());
+    assert!(!edit.can_redo());
 
     // Undo steps back newest-first: the toggle, then the splice.
     assert!(edit.undo());
+    let one_back = edit.text().to_string();
     assert!(edit.text().contains("[ ]"));
     assert!(edit.text().contains("# Renamed"));
+    assert!(edit.can_redo());
     assert!(edit.undo());
     assert_eq!(edit.text(), markdown);
     assert!(!edit.is_dirty());
@@ -225,6 +230,37 @@ fn undo_reverts_reading_view_edits_newest_first() {
     // Nothing left to undo.
     assert!(!edit.undo());
     assert!(!edit.can_undo());
+
+    // Redo hands the same snapshots back in the order undo took them.
+    assert!(edit.redo());
+    assert_eq!(edit.text(), one_back);
+    assert!(edit.can_undo());
+    assert!(edit.redo());
+    assert_eq!(edit.text(), both_edits);
+    assert!(!edit.redo());
+    assert!(!edit.can_redo());
+
+    // A fresh edit ends the future the undo before it left standing.
+    assert!(edit.undo());
+    assert!(edit.can_redo());
+    edit.replace_range(0, 9, "# Third");
+    assert!(!edit.can_redo());
+    assert!(!edit.redo());
+
+    // A save leaves nothing to walk in either direction.
+    assert!(edit.undo());
+    assert!(edit.can_redo());
+    edit.mark_saved();
+    assert!(!edit.can_undo());
+    assert!(!edit.can_redo());
+
+    // Neither does a baseline that came from outside: both stacks describe a document this one has replaced.
+    edit.replace_range(0, 9, "# Fourth");
+    assert!(edit.undo());
+    assert!(edit.can_redo());
+    edit.adopt_external(SourceText::utf8("# Outside\n".to_string()));
+    assert!(!edit.can_undo());
+    assert!(!edit.can_redo());
 }
 
 #[test]

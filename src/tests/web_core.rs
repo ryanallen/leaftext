@@ -683,6 +683,9 @@ fn apply_pinned_buffer_edit(edit: &mut EditableDocument, step: &serde_json::Valu
         Some("undo") => {
             edit.undo();
         }
+        Some("redo") => {
+            edit.redo();
+        }
         // A step the buffer knows nothing about, which has to move nothing rather than doing something near it.
         _ => {}
     }

@@ -129,6 +129,32 @@
       "kind": "undo",
       "changed": true,
       "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "the press too many walked forward again, which brings the whole typing run back in one step",
+      "kind": "redo",
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on and on.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "undo once more, so there is a future standing for the edit below to drop",
+      "kind": "undo",
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "a fresh undoable edit, which ends the future the undo above left standing",
+      "kind": "block",
+      "block": "The last line.",
+      "text_in": "The last line. Again.",
+      "changed": true,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line. Again.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+    },
+    {
+      "what": "redo after that edit, which has nothing left to bring back and so moves nothing",
+      "kind": "redo",
+      "changed": false,
+      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line. Again.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
     }
   ]
 }

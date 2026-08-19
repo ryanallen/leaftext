@@ -34,7 +34,11 @@ function updateEditingChrome() {
     // Undo appears whenever the document has reading-view edits since the last successful save.
     undoButton.hidden = !(hasDocument && undoableByPath.get(path) === true);
   }
-  // Save/Undo/code-view visibility changes the action row's width — refold.
+  if (redoButton) {
+    // Redo appears only where an undo has left a version standing, so the pair is never a button that would do nothing.
+    redoButton.hidden = !(hasDocument && redoableByPath.get(path) === true);
+  }
+  // Save/Undo/Redo/code-view visibility changes the action row's width — refold.
   refitAppBar();
 }
 
@@ -46,6 +50,17 @@ function undoLastEdit() {
   afterActiveEditCommits(() => {
     if (activeDocumentPath() !== path || undoableByPath.get(path) !== true) return;
     send({ command: 'undoEdit' });
+  });
+}
+
+// The same trip in the other direction. Words under the caret are committed first here too: a commit is a fresh edit, which ends the future, so it has to happen before the ask rather than after the answer has already put a version back.
+function redoLastEdit() {
+  const path = activeDocumentPath();
+  if (!path) return;
+  commitActiveEditingBlock();
+  afterActiveEditCommits(() => {
+    if (activeDocumentPath() !== path || redoableByPath.get(path) !== true) return;
+    send({ command: 'redoEdit' });
   });
 }
 
@@ -323,6 +338,9 @@ if (saveButton) {
 if (undoButton) {
   undoButton.addEventListener('click', undoLastEdit);
 }
+if (redoButton) {
+  redoButton.addEventListener('click', redoLastEdit);
+}
 // Ctrl/Cmd+S saves the active document. Not gated on the dirty state: typing that has not been clicked out of yet is not dirty, and the save is what commits it — saveActiveDocument decides after that.
 window.addEventListener('keydown', (event) => {
   if (!isSaveKey(event)) return;
@@ -373,7 +391,7 @@ window.addEventListener('keydown', (event) => {
   undoLastEdit();
 });
 
-// Ctrl+Y and Ctrl+Shift+Z walk the same groups forward again, up to the newest words the reader typed. Only inside a block: taking the key off the web view took its redo with it, and the app's whole-edit undo has no forward of its own yet.
+// Ctrl+Y and Ctrl+Shift+Z walk the same groups forward again, up to the newest words the reader typed, and once that block's groups are spent one committed edit — the mirror of the key above it.
 window.addEventListener('keydown', (event) => {
   const redoKey =
     (event.ctrlKey || event.metaKey) &&
@@ -382,9 +400,15 @@ window.addEventListener('keydown', (event) => {
   if (!redoKey) return;
   if (nativeUndoOwnsKey(event.target)) return;
   const block = editableBlockAt(event.target);
-  if (!block) return;
+  if (block) {
+    // The web view's own forward step never runs inside a block, whether or not there is a group left to walk to.
+    event.preventDefault();
+    if (stepTypingForward(block)) return;
+  }
+  const path = activeDocumentPath();
+  if (!path || redoableByPath.get(path) !== true) return;
   event.preventDefault();
-  stepTypingForward(block);
+  redoLastEdit();
 });
 
 // The raw-source code view is Monaco (the VS Code editor): it owns line wrapping, virtualized rendering of huge files, and its own colored minimap. The vendored bundle loads lazily on first entry; edits relay back to the host as source splices. Monaco scrolls internally, so the reader shell does not scroll here and carries no rail.
@@ -1002,7 +1026,9 @@ window.leafSourceUpdated = (state) => {
 // The host reports a save's outcome. On success the document is no longer dirty; on failure, keep the edits and surface the error.
 window.leafSaved = (path, ok, error) => {
   if (ok) {
+    // A save is the end of both directions of the history, in the buffer and so on the bar.
     undoableByPath.delete(path);
+    redoableByPath.delete(path);
     setDirtyState(path, false);
   } else if (error) {
     window.leafShowOpenError(path, error);

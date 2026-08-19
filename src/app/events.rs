@@ -480,6 +480,9 @@ pub(crate) enum IpcCommand {
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]
     UndoEdit,
+    /// Bring back the reading-view edit the last undo displaced.
+    #[serde(rename = "redoEdit")]
+    RedoEdit,
     /// Sent after every release check, found or not, to reset the throttle.
     #[serde(rename = "updateChecked")]
     UpdateChecked {

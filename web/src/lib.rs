@@ -197,6 +197,7 @@ pub unsafe extern "C" fn leaf_document_script(
         path: path.to_string(),
         dirty: false,
         undoable: false,
+        redoable: false,
     }];
     into_length_prefixed(
         leaftext::workspace_state_script(
@@ -254,7 +255,7 @@ fn with_buffer<T>(handle: u32, act: impl FnOnce(&mut EditableDocument) -> T) -> 
     slot.as_mut().map(act)
 }
 
-/// The buffer's editing state, in the shape the desktop pushes to its own page after every edit: whether it differs from what was last saved, whether there is an edit to take back, where the task markers now sit, and what the page's own copy should measure.
+/// The buffer's editing state, in the shape the desktop pushes to its own page after every edit: whether it differs from what was last saved, whether there is an edit to take back or to bring forward again, where the task markers now sit, and what the page's own copy should measure.
 ///
 /// The spelling rides along because a caller that handed over bytes owns the save, and the one thing it must not do is write the file back in another encoding.
 #[cfg(feature = "shell")]
@@ -263,6 +264,7 @@ fn buffer_state(edit: &EditableDocument) -> serde_json::Value {
         "path": edit.path.display().to_string(),
         "dirty": edit.is_dirty(),
         "canUndo": edit.can_undo(),
+        "canRedo": edit.can_redo(),
         "tasks": edit.task_offsets(),
         "utf16Len": edit.utf16_len(),
         "spelling": {
@@ -361,12 +363,13 @@ pub extern "C" fn leaf_buffer_state(handle: u32) -> *mut u8 {
 #[cfg(feature = "shell")]
 #[no_mangle]
 pub extern "C" fn leaf_buffer_document_script(handle: u32) -> *mut u8 {
-    let Some((text, path, dirty, undoable)) = with_buffer(handle, |edit| {
+    let Some((text, path, dirty, undoable, redoable)) = with_buffer(handle, |edit| {
         (
             edit.text().to_string(),
             edit.path.clone(),
             edit.is_dirty(),
             edit.can_undo(),
+            edit.can_redo(),
         )
     }) else {
         return std::ptr::null_mut();
@@ -377,6 +380,7 @@ pub extern "C" fn leaf_buffer_document_script(handle: u32) -> *mut u8 {
         path: text_path(&path),
         dirty,
         undoable,
+        redoable,
     }];
     let state = leaftext::workspace_state_script(
         &[],
@@ -390,6 +394,7 @@ pub extern "C" fn leaf_buffer_document_script(handle: u32) -> *mut u8 {
             &edit.task_offsets(),
             edit.is_dirty(),
             edit.can_undo(),
+            edit.can_redo(),
             None,
         )
     }) else {
@@ -426,6 +431,7 @@ pub unsafe extern "C" fn leaf_buffer_save_script(
             &edit.task_offsets(),
             edit.is_dirty(),
             edit.can_undo(),
+            edit.can_redo(),
             None,
         )
     }) else {
@@ -457,7 +463,7 @@ pub extern "C" fn leaf_buffer_render(handle: u32) -> *mut u8 {
 
 /// Make one edit, described as JSON, and answer whether the buffer moved together with its new state.
 ///
-/// `{"edit":"splice","start":0,"removed":2,"inserted":"hi"}` — a range given in UTF-16 code units, which is what a JavaScript string index counts. No undo step, like the code-view typing it serves. `{"edit":"block","start":0,"end":9,"text":"...","undo":true,"cell":{"row":1,"column":0,"columns":3,"text":"..."}}` — an inline edit over one block's source range. `cell` names the one cell that really changed, written on its own where the source map can prove where it sits so a table lined up by hand keeps its spacing; where it cannot, the whole-block rewrite is what lands, so no edit is ever refused. `{"edit":"text","text":"..."}` — the whole buffer replaced, which is the code view's resync path for when a splice left the page and the buffer disagreeing. `{"edit":"task","index":2}` — flip one task-list marker. One ASCII byte for another, so nothing after it shifts, and no undo step: the desktop's checkbox is not undoable either. `{"edit":"field","key":"title","set":"..."}`, `"items":[...]`, `"rename":"..."` or `"remove":true` — one frontmatter field. The splice comes from the parser, so the block keeps its order, its comments and its quoting. `{"edit":"move","ranges":[[0,9],[10,20]],"from":1,"to":0}` — reorder one run of sibling blocks. Whatever sits between them never moves. `{"edit":"undo"}` — take the last undoable edit back.
+/// `{"edit":"splice","start":0,"removed":2,"inserted":"hi"}` — a range given in UTF-16 code units, which is what a JavaScript string index counts. No undo step, like the code-view typing it serves. `{"edit":"block","start":0,"end":9,"text":"...","undo":true,"cell":{"row":1,"column":0,"columns":3,"text":"..."}}` — an inline edit over one block's source range. `cell` names the one cell that really changed, written on its own where the source map can prove where it sits so a table lined up by hand keeps its spacing; where it cannot, the whole-block rewrite is what lands, so no edit is ever refused. `{"edit":"text","text":"..."}` — the whole buffer replaced, which is the code view's resync path for when a splice left the page and the buffer disagreeing. `{"edit":"task","index":2}` — flip one task-list marker. One ASCII byte for another, so nothing after it shifts, and no undo step: the desktop's checkbox is not undoable either. `{"edit":"field","key":"title","set":"..."}`, `"items":[...]`, `"rename":"..."` or `"remove":true` — one frontmatter field. The splice comes from the parser, so the block keeps its order, its comments and its quoting. `{"edit":"move","ranges":[[0,9],[10,20]],"from":1,"to":0}` — reorder one run of sibling blocks. Whatever sits between them never moves. `{"edit":"undo"}` — take the last undoable edit back. `{"edit":"redo"}` — bring back what the last undo displaced.
 ///
 /// An edit this does not know, or one whose numbers do not describe anything, answers `changed: false` and leaves the buffer alone. A null pointer back means the handle names nothing or the JSON was not text.
 ///
@@ -579,6 +585,9 @@ fn apply_buffer_edit(edit: &mut EditableDocument, asked: &serde_json::Value) -> 
         }
         Some("undo") => {
             edit.undo();
+        }
+        Some("redo") => {
+            edit.redo();
         }
         _ => return false,
     }

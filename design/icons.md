@@ -71,7 +71,7 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | replace | replace.svg | lucide | regular | — | The find bar's replace toggle: the row of Replace and All folds out under it. |
 | select-all | select-all.svg | leaftext | regular | — | Put a cursor on every match, on the find bar's always-visible row. Two I-beams, the second stepped below the first: side by side and level they read as a pause button at 16px, which is the size this is worn at. |
 | theme | theme.svg | tabler | regular | — | The app bar's palette button, which opens the theme sheet. |
-| redo | redo.svg | heroicons | regular | — | Redo, beside undo in the flowchart editor. |
+| redo | redo.svg | heroicons | regular | — | Redo, beside undo in the reader tool bar and in the flowchart editor. |
 | window-minimize | window-minimize.svg | leaftext | hairline | — | The window's own minimize button. Drawn on a 12px grid at a hairline, because it sits in the title bar beside the platform's own chrome. |
 | window-maximize | window-maximize.svg | leaftext | hairline | — | Maximize. Same grid. |
 | window-restore | window-restore.svg | leaftext | hairline | — | Restore down, shown in place of maximize when the window is already maximized. |

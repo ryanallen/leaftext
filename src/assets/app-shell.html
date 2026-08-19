@@ -160,6 +160,9 @@
   </div>
   <span class="reader-tool-divider" aria-hidden="true"></span>
   <button type="button" id="undoButton" class="reader-tool undo-button" aria-label="Undo" title="Undo last edit" hidden><span class="lt-icon lt-icon-undo"></span></button>
+  <!-- The other half of the same history, beside its twin so a press too many
+       has a visible way back rather than a key somebody has to know. -->
+  <button type="button" id="redoButton" class="reader-tool redo-button" aria-label="Redo" title="Redo last edit" hidden><span class="lt-icon lt-icon-redo"></span></button>
   <button type="button" id="saveButton" class="reader-tool-save" aria-label="Save" title="Save" hidden>Save</button>
 </div>
 <!-- Find, over whichever view is on screen. One bar for both: the source view's
