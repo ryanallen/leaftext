@@ -8479,9 +8479,9 @@ if (booted) {
     const original = { prepend: panel.prepend, appendChild: panel.appendChild, children: panel.children };
     // Real list semantics for the panel: the fold moves elements into it, and the order they come to rest in is the whole claim — a string in the stylesheet cannot say it.
     const inside = [];
+    // Taken out of wherever it was standing, not just written into this list: a move that leaves the node in its old container as well hands the next check a strip holding the same button three times.
     const move = (child) => {
-      const at = inside.indexOf(child);
-      if (at >= 0) inside.splice(at, 1);
+      detachChild(child);
       child.parentElement = panel;
       return child;
     };
@@ -8656,6 +8656,29 @@ if (booted) {
       // They are first in the list and the loop walks it backwards, so they are the last thing it would reach — closing the window stays one press.
       if (!bar.standing().includes('windowControls')) {
         throw new Error('the window buttons folded into the menu');
+      }
+    } finally {
+      bar.done();
+    }
+  });
+
+  check('the strip the arrows leave behind holds no element, and holds both again once the bar widens', () => {
+    // The condition the stylesheet keys on: `.history-actions:not(:has(*))` stops the strip being drawn, so the lead's 16px gap has nothing to land against. There is no layout engine here, so what is proved is that the fold really reaches that state and really comes out of it — the 16px itself is the owner's press.
+    const bar = measuredAppBar();
+    const strip = booted.document.querySelector('.history-actions');
+    try {
+      // Narrow past every candidate, so both arrows are certainly in the menu rather than only the one the bar's own width happened to buy.
+      bar.bar.clientWidth = 0;
+      booted.refitAppBar();
+      if (strip.children.length) {
+        throw new Error(`the emptied strip still holds ${strip.children.map((el) => el.id).join(',')}`);
+      }
+
+      bar.bar.clientWidth = 900;
+      booted.refitAppBar();
+      const back = strip.children.map((el) => el.id);
+      if (back.join(',') !== 'backButton,forwardButton') {
+        throw new Error(`a wide bar put the strip back as ${back.join(',') || 'empty'}`);
       }
     } finally {
       bar.done();

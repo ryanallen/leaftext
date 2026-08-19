@@ -530,6 +530,22 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
 }
 
 #[test]
+fn an_emptied_history_strip_stops_taking_a_gap() {
+    // The gap above lands between every pair of the lead's children, so the strip the fold leaves behind is 16px spent on nothing at the one moment the bar has no room. `:empty` cannot see that state: the markup writes the strip over eight lines, so three whitespace text nodes stay when the two buttons go.
+    let css = reading_mode_css();
+
+    let emptied = rule_body(css, "\n.history-actions:not(:has(*)) {");
+    assert!(
+        emptied.contains("display: none;"),
+        "a history strip holding no element is not drawn: {emptied}"
+    );
+    assert!(
+        !css.contains(".history-actions:empty"),
+        "the emptied strip must be found by element, not by `:empty`, which the markup's whitespace defeats"
+    );
+}
+
+#[test]
 fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
     let css = reading_mode_css();
 
