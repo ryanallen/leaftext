@@ -1626,7 +1626,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
     // Somebody typed before the vault had been read, so the query is waiting on it.
     state.pending_search = Some(typed("dharma"));
     let started = state.corpus_generation;
-    // Every slice below is stamped with this one read's number, which is what the live read's slices carry.
+    // Every slice below is stamped with this one read's number, the way a live read's are.
     let reading = state.corpus_read.claim();
 
     let first = absorb_corpus_slice(
@@ -1752,7 +1752,7 @@ fn a_vault_left_and_come_straight_back_to_keeps_nothing_from_the_read_it_abandon
     )
     .expect("the read being waited for had its first slice thrown away");
 
-    // Clicked to another vault and straight back to this one. The root is `/vault` again, so it is the only thing the abandoned read's tail has to get past.
+    // Clicked to another vault and straight back to this one, so the root is `/vault` again and the abandoned read's tail gets past it.
     state.drop_corpus();
     state.root = Some(PathBuf::from("/another-vault"));
     state.drop_corpus();

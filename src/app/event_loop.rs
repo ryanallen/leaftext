@@ -482,7 +482,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 last,
                 wanted,
             }) => {
-                // Answered only by the last slice, and only for the vault still on screen under the read still being waited for — `deliver_corpus` has already thrown the slice away if it is not.
+                // Answered only by the last slice of the read still being waited for, in the vault still on screen — `deliver_corpus` throws the rest away.
                 let hints = deliver_corpus(
                     &mut vault_state,
                     &proxy,

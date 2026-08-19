@@ -513,7 +513,7 @@ pub(crate) struct AbsorbedSlice {
 
 /// Grow the vault's text by one slice of the read, and say what that leaves to do. Split from [`deliver_corpus`] because everything here is a decision about state and nothing here touches a worker, which is the half worth testing.
 ///
-/// `None` when the slice is for a vault we have since left, or for a read nobody is waiting on any more. The two answer different questions — which vault a slice is about, and which read sent it — and only the second one catches a vault left and come straight back to, where the root is the same again while the abandoned read is still delivering.
+/// `None` when the slice is for a vault we have since left, or for a read nobody is waiting on any more. The two answer different questions — which vault, and which read — and only the second catches a vault left and come straight back to, where the root is the same again while the abandoned read is still delivering.
 pub(crate) fn absorb_corpus_slice(
     state: &mut VaultState,
     root: &Path,
