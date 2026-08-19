@@ -363,6 +363,12 @@ function runShell(source, extras = {}) {
       height: VIEW_HEIGHT,
     });
   }
+  // The bar's left zone measures its own buttons, and the pane opens no narrower than that — so a zone reporting an empty box would let the rule pass with nothing measured. `__leafLeadWidth` is what a platform's zone comes to: 187.33 on Windows, 247.33 on a Mac, whose window dots stand in it.
+  const lead = document.querySelector('.app-bar-lead');
+  if (lead) {
+    const leadWidth = typeof extras.__leafLeadWidth === 'number' ? extras.__leafLeadWidth : 0;
+    lead.getBoundingClientRect = () => ({ left: 0, top: 0, right: leadWidth, bottom: 0, width: leadWidth, height: 0 });
+  }
   const noop = () => {};
   const frames = new Map();
   let frameId = 0;
@@ -7795,6 +7801,70 @@ if (booted) {
     }
   });
 }
+
+// ---- 3a2. the pane opens no narrower than the bar's left zone ---------------
+//
+// That zone is sized to the pane so the tab strip begins at the pane's edge, and floored at the buttons standing in it — so a pane that opens inside the floor leaves the tabs over the page with nothing pressed. That is where a Mac starts: the window's own three dots stand in the zone and take it past the 240px a pane opens at. Opening only, which is the whole shape of the fix: flooring the drag was built for this once and thrown out, because it took the narrow pane away from Windows, where nothing was ever wrong — so the drag's own range is checked here beside it.
+
+/** The bar's left zone on each platform, read off the running app: the leaf, the library toggle and the two history arrows, plus a Mac's three window dots and the gap before them. */
+const WINDOWS_LEAD = 187.33;
+const MAC_LEAD = 247.33;
+
+/** A booted page with the bar's left zone at `leadWidth` and a window with room for both a pane and a reader. */
+function bootWithLead(leadWidth, settings = {}) {
+  const context = runShell(source, { __leafLeadWidth: leadWidth, __leafSettings: settings });
+  context.document.getElementById('libraryShell').clientWidth = VIEW_WIDTH;
+  return context;
+}
+
+/** What the page last wrote as the pane's width: one var moves the pane, the tabs and the divider together. */
+const railWidth = (context) => context.document.documentElement.style.getPropertyValue('--library-rail-width');
+
+check('a pane opens on the edge of the bar left zone wherever that zone is the wider', () => {
+  const mac = bootWithLead(MAC_LEAD);
+  // Shut, then open: the width a toggle opens at is the one a reader meets after using the button.
+  mac.toggleLibrary();
+  mac.toggleLibrary();
+  if (railWidth(mac) !== `${MAC_LEAD}px`) throw new Error(`a Mac opened its pane at ${railWidth(mac)}, inside its own window dots`);
+  const windows = bootWithLead(WINDOWS_LEAD);
+  windows.toggleLibrary();
+  windows.toggleLibrary();
+  if (railWidth(windows) !== '240px') throw new Error(`Windows opened its pane at ${railWidth(windows)} rather than the 240px it has always opened at`);
+});
+
+check('a pane left at the width it opens at is raised on the way back in, and a dragged one is not', () => {
+  // A Mac that has been run before has 240 written down, so a rule that only moved the default would leave every existing Mac exactly where it was, with nothing to migrate it.
+  const mac = bootWithLead(MAC_LEAD, { libraryWidth: 240 });
+  mac.applyPaneLayout();
+  if (railWidth(mac) !== `${MAC_LEAD}px`) throw new Error(`a saved width came back at ${railWidth(mac)}`);
+  // A width a reader dragged to is theirs at any size, on either platform: raising it would take the narrow pane away one restart later, which is what the discarded design took away outright.
+  for (const [lead, platform] of [[WINDOWS_LEAD, 'Windows'], [MAC_LEAD, 'a Mac']]) {
+    const context = bootWithLead(lead, { libraryWidth: 96 });
+    context.applyPaneLayout();
+    if (railWidth(context) !== '96px') throw new Error(`a 96px pane came back at ${railWidth(context)} on ${platform}`);
+  }
+});
+
+check('a drag still reaches every width it reached before, and still snaps shut', () => {
+  // The claim the discarded design broke: it floored the pane at the zone, so a reader dragging the divider in found the pane slamming shut while it was still a fifth of the window wide. Run against a Mac's zone, which is the widest floor there is.
+  const context = bootWithLead(MAC_LEAD);
+  const divider = context.document.getElementById('libraryDivider');
+  const shell = context.document.getElementById('libraryShell');
+  shell.getBoundingClientRect = () => ({ left: 0, top: 0, right: VIEW_WIDTH, bottom: VIEW_HEIGHT, width: VIEW_WIDTH, height: VIEW_HEIGHT });
+  const pointer = (extra) => ({ pointerId: 7, button: 0, buttons: 1, clientY: 300, target: divider, preventDefault() {}, stopPropagation() {}, ...extra });
+  // Every handler the page registered, in the order it registered them — the same walk the real page makes, so a drag here is a drag there.
+  const raise = (type, event) => {
+    for (const handler of [...(context.document.listeners.get(type) || [])]) handler(event);
+  };
+  for (const handler of [...(divider.listeners.get('pointerdown') || [])]) handler(pointer({ clientX: 247 }));
+  raise('pointermove', pointer({ clientX: 96 }));
+  context.__frames.drain();
+  if (railWidth(context) !== '96px') throw new Error(`a pane dragged to 96px came to rest at ${railWidth(context)}`);
+  // Past the snap: the pane closes, exactly as a drag to 40px always did.
+  raise('pointermove', pointer({ clientX: 20 }));
+  context.__frames.drain();
+  if (railWidth(context) !== '0px') throw new Error(`a drag past the snap left the pane at ${railWidth(context)}`);
+});
 
 // ---- 3b. copying what is highlighted in the reading view --------------------
 //

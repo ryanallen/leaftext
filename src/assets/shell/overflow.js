@@ -64,6 +64,20 @@ function foldAppBar() {
   if (!folded) closeOverflowMenu();
   return raisedTheChevron;
 }
+// The bar's left zone measured on its own buttons, with the pane's width out of it: an open pane pins the zone to the rail, so a plain read answers the pane rather than what is standing in the zone. `width: auto` is the value the closed state already asks for, taken for one read and put straight back. Held between reads because reading it forces a layout and the answer only moves when the zone's contents do.
+let appBarLeadOwnWidth = 0;
+function appBarLeadWidth() {
+  if (appBarLeadOwnWidth) return appBarLeadOwnWidth;
+  if (!appBarLead) return 0;
+  const pinned = appBarLead.style.width || '';
+  appBarLead.style.width = 'auto';
+  appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;
+  appBarLead.style.width = pinned;
+  return appBarLeadOwnWidth;
+}
+function forgetAppBarLeadWidth() {
+  appBarLeadOwnWidth = 0;
+}
 function refitAppBar() {
   // Moving the buttons relayouts the bar, which is what the ResizeObserver watches; without this the first fold would trigger the next.
   if (refittingAppBar) return;
@@ -73,6 +87,8 @@ function refitAppBar() {
     if (foldAppBar()) foldAppBar();
   } finally {
     refittingAppBar = false;
+    // A fold takes buttons out of the left zone and an unfold puts them back, so whatever was measured of it is stale.
+    forgetAppBarLeadWidth();
   }
 }
 overflowToggle.addEventListener('click', (event) => {

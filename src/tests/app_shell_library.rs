@@ -225,6 +225,22 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
     assert!(html.contains("if (raw < SNAP_SHUT) {"));
     assert!(html.contains("dividerDrag.frame = requestAnimationFrame(applyPendingDividerWidth);"));
 
+    // A pane opens no narrower than the bar's left zone, and that zone is measured rather than written down a second time: it is sized to the pane, so its own width is only readable with the pane's out of it for the one read.
+    assert_contains(
+        &html,
+        "function openPaneFloor(width) {\n  return Math.max(width, appBarLeadWidth());\n}",
+    );
+    assert_contains(&html, "  appBarLead.style.width = 'auto';\n  appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;\n  appBarLead.style.width = pinned;");
+    // Both paths a pane opens through: the width it comes back at, and the width the toggle opens it at.
+    assert_contains(
+        &html,
+        "if (libraryWidth === DEFAULT_PANE_WIDTH) libraryWidth = openPaneFloor(libraryWidth);",
+    );
+    assert_contains(&html, "libraryWidth = openPaneFloor(DEFAULT_PANE_WIDTH);");
+    // And nowhere else: flooring the drag at that zone was built once and thrown out, for taking every narrow pane away from a platform that never had the fault. The drag reads the plain clamp, and the snap is the snap.
+    assert_contains(&html, "dividerDrag.pendingWidth = clampOpenPaneWidth(raw);");
+    assert!(!html.contains("openPaneFloor(raw)"));
+
     // The toggle flips the pane open/closed; layout applies on boot and on resize.
     assert!(html.contains("libraryOpen.addEventListener('click', toggleLibrary);"));
     assert!(html

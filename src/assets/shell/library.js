@@ -13,6 +13,12 @@ function maxOpenPaneWidth() {
 function clampOpenPaneWidth(width) {
   return Math.min(Math.max(width, SNAP_SHUT), maxOpenPaneWidth());
 }
+// A pane never opens narrower than the bar's left zone, because that zone is sized to the pane so the tabs begin at the pane's edge and floored at the buttons it holds — so a pane opening inside it leaves the tabs hanging over the page with nothing pressed. The floor is measured off the zone rather than written down again: on a Mac the window's own three dots stand there and make it wider than the 240px the pane opens at, on Windows it is 53px inside that and this changes nothing. Opening only — a drag still reaches every width it ever did, and flooring the drag here is what was built once and thrown out.
+function openPaneFloor(width) {
+  return Math.max(width, appBarLeadWidth());
+}
+// The width the pane comes back at, raised on the way in — but only where it is still the width a pane opens at on its own. A Mac that has been run before has 240px written down and would otherwise stay adrift for good, with no migration to raise it; a width a reader dragged to is theirs at any size, and raising that would take the narrow pane away one restart later, which is the whole reason the first design was thrown out.
+if (libraryWidth === DEFAULT_PANE_WIDTH) libraryWidth = openPaneFloor(libraryWidth);
 // A window too narrow for both reader and pane shows the pane closed regardless of preference — a display fallback, not a saved state.
 function libraryTooNarrow() {
   return libraryShell.clientWidth < SNAP_SHUT + MIN_READER_WIDTH;
@@ -96,7 +102,7 @@ libraryShell.addEventListener('transitionend', (event) => {
   }
   endLibraryMotion();
 });
-// The panel button in the app bar toggles the library: closed → open at the default width (never the sliver it was dragged to before snapping shut), open → closed. On a too-narrow window it slides the sheet in and out instead — a transient view state, so nothing about it is persisted.
+// The panel button in the app bar toggles the library: closed → open at the default width, or at the bar's left zone where that is wider (never the sliver it was dragged to before snapping shut), open → closed. On a too-narrow window it slides the sheet in and out instead — a transient view state, so nothing about it is persisted.
 function toggleLibrary() {
   if (libraryTooNarrow()) {
     librarySheetOpen = !librarySheetOpen;
@@ -105,7 +111,7 @@ function toggleLibrary() {
   }
   if (libraryIsClosed()) {
     libraryUserClosed = false;
-    libraryWidth = DEFAULT_PANE_WIDTH;
+    libraryWidth = openPaneFloor(DEFAULT_PANE_WIDTH);
     // Two steps: land the open classes with the rail at the padding (the closed card's resting edge), flush, then grow — so nothing jumps on the first frame.
     document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + 'px');
     applyPaneLayout(true);
@@ -179,6 +185,8 @@ window.addEventListener('resize', () => {
   if (paneResizeFrame) return;
   paneResizeFrame = requestAnimationFrame(() => {
     paneResizeFrame = 0;
+    // A narrower window folds buttons out of the bar's left zone, so what was measured of it no longer stands. Re-clamped here, never re-floored: the floor is the width a pane opens at, and raising one already open would take a dragged pane away from whoever dragged it.
+    forgetAppBarLeadWidth();
     if (!libraryIsClosed()) libraryWidth = clampOpenPaneWidth(libraryWidth);
     applyPaneLayout();
   });
