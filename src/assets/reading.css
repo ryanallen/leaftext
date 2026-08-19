@@ -607,7 +607,7 @@ body.is-maximized #winMaximize .wc-restore {
   border-color: var(--lt-window-close);
   color: var(--lt-window-close-foreground);
 }
-/* A Mac's three, at the bar's left end. Ours rather than Apple's because a native view is pinned to the window and cannot fold into the chevron menu, which meant the bar reserving room for them whether it had any or not. Centered by the zone's own rule instead of inset into the top corner. Twice the Windows gap because the dot is a quarter of the button: 4px between 32px buttons is an eighth of one, while 4px between 12px dots is a third of one and the three run together as a blob. */
+/* A Mac's three, at the bar's left end. Ours rather than Apple's because a native view is pinned to the window and cannot fold into the chevron menu, which meant the bar reserving room for them whether it had any or not. Centered by the zone's own rule instead of inset into the top corner. Twice the Windows gap because the dot is a quarter of the button: the same 4px is an eighth of a 32px button and a third of a 12px dot, and three dots that close read as one blob. */
 .mac-frame .window-controls {
   gap: var(--lt-space-8);
   margin-left: 0;
@@ -632,7 +632,7 @@ body.mac-frame.is-fullscreen .window-controls {
   order: -1;
   background: var(--lt-danger);
 }
-/* The stacked copy is the same three dots on the same gap turned on its side, so it takes the row's 8px too and the fix does not disappear the moment the window is narrow enough to fold. Windows keeps the shared column's 4px. */
+/* Folded into the menu the same three stack, so they take the row's gap rather than the shared column's 4px, which is the Windows squares'. Said outright because the row's rule and the shared column's weigh the same, so which of them lands here is only their order. */
 .mac-frame .app-overflow-panel .window-controls {
   gap: var(--lt-space-8);
 }

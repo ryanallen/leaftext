@@ -97,7 +97,7 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
     ] {
         assert_contains(&css, wearer);
     }
-    // A second definition is how the pane ended up with a bar 10px wide beside a reader's at 14. Five wearers named in each of three blocks — the thumb, and the floor under its length per axis. Nothing else may paint a thumb: a private copy is how the app ends up with two answers to when a bar is there. There is no reduced-motion block of its own any more: the fade moved onto the box, where the stylesheet's universal one reaches it.
+    // A second definition is how the pane ended up with a bar 10px wide beside a reader's at 14. Five wearers named in each of three blocks — the thumb, and the floor under its length per axis. Nothing else may paint a thumb: a private copy is how the app ends up with two answers to when a bar is there. The fade sits on the box, where the stylesheet's universal reduced-motion block reaches it, so the thumb needs none of its own.
     assert_eq!(css.matches("::-webkit-scrollbar-thumb").count(), 15);
     // Where the markup is ours the box carries the class, which is the whole of joining: the shape picker, the theme picker's grid of cards, a glossary entry, the flowchart canvas and the code panel beside it. One of these missing it is a box drawing the platform's gray stripe in a window where nothing else does.
     for (id, what) in [
@@ -204,7 +204,7 @@ fn the_front_end_is_served_beside_the_shell_not_inside_it() {
     );
     assert_contains(script, "function parseFlow(");
     assert_contains(script, "function openFlowSheet(");
-    // The flowchart pair leads the script, where its own tag used to sit.
+    // The flowchart pair leads the script, ahead of everything that calls into it.
     assert!(
         script.find("function parseFlow(") < script.find("function leafToast("),
         "the flowchart grammar must come before the fragments that call it"
@@ -374,7 +374,7 @@ fn app_shell_back_icon_uses_current_color_and_keeps_no_square_fallback() {
         rule_body(css, ".lt-icon {"),
         "background-color: currentColor;",
     );
-    // Nothing in the page is drawn any more — every icon is a class — so the scan below holds for whatever arrives next rather than for what is there.
+    // Every icon in the page is a class rather than a drawing, so the scan below holds for whatever arrives next rather than for what is there.
     assert!(
         !app_shell_html().contains("<svg"),
         "an icon is inlined into the page again; it belongs in design/icons.md"
@@ -639,7 +639,7 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
 fn the_minimap_is_always_on_and_still_one_switch() {
     let html = app_shell_page();
 
-    // Not a choice any more: nothing turns it off, so the seed is a constant. The switch stays because the rail still comes and goes with the document, and everything that draws it asks here rather than keeping its own copy.
+    // Nothing turns the rail off, so the seed is a constant. The switch stays because the rail still comes and goes with the document, and everything that draws it asks here rather than keeping its own copy.
     for expected in [
         "let minimapEnabled = true;",
         "getEnabled: () => minimapEnabled",
@@ -729,7 +729,7 @@ fn app_shell_hides_the_minimaps_decorative_marks_from_accessibility() {
 fn app_shell_reacts_to_minimap_and_theme_settings() {
     let html = app_shell_page();
 
-    // The rail still comes and goes with the document, so the subscription has to re-render the page — that is the whole of what it does now the checkbox is gone.
+    // The rail still comes and goes with the document, so the subscription has to re-render the page — which is the whole of what it does.
     assert_contains(
         &html,
         "window.leafMinimap.subscribe(() => {\n  renderState();",
@@ -1357,7 +1357,7 @@ fn document_extensions_ride_to_the_page_from_the_format_table() {
 
 #[test]
 fn the_front_end_shares_its_repeated_plumbing() {
-    // Three things every part of the front-end needed and each used to write for itself. A second copy is how two menus end up clamping to different margins, or one drag losing the pointer where another keeps it.
+    // Three things every part of the front-end needs, written once. A second copy is how two menus end up clamping to different margins, or one drag losing the pointer where another keeps it.
     let script = app_shell_script();
 
     // Escape closes what is open: every caller one listener, no key checks of their own.
