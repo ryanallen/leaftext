@@ -398,6 +398,18 @@ function runShell(source, extras = {}) {
   const windowListeners = new Map();
   // Every watcher the page registered, with the element and the options it was handed, so a check can find the one guarding an attribute and run it.
   const watchers = [];
+  // One stand-in per kind of watcher the page constructs, each keeping what it was handed on the shared list: the kind, the callback, the element and the options. Nothing is dropped when the page lets a watcher go, so the list answers what was ever registered — which is what a count of every registration and a later firing of one both need.
+  const watcherStandIn = (kind) =>
+    class {
+      constructor(callback) {
+        this.callback = callback;
+      }
+      observe(target, options) {
+        watchers.push({ kind, callback: this.callback, target, options: options || {} });
+      }
+      unobserve() {}
+      disconnect() {}
+    };
   const address = fakeAddress('https://leaf.test/', (type, event) => {
     for (const handler of [...(windowListeners.get(type) || [])]) handler(event);
   });
@@ -444,28 +456,9 @@ function runShell(source, extras = {}) {
     },
     fetch: () => new Promise(() => {}),
     // Kept rather than swallowed, the way a listener is: a callback registered on every boot and called on none of them is a sweep no check has ever run, which is how a retired function sat in the theme sweep throwing into the record on every theme change. A check flips the attribute and fires what was watching it.
-    MutationObserver: class {
-      constructor(callback) {
-        this.callback = callback;
-      }
-      observe(target, options) {
-        watchers.push({ callback: this.callback, target, options: options || {} });
-      }
-      disconnect() {
-        const at = watchers.findIndex((one) => one.callback === this.callback);
-        if (at >= 0) watchers.splice(at, 1);
-      }
-    },
-    ResizeObserver: class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-    IntersectionObserver: class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
+    MutationObserver: watcherStandIn('MutationObserver'),
+    ResizeObserver: watcherStandIn('ResizeObserver'),
+    IntersectionObserver: watcherStandIn('IntersectionObserver'),
     // Real implementations, not stubs: the web view has these and so does Node, and the offset arithmetic below depends on them being genuine.
     TextEncoder,
     TextDecoder,
@@ -611,6 +604,107 @@ check('a theme change runs the sweep to its end', () => {
   root.dataset.theme = 'forest';
   root.dataset.leafTheme = 'forest';
   for (const sweep of sweeps) sweep.callback([{ type: 'attributes', attributeName: 'data-theme', target: root }]);
+});
+
+// ---- 2d. every watcher the page registers is held -------------------------
+//
+// A registration nothing keeps is a callback no check can ever run, and a callback no check runs is where a name retired out of the page sits throwing at a reader. So the record is what a boot registered, by element, and a watcher that stops being registered fails here rather than in somebody's window.
+
+/** What `kind` watchers the record holds against `target`. */
+function registrationsOn(watchers, kind, target) {
+  return watchers.filter((one) => one.kind === kind && one.target === target);
+}
+
+/** Throws unless the record holds exactly the registrations `wanted` names, one each. */
+function holdsRegistrations(watchers, wanted) {
+  for (const [name, kind, target] of wanted) {
+    const held = registrationsOn(watchers, kind, target);
+    if (held.length !== 1) throw new Error(`${name}: expected one registration, the record holds ${held.length}`);
+  }
+  if (watchers.length !== wanted.length) throw new Error(`the record holds ${watchers.length} registrations, not the ${wanted.length} named here`);
+}
+
+/** The four a bare boot makes, each top-level in its own fragment. */
+function bootRegistrations(context) {
+  const { document } = context;
+  return [
+    ['the theme sweep', 'MutationObserver', document.documentElement],
+    ['the minimap width fit', 'ResizeObserver', document.getElementById('app')],
+    ['the crumb trail fit', 'ResizeObserver', document.getElementById('libraryCrumbs')],
+    ['the app bar refit', 'ResizeObserver', document.getElementById('appBar')],
+  ];
+}
+
+check('a bare boot holds every watcher it registered, against the element it watches', () => {
+  const context = runShell(source);
+  const wanted = bootRegistrations(context);
+  holdsRegistrations(context.__watchers, wanted);
+  // The theme sweep is the one that has already shipped a fault, so its filter is read as well as its element.
+  const [sweep] = registrationsOn(context.__watchers, 'MutationObserver', context.document.documentElement);
+  if (!(sweep.options.attributeFilter || []).includes('data-theme')) throw new Error('the theme sweep is watching the root element without asking for the theme attribute');
+  // A dropped registration has to fail rather than pass quietly, which is the whole reason the record exists.
+  let dropped = false;
+  try {
+    holdsRegistrations(context.__watchers.filter((one) => one.target !== context.document.getElementById('appBar')), wanted);
+  } catch (_) {
+    dropped = true;
+  }
+  if (!dropped) throw new Error('the record still read as complete with a registration taken out of it');
+});
+
+// The other eight sit inside installers a bare boot never calls — a diagram drawn, the find bar opened, the code view under Monaco, a minimap bound, a graph scene wired. Called by name off the booted page, so a watcher moved out of one of them, or an installer that stops registering at all, fails here.
+
+check('the eight installers a bare boot never calls each register their watcher', () => {
+  const context = runShell(source);
+  const { document } = context;
+  const appEl = document.getElementById('app');
+  const body = fakeElement('documentBody');
+  // One more drawing than the two picture memos hold: under that the document keeps every drawing it makes and the recycler returns before it ever makes a watcher.
+  const drawn = Array.from({ length: 201 }, () => fakeElement('drawnDiagram'));
+  body.querySelectorAll = (selector) => (String(selector) === 'pre.mermaid' ? drawn : []);
+  const rail = fakeElement('monacoMinimapRail');
+  const track = fakeElement('minimapTrack');
+  const nearDiagram = fakeElement('nearDiagram');
+  const farDiagram = fakeElement('farDiagram');
+  const canvas = document.getElementById('readerGraphCanvas');
+  const wasQuery = appEl.querySelector;
+  // The fake page answers an id and one bare class; these are the two the installers reach for that it cannot, and both have to answer with the same element twice — the installers read them again on the way through.
+  appEl.querySelector = (selector) => {
+    const one = String(selector);
+    if (one === '.document-body') return body;
+    if (one === '.code-view-monaco .monaco-editor .minimap') return rail;
+    return wasQuery.call(appEl, one);
+  };
+  try {
+    context.watchMermaidDiagrams([nearDiagram]);
+    context.watchMermaidForRecycling(farDiagram);
+    context.watchFindRender();
+    context.watchMinimapSlider();
+    context.bindDocumentMinimapPreview(track);
+    context.observeReaderReflow();
+    context.wireGraphResize({});
+  } finally {
+    appEl.querySelector = wasQuery;
+  }
+  const wanted = [
+    ...bootRegistrations(context),
+    ['the diagram draw watch', 'IntersectionObserver', nearDiagram],
+    ['the diagram recycler', 'IntersectionObserver', farDiagram],
+    ['the find bar re-render watch', 'MutationObserver', appEl],
+    ['the code view slider clamp', 'MutationObserver', rail],
+    ['the minimap clone watch', 'MutationObserver', body],
+    ['the minimap rail fit', 'ResizeObserver', track],
+    ['the reader reflow watch', 'ResizeObserver', body],
+    ['the graph canvas fit', 'ResizeObserver', canvas],
+  ];
+  holdsRegistrations(context.__watchers, wanted);
+  let dropped = false;
+  try {
+    holdsRegistrations(context.__watchers.filter((one) => one.target !== rail), wanted);
+  } catch (_) {
+    dropped = true;
+  }
+  if (!dropped) throw new Error('the record still read as complete with a registration taken out of it');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
