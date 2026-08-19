@@ -2681,15 +2681,15 @@ body.mac-frame.is-fullscreen::before {
 }
 .tab-bar {
   display: flex;
-  /* The bar's one gap, and it must clear the active tab's --tab-flare on both sides, or a flare reaches an inactive neighbor and the two tabs read as fused. Move the two together. */
-  gap: var(--lt-space-16);
+  /* Tighter than the bar's 16px on purpose: a strip of open documents is one list, not a run of unrelated controls. A flare reaching an inactive neighbor makes the two read as fused, so the active tab buys the difference back with a 12px margin of its own — 4px here plus 12px there is the 16px its curve needs. Move the two together. */
+  gap: var(--lt-space-4);
   min-width: 0;
   /* Full header height, but the tabs hang from the bar's bottom edge (where the active one covers the reader divider) under a shoulder of chrome — which is what gives their top corners room to round. */
   align-self: stretch;
   align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
-  /* The side insets are the bar's own gap, so the space beside the first and last tab matches every other space in the row. They also cap --tab-flare: this box scrolls, so a flare wider than the inset is clipped flat and the first tab's corner draws as a straight run. No bottom inset — the tabs have to reach the divider. */
+  /* The side insets stay at the bar's own 16px while the gap above closes, so the space beside the first and last tab matches every other space in the row. They also cap --tab-flare: this box scrolls, so a flare wider than the inset is clipped flat and the first tab's corner draws as a straight run. No bottom inset — the tabs have to reach the divider. */
   padding: var(--lt-space-4) var(--lt-space-16) 0;
 }
 .tab-bar::-webkit-scrollbar {
@@ -2723,10 +2723,12 @@ body.mac-frame.is-fullscreen::before {
   cursor: grab;
   user-select: none;
   /* Emphasized: a tab neither arrives nor leaves, the strip rearranges around it. */
-  transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized);
+  transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized), margin var(--lt-duration-120) var(--lt-ease-emphasized);
 }
 .tab-active {
   max-width: none;
+  /* The room the flares below turn in: 12px each side on top of the strip's 4px gap is the 16px they need, bought only by the one tab drawing them. It is in the transition above, or every tab to the right jumps when the selection moves. */
+  margin: 0 var(--lt-space-12);
 }
 .tab-dragging {
   position: relative;
@@ -2741,7 +2743,7 @@ body.mac-frame.is-fullscreen::before {
 .tab-active {
   /* Drop the bottom stroke so the page-colored fill flows over the reader divider and the tab looks joined to the document below. The other three strokes are the selection cue — only the active tab frames itself. The fill is a variable because the flares below have to match it. */
   --tab-fill: var(--lt-background);
-  /* These carry the fill out over the divider rather than just turning a stroke. Capped by the tab-bar's gap, which it grows into, and the strip scrolls, so a flare wider than the strip's own side inset is clipped flat: at the bar's 16px gap the largest radius that still leaves daylight is 14px. */
+  /* These carry the fill out over the divider rather than just turning a stroke. Capped by the room beside the active tab, which they grow into — the strip's 4px gap plus this tab's own 12px margin — and the strip scrolls, so a flare wider than the strip's own 16px side inset is clipped flat: inside that 16px the largest radius that still leaves daylight is 14px. */
   --tab-flare: var(--lt-radius-2xl);
   background: var(--tab-fill);
   border-top-color: var(--lt-border);

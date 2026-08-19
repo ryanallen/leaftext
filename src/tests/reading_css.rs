@@ -1736,7 +1736,7 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
         // Neither arriving nor leaving: the strip rearranges around a tab, a caret turns in place, and a block steps aside without leaving the page.
         (
             ".tab {",
-            "transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized);",
+            "transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized), margin var(--lt-duration-120) var(--lt-ease-emphasized);",
         ),
         (
             "body.is-block-dragging .document-body [data-src-start] {",
