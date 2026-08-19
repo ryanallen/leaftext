@@ -16,6 +16,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
 | [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault |
+| [Skipped folders](#skipped-folders) | A folder a machine filled — build output, a package cache — is listed and openable, and not read or watched. The search line says when one was left out |
 | [Filtering](#filtering) | More than words in the search box: `#work status:open due:<friday -draft` |
 | [Other names](#other-names) | A note's `aliases` field: every name in it works wherever the file's own name works |
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
@@ -102,7 +103,9 @@ The pane lists every folder there is. A name starting with a dot, a build folder
 
 Two things are left out. At the top of a drive, the operating system's own folders — `Windows`, `Program Files`, `AppData`, `Library` and the rest — are skipped, and only there: a folder of yours with one of those names, anywhere else, is listed. And a shortcut pointing at nothing is not a folder to open.
 
-Search and the [graph](#graph) read every folder too, so a note in a folder whose name starts with a dot is findable and on the map. The one thing that walk still refuses is a shortcut, which can point back at a folder above it and make the walk run forever.
+Search and the [graph](#graph) go almost as wide. A note in a folder whose name starts with a dot is findable and on the map, and a shortcut is refused, because one can point back at a folder above it and make the walk run forever.
+
+The other thing that walk refuses is a folder a machine filled: one that declares itself a cache, or one named `target`, `node_modules`, `build`, `dist`, `vendor`, `venv`, `.venv`, `__pycache__`, `.next`, `.gradle` or `Pods`. A vault that is also a folder you build in can hold a hundred generated files for every note you wrote, and reading and watching all of them costs a third of your computer while you sit still. The pane still lists these folders and you can still open one; what changes is that search does not read inside them, and a change inside one is not something Leaftext goes and looks at. When a search leaves any of them out, the line above the results says how many and names them if you rest on it. A document you have actually opened from inside one still updates when it changes on disk.
 
 ## File actions
 
@@ -185,6 +188,7 @@ Once you have typed, a cross at the field's right end clears the search and brin
 | More than words | The box takes a [filter](#filtering) — `#work status:open due:<friday -draft` |
 | Rows per file | Up to three, one per place the word is |
 | Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
+| Folders left out | Named in the same line, with how many — "12 results · 1 folder of generated files not read". Rest on the line to see which. See [Skipped folders](#skipped-folders) |
 | While the vault is still being read | Rows arrive in batches, a turning ring sits in the count line, and the count says what it has so far |
 
 Opening a result lands on the line the match is on. Documents whose source the pane cannot place a line in — anything but Markdown — fall back to the nearest heading above the match.
@@ -365,6 +369,7 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 - The same file watcher that drives live reload watches the active vault **recursively**, plus the open document's folder when it sits outside the vault. With no vault, only the folder you are browsing is watched, and not recursively — browsing a drive root should not subscribe to the whole drive.
 - A file added, renamed or removed in the folder you are looking at refreshes the list. A read that describes exactly what is already on screen leaves the rows where they are, so a row can never be replaced under your finger mid-click.
 - A change inside a `.git` folder is ignored outright. Nothing in there is a document to open or a row to draw, and reading a repository's state runs `git`, which writes there — so treating those writes as news is the app answering itself for ever.
+- A change inside a folder that holds generated files is ignored the same way, for the same reason: it is not a document and not a row, and a build rewriting tens of thousands of files at once is the one thing measured taking a third of a computer while nobody was touching the window. See [Skipped folders](#skipped-folders) for which folders those are. The exception is the folder the open document sits in, so a file you are actually reading out of one still reloads when it changes.
 - Something *you* did — a [paste, rename or delete](#file-actions) — refreshes the list the moment it lands, rather than waiting on the watcher to notice.
 - The vault's in-memory text is patched for the one file that changed, so [search](#search) and the [graph](#graph) stay current without re-reading the vault. Only a document whose text actually moved counts: a vault is a folder you work in, and git writing to itself, a saved image or an editor's temp file are not changes to your documents.
 - A [graph of one document](#graph) rather than a vault holds nothing in memory to patch, so it is simply read again — a folder listing and a file per link, which is cheap enough not to cache. It cannot go stale, and a redraw that produces the same picture never reaches the screen.
@@ -404,6 +409,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | Vault registry | `manifest.db` — the vaults you have named, and which one is active |
 | Vault text | Held in memory for the active vault only; dropped on a switch and on quit |
 | Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, smallest documents first |
+| Folders not read | A folder that declares itself a cache, and eleven names a build tool picks. See [Skipped folders](#skipped-folders) |
 | Search results | Top 50 |
 | Folder listing | One directory per click |
 | First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again |

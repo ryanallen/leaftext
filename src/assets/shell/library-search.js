@@ -80,7 +80,7 @@ function searchCountText(hits) {
   const read = librarySearchPartial ? ' read so far' : '';
   return `${formatCount(hits.length)} results in the first ${formatCount(files)} files${read}${skippedClause()}`;
 }
-// What the walk did not go into, joined to the sentence that already says what was cut. A vault that read three quarters of itself and said nothing is the worse bug of the two, so this is not optional: the count says how many folders and the element's title says which.
+// Joined to the sentence that already says what was cut, because a vault that read three quarters of itself and said nothing is the worse bug of the two.
 function skippedClause() {
   const count = librarySearchSkipped.length;
   if (!count) return '';

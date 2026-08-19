@@ -55,7 +55,7 @@ const CACHE_TAG_SIGNATURE: &[u8] = b"Signature: 8a477f597d28d172789f06886806bc55
 
 /// Whether a folder says it holds generated files: it declares itself a cache, or it carries one of the names above.
 ///
-/// One rule for two halves that must never part company. The vault's walk stops descending here, and the watcher drops this folder's events at the same boundary git's own bookkeeping is dropped at — a vault that is also a folder somebody builds in was 98.7% build output on this repo, and every file of it was listed, opened and answered for.
+/// One rule for two halves that must never part company: the walk stops descending here, and the watcher drops this folder's events at the boundary git's own bookkeeping is dropped at. A vault pointed at this project is 98.7% build output, and without this every file of it is listed, opened and answered for.
 ///
 /// The name is asked first, because that is free and it is the case this exists for; the tag costs one look at the disk and is only reached where the name says nothing.
 pub fn folder_holds_generated_files(dir: &Path) -> bool {
@@ -701,7 +701,7 @@ pub(crate) fn collect_documents(
             if crate::store::is_dir_reparse(&path) {
                 continue;
             }
-            // Above the descent, not below it beside the document test: the test per file saves a read and never the walk, and it is the walk that costs — 440,034 files under one folder on this repo, every one of them listed before the first was refused.
+            // Above the descent, not beside the document test below it: that test per file saves a read and never the walk, and 440,034 files under one folder is what the walk costs here.
             if folder_holds_generated_files(&path) {
                 left_out.push(path);
                 continue;

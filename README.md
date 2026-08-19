@@ -129,7 +129,7 @@ Until you have a vault the start screen offers to add your notes folder, and the
 
 ![Search results in the library pane: a filename match at the top, then content matches each with a snippet showing the search terms in context](imgs/search.png)
 
-Name matches first — the whole name beats the start of it, which beats a word inside it — then content matches ranked for the document's size, so a long file cannot win by being long. Up to three rows per file, one per place the word is, and clicking one lands on that line. There's no index on disk: the text is read once and held in memory, so nothing can go stale against your files, and nothing is uploaded to search it. **[Search →](docs/01-features/03-library.md#search)**
+Name matches first — the whole name beats the start of it, which beats a word inside it — then content matches ranked for the document's size, so a long file cannot win by being long. Up to three rows per file, one per place the word is, and clicking one lands on that line. There's no index on disk: the text is read once and held in memory, so nothing can go stale against your files, and nothing is uploaded to search it. A folder a machine filled — build output, a package cache — is left out of that read, and the line above the results says when one was. **[Search →](docs/01-features/03-library.md#search)**
 
 `Ctrl+F` searches inside the document you are reading instead — one bar over the page or its source, with match case, whole word, expressions, and replace behind the padlock. **[Find in this document →](docs/01-features/02-navigation.md#find-in-this-document)**
 

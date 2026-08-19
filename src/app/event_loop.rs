@@ -184,6 +184,90 @@ pub(crate) fn window_event_could_have_changed_anything(event: &WindowEvent) -> b
     !matches!(event, WindowEvent::Moved(_))
 }
 
+// TEMPORARY — phase 0 of ../docs/fixes/reading/dragging-the-window-is-still-slow-with-tabs-open.md. Counts what the loop is handed, and how much of it reaches the tail, while a pointer crosses the window. Off unless `LEAF_EVENT_PROBE` names a file to write. Taken back out by that phase's fourth box.
+mod probe {
+    use super::*;
+    use std::collections::BTreeMap;
+    use std::sync::Mutex;
+    use std::time::Duration;
+
+    struct Probe {
+        counts: BTreeMap<&'static str, (u64, u64)>,
+        started: bool,
+        path: PathBuf,
+    }
+
+    static PROBE: Mutex<Option<Probe>> = Mutex::new(None);
+
+    fn name_of(event: &Event<UserEvent>) -> &'static str {
+        match event {
+            Event::NewEvents(_) => "NewEvents",
+            Event::MainEventsCleared => "MainEventsCleared",
+            Event::RedrawRequested(_) => "RedrawRequested",
+            Event::RedrawEventsCleared => "RedrawEventsCleared",
+            Event::LoopDestroyed => "LoopDestroyed",
+            Event::Suspended => "Suspended",
+            Event::Resumed => "Resumed",
+            Event::UserEvent(_) => "UserEvent",
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::Resized(_) => "WindowEvent::Resized",
+                WindowEvent::Moved(_) => "WindowEvent::Moved",
+                WindowEvent::CloseRequested => "WindowEvent::CloseRequested",
+                WindowEvent::Destroyed => "WindowEvent::Destroyed",
+                WindowEvent::Focused(_) => "WindowEvent::Focused",
+                WindowEvent::KeyboardInput { .. } => "WindowEvent::KeyboardInput",
+                WindowEvent::ModifiersChanged(_) => "WindowEvent::ModifiersChanged",
+                WindowEvent::CursorMoved { .. } => "WindowEvent::CursorMoved",
+                WindowEvent::CursorEntered { .. } => "WindowEvent::CursorEntered",
+                WindowEvent::CursorLeft { .. } => "WindowEvent::CursorLeft",
+                WindowEvent::MouseWheel { .. } => "WindowEvent::MouseWheel",
+                WindowEvent::MouseInput { .. } => "WindowEvent::MouseInput",
+                WindowEvent::ScaleFactorChanged { .. } => "WindowEvent::ScaleFactorChanged",
+                WindowEvent::ThemeChanged(_) => "WindowEvent::ThemeChanged",
+                _ => "WindowEvent::other",
+            },
+            _ => "other",
+        }
+    }
+
+    pub(super) fn record(event: &Event<UserEvent>, reaches_tail: bool) {
+        let Ok(path) = std::env::var("LEAF_EVENT_PROBE") else {
+            return;
+        };
+        let name = name_of(event);
+        let Ok(mut guard) = PROBE.lock() else { return };
+        let probe = guard.get_or_insert_with(|| Probe {
+            counts: BTreeMap::new(),
+            started: false,
+            path: PathBuf::from(path),
+        });
+        let entry = probe.counts.entry(name).or_insert((0, 0));
+        entry.0 += 1;
+        if reaches_tail {
+            entry.1 += 1;
+        }
+        // A writer of its own, because the counts have to be readable across a span in which the loop is handed nothing at all — which is the answer this probe is looking for.
+        if !probe.started {
+            probe.started = true;
+            std::thread::spawn(|| loop {
+                std::thread::sleep(Duration::from_millis(100));
+                let Ok(guard) = PROBE.lock() else { return };
+                let Some(probe) = guard.as_ref() else {
+                    continue;
+                };
+                let body: String = probe
+                    .counts
+                    .iter()
+                    .map(|(name, (seen, tail))| format!("{name}\t{seen}\t{tail}\n"))
+                    .collect();
+                let path = probe.path.clone();
+                drop(guard);
+                let _ = std::fs::write(&path, body);
+            });
+        }
+    }
+}
+
 /// Runs until the window closes, which ends the process — hence the `!`.
 pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> ! {
     // Unpacked straight back into locals: the arms mutate most of these and read them constantly, and `ctx.` at every use would bury the event handling.
@@ -214,6 +298,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
         *control_flow = ControlFlow::Wait;
         // Read here because the match below takes the event by value.
         let anything_to_persist = could_have_changed_anything(&event);
+        probe::record(&event, anything_to_persist);
 
         match event {
             Event::WindowEvent {

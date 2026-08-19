@@ -67,7 +67,7 @@ fn synthetic_corpus(count: usize) -> VaultCorpus {
     }
 }
 
-/// A vault that is also a folder somebody builds in was 98.7% build output on this repo, and every file of it was listed. The folder is not descended into now, so nothing under it reaches the corpus and nothing under it is opened.
+/// A build folder is not descended into, so nothing under it reaches the corpus and nothing under it is opened.
 #[test]
 fn a_folder_of_build_output_is_not_walked() {
     let root = corpus_dir("generated-walk");
@@ -126,7 +126,7 @@ fn a_cache_tag_and_a_known_name_each_skip_a_folder_on_their_own() {
     fs::remove_dir_all(&root).ok();
 }
 
-/// What `collect_documents` was written not to do, and the skip must not take back: a vault whose notes live under a dotted folder otherwise reads as empty.
+/// A dotted folder is still walked, and the skip must not take that back: a vault whose notes live under one otherwise reads as empty.
 #[test]
 fn a_vault_whose_notes_live_under_a_dotted_folder_still_reads_them() {
     let root = corpus_dir("generated-dotted");
