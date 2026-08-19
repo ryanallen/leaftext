@@ -154,7 +154,7 @@ pub struct CorpusDocument {
 pub struct VaultCorpus {
     pub root: PathBuf,
     pub documents: Vec<CorpusDocument>,
-    /// Set when the read hit either limit, so the graph can say the picture is partial.
+    /// Set when the read hit either limit, or was stopped part-way because the vault was left, so the graph can say the picture is partial.
     pub truncated: bool,
     /// Folders the walk did not descend into because they hold generated files, named from the vault root down. A vault that quietly read three quarters of itself would be worse than one that read all of it slowly, so this is what the count line above the rows says out loud.
     pub skipped: Vec<String>,
@@ -163,7 +163,7 @@ pub struct VaultCorpus {
 /// One slice of a read, as it lands. `documents` are the new ones only, so whoever is collecting them grows what it holds rather than replacing it.
 pub struct CorpusSlice {
     pub documents: Vec<CorpusDocument>,
-    /// Whether either cap has been hit so far. The last slice carries the final answer.
+    /// Whether either cap has been hit so far, or the read was stopped. The last slice carries the final answer.
     pub truncated: bool,
     /// What the walk left out. Known in full before the first slice, because the walk runs whole before anything is opened — so it rides every slice rather than waiting for the last.
     pub skipped: Vec<String>,
@@ -183,7 +183,7 @@ impl VaultCorpus {
         let mut documents = Vec::new();
         let mut truncated = false;
         let mut skipped = Vec::new();
-        Self::read_in_slices(root, usize::MAX, |slice| {
+        Self::read_in_slices(root, usize::MAX, &|| false, |slice| {
             documents.extend(slice.documents);
             truncated |= slice.truncated;
             skipped = slice.skipped;
@@ -199,20 +199,32 @@ impl VaultCorpus {
     /// The same read, handing over what it has as it goes, so a search can answer over part of a vault while the rest is still being opened.
     ///
     /// The walk runs whole before anything is opened, and that order is load-bearing: the byte budget is spent smallest-first, which is what buys the whole of a vault of notes rather than as much as fits of a folder of generated ones. So a slice is a prefix of the sorted list, and nothing can be handed over until every path under the vault has been listed.
-    pub fn read_in_slices(root: &Path, size: usize, mut deliver: impl FnMut(CorpusSlice)) {
+    ///
+    /// `overtaken` is checked between documents, the same question [`Self::search_until`] asks in the same place: the vault has been left, so the rest of this read is answers nobody will collect.
+    pub fn read_in_slices(
+        root: &Path,
+        size: usize,
+        overtaken: &dyn Fn() -> bool,
+        mut deliver: impl FnMut(CorpusSlice),
+    ) {
         let mut found = Vec::new();
         let mut left_out = Vec::new();
-        collect_documents(root, 0, &mut found, &mut left_out);
+        collect_documents(root, 0, &mut found, &mut left_out, overtaken);
         let skipped = skipped_folder_labels(root, left_out);
         // Smallest first, so the byte budget buys as many documents as it can. The sizes came back off the same directory entries the walk had already read, so this costs no second look at the disk.
         found.sort_by_key(|(size, _)| *size);
-        let mut truncated = found.len() > MAX_CORPUS_DOCUMENTS;
+        // Asked here rather than reported up through the recursion: a walk that stopped left folders unlisted, which is what this flag already means.
+        let mut truncated = found.len() > MAX_CORPUS_DOCUMENTS || overtaken();
         found.truncate(MAX_CORPUS_DOCUMENTS);
 
         let size = size.max(1);
         let mut held = 0;
         let mut documents = Vec::new();
         for (_, path) in found {
+            // Break rather than return: the slice below is the only thing that says a read is over, and the loop that started this one cannot begin another until it lands.
+            if overtaken() {
+                break;
+            }
             if held >= MAX_CORPUS_BYTES {
                 truncated = true;
                 break;
@@ -683,8 +695,10 @@ pub(crate) fn collect_documents(
     depth: usize,
     out: &mut Vec<(u64, PathBuf)>,
     left_out: &mut Vec<PathBuf>,
+    overtaken: &dyn Fn() -> bool,
 ) {
-    if depth >= MAX_DEPTH || out.len() > MAX_CORPUS_DOCUMENTS {
+    // Beside the document cap rather than deeper in, so a walk of a folder nobody is in any more unwinds at the next folder instead of at the next document. It cannot say it stopped — the recursion hands nothing back — so the caller asks again once this returns.
+    if depth >= MAX_DEPTH || out.len() > MAX_CORPUS_DOCUMENTS || overtaken() {
         return;
     }
     let Ok(entries) = fs::read_dir(dir) else {
@@ -713,7 +727,7 @@ pub(crate) fn collect_documents(
         }
     }
     for folder in subfolders {
-        collect_documents(&folder, depth + 1, out, left_out);
+        collect_documents(&folder, depth + 1, out, left_out, overtaken);
     }
 }
 

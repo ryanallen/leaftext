@@ -24,6 +24,8 @@ pub(crate) struct VaultState {
     pub(crate) corpus_generation: u64,
     /// A read is in flight, so a second request waits rather than starting one.
     pub(crate) corpus_loading: bool,
+    /// Which vault's read is wanted. Claimed when one starts and bumped when the vault is left, so the thread stops between documents instead of walking a folder nobody is in — its own counter rather than [`Self::corpus_generation`], which every slice bumps and would cancel the read that sent it.
+    pub(crate) corpus_read: WorkGeneration,
     /// The text above is part of a vault, not all of it: the read has handed over some slices and not the last. An answer scanned over it is true of what has been read and no more, so it is never kept, and the pane keeps its ring.
     pub(crate) corpus_partial: bool,
     /// What asked for the corpus while it was being read.
@@ -68,6 +70,7 @@ impl VaultState {
             corpus: None,
             corpus_generation: 0,
             corpus_loading: false,
+            corpus_read: WorkGeneration::default(),
             corpus_partial: false,
             pending_graph: None,
             pending_search: None,
@@ -101,8 +104,9 @@ impl VaultState {
         self.pending_graph = None;
         self.pending_search = None;
         self.last_graph = None;
-        // A scan of the vault we just left is work nobody is waiting on.
+        // A scan of the vault we just left is work nobody is waiting on, and neither is the read feeding it.
         self.search.cancel();
+        self.corpus_read.cancel();
     }
 
     pub(crate) fn vaults(&self) -> Vec<Vault> {
@@ -475,9 +479,12 @@ pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEve
     state.corpus_loading = true;
     // Its own thread rather than `off_loop`, because this worker answers many times: a slice of the vault every fifty documents, so the pane fills while the disk is still being read instead of after it.
     let proxy = proxy.clone();
+    let wanted = state.corpus_read.claim();
+    let counter = state.corpus_read.clone();
     thread::spawn(move || {
         let mut first = true;
-        VaultCorpus::read_in_slices(&root, CORPUS_SLICE_DOCUMENTS, |slice| {
+        let overtaken = || !counter.is_current(wanted);
+        VaultCorpus::read_in_slices(&root, CORPUS_SLICE_DOCUMENTS, &overtaken, |slice| {
             let sent = proxy.send_event(UserEvent::CorpusLoaded {
                 root: root.clone(),
                 documents: Box::new(slice.documents),

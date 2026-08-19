@@ -78,7 +78,7 @@ fn a_folder_of_build_output_is_not_walked() {
     write(&root.join("target/.rustc_info.json"), "{}\n");
 
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new());
+    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new(), &|| false);
     let names: Vec<String> = found
         .iter()
         .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
@@ -108,7 +108,7 @@ fn a_cache_tag_and_a_known_name_each_skip_a_folder_on_their_own() {
     write(&root.join("diary/monday.md"), "# Monday\n");
 
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new());
+    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new(), &|| false);
     let mut names: Vec<String> = found
         .iter()
         .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
@@ -134,7 +134,7 @@ fn a_vault_whose_notes_live_under_a_dotted_folder_still_reads_them() {
     write(&root.join(".notes/deeper/two.md"), "# Two\n");
 
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new());
+    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new(), &|| false);
     let mut names: Vec<String> = found
         .iter()
         .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
@@ -235,7 +235,7 @@ fn reading_a_vault_is_timed_in_its_parts() {
 
     let started = std::time::Instant::now();
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new());
+    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new(), &|| false);
     found.sort_by_key(|(size, _)| *size);
     let walk = started.elapsed();
     println!(
@@ -362,7 +362,7 @@ fn a_vault_read_in_slices_ends_up_holding_what_one_read_holds() {
     let mut slices = 0;
     let mut lasts = 0;
     let mut documents = Vec::new();
-    VaultCorpus::read_in_slices(&root, 2, |slice| {
+    VaultCorpus::read_in_slices(&root, 2, &|| false, |slice| {
         slices += 1;
         if slice.last {
             lasts += 1;
@@ -387,6 +387,120 @@ fn a_vault_read_in_slices_ends_up_holding_what_one_read_holds() {
 }
 
 #[test]
+fn a_vault_read_told_to_stop_opens_no_more_documents_and_still_says_it_is_over() {
+    let dir = corpus_dir("stopped");
+    let root = dir.join("vault");
+    for index in 0..7 {
+        write(
+            &root.join(format!("note-{index}.md")),
+            "# Note
+
+a talk on dharma
+",
+        );
+    }
+
+    // The vault was left before a single document was opened. The read stops there and still delivers the slice that says it is over, which is the only thing that lets the next vault be read.
+    let mut slices = Vec::new();
+    VaultCorpus::read_in_slices(&root, 2, &|| true, |slice| {
+        slices.push((slice.documents.len(), slice.last))
+    });
+    assert_eq!(
+        slices,
+        vec![(0, true)],
+        "a read told to stop did not end in one empty final slice"
+    );
+
+    // Left part-way through instead: what had landed is handed over, the rest of the folder is never opened, and the read still ends exactly once.
+    let asked = std::cell::Cell::new(0usize);
+    let mut opened = 0;
+    let mut ends = 0;
+    VaultCorpus::read_in_slices(
+        &root,
+        2,
+        &|| {
+            let so_far = asked.get();
+            asked.set(so_far + 1);
+            so_far >= 4
+        },
+        |slice| {
+            opened += slice.documents.len();
+            if slice.last {
+                ends += 1;
+            }
+        },
+    );
+    assert!(
+        opened > 0 && opened < 7,
+        "a read stopped part-way opened {opened} of 7 documents"
+    );
+    assert_eq!(ends, 1);
+
+    // Nothing stopping it reads the whole vault, so the stop is the only difference between the two.
+    let mut whole = 0;
+    VaultCorpus::read_in_slices(&root, 2, &|| false, |slice| whole += slice.documents.len());
+    assert_eq!(whole, 7);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_walk_told_to_stop_lists_less_than_the_folder_holds_and_says_the_picture_is_partial() {
+    let dir = corpus_dir("stopped-walk");
+    let root = dir.join("vault");
+    // Folders rather than a flat list, because the walk is what is being stopped here and it unwinds at a folder.
+    for folder in 0..6 {
+        for note in 0..3 {
+            write(
+                &root
+                    .join(format!("part-{folder}"))
+                    .join(format!("note-{note}.md")),
+                "# Note
+
+a talk on dharma
+",
+            );
+        }
+    }
+
+    // Stopped before the first folder is listed, so nothing is found at all — and the corpus says so, rather than reporting an empty vault as the whole truth.
+    let mut found = 0;
+    let mut partial = false;
+    VaultCorpus::read_in_slices(&root, 50, &|| true, |slice| {
+        found += slice.documents.len();
+        if slice.last {
+            partial = slice.truncated;
+        }
+    });
+    assert_eq!(found, 0);
+    assert!(
+        partial,
+        "a walk that stopped before it listed anything called its picture whole"
+    );
+
+    // Stopped part-way instead: the walk unwinds at the next folder rather than listing the rest of the tree, so it comes back with some of the vault and not all of it.
+    let asked = std::cell::Cell::new(0usize);
+    let mut some = Vec::new();
+    crate::vault_corpus::collect_documents(&root, 0, &mut some, &mut Vec::new(), &|| {
+        let so_far = asked.get();
+        asked.set(so_far + 1);
+        so_far >= 4
+    });
+    assert!(
+        !some.is_empty() && some.len() < 18,
+        "a walk stopped part-way listed {} of 18 documents",
+        some.len()
+    );
+
+    // A whole walk of the same folder finds all eighteen and calls the picture complete, so the flag is the stop's doing and not the folder's.
+    let whole = VaultCorpus::read(&root);
+    assert_eq!(whole.documents.len(), 18);
+    assert!(!whole.truncated);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
 fn a_read_of_nothing_still_says_it_is_over() {
     let dir = corpus_dir("empty");
     let root = dir.join("vault");
@@ -394,7 +508,7 @@ fn a_read_of_nothing_still_says_it_is_over() {
 
     // A vault with no documents in it must still send the slice that says the read has finished, or the pane waits on a ring for ever.
     let mut ends = 0;
-    VaultCorpus::read_in_slices(&root, 2, |slice| {
+    VaultCorpus::read_in_slices(&root, 2, &|| false, |slice| {
         assert!(slice.documents.is_empty());
         if slice.last {
             ends += 1;

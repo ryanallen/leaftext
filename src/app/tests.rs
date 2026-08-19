@@ -1566,9 +1566,37 @@ fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
             .is_current(first))
         .is_none());
 
-    // Switching vaults abandons the scan with nothing taking its place, so the answer about the vault we left is dropped too.
+    // Switching vaults abandons the scan with nothing taking its place, so the answer about the vault we left is dropped too — and so is the read feeding it, which stops between documents rather than walking a folder nobody is in.
+    let reading = state.corpus_read.claim();
     state.drop_corpus();
     assert!(!state.search.generation.is_current(second));
+    assert!(
+        !state.corpus_read.is_current(reading),
+        "leaving a vault left its read running"
+    );
+}
+
+#[test]
+fn a_stopped_read_s_last_slice_still_frees_the_next_vault_to_be_read() {
+    let left = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(left.clone());
+    state.corpus_loading = true;
+    let reading = state.corpus_read.claim();
+
+    // The reader picks another vault while the first is still being opened.
+    state.drop_corpus();
+    state.root = Some(PathBuf::from("/another-vault"));
+    assert!(!state.corpus_read.is_current(reading));
+
+    // The stopped read still sends the slice that says it is over. Its text is thrown away — it is about somewhere we have left — and letting the next vault start is the whole of what it is for. A read that returned instead of breaking would never send it, and no vault could be read again for the rest of the session.
+    assert!(
+        absorb_corpus_slice(&mut state, &left, Vec::new(), false, Vec::new(), true, true).is_none()
+    );
+    assert!(
+        !state.corpus_loading,
+        "a stopped read left every later vault unreadable"
+    );
 }
 
 /// One document, as a slice of a read carries it.

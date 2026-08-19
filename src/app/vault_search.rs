@@ -13,7 +13,7 @@ use std::sync::mpsc::{self, Sender};
 #[derive(Default)]
 pub(crate) struct VaultSearch {
     jobs: Option<Sender<SearchJob>>,
-    pub(crate) generation: SearchGeneration,
+    pub(crate) generation: WorkGeneration,
     /// The last answer, and what it was an answer to. The pane re-runs its search every time the folder on screen changes, and the field losing and regaining focus asks again too — neither is a reason to read the vault twice.
     last: Option<SearchMemo>,
 }
@@ -42,12 +42,14 @@ impl TypedQuery {
     }
 }
 
-/// Which query is being waited for. The loop claims a number per keystroke; the scan reads it between documents, and anything holding an older one is work nobody will read.
+/// Which piece of work is being waited for. Whoever starts one claims a number; the worker reads it between documents, and anything holding an older one is work nobody will read.
+///
+/// One of these per worker, never one shared: the search claims a number per keystroke and the vault read claims one per vault, so a single counter would have each of them canceling the other.
 #[derive(Clone, Default)]
-pub(crate) struct SearchGeneration(Arc<AtomicU64>);
+pub(crate) struct WorkGeneration(Arc<AtomicU64>);
 
-impl SearchGeneration {
-    /// Claim the next query number. Every earlier scan is stale from here on.
+impl WorkGeneration {
+    /// Claim the next number. Every earlier run is stale from here on.
     pub(crate) fn claim(&self) -> u64 {
         self.0.fetch_add(1, Ordering::Relaxed) + 1
     }
@@ -190,7 +192,7 @@ pub(crate) fn run_search(
 /// One thread for every query there will ever be. It holds the counter rather than the loop's state, because that is the only thing a worker may read while the loop is running.
 fn spawn_search_worker(
     proxy: &EventLoopProxy<UserEvent>,
-    generation: SearchGeneration,
+    generation: WorkGeneration,
 ) -> Sender<SearchJob> {
     let (sender, jobs) = mpsc::channel::<SearchJob>();
     let proxy = proxy.clone();
