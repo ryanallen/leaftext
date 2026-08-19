@@ -1,13 +1,13 @@
 ---
 name: dev
-description: Build a ticket from its path under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Designs it when needed, works its phases in order, checks each phase, drives what it can reach, stops at an open owner's box and closes the ticket itself where that box is struck. Use when the user says "build this", "dev this", "work that ticket", or "do the plan".
+description: Build a ticket from its path under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Designs it when needed, works its phases in order, checks each phase, drives what it can reach, and stops at the owner's box — it never retires a ticket, which is /done's job alone. Use when the user says "build this", "dev this", "work that ticket", or "do the plan".
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
 
 # Dev
 
-Build a ticket from its path, phase by phase, and stop at the owner's box.
+Build a ticket from its path, phase by phase, and stop at the owner's box. **Retiring a ticket is [`/done`](../done/SKILL.md)'s job and never this skill's** — no move into `../docs/done/`, no shipped note, no retired row, whatever state the owner's box is in.
 
 ## Process
 
@@ -41,9 +41,7 @@ Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase
 
 ### 7. Hand back at the owner's box
 
-Stop at the owner's box while it is open: do not run `/done` or `/git-release` yourself, because that box is a gesture nobody but the owner can make. Hand back whether anything is broken and the gestures needed for it. If the work is complete but not shipped, say to run `/git-release` next.
-
-**Where the owner's box carries a strike, the last phase box finishes the ticket and this skill runs [`/done`](../done/SKILL.md) itself.** A strike is what [`/ticket`](../ticket/SKILL.md) and [`/design`](../design/SKILL.md) write where the subject has genuinely nothing to press, and the reason written after it is the owner's answer given in advance — [`/git-release`](../git-release/SKILL.md) already reads it that way and sends such a plan here rather than shipping it. So ticking the last phase box leaves a finished plan filed as live work, which is the one state `/check` refuses, and its refusal names the move into `../docs/done/` as the fix. There is nobody left to wait for, so waiting is what breaks the build: retire it, then hand back.
+**This skill never retires a ticket.** Never run [`/done`](../done/SKILL.md) and never run [`/git-release`](../git-release/SKILL.md), whatever state the owner's box is in — struck, ticked or open. Closing is the owner's word and nobody else's, and a strike written in advance is not that word. Hand back whether anything is broken and the gestures needed for it, and leave the ticket in its live folder with its boxes ticked. If the work is complete but not shipped, say to run `/git-release` next.
 
 ## What building turns up beside the work is its own ticket
 
