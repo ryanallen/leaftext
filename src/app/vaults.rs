@@ -492,6 +492,7 @@ pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEve
                 skipped: slice.skipped,
                 first,
                 last: slice.last,
+                wanted,
             });
             first = false;
             let _ = sent;
@@ -512,7 +513,7 @@ pub(crate) struct AbsorbedSlice {
 
 /// Grow the vault's text by one slice of the read, and say what that leaves to do. Split from [`deliver_corpus`] because everything here is a decision about state and nothing here touches a worker, which is the half worth testing.
 ///
-/// `None` when the slice is for a vault we have since left: it is thrown away rather than answered with somebody else's text.
+/// `None` when the slice is for a vault we have since left, or for a read nobody is waiting on any more. The two answer different questions — which vault a slice is about, and which read sent it — and only the second one catches a vault left and come straight back to, where the root is the same again while the abandoned read is still delivering.
 pub(crate) fn absorb_corpus_slice(
     state: &mut VaultState,
     root: &Path,
@@ -521,11 +522,16 @@ pub(crate) fn absorb_corpus_slice(
     skipped: Vec<String>,
     first: bool,
     last: bool,
+    wanted: u64,
 ) -> Option<AbsorbedSlice> {
     if last {
         state.corpus_loading = false;
     }
     if state.root.as_deref() != Some(root) {
+        return None;
+    }
+    // Leaving the vault bumped this, so a slice stamped with the older number is a read nobody is waiting on — including the one overtaken before it opened a document, whose only slice is also its first.
+    if !state.corpus_read.is_current(wanted) {
         return None;
     }
     match state.corpus.as_mut().filter(|_| !first) {
@@ -582,10 +588,11 @@ pub(crate) fn deliver_corpus(
     skipped: Vec<String>,
     first: bool,
     last: bool,
+    wanted: u64,
 ) -> Option<FilterHints> {
-    let Some(absorbed) =
-        absorb_corpus_slice(state, &root, documents, truncated, skipped, first, last)
-    else {
+    let Some(absorbed) = absorb_corpus_slice(
+        state, &root, documents, truncated, skipped, first, last, wanted,
+    ) else {
         // The slice belonged to a vault nobody is in any more, and it is what let go of the one read. Anything asked for since the switch was turned away by that read and has been sitting there ever since, so this is where it gets its own.
         if read_is_owed(state) {
             read_corpus(state, proxy);

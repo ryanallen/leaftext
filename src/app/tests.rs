@@ -1590,9 +1590,17 @@ fn a_stopped_read_s_last_slice_still_frees_the_next_vault_to_be_read() {
     assert!(!state.corpus_read.is_current(reading));
 
     // The stopped read still sends the slice that says it is over: its text is thrown away, and freeing the next vault is the whole of what it is for. A read that returned instead of breaking would never send one, and no vault could be read again for the session.
-    assert!(
-        absorb_corpus_slice(&mut state, &left, Vec::new(), false, Vec::new(), true, true).is_none()
-    );
+    assert!(absorb_corpus_slice(
+        &mut state,
+        &left,
+        Vec::new(),
+        false,
+        Vec::new(),
+        true,
+        true,
+        reading
+    )
+    .is_none());
     assert!(
         !state.corpus_loading,
         "a stopped read left every later vault unreadable"
@@ -1618,6 +1626,8 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
     // Somebody typed before the vault had been read, so the query is waiting on it.
     state.pending_search = Some(typed("dharma"));
     let started = state.corpus_generation;
+    // Every slice below is stamped with this one read's number, which is what the live read's slices carry.
+    let reading = state.corpus_read.claim();
 
     let first = absorb_corpus_slice(
         &mut state,
@@ -1627,6 +1637,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
         Vec::new(),
         true,
         false,
+        reading,
     )
     .expect("the first slice is for the vault on screen");
     assert_eq!(first.corpus.documents.len(), 1);
@@ -1657,6 +1668,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
         Vec::new(),
         false,
         false,
+        reading,
     )
     .expect("a later slice is kept");
     // Grown, not replaced.
@@ -1673,6 +1685,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
         Vec::new(),
         false,
         true,
+        reading,
     )
     .expect("the last slice is kept");
     assert_eq!(last.corpus.documents.len(), 3);
@@ -1701,6 +1714,8 @@ fn a_read_of_a_vault_nobody_is_in_any_more_is_thrown_away() {
     let mut state = VaultState::load(None);
     state.root = Some(PathBuf::from("/vault"));
     let elsewhere = PathBuf::from("/somewhere-else");
+    // Still the read being waited for, so the root is the only thing that can turn this slice away.
+    let reading = state.corpus_read.claim();
     assert!(
         absorb_corpus_slice(
             &mut state,
@@ -1709,12 +1724,100 @@ fn a_read_of_a_vault_nobody_is_in_any_more_is_thrown_away() {
             false,
             Vec::new(),
             true,
-            false
+            false,
+            reading
         )
         .is_none(),
         "a slice read under a vault we have left was taken as this one's text"
     );
     assert!(state.corpus.is_none());
+}
+
+#[test]
+fn a_vault_left_and_come_straight_back_to_keeps_nothing_from_the_read_it_abandoned() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus_loading = true;
+    let abandoned = state.corpus_read.claim();
+    absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("one")],
+        false,
+        Vec::new(),
+        true,
+        false,
+        abandoned,
+    )
+    .expect("the read being waited for had its first slice thrown away");
+
+    // Clicked to another vault and straight back to this one. The root is `/vault` again, so it is the only thing the abandoned read's tail has to get past.
+    state.drop_corpus();
+    state.root = Some(PathBuf::from("/another-vault"));
+    state.drop_corpus();
+    state.root = Some(root.clone());
+
+    assert!(
+        absorb_corpus_slice(
+            &mut state,
+            &root,
+            vec![slice_document("two")],
+            false,
+            Vec::new(),
+            false,
+            true,
+            abandoned
+        )
+        .is_none(),
+        "the vault they came back to was handed the tail of the read they walked out on"
+    );
+    assert!(
+        state.corpus.is_none(),
+        "a scrap of the abandoned read became the vault's whole text"
+    );
+    assert!(
+        !state.corpus_loading,
+        "the refused slice left the vault unreadable for the rest of the session"
+    );
+}
+
+#[test]
+fn a_read_overtaken_before_it_opened_a_document_is_thrown_away_though_its_slice_is_a_first() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus_loading = true;
+    let abandoned = state.corpus_read.claim();
+
+    // The fast gesture: away and back before the walk ended, so the read broke having sent nothing. Its one slice is its first as well as its last and holds no documents — the case a `first`-based test keeps, leaving the vault empty and calling it read.
+    state.drop_corpus();
+    state.root = Some(PathBuf::from("/another-vault"));
+    state.drop_corpus();
+    state.root = Some(root.clone());
+
+    assert!(
+        absorb_corpus_slice(
+            &mut state,
+            &root,
+            Vec::new(),
+            false,
+            Vec::new(),
+            true,
+            true,
+            abandoned
+        )
+        .is_none(),
+        "an abandoned read's only slice was taken as the vault's text because it was a first"
+    );
+    assert!(
+        state.corpus.is_none(),
+        "the vault was left holding nothing and called read"
+    );
+    assert!(
+        !state.corpus_loading,
+        "the refused slice left the vault unreadable for the rest of the session"
+    );
 }
 
 #[test]
@@ -1786,10 +1889,35 @@ fn giving_up_a_stale_slice_starts_the_read_the_open_vault_is_owed() {
 }
 
 #[test]
+fn every_slice_of_a_read_carries_the_one_number_that_read_claimed() {
+    // The read is a thread and a proxy, and nothing in this suite has either, so it is held as source the way the loop's own arms are. Nothing else can catch it: a number claimed again per slice would refuse every slice of every read and leave each vault empty, with the whole suite still green.
+    let source = include_str!("vaults.rs");
+    let at = source
+        .find("pub(crate) fn read_corpus(")
+        .expect("the one read is started somewhere");
+    let body = &source[at..source.len().min(at + 1400)];
+
+    assert!(
+        body.contains("let wanted = state.corpus_read.claim();"),
+        "the read no longer claims the number that says anybody is waiting for it"
+    );
+    assert_eq!(
+        body.matches("claim()").count(),
+        1,
+        "the read claims more than once, so its own slices are stamped with numbers it has already moved past"
+    );
+    assert!(
+        body.contains("wanted,"),
+        "a slice goes out without saying which read sent it, so a vault left and come back to keeps the tail of the read it abandoned"
+    );
+}
+
+#[test]
 fn a_fresh_read_replaces_the_text_it_finds_rather_than_growing_it() {
     let root = PathBuf::from("/vault");
     let mut state = VaultState::load(None);
     state.root = Some(root.clone());
+    let reading = state.corpus_read.claim();
     absorb_corpus_slice(
         &mut state,
         &root,
@@ -1798,8 +1926,10 @@ fn a_fresh_read_replaces_the_text_it_finds_rather_than_growing_it() {
         Vec::new(),
         true,
         true,
+        reading,
     );
-    // A second read of the same vault — its files changed underneath, or it was left and came back to.
+    // A second read of the same vault — its files changed underneath, or it was left and came back to — so it claims its own number.
+    let again = state.corpus_read.claim();
     let fresh = absorb_corpus_slice(
         &mut state,
         &root,
@@ -1808,6 +1938,7 @@ fn a_fresh_read_replaces_the_text_it_finds_rather_than_growing_it() {
         Vec::new(),
         true,
         true,
+        again,
     )
     .expect("the fresh read is kept");
     assert_eq!(

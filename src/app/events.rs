@@ -55,6 +55,8 @@ pub(crate) enum UserEvent {
         first: bool,
         /// The last slice. Until it lands the vault's text is partial.
         last: bool,
+        /// Which read sent it, claimed once when that read started. A vault left and come straight back to is the same root again, so the root alone cannot tell a slice of the read nobody is waiting on from a slice of the live one.
+        wanted: u64,
     },
     /// A graph finished building. Both this and the search below are computed on a worker thread: they read documents off the disk, which is far too much to do on the thread that answers the window.
     ///
