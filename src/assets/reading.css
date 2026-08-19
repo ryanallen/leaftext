@@ -6227,7 +6227,7 @@ body.is-home-row-dragging .home-list-scroll li {
   position: relative;
 }
 .mermaid-tools,
-.mermaid-zoom {
+.mermaid-view-controls {
   position: absolute;
   right: 6px;
   display: flex;
@@ -6238,15 +6238,21 @@ body.is-home-row-dragging .home-list-scroll li {
   bottom: 6px;
   gap: var(--lt-space-6);
 }
-.mermaid-zoom {
+/* Keeping a diagram sits beside looking at one, in one row, so the space between them is a gap rather than an offset somebody measured against the corner. */
+.mermaid-view-controls {
   top: 6px;
+  gap: var(--lt-space-6);
+}
+.mermaid-zoom {
+  display: flex;
 }
 .document-body pre.mermaid:hover .mermaid-tools,
-.document-body pre.mermaid:hover .mermaid-zoom,
+.document-body pre.mermaid:hover .mermaid-view-controls,
 .mermaid-tools:focus-within,
-.mermaid-zoom:focus-within {
+.mermaid-view-controls:focus-within {
   opacity: 1;
 }
+.mermaid-export,
 .mermaid-tool,
 .mermaid-zoom button {
   display: grid;
@@ -6258,16 +6264,19 @@ body.is-home-row-dragging .home-list-scroll li {
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
 }
+.mermaid-export,
 .mermaid-tool,
 .mermaid-zoom button {
   width: 28px;
 }
+.mermaid-export:hover,
 .mermaid-tool:hover,
 .mermaid-zoom button:hover {
   border-color: var(--lt-border-strong);
   background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
+.mermaid-export .lt-icon,
 .mermaid-tool .lt-icon,
 .mermaid-zoom .lt-icon {
   width: 16px;
@@ -6459,7 +6468,7 @@ body.is-home-row-dragging .home-list-scroll li {
   max-height: 100%;
 }
 /* The window is the box now, so nothing here is something to go hunting for. */
-.diagram-stage .mermaid-zoom,
+.diagram-stage .mermaid-view-controls,
 .diagram-stage .mermaid-tools {
   opacity: 1;
 }
@@ -6468,8 +6477,8 @@ body.is-home-row-dragging .home-list-scroll li {
   top: 6px;
   right: 6px;
 }
-/* The zoom keeps the top right it has in the page, moved left of the X, which is the one corner the overlay owns. Centered against it: the X is 32px tall and these are 28. The edit pair stays bottom right, as on the block. */
-.diagram-stage .mermaid-zoom {
+/* The view controls keep the top right they have in the page, moved left of the X, which is the one corner the overlay owns. Centered against it: the X is 32px tall and these are 28. The edit pair stays bottom right, as on the block. */
+.diagram-stage .mermaid-view-controls {
   top: 8px;
   right: 44px;
 }
