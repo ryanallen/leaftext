@@ -1049,6 +1049,53 @@ fn renaming_a_file_no_tab_holds_changes_no_tab() {
 }
 
 #[test]
+fn renaming_the_open_document_renders_with_the_place_its_tab_is_holding() {
+    // Every other in-place rebuild sends no place, because the page carries one off the editor it is replacing. A rename moves the path that capture is keyed on, so this is the arm that has to name a place — read off the arm itself, since the rename lives inside the loop and the render it makes needs a window.
+    let source = include_str!("event_loop.rs");
+    let arm = source
+        .split("IpcCommand::RenameFile")
+        .nth(1)
+        .and_then(|rest| rest.split("IpcCommand::").next())
+        .expect("the rename arm");
+    assert!(
+        arm.contains("front_saved_code_scroll_for(&renamed)"),
+        "the place comes off the tab, under the name it has just followed"
+    );
+    assert!(
+        arm.contains("reader.render(ScrollIntent::Preserve { code })"),
+        "and it is still an in-place render, so the reading view neither flashes a spinner nor re-anchors"
+    );
+}
+
+#[test]
+fn a_rename_only_answers_with_a_place_for_the_tab_at_the_front() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("front.md"));
+    workspace.open_path(PathBuf::from("behind.md"));
+    workspace.tabs[0].saved_code_scroll = Some(0.61);
+    workspace.tabs[1].saved_code_scroll = Some(0.12);
+    assert!(workspace.set_active(0));
+
+    assert_eq!(
+        workspace.front_saved_code_scroll_for(Path::new("front.md")),
+        Some(0.61)
+    );
+
+    // Renaming a file open behind still redraws the front tab, and that tab's own live position is exacter than anything it saved — so it is left to the page.
+    assert_eq!(
+        workspace.front_saved_code_scroll_for(Path::new("behind.md")),
+        None
+    );
+
+    // A tab that has never been scrolled in source view holds nothing to give.
+    workspace.tabs[0].saved_code_scroll = None;
+    assert_eq!(
+        workspace.front_saved_code_scroll_for(Path::new("front.md")),
+        None
+    );
+}
+
+#[test]
 fn startup_failure_message_includes_recovery_hint() {
     let error = io::Error::new(io::ErrorKind::NotFound, "webview runtime missing");
     let message = startup_failure_message(&error);
@@ -2525,7 +2572,18 @@ fn a_back_into_the_code_view_asks_for_the_top_of_the_source() {
     assert_eq!(code_view_scroll(&switch), Some(0.42));
 
     assert_eq!(code_view_scroll(&ScrollIntent::Reset), Some(0.0));
-    assert_eq!(code_view_scroll(&ScrollIntent::Preserve), None);
+
+    // An in-place rebuild says nothing on purpose, which is what tells the page to carry the place off the editor it is replacing.
+    assert_eq!(
+        code_view_scroll(&ScrollIntent::Preserve { code: None }),
+        None
+    );
+
+    // Except a rename, whose moved path is exactly what makes the page refuse that capture, so the host names the place instead.
+    assert_eq!(
+        code_view_scroll(&ScrollIntent::Preserve { code: Some(0.61) }),
+        Some(0.61)
+    );
 }
 
 #[test]

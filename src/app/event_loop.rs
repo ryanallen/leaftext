@@ -604,7 +604,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     pipe_edit_document(&mut reader.workspace, &path, start, end, &text, &expect);
                 if answer.is_ok() {
                     // Straight back on screen, the way a reading-view edit is: the render restores a tab left in source from the same buffer, so either view shows what the agent wrote.
-                    reader.render(ScrollIntent::Preserve);
+                    reader.render(ScrollIntent::Preserve { code: None });
                     resync_editing_state(reader.page(), &reader.workspace);
                 }
                 let _ = reply.try_send(answer);
@@ -783,8 +783,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     Ok(renamed) => {
                         // The file moved under whatever tab is sitting on it, so the tab moves with it and redraws under the new name. The watcher re-aims itself at the active document every turn and needs nothing here.
                         if reader.workspace.follow_rename(&path, &renamed) {
+                            // The one in-place render that names a source place: the page will not spend the place it captured off the editor it is replacing once the document's path has moved, so the tab's own saved fraction goes instead.
+                            let code = reader.workspace.front_saved_code_scroll_for(&renamed);
                             reader.record_recent(renamed);
-                            reader.render(ScrollIntent::Preserve);
+                            reader.render(ScrollIntent::Preserve { code });
                         }
                         refresh_library_folder(reader.page());
                     }
@@ -1181,7 +1183,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             );
                             // The tab, the title and the image folder still say Untitled. A plain save changes none of them.
                             if matches!(ready, SaveReady::Named) {
-                                reader.render(ScrollIntent::Preserve);
+                                reader.render(ScrollIntent::Preserve { code: None });
                             }
                         }
                     }
@@ -1217,7 +1219,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         }
                         // A live splice leaves the page standing: the reader is still typing in it, and a render would take the words out from under the caret.
                         if !live {
-                            reader.render(ScrollIntent::Preserve);
+                            reader.render(ScrollIntent::Preserve { code: None });
                         }
                         // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess.
                         resync_editing_state(reader.page(), &reader.workspace);
@@ -1230,25 +1232,25 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         None => FieldEdit::Remove,
                     };
                     if apply_field_edit(&mut reader.workspace, &key, edit) {
-                        reader.render(ScrollIntent::Preserve);
+                        reader.render(ScrollIntent::Preserve { code: None });
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
                 IpcCommand::SetListField { key, items } => {
                     if apply_field_edit(&mut reader.workspace, &key, FieldEdit::SetList(&items)) {
-                        reader.render(ScrollIntent::Preserve);
+                        reader.render(ScrollIntent::Preserve { code: None });
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
                 IpcCommand::RenameField { key, to } => {
                     if apply_field_edit(&mut reader.workspace, &key, FieldEdit::Rename(&to)) {
-                        reader.render(ScrollIntent::Preserve);
+                        reader.render(ScrollIntent::Preserve { code: None });
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
                 IpcCommand::MoveBlock { ranges, from, to } => {
                     if apply_block_move(&mut reader.workspace, &ranges, from, to) {
-                        reader.render(ScrollIntent::Preserve);
+                        reader.render(ScrollIntent::Preserve { code: None });
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
@@ -1298,7 +1300,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         .active_edit_mut()
                         .is_some_and(EditableDocument::undo);
                     if undone {
-                        reader.render(ScrollIntent::Preserve);
+                        reader.render(ScrollIntent::Preserve { code: None });
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
@@ -1309,7 +1311,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         .active_edit_mut()
                         .is_some_and(EditableDocument::redo);
                     if redone {
-                        reader.render(ScrollIntent::Preserve);
+                        reader.render(ScrollIntent::Preserve { code: None });
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }

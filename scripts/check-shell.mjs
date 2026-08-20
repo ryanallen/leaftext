@@ -9871,6 +9871,19 @@ if (booted) {
       }
       front(path);
 
+      // A rename is the one in-place rebuild the host names a place for, because it is the one that moves the path the capture above is keyed on: the live editor still holds the old name, so its own answer is refused, and the host's fraction is taken before that guard is even reached.
+      booted.__fakeMonaco = fakeEditor(2700);
+      vm.runInContext('monacoEditor = __fakeMonaco; monacoEditorPath = __oldPath;', Object.assign(booted, { __oldPath: other }));
+      if (booted.codeViewLandingFraction({}) !== null) {
+        throw new Error('a renamed document spent a place captured under its old name');
+      }
+      if (booted.codeViewLandingFraction({ scrollFraction: 0.61 }) !== 0.61) {
+        throw new Error('a rename threw away the place its own tab was holding');
+      }
+      if (land(0.61, null, '').getScrollTop() !== 5490) {
+        throw new Error('a renamed source view did not come back where it was');
+      }
+
       // Neither answer takes the toggle's, which is the more exact of the three: the pixel it saved when nothing moved under it.
       vm.runInContext(
         'viewHandoff = { path: __landPath, readerScrollTop: 100, codeScrollTop: 777, readerLanded: null, codeLanded: null, restoreExact: true };',

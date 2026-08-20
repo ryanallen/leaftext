@@ -8,7 +8,7 @@ pub(crate) struct Tab {
     pub(crate) history: DocumentHistory,
     pub(crate) scroll_history: ScrollHistory,
     pub(crate) title: String,
-    /// Where the code view was scrolled when this tab was last left, as a 0..1 fraction of the scrollable range, so switching tabs keeps the source editor's place. On the tab rather than on the history entry beside it: a fraction of a source buffer is not a block in a rendered document. `None` until the tab has been left while in code view.
+    /// Where the code view is scrolled to, as a 0..1 fraction of the scrollable range, so switching tabs keeps the source editor's place. Kept current by the reader's own scrolling — the source editor sends it back a quarter second after they stop — rather than written on the way out, which is what lets a rename hand it to a page that has no capture of its own. On the tab rather than on the history entry beside it: a fraction of a source buffer is not a block in a rendered document. `None` until the tab has been scrolled while in code view.
     pub(crate) saved_code_scroll: Option<f64>,
     /// The editable source buffer, created on first edit and kept so unsaved edits survive view toggles and tab switches. `None` until edited. The authoritative copy a save writes and the reading view re-renders from.
     pub(crate) edit: Option<EditableDocument>,
@@ -285,6 +285,16 @@ impl Workspace {
             .and_then(|tab| tab.edit.as_mut())
     }
 
+    /// The source place the tab at the front is holding, but only while that tab is showing `path`. The one caller is a rename, which is the only in-place render that has to hand the page a place of its own: the page's capture is refused when the document moves, and a rename is what moves it. The path is named rather than trusted off `active`, because renaming a file open in a background tab still redraws the front one — and that tab's live position is exacter than anything saved.
+    pub(crate) fn front_saved_code_scroll_for(&self, path: &Path) -> Option<f64> {
+        let tab = self.active.and_then(|index| self.tabs.get(index))?;
+        let showing = tab
+            .history
+            .current()
+            .is_some_and(|current| paths_refer_to_same_document(current, path));
+        showing.then_some(tab.saved_code_scroll).flatten()
+    }
+
     /// Move every tab sitting on `from` across to `to`, after the file itself has been renamed, and rename every back and forward step naming it in every tab. Answers whether any tab followed.
     ///
     /// Without this a rename leaves whoever is reading the file pointed at a path that is not there any more, and the next render fails to open it. The buffer is never touched, only the path it wears, so unsaved typing survives — and the format follows the new name, which is the answer reopening the file would give. Every step is renamed in place rather than gaining one: Back must not offer a name nothing was ever at.
@@ -498,8 +508,8 @@ pub(crate) enum TabClose {
 pub(crate) enum ScrollIntent {
     /// Jump to the top of the freshly rendered document (opening a new file, navigating history, returning home).
     Reset,
-    /// Keep the reader exactly where it is. Used when what the document says changes under them (an edit, a save, a rename, the file changing on disk). A change to the tabs around it does not come here at all — it redraws the strip alone.
-    Preserve,
+    /// Keep the reader exactly where it is. Used when what the document says changes under them (an edit, a save, a rename, the file changing on disk). A change to the tabs around it does not come here at all — it redraws the strip alone. `code` is a 0..1 fraction of the source and is `None` for all but one caller, which is the page's cue to carry the place off the source editor it is about to replace — exacter than any fraction the host holds. A rename sends the tab's own saved fraction instead, because the page refuses its capture when the path moves under it.
+    Preserve { code: Option<f64> },
     /// Put the reader back where they were after rendering — a tab switch, or Back and Forward across documents. Both positions are named because a tab showing source restores the editor instead of the page: `anchor` is a place in the rendered document and `None` lands at the top; `code` is a 0..1 fraction of the source and `None` leaves it where the page has it.
     Restore {
         anchor: Option<ScrollAnchor>,

@@ -81,7 +81,7 @@ impl Reader {
     pub(crate) fn repoint_favorite(&mut self, from: &Path, to: &Path, vault_id: Option<i64>) {
         if self.favorites.repoint(from, to, vault_id) {
             self.persist_favorites();
-            self.render(ScrollIntent::Preserve);
+            self.render(ScrollIntent::Preserve { code: None });
         }
     }
 
@@ -89,7 +89,7 @@ impl Reader {
     pub(crate) fn move_favorite(&mut self, path: &Path, before: Option<&Path>) {
         if self.favorites.move_before(path, before) {
             self.persist_favorites();
-            self.render(ScrollIntent::Preserve);
+            self.render(ScrollIntent::Preserve { code: None });
         }
     }
 
@@ -143,7 +143,7 @@ impl Reader {
     /// Render the active tab's document (or the home screen) into the webview and refresh the tab bar, window title, image source dir, and navigation buttons.
     pub(crate) fn render(&mut self, scroll: ScrollIntent) {
         // Pop the spinner for navigations (open, back/forward, tab switch), where the load below can be slow; the state script clears it. In-place re-renders (Preserve: edits, saves, renames) and the home screen skip it, so a checkbox click doesn't flash an overlay.
-        if self.workspace.active.is_some() && !matches!(scroll, ScrollIntent::Preserve) {
+        if self.workspace.active.is_some() && !matches!(scroll, ScrollIntent::Preserve { .. }) {
             begin_reader_loading(self.page());
         }
         match self.workspace.active {
@@ -248,7 +248,7 @@ impl Reader {
                 self.set_image_dir(local_image_source_dir(&image_source_path));
                 let tabs = self.workspace.tab_summaries();
                 let script = match scroll {
-                    ScrollIntent::Preserve => workspace_reload_script(
+                    ScrollIntent::Preserve { .. } => workspace_reload_script(
                         &self.recent.files,
                         &self.favorites,
                         &tabs,
@@ -288,11 +288,11 @@ impl Reader {
     }
 }
 
-/// Where the source editor goes when a tab showing source is re-rendered — one of the two answers a source-editor landing has. A restore carries the fraction it means and a reset says the top; an in-place change sends none on purpose, which is the page's cue to use the other answer and carry the fraction off the editor it is about to replace.
+/// Where the source editor goes when a tab showing source is re-rendered — one of the two answers a source-editor landing has. A restore carries the fraction it means and a reset says the top; an in-place change sends none on purpose, which is the page's cue to use the other answer and carry the fraction off the editor it is about to replace. A rename is the one in-place change that carries a fraction, because the path it moves is what makes the page refuse its own capture.
 pub(crate) fn code_view_scroll(scroll: &ScrollIntent) -> Option<f64> {
     match scroll {
         ScrollIntent::Restore { code, .. } => *code,
-        ScrollIntent::Preserve => None,
+        ScrollIntent::Preserve { code } => *code,
         ScrollIntent::Reset => Some(0.0),
     }
 }
