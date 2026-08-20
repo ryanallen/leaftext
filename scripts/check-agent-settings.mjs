@@ -51,10 +51,16 @@ if (settingsProblems('{').length !== 1) {
 // The same shape, once per way a hook row can name a script that is not here. `here` is the pretend repo: everything else is gone.
 const here = (name) => name === 'gate-rules.mjs';
 const row = (command) => JSON.stringify({ hooks: { UserPromptSubmit: [{ hooks: [{ type: 'command', command }] }] } });
+// One event carrying a row per matcher is the ordinary shape here — the edit tools and the shell tools are measured separately on the same event — so a check reading only the first row would wave the second one through.
+const rows = (...commands) => JSON.stringify({
+  hooks: { PostToolUse: commands.map((command, i) => ({ matcher: i ? 'Write|Edit|NotebookEdit' : 'Bash|PowerShell', hooks: [{ type: 'command', command }] })) },
+});
 const HOOK_CASES = [
   ['a row running a script the repo does not have', row('node "${CLAUDE_PROJECT_DIR}/scripts/gate-gone.mjs"'), true],
   ['the same row written with backslashes', row('node "${CLAUDE_PROJECT_DIR}\\scripts\\gate-gone.mjs"'), true],
   ['a second script on one command line', row('node scripts/gate-rules.mjs && node scripts/gate-gone.mjs'), true],
+  ['a second row on one event naming a script the repo does not have', rows('node scripts/gate-rules.mjs', 'node scripts/gate-gone.mjs'), true],
+  ['two rows on one event that both name a script that is here', rows('node scripts/gate-rules.mjs', 'node scripts/gate-rules.mjs'), false],
   ['every script it names being here', row('node "${CLAUDE_PROJECT_DIR}/scripts/gate-rules.mjs"'), false],
   ['a settings file with no hooks at all', '{}', false],
 ];
