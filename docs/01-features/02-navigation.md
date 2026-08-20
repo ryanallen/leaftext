@@ -108,7 +108,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 - A tab with [unsaved edits](07-editing.md#save) shows a dot in the corner where its close button sits, until they are saved; pointing at the tab hands that corner back to the button. The two share one spot rather than each taking their own, so a tab never changes size as the pointer crosses it.
 - Both corner buttons take their own click on a tab you are not reading: the cross closes it and the heart marks it, without switching to it first.
 - Closing a tab you are not reading leaves the page you are reading exactly where it was — the strip loses the tab and nothing else moves, whether that page is the rendered document or the [source](07-editing.md#code-view). Closing the tab you *are* reading brings the neighbor forward at the place you left it, the same as switching to it would.
-- Tabs can be dragged to reorder them.
+- Tabs can be dragged to reorder them, and dragging one leaves the page you are reading exactly where it was — the strip takes the new order and nothing else moves, whether that page is the rendered document or the [source](07-editing.md#code-view).
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.
 - Closing the last tab returns to the home screen. So does clicking the leaf mark at the left of the app bar, which brightens on hover to show it is a control.
 - Opening a file while Leaftext is already running (e.g. Explorer "Open with", or double-clicking an [associated file](../02-installation.md#file-associations)) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
