@@ -2693,7 +2693,7 @@ body.mac-frame.is-fullscreen::before {
   align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
-  /* The side insets stay at the bar's own 16px while the gap above closes, so the space beside the first and last tab matches every other space in the row. They also cap --tab-flare: this box scrolls, so a flare wider than the inset is clipped flat and the first tab's corner draws as a straight run. No bottom inset — the tabs have to reach the divider. */
+  /* The side insets stay at the bar's own 16px while the gap above closes, so the space beside the first and last tab matches every other space in the row — which is why a selected tab at an end drops its own margin rather than adding to this. They also cap --tab-flare: this box scrolls, so a flare wider than the inset is clipped flat and the first tab's corner draws as a straight run. No bottom inset — the tabs have to reach the divider. */
   padding: var(--lt-space-4) var(--lt-space-16) 0;
 }
 .tab-bar::-webkit-scrollbar {
@@ -2731,8 +2731,15 @@ body.mac-frame.is-fullscreen::before {
 }
 .tab-active {
   max-width: none;
-  /* The room the flares below turn in: 12px each side on top of the strip's 4px gap is the 16px they need, bought only by the one tab drawing them. It is in the transition above, or every tab to the right jumps when the selection moves. */
+  /* The room the flares below turn in: 12px on top of the strip's 4px gap is the 16px they need, bought only beside another tab and only by the one tab drawing them. It is in the transition above, or every tab to the right jumps when the selection moves. */
   margin: 0 var(--lt-space-12);
+}
+/* At an end of the strip there is no neighbor to buy room from, and none is needed: the strip's own 16px inset is wider than the 14px flare, so the margin here would only push the tab past the 16px every other space in the row keeps. A one-tab strip is both ends and drops both. */
+.tab-active:first-child {
+  margin-left: 0;
+}
+.tab-active:last-child {
+  margin-right: 0;
 }
 .tab-dragging {
   position: relative;
@@ -2747,7 +2754,7 @@ body.mac-frame.is-fullscreen::before {
 .tab-active {
   /* Drop the bottom stroke so the page-colored fill flows over the reader divider and the tab looks joined to the document below. The other three strokes are the selection cue — only the active tab frames itself. The fill is a variable because the flares below have to match it. */
   --tab-fill: var(--lt-background);
-  /* These carry the fill out over the divider rather than just turning a stroke. Capped by the room beside the active tab, which they grow into — the strip's 4px gap plus this tab's own 12px margin — and the strip scrolls, so a flare wider than the strip's own 16px side inset is clipped flat: inside that 16px the largest radius that still leaves daylight is 14px. */
+  /* These carry the fill out over the divider rather than just turning a stroke. Capped by the room beside the active tab, which they grow into — the strip's 4px gap plus this tab's own 12px margin next to another tab, and the strip's own 16px inset at an end — and the strip scrolls, so a flare wider than that 16px inset is clipped flat: inside it the largest radius that still leaves daylight is 14px. */
   --tab-flare: var(--lt-radius-2xl);
   background: var(--tab-fill);
   border-top-color: var(--lt-border);
@@ -2896,9 +2903,10 @@ body.mac-frame.is-fullscreen::before {
   border-color: transparent;
   color: var(--lt-primary-foreground);
 }
+/* Back and forward are one paired control, so they sit at the tight gap the window buttons use rather than the bar's 16px between groups. */
 .history-actions {
   display: flex;
-  gap: var(--lt-space-16);
+  gap: var(--lt-space-4);
   align-items: center;
 }
 /* Once the fold has taken both arrows into the chevron menu, the strip is a zero-wide box the bar's left zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Not `:empty`: the markup writes the strip over eight lines, so three whitespace text nodes stay behind when the buttons leave. */
