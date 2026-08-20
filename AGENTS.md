@@ -66,7 +66,13 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 
 ## Layout
 
-**[`docs/02-development/01-architecture.md`](docs/02-development/01-architecture.md) is the file map.** The rules it carries that no reading of the code will tell you:
+### The file map
+
+**[`docs/02-development/01-architecture.md`](docs/02-development/01-architecture.md) is the file map** — every module under `src/`, named, with what it is for. Open it when the work reaches a source file.
+
+### Rules the file map does not carry
+
+These hold across the tree and are read before a session knows which file it will open, which is why they are the guide's and not that page's:
 
 - **Both crate roots share `src/`** — `lib.rs` and `main.rs` — so a bare `mod tests;` in `main.rs` resolves to the library's `src/tests/`. That is why the binary's modules live under `src/app/`.
 - Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pipeline that orders the stages; siblings hold one stage each. Types stay module-wide (`pub(super)`); functions open up only where something calls them.
@@ -84,6 +90,8 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 - **Both published sites draw their documents through that module, and never through a copy of it.** `site/leaftext-core.js` loads the module and `site/pager.js` fills the waiting strip it draws; everything else in `site/` draws the page **around** the document and stays each site's own. **No built file is ever committed** — `.gitignore` refuses `assets/leaftext`, `publish-site.yml` builds at publish time, and `scripts/site-assets.mjs` is the one table naming those paths, which `check-site` holds the pages, the ignore rules and the workflow to. Emptyguru fetches the same files from leaftext.com, which is why it needs no Rust and why a page whose module does not arrive says so rather than waiting. Where a page names the module is a `<meta name="leaftext-renderer">` in its own head, with no default.
 - **One front end, three hosts — and a command with no line in every one of them does not ship.** A window, a published static site, and a document inside somebody else's product all run the same page and script. `IpcCommand` is the one typed list of what the page may send, and every arm carries a written line in **each** browser host: answered, refused on purpose with the reason, or not yet with the ticket that owns it. `just check-web-commands` fails on an arm with no line, a line naming no arm, and a command the front end sends that no host has. Write the line in the same edit as the command — the page raises a waiting state before it sends and clears it when the answer arrives, so an unanswered command waits for ever. `check-shell` boots both hosts offline (**neither may carry an `import`**, since it boots one by stripping `export`), and a tagged release builds the modules for `wasm32`.
 - **An embedded document is an editor, not a picture of one, because the module holds the buffer.** The browser module's buffer is the library's `EditableDocument`, so there is one splice, one undo stack, one table rewrite and one field parser shared with the desktop. A buffer is opened over a document's **bytes** rather than a string, so the source comes back out spelled the way it went in — a product owning the save cannot re-spell somebody's file. `web/buffer.json` pins the text after every kind of edit, and both sides walk it.
+
+### The plan stage
 
 **A stage in the running order is read off the ticket, never written ahead of it.** `Designed`, `Dev` and `Released` all rest on one fact — the ticket carries a dated `Designed` line — so a row claiming one without it tells the owner a build is under way on a plan nobody has read against the code. A ticket is not built until [`/design`](.agents/skills/design/SKILL.md) has written that line, however small the change, however recently the owner asked for it, and however few minutes ago this session wrote the ticket. `just check-plan-stage` refuses the row and `scripts/gate-design.mjs` refuses the build.
 
