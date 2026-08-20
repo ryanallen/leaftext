@@ -267,6 +267,8 @@ body.mac-frame.is-fullscreen::before {
   justify-content: center;
   flex-shrink: 0;
   padding: var(--lt-space-4);
+  /* The leaf is a 22px mark in a 32px box, so the row's 16px gap lands beside a painted edge that stops 4px short and the first space reads wider than every other one. Pull the controls after it back by this button's own trailing inset: the painted gap joins the rhythm and the 32px hit area does not move. */
+  margin-right: calc(-1 * var(--lt-space-4));
   border: var(--lt-stroke-1) solid transparent;
   border-radius: var(--lt-radius-lg);
   background: transparent;

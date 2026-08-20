@@ -465,7 +465,7 @@ fn app_shell_styles_history_controls_with_neutral_icon_treatment() {
 
 #[test]
 fn app_bar_keeps_one_gap_between_visible_groups() {
-    // The bar is one sequence of places to go, so every space it declares between the leaf, the history pair and the two trailing rows is the same 16px. Unequal gaps made the same row read as loosely assembled clusters. Three groups are the exceptions: the window buttons, below, where three read as one control set rather than three more stops along the row, back and forward, which are one paired control on that same tight gap, and the tab strip, which is a list of open documents rather than a run of unrelated controls.
+    // The bar is one sequence of places to go, so every space it declares between the leaf, the history pair and the two trailing rows is the same 16px. Unequal gaps made the same row read as loosely assembled clusters. Three groups are the exceptions: the window buttons, below, where three read as one control set rather than three more stops along the row, back and forward, which are one paired control on that same tight gap, and the tab strip, which is a list of open documents rather than a run of unrelated controls. The leaf is a fourth of another kind: the gap it declares is the row's, and the gap a reader sees is 4px wider because its mark stops short of its box, so it is the one control that hands an inset back.
     let css = reading_mode_css();
 
     for selector in [
@@ -523,6 +523,13 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
     assert!(
         lead.contains("padding: 0 0 0 var(--lt-space-12);"),
         "the lead keeps its logo-aligning left inset and adds no right one: {lead}"
+    );
+    // The leaf is the one place the declared gap and the seen gap disagree: it is a 22px mark in a 32px box, so the row's 16px lands beside a painted edge that stopped 4px short and the first space reads 20.67px against everything else's 16px. The brand button hands that inset back with a negative margin, which moves the controls after it and not its own hit area, so what a reader sees joins the rhythm the rest of the row declares.
+    let brand = rule_body(css, "\n.brand-button {");
+    assert!(
+        brand.contains("padding: var(--lt-space-4);")
+            && brand.contains("margin-right: calc(-1 * var(--lt-space-4));"),
+        "the leaf keeps its 32px box and gives its trailing inset back to the row: {brand}"
     );
     // The window buttons close up to 4px instead of taking the row's gap, so the three read as one set, and they add no lead-in of their own.
     let controls = rule_body(css, "\n.window-controls {");
