@@ -3,9 +3,11 @@
 //
 //   node scripts/check-plan.mjs   fail on a running order that has stopped ranking every live ticket
 //
-// Twelve rules, every one read straight off the page. Whether a row is ranked well is the ranker's judgment and no script's.
+// Thirteen rules, every one read straight off the page. Whether a row is ranked well is the ranker's judgment and no script's.
 //
-// The last of them is about the shipped log next door: 30 retired rows once sat above its title, under no header row and inside no tier table, and the count that would have caught it read a struck line wherever it sat. One walk answers the count and the shape so the two cannot drift apart again.
+// One of them is about the shipped log next door: 30 retired rows once sat above its title, under no header row and inside no tier table, and the count that would have caught it read a struck line wherever it sat. One walk answers the count and the shape so the two cannot drift apart again.
+//
+// The last is about the names themselves rather than the rows: the same two walks say whether a live plan has taken a name the shipped or turned-down half already holds, which is a collision the retirement otherwise meets hours later with every link to the ticket already made.
 //
 // Size is not a test: a band holding most of the rows is what a tree of mostly-features looks like, and no count makes a definition wrong. What makes one wrong is asking for two unrelated things at once, or asking for something no row can satisfy — read the words of a definition, never the count under it.
 //
@@ -403,6 +405,35 @@ function indexProblems(text, live, archived = new Set()) {
   return problems;
 }
 
+// A plan is usually one file, so its name is the file's. Written as a folder of parts it is named by the folder, because every one of those opens a `README.md` and a name of `README` would take the name from the next ticket shaped the same way rather than from the next ticket about the same fault.
+function planName(path) {
+  const parts = path.split('/');
+  const file = parts[parts.length - 1];
+  return file === 'README.md' ? parts[parts.length - 2] : file.slice(0, -3);
+}
+
+// A ticket is named after the fault it fixes, so a fault that comes back is named the same — and retirement moves the live plan into a folder already holding that name. On this checkout two spellings of one name are one file, so that move overwrites the shipped record of the first time instead of refusing, and it is found hours after every link to the ticket has been made. The name is the only part that carries across the move: a ticket keeps its subject word between the live folders and can take a new one when it retires, so the path never matches and the name always does.
+function nameProblems(live, archived) {
+  const problems = [];
+  // Each half's own ranking file is a record rather than a plan, so it holds no name — and one on each side would otherwise read as a collision with itself.
+  const plans = (set) => [...set].filter((path) => !path.endsWith('/PLAN.md')).sort();
+  const taken = new Map();
+  for (const path of plans(archived)) {
+    const key = planName(path).toLowerCase();
+    if (!taken.has(key)) taken.set(key, path);
+  }
+  for (const path of plans(live)) {
+    const held = taken.get(planName(path).toLowerCase());
+    if (!held) continue;
+    problems.push({
+      rule: 'name',
+      subject: path,
+      message: `${path} takes a name ${held} already holds, so retiring it writes over the record of the first time rather than landing beside it — rename the live one after what is different about this time, since the archived file is the record of the first`,
+    });
+  }
+  return problems;
+}
+
 // Every refusal is proved on made-up files before the real one is opened. Each case is a fault that has happened.
 const TABLE = '| # | Ticket | Status | Blocks | Blocked by | Why here |\n|---|---|---|---|---|---|\n';
 
@@ -708,6 +739,27 @@ const KIND_INDEX_CASES = [
     index(SECOND_LOOK, INDEX_ONE, LIVE_FEATURES, INDEX_FEATURE, LIVE_FIXES, INDEX_FIX), [], ''],
 ];
 
+// The name a live plan takes, read against the half that has already shipped or been turned down. Each case is `[what it asserts, live, archived, refusals, a phrase the message owes]`.
+const NAME_CASES = [
+  ['a live plan whose name is free passes',
+    ['refactor/a/one.md'], ['done/c/gone.md', 'canceled/c/dropped.md'], [], ''],
+  ['a live plan whose name a shipped one holds is refused, and both paths are named',
+    ['refactor/a/gone.md'], ['done/c/gone.md'],
+    ['name refactor/a/gone.md'], 'refactor/a/gone.md takes a name done/c/gone.md already holds'],
+  ['a live plan whose name a turned-down one holds is refused',
+    ['fixes/a/dropped.md'], ['canceled/c/dropped.md'],
+    ['name fixes/a/dropped.md'], 'canceled/c/dropped.md already holds'],
+  ['two spellings differing only in case are one name, which is what makes the move overwrite',
+    ['refactor/a/Gone.md'], ['done/c/gone.md'], ['name refactor/a/Gone.md'], ''],
+  ['a shipped plan written as a folder of parts is named by its folder',
+    ['refactor/a/split.md'], ['done/reference/split/README.md', 'done/reference/split/01-first.md'],
+    ['name refactor/a/split.md'], 'done/reference/split/README.md already holds'],
+  ['a README.md inside a shipped plan\'s own folder refuses nothing, so a live plan shaped the same way keeps its name',
+    ['refactor/a/other/README.md'], ['done/reference/split/README.md'], [], ''],
+  ['neither half\'s own ranking file is read as a plan',
+    ['features/PLAN.md'], ['done/PLAN.md', 'canceled/PLAN.md'], [], ''],
+];
+
 function selfTest() {
   const fails = [];
   for (const [name, text, t, want] of CASES) {
@@ -741,6 +793,16 @@ function selfTest() {
   ];
   for (const [[name, text, want, said], liveSet, archivedSet] of HALF_CASES) {
     const found = indexProblems(text, liveSet, archivedSet);
+    const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+    if (said && !found.some((p) => p.message.includes(said))) {
+      fails.push(`${name}: no message said \`${said}\``);
+    }
+  }
+  for (const [name, liveSet, archivedSet, want, said] of NAME_CASES) {
+    const found = nameProblems(new Set(liveSet), new Set(archivedSet));
     const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
     if (got.join(', ') !== [...want].sort().join(', ')) {
       fails.push(`${name}: got [${got}], want [${want}]`);
@@ -810,6 +872,9 @@ const problems = [...shapeProblems(text, { live, retired, turnedDown, phases }),
 // The same walks answer the index, so the two cannot disagree about what is live or what is archived.
 const indexFails = indexProblems(readFileSync(join(plans, 'README.md'), 'utf8'), live, archived);
 
+// The same two walks again, asked the one question the retirement asks too late.
+const nameFails = nameProblems(live, archived);
+
 if (problems.length) {
   console.error('the running order has stopped ranking every live ticket:');
   for (const { message } of problems) console.error(`  ${message}`);
@@ -826,6 +891,13 @@ if (indexFails.length) {
   console.error('A shipped or turned-down ticket owns a row too: that half is what a reader opens to find out whether the tree already answered them.');
 }
 
-if (problems.length || indexFails.length) process.exit(1);
+if (nameFails.length) {
+  console.error('a live ticket has taken a name a shipped or turned-down plan already holds:');
+  for (const { message } of nameFails) console.error(`  ${message}`);
+  console.error('Rename it now, while the links to it can still be counted: its index row, its running-order row, and');
+  console.error('the found line on anything filed beside it. Left alone, /done moves it onto the older file rather than beside it.');
+}
 
-console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} shipped or turned down`);
+if (problems.length || indexFails.length || nameFails.length) process.exit(1);
+
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} shipped or turned down, no live one taking a name the archived half already holds`);
