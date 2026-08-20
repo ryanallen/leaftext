@@ -143,6 +143,10 @@ function fakeElement(id = '') {
       child.parentElement = this;
       return child;
     },
+    // Any number of children in one call, each through the move above, and nothing answered — the platform's own append. A string arrives as the same text node createTextNode answers, so a builder mixing the two forms reads back as one list of children.
+    append(...children) {
+      for (const child of children) this.appendChild(typeof child === 'string' ? { textContent: child } : child);
+    },
     removeChild: (child) => {
       detachChild(child);
       return child;
@@ -763,6 +767,35 @@ check('a callback naming something the page no longer defines fails, and the fai
   for (const part of ['ResizeObserver', 'retiredNameHolder']) {
     if (!said.includes(part)) throw new Error(`the failure never named ${part}: ${said}`);
   }
+});
+
+// ---- 2f. one call, several children ----------------------------------------
+//
+// Three fragments build their own markup with `append` rather than a child at a time, so a stand-in page without it throws before the first line of a build — and the checks standing in its place had to read the fragment as text, which passes on a binding that is written correctly and never reached.
+
+check('the stand-in page takes several children in one call, and a string among them as text', () => {
+  const { document } = fakePage();
+  const parent = fakeElement('appendHolder');
+  const first = document.createElement('div');
+  const last = document.createElement('div');
+  if (parent.append(first, 'between', last) !== undefined) throw new Error('append answered something; the platform answers nothing');
+  if (parent.children.length !== 3) throw new Error(`one call put ${parent.children.length} children in the parent`);
+  if (parent.children[0] !== first || parent.children[2] !== last) throw new Error('the children did not land in the order they were handed over');
+  // The same node createTextNode answers, so a builder mixing a string with a created node reads back as one list of children.
+  const made = document.createTextNode('between');
+  const written = parent.children[1];
+  if (written.textContent !== made.textContent || written.tagName !== undefined) {
+    throw new Error('a string among the children is not the text node createTextNode answers');
+  }
+  // A real move, the way appendChild is one: the app-bar fold takes a button out of one container and puts it in another.
+  const elsewhere = fakeElement('appendMovedTo');
+  elsewhere.append(first);
+  if (parent.children.includes(first)) throw new Error('a child moved by append is still listed in the parent that was holding it');
+  if (first.parentElement !== elsewhere) throw new Error('a child moved by append never reached the parent it was moved to');
+  // The fragment the speed reader builds its words in is the same stand-in, so it takes them the same way.
+  const fragment = document.createDocumentFragment();
+  fragment.append(document.createElement('span'), ' ', document.createElement('span'));
+  if (fragment.children.length !== 3) throw new Error('the fragment the page builds in cannot take children in one call');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
@@ -7692,14 +7725,67 @@ if (booted) {
       glossarySheet.hidden = wasHidden;
     }
 
-    // Every way the table closes is that one call: its cross, a press on its own dim, and the key. Read as text because opening the sheet for real needs a laid-out page to copy a table out of.
+    // The key's own path, read as text: it is fired for real above, and this holds it to the one close rather than to a second copy of the removal.
     const fragment = readFileSync(join(root, 'src/assets/shell/table-sheet.js'), 'utf8');
-    for (const bound of ["scrim.addEventListener('click', closeTableSheet)", "close.addEventListener('click', closeTableSheet)"]) {
-      if (!fragment.includes(bound)) throw new Error(`a way out of the full-window table stopped going through the one close: ${bound}`);
-    }
     const key = fragment.slice(fragment.indexOf('function onTableSheetKey('));
     if (!key.includes('closeTableSheet()')) throw new Error('the key closes the full-window table by some other path than the one close');
     if (!fragment.includes('dismissGlossary();')) throw new Error('closing the full-window table says nothing about the term raised from it');
+  });
+
+  // The cross and the sheet's own dim were held by matching the two lines that bind them, which passes on a binding written correctly and never reached. So the sheet is opened over a table of the check's own and both are pressed for real.
+  check('the full-window table opens over a table of its own, wears its open state, and both ways out take it back down', () => {
+    const app = booted.document.getElementById('app');
+    const wasQuery = app.querySelector;
+    const held = app.children.slice();
+    // Safe to open: nothing the serializer refuses, and a real header row to key the pipes off. The laid-out page it would be copied out of is the one thing the check has no version of, so the copy is a stand-in too.
+    const standInTable = () => {
+      const table = fakeElement('checkedTable');
+      table.tagName = 'TABLE';
+      table.querySelector = (selector) => (String(selector) === ':scope > thead > tr > th' ? fakeElement('checkedTableHeading') : null);
+      table.cloneNode = () => fakeElement('checkedTableCopy');
+      return table;
+    };
+    const opener = fakeElement('checkedTableOpener');
+    const wornBy = (child) => String((child && child.className) || '');
+    // The page's class list holds only what the shipped markup declares, so an overlay the open just built is not in it — the one query that finds it is pointed at what landed on the page, the way the checks above point it.
+    let standing = null;
+    const openOnce = () => {
+      standing = null;
+      booted.openTableSheet(standInTable(), opener);
+      const fresh = app.children.filter((child) => !held.includes(child));
+      standing = fresh.find((child) => wornBy(child).includes('table-sheet-overlay')) || null;
+      return { fresh, scrim: fresh.find((child) => wornBy(child) === 'lt-backdrop') || null };
+    };
+    const press = (element) => (element.listeners.get('click') || []).forEach((handler) => handler({}));
+    const gone = (...leaving) => leaving.every((one) => !app.children.includes(one));
+    try {
+      app.querySelector = (selector) => (String(selector) === '.table-sheet-overlay' ? standing : wasQuery.call(app, selector));
+      const first = openOnce();
+      if (!standing || !first.scrim) throw new Error(`opening the full-window table put ${first.fresh.length} new things on the page`);
+      const [head, grid] = standing.children;
+      if (!wornBy(head).includes('table-sheet-head')) throw new Error('the sheet opened with no header row');
+      if (!wornBy(grid).includes('table-sheet-grid')) throw new Error('the sheet opened holding no copy of the table');
+      const [title, cross] = head.children;
+      if (title.textContent !== 'Table') throw new Error(`the sheet is titled ${JSON.stringify(title.textContent)}`);
+      if (!wornBy(cross).includes('table-sheet-close')) throw new Error('the header carries no close cross');
+      // The open state rides on a frame the page asks for, so a sheet born open could never be seen arriving.
+      if (standing.classList.contains('open')) throw new Error('the sheet and its dim were built already open');
+      booted.__frames.drain();
+      if (!standing.classList.contains('open') || !first.scrim.classList.contains('open')) {
+        throw new Error('the frame the page asked for left the sheet or its dim shut');
+      }
+      press(cross);
+      if (!gone(standing, first.scrim)) throw new Error('the close cross left the sheet or its dim standing on the page');
+
+      const second = openOnce();
+      if (!standing || !second.scrim) throw new Error('the table would not open a second time');
+      booted.__frames.drain();
+      press(second.scrim);
+      if (!gone(standing, second.scrim)) throw new Error('a press on the sheet’s own dim left it standing on the page');
+    } finally {
+      app.querySelector = wasQuery;
+      for (const child of app.children.slice()) if (!held.includes(child)) child.remove();
+    }
   });
 
   // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.
