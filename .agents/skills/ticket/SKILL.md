@@ -33,6 +33,8 @@ Not sure between the first three? It is a **feature** if a user would notice it 
 
 The file name is kebab-case and names the thing, not the change: `highlight-annotate.md`, `search.md`, `update-system.md`.
 
+**A name already used under `../docs/done/` or `../docs/canceled/` is taken, whatever folder it sits in.** A ticket is named after the fault it fixes, so a fault that comes back wants the same name — and the shipped file keeps it, because it is the record of the first time. Name the live one after what is different about this time. `just check-plan` refuses the name, so choosing it here costs nothing and meeting it later costs every link to the ticket: [`/done`](../done/SKILL.md) moves the file into a folder that already holds the name, and on this checkout that writes over the older plan rather than refusing.
+
 ## The README — read it first, then keep it
 
 `../docs/README.md` is one line per ticket in the tree, grouped by subject, saying what shipped, what is planned and what was turned down. **Read it before writing a word.** Ninety-odd plans is more than anyone holds in their head, and the two ways that costs are both expensive: planning a thing this tree already turned down, or planning around plumbing that already has a ticket. The README is where a ticket finds its neighbors — the vault tickets ride on one piece of plumbing, the filter tickets share one syntax, and a plan that ignores that gets built twice.
