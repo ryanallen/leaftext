@@ -459,7 +459,7 @@ function loadMonacoOnce() {
       )
       .catch(reject);
   });
-  // A refusal is not remembered. Nothing else clears this, so without it the first failure is handed to every later press and the source view is gone for the rest of the session, on every document. Guarded on identity in case a retry has already replaced it. `loadScriptOnce` builds a fresh script tag each call, so the retry is a real one.
+  // A refusal is not remembered: nothing else clears this, so without it the first failure is handed to every later press and the source view is gone for the rest of the session, on every document. Guarded on identity so a retry already in flight survives the failure of the one before it, and `loadScriptOnce` builds a fresh script tag on every call, so the retry is a real one.
   attempt.catch(() => {
     if (monacoLoadPromise === attempt) monacoLoadPromise = null;
   });
@@ -1019,7 +1019,7 @@ function renderCodeView(state) {
     .catch((error) => abandonCodeView('the source editor would not load', error));
 }
 
-// Give up on entering the source view: say so, and give the document back. Both ways in land here. The host marks the tab as being in source view whatever the page then managed, so going back out through the toggle's own command is what takes that mark off — and the reading render is armed to land on the pixel the toggle recorded rather than the top that command's reset intent asks for.
+// Give up on entering the source view: say so, and give the document back. The host marks the tab as being in source view whatever the page then managed, so going back out through the toggle's own command is what takes that mark off, and the reading render is armed to land on the pixel the toggle recorded rather than the top that command's reset intent asks for.
 function abandonCodeView(what, error) {
   console.error(`code view: ${what}`, error);
   clearReaderLoading();
