@@ -7002,23 +7002,27 @@ if (booted) {
   //
   // The chip in a diagram's own corner is a reader's way to the two exports, which a shut padlock and a flowchart-only editor otherwise keep. So what is driven below is the page's own builder and the page's own menu, never the helpers under them.
 
-  // A block that answers only for what has really been put in it. The stand-in page answers every element query with an element, which would tell the builder its row was already there.
-  const drawnDiagram = (source) => {
-    const block = booted.document.createElement('pre');
-    block.className = 'mermaid';
-    block.__mermaidSource = source;
-    const wearing = (node, name) => String(node.className || '').split(/\s+/).includes(name);
-    const findIn = (node, name) => {
-      for (const child of node.children) {
+  // An element that answers only for what has really been put in it. The stand-in page answers every element query with an element, which would tell the builder its row was already there — so a stage the page itself built gets this too, before it is handed back to the builder.
+  const answeringForItsOwnChildren = (node) => {
+    const wearing = (one, name) => String(one.className || '').split(/\s+/).includes(name);
+    const findIn = (one, name) => {
+      for (const child of one.children) {
         if (wearing(child, name)) return child;
         const deeper = findIn(child, name);
         if (deeper) return deeper;
       }
       return null;
     };
-    block.querySelector = (selector) => findIn(block, String(selector).replace(/^\./, ''));
-    block.__find = (name) => findIn(block, name);
-    return block;
+    node.querySelector = (selector) => findIn(node, String(selector).replace(/^\./, ''));
+    node.__find = (name) => findIn(node, name);
+    return node;
+  };
+
+  const drawnDiagram = (source) => {
+    const block = booted.document.createElement('pre');
+    block.className = 'mermaid';
+    block.__mermaidSource = source;
+    return answeringForItsOwnChildren(block);
   };
 
   // The walk up from the button, which the stand-in cannot do: the page asks the chip what block it is in and whether it is inside the full-window view. Its corner is put 2000px out, so where the menu lands says whether it was clamped.
@@ -7428,6 +7432,111 @@ if (booted) {
       }
     } finally {
       booted.closeFlowMenu();
+    }
+  });
+
+  // Every way out is pressed on the element that carries it, over a diagram of the check's own: a binding matched as a line of text passes whether or not anything ever reaches it. Each exit gets a fresh overlay, because the first close takes the overlay and its dim off the page.
+  check('the full-window diagram opens over a diagram of its own, wears its open state, and every way out takes it back down', () => {
+    const app = booted.document.getElementById('app');
+    const read = (expression) => vm.runInContext(expression, booted);
+    const wasQuery = app.querySelector;
+    const was = {
+      format: read('currentDocumentFormat'),
+      unlocked: read('readingUnlocked'),
+      sourceEdit: booted.startBlockSourceEdit,
+      blockSheet: booted.openMermaidBlockSheet,
+    };
+    const held = app.children.slice();
+    const opener = fakeElement('checkedDiagramOpener');
+    const wornBy = (child) => String((child && child.className) || '');
+    // The page's class list holds only what the shipped markup declares, so an overlay the open just built is not in it — the one query that finds it is pointed at what landed on the page, the way the checks above point it.
+    let standing = null;
+    let current = null;
+    const openOnce = () => {
+      standing = null;
+      const block = drawnDiagram('flowchart TD\n  V1 --> V2');
+      // The place in the file the corner pair acts on. Without it the pair is not built, and neither handoff has anything to give the document back with.
+      block.dataset.srcStart = '0';
+      block.dataset.srcEnd = '32';
+      booted.openDiagramOverlay(block, opener);
+      const fresh = app.children.filter((child) => !held.includes(child));
+      standing = fresh.find((child) => wornBy(child).includes('diagram-overlay')) || null;
+      const scrim = fresh.find((child) => wornBy(child) === 'lt-backdrop') || null;
+      if (!standing || !scrim) throw new Error(`opening the full-window diagram put ${fresh.length} new things on the page`);
+      const stage = answeringForItsOwnChildren(standing.children[0]);
+      if (!wornBy(stage).includes('diagram-stage')) throw new Error('the overlay opened holding nothing to draw on');
+      if (stage.__mermaidSource !== block.__mermaidSource) throw new Error('the stage is not a picture of the diagram it was opened from');
+      // The open state rides on a frame the page asks for, so an overlay born open could never be seen arriving.
+      if (standing.classList.contains('open')) throw new Error('the overlay and its dim were built already open');
+      booted.__frames.drain();
+      if (!standing.classList.contains('open') || !scrim.classList.contains('open')) {
+        throw new Error('the frame the page asked for left the overlay or its dim shut');
+      }
+      // The runtime never lands in the stand-in head, so the draw's promise stays pending and the controls that ride on it never arrive. They go in here, which is where the draw would have put them.
+      booted.addDiagramStageControls(stage);
+      current = { overlay: standing, scrim, stage, block };
+      return current;
+    };
+    const press = (element, event = {}) => (element.listeners.get('click') || []).forEach((handler) => handler(event));
+    // Raised on the document's own list rather than called by name: the fragment binds it at load, and a handler nothing ever registered would pass a call.
+    const escape = () => {
+      const event = { key: 'Escape', preventDefault() {}, stopPropagation() {} };
+      for (const handler of booted.document.listeners.get('keydown') || []) handler(event);
+    };
+    const gone = (...leaving) => leaving.every((one) => !app.children.includes(one));
+    // Where each tool button hands the document, and whether the overlay was still standing when it got there: both destinations put something over the page the overlay would otherwise be covering.
+    let handedOff = null;
+    const recordHandoff = (which) => (block) => {
+      handedOff = { which, block, overlayStanding: !gone(current.overlay, current.scrim) };
+    };
+    const pressTool = (stage, which) => {
+      const tools = stage.__find('mermaid-tools');
+      if (!tools) throw new Error('the full-window diagram carries no pair of buttons to give the document back with');
+      const button = tools.children.find((child) => child.dataset.mermaidTool === which);
+      if (!button) throw new Error(`the pair has no ${which} button`);
+      // The row is what is listened to, and it asks the press which button it was: a walk up the stand-in cannot do.
+      button.closest = (selector) => (String(selector) === '.mermaid-tool' ? button : null);
+      press(tools, { target: button, preventDefault() {}, stopPropagation() {} });
+    };
+    try {
+      app.querySelector = (selector) => (String(selector) === '.diagram-overlay' ? standing : wasQuery.call(app, selector));
+      // The two conditions the corner pair is built under, so the same open can be pressed either way.
+      read('currentDocumentFormat = \'markdown\'; readingUnlocked = true;');
+      booted.startBlockSourceEdit = recordHandoff('source');
+      booted.openMermaidBlockSheet = recordHandoff('sheet');
+
+      const first = openOnce();
+      const cross = first.stage.__find('diagram-close');
+      if (!cross) throw new Error('the drawn stage carries no close cross');
+      press(cross);
+      if (!gone(first.overlay, first.scrim)) throw new Error('the close cross left the overlay or its dim standing on the page');
+
+      const second = openOnce();
+      press(second.scrim);
+      if (!gone(second.overlay, second.scrim)) throw new Error('a press on the overlay’s own dim left it standing on the page');
+
+      const third = openOnce();
+      escape();
+      if (!gone(third.overlay, third.scrim)) throw new Error('Escape on the document left the overlay or its dim standing on the page');
+
+      // Both buttons are one listener with two handoffs, so each is pressed on an overlay of its own and read for where it went.
+      for (const which of ['source', 'sheet']) {
+        const naming = which === 'source' ? 'the button for the diagram’s own text' : 'the button for the flowchart editor';
+        const open = openOnce();
+        handedOff = null;
+        pressTool(open.stage, which);
+        if (!gone(open.overlay, open.scrim)) throw new Error(`${naming} left the overlay or its dim standing on the page`);
+        if (!handedOff) throw new Error(`${naming} took the overlay down and gave the document to nothing`);
+        if (handedOff.which !== which) throw new Error(`${naming} gave the document to the other one`);
+        if (handedOff.block !== open.block) throw new Error(`${naming} gave on the stage rather than the block it is a picture of`);
+        if (handedOff.overlayStanding) throw new Error(`${naming} opened over an overlay that was still standing`);
+      }
+    } finally {
+      app.querySelector = wasQuery;
+      booted.startBlockSourceEdit = was.sourceEdit;
+      booted.openMermaidBlockSheet = was.blockSheet;
+      read(`currentDocumentFormat = ${JSON.stringify(was.format)}; readingUnlocked = ${JSON.stringify(was.unlocked)};`);
+      for (const child of app.children.slice()) if (!held.includes(child)) child.remove();
     }
   });
 
