@@ -66,17 +66,34 @@ export function hasReleaseLicense(prompt) {
   return /^[$\/]git-release\b/i.test(prompt.trim());
 }
 
-// The `# Rule 1` section of AGENTS.md, up to the rule after it.
-export function rule1(markdown) {
+// One section's body, up to the next heading at its own level or above.
+function sectionBody(markdown, heading, depth) {
   const lines = markdown.split('\n');
-  const start = lines.findIndex((line) => /^#+\s+Rule 1\b/.test(line));
+  const start = lines.findIndex((line) => heading.test(line));
   if (start < 0) return '';
+  const stop = new RegExp(`^#{1,${depth}}\\s`);
   const body = [];
   for (const line of lines.slice(start + 1)) {
-    if (/^#{1,2}\s/.test(line) || /^---\s*$/.test(line)) break;
+    if (stop.test(line) || /^---\s*$/.test(line)) break;
     body.push(line);
   }
   return body.join('\n').trim();
+}
+
+// The `# Rule 1` section of AGENTS.md, up to the rule after it.
+export function rule1(markdown) {
+  return sectionBody(markdown, /^#+\s+Rule 1\b/, 2);
+}
+
+// The layout section is two things: a pointer to the architecture page, which is the file map, and the cross-cutting rules the guide carries itself. Under one heading the rules read as a second file map, so each half owes a heading saying which it is.
+export function layoutFaults(markdown) {
+  const layout = sectionBody(markdown, /^##\s+Layout\b/, 2);
+  if (!layout) return ['AGENTS.md: no `## Layout` section'];
+  const faults = [];
+  if (!/^###\s+The file map\s*$/m.test(layout)) faults.push('AGENTS.md: the layout section has no `### The file map` heading');
+  if (!/docs\/02-development\/01-architecture\.md/.test(layout)) faults.push('AGENTS.md: the layout section no longer points at the architecture page, which is the file map');
+  if (!/^###\s+Rules the file map does not carry\s*$/m.test(layout)) faults.push('AGENTS.md: the cross-cutting rules have no heading of their own, so they read as a second file map');
+  return faults;
 }
 
 export function reminders(prompt) {
@@ -148,6 +165,18 @@ function selfTest() {
   if (!rule.includes('A fact the owner cannot act on')) {
     fails.push('AGENTS.md: the printed Rule 1 no longer carries the hand-back test');
   }
+  // The layout section's two halves, each under its own heading. One heading over both read the guide's cross-cutting rules as a second file map, so the check refuses a guide that loses either the pointer or the rules' own heading.
+  for (const fault of layoutFaults(agents)) fails.push(fault);
+  if (!layoutFaults(agents.replace(/^### The file map$/m, '### Where things live')).length) {
+    fails.push('layout: a guide whose file map lost its heading passed');
+  }
+  if (!layoutFaults(agents.replace(/docs\/02-development\/01-architecture\.md/g, 'docs/02-development/')).length) {
+    fails.push('layout: a guide that stopped naming the architecture page passed');
+  }
+  if (!layoutFaults(agents.replace(/^### Rules the file map does not carry$/m, '### More')).length) {
+    fails.push('layout: a guide whose cross-cutting rules lost their heading passed');
+  }
+
   if (!reminders('editing src/assets/reading.css').length) fails.push('reminders: reading.css matched nothing');
   if (reminders('hello').length) fails.push('reminders: fired on a message that touches nothing');
   if (!context('hello', rule).includes('refused')) fails.push('context: missing the git refusal');
