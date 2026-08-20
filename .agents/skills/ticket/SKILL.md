@@ -270,7 +270,7 @@ That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks ea
 
 - `/pm` — ranks every ticket in the tree into one running order.
 - `/design` — checks a written ticket against the code before anyone builds it.
-- `/dev` — builds one and stops at an open owner's box, or runs `/done` itself where that box is struck; `/git-release` ships it; `/done` moves it to `done/`.
+- `/dev` — builds one and always stops at the owner's box, struck or open; `/git-release` ships it; `/done` moves it to `done/` on the owner's word.
 - `/sync-tests` — where a test goes, how it is named, and the pass that writes the ones a phase asked for.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
 - `../docs/imgs/` — every picture the owner has handed over, named after the ticket that uses it.

@@ -28,6 +28,11 @@
             "type": "command",
             "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-git.mjs\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-touched.mjs\" --before",
+            "timeout": 10
           }
         ]
       },
@@ -37,6 +42,30 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-touched.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-touched.mjs\" --after",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-touched.mjs\" --after",
             "timeout": 10
           }
         ]

@@ -347,10 +347,11 @@ function retirementReady(file, text) {
   if (!livePlan(file)) return false;
   const states = boxStates(text);
   const owner = ownerBoxes(text);
+  // Only a ticked owner's box finishes a plan. A struck one says nothing is pressed, which is not the owner having looked at what was built, so a plan carrying one stays live until they say so.
   return states.includes('ticked')
     && !states.includes('open')
     && owner.length > 0
-    && owner.every((state) => state !== 'open');
+    && owner.every((state) => state === 'ticked');
 }
 
 // This tree fills a whole day in a day — 257 of its lines say `15 August 2026` — so a date on its own is not an answer to when: two stamps written the same day cannot be put in order, and neither can be told from twelve hours old. Every date the workflow writes carries the time beside it, off this machine's clock.
@@ -463,10 +464,10 @@ const OWNER_CASES = [
     { owed: false, ready: true, misplaced: false, loose: [] },
   ],
   [
-    'a struck owner\'s box is a section that exists and an owner who answered',
+    'a struck owner\'s box is a section that exists and nobody\'s word, so the plan stays live',
     '../docs/features/reading/a.md',
     '## Phases\n\n### Phase 1\n\n- [x] Built\n\n### The owner\'s box\n\n- [ ] ~~Nothing to press; this changes how a plan is counted~~\n',
-    { owed: false, ready: true, misplaced: false, loose: [] },
+    { owed: false, ready: false, misplaced: false, loose: [] },
   ],
   [
     'a plan of nothing but struck boxes is nobody\'s work, so it stays live',
@@ -742,7 +743,7 @@ if (orphans.length) {
   process.exit(1);
 }
 
-// Nothing left open, the owner's own box answered, and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question, the owner's-box question and the struck-box question, so each live ticket is read once.
+// Nothing left open, the owner's own box ticked, and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question, the owner's-box question and the struck-box question, so each live ticket is read once.
 const finished = [];
 const undrawn = [];
 const unapprovable = [];

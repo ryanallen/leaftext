@@ -9,7 +9,7 @@ user-invocable: true
 
 Retire a ticket on the owner's word. **Closing is the owner's call.** Never refuse and never infer it. Any status closes, open boxes and all.
 
-**A struck owner's box is that word, given when the strike and its reason were written.** Where a subject has genuinely nothing to press, the strike says so and says why, so a build that ticks the last phase box of such a ticket is acting on an answer already in the file rather than inferring one — [`/dev`](../dev/SKILL.md) runs this skill itself at that point, because the plan is finished the moment that box closes and `/check` refuses a finished plan still filed as live work.
+**A struck owner's box is not that word.** It says the subject has nothing to press; it does not say the owner has seen what was built. So [`/dev`](../dev/SKILL.md) never runs this skill, a plan carrying one stays live until the owner asks, and `/check` leaves it alone.
 
 With no argument, take a live ticket at `Released`.
 
