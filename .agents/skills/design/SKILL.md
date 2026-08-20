@@ -1,17 +1,19 @@
 ---
 name: design
-description: Design a ticket before anyone builds it. Opens every line it cites against the code, holds the plan against the rules this repo already paid for, fixes what is wrong in place, draws it — a photographed wireframe where it touches the window, a flow where it does not, and never a ticket left with no picture — dates the top of the file, and records what was wrong at the bottom. Never edits app code. Use when the user says "design this ticket", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket.
+description: Design a ticket before anyone builds it. Watches the fault happen in a running copy before it will name a cause — and where nothing can watch it, files the tooling that would as a ticket in front of this one rather than guessing. Then opens every line it cites against the code, holds the plan against the rules this repo already paid for, fixes what is wrong in place, draws it — a photographed wireframe where it touches the window, a flow where it does not, and never a ticket left with no picture — dates the top of the file, and records what was wrong at the bottom. Never edits app code. Use when the user says "design this ticket", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
 
 # Design a ticket
 
-A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this reads the file against the code, decides between the researched options, fixes what is wrong in the plan, draws it, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
+A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this proves the cause before it solves it, reads the file against the code, decides between the researched options, fixes what is wrong in the plan, draws it, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
+
+**Nothing is designed on a guess** — step 1a. A cause is watched happening in a running copy, or the ticket carries the smallest earlier phase that makes it watchable. Everything below is a way of being wrong more slowly; this is the way of not solving the wrong problem at all.
 
 **Every ticket comes out of this pass with a picture in it** — step 6a. A plan handed on as prose alone is one where whoever builds it draws it in their own head instead. A supplied screenshot is that picture for the state it shows: keep it inline and do not redraw it.
 
-**Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug in its own subject, it stays a box in the ticket — fixing it is a separate job with its own `/check`. **A fault this pass finds beside that one, which no phase in the file would build anyway, is its own ticket** — step 5b.
+**Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug in its own subject, it stays a box in the ticket — fixing it is a separate job with its own `/check`. Work this pass finds that makes the ticket's own change work belongs in an earlier phase of this ticket — step 5b.
 
 Written for the tickets in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, each of which groups its files into subject folders. Read [ticket](../ticket/SKILL.md) first: it is the shape this holds a file to.
 
@@ -28,6 +30,24 @@ A ticket earns its keep with the measured table — the claim beside the line it
 - **A flow diagram is a measured table drawn sideways, so every node and every edge is opened.** A node is a real thing or it is cut; an edge is a call that exists, or one this ticket is adding and says so. A drawing reads as settled in a way a sentence does not, which is exactly why a wrong one costs more — see step 6b.
 
 Read the repo, do not remember it. A plausible sentence that is false is worse than no sentence.
+
+## 1a. The cause is proved, never inferred
+
+A ticket names a cause, and every part of the file downstream rests on that one sentence — the phases, the drawing, the record. It is also the part reading the code cannot settle on its own. Two true facts side by side are not a mechanism: the path may never run, a guard above it may answer first, something later may already win. **So this pass either watches the fault happen, or says on the file that nobody has.** A fix designed against a guessed cause is worse than no plan, because it ships, passes its own tests, and leaves the symptom exactly where it was.
+
+**Watch it rather than reason to it.** A copy of the app answers questions and takes gestures, so the cause is observed instead of argued: `just ask '{"ask":"state"}'` for what it has open, `log` for what it has printed, `eval` to run a line in the page and read a real value back, `idle` to wait for a render, `doc` for a document's own source and spelling, and `just drive` for what the page never sees — a wheel, a real drag, a native menu, the file dialog. `just drive-web` does the same to the published site. Make the gesture the ticket describes, in its own words, then read back the thing that is wrong. **Never take the owner's focus**: drive a copy this session launched, and against the one they are reading ask with `eval`, which needs none.
+
+**Then attack it.** One candidate that agrees with itself is a guess with citations under it. Spend a step trying to make it false — take away the piece it blames and watch the fault go, or find the case where the same path does the right thing and say what is different there. A cause that survives that is a cause; one that was never pushed on is a hypothesis the ticket is about to call a finding.
+
+**Whether a pass may go on unwatched turns on one question: did the code decide the cause, or did this pass choose it?** A guard whose condition provably differs, an arm that provably renders one thing, a value a test in the tree already pins — reading settles those, the pass goes on, and the line at the top says `cause inferred, not watched` with the measured row saying what makes it certain. Anything where two explanations both fit the evidence — an ordering, a timing, a state nobody has printed, a fault reported out of the window rather than found in the code — is not settled by more reading, however much of it. Watch that one or stop; a long enough argument for the wrong cause is the exact thing this step exists to catch, and it always reads as thorough.
+
+**The proof is a row in `## What was measured`, written as what was seen.** The table's other rows are readings of the code; this one is a reading of the app, and it says which it is — the gesture, and the value that came back. Without it a reader cannot tell the sentence that was observed from the four that were deduced.
+
+**Where nothing here can see it, the tooling is the work and it goes first.** A fault inside the host with no ask that answers for it, a state the page cannot be asked to show, a gesture the driver has no verb for: none of those is a reason to design on a guess. Put the smallest tooling needed to observe this ticket in its earlier phase — the verb, the step, and the reading it has to give back — then design the phase it makes watchable. **Do not add a `Blocked by` or `Blocks` entry, rerank the ticket, or place it in Hold: only the owner may place work in Hold.**
+
+**One launcher plan is standing, so use its evidence instead of writing around it.** The only copy any of this can reach is the one the owner is running: the ask pipe and the single-instance slot are both keyed on the account, so a second copy hands its file to theirs and exits with no window. A session therefore cannot watch behavior that has not shipped yet — the running copy is whatever was last installed, and the change being designed is not in it. [`nothing-can-launch-a-copy-that-is-not-the-owners`](../../../../docs/refactor/workflow/nothing-can-launch-a-copy-that-is-not-the-owners.md) records the launcher evidence. Where the current ticket needs that ability, its first phase carries the smallest launcher work it needs; never write a second ticket saying the same thing.
+
+**The honest answer is an earlier phase.** Tooling that has to exist before anybody can see the fault is phase 0 or phase 1 in this ticket, spelled out as boxes. A single reading that only makes sense once the code is open is phase 0 too. Anything else is a guess, and a guess that cannot be removed either way is marked as one, in that measured row and in `### Still open`, with the phases held to what the evidence actually carries.
 
 ## 2. The plan is held against the rules
 
@@ -70,8 +90,9 @@ The tell is a plan that gets green without the thing being true.
 
 ## 5. The phases hold
 
-- **Every phase is buildable off this repo plus the phases above it.** A phase waiting on another ticket's work is the one fault that makes a file impossible to finish, so it is the first thing to check: read what each phase needs, and ask which of it exists. Where a file's later phases sit behind another ticket, **split the file at that seam** — the buildable phases keep the file and its name, the blocked ones become a new ticket saying what it rides on, and both rows in `../docs/README.md` are written in the same pass. Splitting is not "changing what gets built", so it does not wait on a question; renumbering the phases and re-pointing the running order is part of it.
-- **A file carrying two jobs is split on the same cut, blocked or not.** This is the pass that reads every phase against the code, so it is the one that can see a file has become two: its summary sentence needs an *and* to stay true, its phases answer more than one question, or somebody would build half of it and leave the rest. [ticket](../ticket/SKILL.md) holds the shape of that split; the rows are re-derived by [`/pm`](../pm/SKILL.md) rather than written here.
+- **Every phase is buildable off this repo plus the phases above it.** Read what each phase needs, and ask which of it exists. Where the current change needs setup that does not exist, add that setup as an earlier phase in this ticket. Split only when the owner has asked for independent work to be planned separately.
+- **A file keeps its coupled work together.** This pass asks whether each phase is needed for the ticket's outcome; if it is, it stays in the file as an earlier or later phase. Split only independent work the owner has asked to separate.
+- **A phase that cannot be watched working begins with the tooling that watches it.** Step 1a's seam is the same seam: where the app cannot be asked whether the phase did what it says, the ask or the driver step that would answer is an earlier phase in this ticket. Only the owner may place work in Hold. A phase proved only by the code compiling is a phase nobody has seen run.
 - Each phase ships alone and is worth having alone.
 - The italic line says why it is in that position, and is true — phase 2 must really need what phase 1 proved.
 - A box has an obvious done. "Make it fast" does not.
@@ -96,18 +117,18 @@ grep -rn "<the behavior>" src/tests/ src/app/tests.rs src/store/tests.rs scripts
 - The box names the file it goes in — `src/tests/` per subject, `src/app/tests.rs` for the binary, `scripts/check-shell.mjs` for `src/assets/shell/`. A phase whose only work is a row in `design/` asks for no test; the design checks already refuse what is not listed.
 - **What genuinely cannot be tested here gets its line in the phase** — a real window, live selected text, a held pointer. Never the Mac build, the installer or the workflows; [`/check`](../check/SKILL.md) step 4 holds that rule.
 
-**A test gap this reading turns up outside the ticket is its own ticket** — the commonest case of step 5b, and the one this pass hits most, because opening every citation walks a lot of code.
+**A test gap this reading turns up that proves this ticket's change is a box in this ticket.**
 
 **A ticket with no `### The owner's box` is one this pass writes it into**, on the same reasoning as a missing test box: it is describing the same work more honestly, so it does not wait on a question. It is the last box in the file, under its own heading, unticked, holding the gesture the owner makes to see the thing in what they will look at — [ticket](../ticket/SKILL.md) holds the shape, and a subject with genuinely nothing to press gets the box struck with that reason. Without it the plan goes fully ticked on machine work alone, which is a machine agreeing with itself.
 
 ## 5b. What this pass finds beside the work is its own ticket
 
-**This is the reading most likely to turn up something nobody was looking for**, because every citation is opened and every node in every drawing is chased into the code. A fault beside the one being planned, a rule nothing enforces, a check that would have caught it, a second copy of something that already has one source: none of it survives the session any other way, and it must not become a box in the ticket in front of you. A plan that grows a fix for something else is one the owner cannot read against what they asked for.
+**This is the reading most likely to turn up something nobody was looking for**, because every citation is opened and every node in every drawing is chased into the code. A fault beside the one being planned, a rule nothing enforces, a check that would have caught it, a second copy of something that already has one source: add it to this ticket when building the current change needs it. A plan that grows a fix with no connection to the current change is one the owner cannot read against what they asked for.
 
-[ticket](../ticket/SKILL.md) holds the rule and the test — a find no phase in this file would build anyway is a second file, its row in `../docs/README.md`, and [`/pm`](../pm/SKILL.md) once for both. Two things are this skill's own end of it:
+[ticket](../ticket/SKILL.md) holds the rule and the test — a find the current change needs becomes a box in this file. Two things are this skill's own end of it:
 
-- **Name it in this ticket's Still open**, in the record at the bottom, so a later reader cannot mistake it for covered. That heading exists for exactly this.
-- **Never fix it here.** This skill does not edit app code, so the temptation is the other one: widening a phase to absorb it. A box that builds something the summary sentence does not name is a box to cut.
+- **Name it in this ticket's Still open** only when it does not help this ticket work, so a later reader cannot mistake it for covered.
+- **Keep the phase honest.** This skill does not edit app code, so every added box must name how it makes the ticket's own outcome work.
 
 ## 6. The six parts are there, and the summary earns its keep
 
@@ -162,10 +183,10 @@ A plan is read as a file, so how it sits on the page is part of whether it is fo
 **Say on the file that this ran, and when.** One short line, directly under the `> **Not built.**` note:
 
 ```markdown
-> **Designed 3 August 2026, 4:12pm.** Citations opened; plan held against `AGENTS.md`; the interface drawn and approved.
+> **Designed 3 August 2026, 4:12pm.** Cause watched in a running copy; citations opened; plan held against `AGENTS.md`; the interface drawn and approved.
 ```
 
-The last clause is the drawing step 6a asked for, named so a reader can see at the top that there is one — `the mechanism drawn` where the picture is a flow rather than a wireframe. A dated line that claims neither is a ticket with no picture in it, which is the thing this pass exists to stop shipping. That is the whole line. It is a date and a scope, not a summary — what the reading *found* is the record at the bottom, and a paragraph here is a paragraph between the reader and the ticket.
+The first clause is step 1a's proof, and it is the one clause that may not be softened: `cause watched in a running copy` where the app was driven and read back, `cause inferred, not watched` where it could not be and the file says why. A ticket that could not be watched at all does not reach this line — it is stopped at step 1a behind the tooling ticket that would let somebody watch it. The last clause is the drawing step 6a asked for, named so a reader can see at the top that there is one — `the mechanism drawn` where the picture is a flow rather than a wireframe. A dated line that claims neither is a ticket with no picture in it, which is the thing this pass exists to stop shipping. That is the whole line. It is a date and a scope, not a summary — what the reading *found* is the record at the bottom, and a paragraph here is a paragraph between the reader and the ticket.
 
 It goes at the top because that is where somebody decides whether to trust the file, and it carries a date because a plan designed in March against code that moved in August is a plan nobody has read. Designing it again replaces the line rather than stacking another one.
 
@@ -200,13 +221,17 @@ sooner, and a reading that disagrees knows what the first one thought.
 
 Three headings, in that order. **Checked and left alone** is the one that pays off — it is where a reviewer's second guess gets answered before they spend a day on it. **Still open** is not a TBD smuggled back in: it is work outside this ticket, named so it is not mistaken for covered.
 
+**A cause that was reasoned to and then watched failing goes in the first section**, because it is the most expensive mistake this pass can make and the one a second reader is most likely to make again: say what the file used to blame, what the app actually showed, and how it was seen. Anything about the cause that is still an inference goes in **Still open** with what would settle it.
+
 Fix the small stuff in place without a line in the record — a stale line number, a renamed function, a typo. The record is for things a reader could reasonably still believe.
 
 ## 10. Hand back
 
 Say what changed in the plan, in plain words. The ticket is a file in `../docs/`; nothing in the app moved, so there is nothing to verify and nothing to bundle. The tree stays dirty.
 
-Three things have to be on the file when this ends: the dated line at the top, a picture in the body — a photographed wireframe or a Mermaid flow — and the record at the bottom. Missing the first or the last, nothing downstream can tell a checked plan from an unchecked one; missing the middle, the plan is four paragraphs somebody has to hold in their head, and what they build instead is whatever they pictured.
+Four things have to be on the file when this ends: the dated line at the top, a watched cause in the measured table, a picture in the body — a photographed wireframe or a Mermaid flow — and the record at the bottom. Missing the first or the last, nothing downstream can tell a checked plan from an unchecked one; missing the picture, the plan is four paragraphs somebody has to hold in their head, and what they build instead is whatever they pictured; missing the cause, the whole file is a confident answer to a question nobody asked the app.
+
+**A pass stopped at step 1a hands back differently**: no dated line, the ticket's status untouched, and the reply says the cause could not be watched, names the tooling ticket now in front of it, and stops. That is a finished pass, not a failed one — it is the pass finding that the next piece of work is the ability to see.
 
 ## Reference
 
