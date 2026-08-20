@@ -99,6 +99,12 @@ check-docs:
 check-plan:
     node scripts/check-plan.mjs
 
+# Fail on a running-order row claiming a stage its ticket never reached: Designed, Dev and
+# Released all rest on the ticket carrying a dated Designed line, and a row that claims one
+# without it tells the owner a build is happening off a plan nobody read against the code.
+check-plan-stage:
+    node scripts/check-plan-stage.mjs --check
+
 # Fail on a copy of a skill in the shared workflow article that no longer says what the
 # skill says. The article is handed on with an exact copy of every skill it cites, so the
 # copy is the reader's evidence — a drifted one is the article teaching a rule that was
@@ -197,6 +203,7 @@ check-hooks:
     node scripts/gate-keycode.mjs --check
     node scripts/gate-checklist.mjs --check
     node scripts/gate-touched.mjs --check
+    node scripts/gate-design.mjs --check
 
 # Run the WebView front-end against a fake page: that it parses, that it boots
 # (the fragments are one script, so their order is load-bearing), and that the
@@ -343,7 +350,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
