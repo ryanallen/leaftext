@@ -265,6 +265,96 @@ function shapeProblems(text, tree) {
   return problems;
 }
 
+// Every live ticket belongs to a subject order next door, one step of one track, and a subject with one ticket is a track with one step. Twice now the ranking has grown a run of rows carrying no track at all: nothing said which subject they were part of, so they were read as loose faults, ranked on their own words and walked up the tiers one pass at a time until they sat above the app's own. The track cell is what stops that, and a cell nobody checks is a cell nobody fills.
+//
+// Three questions, because a wrong answer to each one has already been written: an em dash where a track belongs, a track named that no heading in that file spells, and a track named that the ticket is not a step of — the last is the one a reader cannot see, since the cell links a real heading and lands them on a table their ticket is nowhere in.
+//
+// The `Track` column is found by name in the header row, so a running order written without one is outside this rule rather than failing every row of it.
+const TRACK_HEADING = /^##(?!#)\s+(.+?)\s*$/;
+const EMPTY_CELL = /^[—–-]?$/;
+
+// A heading's own anchor, the way every Markdown renderer in this tree spells one: lowercased, punctuation dropped, spaces hyphenated.
+function anchor(heading) {
+  return heading.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+}
+
+// `{ anchor => Set(ticket paths) }` — every heading in the tracks file, with the tickets its table names as steps. A heading with no table is still a track, so it answers with an empty set rather than being absent.
+function trackSteps(text) {
+  const found = new Map();
+  let held = null;
+  for (const line of text.split('\n')) {
+    const heading = TRACK_HEADING.exec(line.trim());
+    if (heading) {
+      held = anchor(heading[1]);
+      if (!found.has(held)) found.set(held, new Set());
+      continue;
+    }
+    if (held === null || !line.trim().startsWith('|')) continue;
+    for (const path of links(line)) found.get(held).add(path);
+  }
+  return found;
+}
+
+// The column index the header row gives `Track`, or null where the file carries no such column.
+function trackColumn(text) {
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('|')) continue;
+    const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+    if (cells[0] !== '#') continue;
+    const at = cells.indexOf('Track');
+    return at === -1 ? null : at;
+  }
+  return null;
+}
+
+function trackProblems(planText, tracksText, live) {
+  const problems = [];
+  const say = (subject, message) => problems.push({ rule: 'track', subject, message });
+  const column = trackColumn(planText);
+  if (column === null) return problems;
+  const steps = trackSteps(tracksText);
+  let tier = null;
+  const lines = planText.split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (/^##(?!#)\s+Tier\s+\d+\b/.test(line) || /^##(?!#)\s+Hold\b/.test(line)) {
+      tier = line;
+      continue;
+    }
+    if (/^##(?!#)\s/.test(line)) {
+      tier = null;
+      continue;
+    }
+    if (tier === null || !line.startsWith('|')) continue;
+    const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+    if (cells.length <= column || cells[0] === '#') continue;
+    if (cells.every((c) => /^:?-{3,}:?$/.test(c))) continue;
+    const ticket = links(cells[1])[0];
+    if (!ticket || !live.has(ticket)) continue;
+    const cell = cells[column];
+    if (EMPTY_CELL.test(cell)) {
+      say(ticket, `position ${cells[0]} names no track for ${ticket}, so nothing says which subject it is part of — one ticket is a track with one step`);
+      continue;
+    }
+    const named = [...cell.matchAll(/\(\s*TRACKS\.md#([^)\s]+)\s*\)/g)].map((m) => m[1]);
+    if (!named.length) {
+      say(ticket, `position ${cells[0]} says "${cell}" and links no heading in TRACKS.md, so a reader cannot open the track it names`);
+      continue;
+    }
+    for (const slug of named) {
+      if (!steps.has(slug)) {
+        say(ticket, `position ${cells[0]} names TRACKS.md#${slug}, and no heading in that file spells it`);
+        continue;
+      }
+      if (!steps.get(slug).has(ticket)) {
+        say(ticket, `position ${cells[0]} names TRACKS.md#${slug} and ${ticket} is not a step of it, so the link lands the reader on a table their own ticket is nowhere in`);
+      }
+    }
+  }
+  return problems;
+}
+
 // The shipped log is read by the tier a row was retired from, so its headings are what a row is found under.
 const SHIPPED_TIER = /^##(?!#)\s+Retired from tier\s+(\d+)\b/;
 
@@ -760,8 +850,49 @@ const NAME_CASES = [
     ['features/PLAN.md'], ['done/PLAN.md', 'canceled/PLAN.md'], [], ''],
 ];
 
+// The track a row names, read against the file the tracks live in. `tracked(row, ...)` writes a running order carrying the seventh column, and `tracks(...)` the file beside it.
+const TRACKED_TABLE = '| # | Ticket | Status | Blocks | Blocked by | Track | Why here |\n|---|---|---|---|---|---|---|\n';
+
+function tracked(...rows) {
+  return `${TITLE}\n\n## Tier 3 — a band\n\n${TRACKED_TABLE}${rows.map((r) => `${r}\n`).join('')}\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. Retired: 0. Turned down: 0.\n`;
+}
+
+const TRACKS_FILE = '# Tracks\n\n## A subject\n\n| step | Work |\n|---|---|\n| 1 | [one](refactor/a/one.md) |\n\n## Another subject\n\n| step | Work |\n|---|---|\n| 1 | [two](refactor/b/two.md) |\n';
+
+const TRACK_LIVE = new Set(['refactor/a/one.md']);
+const TRACK_ROW = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | first |';
+const TRACK_NONE = '| 1 | [one](refactor/a/one.md) | Ready | — | — | — | first |';
+const TRACK_UNLINKED = '| 1 | [one](refactor/a/one.md) | Ready | — | — | A subject step 1 | first |';
+const TRACK_MISSING = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Nowhere](TRACKS.md#nowhere) step 1 | first |';
+const TRACK_WRONG = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Another subject](TRACKS.md#another-subject) step 1 | first |';
+// The same row without the seventh column: a running order that carries no Track column is outside the rule rather than failing every row of it.
+const TRACK_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. Retired: 0. Turned down: 0.\n`;
+
+const TRACK_CASES = [
+  ['a row naming a track the ticket is a step of passes', tracked(TRACK_ROW), []],
+  ['an em dash where a track belongs is refused, and the one-step rule is said',
+    tracked(TRACK_NONE), ['track refactor/a/one.md'], 'a track with one step'],
+  ['a track named in words with no link to its heading is refused',
+    tracked(TRACK_UNLINKED), ['track refactor/a/one.md'], 'links no heading in TRACKS.md'],
+  ['a track no heading in that file spells is refused, and the anchor is quoted',
+    tracked(TRACK_MISSING), ['track refactor/a/one.md'], 'no heading in that file spells it'],
+  ['a track the ticket is not a step of is refused, which is the one a reader cannot see',
+    tracked(TRACK_WRONG), ['track refactor/a/one.md'], 'is not a step of it'],
+  ['a running order with no Track column at all is outside the rule', TRACK_ABSENT, []],
+];
+
 function selfTest() {
   const fails = [];
+  for (const [name, text, want, said] of TRACK_CASES) {
+    const found = trackProblems(text, TRACKS_FILE, TRACK_LIVE);
+    const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+    if (said && !found.some((p) => p.message.includes(said))) {
+      fails.push(`${name}: no message said \`${said}\``);
+    }
+  }
   for (const [name, text, t, want] of CASES) {
     const got = shapeProblems(text, t).map((p) => `${p.rule} ${p.subject}`).sort();
     if (got.join(', ') !== [...want].sort().join(', ')) {
@@ -867,7 +998,11 @@ for (const ticket of live) {
 }
 
 const text = readFileSync(join(plans, 'PLAN.md'), 'utf8');
-const problems = [...shapeProblems(text, { live, retired, turnedDown, phases }), ...shippedRead.problems];
+const problems = [
+  ...shapeProblems(text, { live, retired, turnedDown, phases }),
+  ...shippedRead.problems,
+  ...trackProblems(text, readFileSync(join(plans, 'TRACKS.md'), 'utf8'), live),
+];
 
 // The same walks answer the index, so the two cannot disagree about what is live or what is archived.
 const indexFails = indexProblems(readFileSync(join(plans, 'README.md'), 'utf8'), live, archived);
@@ -878,7 +1013,7 @@ const nameFails = nameProblems(live, archived);
 if (problems.length) {
   console.error('the running order has stopped ranking every live ticket:');
   for (const { message } of problems) console.error(`  ${message}`);
-  console.error('Run /pm: it re-derives every row off the tree, so a ticket with no row gets one and');
+  console.error('Run /pm: it re-derives every row off the tree, gives every ticket its track, so a ticket with no row gets one and');
   console.error('the counts at the foot are rewritten from what is actually on disk.');
   console.error('A row named above is in done/PLAN.md: /done puts one in the table for the tier it was retired from.');
 }
@@ -900,4 +1035,4 @@ if (nameFails.length) {
 
 if (problems.length || indexFails.length || nameFails.length) process.exit(1);
 
-console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} shipped or turned down, no live one taking a name the archived half already holds`);
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, every row naming a track it is a step of in TRACKS.md, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} shipped or turned down, no live one taking a name the archived half already holds`);
