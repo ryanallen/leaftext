@@ -7732,7 +7732,7 @@ if (booted) {
     if (!fragment.includes('dismissGlossary();')) throw new Error('closing the full-window table says nothing about the term raised from it');
   });
 
-  // The cross and the sheet's own dim were held by matching the two lines that bind them, which passes on a binding written correctly and never reached. So the sheet is opened over a table of the check's own and both are pressed for real.
+  // Both ways out are pressed on the elements that carry them, over a table of the check's own: a binding matched as a line of text passes whether or not anything ever reaches it.
   check('the full-window table opens over a table of its own, wears its open state, and both ways out take it back down', () => {
     const app = booted.document.getElementById('app');
     const wasQuery = app.querySelector;
