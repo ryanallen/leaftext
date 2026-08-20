@@ -7,6 +7,7 @@ use crate::git::{
     parse_ahead_behind, remote_label, repo_folder_name_for_url,
 };
 use crate::repo_name_for_vault;
+use crate::tests::scratch_dir;
 
 #[test]
 fn ahead_and_behind_come_out_of_the_pair_git_prints() {
@@ -217,13 +218,7 @@ fn who_you_are_is_refused_before_git_is_run_when_it_is_not_a_name() {
 /// The two refusals that happen before git is ever run, so neither costs a network call and neither can half-make a vault.
 #[test]
 fn a_clone_is_refused_before_it_starts_when_it_cannot_land() {
-    let parent = std::env::temp_dir().join(format!(
-        "leaf-clone-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
+    let parent = scratch_dir("clone");
     std::fs::create_dir_all(parent.join("leaftext")).expect("a folder already in the way");
 
     let taken = crate::clone_into_vault("https://github.com/owner/leaftext.git", &parent)

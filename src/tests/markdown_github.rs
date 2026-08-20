@@ -40,12 +40,7 @@ fn leaves_bare_hex_runs_alone_instead_of_linking_them_as_commits() {
 
 #[test]
 fn preserves_repository_scoped_references_without_context() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-no-git-{unique}"));
-    fs::create_dir_all(&dir).expect("test directory is created");
+    let dir = scratch_dir("no-git");
 
     let rendered = render_markdown_document("#1 GH-2 a1b2c3d", dir.join("README.md"));
     fs::remove_dir_all(&dir).expect("test directory is removed");

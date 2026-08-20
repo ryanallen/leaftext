@@ -37,11 +37,7 @@ fn pager_label_matches_web_label_rule() {
 
 #[test]
 fn pager_includes_tei_xml_documents() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-pager-xml-{unique}"));
+    let root = scratch_dir("pager-xml");
     let book = root.join("book-1-going-forth--pravrajyavastu");
     fs::create_dir_all(&book).expect("tree is created");
     fs::write(root.join("README.md"), "# Root\n").expect("root README written");
@@ -73,12 +69,7 @@ fn pager_includes_tei_xml_documents() {
 
 #[test]
 fn pager_includes_json_and_yaml_documents() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-pager-data-{unique}"));
-    fs::create_dir_all(&root).expect("tree is created");
+    let root = scratch_dir("pager-data");
     fs::write(root.join("README.md"), "# Root\n").expect("root README written");
     // Every renderable format is a page, so Prev/Next walks the whole folder rather than stepping over the data files in it.
     let notes = root.join("001-notes.md");
@@ -100,11 +91,7 @@ fn pager_includes_json_and_yaml_documents() {
 
 #[test]
 fn pager_orders_by_folder_tree_like_the_web_viewer() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-pager-{unique}"));
+    let root = scratch_dir("pager");
     let book = root.join("book-1-words-of-the-buddha--kangyur");
     let section = book.join("discipline--vinayavastu");
     let chapter = section.join("chapter-1-going-forth--pravrajyavastu");
@@ -137,12 +124,7 @@ fn pager_orders_by_folder_tree_like_the_web_viewer() {
 
 #[test]
 fn each_pager_button_carries_the_page_it_opens() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-pager-title-{unique}"));
-    fs::create_dir_all(&root).expect("folder is created");
+    let root = scratch_dir("pager-title");
     fs::write(root.join("README.md"), "# Landing\n").expect("README written");
     for name in ["001-ordination.md", "002-rains.md", "003-robes.md"] {
         fs::write(root.join(name), "# x\n").expect("page written");

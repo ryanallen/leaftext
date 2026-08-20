@@ -7,14 +7,9 @@ use crate::remote::vault_mirror_dir;
 
 #[test]
 fn opening_document_records_recent_file_and_persists_it() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-open-document-{unique}"));
+    let dir = scratch_dir("open-document");
     let document_path = dir.join("Guide.md");
     let config_path = dir.join("settings").join("recent-files.json");
-    fs::create_dir_all(&dir).expect("test directory is created");
     fs::write(&document_path, "# Guide\n\nReadable.").expect("test markdown is written");
 
     let mut recent = RecentFiles::default();
@@ -31,11 +26,7 @@ fn opening_document_records_recent_file_and_persists_it() {
 
 #[test]
 fn opening_missing_document_returns_typed_error_without_changing_recent_files() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let path = std::env::temp_dir().join(format!("leaf-missing-document-{unique}.md"));
+    let path = scratch_dir("missing-document").join("document.md");
     let mut recent = RecentFiles {
         files: vec![PathBuf::from("already-open.md")],
     };
@@ -63,13 +54,8 @@ fn forget_removes_a_recent_entry_and_reports_whether_it_was_present() {
 
 #[test]
 fn recent_file_save_error_is_returned_without_blocking_open_document() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-recent-save-error-{unique}"));
+    let dir = scratch_dir("recent-save-error");
     let document_path = dir.join("Release.md");
-    fs::create_dir_all(&dir).expect("test directory is created");
     fs::write(&document_path, "# Release\n\nStill opens.").expect("test markdown is written");
 
     let mut recent = RecentFiles::default();
@@ -146,11 +132,7 @@ fn recent_files_are_deduplicated_and_limited() {
 
 #[test]
 fn recent_files_persistence_round_trips_and_falls_back_safely() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-recent-persistence-{unique}"));
+    let dir = scratch_dir("recent-persistence");
     let config_path = dir.join("settings").join("recent-files.json");
     let missing_path = dir.join("missing.json");
 
@@ -170,11 +152,7 @@ fn recent_files_persistence_round_trips_and_falls_back_safely() {
 
 #[test]
 fn favorites_round_trip_through_the_file_recent_files_uses() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-favorites-persistence-{unique}"));
+    let dir = scratch_dir("favorites-persistence");
     let config_path = dir.join("settings").join("recent-files.json");
 
     let mut favorites = Favorites::default();
@@ -236,11 +214,7 @@ fn favorites_collapse_equivalent_path_spellings() {
 
 #[test]
 fn favorites_load_empty_from_a_config_file_written_before_them() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-favorites-older-config-{unique}"));
+    let dir = scratch_dir("favorites-older-config");
     let config_path = dir.join("settings").join("recent-files.json");
     fs::create_dir_all(config_path.parent().expect("config folder"))
         .expect("test directory is created");
@@ -406,11 +380,7 @@ fn a_drop_names_the_rows_it_lands_between_rather_than_their_positions() {
 
 #[test]
 fn settings_persistence_round_trips_and_falls_back_safely() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-settings-persistence-{unique}"));
+    let dir = scratch_dir("settings-persistence");
     let settings_path = dir.join("config").join("settings.json");
     let missing_path = dir.join("missing.json");
 
@@ -480,12 +450,7 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
 
 #[test]
 fn a_byte_order_mark_from_a_windows_editor_does_not_reset_the_config() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-settings-bom-{unique}"));
-    fs::create_dir_all(&dir).expect("test directory is created");
+    let dir = scratch_dir("settings-bom");
 
     // PowerShell's Out-File/Set-Content and Notepad all write a UTF-8 byte order mark by default, so a hand-edited config on Windows arrives with three bytes in front of the opening brace. serde_json refuses them, and every reader here defaults on a parse failure — which silently threw the file away. Both config files must look past the mark.
     let settings_path = dir.join("settings.json");
@@ -515,13 +480,8 @@ fn a_byte_order_mark_from_a_windows_editor_does_not_reset_the_config() {
 
 #[test]
 fn settings_load_migrates_legacy_dracula_mode_to_the_nightshade_family() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-settings-migrate-{unique}"));
+    let dir = scratch_dir("settings-migrate");
     let settings_path = dir.join("settings.json");
-    fs::create_dir_all(&dir).expect("test directory is created");
 
     // Pre-family installs stored Dracula as a theme mode; it becomes the dark half of the Nightshade family (the renamed Dracula palette) on load.
     fs::write(&settings_path, r#"{"theme_mode": "dracula"}"#)
@@ -535,13 +495,8 @@ fn settings_load_migrates_legacy_dracula_mode_to_the_nightshade_family() {
 
 #[test]
 fn settings_load_tolerates_partial_json_via_serde_default() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-settings-partial-{unique}"));
+    let dir = scratch_dir("settings-partial");
     let settings_path = dir.join("settings.json");
-    fs::create_dir_all(&dir).expect("test directory is created");
 
     // Only one field present: the rest must fall back to their defaults. Unknown keys — `indexing_enabled` from the old disk crawler, and the two toggles that stopped being choices — are ignored rather than failing the load, so an installed copy needs no migration to lose them.
     fs::write(
@@ -564,12 +519,7 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
 
 #[test]
 fn a_settings_file_from_before_the_pane_had_one_view_still_loads() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-settings-library-view-{unique}"));
-    fs::create_dir_all(&dir).expect("test directory is created");
+    let dir = scratch_dir("settings-library-view");
 
     // `library_view` was the pane's mode when the graph lived in the sidebar. The graph is a page now and the key is gone, but every installed copy still has it — and an unknown key must be ignored, not fail the whole deserialize and reset every other setting with it.
     for legacy in ["tree", "flat", "project", "graph"] {

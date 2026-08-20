@@ -160,11 +160,7 @@ fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
 
 #[test]
 fn document_state_script_never_serializes_raw_title_markup() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let path = std::env::temp_dir().join(format!("leaf-title-state-{unique}.md"));
+    let path = scratch_dir("title-state").join("document.md");
     fs::write(
         &path,
         r#"# <div align="center">Words &amp; My Perfect Teacher</div>

@@ -149,13 +149,8 @@ fn markdown_pipeline_stages_keep_raw_rendering_before_sanitization() {
 
 #[test]
 fn opened_document_from_markdown_matches_loading_from_disk() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
     // Use a dedicated subdirectory so the on-disk load and already-read render both see the same source path.
-    let dir = std::env::temp_dir().join(format!("leaf-reload-parity-{unique}"));
-    fs::create_dir_all(&dir).expect("test directory is created");
+    let dir = scratch_dir("reload-parity");
     let path = dir.join("doc.md");
     let markdown = "# Reloaded\n\nBody text.\n";
     fs::write(&path, markdown).expect("test markdown is written");
@@ -174,12 +169,7 @@ fn opened_document_from_markdown_matches_loading_from_disk() {
 
 #[test]
 fn opened_document_starts_with_async_pager_placeholder() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-async-pager-{unique}"));
-    fs::create_dir_all(&root).expect("tree is created");
+    let root = scratch_dir("async-pager");
     fs::write(root.join("README.md"), "# Root\n").expect("README written");
     let current = root.join("current.md");
     let next = root.join("next-page.md");
@@ -547,11 +537,7 @@ fn renders_heading_ids_and_preserves_markdown_and_html_fragment_links() {
 
 #[test]
 fn loading_document_preserves_source_markdown() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let path = std::env::temp_dir().join(format!("leaf-preserve-{unique}.md"));
+    let path = scratch_dir("preserve").join("document.md");
     let markdown = "# Preserve\n\n- [x] source state\n\n<script>remove()</script>\n";
 
     fs::write(&path, markdown).expect("test markdown is written");

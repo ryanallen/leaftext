@@ -209,12 +209,7 @@ fn a_host_with_no_answers_refuses_a_command_rather_than_faking_one() {
 /// The commands the desktop answers off its own disk, so the interface is not a set of names nothing implements. Load, save and the asset lookup all go through the host and come back with what the old path produced.
 #[test]
 fn the_desktop_answers_its_commands_through_the_host() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("a clock after 1970")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-web-core-{unique}"));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("web-core");
     let path = dir.join("notes.md");
     fs::write(&path, MARKDOWN_FIXTURE).expect("fixture is written");
     let host = DesktopHost::default();
@@ -254,12 +249,7 @@ fn the_desktop_answers_its_commands_through_the_host() {
 /// The reader's settings survive a round trip through the host, which is the only reason the page can keep any: its origin has no storage.
 #[test]
 fn the_desktop_reads_and_writes_settings_through_the_host() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("a clock after 1970")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-web-core-settings-{unique}"));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("web-core-settings");
     let settings_path = dir.join("settings.json");
     let host = DesktopHost {
         settings_path: Some(&settings_path),
@@ -279,12 +269,7 @@ fn the_desktop_reads_and_writes_settings_through_the_host() {
 /// Search goes through the host too, and answers off the vault text the running app already holds rather than reading the folder again.
 #[test]
 fn the_desktop_searches_the_vault_it_was_handed() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("a clock after 1970")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-web-core-search-{unique}"));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("web-core-search");
     fs::write(dir.join("notes.md"), MARKDOWN_FIXTURE).expect("fixture is written");
 
     let vault = VaultCorpus::read(&dir);

@@ -57,12 +57,7 @@ fn the_missing_image_glyph_is_inlined_painted_and_allowed() {
 /// Every format the reading view can be handed, each stating 5 by 9 in its own way, so the page can reserve the space before the picture decodes. A file we can't read the size out of is left alone rather than guessed at.
 #[test]
 fn reads_the_pixel_size_out_of_each_image_header() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-image-size-{unique}"));
-    fs::create_dir_all(&dir).expect("test image directory is created");
+    let dir = scratch_dir("image-size");
 
     let mut png = tiny_png_bytes().to_vec();
     png[16..20].copy_from_slice(&5u32.to_be_bytes());
@@ -516,11 +511,7 @@ fn preserves_safe_raw_html_image_assets_after_sanitization() {
 
 #[test]
 fn local_image_protocol_serves_rendered_markdown_image_bytes() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-local-image-{unique}"));
+    let dir = scratch_dir("local-image");
     let image_dir = dir.join("nested");
     let markdown_path = dir.join("README.md");
     let image_path = image_dir.join("space image.png");
@@ -561,16 +552,11 @@ fn local_image_protocol_serves_rendered_markdown_image_bytes() {
 
 #[test]
 fn local_image_protocol_serves_raw_html_svg_bytes() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-local-svg-{unique}"));
+    let dir = scratch_dir("local-svg");
     let markdown_path = dir.join("README.md");
     let svg_path = dir.join("logo.svg");
     let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="green"/></svg>"#;
 
-    fs::create_dir_all(&dir).expect("test svg directory is created");
     fs::write(&svg_path, svg).expect("test svg is written");
 
     let rendered = render_markdown_document(r#"<img src="logo.svg" alt="Logo">"#, &markdown_path);
@@ -590,11 +576,7 @@ fn local_image_protocol_serves_raw_html_svg_bytes() {
 
 #[test]
 fn local_image_protocol_serves_requested_markdown_and_html_image_paths() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-requested-images-{unique}"));
+    let root = scratch_dir("requested-images");
     let docs = root.join("docs");
     let images = docs.join("imgs");
     let shared = root.join("shared");
@@ -661,11 +643,7 @@ fn local_image_protocol_serves_requested_markdown_and_html_image_paths() {
 
 #[test]
 fn local_image_protocol_serves_nested_document_image_paths() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-nested-images-{unique}"));
+    let root = scratch_dir("nested-images");
     let nested = root.join("docs").join("nested");
     let nested_images = nested.join("imgs");
     let shared = root.join("docs").join("shared");
@@ -709,11 +687,7 @@ fn local_image_protocol_serves_nested_document_image_paths() {
 
 #[test]
 fn local_image_protocol_loads_any_depth_above_the_document_and_reports_missing_images() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-local-image-scope-{unique}"));
+    let root = scratch_dir("local-image-scope");
     let nested = root.join("docs").join("01-features");
     let markdown_path = nested.join("themes.md");
     let png = tiny_png_bytes();
@@ -754,11 +728,7 @@ fn local_image_protocol_loads_any_depth_above_the_document_and_reports_missing_i
 
 #[test]
 fn local_image_protocol_loads_absolute_paths_outside_the_document_tree() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-local-image-absolute-{unique}"));
+    let root = scratch_dir("local-image-absolute");
     let docs = root.join("docs");
     let elsewhere = root.join("elsewhere");
     let markdown_path = docs.join("README.md");

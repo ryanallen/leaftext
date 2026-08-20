@@ -5,6 +5,10 @@
 //
 // A name belongs to one run when something is interpolated into it — `std::process::id()` is what most of the suite already uses — or when the OS hands it out (`mkdtemp`). A variable path segment is not enough: `join("leaf-journal").join(name)` gave every journal test a folder of its own and every run the same three.
 //
+// A clock reading is not one either, and it is the substitution the suite reached for: fifty-five of the seventy-six paths under `src/` carried one, which is exactly the thing that went red — a clock ticking in hundred-nanosecond steps hands two tests that start together the same folder. So a name whose every substituted value resolves to a clock is refused, and the value is resolved through the `let` that bound it and the function that returned it, because that is how the tree spelled it.
+//
+// The other half is which test, and it is read across files rather than down one. A scratch helper takes a word per test and builds a folder from it, so two calls to one helper carrying one word are one folder with two writers. Two helpers may share a word freely — their prefixes differ, so the folders do — which is why the rule is per helper and why two helpers building one prefix are refused instead.
+//
 // Four temp paths are fixed on purpose and one more is never written, so the rule cannot simply refuse all of them. Each carries a row below with the reason, and a row that matches nothing fails too — a list of exceptions nobody prunes is how a rule stops being read.
 //
 // The rules are proved on made-up files before the real tree is opened, so a matcher that quietly stops matching fails the build instead of passing everything.
@@ -66,12 +70,148 @@ export function unique(source) {
   return false;
 }
 
-/// What is wrong with a set of files and a set of rows. Pure, so both refusals can be proved on input nobody has to keep in step.
+/// Reading a clock, in any of the spellings this tree uses for one.
+const CLOCK = /SystemTime::now|Instant::now|duration_since|as_nanos|as_millis|as_micros|elapsed\(\)|Date\.now\(\)|hrtime/;
+
+/// Every value substituted into a scratch name: the ones named inside the braces, and the arguments that fill the empty ones.
+export function substituted(source) {
+  const named = [];
+  const string = source.replace(/\{\{|\}\}/g, '');
+  for (const brace of string.matchAll(/\{([^{}]*)\}/g)) {
+    const inner = brace[1].split(':')[0].trim();
+    if (inner) named.push(inner);
+  }
+  // What follows the format string, split on the commas between arguments rather than inside them.
+  const after = source.slice(source.indexOf('format!'));
+  const quote = after.indexOf('"');
+  const close = quote === -1 ? -1 : after.indexOf('"', quote + 1);
+  const args = close === -1 ? '' : after.slice(close + 1);
+  let depth = 0;
+  let piece = '';
+  const positional = [];
+  for (const ch of args) {
+    if ('([{'.includes(ch)) depth++;
+    else if (')]}'.includes(ch)) { if (depth === 0) break; depth--; }
+    if (ch === ',' && depth === 0) { positional.push(piece); piece = ''; continue; }
+    piece += ch;
+  }
+  positional.push(piece);
+  return [...named, ...positional].map((v) => v.trim()).filter(Boolean);
+}
+
+/// What a substituted value turns out to be, followed through the `let` that bound it and the function that returned it. One hop each way: the tree spells a clock inline, in a `let unique = …` above the path, or in a `fn unique_suffix()` beside it, and nothing deeper than that.
+export function resolved(value, text) {
+  if (CLOCK.test(value)) return value;
+  const call = /^(\w+)\s*\(\s*\)$/.exec(value);
+  if (call) {
+    const body = functionBody(text, call[1]);
+    return body === null ? value : body;
+  }
+  if (/^\w+$/.test(value)) {
+    const bound = new RegExp(`let\\s+(?:mut\\s+)?${value}\\s*=([\\s\\S]*?);`).exec(text);
+    if (bound) return bound[1];
+  }
+  return value;
+}
+
+/// The body of a named function, braces matched, or null where the file has none.
+export function functionBody(text, name) {
+  const at = new RegExp(`\\bfn\\s+${name}\\s*\\(`).exec(text);
+  if (!at) return null;
+  const open = text.indexOf('{', at.index);
+  if (open === -1) return null;
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}') {
+      depth--;
+      if (depth === 0) return text.slice(open + 1, i);
+    }
+  }
+  return null;
+}
+
+/// Whether a name says nothing about the run but what time it was: every value it carries is a clock. A name carrying no value at all is the fixed-name rule's, not this one's.
+export function clockAlone(source, text) {
+  const values = substituted(source);
+  if (!values.length) return false;
+  return values.every((value) => CLOCK.test(resolved(value, text)));
+}
+
+/// Every function that hands out a scratch folder under a word: it takes one string and its body builds a scratch path, or passes the word on to one that does. Found in two passes, because a per-subject helper is one line over the shared one and the shared one has to be known first.
+///
+/// A wrapper that passes its own word through unchanged is not a namespace of its own — its calls belong to the helper it wraps, or `filtered_vault("empty")` and `corpus_dir("empty")` would read as two words and name one folder.
+export function helpers(files) {
+  const found = new Map();
+  const wraps = new Map();
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const { path, text } of files) {
+      for (const at of text.matchAll(/\bfn\s+(\w+)\s*\(\s*(\w+)\s*:\s*&str\s*\)/g)) {
+        const [, name, param] = at;
+        if (found.has(name)) continue;
+        const body = functionBody(text, name);
+        if (body === null) continue;
+        const direct = scratchPaths(body).some(({ source }) => unique(source));
+        const passes = [...found.keys()].find((known) => new RegExp(`\\b${known}\\s*\\(`).test(body));
+        if (!direct && !passes) continue;
+        // A word handed straight on lands in the wrapped helper's namespace; a word built into a new prefix starts one.
+        const through = passes && new RegExp(`\\b${passes}\\s*\\(\\s*${param}\\s*\\)`).test(body) ? passes : null;
+        found.set(name, { path, prefix: prefixOf(body) });
+        if (through) wraps.set(name, through);
+        grew = true;
+      }
+    }
+  }
+  for (const [name, wrapped] of wraps) {
+    let root = wrapped;
+    while (wraps.has(root)) root = wraps.get(root);
+    found.get(name).under = root;
+  }
+  return found;
+}
+
+/// The fixed head of the folder a helper builds — `corpus` out of `leaf-corpus-{tag}`. Null where the body names no literal at all, which is a helper this check cannot hold and says so.
+export function prefixOf(body) {
+  const literal = /"(leaf-)?([a-z0-9]+(?:-[a-z0-9]+)*?)?-?\{/.exec(body);
+  if (!literal) return null;
+  if (literal[2]) return literal[2];
+  // `leaf-{label}` is a head of nothing on purpose: the word is the whole name. No head at all is a helper whose words cannot be told apart.
+  return literal[1] ? '' : null;
+}
+
+/// Every word handed to a scratch helper, as `helper` and `word` with where it was written.
+export function words(files, found) {
+  const out = [];
+  for (const { path, text } of files) {
+    for (const [name, helper] of found) {
+      // A wrapper's word is spelled by the helper it hands it to, or the two ways of asking for one folder would read as two.
+      const owner = helper.under ?? name;
+      const prefix = found.get(owner)?.prefix;
+      for (const at of text.matchAll(new RegExp(`\\b${name}\\s*\\(\\s*"([^"]*)"`, 'g'))) {
+        out.push({
+          helper: owner,
+          word: prefix ? `${prefix}-${at[1]}` : at[1],
+          path,
+          line: text.slice(0, at.index).split('\n').length,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/// What is wrong with a set of files and a set of rows. Pure, so every refusal can be proved on input nobody has to keep in step.
 export function problems(files, rows) {
   const found = [];
   const matched = new Set();
   for (const { path, text } of files) {
     for (const { line, source } of scratchPaths(text)) {
+      if (clockAlone(source, text)) {
+        found.push(`${path}:${line} names its run with a clock reading and nothing else — the clock ticks slowly enough here to hand two tests that start together one folder, which is what went red. Put this run's own in it (\`std::process::id()\`)`);
+        continue;
+      }
       if (unique(source)) continue;
       const row = rows.find(([file, name]) => file === path && source.includes(name));
       if (row) {
@@ -86,8 +226,45 @@ export function problems(files, rows) {
       found.push(`${SELF} excuses ${row[1]} in ${row[0]}, and nothing there builds that path any more — a stale row is how a list of exceptions stops being read`);
     }
   }
+
+  const scratchHelpers = helpers(files);
+  const prefixes = new Map();
+  for (const [name, helper] of scratchHelpers) {
+    if (helper.under) continue;
+    if (helper.prefix === null) {
+      found.push(`${helper.path} builds scratch folders in ${name} under a name this check cannot read, so two tests sharing a word there would pass. Give the folder a fixed head — \`format!("thing-{word}")\``);
+      continue;
+    }
+    const taken = prefixes.get(helper.prefix);
+    if (taken) {
+      found.push(`${name} and ${taken} both build scratch folders called \`${helper.prefix}-…\`, so one word handed to each is one folder with two writers. Give one of them its own head`);
+      continue;
+    }
+    prefixes.set(helper.prefix, name);
+  }
+
+  const seen = new Map();
+  for (const call of words(files, scratchHelpers)) {
+    const key = `${call.helper} ${call.word}`;
+    const first = seen.get(key);
+    if (first) {
+      found.push(`${call.path}:${call.line} asks ${call.helper} for a scratch folder called \`${call.word}\`, and so does ${first.path}:${first.line} — one folder, two tests, and whichever finishes second reads what the other wrote. A word is its own test's name`);
+      continue;
+    }
+    seen.set(key, call);
+  }
   return found;
 }
+
+/// A made-up suite in the shape the real one now has: one builder, per-subject helpers over it, and a wrapper that hands its word straight on.
+const HELPERS = [
+  'fn shared(label: &str) -> PathBuf {',
+  '    std::env::temp_dir().join(format!("leaf-{label}-{}", std::process::id()))',
+  '}',
+  'fn corpus(tag: &str) -> PathBuf { shared(&format!("corpus-{tag}")) }',
+  'fn clouds(tag: &str) -> PathBuf { shared(&format!("clouds-{tag}")) }',
+  'fn filtered(tag: &str) -> PathBuf { corpus(tag) }',
+].join('\n');
 
 const CASES = [
   ['a fixed name is refused',
@@ -115,6 +292,34 @@ const CASES = [
     [{ path: 'a.mjs', text: "sweep(tmpdir(), 'leaftext-keycode-');" }], [], 0],
   ['an escaped brace is not a value',
     [{ path: 'a.rs', text: 'let d = std::env::temp_dir().join(format!("leaf-{{fixed}}"));' }], [], 1],
+
+  // A clock says what time it is, not which run asked. It is the substitution fifty-five paths reached for, and the one that went red.
+  ['a clock read into the name is refused',
+    [{ path: 'a.rs', text: 'let d = std::env::temp_dir().join(format!("leaf-x-{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()));' }], [], 1],
+  ['a clock bound on the line above is refused too',
+    [{ path: 'a.rs', text: 'let unique = SystemTime::now().as_nanos();\nlet d = std::env::temp_dir().join(format!("leaf-x-{unique}"));' }], [], 1],
+  ['a clock behind a function of its own is refused too',
+    [{ path: 'a.rs', text: 'fn suffix() -> u128 { SystemTime::now().as_nanos() }\nlet d = std::env::temp_dir().join(format!("leaf-x-{}", suffix()));' }], [], 1],
+  ['this run\'s own id passes with a clock beside it',
+    [{ path: 'a.rs', text: 'let d = std::env::temp_dir().join(format!("leaf-x-{}-{}", std::process::id(), SystemTime::now().as_nanos()));' }], [], 0],
+  ['a word passes',
+    [{ path: 'a.rs', text: 'let d = std::env::temp_dir().join(format!("leaf-{label}-{}", std::process::id()));' }], [], 0],
+
+  // Which test, read across files rather than down one.
+  ['two calls to one helper carrying one word are refused',
+    [{ path: 'a.rs', text: HELPERS + '\nfn one() { corpus("empty"); }\nfn two() { corpus("empty"); }' }], [], 1],
+  ['the same word under two helpers passes, because their folders differ',
+    [{ path: 'a.rs', text: HELPERS + '\nfn one() { corpus("empty"); }\nfn two() { clouds("empty"); }' }], [], 0],
+  ['a word handed straight through a wrapper lands in the wrapped helper\'s namespace',
+    [{ path: 'a.rs', text: HELPERS + '\nfn one() { corpus("empty"); }\nfn two() { filtered("empty"); }' }], [], 1],
+  ['two calls in two files are the same folder',
+    [{ path: 'a.rs', text: HELPERS + '\nfn one() { corpus("empty"); }' },
+     { path: 'b.rs', text: 'fn two() { corpus("empty"); }' }], [], 1],
+  ['a helper whose folder has no readable head is refused, because a word under it cannot be counted',
+    [{ path: 'a.rs', text: 'fn odd(tag: &str) -> PathBuf { std::env::temp_dir().join(format!("{tag}{}", std::process::id())) }' }], [], 1],
+  ['a builder of fixed names is not a scratch helper, so its words are nobody\'s',
+    [{ path: 'a.rs', text: 'fn fixture(name: &str) -> PathBuf { std::env::temp_dir().join("leaf-fixtures").join(name) }\nfn one() { fixture("a.md"); }\nfn two() { fixture("a.md"); }' }],
+    [['a.rs', 'leaf-fixtures', 'never written']], 0],
 ];
 
 const testFails = [];

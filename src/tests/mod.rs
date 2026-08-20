@@ -1,7 +1,7 @@
 //! The test suite. Split by subject; helpers shared across those files live here.
 
 use super::*;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 mod app_shell_chrome;
 mod app_shell_library;
@@ -108,6 +108,46 @@ fn fixture_source_path(relative_path: &str) -> PathBuf {
     std::env::temp_dir()
         .join("leaf-render-fixtures")
         .join(relative_path)
+}
+
+/// A scratch folder of this test's own, created. The label says which test asked, this process's id says which run, and the counter separates two asked for in one instant — a clock says none of the three, because it ticks slowly enough here to hand two tests that start together the same folder.
+pub(crate) fn scratch_dir(label: &str) -> PathBuf {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let dir = std::env::temp_dir().join(format!(
+        "leaf-{label}-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::SeqCst)
+    ));
+    fs::create_dir_all(&dir).expect("scratch directory is created");
+    dir
+}
+
+#[test]
+fn a_scratch_folder_is_named_for_its_test_and_for_the_run_that_asked_for_it() {
+    // Handed in rather than written into the call, so the check that refuses one word twice reads only real call sites.
+    let label = "mod-scratch-one";
+    let one = scratch_dir(label);
+    let other = scratch_dir("mod-scratch-other");
+    let again = scratch_dir(label);
+
+    assert_ne!(one, other, "two labels are two folders");
+    assert_ne!(
+        one, again,
+        "one label asked for twice is two folders, so a test that wants a second one gets a second one"
+    );
+    let run = std::process::id().to_string();
+    for dir in [&one, &other, &again] {
+        assert!(dir.is_dir(), "{} was not made", dir.display());
+        assert!(
+            dir.to_string_lossy().contains(&run),
+            "{} does not say which run asked for it, so two runs at once would share it",
+            dir.display()
+        );
+    }
+
+    for dir in [one, other, again] {
+        let _ = fs::remove_dir_all(dir);
+    }
 }
 
 fn expected_base_href(source_path: &Path) -> String {

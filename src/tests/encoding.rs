@@ -4,14 +4,6 @@
 
 use super::*;
 
-/// A per-test suffix so the temp directories here can't collide.
-fn unique_suffix() -> u128 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos()
-}
-
 /// Bytes for `text` in UTF-16, mark included, so a fixture reads as the thing it is testing rather than a wall of escapes.
 fn utf16_bytes(text: &str, big_endian: bool) -> Vec<u8> {
     let mut bytes = Vec::new();
@@ -251,8 +243,7 @@ fn a_zero_byte_in_valid_utf8_still_opens() {
 
 #[test]
 fn reading_a_file_reports_the_path_when_it_cannot_be_decoded() {
-    let dir = std::env::temp_dir().join(format!("leaf-encoding-{}", unique_suffix()));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("encoding");
     let path = dir.join("photo.md");
     fs::write(&path, b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR").expect("fixture is written");
 
@@ -268,8 +259,7 @@ fn reading_a_file_reports_the_path_when_it_cannot_be_decoded() {
 
 #[test]
 fn a_head_read_cuts_between_characters_in_every_encoding() {
-    let dir = std::env::temp_dir().join(format!("leaf-encoding-head-{}", unique_suffix()));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("encoding-head");
     // Long enough that every cut below lands inside the body, and made of characters no cut can divide cleanly: 4 bytes in UTF-8, a surrogate pair in UTF-16, 4 bytes in UTF-32.
     let text = format!("# Head\n\n{}\n", "🌿".repeat(64));
 
@@ -311,8 +301,7 @@ fn a_document_read_in_utf16_saves_back_as_utf16() {
     // The whole point, end to end: open a UTF-16 file, edit it through the buffer the app actually edits with, write it, and assert the file is still UTF-16.
     //
     // The checkbox is on the first line deliberately. With the mark left in the text, pulldown-cmark reads `\u{feff}- [ ] one` as a paragraph and there is no task marker to flip at all — so this fixture is also the test that the mark comes off.
-    let dir = std::env::temp_dir().join(format!("leaf-encoding-save-{}", unique_suffix()));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("encoding-save");
     let path = dir.join("notes.md");
     fs::write(&path, utf16_bytes("- [ ] one\n", false)).expect("fixture is written");
 
@@ -355,8 +344,7 @@ fn a_marked_utf8_document_can_edit_its_first_line() {
 #[test]
 fn documents_that_used_to_fail_to_open_now_open() {
     // `read_to_string` is UTF-8-or-fail and neither of these files is UTF-8, so both have to reach the reader through the decoder.
-    let dir = std::env::temp_dir().join(format!("leaf-encoding-open-{}", unique_suffix()));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("encoding-open");
 
     let wide = dir.join("wide.md");
     fs::write(&wide, utf16_bytes("# Wide\n", false)).expect("fixture is written");

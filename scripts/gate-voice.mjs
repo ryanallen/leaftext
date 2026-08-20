@@ -3,6 +3,8 @@
 //
 // It enforces the half of Rule 1 that names its own words: the 500-character ceiling, the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
 //
+// It also refuses a turn that moved code and left the ticket where it was. `/dev` says to tick each box in the same edit as its code, and nothing read that, so twenty-five files of test code moved across a dozen turns with every box still open and the owner had to ask whether a build was happening — which is the one question the whole plan tree is written to answer without being asked. The read is the one already here for the filing phrases, pointed at the other tree.
+//
 // A phrase is matched on what the reply says in its own voice: quoted material — fenced blocks, inline code, quotation marks, blockquote lines — is stripped first, so a reply quoting Rule 1 or naming a ticket by a phrase is not refused for the words it is quoting.
 //
 //   node scripts/gate-voice.mjs           the hook payload on stdin
@@ -11,13 +13,14 @@
 // Never loops: a payload that says a stop hook is already running exits 0.
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { clear, heldBy, listPath, pending } from './gate-checklist.mjs';
 import { close, outstanding, read } from './gate-keycode.mjs';
 import { keep, sessionOf } from './hook-payload.mjs';
+import { dirtyPaths } from './plan-tree.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -78,6 +81,19 @@ export function filedSince(startedAt, dir = PLAN_TREE) {
     return true;
   }
   return false;
+}
+
+/// The first file in this checkout the turn changed, or null. Dirty and stamped at or after the turn began, which is the same read `filedSince` makes on the tree next door — so there is no second record of who wrote what to keep in step. A tree it cannot read reads as untouched: a gate that cannot see must refuse nothing.
+export function movedSince(startedAt, dir = root) {
+  if (!Number.isFinite(startedAt)) return null;
+  for (const path of dirtyPaths(dir)) {
+    try {
+      if (statSync(join(dir, path)).mtimeMs >= startedAt) return path;
+    } catch {
+      // Deleted, or a path git spells in a way this machine cannot open. Either way it says nothing about the ticket.
+    }
+  }
+  return null;
 }
 
 /// Each block on its own. Rule 1 caps a response, and a turn that says three things says three of them — joining first would fail a turn for the sum of twelve short lines and pass one that ended in an essay.
@@ -265,6 +281,24 @@ function selfTest() {
     rmSync(path, { force: true });
   }
 
+  // The code moving with the ticket left where it was. A scratch checkout of its own, because the answer is about what git calls dirty and the tree this runs in is dirty on purpose.
+  try {
+    const tree = mkdtempSync(join(tmpdir(), `gate-voice-moved-${process.pid}-`));
+    execFileSync('git', ['init', '--quiet'], { cwd: tree, stdio: 'ignore' });
+    writeFileSync(join(tree, 'kept.rs'), 'fn main() {}\n');
+    const began = statSync(join(tree, 'kept.rs')).mtimeMs + 1;
+    if (movedSince(began, tree) !== null) fails.push('moved: a file written before the turn began was read as this turn\'s');
+    const moved = join(tree, 'built.rs');
+    writeFileSync(moved, 'fn built() {}\n');
+    utimesSync(moved, new Date(began + 1000), new Date(began + 1000));
+    if (movedSince(began, tree) !== 'built.rs') fails.push('moved: a file changed this turn was not found');
+    if (movedSince(undefined, tree) !== null) fails.push('moved: a turn with no start was held');
+    if (movedSince(began, join(tree, 'gone')) !== null) fails.push('moved: an unreadable tree held the turn');
+    rmSync(tree, { recursive: true, force: true });
+  } catch (error) {
+    fails.push(`moved: ${error.message}`);
+  }
+
   // The checklist's other half, through the real entry point: a step left un-struck has to actually hold the turn, and a turn held for a step alone must not be told to say its reply again. Its own session id, so a `just verify` beside another one does not hold the agent running it to a list this test wrote.
   const mine = `gate-voice-selftest-${process.pid}`;
   writeFileSync(path, [
@@ -310,7 +344,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, keycodes)`);
+  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, code moving without its ticket, keycodes)`);
 }
 
 if (process.argv.includes('--check')) {
@@ -341,17 +375,23 @@ if (process.argv.includes('--check')) {
   // This session's record, not the other agent's: it owes its own codes and holds its own turn.
   const session = sessionOf(raw);
   const record = read(session);
-  const found = offenses(blocks, filedSince(record?.startedAt));
+  const filed = filedSince(record?.startedAt);
+  const found = offenses(blocks, filed);
+  // The code moved and the ticket did not. Held whatever the reply says, because the reply is not where a box is ticked.
+  const moved = filed ? null : movedSince(record?.startedAt);
   const owed = blocks.length ? outstanding(record) : [];
   // The turn checklist's other half. One Stop hook holds all three, because a second one would spend the same single block the host allows.
   const left = pending(session);
-  if (found.length || owed.length || left.length) {
+  if (found.length || owed.length || left.length || moved) {
     const parts = [];
     if (found.length) parts.push(`Rule 1, from CLAUDE.md:\n${found.map((f) => `- ${f}`).join('\n')}`);
     if (owed.length) {
       parts.push(`Not read yet — report each keycode with \`node scripts/gate-keycode.mjs <file> <code>\`:\n${owed.map((o) => `- ${o}`).join('\n')}`);
     }
     if (left.length) parts.push(heldBy(left, session));
+    if (moved) {
+      parts.push(`${moved} changed and nothing under the plan tree did. Tick the box in the same edit as its code: open the ticket, tick what this turn built, and say on the box what the file now does where it came out different from the plan. A phase whose boxes are still open is one nobody can read the build against.`);
+    }
     // Only a reply that broke a rule is written again. A turn held for a step or a keycode says nothing new.
     if (found.length) parts.push('Say it again, shorter. No note about this correction — just the answer.');
     process.stdout.write(JSON.stringify({ decision: 'block', reason: parts.join('\n\n') }));

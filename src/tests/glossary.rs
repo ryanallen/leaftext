@@ -47,11 +47,7 @@ fn does_not_link_substrings_inside_larger_words() {
 
 #[test]
 fn auto_links_glossary_terms_from_an_ancestor_folder() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-glossary-walkup-{unique}"));
+    let root = scratch_dir("glossary-walkup");
     // Glossary lives at the project root; the document sits several folders down.
     let deep = root.join("collection").join("volume").join("book");
     fs::create_dir_all(&deep).expect("tree is created");
@@ -87,12 +83,7 @@ fn auto_links_glossary_terms_from_an_ancestor_folder() {
 
 #[test]
 fn does_not_auto_link_terms_inside_the_glossary_file_itself() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("leaf-glossary-self-{unique}"));
-    fs::create_dir_all(&root).expect("tree is created");
+    let root = scratch_dir("glossary-self");
     let glossary = root.join("GLOSSARY.md");
     let text = "# Glossary\n\n## Buddha\nan awakened one.\n\n## Dharma\nthe Buddha's teaching.\n";
     fs::write(&glossary, text).expect("glossary written");
@@ -111,11 +102,7 @@ fn does_not_auto_link_terms_inside_the_glossary_file_itself() {
 fn finds_a_glossary_whatever_its_capitals_and_hands_back_the_name_on_disk() {
     // Windows and a stock Mac fold case in a file lookup, so asking for "GLOSSARY.md" finds a "Glossary.md" there anyway. What proves the fix on those disks is the name that comes back: the folder is read, so it is the file's own, not the spelling that was asked for.
     for spelling in ["GLOSSARY.md", "glossary.md", "Glossary.md"] {
-        let unique = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("system time is after Unix epoch")
-            .as_nanos();
-        let root = std::env::temp_dir().join(format!("leaf-glossary-case-{unique}"));
+        let root = scratch_dir("glossary-case");
         let deep = root.join("collection").join("book");
         fs::create_dir_all(&deep).expect("tree is created");
         fs::write(

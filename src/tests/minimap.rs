@@ -340,11 +340,7 @@ fn minimap_model_keeps_large_documents_compressed_by_runs() {
 
 #[test]
 fn opened_document_carries_minimap_model_for_webview_state() {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let path = std::env::temp_dir().join(format!("leaf-minimap-state-{unique}.md"));
+    let path = scratch_dir("minimap-state").join("document.md");
     fs::write(&path, "# Map\n\nParagraph.\n\n```rs\nfn main() {}\n```")
         .expect("test markdown is written");
 
