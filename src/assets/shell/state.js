@@ -28,6 +28,14 @@ function leafClampToApp(x, y, width, height, margin) {
 // The name the host gives the whole root. A published site sends its own, because a site is one folder and that folder has a name; the desktop sends none, where the leftmost crumb is the vault you are standing in or the word for the whole library. Written by the folder payload in library.js, read by libraryRootLabel() in speed-reader.js.
 let libraryRootName = '';
 
+// ---- the pane easing open or shut (library.js, overflow.js) ----------------
+
+// The classes that stand on the body while the pane moves: the open's one overshooting leg, and the close's slam and its settle. Written once because two fragments spend them — library.js puts them up and takes them all down, and overflow.js holds the bar's left-zone measurement back while any is standing.
+const LIBRARY_MOTION_CLASSES = ['is-library-opening', 'is-library-closing', 'is-library-settling'];
+function libraryPaneIsMoving() {
+  return LIBRARY_MOTION_CLASSES.some((name) => document.body.classList.contains(name));
+}
+
 // ---- the platform (context-menu.js, glossary.js) ---------------------------
 
 // Which gesture belongs to which key: Ctrl+click is the right-click on a Mac, so the open-in-a-new-page modifier there is Cmd. Read by the menu and by the document-link handler that picks the modifier.

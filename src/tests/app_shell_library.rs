@@ -237,10 +237,10 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
         &html,
         "  if (width) appBarLead.style.minWidth = `${width}px`;",
     );
-    // Rewritten wherever the measurement behind it is thrown away, so a fold takes the floor down with the buttons and an unfold brings it back.
+    // Rewritten wherever the measurement behind it is thrown away, so a fold takes the floor down with the buttons and an unfold brings it back — behind the pane-motion guard, since the read itself is what stops the zone traveling.
     assert_contains(
         &html,
-        "    forgetAppBarLeadWidth();\n    floorAppBarLead();",
+        "      forgetAppBarLeadWidth();\n      floorAppBarLead();",
     );
     // Both paths a pane opens through: the width it comes back at, and the width the toggle opens it at.
     assert_contains(
@@ -276,10 +276,14 @@ fn the_normal_width_toggle_moves_the_pane_bar_and_page_together() {
     );
     // The floor is the stylesheet's own gutter token, read where it is spent.
     assert_contains(&html, "function readerGutterPx() {");
-    // Every motion class always comes off, and whatever the close deferred always runs.
+    // Every motion class always comes off, and whatever the close deferred always runs. The three are named once, where both the fragment that stands them up and the fragment that reads them can spend the same list.
     assert_contains(
         &html,
-        "document.body.classList.remove('is-library-opening', 'is-library-closing', 'is-library-settling');",
+        "const LIBRARY_MOTION_CLASSES = ['is-library-opening', 'is-library-closing', 'is-library-settling'];",
+    );
+    assert_contains(
+        &html,
+        "document.body.classList.remove(...LIBRARY_MOTION_CLASSES);",
     );
     // transitionend bubbles, so only the shell's own track may advance the motion — the lead's width ending must not cut the grid off mid-move.
     assert_contains(&html, "if (event.target !== libraryShell || event.propertyName !== 'grid-template-columns') return;");
@@ -302,7 +306,7 @@ fn the_normal_width_toggle_moves_the_pane_bar_and_page_together() {
     // A re-toggle mid-move settles the old state first, so the new transition retargets from wherever the rail visually is.
     assert_contains(
         &html,
-        "function startLibraryMotion(direction, done) {\n  // Settle any motion still running, so a re-toggle retargets from where the rail is.\n  endLibraryMotion();",
+        "function startLibraryMotion(direction, done) {\n  // Settle any motion still running, so a re-toggle retargets from where the rail is. Told it is arming another, so it leaves the zone unmeasured.\n  endLibraryMotion(true);",
     );
     // The minimap's width write reacts to the reader resizing one frame in; mid-toggle it would change a grid column and retarget the pane's transition, so it is dropped and the motion's own end asks again. Re-arming it here instead drew a frame for every frame of the gesture.
     assert_contains(
@@ -315,13 +319,35 @@ fn the_normal_width_toggle_moves_the_pane_bar_and_page_together() {
     );
     // And the one place the motion classes come off is the one place that tells it.
     let ending = html
-        .split("function endLibraryMotion() {")
+        .split("function endLibraryMotion(restarting) {")
         .nth(1)
         .expect("the front-end ends a library motion");
     assert!(
         ending[..ending.find("\n}\n").expect("that function closes")]
             .contains("scheduleMinimapWidthSync();"),
         "the pane finishing its motion must ask for the rail width it held back"
+    );
+    // The bar's left zone is measured by putting `width: auto` on it for a layout pass, and a width transition cannot start from `auto` — so a refit landing inside the open left the tab strip standing at its resting place while the page overshot past it. The refit holds the pair back while a motion class is up, and this is the one other place that takes it, beside the rail width and for the same reason.
+    assert!(
+        ending[..ending.find("\n}\n").expect("that function closes")].contains(
+            "if (!restarting) {\n    forgetAppBarLeadWidth();\n    floorAppBarLead();\n  }"
+        ),
+        "the pane finishing its motion must take the zone measurement it held back"
+    );
+    // And the settle that arms the next motion must not: that read lands between the flush and the class going up, snapping the strip left on the open's first frame and killing the close's travel outright.
+    assert_eq!(
+        html.matches("endLibraryMotion(true);").count(),
+        1,
+        "only the settle inside startLibraryMotion may skip the zone measurement"
+    );
+    assert_contains(
+        &html,
+        "if (!libraryPaneIsMoving()) {\n      forgetAppBarLeadWidth();\n      floorAppBarLead();\n    }",
+    );
+    assert_eq!(
+        html.matches("floorAppBarLead()").count(),
+        3,
+        "the definition, the refit's guarded call and the motion's end are the only mentions"
     );
     // Only the toggle's two branches start a motion: the divider drag and the resize re-clamp write the rail with no motion class up, so they stay immediate.
     assert_eq!(

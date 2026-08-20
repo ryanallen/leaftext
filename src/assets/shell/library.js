@@ -63,21 +63,26 @@ function readerGutterPx() {
 let libraryMotionTimer = 0;
 let libraryMotionDone = null;
 let libraryMotionStage = '';
-function endLibraryMotion() {
+function endLibraryMotion(restarting) {
   window.clearTimeout(libraryMotionTimer);
   libraryMotionTimer = 0;
   libraryMotionStage = '';
-  document.body.classList.remove('is-library-opening', 'is-library-closing', 'is-library-settling');
+  document.body.classList.remove(...LIBRARY_MOTION_CLASSES);
   const done = libraryMotionDone;
   libraryMotionDone = null;
   // The rail's width write is dropped while the pane moves, since it retargets the transition mid-gesture. This is the one place the classes come off, so it is the one place that can ask for it again.
   scheduleMinimapWidthSync();
+  // The bar's left zone's own width is held back for the same span and asked for here for the same reason: reading it puts `width: auto` on the zone for a layout pass, and a width transition cannot start from `auto` — so the tab strip stood still while the page eased past it. Never on the settle that arms the next motion: that read lands between the flush and the class going up, which is the same poison one step earlier — it snapped the strip left on the first frame of the open and killed the close's travel outright.
+  if (!restarting) {
+    forgetAppBarLeadWidth();
+    floorAppBarLead();
+  }
   // A full layout of the resting truth, so ending mid-bounce still seats everything.
   if (done) done();
 }
 function startLibraryMotion(direction, done) {
-  // Settle any motion still running, so a re-toggle retargets from where the rail is.
-  endLibraryMotion();
+  // Settle any motion still running, so a re-toggle retargets from where the rail is. Told it is arming another, so it leaves the zone unmeasured.
+  endLibraryMotion(true);
   document.body.classList.add(direction);
   libraryMotionStage = direction === 'is-library-closing' ? 'slam' : '';
   libraryMotionDone = done || null;
