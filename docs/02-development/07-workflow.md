@@ -35,6 +35,8 @@ Work here starts as a written plan and ends as a released version, and the same 
 
 **A plan carrying two jobs is split, the same way a blocked one is.** Each half keeps its own name and its own row, and the two point at each other. Splitting on size is otherwise nobody's call, so a plan that is really two ships half and never closes.
 
+**A plan's file name has to be free of the shipped and turned-down half.** A plan is named after the fault it fixes, so a fault that comes back wants the name a shipped plan already carries — and that plan keeps it, being the record of the first time. `just check-plan` names both files and asks for the live one to be renamed after what is different this time, because retiring it puts the file in a folder that already holds the name, and on a checkout that reads two spellings of one name as one file the move writes over the older plan instead of refusing. A plan written as a folder of parts is named by its folder.
+
 ## Where a test goes
 
 | What changed | Where its test lives |
