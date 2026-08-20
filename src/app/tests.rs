@@ -2638,6 +2638,147 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
 }
 
 #[test]
+fn closing_a_tab_to_the_right_of_the_one_being_read_changes_only_the_strip() {
+    // The whole reported fault: the document on screen did not change, so nothing about it may be drawn again.
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/docs/a.md"));
+    workspace.open_path(PathBuf::from("/docs/b.md"));
+    workspace.open_path(PathBuf::from("/docs/c.md"));
+    assert!(workspace.set_active(0));
+
+    assert_eq!(workspace.close_tab(2), TabClose::StripOnly);
+    assert_eq!(workspace.active, Some(0));
+    assert_eq!(workspace.tabs.len(), 2);
+}
+
+#[test]
+fn closing_a_tab_to_the_left_of_the_one_being_read_shifts_the_lit_tab_down() {
+    // Same answer, and the strip is redrawn against an index that has moved — so the tab lit is still the one being read.
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/docs/a.md"));
+    workspace.open_path(PathBuf::from("/docs/b.md"));
+    workspace.open_path(PathBuf::from("/docs/c.md"));
+    assert_eq!(workspace.active, Some(2));
+
+    assert_eq!(workspace.close_tab(0), TabClose::StripOnly);
+    assert_eq!(workspace.active, Some(1));
+    assert_eq!(
+        workspace.active_file(),
+        Some(Path::new("/docs/c.md")),
+        "the document being read is still the one being read"
+    );
+}
+
+#[test]
+fn closing_the_last_tab_left_leaves_the_home_screen() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/docs/a.md"));
+
+    assert_eq!(workspace.close_tab(0), TabClose::HomeScreen);
+    assert_eq!(workspace.active, None);
+    assert!(workspace.tabs.is_empty());
+}
+
+#[test]
+fn closing_the_tab_being_read_reports_that_the_document_on_screen_changed() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/docs/a.md"));
+    workspace.open_path(PathBuf::from("/docs/b.md"));
+    assert_eq!(workspace.active, Some(1));
+
+    assert_eq!(workspace.close_tab(1), TabClose::ReaderMoved);
+    assert_eq!(workspace.active, Some(0));
+}
+
+#[test]
+fn closing_a_tab_that_is_not_there_closes_nothing() {
+    // Today an index past the end still renders the active document at the top, which is the fault for a close that never happened.
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/docs/a.md"));
+
+    assert_eq!(workspace.close_tab(9), TabClose::Nothing);
+    assert_eq!(workspace.active, Some(0));
+    assert_eq!(workspace.tabs.len(), 1);
+}
+
+#[test]
+fn closing_the_tab_being_read_lands_on_the_neighbor_where_it_was_left() {
+    // Every Ctrl+W closes the tab being read, so the neighbor coming forward at the top of itself is the common case, not a corner.
+    let anchor = ScrollAnchor {
+        section: Some("halfway".to_string()),
+        block: 7,
+        offset_y: -12.0,
+    };
+    let mut neighbor = Tab {
+        saved_code_scroll: Some(0.61),
+        ..Tab::default()
+    };
+    neighbor.history.record(PathBuf::from("/docs/a.md"));
+    neighbor.history.stamp_current(anchor.clone());
+    let mut being_read = Tab::default();
+    being_read.history.record(PathBuf::from("/docs/b.md"));
+    let mut workspace = Workspace {
+        tabs: vec![neighbor, being_read],
+        active: Some(1),
+    };
+
+    assert_eq!(workspace.close_tab(1), TabClose::ReaderMoved);
+    match restore_front_tab_intent(&workspace) {
+        Some(ScrollIntent::Restore {
+            anchor: Some(saved),
+            code: Some(code),
+        }) => {
+            assert_eq!(saved, anchor);
+            assert_eq!(code, 0.61);
+        }
+        _ => panic!("the neighbor opens where the reader left it"),
+    }
+}
+
+#[test]
+fn the_home_screen_has_no_place_to_be_put_back_to() {
+    let workspace = Workspace::default();
+    assert!(restore_front_tab_intent(&workspace).is_none());
+}
+
+#[test]
+fn closing_the_tab_being_read_restores_rather_than_resetting() {
+    let source = include_str!("event_loop.rs");
+    let arm = source
+        .split("IpcCommand::CloseTab")
+        .nth(1)
+        .and_then(|rest| rest.split("IpcCommand::").next())
+        .expect("the close-tab arm");
+    assert!(
+        arm.contains("TabClose::ReaderMoved => {") && arm.contains("restore_front_tab_intent"),
+        "the tab coming forward opens where it was left"
+    );
+    assert!(
+        arm.contains("TabClose::HomeScreen => reader.render(ScrollIntent::Reset)"),
+        "the home screen still starts from scratch"
+    );
+}
+
+#[test]
+fn closing_a_background_tab_redraws_the_strip_instead_of_the_document() {
+    // What the workspace answers is only half of it: the arm has to act on the answer. A render of any intent reads the file off the disk and pushes the whole document back to a page that did not ask for it.
+    let source = include_str!("event_loop.rs");
+    let arm = source
+        .split("IpcCommand::CloseTab")
+        .nth(1)
+        .and_then(|rest| rest.split("IpcCommand::").next())
+        .expect("the close-tab arm");
+    assert!(
+        arm.contains("TabClose::StripOnly => reader.refresh_tab_strip()"),
+        "a tab beside the one being read redraws the strip and nothing else"
+    );
+    assert!(
+        arm.contains("TabClose::Nothing => {}"),
+        "an index that names no tab draws nothing"
+    );
+}
+
+#[test]
 fn a_browsed_folder_is_watched_one_level_deep_not_recursively() {
     // Browsing into `C:\` in the library must not hand the watcher a recursive subscription to the whole drive: every change on the machine then arrives as an event, the pane rebuilds against each one, the window stops answering, and switching vaults never gets processed.
     //
