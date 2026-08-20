@@ -181,7 +181,7 @@ let pendingCodeViewFraction = null;
 // The document the live editor holds, so a position taken off it before it is thrown away is never spent on somebody else's file.
 let monacoEditorPath = null;
 
-// Drop the toggle's landings unless `path` is the document they were armed for. Called at each place one is spent rather than at each place an entry gives up: four things can abandon a source-view entry after the toggle has written all four down -- nothing staged, a later render taking the token, the view or the container going while Monaco loads, Monaco failing -- and one of them is not in this file, so a guard at the spend covers those and the next one somebody writes. A landing is armed for one render; if that render never happened nobody is coming for it, and the host is holding that document's real place the whole time. Identity, not age: a document's own stale landing is the best answer left for it.
+// Drop the toggle's landings unless `path` is the document they were armed for. At the spend rather than at each place an entry gives up, because four things abandon one — a payload that will not arrive, a later render taking the token, the view or the container going while Monaco loads, Monaco failing — and one of them is in another fragment, shared with every view. Dropped rather than held: a landing is armed for one render, and the host is holding that document's real place the whole time. Identity, not age, so a document's own stale landing is still the best answer left for it.
 function dropViewLandingsFromAnotherDocument(path) {
   if (pendingViewLandingPath == null || pendingViewLandingPath === path) return;
   pendingViewLandingPath = null;
@@ -329,7 +329,7 @@ function toggleCodeView() {
     const path = activeDocumentPath();
     if (!path) return;
     const handoff = viewHandoffFor(path);
-    // Stamp the landings below with the document they are taken from -- see dropViewLandingsFromAnotherDocument.
+    // Stamp the landings below with the document they are taken from — see dropViewLandingsFromAnotherDocument.
     pendingViewLandingPath = path;
     // Carry the current position across the toggle; the destination view's render consumes it and lands at the same relative spot.
     pendingViewScrollFraction = viewScrollFraction();
