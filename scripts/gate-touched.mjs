@@ -12,6 +12,8 @@
 // Edit tools name their file directly. Shell commands get their dirty paths before and after they run. Files the release itself generates are still unclaimed, because the release runner is not a shell tool call.
 //
 // One file per session in the OS temp folder, beside the keycode record and the turn checklist, swept on the same 24-hour window. A stale entry costs nothing: a path that has been committed is not dirty, so it is not in the list being subtracted from.
+//
+// The other half is the build being watched. Before each source edit this appends one sample to the record gate-design.mjs wrote — the phase being built, and how many of its boxes are ticked at that moment — and gate-voice.mjs reads the run of them at the end of the turn. It has to be sampled here rather than read once at the end, because a phase batch-ticked after the code stopped moving leaves a file identical to one filled in as the work finished. The samples are kept apart from the touched-file record above, which the release subtracts from and must not meet something it cannot stage.
 
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
