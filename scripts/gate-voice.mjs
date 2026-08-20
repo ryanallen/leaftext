@@ -3,7 +3,7 @@
 //
 // It enforces the half of Rule 1 that names its own words: the 500-character ceiling, the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
 //
-// It also refuses a turn that moved code and left the ticket where it was. `/dev` says to tick each box in the same edit as its code, and nothing read that, so twenty-five files of test code moved across a dozen turns with every box still open and the owner had to ask whether a build was happening — which is the one question the whole plan tree is written to answer without being asked. The read is the one already here for the filing phrases, pointed at the other tree.
+// It also refuses a turn that moved code and left the ticket where it was. `/dev` says to tick each box in the same edit as its code, and a rule nothing reads is one a build forgets — which leaves the owner asking whether one is happening at all, the question the plan tree exists to answer without being asked. The read is the one already here for the filing phrases, pointed at the other tree.
 //
 // A phrase is matched on what the reply says in its own voice: quoted material — fenced blocks, inline code, quotation marks, blockquote lines — is stripped first, so a reply quoting Rule 1 or naming a ticket by a phrase is not refused for the words it is quoting.
 //

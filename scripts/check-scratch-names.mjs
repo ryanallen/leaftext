@@ -5,7 +5,7 @@
 //
 // A name belongs to one run when something is interpolated into it — `std::process::id()` is what most of the suite already uses — or when the OS hands it out (`mkdtemp`). A variable path segment is not enough: `join("leaf-journal").join(name)` gave every journal test a folder of its own and every run the same three.
 //
-// A clock reading is not one either, and it is the substitution the suite reached for: fifty-five of the seventy-six paths under `src/` carried one, which is exactly the thing that went red — a clock ticking in hundred-nanosecond steps hands two tests that start together the same folder. So a name whose every substituted value resolves to a clock is refused, and the value is resolved through the `let` that bound it and the function that returned it, because that is how the tree spelled it.
+// A clock reading is not one either, and it is the substitution a test reaches for: a clock ticking in hundred-nanosecond steps hands two tests that start together the same folder, which is what took the gate red on a change that broke nothing. So a name whose every substituted value resolves to a clock is refused, and a value is followed through the `let` that bound it and the function that returned it, because a bare inline clock is the shape it is spelled in least often.
 //
 // The other half is which test, and it is read across files rather than down one. A scratch helper takes a word per test and builds a folder from it, so two calls to one helper carrying one word are one folder with two writers. Two helpers may share a word freely — their prefixes differ, so the folders do — which is why the rule is per helper and why two helpers building one prefix are refused instead.
 //
@@ -293,7 +293,7 @@ const CASES = [
   ['an escaped brace is not a value',
     [{ path: 'a.rs', text: 'let d = std::env::temp_dir().join(format!("leaf-{{fixed}}"));' }], [], 1],
 
-  // A clock says what time it is, not which run asked. It is the substitution fifty-five paths reached for, and the one that went red.
+  // A clock says what time it is, not which run asked, and it is the substitution that took the gate red.
   ['a clock read into the name is refused',
     [{ path: 'a.rs', text: 'let d = std::env::temp_dir().join(format!("leaf-x-{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()));' }], [], 1],
   ['a clock bound on the line above is refused too',
