@@ -524,7 +524,7 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         lead.contains("padding: 0 0 0 var(--lt-space-12);"),
         "the lead keeps its logo-aligning left inset and adds no right one: {lead}"
     );
-    // The leaf is the one place the declared gap and the seen gap disagree: it is a 22px mark in a 32px box, so the row's 16px lands beside a painted edge that stopped 4px short and the first space reads 20.67px against everything else's 16px. The brand button hands that inset back with a negative margin, which moves the controls after it and not its own hit area, so what a reader sees joins the rhythm the rest of the row declares.
+    // Handing the inset back is a negative margin rather than less padding, so the controls after the leaf move and its own 32px hit area does not. The gap beside it measured 20.67px against every other space's 16px.
     let brand = rule_body(css, "\n.brand-button {");
     assert!(
         brand.contains("padding: var(--lt-space-4);")
