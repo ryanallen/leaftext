@@ -8628,6 +8628,53 @@ check('the zone floor follows the buttons out of the bar and back in', () => {
   if (lead.style.minWidth !== whole) throw new Error(`the arrows came back and the zone stayed floored at ${lead.style.minWidth || 'nothing'}`);
 });
 
+check('the open leaves the zone unmeasured, so the tab strip travels with the pane', () => {
+  // The zone's own width is read by putting `width: auto` on it for one layout pass, and a width transition cannot start from `auto`. So the strip landed on its resting place on the very first frame while the page eased out and overshot past it, and the open tab's lower-left curve hung over the pane with daylight under it — the one motion a reader triggers by hand breaking at its most visible moment.
+  const context = bootWithLead(MAC_LEAD, { libraryClosed: true });
+  const lead = context.document.querySelector('.app-bar-lead');
+  // Every width the zone is written, with whether the pane was moving when it was written — the claim is what the page did, not which branch it took.
+  const written = [];
+  let held = lead.style.width;
+  Object.defineProperty(lead.style, 'width', {
+    get: () => held,
+    set: (value) => {
+      held = value;
+      written.push({ value, moving: context.libraryPaneIsMoving() });
+    },
+    configurable: true,
+  });
+  const measuredWhileMoving = () => written.filter((one) => one.value === 'auto' && one.moving).length;
+  const measured = () => written.filter((one) => one.value === 'auto').length;
+  context.applyPaneLayout();
+  written.length = 0;
+  context.toggleLibrary();
+  if (!context.libraryPaneIsMoving()) throw new Error('the open never armed its motion');
+  // Exactly one read arms the open — the layout pass before the classes land. A second one settling the motion lands between the flush and the class going up, which snapped the strip left on the first frame and left the page easing out on its own.
+  if (measured() !== 1) throw new Error(`the open armed its motion on ${measured()} measurements of the zone rather than one`);
+  // The read the open takes before it arms the motion must stay: it runs with no class up, so it starts no transition, and it is what leaves the floor fresh for the frames where the rail is still inside it.
+  if (!written.some((one) => one.value === 'auto' && !one.moving)) {
+    throw new Error('the open armed its motion on a floor nobody had measured');
+  }
+  if (measuredWhileMoving()) throw new Error('the zone was measured mid-open, so its width transition never started');
+  // Held on the motion rather than on the toggle: a document finishing its render, the code view and the update bell all refit too, and any of them landing inside the open would kill the travel the same way.
+  context.refitAppBar();
+  if (measuredWhileMoving()) throw new Error('a refit inside the open measured the zone');
+  // The close arms the same way, and it traveled correctly before any of this — a read settling it kills its travel outright.
+  written.length = 0;
+  context.toggleLibrary();
+  if (measured() !== 0) throw new Error(`the close armed its motion on ${measured()} measurements of the zone rather than none`);
+  if (measuredWhileMoving()) throw new Error('the zone was measured mid-close');
+  // Deferred, never dropped: the motion ending is the one place the read is taken, and the floor comes back at the zone's own number.
+  written.length = 0;
+  context.endLibraryMotion();
+  if (!written.some((one) => one.value === 'auto' && !one.moving)) {
+    throw new Error('the motion ended and the held-back measurement was never taken');
+  }
+  if (lead.style.minWidth !== `${MAC_LEAD}px`) {
+    throw new Error(`the pane stopped and the zone was left floored at ${lead.style.minWidth || 'nothing'} rather than its own ${MAC_LEAD}px`);
+  }
+});
+
 check('a shut pane leaves the zone sized by its own buttons', () => {
   // The claim the change must not break: with no pane to match, the zone takes its width from what is standing in it and the stylesheet's own `width: auto` is the whole of that. So the floor is the same number and nothing pins a width over it.
   const context = bootWithLead(WINDOWS_LEAD, { libraryClosed: true });
