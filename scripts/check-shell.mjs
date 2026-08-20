@@ -8050,7 +8050,7 @@ if (booted) {
   // The full-window picture is a reader and nothing else: it shows an element the page already holds, so no route from opening or closing it reaches the document buffer, and none of it needs a host.
   check('a full-window picture is safe to open and can never write', () => {
     const fragment = readFileSync(join(root, 'src/assets/shell/image-sheet.js'), 'utf8');
-    for (const part of ['function bindImageSheet(', 'function openImageSheet(', 'function closeImageSheet()', 'leafFocusForKeyboard(opener)', "event.key !== 'Escape'", "scrim.addEventListener('click', closeImageSheet)"]) {
+    for (const part of ['function bindImageSheet(', 'function openImageSheet(', 'function closeImageSheet()', 'leafFocusForKeyboard(opener)']) {
       if (!fragment.includes(part)) throw new Error(`the picture sheet lost: ${part}`);
     }
     if (/\b(?:send|sendEditCommand|ipc\.postMessage)\b/.test(fragment)) {
@@ -8078,6 +8078,71 @@ if (booted) {
     const render = readFileSync(join(root, 'src/assets/shell/render-document.js'), 'utf8');
     if (render.indexOf('bindImageSheet();') < render.indexOf('laneWidePictures();')) {
       throw new Error('the opener is bound before the paragraphs it looks for are marked');
+    }
+  });
+
+  // All four ways out are pressed on the elements that carry them, over a picture of the check's own: a binding matched as a line of text passes whether or not anything ever reaches it.
+  check('the full-window picture opens over a picture of its own, wears its open state, and all four ways out take it back down', () => {
+    const app = booted.document.getElementById('app');
+    const wasQuery = app.querySelector;
+    const held = app.children.slice();
+    // The whole of what the builder reads off the element it is opened from: no missing mark, a word for the label, an address for the source.
+    const standInPicture = () => Object.assign(fakeElement('checkedPicture'), { tagName: 'IMG', dataset: {}, alt: 'A checked picture', currentSrc: 'leaf-asset://checked.png' });
+    const opener = fakeElement('checkedPictureOpener');
+    const wornBy = (child) => String((child && child.className) || '');
+    // The page's class list holds only what the shipped markup declares, so an overlay the open just built is not in it — the one query that finds it is pointed at what landed on the page, the way the checks above point it.
+    let standing = null;
+    const openOnce = () => {
+      standing = null;
+      booted.openImageSheet(standInPicture(), opener);
+      const fresh = app.children.filter((child) => !held.includes(child));
+      standing = fresh.find((child) => wornBy(child).includes('image-sheet-overlay')) || null;
+      const scrim = fresh.find((child) => wornBy(child) === 'lt-backdrop') || null;
+      if (!standing || !scrim) throw new Error(`opening the full-window picture put ${fresh.length} new things on the page`);
+      const [shown, corner] = standing.children;
+      // The open state rides on a frame the page asks for, so a sheet born open could never be seen arriving.
+      if (standing.classList.contains('open')) throw new Error('the sheet and its dim were built already open');
+      booted.__frames.drain();
+      if (!standing.classList.contains('open') || !scrim.classList.contains('open')) {
+        throw new Error('the frame the page asked for left the sheet or its dim shut');
+      }
+      return { overlay: standing, scrim, shown, corner };
+    };
+    const press = (element, event = {}) => (element.listeners.get('click') || []).forEach((handler) => handler(event));
+    // Raised on the document's own list rather than called by name: the fragment binds it at load, and a handler nothing ever registered would pass a call.
+    const escape = () => {
+      const event = { key: 'Escape', preventDefault() {}, stopPropagation() {} };
+      for (const handler of booted.document.listeners.get('keydown') || []) handler(event);
+    };
+    const gone = (...leaving) => leaving.every((one) => !app.children.includes(one));
+    try {
+      app.querySelector = (selector) => (String(selector) === '.image-sheet-overlay' ? standing : wasQuery.call(app, selector));
+      const first = openOnce();
+      if (wornBy(first.shown) !== 'image-sheet-picture') throw new Error('the sheet opened holding no picture');
+      if (first.shown.src !== 'leaf-asset://checked.png') throw new Error(`the sheet shows ${JSON.stringify(first.shown.src)} rather than the address the element itself carries`);
+      if (first.shown.alt !== 'A checked picture') throw new Error('the shown picture lost the word the element was labeled with');
+      const cross = first.corner.children[0];
+      if (!wornBy(cross).includes('image-sheet-close')) throw new Error('the corner carries no close cross');
+      press(cross);
+      if (!gone(first.overlay, first.scrim)) throw new Error('the close cross left the sheet or its dim standing on the page');
+
+      const second = openOnce();
+      press(second.scrim);
+      if (!gone(second.overlay, second.scrim)) throw new Error('a press on the sheet’s own dim left it standing on the page');
+
+      // The glass is the ground the scrim shows through, so the listener closes on anything whose target is not the picture — which makes the press on the picture the one that carries the claim: without it, a listener that closed on every press would pass.
+      const third = openOnce();
+      press(third.overlay, { target: third.shown });
+      if (gone(third.overlay, third.scrim)) throw new Error('a press on the picture itself took the sheet down');
+      press(third.overlay, { target: third.corner });
+      if (!gone(third.overlay, third.scrim)) throw new Error('a press on the glass beside the picture left the sheet standing on the page');
+
+      const fourth = openOnce();
+      escape();
+      if (!gone(fourth.overlay, fourth.scrim)) throw new Error('Escape on the document left the sheet or its dim standing on the page');
+    } finally {
+      app.querySelector = wasQuery;
+      for (const child of app.children.slice()) if (!held.includes(child)) child.remove();
     }
   });
 
