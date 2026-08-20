@@ -9753,6 +9753,52 @@ if (booted) {
     vm.runInContext('dirtyByPath.clear(); undoableByPath.clear();', booted);
   });
 
+  check('the strip a tab drag redraws leaves an open source editor exactly where it was', () => {
+    // The whole of what a tab drag now sends. A full render would take the source tab off the reading path, throw the editor away and build a new one at the top of the file — so what has to be true is that this call never reaches the editor at all.
+    const first = 'C:\\Notes\\one.md';
+    const second = 'C:\\Notes\\two.md';
+    let disposed = 0;
+    const editor = {
+      __scrollTop: 4200,
+      getScrollTop() { return this.__scrollTop; },
+      setScrollTop(next) { this.__scrollTop = next; },
+      dispose() { disposed += 1; },
+      focus() {},
+      updateOptions() {},
+    };
+    booted.__fakeMonaco = editor;
+    try {
+      vm.runInContext('monacoEditor = __fakeMonaco; codeViewActive = true;', booted);
+      const strip = () => booted.document.getElementById('tabBar').innerHTML;
+      const order = () => [...strip().matchAll(/data-tab-path="([^"]*)"/g)].map((one) => one[1]);
+      const reorder = (tabs) =>
+        booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs, active: tabs.findIndex((t) => t.path === second) });
+      reorder([{ path: first }, { path: second }]);
+      if (order().join('|') !== `${first}|${second}`) {
+        throw new Error(`the strip did not draw the order the host sent: ${JSON.stringify(order())}`);
+      }
+
+      // Drag the other tab past the one being read: the strip comes back in the new order and the editor is untouched.
+      reorder([{ path: second }, { path: first }]);
+      if (order().join('|') !== `${second}|${first}`) {
+        throw new Error(`the strip did not redraw the new order: ${JSON.stringify(order())}`);
+      }
+      if (vm.runInContext('monacoEditor', booted) !== editor) {
+        throw new Error('the reorder replaced the editor, so every keystroke of undo in it has gone');
+      }
+      if (disposed) throw new Error('the reorder threw the editor away');
+      if (editor.getScrollTop() !== 4200) {
+        throw new Error(`the reader was moved to ${editor.getScrollTop()} instead of being left where they were`);
+      }
+      if (vm.runInContext('codeViewActive', booted) !== true) {
+        throw new Error('the reorder took the source view down');
+      }
+    } finally {
+      vm.runInContext('monacoEditor = null; codeViewActive = false;', booted);
+      booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [], active: null });
+    }
+  });
+
   check('a home row reads as a name over its folder', () => {
     const path = 'C:\\Users\\me\\Vault\\Journal\\A note.md';
     const row = homeRowMarkup(path);

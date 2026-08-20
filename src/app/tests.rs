@@ -2638,6 +2638,46 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
 }
 
 #[test]
+fn dragging_a_tab_redraws_the_strip_and_leaves_the_document_alone() {
+    // A reorder changes the strip and nothing else, and a full render is not free: it rereads the file, rewrites the recents, and a tab showing source is thrown away and built again at the top of the file with the caret and the editor's undo stack.
+    let source = include_str!("event_loop.rs");
+    let arm = source
+        .split("IpcCommand::MoveTab")
+        .nth(1)
+        .and_then(|rest| rest.split("IpcCommand::").next())
+        .expect("the move-tab arm");
+    assert!(
+        arm.contains("refresh_tab_strip"),
+        "the strip carries everything a reorder changes"
+    );
+    assert!(
+        !arm.contains("render("),
+        "a reorder never changes which document is on screen, so nothing about it may be drawn again"
+    );
+    assert!(
+        arm.contains("move_tab(from, to)"),
+        "the guard that refuses a drag landing where it started stays"
+    );
+}
+
+#[test]
+fn moving_a_favorite_row_needs_more_than_the_strip() {
+    // The cheap path a tab drag now takes would stop these two drawing at all: a favorite row exists only on the start screen, which the strip refresh does not draw. The drag that moves a row clears its transform without moving the row, so this render is the only thing that draws the new order.
+    let source = include_str!("render.rs");
+    for name in ["repoint_favorite", "move_favorite"] {
+        let body = source
+            .split(&format!("fn {name}("))
+            .nth(1)
+            .and_then(|rest| rest.split("\n    }").next())
+            .unwrap_or_else(|| panic!("the {name} body"));
+        assert!(
+            body.contains("self.render("),
+            "the start screen's own render is the only thing that draws a favorite row, so {name} keeps it"
+        );
+    }
+}
+
+#[test]
 fn closing_a_tab_to_the_right_of_the_one_being_read_changes_only_the_strip() {
     // The whole reported fault: the document on screen did not change, so nothing about it may be drawn again.
     let mut workspace = Workspace::default();
