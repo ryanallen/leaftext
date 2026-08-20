@@ -17,6 +17,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync,
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { buildRecord, buildingPath } from './gate-design.mjs';
 import { keep, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
 import { dirtyPaths } from './plan-tree.mjs';
 
@@ -88,6 +89,47 @@ export function recordAfter(session, toolUseId, dir = tmpdir(), from = root, pat
   const before = pathsIn(path);
   rmSync(path, { force: true });
   return paths.filter((file) => !before.includes(file)).filter((file) => record(file, session, dir, from));
+}
+
+/// Every `### Phase` section of a ticket, with its boxes counted. Any other heading ends the section, so the owner's box and the per-phase `/check` box — each under a heading of its own — are never counted as a phase's work.
+export function phasesOf(ticket) {
+  const phases = [];
+  let here = null;
+  for (const line of String(ticket ?? '').split('\n')) {
+    const heading = /^#{1,6}\s+(.+?)\s*$/.exec(line);
+    if (heading) {
+      here = /^Phase\b/i.test(heading[1]) ? { phase: heading[1], open: 0, ticked: 0 } : null;
+      if (here) phases.push(here);
+      continue;
+    }
+    if (!here) continue;
+    const box = /^\s*-\s*\[([ xX])\]/.exec(line);
+    if (box) here[box[1] === ' ' ? 'open' : 'ticked'] += 1;
+  }
+  return phases;
+}
+
+/// The phase a build is on — the first still carrying an open box — and how many of its boxes are ticked. Null once every phase is finished.
+export function phaseNow(ticket) {
+  const phase = phasesOf(ticket).find((p) => p.open > 0);
+  return phase ? { phase: phase.phase, ticked: phase.ticked } : null;
+}
+
+/// Append one sample to this session's build record: the phase being built and how many of its boxes are ticked, read before the edit lands. Only a source edit is sampled — a tick goes in the plan tree next door, and sampling that would record the tick as though it were the code.
+export function sample(session, file, dir = tmpdir(), from = root, open = (path) => readFileSync(path, 'utf8')) {
+  const held = buildRecord(session, dir);
+  if (!held) return null;
+  if (!repoRelative(file, from)) return null;
+  let text = '';
+  try {
+    text = open(held.ticket);
+  } catch {
+    return null; // A ticket that will not open says nothing about how its boxes stand.
+  }
+  const now = phaseNow(text);
+  if (!now) return null;
+  writeFileSync(buildingPath(session, dir), JSON.stringify({ session: sessionTag(session), ticket: held.ticket, samples: [...held.samples, now] }) + '\n');
+  return now;
 }
 
 /// What one session has edited.
@@ -174,6 +216,36 @@ function selfTest() {
     if (recordAfter(THREE, `${CALL}-nothing`, dir, root, ['scripts/gate-touched.mjs', 'Cargo.toml']).length) fails.push('a shell command that changed nothing grew the record');
     if (touchedBy(THREE, dir).join(' ') !== 'scripts/gate-touched.mjs Cargo.toml') fails.push('a shell command left the wrong paths in its record');
 
+    // How a ticket's boxes stand, which is the one fact the stop hook cannot get anywhere else.
+    const TICKET = [
+      '# A plan', '', '## Phases', '',
+      '### Phase 1 — the first one', '', '- [x] built', '- [ ] not built yet', '',
+      '### Phase 2 — the second one', '', '- [ ] nothing here yet', '',
+      '### Every phase ends the same way', '', '- [ ] `/check`', '',
+      '### The owner\'s box', '', '- [ ] press it', '',
+    ].join('\n');
+    const phases = phasesOf(TICKET);
+    if (phases.length !== 2) fails.push(`${phases.length} phases read rather than 2 — a heading of its own is not a phase`);
+    if (phases[0]?.ticked !== 1 || phases[0]?.open !== 1) fails.push("the first phase's boxes were not counted");
+    if (phases.some((p) => p.phase.includes('owner') || p.phase.includes('Every'))) fails.push("the owner's box or the `/check` box was read as a phase");
+    if (phaseNow(TICKET)?.phase !== 'Phase 1 — the first one') fails.push('the phase being built is not the first one with an open box');
+    if (phaseNow(TICKET)?.ticked !== 1) fails.push('the phase being built did not carry its tick count');
+    if (phaseNow('# A plan\n\n### Phase 1 — done\n\n- [x] built\n')) fails.push('a ticket with every box ticked still named a phase being built');
+    if (phasesOf('# A plan\n\n### Phase 1 — struck\n\n- [x] ~~dropped~~ — N/A\n')[0]?.ticked !== 1) fails.push('a struck box was not counted as ticked');
+    if (phasesOf('')?.length) fails.push('an empty ticket named a phase');
+
+    // A sample per source edit, and none for the plan tree next door, where the tick itself goes.
+    const FOUR = 'dddddddd-4444-4444-4444-444444444444';
+    const readTicket = () => TICKET;
+    if (sample(FOUR, join(root, 'src', 'lib.rs'), dir, root, readTicket)) fails.push('a session with no build turn was sampled');
+    writeFileSync(buildingPath(FOUR, dir), JSON.stringify({ session: sessionTag(FOUR), ticket: '/plans/a.md', samples: [] }) + '\n');
+    if (sample(FOUR, join(root, 'src', 'lib.rs'), dir, root, readTicket)?.ticked !== 1) fails.push('a source edit was not sampled');
+    if (sample(FOUR, join(root, '..', 'docs', 'README.md'), dir, root, readTicket)) fails.push('an edit to the plan tree was sampled as code');
+    sample(FOUR, join(root, 'Cargo.toml'), dir, root, readTicket);
+    if (buildRecord(FOUR, dir)?.samples.length !== 2) fails.push('the build record did not keep one sample per source edit');
+    if (sample(FOUR, join(root, 'src', 'lib.rs'), dir, root, () => { throw new Error('gone'); })) fails.push('a ticket that will not open was still sampled');
+    if (touchedBy(FOUR, dir).length) fails.push('sampling grew the release touched-file record');
+
     // The sweep this hook runs on every edit clears a day-old record and leaves a live one.
     const stale = join(dir, `${TOUCHED}eeeeeeee.json`);
     writeFileSync(stale, JSON.stringify({ session: 'eeeeeeee', paths: ['src/lib.rs'] }) + '\n');
@@ -203,7 +275,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log('gate-touched: ok (edits and shell commands write the paths they changed under their own session, a no-op command grows nothing, one outside the checkout is dropped, no session id records nothing and subtracts nothing, and a day-old record is swept)');
+  console.log('gate-touched: ok (edits and shell commands write the paths they changed under their own session, a no-op command grows nothing, one outside the checkout is dropped, no session id records nothing and subtracts nothing, a day-old record is swept, and every source edit of a build samples the phase it is on without touching the release record)');
 }
 
 // Only act when run directly: the release imports this for `othersTouched`, and a hook body that read stdin on import would swallow whatever payload the importing hook was handed.
@@ -231,7 +303,9 @@ if (!args) {
   }
   if (EDIT_TOOLS.test(payload.tool_name ?? '')) {
     try {
-      record(payload.tool_input?.file_path ?? payload.tool_input?.notebook_path ?? '', sessionOf(raw));
+      const file = payload.tool_input?.file_path ?? payload.tool_input?.notebook_path ?? '';
+      record(file, sessionOf(raw));
+      sample(sessionOf(raw), file);
       sweep(tmpdir(), TOUCHED);
     } catch {
       // A record that cannot be written subtracts nothing. Never block: a hook that can wedge a session is worse than no hook.
