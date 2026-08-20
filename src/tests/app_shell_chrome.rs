@@ -465,12 +465,11 @@ fn app_shell_styles_history_controls_with_neutral_icon_treatment() {
 
 #[test]
 fn app_bar_keeps_one_gap_between_visible_groups() {
-    // The bar is one sequence of places to go, so every space it declares between the leaf, the history pair and the two trailing rows is the same 16px. Unequal gaps made the same row read as loosely assembled clusters. Two groups are the exceptions: the window buttons, below, where three read as one control set rather than three more stops along the row, and the tab strip, which is a list of open documents rather than a run of unrelated controls.
+    // The bar is one sequence of places to go, so every space it declares between the leaf, the history pair and the two trailing rows is the same 16px. Unequal gaps made the same row read as loosely assembled clusters. Three groups are the exceptions: the window buttons, below, where three read as one control set rather than three more stops along the row, back and forward, which are one paired control on that same tight gap, and the tab strip, which is a list of open documents rather than a run of unrelated controls.
     let css = reading_mode_css();
 
     for selector in [
         "\n.app-bar-lead {",
-        "\n.history-actions {",
         "\n.app-trailing-items {",
         "\n.app-actions-items {",
     ] {
@@ -480,6 +479,13 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
             "{selector} must run on the bar's one gap: {body}"
         );
     }
+
+    // Back and forward are one control, not two stops along the row, so they close up to the same 4px the window buttons take.
+    let history = rule_body(css, "\n.history-actions {");
+    assert!(
+        history.contains("gap: var(--lt-space-4);"),
+        "the back and forward buttons sit tight against each other: {history}"
+    );
 
     // Inside the strip the tabs close up to 4px so they read as one set, while each end of the strip keeps the row's 16px: that inset is what the flares below are capped by, and the strip carries it while the two zones either side add none.
     let strip = rule_body(css, "\n.tab-bar {");
@@ -496,6 +502,17 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
     assert!(
         active.contains("margin: 0 var(--lt-space-12);"),
         "the active tab buys back the room its flare turns in: {active}"
+    );
+    // At an end of the strip there is no neighbor, and the strip's own 16px inset is already wider than the 14px flare — so the margin there would only push the first tab past the 16px every other space in the row keeps. Both drop, which is also a one-tab strip losing both.
+    let first = rule_body(css, "\n.tab-active:first-child {");
+    assert!(
+        first.contains("margin-left: 0;"),
+        "a selected first tab leaves the strip's own inset to feed its flare: {first}"
+    );
+    let last = rule_body(css, "\n.tab-active:last-child {");
+    assert!(
+        last.contains("margin-right: 0;"),
+        "a selected last tab leaves the strip's own inset to feed its flare: {last}"
     );
     let tab = rule_body(css, "\n.tab {");
     assert!(
