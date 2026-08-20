@@ -598,6 +598,8 @@ function renderState() {
     renderMathElements();
     observeReaderReflow();
     scheduleMinimapPreviewUpdate();
+    // A source view that gave up before it rendered left its landings standing, so drop them before this document spends them -- see dropViewLandingsFromAnotherDocument.
+    dropViewLandingsFromAnotherDocument(renderedPath);
     // Returning from the code view: land on the block holding the source line the code view was scrolled to. This wins over the reset-to-top the host's Reset intent would otherwise run.
     const exactRestore = takeExactViewRestore(state.document.path || activeDocumentPath());
     if (exactRestore) {

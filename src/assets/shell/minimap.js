@@ -373,6 +373,7 @@ function clampReaderScrollPosition() {
 }
 let resetReaderScrollFrame = 0;
 function resetReaderScrollToContentStart() {
+  dropViewLandingsFromAnotherDocument(activeDocumentPath());
   // Coalesce: back-to-back renders each scheduling a reset must not run it twice — the second pass would see the toggle fraction already consumed and hard-reset a mid-document reader to the top.
   if (resetReaderScrollFrame) {
     return;
