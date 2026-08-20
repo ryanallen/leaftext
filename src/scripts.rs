@@ -395,7 +395,7 @@ pub fn code_view_payload(
         "displayName": display_name,
         "dirty": dirty,
     });
-    // A restored position (returning to a tab left in code view) rides along as a 0..1 scroll fraction; omit it entirely otherwise so the page keeps its own placement (fresh toggle, in-place live reload).
+    // A source editor lands on one of two answers. This is the host's: a returning tab or a launch rides along as a 0..1 scroll fraction, `0` among them, since a saved place at the top is still a place. Omitted otherwise, which tells the page to use its own — the line the toggle was reading on a fresh entry, and the fraction off the editor it is replacing on an in-place rebuild.
     if let Some(fraction) = scroll_fraction {
         state["scrollFraction"] = serde_json::json!(fraction);
     }

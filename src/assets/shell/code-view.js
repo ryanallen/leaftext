@@ -176,6 +176,18 @@ function viewScrollFraction() {
   return Math.min(1, Math.max(0, app.scrollTop / scrollable));
 }
 
+// Where the next source editor lands, as a 0..1 fraction of its scrollable range. `null` is no answer and `0` is the top, so a first source view stays at the top while a return to the top goes there. Consumed by the next editor built.
+let pendingCodeViewFraction = null;
+// The document the live editor holds, so a position taken off it before it is thrown away is never spent on somebody else's file.
+let monacoEditorPath = null;
+
+// The fraction the next source editor should land at, decided while the editor it replaces is still there to ask. The host sends one for a tab coming back or a launch; an in-place rebuild (the file changing on disk, a save, a field edit, a block move) deliberately sends none, so the editor being replaced is asked instead — and only for its own document, or a switch to a source tab nobody has ever scrolled would land at the place in the file it came from.
+function codeViewLandingFraction(state) {
+  if (state && typeof state.scrollFraction === 'number') return state.scrollFraction;
+  if (!monacoEditor || monacoEditorPath == null || monacoEditorPath !== activeDocumentPath()) return null;
+  return viewScrollFraction();
+}
+
 let sessionPlaceTimer = 0;
 function scheduleSessionPlace() {
   clearTimeout(sessionPlaceTimer);
@@ -828,7 +840,33 @@ function growlLockedForReading() {
   leafToast('The source is locked. Click the padlock in the toolbar to edit it.');
 }
 
-// Create the editor in `container`, relay content changes to the source-splice path, and land where the reader was if a source offset was carried across the toggle. Skinned with the theme defineLeafMonacoTheme builds from our palette.
+// Put a freshly built editor where the reader left off, in priority order: the exact pixel the toggle saved when nothing has moved under it, then the source line the toggle was reading, then a fraction — the host's for a tab coming back, or the one taken off the editor this render replaced. Called once the wrap column is set, because a fraction needs the scrollable range the reader will actually have rather than the one it was measured against.
+function landNewCodeEditor(text) {
+  const path = activeDocumentPath();
+  const srcOffset = pendingCodeViewSrcOffset;
+  pendingCodeViewSrcOffset = null;
+  const fraction = pendingCodeViewFraction;
+  pendingCodeViewFraction = null;
+  const exact = takeExactViewRestore(path);
+  if (exact) {
+    // The reader never moved, so take the pixel back rather than re-derive it.
+    monacoEditor.setScrollTop(exact.codeScrollTop);
+  } else if (srcOffset != null && !pendingViewAtTop) {
+    const lineIndex = lineIndexAtByteOffset(text, srcOffset);
+    monacoEditor.revealLineNearTop(lineIndex + 1);
+  } else if (fraction != null) {
+    const scrollable = monacoEditor.getScrollHeight() - monacoEditor.getLayoutInfo().height;
+    if (scrollable > 0) {
+      monacoEditor.setScrollTop(Math.round(Math.min(1, Math.max(0, fraction)) * scrollable));
+    }
+  }
+  // Read back where it settled, not what was asked for: the landing can clamp.
+  viewHandoffFor(path).codeLanded = monacoEditor.getScrollTop();
+  pendingViewAtTop = false;
+  pendingViewScrollFraction = null;
+}
+
+// Create the editor in `container`, relay content changes to the source-splice path, and land where the reader was — see landNewCodeEditor. Skinned with the theme defineLeafMonacoTheme builds from our palette.
 function createMonacoEditor(monaco, container, state, text) {
   const codeFont = getComputedStyle(document.documentElement)
     .getPropertyValue('--code-font')
@@ -872,6 +910,7 @@ function createMonacoEditor(monaco, container, state, text) {
     overviewRulerLanes: 0,
     overviewRulerBorder: false,
   });
+  monacoEditorPath = activeDocumentPath();
   monacoChangeSub = monacoEditor.onDidChangeModelContent(() => {
     codeViewText = monacoEditor.getValue();
     const path = activeDocumentPath();
@@ -896,20 +935,7 @@ function createMonacoEditor(monaco, container, state, text) {
     monacoFontsDoneHandler = () => refitCodeViewToFont();
     document.fonts.addEventListener('loadingdone', monacoFontsDoneHandler);
   }
-  const srcOffset = pendingCodeViewSrcOffset;
-  pendingCodeViewSrcOffset = null;
-  const exact = takeExactViewRestore(activeDocumentPath());
-  if (exact) {
-    // The reader never moved, so take the pixel back rather than re-derive it.
-    monacoEditor.setScrollTop(exact.codeScrollTop);
-  } else if (srcOffset != null && !pendingViewAtTop) {
-    const lineIndex = lineIndexAtByteOffset(text, srcOffset);
-    monacoEditor.revealLineNearTop(lineIndex + 1);
-  }
-  // Read back where it settled, not what was asked for: the landing can clamp.
-  viewHandoffFor(activeDocumentPath()).codeLanded = monacoEditor.getScrollTop();
-  pendingViewAtTop = false;
-  pendingViewScrollFraction = null;
+  landNewCodeEditor(text);
   // Typing help: completions, hover, and the broken-link pass (code-intel.js).
   setupCodeIntel(monaco);
   // And the heading trail pinned at the top edge (code-sticky.js).
@@ -944,6 +970,7 @@ function disposeMonacoEditor() {
   }
   monacoEditor.dispose();
   monacoEditor = null;
+  monacoEditorPath = null;
   codeViewWrapColumn = 0;
   // Drop the published minimap width so a stale value can't frame the reading view if it ever read the property.
   document.documentElement.style.removeProperty('--cv-minimap-width');
@@ -951,6 +978,8 @@ function disposeMonacoEditor() {
 
 // Swap the reader shell over to Monaco for the active document's source. Monaco loads lazily; the spinner (armed by the toggle) stays up until the editor is on screen. Re-entering (live reload) disposes and rebuilds.
 function renderCodeView(state) {
+  // Asked before the editor it replaces is gone, because on an in-place rebuild that editor is the only thing that knows where the reader was — see codeViewLandingFraction.
+  pendingCodeViewFraction = codeViewLandingFraction(state);
   disposeMonacoEditor();
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
