@@ -18,7 +18,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { clear, heldBy, listPath, pending } from './gate-checklist.mjs';
+import { buildRecord, buildingPath, forget } from './gate-design.mjs';
 import { close, outstanding, read } from './gate-keycode.mjs';
+import { phasesOf } from './gate-touched.mjs';
 import { keep, sessionOf } from './hook-payload.mjs';
 import { dirtyPaths } from './plan-tree.mjs';
 
@@ -94,6 +96,18 @@ export function movedSince(startedAt, dir = root) {
     }
   }
   return null;
+}
+
+/// The phase a build swept, or null when its boxes filled in as the code landed. Two questions, and both have to answer yes: the ticks never moved between the first source edit and the last, and the turn does not end owing exactly one box. A box's code lands before that box's own tick, so one is what the loop may always still owe — none means nothing was ticked at all, and more than one means several boxes' work went in before anything was said about it.
+export function sweptPhase(held, ticket) {
+  if (!held?.samples?.length) return null;
+  const last = held.samples[held.samples.length - 1];
+  const mine = held.samples.filter((s) => s?.phase === last.phase);
+  const first = mine[0].ticked;
+  if (mine.some((s) => s.ticked > first)) return null;
+  const ended = phasesOf(ticket).find((p) => p.phase === last.phase);
+  const gained = (ended ? ended.ticked : first) - first;
+  return gained === 1 ? null : { phase: last.phase, gained, edits: mine.length };
 }
 
 /// Each block on its own. Rule 1 caps a response, and a turn that says three things says three of them — joining first would fail a turn for the sum of twelve short lines and pass one that ended in an essay.
@@ -299,6 +313,25 @@ function selfTest() {
     fails.push(`moved: ${error.message}`);
   }
 
+  // Whether a phase's boxes filled in while its code was landing, which is the whole of what a build turn is held on.
+  const PHASE = 'Phase 1 — the first one';
+  const plan = (ticked, open) => ['# A plan', '', `### ${PHASE}`, '', ...Array(ticked).fill('- [x] built'), ...Array(open).fill('- [ ] not yet'), ''].join('\n');
+  const turn = (...counts) => ({ ticket: '/plans/a.md', samples: counts.map((ticked) => ({ phase: PHASE, ticked })) });
+  // The loop: code, test, tick, next box. The count moved while the code did.
+  if (sweptPhase(turn(0, 0, 1, 1), plan(2, 3))) fails.push('swept: a build that ticked as it went was held');
+  // The sweep: five boxes' code, then five ticks at the end.
+  if (!sweptPhase(turn(0, 0, 0, 0, 0), plan(5, 0))) fails.push('swept: a phase batch-ticked at the end was let through');
+  // A one-box phase can only tick after its last edit, and that is the loop working.
+  if (sweptPhase(turn(0, 0), plan(1, 2))) fails.push('swept: a phase owing one box at the end was held');
+  // Code moved and nothing was ever said about it.
+  if (!sweptPhase(turn(0, 0), plan(0, 3))) fails.push('swept: a turn that ticked nothing was let through');
+  // Another ticket's boxes cannot satisfy it: the phase is matched by name, and one that is not in the file gained nothing.
+  if (!sweptPhase(turn(0, 0), '# Another plan\n\n### Phase 1 — something else\n\n- [x] a\n- [x] b\n')) fails.push("swept: another ticket's ticks satisfied the rule");
+  // A turn that opened the next phase is judged on the one it ended in.
+  if (sweptPhase({ ticket: '/plans/a.md', samples: [{ phase: 'Phase 1 — old', ticked: 0 }, { phase: PHASE, ticked: 3 }] }, plan(4, 1))) fails.push('swept: a turn was judged on a phase it had already left');
+  if (sweptPhase(null, plan(0, 1))) fails.push('swept: a turn with no build record was held');
+  if (sweptPhase({ ticket: '/plans/a.md', samples: [] }, plan(0, 1))) fails.push('swept: a build that edited no source was held');
+
   // The checklist's other half, through the real entry point: a step left un-struck has to actually hold the turn, and a turn held for a step alone must not be told to say its reply again. Its own session id, so a `just verify` beside another one does not hold the agent running it to a list this test wrote.
   const mine = `gate-voice-selftest-${process.pid}`;
   writeFileSync(path, [
@@ -320,10 +353,23 @@ function selfTest() {
     if (stop().trim() !== '') fails.push('checklist: a fully struck list still held the turn');
     writeFileSync(listPath(mine), '- 1. Tests first\n');
     if (stop({ stop_hook_active: true }).trim() !== '') fails.push('checklist: held again while a stop hook was already running');
+    clear(mine);
+
+    // The build record through the real entry point: the wiring, not only the reading. Its own ticket file, so nothing here opens a plan somebody is working on.
+    const ticket = join(tmpdir(), `gate-voice-ticket-${process.pid}.md`);
+    writeFileSync(ticket, plan(5, 0));
+    writeFileSync(buildingPath(mine), JSON.stringify({ session: mine, ticket, samples: turn(0, 0, 0, 0, 0).samples }) + '\n');
+    const swung = JSON.parse(stop() || '{}');
+    if (swung.decision !== 'block') fails.push('build: a swept phase did not hold the turn');
+    if (!swung.reason?.includes(PHASE)) fails.push('build: the block did not name the phase');
+    if (buildRecord(mine)) fails.push('build: the record survived the turn it held');
+    if (stop().trim() !== '') fails.push('build: the turn was held again after its record was cleared');
+    rmSync(ticket, { force: true });
   } catch (error) {
     fails.push(`checklist: ${error.message}`);
   } finally {
     clear(mine);
+    forget(mine);
     rmSync(path, { force: true });
   }
 
@@ -344,7 +390,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, code moving without its ticket, keycodes)`);
+  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, code moving without its ticket, a phase whose boxes did not fill in while its code landed, keycodes)`);
 }
 
 if (process.argv.includes('--check')) {
@@ -377,12 +423,20 @@ if (process.argv.includes('--check')) {
   const record = read(session);
   const filed = filedSince(record?.startedAt);
   const found = offenses(blocks, filed);
-  // The code moved and the ticket did not. Held whatever the reply says, because the reply is not where a box is ticked.
-  const moved = filed ? null : movedSince(record?.startedAt);
+  // The boxes of the phase being built did not fill in while its code was landing. Held whatever the reply says, because the reply is not where a box is ticked, and read off the samples rather than off the ticket alone — a batch tick at the end leaves a file identical to one filled in as the work finished.
+  const held = buildRecord(session);
+  let swept = null;
+  try {
+    if (held) swept = sweptPhase(held, readFileSync(held.ticket, 'utf8'));
+  } catch {
+    // A ticket that will not open says nothing about its boxes, and a gate that cannot read must refuse nothing.
+  }
+  // The same fault where no build prompt named a ticket: the code moved and nothing under the plan tree did. This is the whole of what a turn outside a build is still held on.
+  const moved = held || filed ? null : movedSince(record?.startedAt);
   const owed = blocks.length ? outstanding(record) : [];
   // The turn checklist's other half. One Stop hook holds all three, because a second one would spend the same single block the host allows.
   const left = pending(session);
-  if (found.length || owed.length || left.length || moved) {
+  if (found.length || owed.length || left.length || moved || swept) {
     const parts = [];
     if (found.length) parts.push(`Rule 1, from CLAUDE.md:\n${found.map((f) => `- ${f}`).join('\n')}`);
     if (owed.length) {
@@ -392,13 +446,20 @@ if (process.argv.includes('--check')) {
     if (moved) {
       parts.push(`${moved} changed and nothing under the plan tree did. Tick the box in the same edit as its code: open the ticket, tick what this turn built, and say on the box what the file now does where it came out different from the plan. A phase whose boxes are still open is one nobody can read the build against.`);
     }
+    if (swept) {
+      const gained = swept.gained ? `${swept.gained} boxes were ticked after the code stopped moving` : 'no box was ticked at all';
+      parts.push(`${held.ticket}\n"${swept.phase}" took ${swept.edits} source edits and its boxes never moved while they landed — ${gained}. Tick each box in the same edit as the code and test that finish it, before the next one is started: the ticket is where the owner watches a build happen, and a phase that fills in at the end says nothing was happening while it was.`);
+    }
     // Only a reply that broke a rule is written again. A turn held for a step or a keycode says nothing new.
     if (found.length) parts.push('Say it again, shorter. No note about this correction — just the answer.');
+    // The samples belong to the turn that made them. Kept past the block, they would hold the turn that fixes the ticket for the sweep it is repairing.
+    forget(session);
     process.stdout.write(JSON.stringify({ decision: 'block', reason: parts.join('\n\n') }));
     process.exit(0);
   }
   // The turn stands. Forget what it owed rather than leave a file behind.
   close(session);
   clear(session);
+  forget(session);
   process.exit(0);
 }
