@@ -3,6 +3,7 @@
 use super::*;
 use std::{
     io,
+    sync::OnceLock,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -17,18 +18,72 @@ fn fixture_source_path(relative_path: &str) -> PathBuf {
         .join(relative_path)
 }
 
-fn session_fixture_dir() -> PathBuf {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    std::env::temp_dir().join(format!("leaf-session-fixtures-{unique}"))
+/// A scratch folder of this test's own. The label is what keeps two tests apart inside one run: the clock here ticks slowly enough that two starting together were handed one folder, and seven of them write the same file name into it. The run's process id and its single clock reading keep two runs apart.
+fn scratch_dir(label: &str) -> PathBuf {
+    static RUN: OnceLock<u128> = OnceLock::new();
+    let run = RUN.get_or_init(|| {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time is after Unix epoch")
+            .as_nanos()
+    });
+    let dir =
+        std::env::temp_dir().join(format!("leaf-scratch-{label}-{}-{run}", std::process::id()));
+    fs::create_dir_all(&dir).expect("scratch directory is created");
+    dir
+}
+
+#[test]
+fn two_scratch_folders_asked_for_under_different_names_are_never_the_same_folder() {
+    // Handed in rather than written into the call, so the guard below reads only real call sites.
+    let one = "two-scratch-folders-one";
+    let other = "two-scratch-folders-other";
+    let first = scratch_dir(one);
+    let second = scratch_dir(other);
+
+    assert_ne!(first, second, "two names are two folders");
+    assert_eq!(
+        first,
+        scratch_dir(one),
+        "and one name is one folder, which is why no two tests may share a name"
+    );
+
+    let _ = fs::remove_dir_all(&first);
+    let _ = fs::remove_dir_all(&second);
+}
+
+#[test]
+fn no_two_tests_ask_for_a_scratch_folder_under_the_same_name() {
+    // A label typed twice collides exactly as the clock alone did, and says as little. So the file reads itself.
+    let source = include_str!("tests.rs");
+    // Spelled in halves so the scan cannot find itself, and read past whatever spacing the formatter left, because a long label is wrapped onto its own line.
+    let opener = concat!("scratch", "_dir(");
+    let mut seen: Vec<(&str, usize)> = Vec::new();
+    for (at, _) in source.match_indices(opener) {
+        let after = source[at + opener.len()..].trim_start();
+        if !after.starts_with('"') {
+            continue;
+        }
+        let opened = source.len() - after.len() + 1;
+        let end = opened + source[opened..].find('"').expect("the label is closed");
+        let label = &source[opened..end];
+        let line = source[..at].lines().count();
+        if let Some((_, first)) = seen.iter().find(|(name, _)| *name == label) {
+            panic!("two tests ask for a scratch folder called {label} — line {first} and line {line}. A label is its own test's name");
+        }
+        seen.push((label, line));
+    }
+
+    assert!(
+        seen.len() > 20,
+        "the scan found {} call sites, so it has stopped reading them",
+        seen.len()
+    );
 }
 
 #[test]
 fn a_workspace_restores_saved_regular_files_in_order_and_nearest_tab() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("a_workspace_restores_saved_regular_files_in_order_and_nearest_tab");
     let first = dir.join("first.md");
     let second = dir.join("second.md");
     fs::write(&first, "# First").expect("first session file is written");
@@ -151,7 +206,7 @@ fn the_mid_run_session_names_the_document_a_tab_followed_a_link_to_with_that_tab
 
 #[test]
 fn a_tab_needs_no_seed_for_its_own_buffers_document_with_nothing_on_disk() {
-    let dir = session_fixture_dir();
+    let dir = scratch_dir("a_tab_needs_no_seed_for_its_own_buffers_document_with_nothing_on_disk");
     let path = dir.join("guide.md");
     let mut workspace = Workspace::default();
     workspace.open_path(path.clone());
@@ -193,8 +248,7 @@ fn a_new_note_nobody_typed_into_is_not_carried_out_of_the_window() {
 
 #[test]
 fn a_new_note_comes_back_with_its_words_its_name_its_place_and_its_dot() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("a_new_note_comes_back_with_its_words_its_name_its_place_and_its_dot");
     let guide = dir.join("guide.md");
     fs::write(&guide, "# Guide\n").expect("session file is written");
     let mut workspace = Workspace::default();
@@ -272,8 +326,7 @@ fn a_restored_note_still_has_no_file_so_the_first_save_is_the_one_that_asks() {
 
 #[test]
 fn an_entry_with_no_file_is_never_put_back_from_a_file_of_that_name() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("an_entry_with_no_file_is_never_put_back_from_a_file_of_that_name");
     let decoy = dir.join("Untitled.md");
     fs::write(&decoy, "# Somebody else's file\n").expect("the decoy file is written");
 
@@ -323,8 +376,9 @@ fn note_wearing_a_real_files_name(path: &Path) -> Workspace {
 
 #[test]
 fn a_file_named_untitled_opens_in_its_own_tab_rather_than_the_note_wearing_that_name() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir(
+        "a_file_named_untitled_opens_in_its_own_tab_rather_than_the_note_wearing_that_name",
+    );
     let readers_file = dir.join("Untitled.md");
     fs::write(&readers_file, "# The reader's own file\n").expect("the reader's file is written");
     let mut workspace = note_wearing_a_real_files_name(&readers_file);
@@ -349,8 +403,7 @@ fn a_file_named_untitled_opens_in_its_own_tab_rather_than_the_note_wearing_that_
 
 #[test]
 fn the_pipe_opens_a_file_the_note_at_the_front_is_named_after() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("the_pipe_opens_a_file_the_note_at_the_front_is_named_after");
     let readers_file = dir.join("Untitled.md");
     fs::write(&readers_file, "# The reader's own file\n").expect("the reader's file is written");
     let mut workspace = note_wearing_a_real_files_name(&readers_file);
@@ -385,8 +438,7 @@ fn a_notes_tab_that_followed_a_link_is_still_the_tab_showing_that_document() {
 
 #[test]
 fn a_change_to_a_file_the_note_is_named_after_is_not_a_change_to_the_note() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("a_change_to_a_file_the_note_is_named_after_is_not_a_change_to_the_note");
     let readers_file = dir.join("Untitled.md");
     fs::write(&readers_file, "# The reader's own file\n").expect("the reader's file is written");
     let workspace = note_wearing_a_real_files_name(&readers_file);
@@ -435,8 +487,7 @@ fn dirty_tab_workspace(path: &Path, saved: &str, typed: &str) -> Workspace {
 
 #[test]
 fn closing_with_a_dirty_tab_brings_its_words_and_its_dot_back() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("closing_with_a_dirty_tab_brings_its_words_and_its_dot_back");
     let note = dir.join("note.md");
     fs::write(&note, "# Note\n").expect("session file is written");
     let workspace = dirty_tab_workspace(&note, "# Note\n", "\nTyped and never saved.\n");
@@ -467,8 +518,9 @@ fn closing_with_a_dirty_tab_brings_its_words_and_its_dot_back() {
 
 #[test]
 fn a_tab_that_followed_a_link_out_of_its_unsaved_words_comes_back_sitting_on_them() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir(
+        "a_tab_that_followed_a_link_out_of_its_unsaved_words_comes_back_sitting_on_them",
+    );
     let note = dir.join("note.md");
     fs::write(&note, "# Note\n").expect("session file is written");
     let guide = dir.join("guide.md");
@@ -566,8 +618,7 @@ fn a_tab_showing_a_file_keeps_its_entry_with_a_notes_buffer_behind_it() {
 
 #[test]
 fn a_file_changed_since_the_close_opens_as_the_disk_has_it() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("a_file_changed_since_the_close_opens_as_the_disk_has_it");
     let note = dir.join("note.md");
     fs::write(&note, "# Note\n").expect("session file is written");
     let session = dirty_tab_workspace(&note, "# Note\n", "Typed here.\n").closing_session();
@@ -583,8 +634,9 @@ fn a_file_changed_since_the_close_opens_as_the_disk_has_it() {
 
 #[test]
 fn a_file_gone_from_the_disk_brings_its_words_back_as_a_note_wearing_the_name_it_had() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir(
+        "a_file_gone_from_the_disk_brings_its_words_back_as_a_note_wearing_the_name_it_had",
+    );
     let note = dir.join("note.md");
     fs::write(&note, "# Note\n").expect("session file is written");
     let session =
@@ -615,8 +667,9 @@ fn a_file_gone_from_the_disk_brings_its_words_back_as_a_note_wearing_the_name_it
 
 #[test]
 fn undo_on_a_gone_files_restored_words_is_one_step_back_to_the_file_as_it_was_last_saved() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir(
+        "undo_on_a_gone_files_restored_words_is_one_step_back_to_the_file_as_it_was_last_saved",
+    );
     let note = dir.join("note.md");
     fs::write(&note, "# Note\n").expect("session file is written");
     let session =
@@ -637,8 +690,7 @@ fn undo_on_a_gone_files_restored_words_is_one_step_back_to_the_file_as_it_was_la
 
 #[test]
 fn a_saved_tab_carries_no_words_out_of_the_window() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("a_saved_tab_carries_no_words_out_of_the_window");
     let note = dir.join("note.md");
     fs::write(&note, "# Note\n").expect("session file is written");
 
@@ -664,8 +716,7 @@ fn a_saved_tab_carries_no_words_out_of_the_window() {
 
 #[test]
 fn undo_on_a_restored_tab_is_one_step_back_to_the_saved_file() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("session fixture directory is created");
+    let dir = scratch_dir("undo_on_a_restored_tab_is_one_step_back_to_the_saved_file");
     let note = dir.join("note.md");
     fs::write(&note, "# Note\n").expect("session file is written");
     let session = dirty_tab_workspace(&note, "# Note\n", "Typed here.\n").closing_session();
@@ -884,8 +935,7 @@ fn rename_file_rejects_path_traversal_and_empty_names() {
 
 #[test]
 fn renaming_the_open_document_moves_the_tab_with_it() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("renaming_the_open_document_moves_the_tab_with_it");
     let before = dir.join("notes.yaml");
     fs::write(&before, "title: Notes\n").expect("fixture file is written");
 
@@ -914,8 +964,7 @@ fn renaming_the_open_document_moves_the_tab_with_it() {
 
 #[test]
 fn renaming_the_open_document_moves_an_earlier_visit_to_it_too() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("renaming_the_open_document_moves_an_earlier_visit_to_it_too");
     let notes = dir.join("notes.md");
     fs::write(&notes, "# Notes\n").expect("fixture file is written");
     let linked = dir.join("linked.md");
@@ -959,8 +1008,7 @@ fn renaming_the_open_document_moves_an_earlier_visit_to_it_too() {
 
 #[test]
 fn renaming_a_file_a_tab_has_left_moves_its_buried_step_and_nothing_else() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("renaming_a_file_a_tab_has_left_moves_its_buried_step_and_nothing_else");
     let notes = dir.join("notes.md");
     fs::write(&notes, "# Notes\n").expect("fixture file is written");
     let linked = dir.join("linked.md");
@@ -1025,8 +1073,7 @@ fn renaming_a_file_leaves_a_step_naming_another_file_alone() {
 
 #[test]
 fn renaming_a_file_no_tab_holds_changes_no_tab() {
-    let dir = session_fixture_dir();
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("renaming_a_file_no_tab_holds_changes_no_tab");
     let open = dir.join("open.md");
     fs::write(&open, "# Open\n").expect("fixture file is written");
     let other = dir.join("other.md");
@@ -3010,22 +3057,9 @@ fn a_picture_picked_after_the_file_moved_is_never_spliced_at_the_offsets_the_pag
     );
 }
 
-/// A scratch folder for the transfer tests, named per test so they can run at once.
-fn transfer_fixture(label: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "leaf-transfer-{label}-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
-    dir
-}
-
 #[test]
 fn a_cut_file_pasted_into_a_folder_moves_there() {
-    let dir = transfer_fixture("move");
+    let dir = scratch_dir("a_cut_file_pasted_into_a_folder_moves_there");
     let note = dir.join("note.md");
     let folder = dir.join("archive");
     fs::create_dir_all(&folder).expect("destination is created");
@@ -3044,7 +3078,7 @@ fn a_cut_file_pasted_into_a_folder_moves_there() {
 
 #[test]
 fn a_pasted_copy_leaves_the_original_where_it_was() {
-    let dir = transfer_fixture("copy");
+    let dir = scratch_dir("a_pasted_copy_leaves_the_original_where_it_was");
     let note = dir.join("note.md");
     let folder = dir.join("archive");
     fs::create_dir_all(&folder).expect("destination is created");
@@ -3060,7 +3094,7 @@ fn a_pasted_copy_leaves_the_original_where_it_was() {
 #[test]
 fn a_transfer_never_overwrites_what_is_already_there() {
     // The one outcome that would lose someone's work. Refusing is the whole point.
-    let dir = transfer_fixture("collide");
+    let dir = scratch_dir("a_transfer_never_overwrites_what_is_already_there");
     let note = dir.join("note.md");
     let folder = dir.join("archive");
     fs::create_dir_all(&folder).expect("destination is created");
@@ -3085,7 +3119,7 @@ fn a_transfer_never_overwrites_what_is_already_there() {
 
 #[test]
 fn a_folder_cannot_be_put_inside_itself() {
-    let dir = transfer_fixture("recursive");
+    let dir = scratch_dir("a_folder_cannot_be_put_inside_itself");
     let outer = dir.join("outer");
     let inner = outer.join("inner");
     fs::create_dir_all(&inner).expect("fixture tree is created");
@@ -3107,7 +3141,7 @@ fn a_folder_cannot_be_put_inside_itself() {
 
 #[test]
 fn a_folder_moves_with_everything_in_it() {
-    let dir = transfer_fixture("folder");
+    let dir = scratch_dir("a_folder_moves_with_everything_in_it");
     let source = dir.join("chapter");
     let destination = dir.join("book");
     fs::create_dir_all(&source).expect("source is created");
