@@ -266,7 +266,7 @@ A ticket nobody can find is a ticket nobody builds, so finishing one is: write t
 
 ## Working a ticket later
 
-That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box while that box is open**. Shipping is [git-release](../git-release/SKILL.md)'s; closing is [done](../done/SKILL.md)'s, on the owner's word alone. **A struck owner's box is not that word** — it says the subject has nothing to press, not that the owner has seen what was built, so `/dev` hands back and the ticket stays live until they ask.
+That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box while that box is open**. Shipping is [git-release](../git-release/SKILL.md)'s; closing is [done](../done/SKILL.md)'s, on the owner's word alone. **<!-- shared-rule: struck-owners-box -->A struck owner's box is not the owner's word.<!-- /shared-rule -->** It says the subject has nothing to press, not that the owner has seen what was built, so `/dev` hands back and the ticket stays live until they ask.
 
 ## Reference
 

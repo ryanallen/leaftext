@@ -113,6 +113,14 @@ check-plan-stage:
 check-learn-snapshots:
     node scripts/check-learn-snapshots.mjs --check
 
+# Fail on a rule written out in full in more than one file whose copies have stopped
+# agreeing. A handful are repeated on purpose, because a reader of any one of those files
+# needs the answer there rather than a pointer — so one marked sentence owns the rule and
+# every copy is held to its bytes, while each file keeps its own explanation around it.
+# `--fix` rewrites the marked sentences from their owners and touches nothing else.
+check-shared-rules:
+    node scripts/check-shared-rules.mjs --check
+
 # Fail on a paragraph broken across lines — in Markdown, and in a comment in the code.
 # Everything that reads them reflows, so the newline inside a paragraph only costs: it
 # re-flows by hand on every edit after it, and a one-word change diffs as the whole
@@ -350,7 +358,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

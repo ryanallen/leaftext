@@ -45,7 +45,7 @@ Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase
 
 Stop at the owner's box: never run `/done` or `/git-release` yourself, because retiring a ticket is the owner's word and nothing written in the ticket stands in for it. Hand back whether anything is broken and the gestures needed for it. If the work is complete but not shipped, say to run `/git-release` next.
 
-**A struck owner's box is not permission to close the ticket.** A strike says the subject has nothing to press; it does not say the owner has looked at what was built, which is the only thing that retires a plan. So the last phase box is ticked, the ticket stays where it is, and the reply says to run `/done`. A build that closed its own ticket left the owner reading a shipped row for work they had never seen.
+**<!-- shared-rule: struck-owners-box -->A struck owner's box is not the owner's word.<!-- /shared-rule -->** A strike says the subject has nothing to press; it does not say the owner has looked at what was built, which is the only thing that retires a plan. So the last phase box is ticked, the ticket stays where it is, and the reply says to run `/done`. A build that closed its own ticket left the owner reading a shipped row for work they had never seen. **This sentence is the one every other file copies**: five other files state the same rule where their own reader needs it, `scripts/check-shared-rules.mjs` holds each of them to the bytes between the markers here, and a change to the rule is made here first and carried out with `node scripts/check-shared-rules.mjs --fix`.
 
 ## What building turns up beside the work is its own ticket
 
