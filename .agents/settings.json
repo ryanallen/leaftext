@@ -59,6 +59,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-touched.mjs\" --after",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [

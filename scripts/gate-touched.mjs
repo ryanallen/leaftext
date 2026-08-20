@@ -13,13 +13,14 @@
 //
 // One file per session in the OS temp folder, beside the keycode record and the turn checklist, swept on the same 24-hour window. A stale entry costs nothing: a path that has been committed is not dirty, so it is not in the list being subtracted from.
 //
-// The other half is the build being watched. Before each source edit this appends one sample to the record gate-design.mjs wrote — the phase being built, and how many of its boxes are ticked at that moment — and gate-voice.mjs reads the run of them at the end of the turn. It has to be sampled here rather than read once at the end, because a phase batch-ticked after the code stopped moving leaves a file identical to one filled in as the work finished. The samples are kept apart from the touched-file record above, which the release subtracts from and must not meet something it cannot stage.
+// The other half is the build being watched. After each edit this appends one sample to the record gate-design.mjs wrote — every phase of the ticket with its boxes counted — and gate-voice.mjs reads the run of them at the end of the turn. It has to be sampled here rather than read once at the end, because a phase batch-ticked after the code stopped moving leaves a file identical to one filled in as the work finished. After rather than before, and every edit rather than only the ones inside this checkout, because the tick that finishes a box is itself an edit and the plan tree is where it is written: sampled the other way, a tick is only ever seen by whatever edit comes next and the last tick of a turn is seen by nothing. The samples are kept apart from the touched-file record above, which the release subtracts from and must not meet something it cannot stage — so that record keeps its own rule and drops a path outside this checkout exactly as it did.
 
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { buildRecord, buildingPath } from './gate-design.mjs';
+import { buildRecord, buildingPath, forget } from './gate-design.mjs';
 import { keep, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
 import { dirtyPaths } from './plan-tree.mjs';
 
@@ -111,25 +112,18 @@ export function phasesOf(ticket) {
   return phases;
 }
 
-/// The phase a build is on — the first still carrying an open box — and how many of its boxes are ticked. Null once every phase is finished.
-export function phaseNow(ticket) {
-  const phase = phasesOf(ticket).find((p) => p.open > 0);
-  return phase ? { phase: phase.phase, ticked: phase.ticked } : null;
-}
-
-/// Append one sample to this session's build record: the phase being built and how many of its boxes are ticked, read before the edit lands. Only a source edit is sampled — a tick goes in the plan tree next door, and sampling that would record the tick as though it were the code.
-export function sample(session, file, dir = tmpdir(), from = root, open = (path) => readFileSync(path, 'utf8')) {
+/// Append one sample to this session's build record: every phase of the ticket with its boxes counted, read *after* the edit has landed. Every edit is sampled, in this checkout or the plan tree next door, because the tick that finishes a box is itself an edit — sample before the write and a tick is seen only by whatever edit happens to come next, so the last tick of a turn is seen by nothing and the reading has arithmetic left over to make up the difference. Every phase rather than the one being built: ticking a phase's last box moves which phase is open, and a single count would read that move as a fall.
+export function sample(session, dir = tmpdir(), open = (path) => readFileSync(path, 'utf8')) {
   const held = buildRecord(session, dir);
   if (!held) return null;
-  if (!repoRelative(file, from)) return null;
   let text = '';
   try {
     text = open(held.ticket);
   } catch {
     return null; // A ticket that will not open says nothing about how its boxes stand.
   }
-  const now = phaseNow(text);
-  if (!now) return null;
+  const now = phasesOf(text);
+  if (!now.length) return null;
   writeFileSync(buildingPath(session, dir), JSON.stringify({ session: sessionTag(session), ticket: held.ticket, samples: [...held.samples, now] }) + '\n');
   return now;
 }
@@ -230,23 +224,48 @@ function selfTest() {
     if (phases.length !== 2) fails.push(`${phases.length} phases read rather than 2 — a heading of its own is not a phase`);
     if (phases[0]?.ticked !== 1 || phases[0]?.open !== 1) fails.push("the first phase's boxes were not counted");
     if (phases.some((p) => p.phase.includes('owner') || p.phase.includes('Every'))) fails.push("the owner's box or the `/check` box was read as a phase");
-    if (phaseNow(TICKET)?.phase !== 'Phase 1 — the first one') fails.push('the phase being built is not the first one with an open box');
-    if (phaseNow(TICKET)?.ticked !== 1) fails.push('the phase being built did not carry its tick count');
-    if (phaseNow('# A plan\n\n### Phase 1 — done\n\n- [x] built\n')) fails.push('a ticket with every box ticked still named a phase being built');
     if (phasesOf('# A plan\n\n### Phase 1 — struck\n\n- [x] ~~dropped~~ — N/A\n')[0]?.ticked !== 1) fails.push('a struck box was not counted as ticked');
     if (phasesOf('')?.length) fails.push('an empty ticket named a phase');
 
-    // A sample per source edit, and none for the plan tree next door, where the tick itself goes.
+    // One sample per edit, carrying every phase rather than the one being built: ticking a phase's last box moves which phase is open, and a single count would read that move as a fall.
     const FOUR = 'dddddddd-4444-4444-4444-444444444444';
     const readTicket = () => TICKET;
-    if (sample(FOUR, join(root, 'src', 'lib.rs'), dir, root, readTicket)) fails.push('a session with no build turn was sampled');
+    if (sample(FOUR, dir, readTicket)) fails.push('a session with no build turn was sampled');
     writeFileSync(buildingPath(FOUR, dir), JSON.stringify({ session: sessionTag(FOUR), ticket: '/plans/a.md', samples: [] }) + '\n');
-    if (sample(FOUR, join(root, 'src', 'lib.rs'), dir, root, readTicket)?.ticked !== 1) fails.push('a source edit was not sampled');
-    if (sample(FOUR, join(root, '..', 'docs', 'README.md'), dir, root, readTicket)) fails.push('an edit to the plan tree was sampled as code');
-    sample(FOUR, join(root, 'Cargo.toml'), dir, root, readTicket);
-    if (buildRecord(FOUR, dir)?.samples.length !== 2) fails.push('the build record did not keep one sample per source edit');
-    if (sample(FOUR, join(root, 'src', 'lib.rs'), dir, root, () => { throw new Error('gone'); })) fails.push('a ticket that will not open was still sampled');
+    const first = sample(FOUR, dir, readTicket);
+    if (first?.length !== 2) fails.push(`a sample carried ${first?.length ?? 'no'} phases rather than every one of them`);
+    if (first?.[0]?.ticked !== 1 || first?.[1]?.ticked !== 0) fails.push("a sample did not carry each phase's own tick count");
+    if (first?.[0]?.phase !== 'Phase 1 — the first one') fails.push('a sample did not name the phase each count belongs to');
+    sample(FOUR, dir, readTicket);
+    if (buildRecord(FOUR, dir)?.samples.length !== 2) fails.push('the build record did not keep one sample per edit');
+    if (sample(FOUR, dir, () => { throw new Error('gone'); })) fails.push('a ticket that will not open was still sampled');
+    if (sample(FOUR, dir, () => '# A plan with no phases at all\n\n- [ ] a box under nothing\n')) fails.push('a ticket carrying no phase was sampled');
     if (touchedBy(FOUR, dir).length) fails.push('sampling grew the release touched-file record');
+
+    // The wiring, through the real entry point. Two claims no call to `sample` can make on its own: a sample is taken on the way out and never on the way in, and the file the edit named decides nothing — the tick that finishes a box is written in the plan tree next door, so that edit has to be sampled or the tick is seen by nothing.
+    const FIVE = `gate-touched-selftest-${process.pid}`;
+    const onDisk = join(dir, 'ticket.md');
+    writeFileSync(onDisk, TICKET);
+    const edited = (file, ...flags) => execFileSync(process.execPath, [fileURLToPath(import.meta.url), ...flags], {
+      input: JSON.stringify({ session_id: FIVE, tool_name: 'Edit', tool_input: { file_path: file } }),
+      encoding: 'utf8',
+    });
+    try {
+      writeFileSync(buildingPath(FIVE), JSON.stringify({ session: sessionTag(FIVE), ticket: onDisk, samples: [] }) + '\n');
+      edited(join(root, 'src', 'lib.rs'));
+      if (buildRecord(FIVE)?.samples.length) fails.push('an edit was sampled on the way in, so a tick would only ever be seen by whatever edit came next');
+      if (!touchedBy(FIVE).includes('src/lib.rs')) fails.push('an edit on the way in was not written to the release touched-file record');
+      edited(join(root, 'src', 'lib.rs'), '--after');
+      if (buildRecord(FIVE)?.samples.length !== 1) fails.push('an edit was not sampled on the way out');
+      edited(join(root, '..', 'docs', 'README.md'), '--after');
+      if (buildRecord(FIVE)?.samples.length !== 2) fails.push('an edit to the plan tree was not sampled, so a tick would be seen by nothing');
+      edited(join(root, '..', 'docs', 'README.md'));
+      if (touchedBy(FIVE).some((path) => path.startsWith('..'))) fails.push('the release touched-file record took a path outside this checkout');
+      if (touchedBy(FIVE).length !== 1) fails.push('the release touched-file record grew on something other than the one path inside this checkout');
+    } finally {
+      forget(FIVE);
+      rmSync(touchedPath(FIVE), { force: true });
+    }
 
     // The sweep this hook runs on every edit clears a day-old record and leaves a live one.
     const stale = join(dir, `${TOUCHED}eeeeeeee.json`);
@@ -277,7 +296,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log('gate-touched: ok (edits and shell commands write the paths they changed under their own session, a no-op command grows nothing, one outside the checkout is dropped, no session id records nothing and subtracts nothing, a day-old record is swept, and every source edit of a build samples the phase it is on without touching the release record)');
+  console.log('gate-touched: ok (edits and shell commands write the paths they changed under their own session, a no-op command grows nothing, one outside the checkout is dropped, no session id records nothing and subtracts nothing, a day-old record is swept, and every edit of a build samples every phase of its ticket after the write — the plan tree included — without touching the release record)');
 }
 
 // Only act when run directly: the release imports this for `othersTouched`, and a hook body that read stdin on import would swallow whatever payload the importing hook was handed.
@@ -305,9 +324,9 @@ if (!args) {
   }
   if (EDIT_TOOLS.test(payload.tool_name ?? '')) {
     try {
-      const file = payload.tool_input?.file_path ?? payload.tool_input?.notebook_path ?? '';
-      record(file, sessionOf(raw));
-      sample(sessionOf(raw), file);
+      // The touched-file record is the path the tool named, so it is taken on the way in. The sample is how the ticket stands once the write has happened, so it is taken on the way out.
+      if (after) sample(sessionOf(raw));
+      else record(payload.tool_input?.file_path ?? payload.tool_input?.notebook_path ?? '', sessionOf(raw));
       sweep(tmpdir(), TOUCHED);
     } catch {
       // A record that cannot be written subtracts nothing. Never block: a hook that can wedge a session is worse than no hook.
