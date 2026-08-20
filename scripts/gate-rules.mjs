@@ -165,7 +165,7 @@ function selfTest() {
   if (!rule.includes('A fact the owner cannot act on')) {
     fails.push('AGENTS.md: the printed Rule 1 no longer carries the hand-back test');
   }
-  // The layout section's two halves, each under its own heading. One heading over both read the guide's cross-cutting rules as a second file map, so the check refuses a guide that loses either the pointer or the rules' own heading.
+  // The three cases mutate the real guide rather than a fixture, so renaming a heading fails here instead of passing against a copy.
   for (const fault of layoutFaults(agents)) fails.push(fault);
   if (!layoutFaults(agents.replace(/^### The file map$/m, '### Where things live')).length) {
     fails.push('layout: a guide whose file map lost its heading passed');
