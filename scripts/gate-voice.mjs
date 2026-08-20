@@ -3,7 +3,9 @@
 //
 // It enforces the half of Rule 1 that names its own words: the 500-character ceiling, the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
 //
-// It also refuses a turn that moved code and left the ticket where it was. `/dev` says to tick each box in the same edit as its code, and a rule nothing reads is one a build forgets — which leaves the owner asking whether one is happening at all, the question the plan tree exists to answer without being asked. The read is the one already here for the filing phrases, pointed at the other tree.
+// It also refuses a build whose boxes did not fill in while its code was landing. `/dev` says to tick each box in the same edit as its code, and a rule nothing reads is one a build forgets — which leaves the owner asking whether one is happening at all, the question the plan tree exists to answer without being asked. Read off the samples gate-touched.mjs takes before every source edit, never off the ticket alone: a phase ticked all at once at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart.
+//
+// Where no build message named a ticket there are no samples, and the older reading stands in: code moved in this checkout and nothing under the plan tree did. That one is satisfied by any plan file, which is why it is the weaker of the two and why the samples replace it wherever the exact ticket is known.
 //
 // A phrase is matched on what the reply says in its own voice: quoted material — fenced blocks, inline code, quotation marks, blockquote lines — is stripped first, so a reply quoting Rule 1 or naming a ticket by a phrase is not refused for the words it is quoting.
 //

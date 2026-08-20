@@ -106,8 +106,8 @@ In [`.agents/settings.json`](.agents/settings.json), pointing at `scripts/`. Eac
 - `gate-rules.mjs` — prints Rule 1 before every message and records the git license, granted only when the message **starts** with `/git-release` or `$git-release`.
 - `gate-git.mjs` — refuses a git write, a command that throws the working tree away, and the release commands, unless this turn in this session was licensed. An edit is undone by editing it back, never by asking git for the old bytes; `git show <ref>:<path>` is a read and stays allowed.
 - `gate-checklist.mjs` — writes this turn's step list from the numbered headings of the skill the message names. **A bullet is a step, never work** — work is the ticket's boxes, which outlive the session.
-- `gate-touched.mjs` — writes down every file this session changes, so a release stages its own work and leaves another session's alone.
-- `gate-voice.mjs` — refuses to end the turn on a reply breaking the half of Rule 1 that names its own words, or one owing a keycode or leaving a checklist bullet un-struck. It is the only `Stop` hook on purpose: the host allows one a turn.
+- `gate-touched.mjs` — writes down every file this session changes, so a release stages its own work and leaves another session's alone, and samples the build ticket's boxes before each source edit.
+- `gate-voice.mjs` — refuses to end the turn on a reply breaking the half of Rule 1 that names its own words, one owing a keycode or leaving a checklist bullet un-struck, or a build whose phase never gained a tick while its code was landing. It is the only `Stop` hook on purpose: the host allows one a turn.
 - `gate-keycode.mjs` — proof the rules were read rather than remembered. This file and every `SKILL.md` ends with a keycode; each message owes this file's plus any skill it names, reported with `node scripts/gate-keycode.mjs <file> <code>`.
 
 ## Rules each paid for in version numbers
