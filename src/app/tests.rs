@@ -18,9 +18,9 @@ fn fixture_source_path(relative_path: &str) -> PathBuf {
         .join(relative_path)
 }
 
-/// A scratch folder of this test's own, the binary's own copy of the library's `scratch_dir`: this file is the binary crate's and cannot see `src/tests/`, so the rule is written twice because the crates are two, not because anybody forgot.
+/// A scratch folder of this test's own — the binary's copy of the library's `scratch_dir`, because this file is the binary crate's and cannot see `src/tests/`.
 ///
-/// The label separates two tests: the clock alone ticks slowly enough here to hand two that start together one folder. The process id and one clock reading per run separate two runs.
+/// The label separates two tests: a clock alone ticks slowly enough here to hand two that start together one folder. The process id and one clock reading per run separate two runs.
 fn scratch_dir(label: &str) -> PathBuf {
     static RUN: OnceLock<u128> = OnceLock::new();
     let run = RUN.get_or_init(|| {
