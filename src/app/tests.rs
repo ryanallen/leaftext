@@ -2692,7 +2692,7 @@ fn closing_the_tab_being_read_reports_that_the_document_on_screen_changed() {
 
 #[test]
 fn closing_a_tab_that_is_not_there_closes_nothing() {
-    // Today an index past the end still renders the active document at the top, which is the fault for a close that never happened.
+    // An index past the end must draw nothing: rendering the active document at the top is the reported fault for a close that never happened.
     let mut workspace = Workspace::default();
     workspace.open_path(PathBuf::from("/docs/a.md"));
 
@@ -2703,7 +2703,7 @@ fn closing_a_tab_that_is_not_there_closes_nothing() {
 
 #[test]
 fn closing_the_tab_being_read_lands_on_the_neighbor_where_it_was_left() {
-    // Every Ctrl+W closes the tab being read, so the neighbor coming forward at the top of itself is the common case, not a corner.
+    // Every Ctrl+W closes the tab being read, so this is the common case rather than a corner.
     let anchor = ScrollAnchor {
         section: Some("halfway".to_string()),
         block: 7,
@@ -2761,7 +2761,7 @@ fn closing_the_tab_being_read_restores_rather_than_resetting() {
 
 #[test]
 fn closing_a_background_tab_redraws_the_strip_instead_of_the_document() {
-    // What the workspace answers is only half of it: the arm has to act on the answer. A render of any intent reads the file off the disk and pushes the whole document back to a page that did not ask for it.
+    // The answer is only half of it: a render of any intent reads the file off the disk and pushes the whole document back to a page that did not ask for it.
     let source = include_str!("event_loop.rs");
     let arm = source
         .split("IpcCommand::CloseTab")
