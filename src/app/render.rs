@@ -77,7 +77,7 @@ impl Reader {
         self.refresh_tab_strip();
     }
 
-    /// Point the favorite row at `from` at the file the picker handed back, save, and redraw. Unlike marking, the page cannot draw this ahead of the host: the path the row now holds is one only the dialog knows. A full render rather than a strip refresh, because a favorite row is drawn only by the start screen and the strip refresh never reaches it. It costs nothing: a favorite row is only on screen with no document active, where a `Preserve` render takes the home branch and reads no file.
+    /// Point the favorite row at `from` at the file the picker handed back, save, and redraw. Unlike marking, the page cannot draw this ahead of the host: the path the row now holds is one only the dialog knows. A full render rather than a strip refresh, because only the start screen draws a favorite row — and it costs nothing there, where the render takes the home branch and reads no file.
     pub(crate) fn repoint_favorite(&mut self, from: &Path, to: &Path, vault_id: Option<i64>) {
         if self.favorites.repoint(from, to, vault_id) {
             self.persist_favorites();
@@ -157,7 +157,7 @@ impl Reader {
                     self.workspace.active = None;
                     return self.render(scroll);
                 };
-                // A tab left in code view must stay in code view when it is re-rendered (switching tabs away and back, a save, a rename, the file changing on disk). The reading-view render below would silently drop out of the source editor, so restore the code view from the tab's buffer instead. Dragging a tab is not one of these any more: it redraws the strip alone, so the editor is never rebuilt.
+                // A tab left in code view must stay in code view when it is re-rendered (switching tabs away and back, a save, a rename, the file changing on disk). The reading-view render below would silently drop out of the source editor, so restore the code view from the tab's buffer instead.
                 if self
                     .workspace
                     .tabs
