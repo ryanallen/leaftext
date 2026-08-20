@@ -100,16 +100,19 @@ export function movedSince(startedAt, dir = root) {
   return null;
 }
 
-/// The phase a build swept, or null when its boxes filled in as the code landed. Two questions, and both have to answer yes: the ticks never moved between the first source edit and the last, and the turn does not end owing exactly one box. A box's code lands before that box's own tick, so one is what the loop may always still owe — none means nothing was ticked at all, and more than one means several boxes' work went in before anything was said about it.
+/// The phase a build swept, or null when its boxes filled in as the code landed. Two arms, each a subtraction over the samples rather than a threshold: the phase gained no tick at all across the turn, or more than one box was ticked after its last source edit. A box's code lands before that box's own tick, so one box past the last edit is what the loop may always still owe; more than one is several boxes' work that went in before anything was said about it, however many ticks landed earlier in the turn.
 export function sweptPhase(held, ticket) {
   if (!held?.samples?.length) return null;
   const last = held.samples[held.samples.length - 1];
   const mine = held.samples.filter((s) => s?.phase === last.phase);
   const first = mine[0].ticked;
-  if (mine.some((s) => s.ticked > first)) return null;
   const ended = phasesOf(ticket).find((p) => p.phase === last.phase);
-  const gained = (ended ? ended.ticked : first) - first;
-  return gained === 1 ? null : { phase: last.phase, gained, edits: mine.length };
+  // A phase the ticket no longer carries gained nothing: its own ticks are the only ones that count, so another ticket's boxes cannot answer for it.
+  const now = ended ? ended.ticked : first;
+  const gained = now - first;
+  const after = now - mine[mine.length - 1].ticked;
+  if (gained > 0 && after <= 1) return null;
+  return { phase: last.phase, gained, after, edits: mine.length };
 }
 
 /// Each block on its own. Rule 1 caps a response, and a turn that says three things says three of them — joining first would fail a turn for the sum of twelve short lines and pass one that ended in an essay.
@@ -323,6 +326,8 @@ function selfTest() {
   if (sweptPhase(turn(0, 0, 1, 1), plan(2, 3))) fails.push('swept: a build that ticked as it went was held');
   // The sweep: five boxes' code, then five ticks at the end.
   if (!sweptPhase(turn(0, 0, 0, 0, 0), plan(5, 0))) fails.push('swept: a phase batch-ticked at the end was let through');
+  // The sweep behind one honest tick: box 1 ticked when it was finished, then boxes 2 to 5 written and swept. The count rose while the code landed, which is all the older reading asked.
+  if (!sweptPhase(turn(0, 1, 1, 1, 1), plan(5, 0))) fails.push('swept: a phase swept behind an early tick was let through');
   // A one-box phase can only tick after its last edit, and that is the loop working.
   if (sweptPhase(turn(0, 0), plan(1, 2))) fails.push('swept: a phase owing one box at the end was held');
   // Code moved and nothing was ever said about it.
@@ -449,8 +454,8 @@ if (process.argv.includes('--check')) {
       parts.push(`${moved} changed and nothing under the plan tree did. Tick the box in the same edit as its code: open the ticket, tick what this turn built, and say on the box what the file now does where it came out different from the plan. A phase whose boxes are still open is one nobody can read the build against.`);
     }
     if (swept) {
-      const gained = swept.gained ? `${swept.gained} boxes were ticked after the code stopped moving` : 'no box was ticked at all';
-      parts.push(`${held.ticket}\n"${swept.phase}" took ${swept.edits} source edits and its boxes never moved while they landed — ${gained}. Tick each box in the same edit as the code and test that finish it, before the next one is started: the ticket is where the owner watches a build happen, and a phase that fills in at the end says nothing was happening while it was.`);
+      const what = swept.gained ? `${swept.after} boxes were ticked after the code stopped moving` : 'no box was ticked at all';
+      parts.push(`${held.ticket}\n"${swept.phase}" took ${swept.edits} source edits and ${what}. Tick each box in the same edit as the code and test that finish it, before the next one is started: the ticket is where the owner watches a build happen, and a box filled in once its code has stopped moving says nothing was happening while it was.`);
     }
     // Only a reply that broke a rule is written again. A turn held for a step or a keycode says nothing new.
     if (found.length) parts.push('Say it again, shorter. No note about this correction — just the answer.');
