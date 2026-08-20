@@ -394,21 +394,27 @@ impl Workspace {
         unreachable!("an unused Untitled name always exists")
     }
 
-    /// Close the tab at `index`, then pick a sensible neighbor as active (or the home screen when no tabs remain).
-    pub(crate) fn close_tab(&mut self, index: usize) {
+    /// Close the tab at `index`, then pick a sensible neighbor as active (or the home screen when no tabs remain). The answer says how much has to be redrawn, because closing a tab beside the one being read changes nothing about that document.
+    pub(crate) fn close_tab(&mut self, index: usize) -> TabClose {
         if index >= self.tabs.len() {
-            return;
+            return TabClose::Nothing;
         }
         self.tabs.remove(index);
         if self.tabs.is_empty() {
             self.active = None;
-            return;
+            return TabClose::HomeScreen;
         }
+        let was_being_read = self.active == Some(index);
         self.active = match self.active {
             Some(active) if active == index => Some(index.min(self.tabs.len() - 1)),
             Some(active) if active > index => Some(active - 1),
             other => other,
         };
+        if was_being_read {
+            TabClose::ReaderMoved
+        } else {
+            TabClose::StripOnly
+        }
     }
 
     /// Move the tab at `from` to `to`, keeping the active tab selected. Returns `false` when an index is out of range or nothing moves.
@@ -473,6 +479,19 @@ impl Workspace {
 
 /// What a never-saved document is called until someone saves it somewhere.
 pub(crate) const UNTITLED_STEM: &str = "Untitled";
+
+/// What closing a tab did, which is what says how much has to be drawn again. Only the last of these changes the document on screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TabClose {
+    /// The index named no tab, so nothing closed and nothing needs drawing.
+    Nothing,
+    /// A tab beside the one being read went: the strip is shorter and the document on screen is untouched.
+    StripOnly,
+    /// The tab being read went and a neighbor came forward, so the document on screen is a different one.
+    ReaderMoved,
+    /// The last tab went, so the home screen is what is left.
+    HomeScreen,
+}
 
 /// How the reader's scroll position should behave when a render replaces the document view.
 #[derive(Clone)]

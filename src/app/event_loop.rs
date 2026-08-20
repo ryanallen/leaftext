@@ -151,18 +151,25 @@ fn persist_workspace_session(
     }
 }
 
+/// Put the reader back where the tab at the front was left. The one question a tab switch, a startup and a close of the tab being read all ask, so the answer is built once: a close has already moved `active` to the neighbor by the time it asks.
+pub(crate) fn restore_front_tab_intent(workspace: &Workspace) -> Option<ScrollIntent> {
+    workspace
+        .active
+        .and_then(|index| workspace.tabs.get(index))
+        .map(|tab| ScrollIntent::Restore {
+            anchor: tab.history.current_anchor(),
+            code: tab.saved_code_scroll,
+        })
+}
+
 /// A command-line document replaces the saved front tab; otherwise the saved front tab loads through the ordinary restore path.
 pub(crate) fn startup_restore_intent(
     workspace: &Workspace,
     has_pending_path: bool,
 ) -> Option<ScrollIntent> {
     (!has_pending_path)
-        .then(|| workspace.active.and_then(|index| workspace.tabs.get(index)))
+        .then(|| restore_front_tab_intent(workspace))
         .flatten()
-        .map(|tab| ScrollIntent::Restore {
-            anchor: tab.history.current_anchor(),
-            code: tab.saved_code_scroll,
-        })
 }
 
 /// Whether an arm below could have answered this event, which is what says whether the tail after the match has anything left to do. A skip list rather than a list of what counts, so an event this does not recognize still runs the tail and nothing new is quietly dropped.
@@ -834,10 +841,18 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         );
                     }
                 }
-                IpcCommand::CloseTab { index } => {
-                    reader.workspace.close_tab(index);
-                    reader.render(ScrollIntent::Reset);
-                }
+                IpcCommand::CloseTab { index } => match reader.workspace.close_tab(index) {
+                    // Only the strip changed, so the document on screen is left exactly as the reader had it — the same answer a page opened behind them already gets.
+                    TabClose::StripOnly => reader.refresh_tab_strip(),
+                    // A different document is on screen now, so it opens where that tab was left — the same question a tab switch asks.
+                    TabClose::ReaderMoved => {
+                        let intent = restore_front_tab_intent(&reader.workspace)
+                            .unwrap_or(ScrollIntent::Reset);
+                        reader.render(intent);
+                    }
+                    TabClose::HomeScreen => reader.render(ScrollIntent::Reset),
+                    TabClose::Nothing => {}
+                },
                 IpcCommand::SwitchTab {
                     index,
                     scroll_anchor,
@@ -856,20 +871,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                     if reader.workspace.set_active(index) {
                         // Reopen where the reader left it (`None` starts at the top).
-                        let saved = reader
-                            .workspace
-                            .tabs
-                            .get(index)
-                            .and_then(|tab| tab.history.current_anchor());
-                        let code = reader
-                            .workspace
-                            .tabs
-                            .get(index)
-                            .and_then(|tab| tab.saved_code_scroll);
-                        reader.render(ScrollIntent::Restore {
-                            anchor: saved,
-                            code,
-                        });
+                        if let Some(intent) = restore_front_tab_intent(&reader.workspace) {
+                            reader.render(intent);
+                        }
                     }
                 }
                 IpcCommand::MoveTab { from, to } => {

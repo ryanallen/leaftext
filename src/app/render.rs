@@ -228,7 +228,8 @@ impl Reader {
                                 })
                                 .unwrap_or(false);
                             if !recovered {
-                                self.workspace.close_tab(index);
+                                // The answer is ignored on purpose: the reader never saw this document, so the reset below is what they want whichever tab went.
+                                let _ = self.workspace.close_tab(index);
                             }
 
                             self.render(ScrollIntent::Reset);
