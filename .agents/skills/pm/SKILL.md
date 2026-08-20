@@ -27,6 +27,8 @@ user-invocable: true
 
 Never trust the cell. `Ready` — no dated [`/design`](../design/SKILL.md) line. `Designed` — that line exists, no box ticked. `Dev` — a box is ticked. `Released` — shipped, not yet retired. The ticket is the authority; when the README disagrees, fix the README.
 
+**A stage is read off the ticket and never written ahead of it.** `Designed`, `Dev` and `Released` each rest on the same fact — the ticket carries a dated `Designed` line — so a row claiming one without it is the running order telling the owner a build is happening off a plan nobody has read against the code. A ticket with a box ticked and no design line is `Ready` with a tier 0 row saying so, never `Dev`: the cell is a report, and reporting a stage to make the row look further along is the one lie the whole tree is written to prevent. `scripts/check-plan-stage.mjs` refuses it and names the row.
+
 Then check in the code, not in the file:
 
 - Does the status match the app? A ticket claiming a feature that ships, or the reverse, poisons every row resting on it.

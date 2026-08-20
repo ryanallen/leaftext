@@ -173,7 +173,7 @@ It goes at the top because that is where somebody decides whether to trust the f
 
 It is also the flag [dev](../dev/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
 
-**Then set the ticket's status in the running order, in the same pass.** [`../docs/PLAN.md`](../../../../docs/PLAN.md) carries a `Status` column, and this ticket's row becomes `Designed`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The status mirrors the ticket's dated line, so writing one without the other is how the two start disagreeing.
+**Then set the ticket's status in the running order, in the same pass.** [`../docs/PLAN.md`](../../../../docs/PLAN.md) carries a `Status` column, and this ticket's row becomes `Designed`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The status mirrors the ticket's dated line, so writing one without the other is how the two start disagreeing. **The line comes first and the row second**, never the other way about: a row reading `Designed` over a ticket with no line is the running order promising a reading that has not happened, and it is what lets a build start on a plan nobody opened against the code. `scripts/check-plan-stage.mjs` refuses that row and `scripts/gate-design.mjs` refuses the build.
 
 A ticket with no row there yet is a ticket [`/ticket`](../ticket/SKILL.md) did not finish — add the row, unticked, then tick it.
 

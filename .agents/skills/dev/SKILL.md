@@ -13,7 +13,9 @@ Build a ticket from its path, phase by phase, and stop at the owner's box.
 
 ### 1. Read the ticket, its row and the running order
 
-Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` before building. If the ticket has no dated `Designed` line, run `/design` before writing code.
+Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` before building.
+
+**A ticket with no dated `Designed` line is not built here.** Run [`/design`](../design/SKILL.md) over it first and let that pass write the line; only then does this skill open a phase. There is no shortcut for a one-line change, for work the owner just asked for out loud, or for a ticket this pass wrote itself moments earlier — a plan written and built in the same breath has been read against nothing, and the code lands the way the plan guessed rather than the way the tree is. `scripts/gate-design.mjs` refuses the turn, naming the ticket.
 
 ### 2. Set the live plan stage to `Dev`
 

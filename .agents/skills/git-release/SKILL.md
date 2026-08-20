@@ -9,6 +9,7 @@ user-invocable: true
 # Git Release
 
 This is the only skill that commits, tags, pushes, or changes the version. It commits twice: **`just land <message>` first, before anything else**, then `/sync-docs`, `/code-comments` and `/check`, then the release itself. Never add assistant identity to a commit.
+
 **Every commit names its work.** The message is plain words after the command, no quotes needed: `just land Find bar keeps its place across tabs`. It is the ticket being shipped, named the way its README row names it; several tickets name each; work with no ticket says what changed in the same few words a row would. Both commands refuse a blank message, so a history of one repeated title cannot come back. Writing it costs the seconds it takes to say — it is the name of what was just built, never a study of the diff — so naming the work delays the landing by nothing.
 
 **The first act is `just land <message>`.** It stages what is in the tree by name, commits it and pushes `main` — no gate, no version, no tag, nothing checked. Everything after it takes an hour or more, and every minute of that is a minute the work sits uncommitted in a checkout somebody else may be about to start a build in. So it goes out first and unproven on purpose: another session can pull it and work beside it while the rest of this one runs. A clean tree lands nothing and is not a failure. The gate has not run yet, so a break reaches `main` and the site publishes from that push — the release commit that follows is what carries the fix.
