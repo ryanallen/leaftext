@@ -18,7 +18,7 @@ fn fixture_source_path(relative_path: &str) -> PathBuf {
         .join(relative_path)
 }
 
-/// A scratch folder of this test's own. The label is what keeps two tests apart inside one run: the clock here ticks slowly enough that two starting together were handed one folder, and seven of them write the same file name into it. The run's process id and its single clock reading keep two runs apart.
+/// A scratch folder of this test's own. The label separates two tests: the clock alone ticks slowly enough here to hand two that start together one folder. The process id and one clock reading per run separate two runs.
 fn scratch_dir(label: &str) -> PathBuf {
     static RUN: OnceLock<u128> = OnceLock::new();
     let run = RUN.get_or_init(|| {
@@ -54,9 +54,9 @@ fn two_scratch_folders_asked_for_under_different_names_are_never_the_same_folder
 
 #[test]
 fn no_two_tests_ask_for_a_scratch_folder_under_the_same_name() {
-    // A label typed twice collides exactly as the clock alone did, and says as little. So the file reads itself.
+    // A label typed twice collides exactly as the clock alone does, and says as little, so the file reads itself.
     let source = include_str!("tests.rs");
-    // Spelled in halves so the scan cannot find itself, and read past whatever spacing the formatter left, because a long label is wrapped onto its own line.
+    // Spelled in halves so the scan cannot find itself, and read past the spacing because the formatter wraps a long label onto its own line.
     let opener = concat!("scratch", "_dir(");
     let mut seen: Vec<(&str, usize)> = Vec::new();
     for (at, _) in source.match_indices(opener) {
