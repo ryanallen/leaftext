@@ -3,7 +3,7 @@
 //
 // It enforces the half of Rule 1 that names its own words: the 500-character ceiling, the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
 //
-// It also refuses a build whose boxes did not go in one at a time while its code was landing. `/dev` says to tick each box in the same edit as its code, and a rule nothing reads is one a build forgets — which leaves the owner asking whether one is happening at all, the question the plan tree exists to answer without being asked. Read off the samples gate-touched.mjs takes after every edit, never off the ticket alone: a phase ticked all at once at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart. The rule is written per box, so the reading is the run rather than a count — every rise is exactly one box, and no two rises touch. Nothing is left over to make up at the end, which is what the two arithmetics before this one each needed and where both of their faults lived.
+// It also refuses a build whose boxes did not go in one at a time while its code was landing. `/dev` says to tick each box in the same edit as its code, and a rule nothing reads is one a build forgets — which leaves the owner asking whether one is happening at all, the question the plan tree exists to answer without being asked. Read off the samples gate-touched.mjs takes after every edit, never off the ticket alone: a phase ticked all at once at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart. The rule is written per box, so the reading is the run rather than a count — every rise is exactly one box, and no two rises touch. Nothing is left over to make up at the end.
 //
 // Where no build message named a ticket there are no samples, and the older reading stands in: code moved in this checkout and nothing under the plan tree did. That one is satisfied by any plan file, which is why it is the weaker of the two and why the samples replace it wherever the exact ticket is known.
 //
@@ -357,7 +357,7 @@ function selfTest() {
   if (sweptPhase(turn(0, 0, 1, 1, 1, 2))) fails.push('swept: a build that ticked one box at a time was held');
   // A box whose whole work is a note in the ticket, which is one edit rather than two. The note is its own flat sample, so its tick is a rise with work behind it exactly like any other box's — no mark, no allowance, and one flat sample is enough.
   if (sweptPhase(turn(0, 0, 1, 1, 2))) fails.push('swept: a box whose work was a note in the ticket was held');
-  // The sweep, in one edit, with another edit after it — which is what the reading before this let through.
+  // The sweep, in one edit, with another edit after it.
   if (!sweptPhase(turn(0, 0, 0, 0, 0, 5, 5))) fails.push('swept: a phase swept in one edit was let through');
   // The same sweep written as five tick edits back to back, again with an edit after them.
   if (!sweptPhase(turn(0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 5))) fails.push('swept: a phase swept as ticks back to back was let through');
@@ -378,7 +378,7 @@ function selfTest() {
   if (sweptPhase(both([4, 0], [4, 0], [5, 0], [5, 0], [5, 2]))?.phase !== NEXT) fails.push('swept: a phase swept after another one finished was not caught, or was named as the wrong phase');
   if (sweptPhase(null)) fails.push('swept: a turn with no build record was held');
   if (sweptPhase({ ticket: '/plans/a.md', samples: [] })) fails.push('swept: a build that edited nothing was held');
-  // A sample naming no phase at all says nothing about any box, so it holds nothing — which is also how a record written before this reading shipped reads out.
+  // A sample naming no phase at all says nothing about any box, so it holds nothing — which is also how a record left by an older shape of sample reads out.
   if (sweptPhase({ ticket: '/plans/a.md', samples: [[], [{ ticked: 2 }], 'not a sample'] })) fails.push('swept: a record whose samples name no phase held the turn');
 
   // The checklist's other half, through the real entry point: a step left un-struck has to actually hold the turn, and a turn held for a step alone must not be told to say its reply again. Its own session id, so a `just verify` beside another one does not hold the agent running it to a list this test wrote.
@@ -404,7 +404,7 @@ function selfTest() {
     if (stop({ stop_hook_active: true }).trim() !== '') fails.push('checklist: held again while a stop hook was already running');
     clear(mine);
 
-    // The build record through the real entry point: the wiring, not only the reading. The reading no longer opens the ticket — every count it needs is in the samples — so the path here only has to name one.
+    // The build record through the real entry point: the wiring, not only the reading. The reading does not open the ticket — every count it needs is in the samples — so the path here only has to name one.
     const ticket = join(tmpdir(), `gate-voice-ticket-${process.pid}.md`);
     writeFileSync(buildingPath(mine), JSON.stringify({ session: mine, ticket, samples: turn(0, 0, 0, 0, 0, 5, 5).samples }) + '\n');
     const swung = JSON.parse(stop() || '{}');

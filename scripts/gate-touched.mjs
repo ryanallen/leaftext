@@ -112,7 +112,7 @@ export function phasesOf(ticket) {
   return phases;
 }
 
-/// Append one sample to this session's build record: every phase of the ticket with its boxes counted, read *after* the edit has landed. Every edit is sampled, in this checkout or the plan tree next door, because the tick that finishes a box is itself an edit — sample before the write and a tick is seen only by whatever edit happens to come next, so the last tick of a turn is seen by nothing and the reading has arithmetic left over to make up the difference. Every phase rather than the one being built: ticking a phase's last box moves which phase is open, and a single count would read that move as a fall.
+/// Append one sample to this session's build record: every phase of the ticket with its boxes counted, read *after* the edit has landed. Every edit is sampled, in this checkout or the plan tree next door, because the tick that finishes a box is itself an edit — sampled before the write, a tick is seen only by whatever edit comes next, and the last tick of a turn by nothing. Every phase rather than the one being built: ticking a phase's last box moves which phase is open, and a single count would read that move as a fall.
 export function sample(session, dir = tmpdir(), open = (path) => readFileSync(path, 'utf8')) {
   const held = buildRecord(session, dir);
   if (!held) return null;
