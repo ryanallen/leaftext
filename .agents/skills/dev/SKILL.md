@@ -23,13 +23,17 @@ Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` be
 
 ### 3. Work the phases in order
 
-Work phases in order. Tick each box in the same edit as its code and test. Drive what the running app can reach; name anything that needs the owner's gesture in the ticket.
+Work phases in order. Drive what the running app can reach; name anything that needs the owner's gesture in the ticket.
+
+**The ticket is a checklist, and every box on it is checked off as it is finished — one at a time, along the way, in the same edit as the code and test that finish it.** Not batched, not at the end of a phase, not at the end of the build, never skipped. Finish a box, tick that box, then start the next one: that is the loop, and there is no version of it where a box that is done sits empty while the next one is worked. **A tick is a step of the work, not bookkeeping about it** — a box left empty after its code is written is the same failure as not writing the code, because the ticket is the only place the owner can see a build happening and an empty box tells them it has not started.
+
+**So: never a sweep afterwards, and never ahead.** A box goes from empty to ticked at the moment its code and its test are both in, and at no other moment. A session that writes a whole phase and then goes back to tick its boxes has handed the owner a file that was wrong for the whole build and right only once nobody needed it, and it will be told so.
 
 **A change that moves something on the screen is proved by sampled positions, never by classes.** `just probe-motion <selector> <trigger>` watches one element's computed value every frame while the trigger runs and fails when the first frame is already at the resting value. Classes arrive on schedule whether or not anything draws — the leg runner carries a timer for the case where no `transitionend` comes — so a proof that reads the class timeline passes on a motion that snapped, which is how the bottom sheet's entrance shipped.
 
 ### 4. Build each phase's test with its code
 
-Build the phase's test box with its code, and write the test's name on the box. Where the ticket asks for a test but does not say where it goes, design it — [`/sync-tests`](../sync-tests/SKILL.md) holds the table and the naming rule — and record the choice in the ticket as a decision. Where a phase has no test box at all, write one and build it rather than shipping the code bare; only a real window, live selected text or a held pointer excuses one, and that is struck on the box with the reason.
+Build the phase's test box with its code, and write the test's name on the box in the same edit that ticks it. Where the ticket asks for a test but does not say where it goes, design it — [`/sync-tests`](../sync-tests/SKILL.md) holds the table and the naming rule — and record the choice in the ticket as a decision. Where a phase has no test box at all, write one and build it rather than shipping the code bare; only a real window, live selected text or a held pointer excuses one, and that is struck on the box with the reason.
 
 **A phase that adds or changes a command writes its browser line in the same edit as the code**, the way it ticks a box in the same edit. The app and a published site are one front end with two hosts under it, so a new command is two pieces of work and only one of them is obvious: the line goes in `web/preview/host.js`'s table, saying the browser answers it, will not and why, or not yet and which ticket owns it. `just check-web-commands` refuses the build without it, and the answer is decided while the code is in front of you rather than by whoever finds the dead control months later. A command whose browser answer turns out to be real work is that work's own ticket, not this phase's.
 
