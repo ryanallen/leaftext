@@ -25,9 +25,13 @@ user-invocable: true
 
 ## 2. Re-derive every status
 
-Never trust the cell. `Ready` — no dated [`/design`](../design/SKILL.md) line. `Designed` — that line exists, no box ticked. `Dev` — a box is ticked. `Released` — shipped, not yet retired. The ticket is the authority; when the README disagrees, fix the README.
+**The ticket supplies a candidate, never the finished cell.** `Ready` — no dated [`/design`](../design/SKILL.md) line. `Designed` — that line exists, no box ticked. `Dev` — a box is ticked. `Released` — shipped, not yet retired. The ticket is the authority for how far it has itself got; when the README disagrees with it, fix the README.
 
-**A stage is read off the ticket and never written ahead of it.** `Designed`, `Dev` and `Released` each rest on the same fact — the ticket carries a dated `Designed` line — so a row claiming one without it is the running order telling the owner a build is happening off a plan nobody has read against the code. A ticket with a box ticked and no design line is `Ready` with a tier 0 row saying so, never `Dev`: the cell is a report, and reporting a stage to make the row look further along is the one lie the whole tree is written to prevent. `scripts/check-plan-stage.mjs` refuses it and names the row.
+**The four are an order a ticket only climbs, so this pass writes the higher of two reports.** Read each row already in [`../docs/PLAN.md`](../../../../docs/PLAN.md) by its ticket path, derive that ticket's candidate, and write whichever of the two is further along: `Ready` → `Designed` → `Dev` → `Released`. **A row that is new has no earlier report and takes its candidate**, and a row whose ticket has gone leaves with it.
+
+**A higher cell is retained because a build ticks its first box minutes after it starts.** In that window the ticket looks exactly like an untouched plan, so a pass deriving the cell from the file alone writes `Dev` back down to `Designed`, and the owner reads a build under way as one nobody has started. The cell it overwrote was the only report of work in flight, and this pass is the one thing that can keep it: nothing else sees both the old running order and the ticket. **Lowering a live status is a ticket's own decision** — [`/design`](../design/SKILL.md)'s or [`/done`](../done/SKILL.md)'s — never a side effect of ranking.
+
+**A stage is read off the ticket and never written ahead of it, retained or derived.** `Designed`, `Dev` and `Released` each rest on the same fact — the ticket carries a dated `Designed` line — so a row claiming one without it is the running order telling the owner a build is happening off a plan nobody has read against the code. A ticket with a box ticked and no design line is `Ready` with a tier 0 row saying so, never `Dev`: the cell is a report, and reporting a stage to make the row look further along is the one lie the whole tree is written to prevent. `scripts/check-plan-stage.mjs` refuses it and names the row. That is the ceiling on the retained cell as much as on the derived one, so keeping the higher of two reports never carries a row above what its ticket allows.
 
 Then check in the code, not in the file:
 
