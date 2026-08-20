@@ -77,7 +77,7 @@ impl Reader {
         self.refresh_tab_strip();
     }
 
-    /// Point the favorite row at `from` at the file the picker handed back, save, and redraw. Unlike marking, the page cannot draw this ahead of the host: the path the row now holds is one only the dialog knows.
+    /// Point the favorite row at `from` at the file the picker handed back, save, and redraw. Unlike marking, the page cannot draw this ahead of the host: the path the row now holds is one only the dialog knows. A full render rather than a strip refresh, because a favorite row is drawn only by the start screen and the strip refresh never reaches it. It costs nothing: a favorite row is only on screen with no document active, where a `Preserve` render takes the home branch and reads no file.
     pub(crate) fn repoint_favorite(&mut self, from: &Path, to: &Path, vault_id: Option<i64>) {
         if self.favorites.repoint(from, to, vault_id) {
             self.persist_favorites();
@@ -85,7 +85,7 @@ impl Reader {
         }
     }
 
-    /// Move the favorite row for `path` so it sits before `before`, save, and redraw.
+    /// Move the favorite row for `path` so it sits before `before`, save, and redraw. A full render for the same reason as repointing, and here the drag needs it: the page clears the row's transform without moving the row, so this render is the only thing that draws the new order.
     pub(crate) fn move_favorite(&mut self, path: &Path, before: Option<&Path>) {
         if self.favorites.move_before(path, before) {
             self.persist_favorites();
@@ -142,7 +142,7 @@ impl Reader {
 
     /// Render the active tab's document (or the home screen) into the webview and refresh the tab bar, window title, image source dir, and navigation buttons.
     pub(crate) fn render(&mut self, scroll: ScrollIntent) {
-        // Pop the spinner for navigations (open, back/forward, tab switch), where the load below can be slow; the state script clears it. In-place re-renders (Preserve: edits, reorders) and the home screen skip it, so a checkbox click doesn't flash an overlay.
+        // Pop the spinner for navigations (open, back/forward, tab switch), where the load below can be slow; the state script clears it. In-place re-renders (Preserve: edits, saves, renames) and the home screen skip it, so a checkbox click doesn't flash an overlay.
         if self.workspace.active.is_some() && !matches!(scroll, ScrollIntent::Preserve) {
             begin_reader_loading(self.page());
         }
@@ -157,7 +157,7 @@ impl Reader {
                     self.workspace.active = None;
                     return self.render(scroll);
                 };
-                // A tab left in code view must stay in code view when it is re-rendered (switching tabs away and back, reordering tabs). The reading-view render below would silently drop out of the source editor, so restore the code view from the tab's buffer instead.
+                // A tab left in code view must stay in code view when it is re-rendered (switching tabs away and back, a save, a rename, the file changing on disk). The reading-view render below would silently drop out of the source editor, so restore the code view from the tab's buffer instead. Dragging a tab is not one of these any more: it redraws the strip alone, so the editor is never rebuilt.
                 if self
                     .workspace
                     .tabs
@@ -288,7 +288,7 @@ impl Reader {
     }
 }
 
-/// Where the source editor goes when a tab showing source is re-rendered. A restore carries the fraction it means; a reorder leaves the page where it is, which the page handles; a reset starts at the top.
+/// Where the source editor goes when a tab showing source is re-rendered. A restore carries the fraction it means; an in-place change leaves the page where it is, which the page handles; a reset starts at the top.
 pub(crate) fn code_view_scroll(scroll: &ScrollIntent) -> Option<f64> {
     match scroll {
         ScrollIntent::Restore { code, .. } => *code,

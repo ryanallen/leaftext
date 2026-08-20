@@ -878,8 +878,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::MoveTab { from, to } => {
                     if reader.workspace.move_tab(from, to) {
-                        // Only the tab order changed; keep the reader in place rather than snapping the active document back to the top.
-                        reader.render(ScrollIntent::Preserve);
+                        // A reorder is its own answer: the page has already put the tab in its new slot, and this is the host agreeing. The title, the image folder and the Back/Forward pair all describe the active document, which a reorder never changes, so the strip is the whole of it -- and a full render would reread the file, rewrite the recents and rebuild a source editor at the top of the file.
+                        reader.refresh_tab_strip();
                     }
                 }
                 IpcCommand::GoHome => {

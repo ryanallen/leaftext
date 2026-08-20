@@ -498,7 +498,7 @@ pub(crate) enum TabClose {
 pub(crate) enum ScrollIntent {
     /// Jump to the top of the freshly rendered document (opening a new file, navigating history, returning home).
     Reset,
-    /// Keep the reader exactly where it is. Used when the active document does not change, only its surroundings (e.g. reordering tabs).
+    /// Keep the reader exactly where it is. Used when what the document says changes under them (an edit, a save, a rename, the file changing on disk). A change to the tabs around it does not come here at all — it redraws the strip alone.
     Preserve,
     /// Put the reader back where they were after rendering — a tab switch, or Back and Forward across documents. Both positions are named because a tab showing source restores the editor instead of the page: `anchor` is a place in the rendered document and `None` lands at the top; `code` is a 0..1 fraction of the source and `None` leaves it where the page has it.
     Restore {
