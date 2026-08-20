@@ -654,8 +654,8 @@ check('a bare boot holds every watcher it registered, against the element it wat
 
 // The other eight sit inside installers a bare boot never calls — a diagram drawn, the find bar opened, the code view under Monaco, a minimap bound, a graph scene wired. Called by name off the booted page, so a watcher moved out of one of them, or an installer that stops registering at all, fails here.
 
-check('the eight installers a bare boot never calls each register their watcher', () => {
-  const context = runShell(source);
+/** Calls those installers off a booted page and answers the eight registrations they make, so the check below and the firing check share one drive. */
+function installerRegistrations(context) {
   const { document } = context;
   const appEl = document.getElementById('app');
   const body = fakeElement('documentBody');
@@ -686,8 +686,7 @@ check('the eight installers a bare boot never calls each register their watcher'
   } finally {
     appEl.querySelector = wasQuery;
   }
-  const wanted = [
-    ...bootRegistrations(context),
+  return [
     ['the diagram draw watch', 'IntersectionObserver', nearDiagram],
     ['the diagram recycler', 'IntersectionObserver', farDiagram],
     ['the find bar re-render watch', 'MutationObserver', appEl],
@@ -697,7 +696,13 @@ check('the eight installers a bare boot never calls each register their watcher'
     ['the reader reflow watch', 'ResizeObserver', body],
     ['the graph canvas fit', 'ResizeObserver', canvas],
   ];
+}
+
+check('the eight installers a bare boot never calls each register their watcher', () => {
+  const context = runShell(source);
+  const wanted = [...bootRegistrations(context), ...installerRegistrations(context)];
   holdsRegistrations(context.__watchers, wanted);
+  const [, , rail] = wanted.find(([name]) => name === 'the code view slider clamp');
   let dropped = false;
   try {
     holdsRegistrations(context.__watchers.filter((one) => one.target !== rail), wanted);
@@ -705,6 +710,59 @@ check('the eight installers a bare boot never calls each register their watcher'
     dropped = true;
   }
   if (!dropped) throw new Error('the record still read as complete with a registration taken out of it');
+});
+
+// ---- 2e. every kept callback is fired once ---------------------------------
+//
+// A kept registration is still a callback nobody has ever run, which is where a name retired out of the page sits: the theme sweep called a function deleted from the shell and passed every check while it threw at a reader on every theme change. So each one is fired once with a stand-in entry shaped for its kind, and a throw fails here naming the watcher and what it watches. A fire proves the body runs and its bare calls resolve, not every branch — the zero-size stand-ins take the early returns, and that is the shape the shipped fault had.
+
+/** The one entry a `kind` watcher's callback is handed, shaped the way the browser shapes it. An empty list would walk past the two diagram recyclers' whole bodies, which are loops over what they are given. */
+function standInEntry(kind, target, options) {
+  if (kind === 'IntersectionObserver') return { target, isIntersecting: false, intersectionRatio: 0 };
+  if (kind === 'ResizeObserver') {
+    return { target, contentRect: { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }, contentBoxSize: [{ inlineSize: 0, blockSize: 0 }] };
+  }
+  return { type: 'attributes', attributeName: (options.attributeFilter || [])[0] || 'class', target, addedNodes: [], removedNodes: [] };
+}
+
+/** What to call a watched element in a failure, so the throw names something a reader can find. */
+function describeWatchTarget(target) {
+  if (!target) return 'nothing';
+  return target.id || String(target.className || '').trim() || String(target.tagName || 'element').toLowerCase();
+}
+
+/** Fires every kept callback once, rethrowing with the watcher's kind and target. */
+function fireEveryCallback(watchers) {
+  for (const one of watchers) {
+    try {
+      one.callback([standInEntry(one.kind, one.target, one.options)], one);
+    } catch (error) {
+      throw new Error(`the ${one.kind} on ${describeWatchTarget(one.target)} threw when it was fired: ${(error && error.message) || error}`);
+    }
+  }
+}
+
+check('every watcher callback the page registers runs to its end when it is fired', () => {
+  const context = runShell(source);
+  installerRegistrations(context);
+  fireEveryCallback(context.__watchers);
+});
+
+check('a callback naming something the page no longer defines fails, and the failure names its watcher', () => {
+  const context = runShell(source);
+  const target = fakeElement('retiredNameHolder');
+  // Its own record rather than the page's, so this proves the wrapper and never doubles as a second reading of the check above.
+  const retired = [{ kind: 'ResizeObserver', callback: () => context.thisNameWasRetiredOutOfThePage(), target, options: {} }];
+  let said = '';
+  try {
+    fireEveryCallback(retired);
+  } catch (error) {
+    said = String(error.message);
+  }
+  if (!said) throw new Error('a callback calling a name the page does not define was fired and passed');
+  for (const part of ['ResizeObserver', 'retiredNameHolder']) {
+    if (!said.includes(part)) throw new Error(`the failure never named ${part}: ${said}`);
+  }
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
