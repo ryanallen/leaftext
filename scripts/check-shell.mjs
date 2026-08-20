@@ -11910,6 +11910,88 @@ check('every constructed script tag asks for its errors unmasked', () => {
   }
 });
 
+// ---- 6a. a source view that will not open says so and gives the document back ----
+//
+// Both ways into the source view can give up, and neither used to draw anything: the editor's own load fails after the reader has already been emptied into its container, and the staged payload fails before that. The reader met a blank page the app was calling the source view, or a press that did nothing. Driven rather than read, because what is being held is a growl on the surface and a command on the wire.
+
+/** A booted page with one document open, its ipc recording, and the reader's own scroll position remembered the way the toggle remembers it. */
+function bootEnteringSource(extras = {}) {
+  const context = runShell(source, extras);
+  const posted = [];
+  context.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+  vm.runInContext("currentState = { recent: [], tabs: [{ path: 'notes.md' }], active: 0, document: {} };", context);
+  vm.runInContext("viewHandoff = { path: 'notes.md', readerScrollTop: 940, codeScrollTop: null, readerLanded: 940, codeLanded: null, restoreExact: false };", context);
+  const surface = context.document.getElementById('appSurface');
+  return {
+    context,
+    posted,
+    growls: () => surface.children.filter((child) => String(child.className || '').includes('app-toast')),
+  };
+}
+
+/** Everything the two paths owe a reader, read off the page and the wire. */
+function saidAndWentBack(page, what) {
+  const growls = page.growls();
+  if (growls.length !== 1) throw new Error(`${what}: expected one growl, got ${growls.length}`);
+  const said = String(growls[0].textContent);
+  if (!said.includes('source view could not be opened')) throw new Error(`${what}: the growl said "${said}"`);
+  if (!growls[0].className.includes('is-error')) throw new Error(`${what}: a failure drew the quiet growl`);
+  if (!page.posted.some((one) => one.command === 'exitCodeView')) {
+    throw new Error(`${what}: the tab was left marked as being in source view — sent ${JSON.stringify(page.posted)}`);
+  }
+  // The reader was part way down a page, so the reading render owes them that pixel rather than the top the host's reset intent asks for.
+  if (vm.runInContext('viewHandoff.restoreExact', page.context) !== true) {
+    throw new Error(`${what}: going back was not armed to land where the reader was`);
+  }
+}
+
+checkSettled('the source editor refusing to load says so and gives the document back', async () => {
+  const page = bootEnteringSource();
+  // The vendored bundle is fetched as a script tag the stand-in page never resolves, so the refusal is put where a missing or broken asset puts it.
+  vm.runInContext("loadScriptOnce = () => Promise.reject(new Error('the bundle would not load'));", page.context);
+  vm.runInContext("codeViewActive = true; renderCodeView({ text: 'a line of source', language: 'markdown' });", page.context);
+  await new Promise((resolve) => setImmediate(resolve));
+  page.context.__frames.drain();
+  await new Promise((resolve) => setImmediate(resolve));
+  saidAndWentBack(page, 'the editor giving up');
+  // The state this check is about: the reader has been emptied into the editor's container and there is nothing in it. If that stops being true the check is passing on a different failure and says so.
+  if (!vm.runInContext("app.className.includes('code-view-monaco-shell') && app.textContent === ''", page.context)) {
+    throw new Error('the editor path no longer leaves the reader emptied, so this check is holding something else');
+  }
+});
+
+checkSettled('the staged source payload refusing to arrive says so too', async () => {
+  const page = bootEnteringSource({ fetch: () => Promise.reject(new TypeError('Failed to fetch')) });
+  page.context.window.leafLoadCodeView('leaf-source://1');
+  await new Promise((resolve) => setImmediate(resolve));
+  page.context.__frames.drain();
+  await new Promise((resolve) => setImmediate(resolve));
+  saidAndWentBack(page, 'the payload giving up');
+  // This path fails before the reader is replaced, so what it must not do is disturb the document that is still on screen.
+  if (vm.runInContext('codeViewActive', page.context) !== false) {
+    throw new Error('the page thinks it entered the source view on a payload that never arrived');
+  }
+});
+
+checkSettled('a refused source editor is not the answer to the next press', async () => {
+  const page = bootEnteringSource();
+  let attempts = 0;
+  vm.runInContext("loadScriptOnce = () => { __attempt(); return Promise.reject(new Error('the bundle would not load')); };", page.context);
+  page.context.__attempt = () => {
+    attempts += 1;
+  };
+  const settle = () => vm.runInContext("loadMonacoOnce().then(() => 'loaded', (error) => 'refused: ' + error.message)", page.context);
+  const first = await settle();
+  if (first !== 'refused: the bundle would not load') throw new Error(`the first press settled as ${first}`);
+  // The whole point: the second press builds its own attempt rather than being handed the one that already failed.
+  if (vm.runInContext('monacoLoadPromise', page.context) !== null) {
+    throw new Error('the refusal is still held, so every later press gets it back');
+  }
+  const second = await settle();
+  if (second !== 'refused: the bundle would not load') throw new Error(`the second press settled as ${second}`);
+  if (attempts !== 2) throw new Error(`two presses made ${attempts} attempts at the bundle`);
+});
+
 // ---- the browser's own host -------------------------------------------------
 //
 // The app and a published site are one front end with two hosts under it, and `web/preview/host.js` is the browser's half — shipped to every site the export writes, and reachable nowhere else outside a browser.

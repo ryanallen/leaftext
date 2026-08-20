@@ -429,7 +429,7 @@ window.addEventListener('keydown', (event) => {
 function loadMonacoOnce() {
   if (window.LeafMonaco) return Promise.resolve(window.LeafMonaco);
   if (monacoLoadPromise) return monacoLoadPromise;
-  monacoLoadPromise = new Promise((resolve, reject) => {
+  const attempt = new Promise((resolve, reject) => {
     if (!self.MonacoEnvironment) {
       self.MonacoEnvironment = {
         getWorker() {
@@ -459,7 +459,12 @@ function loadMonacoOnce() {
       )
       .catch(reject);
   });
-  return monacoLoadPromise;
+  // A refusal is not remembered. Nothing else clears this, so without it the first failure is handed to every later press and the source view is gone for the rest of the session, on every document. Guarded on identity in case a retry has already replaced it. `loadScriptOnce` builds a fresh script tag each call, so the retry is a real one.
+  attempt.catch(() => {
+    if (monacoLoadPromise === attempt) monacoLoadPromise = null;
+  });
+  monacoLoadPromise = attempt;
+  return attempt;
 }
 
 // JSON's colors. Monaco bundles no JSON colorer — its own is inside the language service, which wants a worker — so this is a Monarch grammar, which is in the editor core and so costs nothing in the vendored bundle and needs no worker.
@@ -1011,10 +1016,17 @@ function renderCodeView(state) {
       createMonacoEditor(monaco, container, state, text);
       clearReaderLoading();
     })
-    .catch((error) => {
-      console.error('code view: Monaco failed to load', error);
-      clearReaderLoading();
-    });
+    .catch((error) => abandonCodeView('the source editor would not load', error));
+}
+
+// Give up on entering the source view: say so, and give the document back. Both ways in land here. The host marks the tab as being in source view whatever the page then managed, so going back out through the toggle's own command is what takes that mark off — and the reading render is armed to land on the pixel the toggle recorded rather than the top that command's reset intent asks for.
+function abandonCodeView(what, error) {
+  console.error(`code view: ${what}`, error);
+  clearReaderLoading();
+  const handoff = viewHandoff && viewHandoff.path === activeDocumentPath() ? viewHandoff : null;
+  if (handoff && handoff.readerScrollTop != null) handoff.restoreExact = true;
+  window.leafShowError('The source view could not be opened.');
+  send({ command: 'exitCodeView' });
 }
 
 // Enter the code view by fetching the payload the host staged. The source runs to megabytes, and handing it over as script means crossing the webview's process boundary — seconds on a large file — so the host sends only this URL. A failure leaves the reading view up rather than a half-built editor.
@@ -1022,10 +1034,7 @@ window.leafLoadCodeView = (url) => {
   fetch(url)
     .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
     .then((state) => window.leafShowCodeView(state))
-    .catch((error) => {
-      console.error('code view: could not load the source payload', error);
-      clearReaderLoading();
-    });
+    .catch((error) => abandonCodeView('the source payload would not load', error));
 };
 
 // Enter the code view: the host sends the exact buffer text, the language, and the dirty state. The source itself is the weight runViewRender is deciding about — building the editor on a few megabytes blocks, so the spinner goes up first.
