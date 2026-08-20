@@ -367,7 +367,7 @@ const DATED = new RegExp(`\\b(\\d{1,2}) (${MONTHS.join('|')}) (\\d{4})`, 'g');
 // A time straight after the date, in either clock: `, 9:11pm`, ` 9:11 pm`, `, 21:11`.
 const TIME_AFTER = /^,?\s*\d{1,2}:\d{2}/;
 
-// A complete time after a dated stamp, for comparing the stamp to this machine's local clock.
+// Future stamps need the actual time, not only evidence that one follows.
 const STAMP_TIME = /^,?\s*(\d{1,2}):(\d{2})(?:\s*([ap]m))?/i;
 
 /** The one-based line number of every date written on or after the cutoff that carries no time after it. */
