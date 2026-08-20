@@ -367,6 +367,9 @@ const DATED = new RegExp(`\\b(\\d{1,2}) (${MONTHS.join('|')}) (\\d{4})`, 'g');
 // A time straight after the date, in either clock: `, 9:11pm`, ` 9:11 pm`, `, 21:11`.
 const TIME_AFTER = /^,?\s*\d{1,2}:\d{2}/;
 
+// A complete time after a dated stamp, for comparing the stamp to this machine's local clock.
+const STAMP_TIME = /^,?\s*(\d{1,2}):(\d{2})(?:\s*([ap]m))?/i;
+
 /** The one-based line number of every date written on or after the cutoff that carries no time after it. */
 export function datesWithoutTime(text) {
   const out = [];
@@ -376,6 +379,25 @@ export function datesWithoutTime(text) {
       if (on < DATED_FROM) continue;
       if (TIME_AFTER.test(line.slice(found.index + found[0].length))) continue;
       out.push(i + 1);
+    }
+  });
+  return out;
+}
+
+/** The line and stamp of every dated stamp at or after the cutoff that is later than now. */
+export function datesAheadOfClock(text, now) {
+  const out = [];
+  text.split('\n').forEach((line, i) => {
+    for (const found of line.matchAll(DATED)) {
+      const on = Number(found[3]) * 10000 + (MONTHS.indexOf(found[2]) + 1) * 100 + Number(found[1]);
+      if (on < DATED_FROM) continue;
+      const time = STAMP_TIME.exec(line.slice(found.index + found[0].length));
+      if (!time) continue;
+      let hour = Number(time[1]);
+      if (time[3]) hour = (hour % 12) + (time[3].toLowerCase() === 'pm' ? 12 : 0);
+      const stamp = new Date(Number(found[3]), MONTHS.indexOf(found[2]), Number(found[1]), hour, Number(time[2]));
+      if (stamp.getFullYear() !== Number(found[3]) || stamp.getMonth() !== MONTHS.indexOf(found[2]) || stamp.getDate() !== Number(found[1]) || stamp.getHours() !== hour || stamp.getMinutes() !== Number(time[2])) continue;
+      if (stamp > now) out.push({ line: i + 1, stamp: `${found[0]}${time[0]}` });
     }
   });
   return out;
@@ -393,11 +415,35 @@ const DATE_CASES = [
   ['the line number is the one a reader opens', 'a\nb\nAsked for 19 August 2026.\n', [3]],
 ];
 
+const AHEAD_OF_CLOCK_CASES = [
+  ['a stamp an hour ahead is refused', 'Designed 19 August 2026, 10:11pm.', [{ line: 1, stamp: '19 August 2026, 10:11pm' }], []],
+  ['a stamp a minute behind passes', 'Designed 19 August 2026, 9:10pm.', [], []],
+  ['a stamp before the cutoff is untouched however far ahead it reads', 'Found 15 August 2026, 11:11pm.', [], []],
+  ['a date with no time only fails the existing rule', 'Designed 19 August 2026.', [], [1]],
+  ['a malformed stamp stays for its own validation ticket', 'Designed 31 February 2027, 9:11pm.', [], []],
+];
+
 function dateSelfTest() {
   const fails = [];
   for (const [name, text, want] of DATE_CASES) {
     const got = datesWithoutTime(text);
     if (got.join(',') !== want.join(',')) fails.push(`${name}: got [${got}], want [${want}]`);
+  }
+  return fails;
+}
+
+function aheadOfClockSelfTest() {
+  const now = new Date(2026, 7, 19, 21, 11);
+  const fails = [];
+  for (const [name, text, wantAhead, wantDayOnly] of AHEAD_OF_CLOCK_CASES) {
+    const gotAhead = datesAheadOfClock(text, now);
+    const gotDayOnly = datesWithoutTime(text);
+    if (JSON.stringify(gotAhead) !== JSON.stringify(wantAhead)) {
+      fails.push(`${name}: got ahead ${JSON.stringify(gotAhead)}, want ${JSON.stringify(wantAhead)}`);
+    }
+    if (gotDayOnly.join(',') !== wantDayOnly.join(',')) {
+      fails.push(`${name}: got day-only [${gotDayOnly}], want [${wantDayOnly}]`);
+    }
   }
   return fails;
 }
@@ -701,6 +747,13 @@ if (dateFails.length) {
   process.exit(1);
 }
 
+const aheadOfClockFails = aheadOfClockSelfTest();
+if (aheadOfClockFails.length) {
+  console.error('ahead-of-clock dates: the reader is wrong, so nothing was read:');
+  for (const line of aheadOfClockFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 const strikeFails = strikeSelfTest();
 if (strikeFails.length) {
   console.error('struck boxes: the reader is wrong, so nothing was read:');
@@ -753,10 +806,13 @@ const reasonless = [];
 
 // Every file in the plan tree, not only the live half: a shipped note, a retired row and a refused row each carry a date, and each is written after the cutoff by a pass that has to read the clock for it.
 const dayOnly = [];
+const aheadOfClock = [];
+const now = new Date();
 for (const file of rows.map(([f]) => f)) {
   if (!file.startsWith('../docs/')) continue;
   const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
   for (const at of datesWithoutTime(text)) dayOnly.push(`${file}:${at}`);
+  for (const found of datesAheadOfClock(text, now)) aheadOfClock.push(`${file}:${found.line}  ->  "${found.stamp}"`);
 }
 
 for (const file of rows.map(([f]) => f)) {
@@ -781,6 +837,13 @@ if (dayOnly.length) {
   console.error('stamps came first or whether one is twelve minutes old. Write the time beside it —');
   console.error('18 August 2026, 9:11pm — off this machine\'s clock (Get-Date), which keeps Arizona');
   console.error('time all year. See "Every date carries the time beside it" in AGENTS.md.');
+  process.exit(1);
+}
+
+if (aheadOfClock.length) {
+  console.error(`these stamps are later than this machine's local clock (${now.toLocaleString('en-US')}):`);
+  for (const stamp of aheadOfClock) console.error(`  ${stamp}`);
+  console.error('read the clock and write the time it says. A stamp records something finished, so it cannot be ahead of the check that reads it.');
   process.exit(1);
 }
 
