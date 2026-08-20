@@ -480,7 +480,7 @@ impl Workspace {
 /// What a never-saved document is called until someone saves it somewhere.
 pub(crate) const UNTITLED_STEM: &str = "Untitled";
 
-/// What closing a tab did, which is what says how much has to be drawn again. Only the last of these changes the document on screen.
+/// What closing a tab did, which is what says how much has to be drawn again. Only the last two change the document on screen.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TabClose {
     /// The index named no tab, so nothing closed and nothing needs drawing.
