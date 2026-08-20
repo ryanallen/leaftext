@@ -72,7 +72,7 @@ function endLibraryMotion(restarting) {
   libraryMotionDone = null;
   // The rail's width write is dropped while the pane moves, since it retargets the transition mid-gesture. This is the one place the classes come off, so it is the one place that can ask for it again.
   scheduleMinimapWidthSync();
-  // The bar's left zone's own width is held back for the same span and asked for here for the same reason: reading it puts `width: auto` on the zone for a layout pass, and a width transition cannot start from `auto` — so the tab strip stood still while the page eased past it. Never on the settle that arms the next motion: that read lands between the flush and the class going up, which is the same poison one step earlier — it snapped the strip left on the first frame of the open and killed the close's travel outright.
+  // The bar's left zone is held back over the same span and asked for here for the same reason: this read puts `width: auto` on it for a layout pass, and a width transition cannot start from `auto`. Never on the settle that arms the next motion — the read lands between the flush and the class going up, which stops the open's first frame and the whole of the close from traveling.
   if (!restarting) {
     forgetAppBarLeadWidth();
     floorAppBarLead();
