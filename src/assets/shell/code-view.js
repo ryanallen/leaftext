@@ -181,6 +181,16 @@ let pendingCodeViewFraction = null;
 // The document the live editor holds, so a position taken off it before it is thrown away is never spent on somebody else's file.
 let monacoEditorPath = null;
 
+// Drop the toggle's landings unless `path` is the document they were armed for. Called at each place one is spent rather than at each place an entry gives up: four things can abandon a source-view entry after the toggle has written all four down -- nothing staged, a later render taking the token, the view or the container going while Monaco loads, Monaco failing -- and one of them is not in this file, so a guard at the spend covers those and the next one somebody writes. A landing is armed for one render; if that render never happened nobody is coming for it, and the host is holding that document's real place the whole time. Identity, not age: a document's own stale landing is the best answer left for it.
+function dropViewLandingsFromAnotherDocument(path) {
+  if (pendingViewLandingPath == null || pendingViewLandingPath === path) return;
+  pendingViewLandingPath = null;
+  pendingViewScrollFraction = null;
+  pendingViewAtTop = false;
+  pendingCodeViewSrcOffset = null;
+  pendingReadingSrcOffset = null;
+}
+
 // The fraction the next source editor should land at, decided while the editor it replaces is still there to ask. The host sends one for a tab coming back or a launch; an in-place rebuild (the file changing on disk, a save, a field edit, a block move) deliberately sends none, so the editor being replaced is asked instead — and only for its own document, or a switch to a source tab nobody has ever scrolled would land at the place in the file it came from.
 function codeViewLandingFraction(state) {
   if (state && typeof state.scrollFraction === 'number') return state.scrollFraction;
@@ -319,6 +329,8 @@ function toggleCodeView() {
     const path = activeDocumentPath();
     if (!path) return;
     const handoff = viewHandoffFor(path);
+    // Stamp the landings below with the document they are taken from -- see dropViewLandingsFromAnotherDocument.
+    pendingViewLandingPath = path;
     // Carry the current position across the toggle; the destination view's render consumes it and lands at the same relative spot.
     pendingViewScrollFraction = viewScrollFraction();
     // At the very top, land flush at the top of the other view — don't align the first block below the edge, which reads as a stray scroll-down.
@@ -848,6 +860,7 @@ function growlLockedForReading() {
 // Put a freshly built editor where the reader left off, in priority order: the exact pixel the toggle saved when nothing has moved under it, then the source line the toggle was reading, then a fraction — the host's for a tab coming back, or the one taken off the editor this render replaced. Called once the wrap column is set, because a fraction needs the scrollable range the reader will actually have rather than the one it was measured against.
 function landNewCodeEditor(text) {
   const path = activeDocumentPath();
+  dropViewLandingsFromAnotherDocument(path);
   const srcOffset = pendingCodeViewSrcOffset;
   pendingCodeViewSrcOffset = null;
   const fraction = pendingCodeViewFraction;

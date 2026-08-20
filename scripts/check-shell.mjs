@@ -9911,6 +9911,93 @@ if (booted) {
     }
   });
 
+  // One gesture writes down four landings before the host is asked for anything, and four things can then abandon the source-view entry without rendering -- so the landings stand and the next document opened spends them. Neither the fetch nor Monaco can be driven here, so the landing is armed by hand the way the tests above arm one, and the three places it is spent are driven against the wrong document. Same 10,000px of source in a 1,000px window, so 9,000px of range makes every fraction a round pixel.
+  check('a landing armed on one document is not spent on the next one', () => {
+    const armed = 'C:\Notes\armed.md';
+    const next = 'C:\Notes\next.md';
+    const front = (which) =>
+      booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [{ path: which }], active: 0 });
+    // Everything one press of the source button writes down, stamped with the document it was taken from -- see toggleCodeView.
+    const arm = (which) =>
+      vm.runInContext(
+        `pendingViewLandingPath = ${JSON.stringify(which)}; pendingViewScrollFraction = 0.5; pendingViewAtTop = false; pendingCodeViewSrcOffset = 30; pendingReadingSrcOffset = 30;`,
+        booted
+      );
+    const landings = () =>
+      vm.runInContext(
+        'JSON.stringify([pendingViewLandingPath, pendingViewScrollFraction, pendingViewAtTop, pendingCodeViewSrcOffset, pendingReadingSrcOffset])',
+        booted
+      );
+    const source = 'aaaa\n'.repeat(40);
+    const fakeEditor = (scrollTop) => ({
+      __scrollTop: scrollTop,
+      __revealed: null,
+      getScrollTop() { return this.__scrollTop; },
+      setScrollTop(next2) { this.__scrollTop = next2; },
+      getScrollHeight: () => 10000,
+      getLayoutInfo: () => ({ height: 1000 }),
+      revealLineNearTop(line) { this.__revealed = line; },
+    });
+    const buildEditor = (from) => {
+      booted.__fakeMonaco = fakeEditor(from);
+      vm.runInContext('monacoEditor = __fakeMonaco;', booted);
+      return booted.__fakeMonaco;
+    };
+    try {
+      vm.runInContext('viewHandoff = null; currentState = Object.assign({}, currentState, { document: null }); app.scrollHeight = 10000; app.clientHeight = 1000; app.scrollTop = 0;', booted);
+
+      // The source view: a line armed on one document is not the line the next document's source opens on, and the place the host sent for the document actually open is what it lands on instead.
+      arm(armed);
+      front(next);
+      vm.runInContext('pendingCodeViewFraction = 0.4;', booted);
+      const opened = buildEditor(0);
+      booted.landNewCodeEditor(source);
+      if (opened.__revealed !== null) {
+        throw new Error(`a source line armed on another document was revealed at line ${opened.__revealed}`);
+      }
+      if (opened.getScrollTop() !== 3600) {
+        throw new Error(`the source view landed at ${opened.getScrollTop()} instead of the place the host sent for it`);
+      }
+
+      // Dropped, not held: nobody is coming for a landing whose render never happened, so going back to the document that armed it finds nothing to spend.
+      if (landings() !== '[null,null,false,null,null]') {
+        throw new Error(`a refused landing was held rather than dropped: ${landings()}`);
+      }
+      front(armed);
+      vm.runInContext('pendingCodeViewFraction = null;', booted);
+      const revisited = buildEditor(2200);
+      booted.landNewCodeEditor(source);
+      if (revisited.__revealed !== null || revisited.getScrollTop() !== 2200) {
+        throw new Error('the document that armed the landing spent it on a later visit');
+      }
+
+      // The reading view: a fraction armed on one document opens another document at the top of itself.
+      vm.runInContext('monacoEditor = null; viewHandoff = null; app.scrollTop = 0;', booted);
+      arm(armed);
+      front(next);
+      booted.resetReaderScrollToContentStart();
+      booted.__frames.drain();
+      if (vm.runInContext('app.scrollTop', booted) !== 0) {
+        throw new Error(`a fresh document opened ${vm.runInContext('app.scrollTop', booted)}px down at another document's fraction`);
+      }
+
+      // And the same document's own landing still lands, or the guard would have taken the toggle with it.
+      vm.runInContext('app.scrollTop = 0;', booted);
+      arm(next);
+      booted.resetReaderScrollToContentStart();
+      booted.__frames.drain();
+      if (vm.runInContext('app.scrollTop', booted) !== 4500) {
+        throw new Error(`the toggle's own fraction no longer lands: ${vm.runInContext('app.scrollTop', booted)}`);
+      }
+    } finally {
+      vm.runInContext(
+        'monacoEditor = null; monacoEditorPath = null; codeViewActive = false; viewHandoff = null; pendingCodeViewFraction = null; pendingCodeViewSrcOffset = null; pendingReadingSrcOffset = null; pendingViewScrollFraction = null; pendingViewAtTop = false; pendingViewLandingPath = null; app.scrollHeight = 0; app.clientHeight = 0; app.scrollTop = 0;',
+        booted
+      );
+      booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [], active: null });
+    }
+  });
+
   check('a home row reads as a name over its folder', () => {
     const path = 'C:\\Users\\me\\Vault\\Journal\\A note.md';
     const row = homeRowMarkup(path);
