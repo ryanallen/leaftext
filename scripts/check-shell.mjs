@@ -9799,6 +9799,105 @@ if (booted) {
     }
   });
 
+  // A source view has two ways of being told where the reader left off, and both of them are decided here rather than by Monaco: the host sends a fraction for a tab coming back or a launch, and sends none on purpose for an in-place rebuild, where the only thing that still knows is the editor about to be thrown away. Monaco cannot load offline, so the decision and the landing are driven straight against a stand-in editor — 10,000px of source in a 1,000px window, so 9,000px of range makes every fraction a round pixel.
+  check('a source view comes back where it was left, from the host or from the editor it replaces', () => {
+    const path = 'C:\\Notes\\long.md';
+    const other = 'C:\\Notes\\other.md';
+    const fakeEditor = (scrollTop) => ({
+      __scrollTop: scrollTop,
+      __revealed: null,
+      getScrollTop() { return this.__scrollTop; },
+      setScrollTop(next) { this.__scrollTop = next; },
+      getScrollHeight: () => 10000,
+      getLayoutInfo: () => ({ height: 1000 }),
+      revealLineNearTop(line) { this.__revealed = line; },
+    });
+    const front = (which) =>
+      booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [{ path: which }], active: 0 });
+    // Build the replacement editor, hand it a landing, and say where it ended up. It starts at the top the way a real new editor does, unless a case needs to see it move off somewhere else.
+    const land = (fraction, srcOffset, text, from = 0) => {
+      booted.__fakeMonaco = fakeEditor(from);
+      vm.runInContext('monacoEditor = __fakeMonaco;', booted);
+      vm.runInContext(
+        `pendingCodeViewFraction = ${fraction === null ? 'null' : fraction}; pendingCodeViewSrcOffset = ${srcOffset === null ? 'null' : srcOffset}; pendingViewAtTop = false;`,
+        booted
+      );
+      booted.landNewCodeEditor(text || '');
+      return booted.__fakeMonaco;
+    };
+    try {
+      front(path);
+      vm.runInContext('codeViewActive = true; viewHandoff = null;', booted);
+
+      // The host's answer, and the one route that is broken today: nothing on the page reads it.
+      vm.runInContext('monacoEditor = null; monacoEditorPath = null;', booted);
+      if (booted.codeViewLandingFraction({ scrollFraction: 0.5 }) !== 0.5) {
+        throw new Error('the page threw away the place the host saved for a returning tab');
+      }
+      const halfway = land(0.5, null, '').getScrollTop();
+      if (halfway !== 4500) throw new Error(`a returning tab landed at ${halfway} instead of halfway down`);
+
+      // `0` is a place and no answer is not: a saved top goes to the top, and a first source view is left alone.
+      if (booted.codeViewLandingFraction({ scrollFraction: 0 }) !== 0) {
+        throw new Error('a saved place at the top was read as no place at all');
+      }
+      if (land(0, null, '', 3000).getScrollTop() !== 0) {
+        throw new Error('a source view saved at the top did not go back to the top');
+      }
+      vm.runInContext('monacoEditor = null; monacoEditorPath = null;', booted);
+      if (booted.codeViewLandingFraction({}) !== null) {
+        throw new Error('a first source view was given a place to land');
+      }
+      if (land(null, null, '', 3000).getScrollTop() !== 3000) {
+        throw new Error('no answer at all still moved the editor');
+      }
+
+      // No host answer and the same document: the editor being replaced is what knows. 2,700 of 9,000 is three tenths down.
+      booted.__fakeMonaco = fakeEditor(2700);
+      vm.runInContext('monacoEditor = __fakeMonaco; monacoEditorPath = __landPath;', Object.assign(booted, { __landPath: path }));
+      if (booted.codeViewLandingFraction({}) !== 0.3) {
+        throw new Error('a rebuilt source view did not ask the editor it was replacing');
+      }
+      if (land(0.3, null, '').getScrollTop() !== 2700) {
+        throw new Error('a rebuilt source view did not come back to the same place');
+      }
+
+      // And a switch to a source tab nobody has ever scrolled takes nothing from the file it came from.
+      booted.__fakeMonaco = fakeEditor(2700);
+      vm.runInContext('monacoEditor = __fakeMonaco;', booted);
+      front(other);
+      if (booted.codeViewLandingFraction({}) !== null) {
+        throw new Error('an unscrolled tab opened at the place in the file before it');
+      }
+      front(path);
+
+      // Neither answer takes the toggle's, which is the more exact of the three: the pixel it saved when nothing moved under it.
+      vm.runInContext(
+        'viewHandoff = { path: __landPath, readerScrollTop: 100, codeScrollTop: 777, readerLanded: null, codeLanded: null, restoreExact: true };',
+        booted
+      );
+      if (land(0.5, null, '').getScrollTop() !== 777) {
+        throw new Error('a fraction overrode the exact pixel the toggle saved');
+      }
+
+      // Nor the line the toggle was reading, which is scrolled to rather than placed.
+      vm.runInContext('viewHandoff = null;', booted);
+      const revealed = land(0.5, 12, 'line one\nline two\nline three');
+      if (revealed.__revealed !== 2) {
+        throw new Error(`the toggle's own line was not the landing: ${revealed.__revealed}`);
+      }
+      if (revealed.getScrollTop() !== 0) {
+        throw new Error('a fraction moved an editor the toggle had already placed by line');
+      }
+    } finally {
+      vm.runInContext(
+        'monacoEditor = null; monacoEditorPath = null; codeViewActive = false; viewHandoff = null; pendingCodeViewFraction = null; pendingCodeViewSrcOffset = null;',
+        booted
+      );
+      booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [], active: null });
+    }
+  });
+
   check('a home row reads as a name over its folder', () => {
     const path = 'C:\\Users\\me\\Vault\\Journal\\A note.md';
     const row = homeRowMarkup(path);

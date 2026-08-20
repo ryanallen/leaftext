@@ -288,7 +288,7 @@ impl Reader {
     }
 }
 
-/// Where the source editor goes when a tab showing source is re-rendered. A restore carries the fraction it means; an in-place change leaves the page where it is, which the page handles; a reset starts at the top.
+/// Where the source editor goes when a tab showing source is re-rendered — one of the two answers a source-editor landing has. A restore carries the fraction it means and a reset says the top; an in-place change sends none on purpose, which is the page's cue to use the other answer and carry the fraction off the editor it is about to replace.
 pub(crate) fn code_view_scroll(scroll: &ScrollIntent) -> Option<f64> {
     match scroll {
         ScrollIntent::Restore { code, .. } => *code,
