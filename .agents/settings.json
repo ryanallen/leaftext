@@ -1,8 +1,5 @@
 {
   "enabledMcpjsonServers": ["leaftext"],
-  "enabledPlugins": {
-    "rust-analyzer-lsp@claude-plugins-official": true
-  },
   "hooks": {
     "UserPromptSubmit": [
       {
