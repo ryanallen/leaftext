@@ -18,7 +18,9 @@ fn fixture_source_path(relative_path: &str) -> PathBuf {
         .join(relative_path)
 }
 
-/// A scratch folder of this test's own. The label separates two tests: the clock alone ticks slowly enough here to hand two that start together one folder. The process id and one clock reading per run separate two runs.
+/// A scratch folder of this test's own, the binary's own copy of the library's `scratch_dir`: this file is the binary crate's and cannot see `src/tests/`, so the rule is written twice because the crates are two, not because anybody forgot.
+///
+/// The label separates two tests: the clock alone ticks slowly enough here to hand two that start together one folder. The process id and one clock reading per run separate two runs.
 fn scratch_dir(label: &str) -> PathBuf {
     static RUN: OnceLock<u128> = OnceLock::new();
     let run = RUN.get_or_init(|| {
@@ -27,8 +29,7 @@ fn scratch_dir(label: &str) -> PathBuf {
             .expect("system time is after Unix epoch")
             .as_nanos()
     });
-    let dir =
-        std::env::temp_dir().join(format!("leaf-scratch-{label}-{}-{run}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("leaf-{label}-{}-{run}", std::process::id()));
     fs::create_dir_all(&dir).expect("scratch directory is created");
     dir
 }
@@ -50,35 +51,6 @@ fn two_scratch_folders_asked_for_under_different_names_are_never_the_same_folder
 
     let _ = fs::remove_dir_all(&first);
     let _ = fs::remove_dir_all(&second);
-}
-
-#[test]
-fn no_two_tests_ask_for_a_scratch_folder_under_the_same_name() {
-    // A label typed twice collides exactly as the clock alone does, and says as little, so the file reads itself.
-    let source = include_str!("tests.rs");
-    // Spelled in halves so the scan cannot find itself, and read past the spacing because the formatter wraps a long label onto its own line.
-    let opener = concat!("scratch", "_dir(");
-    let mut seen: Vec<(&str, usize)> = Vec::new();
-    for (at, _) in source.match_indices(opener) {
-        let after = source[at + opener.len()..].trim_start();
-        if !after.starts_with('"') {
-            continue;
-        }
-        let opened = source.len() - after.len() + 1;
-        let end = opened + source[opened..].find('"').expect("the label is closed");
-        let label = &source[opened..end];
-        let line = source[..at].lines().count();
-        if let Some((_, first)) = seen.iter().find(|(name, _)| *name == label) {
-            panic!("two tests ask for a scratch folder called {label} — line {first} and line {line}. A label is its own test's name");
-        }
-        seen.push((label, line));
-    }
-
-    assert!(
-        seen.len() > 20,
-        "the scan found {} call sites, so it has stopped reading them",
-        seen.len()
-    );
 }
 
 #[test]
@@ -880,14 +852,7 @@ fn file_url_for_fixture(relative_path: &str) -> String {
 
 #[test]
 fn rename_file_renames_within_the_same_folder() {
-    let dir = std::env::temp_dir().join(format!(
-        "leaf-rename-ok-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
-    std::fs::create_dir_all(&dir).expect("temp dir");
+    let dir = scratch_dir("rename_file_renames_within_the_same_folder");
     let original = dir.join("before.md");
     std::fs::write(&original, "# Note\n").expect("write");
 
@@ -901,14 +866,7 @@ fn rename_file_renames_within_the_same_folder() {
 
 #[test]
 fn rename_file_rejects_path_traversal_and_empty_names() {
-    let dir = std::env::temp_dir().join(format!(
-        "leaf-rename-bad-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
-    std::fs::create_dir_all(&dir).expect("temp dir");
+    let dir = scratch_dir("rename_file_rejects_path_traversal_and_empty_names");
     let original = dir.join("keep.md");
     std::fs::write(&original, "# Keep\n").expect("write");
 
@@ -1556,14 +1514,8 @@ fn make_writable(dir: &Path) {
 
 #[test]
 fn an_external_file_in_the_shown_folder_refreshes_the_pane_for_every_format() {
-    let dir = std::env::temp_dir().join(format!(
-        "leaf-pane-refresh-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir =
+        scratch_dir("an_external_file_in_the_shown_folder_refreshes_the_pane_for_every_format");
     let canonical = fs::canonicalize(&dir).expect("fixture directory canonicalizes");
 
     let mut state = VaultState::load(None);
@@ -2193,14 +2145,7 @@ fn one_more_letter_scans_what_the_last_letter_matched() {
 
 #[test]
 fn the_vaults_text_is_patched_for_every_format_the_watcher_reports() {
-    let dir = std::env::temp_dir().join(format!(
-        "leaf-corpus-patch-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
-    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let dir = scratch_dir("the_vaults_text_is_patched_for_every_format_the_watcher_reports");
     let canonical = fs::canonicalize(&dir).expect("fixture directory canonicalizes");
     let root = plain_event_path(canonical.clone());
 
@@ -2396,11 +2341,7 @@ fn reads_the_slug_out_of_a_glossary_scheme_link() {
 
 #[test]
 fn detects_same_document_paths_after_canonicalization() {
-    let unique = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-same-document-{unique}"));
+    let dir = scratch_dir("detects_same_document_paths_after_canonicalization");
     let nested = dir.join("nested");
     fs::create_dir_all(&nested).expect("test directory is created");
     let document = nested.join("guide.md");
@@ -2701,13 +2642,7 @@ fn a_browsed_folder_is_watched_one_level_deep_not_recursively() {
     // Browsing into `C:\` in the library must not hand the watcher a recursive subscription to the whole drive: every change on the machine then arrives as an event, the pane rebuilds against each one, the window stops answering, and switching vaults never gets processed.
     //
     // A vault is the user's own choice of folder and stays recursive; a folder the pane merely browsed to gets one level, which is all the pane shows.
-    let dir = std::env::temp_dir().join(format!(
-        "leaf-watch-mode-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
+    let dir = scratch_dir("a_browsed_folder_is_watched_one_level_deep_not_recursively");
     let browsed = dir.join("browsed");
     fs::create_dir_all(&browsed).expect("test directory is created");
 

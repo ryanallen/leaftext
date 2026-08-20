@@ -1,18 +1,9 @@
 //! What is left of the store: the vault registry, the schema, and the two parsers the renderer and the corpus share.
 
 use super::*;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 fn unique_dir(tag: &str) -> PathBuf {
-    static COUNTER: AtomicU64 = AtomicU64::new(0);
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let n = COUNTER.fetch_add(1, Ordering::SeqCst);
-    let dir = std::env::temp_dir().join(format!("leaf-store-{tag}-{nanos}-{n}"));
-    std::fs::create_dir_all(&dir).expect("temp dir created");
-    dir
+    crate::tests::scratch_dir(&format!("store-{tag}"))
 }
 
 fn table_exists(conn: &Connection, table: &str) -> bool {

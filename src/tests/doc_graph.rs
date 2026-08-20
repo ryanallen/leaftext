@@ -5,13 +5,7 @@ use super::*;
 use crate::store::{DocumentGraph, GraphRequest};
 
 fn graph_dir(tag: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let dir = std::env::temp_dir().join(format!("leaf-docgraph-{tag}-{nanos}"));
-    fs::create_dir_all(&dir).expect("temp dir created");
-    dir
+    scratch_dir(&format!("docgraph-{tag}"))
 }
 
 fn write(path: &Path, contents: &str) {

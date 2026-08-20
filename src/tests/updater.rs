@@ -2,16 +2,8 @@
 
 use super::*;
 
-/// A scratch data directory, named per test so parallel runs cannot collide.
 fn update_test_dir(name: &str) -> PathBuf {
-    let unique = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("system time is after Unix epoch")
-        .as_nanos();
-    let dir = std::env::temp_dir().join(format!("leaf-update-{name}-{unique}"));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("scratch data directory");
-    dir
+    scratch_dir(&format!("update-{name}"))
 }
 
 #[test]

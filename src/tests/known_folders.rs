@@ -16,13 +16,7 @@ fn roots(home: &Path) -> CloudRoots {
 }
 
 fn temp_home(tag: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let home = std::env::temp_dir().join(format!("leaf-clouds-{tag}-{nanos}"));
-    fs::create_dir_all(&home).expect("temp home");
-    home
+    scratch_dir(&format!("clouds-{tag}"))
 }
 
 #[test]

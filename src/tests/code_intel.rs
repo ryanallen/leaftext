@@ -10,13 +10,7 @@ use crate::store::document_links;
 use crate::vault_corpus::CorpusDocument;
 
 fn intel_dir(tag: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let dir = std::env::temp_dir().join(format!("leaf-codeintel-{tag}-{nanos}"));
-    fs::create_dir_all(&dir).expect("temp dir created");
-    dir
+    scratch_dir(&format!("codeintel-{tag}"))
 }
 
 fn doc(label: &str, path: &str, text: &str) -> CorpusDocument {

@@ -13,14 +13,7 @@ use crate::store::{
 use crate::VaultCorpus;
 
 fn remote_dir(tag: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let dir =
-        std::env::temp_dir().join(format!("leaf-remote-{tag}-{nanos}-{}", std::process::id()));
-    fs::create_dir_all(&dir).expect("temp dir created");
-    dir
+    scratch_dir(&format!("remote-{tag}"))
 }
 
 fn write(path: &Path, contents: &str) {

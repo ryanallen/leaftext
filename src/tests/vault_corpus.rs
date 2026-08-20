@@ -5,13 +5,7 @@ use super::*;
 use crate::store::GraphRequest;
 
 fn corpus_dir(tag: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let dir = std::env::temp_dir().join(format!("leaf-corpus-{tag}-{nanos}"));
-    fs::create_dir_all(&dir).expect("temp dir created");
-    dir
+    scratch_dir(&format!("corpus-{tag}"))
 }
 
 fn write(path: &Path, contents: &str) {
