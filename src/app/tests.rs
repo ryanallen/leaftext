@@ -3632,6 +3632,65 @@ fn the_export_ask_carries_a_destination_and_the_size_the_page_measured() {
     );
 }
 
+/// What a Mac reader gets when they press Export PDF. The arm is Mac code and nothing here compiles or runs it, so the proof is the source: the panel switched off, the chosen path named as where the job saves to, and the sheet the page measured spent rather than dropped. Read the same way as the ask above it, for the same reason.
+#[test]
+fn the_mac_export_switches_the_print_panel_off_and_saves_to_the_chosen_path() {
+    let write = include_str!("fileops.rs");
+    let body = write
+        .split(
+            "#[cfg(target_os = \"macos\")]
+fn write_page_pdf(",
+        )
+        .nth(1)
+        .expect("the Mac arm's own write");
+
+    // The whole point of the ticket: no sheet asking about paper, and no progress window over a render that is writing a file.
+    assert!(
+        body.contains("setShowsPrintPanel(false)") && body.contains("setShowsProgressPanel(false)"),
+        "a Mac export must raise no panel: {body}"
+    );
+    assert!(
+        !body.contains("page.print()"),
+        "the plain print call is the panel: {body}"
+    );
+
+    // The reader answered where the file goes before any of this ran, so the job saves to that answer rather than asking again.
+    assert!(
+        body.contains("NSPrintSaveJob") && body.contains("NSPrintJobSavingURL"),
+        "the chosen path is where the job saves to: {body}"
+    );
+    assert!(
+        body.contains("NSURL::fileURLWithPath") && body.contains("target.to_string_lossy()"),
+        "the path spent is the one handed in: {body}"
+    );
+
+    // Its own settings, not the app's. The shared ones are what a later print reads.
+    assert!(
+        body.contains("NSPrintInfo::new()") && !body.contains("sharedPrintInfo"),
+        "an export must not scribble in the app's session-wide print settings: {body}"
+    );
+
+    // The size the page measured, through the same sheet arithmetic Windows asks, written in the unit a Mac page size takes.
+    assert!(
+        body.contains("sheet_inches((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH)"),
+        "both desktops divide a tall document the same way: {body}"
+    );
+    assert!(
+        body.contains("const POINTS_PER_INCH: f64 = 72.0;") && body.contains("* POINTS_PER_INCH"),
+        "a Mac page size is points, and inches written there is a sheet a third of the size: {body}"
+    );
+    assert!(
+        body.contains("setScalingFactor(1.0)"),
+        "fitting the document onto its own sheet is the blank paper the Windows half spent rounds on: {body}"
+    );
+
+    // Nothing here can watch the operation finish, so the growl answers on the file.
+    assert!(
+        body.contains("std::fs::metadata(target)") && body.contains("file.len() > 0"),
+        "a saved growl must never name a file nobody wrote: {body}"
+    );
+}
+
 #[test]
 fn the_doc_ask_answers_the_buffer_and_refuses_a_path_that_will_not_open() {
     // The read half of the agent's document workflow, without a window: bring a file to the front, then answer off the same buffer the reader types into.
@@ -5691,8 +5750,7 @@ fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
     );
 }
 
-/// The ceiling on a PDF page, and what a document past it comes out as. Cut at the ceiling, a document a little over is one full sheet and a mostly blank one — which is the blank paper a reader meets and cannot explain. Divided, every sheet is full and the last ends at the last line.
-#[cfg(target_os = "windows")]
+/// The ceiling on a PDF page, and what a document past it comes out as. Cut at the ceiling, a document a little over is one full sheet and a mostly blank one — which is the blank paper a reader meets and cannot explain. Divided, every sheet is full and the last ends at the last line. Both desktops ask it, so both desktops run this.
 #[test]
 fn a_document_taller_than_a_pdf_page_is_divided_into_equal_sheets() {
     use crate::app::fileops::sheet_inches;

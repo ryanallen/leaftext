@@ -112,6 +112,32 @@ yaml-rust2 = { version = "0.11.0", default-features = false }
 [target.'cfg(not(windows))'.dependencies]
 png = "0.17.16"
 
+# Writing the open page out as a PDF on a Mac: the web view's own print
+# operation with both panels switched off, the paper sized to the document and
+# the chosen path set as where the job saves to. Every one of these already
+# compiles into this binary through `wry`, at these versions and with these
+# features already switched on — `objc2-web-kit` asks `objc2-app-kit` for
+# `NSPrintInfo` and `NSPrintOperation` itself — so naming them adds no code to
+# the tree and no feature to it either. What it buys is the name to call those
+# methods by. `wry` re-exports none of them, and the only alternative it does
+# offer is the print panel the reader refused.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = { version = "0.6.4", default-features = false, features = ["std"] }
+objc2-app-kit = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "objc2-core-foundation",
+    "NSPrintInfo",
+    "NSPrintOperation",
+] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "objc2-core-foundation",
+    "NSDictionary",
+    "NSObject",
+    "NSString",
+    "NSURL",
+] }
+
 [target.'cfg(windows)'.build-dependencies]
 embed-resource = "2.5"
 

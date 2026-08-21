@@ -306,7 +306,7 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
 
 /// Write the page as it stands out as a file of its own, asking where it goes first.
 ///
-/// No print panel. The reader asked for a file, not a printer to choose, so the chooser is the app's own two rows and the only question after it is where the file goes. What makes the file the whole document in its theme, rather than one screen of app frame, is the stylesheet's `@media print` block.
+/// No print panel on either desktop. The reader asked for a file, not a printer to choose, so the chooser is the app's own two rows and the only question after it is where the file goes. What makes the file the whole document in its theme, rather than one screen of app frame, is the stylesheet's `leaf-paper` class, which the page raises before it sends this and which is why the page can measure the sheet it is about to ask for.
 ///
 /// One continuous page rather than a document chopped across sheets: the page carries its own size here, so the sheet is made as tall as the document is.
 ///
@@ -390,21 +390,19 @@ pub(crate) fn write_page_pdf_at(
 }
 
 /// A CSS pixel is a ninety-sixth of an inch by definition, which is the only conversion between what the page measured and what a page size is written in.
-#[cfg(target_os = "windows")]
 const CSS_PIXELS_PER_INCH: f64 = 96.0;
 
 /// Four pixels of slack under the last line, so a sheet is never a fraction shorter than what is laid out on it. A fraction short is not a fraction of blank paper — it is a whole second page with almost nothing on it.
-#[cfg(target_os = "windows")]
 const HAIR_OF_PAPER: f64 = 4.0;
 
 /// How long a side of a PDF page can be. The format's own ceiling rather than anything chosen here, so a document taller than this cannot be one continuous page whatever the app asks for.
-#[cfg(target_os = "windows")]
 const LONGEST_PAGE_INCHES: f64 = 200.0;
 
 /// The height of each sheet for a document `inches` tall: its own height where that fits on one page, and an equal share of it where it does not.
 ///
 /// Cut at the ceiling instead and a document a little past it is one full sheet followed by a mostly blank one, which is the blank paper a reader meets and cannot explain. Divided, every sheet is full and the last one ends at the last line.
-#[cfg(target_os = "windows")]
+///
+/// Both desktops ask it. A Mac writes the answer as points and Windows as inches, which is the only difference between them.
 pub(super) fn sheet_inches(inches: f64) -> f64 {
     let sheets = (inches / LONGEST_PAGE_INCHES).ceil().max(1.0);
     // Rounded up to the hundredth the page size is written in. Rounded down instead, a sheet comes out a fraction of a pixel shorter than what is on it, and that fraction is a second, nearly empty page — which is most of what a reader sees as blank paper.
@@ -475,10 +473,57 @@ fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Res
     }
 }
 
-/// The same on a Mac, through the panel, until `WKWebView`'s own page-to-PDF call is written: [`mac-saves-a-pdf-through-a-panel`](../../../docs/features/reading/mac-saves-a-pdf-through-a-panel.md) owns that. A reader here still gets a PDF and still gets the page the print rules prepare; what they also get is a sheet asking about paper, which is what the Windows side no longer shows. The path they chose and the size the page measured are both spent, because the panel asks again.
+/// The same render on a Mac, and the same file at the end of it: the web view's own print operation with both panels switched off, the sheet the page measured as the paper, and the path the reader already chose as where the job saves to.
+///
+/// A plain `print()` is what raised the panel — the helper behind it leaves both panels on and writes its margins into the app's session-wide print settings — so this builds an `NSPrintInfo` of its own, which costs nothing and changes nothing a later print reads.
+///
+/// A page size is written in points here and in inches on the Windows side: a point is a seventy-second of an inch against a CSS pixel's ninety-sixth. Same sheet, same arithmetic above, two units.
+///
+/// Nothing here can watch the operation finish, so the answer is read off the file rather than off the call. A saved growl then only ever names a path with bytes at it.
 #[cfg(target_os = "macos")]
-fn write_page_pdf(page: &WebView, _target: &Path, _width: f64, _height: f64) -> Result<(), String> {
-    page.print().map_err(|error| error.to_string())
+fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Result<(), String> {
+    use objc2::runtime::ProtocolObject;
+    use objc2_app_kit::{NSPrintInfo, NSPrintJobSavingURL, NSPrintSaveJob};
+    use objc2_foundation::{NSCopying, NSSize, NSString, NSURL};
+    use wry::WebViewExtMacOS;
+
+    /// A point is a seventy-second of an inch, which is what a Mac page size is written in.
+    const POINTS_PER_INCH: f64 = 72.0;
+
+    let inches = |pixels: f64| (pixels / CSS_PIXELS_PER_INCH).clamp(1.0, LONGEST_PAGE_INCHES);
+    let sheet = sheet_inches((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH);
+    let settings = NSPrintInfo::new();
+    settings.setPaperSize(NSSize::new(
+        inches(width) * POINTS_PER_INCH,
+        sheet * POINTS_PER_INCH,
+    ));
+    settings.setTopMargin(0.0);
+    settings.setBottomMargin(0.0);
+    settings.setLeftMargin(0.0);
+    settings.setRightMargin(0.0);
+    // One to one, said out loud. Fitting shrinks the document onto the sheet, and the sheet is already the document's own size — which is the blank paper the Windows half spent rounds on.
+    settings.setScalingFactor(1.0);
+    let destination = NSURL::fileURLWithPath(&NSString::from_str(&target.to_string_lossy()));
+    // The job saves rather than spools, and the file it saves to is the one the reader named in the dialog before any of this ran.
+    unsafe {
+        settings.setJobDisposition(NSPrintSaveJob);
+        settings
+            .dictionary()
+            .setObject_forKey(&destination, ProtocolObject::from_ref(NSPrintJobSavingURL));
+    }
+    let operation = unsafe { page.webview().printOperationWithPrintInfo(&settings) };
+    // The two sheets a reader is not asking for: a printer to choose, and a progress window over a render that is writing a file.
+    operation.setShowsPrintPanel(false);
+    operation.setShowsProgressPanel(false);
+    let ran = operation.runOperation();
+    let wrote = std::fs::metadata(target)
+        .map(|file| file.len() > 0)
+        .unwrap_or(false);
+    if ran && wrote {
+        Ok(())
+    } else {
+        Err("The page could not be rendered.".to_string())
+    }
 }
 
 /// What one diagram export comes to: the bytes to write, or why there are none. Where the file goes was answered by the save window before any of this ran.
