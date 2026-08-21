@@ -72,6 +72,20 @@ function detachChild(child) {
   child.parentElement = null;
 }
 
+/** What an element's own subtree answers a query with, in document order: a comma list of tags and classes, which is the whole grammar the front end asks an element with. One matcher behind every stand-in element, so nothing on the page is ever told it is holding something it has not got — a guard asking a line whether it carries a picture reads an answer of "yes, always" as itself having fired. */
+function matchingDescendants(el, selector) {
+  const wants = String(selector)
+    .split(',')
+    .map((one) => one.trim())
+    .filter(Boolean);
+  // Either place a class is kept, because a check writes one both ways and the page reads it back through whichever name it was given.
+  const wears = (node, name) => !!(node.classList && node.classList.contains(name)) || String(node.className || '').split(/\s+/).includes(name);
+  const walk = (from) => (from.children || []).flatMap((child) => [child, ...walk(child)]);
+  return walk(el).filter((child) =>
+    wants.some((one) => (one.startsWith('.') ? wears(child, one.slice(1)) : String(child.tagName || '').toLowerCase() === one.split(/[ :]/)[0])),
+  );
+}
+
 /** A stand-in element: enough surface to be wired up, and inert when used. */
 function fakeElement(id = '') {
   const element = Object.assign(new FakeElement(), {
@@ -180,10 +194,9 @@ function fakeElement(id = '') {
     closest: () => null,
     matches: () => false,
     contains: () => false,
-    // The page writes its own markup into these and then reaches back into it, so a query finds something — as it would once that markup is really there.
-    querySelector: (selector) => fakeElement(String(selector)),
-    // Nothing has been rendered yet at boot, so a list of them is empty.
-    querySelectorAll: () => [],
+    // Its own children and nothing else, so an element holding nothing says so.
+    querySelector: (selector) => matchingDescendants(element, selector)[0] || null,
+    querySelectorAll: (selector) => matchingDescendants(element, selector),
     getBoundingClientRect: () => ({
       top: 0,
       left: 0,
@@ -200,7 +213,7 @@ function fakeElement(id = '') {
     configurable: true,
     enumerable: true,
   });
-  // Writing either name empties the element, which is how the app clears a container before drawing it again — a write of '' in 22 places. Kept as a plain string the children survive, and a container drawn twice reads back as both drawings. Neither name parses markup: a check that needs real children builds them with createElement.
+  // Writing either name empties the element, which is how the app clears a container before drawing it again — a write of '' in 22 places. The string is kept and reads back, so a container drawn twice reads back as both drawings. Only the markup becomes children: the page draws whole panels as one string and reaches straight back into what it drew, and the text is what eight checks rebind to hand-made words for a line being typed on.
   const held = { textContent: '', innerHTML: '' };
   for (const name of ['textContent', 'innerHTML']) {
     Object.defineProperty(element, name, {
@@ -209,6 +222,7 @@ function fakeElement(id = '') {
         held[name] = String(value ?? '');
         // By this name and never childNodes: no move here writes that one, so it is not a child list — it is what eight checks rebind to hand-made text for a line being typed on. Each child leaves through the same detach a removal uses, so a whole redraw's worth of dropped children are not left naming the container that dropped them.
         for (const child of [...element.children]) detachChild(child);
+        if (name === 'innerHTML') for (const child of elementsFromMarkup(held[name])) element.appendChild(child);
       },
       configurable: true,
       enumerable: true,
@@ -226,13 +240,55 @@ function fakeElement(id = '') {
   return element;
 }
 
+// Every tag in a piece of markup, opening or closing, with its attributes — the one pattern both walkers below read markup with.
+const MARKUP_TAGS = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
+// A tag that closes itself, so nothing written after it is written inside it.
+const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
+
+/** The elements a piece of markup declares, nested the way it nests them, each wearing its tag, its id, its classes and its other attributes. The page draws whole panels as one string and then reaches straight back into what it drew — the home screen wires its two buttons out of the markup two lines above them — so a container keeping only the string could answer none of it. */
+function elementsFromMarkup(markup) {
+  const root = fakeElement('');
+  const open = [{ name: '', node: root }];
+  for (const tag of String(markup).matchAll(MARKUP_TAGS)) {
+    const [, closing, rawName, attrs] = tag;
+    const name = rawName.toLowerCase();
+    if (closing) {
+      const at = open.map((one) => one.name).lastIndexOf(name);
+      // Never past the root: markup closing a tag nobody opened is a fragment of a bigger page, not an empty one.
+      if (at > 0) open.length = at;
+      continue;
+    }
+    const node = fakeElement('');
+    node.tagName = name.toUpperCase();
+    const held = new Map();
+    for (const [, key, value] of attrs.matchAll(/([a-zA-Z_:][-\w:.]*)\s*=\s*"([^"]*)"/g)) {
+      held.set(key, value);
+      if (key === 'id') node.id = value;
+      else if (key === 'class') {
+        node.className = value;
+        for (const one of value.split(/\s+/).filter(Boolean)) node.classList.add(one);
+      } else if (key.startsWith('data-')) node.dataset[key.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = value;
+    }
+    node.getAttribute = (key) => (held.has(key) ? held.get(key) : null);
+    node.hasAttribute = (key) => held.has(key);
+    node.setAttribute = (key, value) => held.set(key, String(value));
+    node.removeAttribute = (key) => held.delete(key);
+    if (/(^|\s)hidden(\s|=|$)/.test(attrs)) node.hidden = true;
+    open[open.length - 1].node.appendChild(node);
+    if (!VOID_TAGS.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
+  }
+  const built = [...root.children];
+  for (const child of built) child.parentElement = null;
+  root.children.length = 0;
+  return built;
+}
+
 /** One stand-in per element the markup names, nested the way the page nests them. The app-bar fold takes buttons out of their containers and later puts each back where it was standing, so a flat bag of elements cannot say whether it worked — a wide window left the Mac's dots in the menu until the app was quit, and nothing here could see it. */
 function pageElements() {
   const markup = pageMarkup();
-  const voids = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
   const byId = new Map();
   const open = [];
-  for (const tag of markup.matchAll(/<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g)) {
+  for (const tag of markup.matchAll(MARKUP_TAGS)) {
     const [, closing, rawName, attrs] = tag;
     const name = rawName.toLowerCase();
     if (closing) {
@@ -252,7 +308,7 @@ function pageElements() {
       const holder = [...open].reverse().find((one) => one.node);
       if (holder) holder.node.appendChild(node);
     }
-    if (!voids.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
+    if (!VOID_TAGS.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
   }
   return { byId };
 }
@@ -288,7 +344,12 @@ function fakePage() {
     querySelector: find,
     // Nothing is loaded at boot, so a list query is legitimately empty.
     querySelectorAll: () => [],
-    createElement: (tag) => fakeElement(tag),
+    // The tag it was asked for and no id nobody gave it: a query over an element's children matches on the tag, so a picture built here has to be found by a guard asking whether the line is holding one.
+    createElement: (tag) => {
+      const made = fakeElement('');
+      made.tagName = String(tag).toUpperCase();
+      return made;
+    },
     createTextNode: (text) => ({ textContent: text }),
     // Nothing is rendered here, so a walk over an element finds no nodes — which is what a walk over the fake page's empty elements would find.
     createTreeWalker: () => ({ nextNode: () => null }),
@@ -851,10 +912,29 @@ check('the stand-in page empties a container when its text or its markup is writ
   const block = fakeElement('emptied-source');
   block.innerText = '# Title\n';
   if (block.textContent !== '# Title\n' || block.innerText !== '# Title\n') throw new Error('innerText stopped mirroring the text');
-  // Neither name parses markup. A check that needs real children builds them with createElement.
-  const markup = fakeElement('emptied-markup');
-  markup.innerHTML = '<div></div>';
-  if (markup.children.length) throw new Error('innerHTML built elements out of a string');
+  // The markup becomes children, because a panel the page drew is a panel the next line reaches back into. The text parses nothing: it is words, and eight checks rebind it to hand-made ones.
+  const drawn = fakeElement('emptied-markup');
+  drawn.innerHTML = '<section class="empty-state"><button type="button" class="primary-open">Choose file</button><img src="leaf.png"><p class="empty-vault-help">One folder of notes</p></section>';
+  if (drawn.children.length !== 1) throw new Error(`a written panel hung ${drawn.children.length} elements off the container rather than its one section`);
+  const section = drawn.children[0];
+  if (section.tagName !== 'SECTION' || !section.classList.contains('empty-state')) {
+    throw new Error(`the panel came back as a ${section.tagName} wearing ${JSON.stringify(section.className)}`);
+  }
+  // Both of the two ways the page asks for what it drew: by class and by tag, at whatever depth it landed.
+  const button = section.children[0];
+  if (!button || button.tagName !== 'BUTTON' || !button.classList.contains('primary-open')) throw new Error('the button the panel names was not built');
+  if (button.getAttribute('type') !== 'button') throw new Error(`the button lost the attributes its markup gave it: ${JSON.stringify(button.getAttribute('type'))}`);
+  // A tag that closes itself takes nothing inside it, or everything after a picture is drawn as its child.
+  const picture = section.children[1];
+  if (!picture || picture.tagName !== 'IMG' || picture.children.length) throw new Error('a self-closing tag was left holding what came after it');
+  const help = section.children[2];
+  if (!help || help.tagName !== 'P' || !help.classList.contains('empty-vault-help')) throw new Error('the line after the picture is not standing beside it');
+  // A redraw replaces what was there rather than stacking a second drawing on it.
+  drawn.innerHTML = '<p class="empty-subtitle"></p>';
+  if (drawn.children.length !== 1 || drawn.children[0].tagName !== 'P') throw new Error('a second write left the first drawing standing');
+  const words = fakeElement('emptied-words');
+  words.textContent = '<div></div>';
+  if (words.children.length) throw new Error('the text was parsed as markup');
 });
 
 // ---- 2h. a node taken out has no holder -------------------------------------
@@ -947,6 +1027,40 @@ check('the stand-in page finds a class the page drew, and stops finding it once 
   nested.remove();
   if (page.document.querySelector('.app-toast')) throw new Error('a growl taken out of the page is still found by its class');
   if (page.document.querySelector('.probe-nested')) throw new Error('an element taken out of the page is still found by its class');
+});
+
+// ---- 2j. an element answers about its own children --------------------------
+//
+// An element answering any query with a fresh element is never holding nothing, so a guard written as "refuse this if the line is carrying a picture, a table or a rule" can only ever be told it is — and every check wanting the other answer has to switch the query off in the line above the press. That is a guard stuck on one branch and a workaround somebody writes on purpose.
+
+check('a stand-in element answers a query about its own children, and answers nothing when it has none', () => {
+  const { document } = fakePage();
+  const line = document.createElement('p');
+  // Nothing in it: the answer the reflex could never give, and the one the plus's own refusal turns on.
+  if (line.querySelector('img, svg, hr, table, video, iframe, input') !== null) throw new Error('a line holding nothing was told it is holding something');
+  if (line.querySelectorAll('img').length) throw new Error('a list query over an empty line answered with something');
+  const picture = document.createElement('img');
+  line.appendChild(picture);
+  if (line.querySelector('img, svg, hr, table, video, iframe, input') !== picture) throw new Error('a line holding a picture did not answer with it');
+  // The tag it was made with, not the one the query happened to name: a query for something else is still nothing.
+  if (line.querySelector('table') !== null) throw new Error('a line holding a picture answered a query for a table');
+  // Below the first row of children, which is where a rendered document puts most of what a guard asks about.
+  const quote = document.createElement('blockquote');
+  const inner = document.createElement('table');
+  quote.appendChild(document.createElement('p'));
+  quote.children[0].appendChild(inner);
+  if (quote.querySelector('table') !== inner) throw new Error('a table one level down was not found');
+  // By class as well as by tag, and both ways a class is written on the page.
+  const drawn = document.createElement('div');
+  const added = document.createElement('span');
+  added.classList.add('block-insert-row');
+  const written = document.createElement('span');
+  written.className = 'block-insert-row';
+  drawn.append(added, written);
+  if (drawn.querySelector('.block-insert-row') !== added) throw new Error('a class put on with the list is not found, or not the first of two');
+  if (drawn.querySelectorAll('.block-insert-row').length !== 2) throw new Error('the list query missed one of the two ways a class is written');
+  // Document order, so the first result is the first one drawn.
+  if (drawn.querySelectorAll('span')[1] !== written) throw new Error('the list query answered out of the order the children stand in');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
@@ -1192,16 +1306,8 @@ if (booted) {
         return kids.map((child) => child.textContent || '').join('');
       },
     };
-    // Enough of a query to answer the safety tests: a comma list of tags and classes, matched against the whole subtree.
-    const descendants = (from) => from.children.flatMap((child) => [child, ...descendants(child)]);
-    const matching = (selector) => {
-      const wants = String(selector).split(',').map((one) => one.trim());
-      return descendants(el).filter((child) =>
-        wants.some((one) => (one.startsWith('.') ? child.classList.contains(one.slice(1)) : child.tagName.toLowerCase() === one.split(/[ :]/)[0])),
-      );
-    };
-    el.querySelector = (selector) => matching(selector)[0] || null;
-    el.querySelectorAll = (selector) => matching(selector);
+    el.querySelector = (selector) => matchingDescendants(el, selector)[0] || null;
+    el.querySelectorAll = (selector) => matchingDescendants(el, selector);
     el.cloneNode = () => node(tag, { ...options, children: (options.children || []).map((child) => (typeof child === 'string' ? child : child.cloneNode())) });
     kids.forEach((child) => {
       if (child.nodeType !== 1) return;
@@ -4639,13 +4745,9 @@ if (booted) {
   check("the plus on an empty line writes over that line's own range", () => {
     const note = '# Title\n\n>\n\nA paragraph.\n';
     const at = note.indexOf('>');
-    // The stand-in page answers every element query with an element, so an emptiness test that asks a line what it is holding can never pass on one that is not told.
-    const holdingNothing = (el) => {
-      el.querySelector = () => null;
-      return el;
-    };
     noteGutter(note, ({ block, sent, option, caret }) => {
-      const empty = holdingNothing(block(at, at + 1));
+      // The ordinary block, holding nothing and saying so: the refusal is read off what the line is really carrying rather than off a query written here.
+      const empty = block(at, at + 1);
       empty.dataset.blockKind = 'block_quote';
       booted.runBlockInsert(empty, option('table'));
       const edits = sent.filter((one) => one.command === 'editBlock');
@@ -4665,11 +4767,22 @@ if (booted) {
     // What stands between that splice and somebody's sentence.
     noteGutter(note, ({ block, sent, option }) => {
       const start = note.indexOf('A paragraph.');
-      const says = holdingNothing(block(start, start + 'A paragraph.'.length));
+      const says = block(start, start + 'A paragraph.'.length);
       says.textContent = 'A paragraph.';
       booted.runBlockInsert(says, option('divider'));
       if (sent.some((one) => one.command === 'editBlock')) {
         throw new Error(`the plus wrote over a line that says something: ${JSON.stringify(sent)}`);
+      }
+    });
+
+    // The other half of the same refusal, and the one this whole file was raised over: a line with no word on it that is carrying a picture. Nothing said it out loud until the block could be asked what it holds.
+    noteGutter(note, ({ block, sent, option }) => {
+      const start = note.indexOf('A paragraph.');
+      const holding = block(start, start + 'A paragraph.'.length);
+      holding.appendChild(booted.document.createElement('img'));
+      booted.runBlockInsert(holding, option('divider'));
+      if (sent.some((one) => one.command === 'editBlock')) {
+        throw new Error(`the plus wrote over a line carrying a picture: ${JSON.stringify(sent)}`);
       }
     });
   });
@@ -4732,11 +4845,26 @@ if (booted) {
     }
   });
 
+  /** The reading layout a rendered document leaves on the app surface, stood up for real. `bindBlockControls` hangs the gutter off `.reader-layout` and refuses without a `.document-body`, and `openBlockGapLine` lays its clickable line into the same layout — so a check pressing either needs both really standing rather than answered by a query. Handed back so a check can read what was appended into it. */
+  function standUpReadingLayout() {
+    const app = vm.runInContext('app', booted);
+    const found = app.querySelector('.reader-layout');
+    if (found) return found;
+    const layout = booted.document.createElement('div');
+    layout.className = 'reader-layout';
+    const body = booted.document.createElement('div');
+    body.className = 'document-body';
+    layout.appendChild(body);
+    app.appendChild(layout);
+    return layout;
+  }
+
   /** The insert row as the plus really opens it, over the gap under `after` on a note. Every button comes back carrying the closure the app wired it with rather than one written here, which is what makes the two options that ask before they write readable at all: neither one calls that closure, they hand it away. */
   function openedInsertRow(after) {
     const read = (expression) => vm.runInContext(expression, booted);
     const wasUnlocked = read('readingUnlocked');
     read('readingUnlocked = true;');
+    standUpReadingLayout();
     booted.bindBlockControls();
     read('blockGutterTarget = null; blockGutterGap = { after: null, before: null };');
     read('blockGutterGap').after = after;
@@ -4954,6 +5082,7 @@ if (booted) {
     noteGutter('# Title\n\nA paragraph.\n', ({ block, sent }) => {
       const first = block(0, 7);
       first.getBoundingClientRect = () => ({ top: 100, bottom: 140, left: 0, right: 0, width: 600, height: 40 });
+      standUpReadingLayout();
       booted.openBlockGapLine({ above: null, below: first, after: null, before: first });
       const line = read('blockGapLine');
       if (!line) throw new Error('the space above the first block got no clickable line');
@@ -12095,6 +12224,8 @@ if (booted) {
     const tree = booted.document.getElementById('libraryTree');
     let writes = 0;
     let held = tree.innerHTML;
+    // Kept rather than deleted afterwards: the page's own markup property is the element's own, so deleting this one leaves the pane with a plain field that builds no children, and every later check reads a pane the page never drew into.
+    const wasMarkup = Object.getOwnPropertyDescriptor(tree, 'innerHTML');
     Object.defineProperty(tree, 'innerHTML', {
       configurable: true,
       get: () => held,
@@ -12121,7 +12252,7 @@ if (booted) {
       booted.leafSetLibraryFolder(folder(two.concat([{ kind: 'file', name: 'PLAN.md', path: 'C:\\Vaults\\Work\\PLAN.md' }])));
       if (writes === drawn) throw new Error('a file appearing in the folder on screen never reached the pane');
     } finally {
-      delete tree.innerHTML;
+      Object.defineProperty(tree, 'innerHTML', wasMarkup);
       tree.innerHTML = held;
     }
   });
@@ -12221,14 +12352,8 @@ if (booted) {
   check('the introduction is retired for good by picking a folder or by opening the list that offers one', () => {
     const sent = [];
     const wasSend = booted.ipc.postMessage;
-    // A query on a stand-in hands back a fresh stand-in, so the button the page really bound has to be kept as it is handed over.
-    const wasQuery = libraryTreeElement.querySelector;
-    let introButton = null;
-    libraryTreeElement.querySelector = (selector) => {
-      const found = wasQuery.call(libraryTreeElement, selector);
-      if (String(selector) === '.library-intro-action') introButton = found;
-      return found;
-    };
+    // The button the page drew, taken off the pane the way the page takes it.
+    const introAction = () => libraryTreeElement.querySelector('.library-intro-action');
     const metNames = () => {
       const saves = sent.filter((one) => one.command === 'setHintState');
       return saves.length ? saves[saves.length - 1].seen : [];
@@ -12238,7 +12363,8 @@ if (booted) {
 
       // Its own button: the command the pane's menu already sends, and the box gone for good.
       paneWith({});
-      if (!introButton) throw new Error('the page never went looking for the button it drew');
+      const introButton = introAction();
+      if (!introButton) throw new Error('the box drew no button to press');
       sent.length = 0;
       for (const handler of introButton.listeners.get('click') || []) handler({});
       if (!sent.some((one) => one.command === 'createVault')) {
@@ -12261,7 +12387,6 @@ if (booted) {
       if (!metNames().includes('vaultIntro')) throw new Error(`opening the list saved ${JSON.stringify(metNames())}`);
       if (libraryTreeElement.innerHTML.includes('library-intro')) throw new Error('the box outlived the menu opening');
     } finally {
-      libraryTreeElement.querySelector = wasQuery;
       booted.ipc.postMessage = wasSend;
       booted.hideCrumbMenu();
       booted.leafResetHints();
