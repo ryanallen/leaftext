@@ -64,10 +64,17 @@ class FakeElement {}
 
 /** Take a node out of whatever is holding it, so a move is a move rather than a second listing. */
 function detachChild(child) {
-  const held = child && child.parentElement && child.parentElement.children;
+  const parent = child && child.parentElement;
+  const held = parent && parent.children;
   if (!held) return;
   const at = held.indexOf(child);
   if (at >= 0) held.splice(at, 1);
+  // The written order is a second list holding the same children, so a child dropped from one and left on the other would go on being said by the parent after it was taken out. Six checks hand an element its children outright, which is why the list is asked for rather than assumed.
+  const written = parent.contents;
+  if (written) {
+    const spot = written.indexOf(child);
+    if (spot >= 0) written.splice(spot, 1);
+  }
   // The holder is let go as well as dropped from its list, because "has it a parent" is how the page asks whether the thing it is closing is still standing: the diagram menu and the box its label is typed into both close that way, and a parent kept after the drop leaves each of those guards on one branch for ever. Every move assigns its new holder straight after this call, so a move is unharmed.
   child.parentElement = null;
 }
@@ -78,12 +85,16 @@ function matchingDescendants(el, selector) {
     .split(',')
     .map((one) => one.trim())
     .filter(Boolean);
-  // Either place a class is kept, because a check writes one both ways and the page reads it back through whichever name it was given.
-  const wears = (node, name) => !!(node.classList && node.classList.contains(name)) || String(node.className || '').split(/\s+/).includes(name);
+  const wears = (node, name) => !!(node.classList && node.classList.contains(name));
   const walk = (from) => (from.children || []).flatMap((child) => [child, ...walk(child)]);
   return walk(el).filter((child) =>
     wants.some((one) => (one.startsWith('.') ? wears(child, one.slice(1)) : String(child.tagName || '').toLowerCase() === one.split(/[ :]/)[0])),
   );
+}
+
+/** What an element says: everything written inside it joined in the order it was written, each child asked the same question in turn. A guard asking a line whether it says anything reads an answer of "no, always" as itself having fired, so a panel the page really drew with a sentence in it has to come back with that sentence. */
+function composedText(node) {
+  return (node.contents || []).map((piece) => (typeof piece === 'string' ? piece : String(piece.textContent ?? ''))).join('');
 }
 
 /** A stand-in element: enough surface to be wired up, and inert when used. */
@@ -128,6 +139,8 @@ function fakeElement(id = '') {
       contains: (name) => classes.has(name),
     },
     children: [],
+    // What was written inside this element, in the order it was written: runs of words and child elements in one list. Two buckets joined one after the other would turn `<p>A <b>bold</b> word</p>` into `A wordbold`. Its own property, because neither name beside it would do — `children` is elements and nothing else in a browser, and `childNodes` is what eight checks rebind to hand-made text for a line being typed on.
+    contents: [],
     // Every element has one, so a stand-in without it turns "this block is empty" into a crash in whatever walks it.
     childNodes: [],
     parentElement: null,
@@ -147,12 +160,14 @@ function fakeElement(id = '') {
     appendChild(child) {
       detachChild(child);
       this.children.push(child);
+      this.contents.push(child);
       child.parentElement = this;
       return child;
     },
     prepend(child) {
       detachChild(child);
       this.children.unshift(child);
+      this.contents.unshift(child);
       child.parentElement = this;
       return child;
     },
@@ -226,12 +241,22 @@ function fakeElement(id = '') {
   const held = { textContent: '', innerHTML: '' };
   for (const name of ['textContent', 'innerHTML']) {
     Object.defineProperty(element, name, {
-      get: () => held[name],
+      // The text an element says is what was written inside it, in that order, each child asked the same question in turn. The held string is the answer only while nothing was written inside — which is what an element a check builds by assigning `children` outright has, so it answers exactly what it answers today.
+      get: () => (name === 'textContent' && element.contents.length ? composedText(element) : held[name]),
       set: (value) => {
         held[name] = String(value ?? '');
         // By this name and never childNodes: no move here writes that one, so it is not a child list — it is what eight checks rebind to hand-made text for a line being typed on. Each child leaves through the same detach a removal uses, so a whole redraw's worth of dropped children are not left naming the container that dropped them.
         for (const child of [...element.children]) detachChild(child);
-        if (name === 'innerHTML') for (const child of elementsFromMarkup(held[name])) element.appendChild(child);
+        element.contents.length = 0;
+        if (name === 'innerHTML') {
+          // A redraw clears what the container said before, the way a browser's does: a container written with nothing in it answers with nothing rather than with its last text.
+          held.textContent = '';
+          // Runs of words with no tag around them are text in a browser too, so `innerHTML = 'a line'` leaves the container saying `a line`.
+          for (const piece of elementsFromMarkup(held[name])) {
+            if (typeof piece === 'string') element.contents.push(piece);
+            else element.appendChild(piece);
+          }
+        }
       },
       configurable: true,
       enumerable: true,
@@ -254,11 +279,20 @@ const MARKUP_TAGS = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
 // A tag that closes itself, so nothing written after it is written inside it.
 const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 
-/** The elements a piece of markup declares, nested the way it nests them, each wearing its tag, its id, its classes and its other attributes. The page draws whole panels as one string and then reaches straight back into what it drew — the home screen wires its two buttons out of the markup two lines above them — so a container keeping only the string could answer none of it. */
+/** Everything a piece of markup declares, in the order it declares it: an element per tag, nested the way it nests them and wearing its tag, its id, its classes and its other attributes, and the runs of words between them. The page draws whole panels as one string and then reaches straight back into what it drew — the home screen wires its two buttons out of the markup two lines above them — so a container keeping only the string could answer none of it, and one keeping only the elements says nothing for every panel it holds. */
 function elementsFromMarkup(markup) {
+  const text = String(markup);
   const root = fakeElement('');
   const open = [{ name: '', node: root }];
-  for (const tag of String(markup).matchAll(MARKUP_TAGS)) {
+  let after = 0;
+  // The words between two tags belong to whatever tag is open around them, and the run is kept before the stack moves — so what was written before a closing tag is still inside the element it closes.
+  const keepRun = (upto) => {
+    const run = text.slice(after, upto);
+    if (run) open[open.length - 1].node.contents.push(run);
+  };
+  for (const tag of text.matchAll(MARKUP_TAGS)) {
+    keepRun(tag.index);
+    after = tag.index + tag[0].length;
     const [, closing, rawName, attrs] = tag;
     const name = rawName.toLowerCase();
     if (closing) {
@@ -273,10 +307,8 @@ function elementsFromMarkup(markup) {
     for (const [, key, value] of attrs.matchAll(/([a-zA-Z_:][-\w:.]*)\s*=\s*"([^"]*)"/g)) {
       held.set(key, value);
       if (key === 'id') node.id = value;
-      else if (key === 'class') {
-        node.className = value;
-        for (const one of value.split(/\s+/).filter(Boolean)) node.classList.add(one);
-      } else if (key.startsWith('data-')) node.dataset[key.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = value;
+      else if (key === 'class') node.className = value;
+      else if (key.startsWith('data-')) node.dataset[key.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = value;
     }
     node.getAttribute = (key) => (held.has(key) ? held.get(key) : null);
     node.hasAttribute = (key) => held.has(key);
@@ -286,9 +318,12 @@ function elementsFromMarkup(markup) {
     open[open.length - 1].node.appendChild(node);
     if (!VOID_TAGS.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
   }
-  const built = [...root.children];
-  for (const child of built) child.parentElement = null;
+  keepRun(text.length);
+  // The whole of what was parsed, runs included, so the container this is written into says the words as well as holding the elements. One line in the file parses markup, so there is no second caller reading the old shape.
+  const built = [...root.contents];
+  for (const child of root.children) child.parentElement = null;
   root.children.length = 0;
+  root.contents.length = 0;
   return built;
 }
 
@@ -1100,6 +1135,43 @@ check('a class on the stand-in element is one class, whichever name put it there
   // The class the app-shell markup declares, which arrives by name and is the one those eight guards ask the list about.
   const surface = page.document.getElementById('appSurface');
   if (!surface.classList.contains('app-surface')) throw new Error(`a class the markup declared does not reach the list: ${surface.className}`);
+});
+
+// ---- 2l. the words come with the markup -------------------------------------
+//
+// The page draws whole panels as one string and reaches straight back into what it drew. The markup becomes real children; nothing carried the words between the tags, so a heading written as `<h1>Open a file</h1>` read back saying nothing. That is an answer that is always the same, in the direction that reads as a guard having fired: `blockIsEmpty` calls a line empty on its text alone, so every panel the page really drew with a sentence in it passed the emptiness test.
+
+check('the words in the markup the page draws come with the elements', () => {
+  const drawn = fakeElement('worded-panel');
+  drawn.innerHTML = '<section class="empty-state"><h1>Open a file</h1><p>Or drop one here</p></section>';
+  const section = drawn.children[0];
+  const heading = section.children[0];
+  if (heading.textContent !== 'Open a file') throw new Error(`a heading the page drew says ${JSON.stringify(heading.textContent)}`);
+  // An element wrapping another answers with what both of them say, at whatever depth the words landed.
+  if (section.textContent !== 'Open a fileOr drop one here') throw new Error(`the panel around them says ${JSON.stringify(section.textContent)}`);
+  // Words on either side of a child come back in the order they were written, which two buckets joined one after the other could not do.
+  const line = fakeElement('worded-line');
+  line.innerHTML = '<p>A <b>bold</b> word</p>';
+  if (line.textContent !== 'A bold word') throw new Error(`words on either side of a child read back as ${JSON.stringify(line.textContent)}`);
+  // Words with no tag around them are text in a browser too.
+  const bare = fakeElement('worded-bare');
+  bare.innerHTML = 'a line';
+  if (bare.textContent !== 'a line') throw new Error(`markup with no tag in it says ${JSON.stringify(bare.textContent)}`);
+  // The guard the whole family was found through, taken off the page itself rather than written a second time here.
+  if (!booted) throw new Error('the page never booted, so the guard could not be asked');
+  const guard = booted.blockIsEmpty;
+  if (typeof guard !== 'function') throw new Error('the page no longer carries the guard that reads a line for what is on it');
+  if (guard(heading)) throw new Error('the guard calls a drawn heading with a sentence in it empty');
+  const blank = fakeElement('worded-blank');
+  blank.innerHTML = '<p></p>';
+  if (!guard(blank.children[0])) throw new Error('the guard calls a line drawn with nothing in it a line that says something');
+  // A write of the text still replaces the lot, so a parsed element says only what was written over it.
+  line.textContent = 'plain';
+  if (line.children.length) throw new Error('a write over parsed markup left the children standing');
+  if (line.textContent !== 'plain') throw new Error(`a write over parsed markup left it saying ${JSON.stringify(line.textContent)}`);
+  // And a redraw with nothing in it does not answer with what the container said before.
+  drawn.innerHTML = '';
+  if (drawn.textContent !== '') throw new Error(`a redrawn container still says ${JSON.stringify(drawn.textContent)}`);
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
