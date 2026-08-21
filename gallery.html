@@ -4679,8 +4679,8 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-tool-save[hidden] {
   display: none;
 }
-/* Nothing to undo, redo or save: the divider has nothing to divide. */
-.reader-toolbar:has(.undo-button[hidden]):has(.redo-button[hidden]):has(.reader-tool-save[hidden]) .reader-tool-divider {
+/* Nothing drawn after the divider: it has nothing to divide. Asked of the markup rather than named button by button, so a button added after it needs no edit here — which is why every element after it has to ship `hidden`. */
+.reader-toolbar:not(:has(.reader-tool-divider ~ *:not([hidden]))) .reader-tool-divider {
   display: none;
 }
 .reader-shell {

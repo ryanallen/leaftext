@@ -609,6 +609,85 @@ fn an_emptied_actions_group_stops_taking_a_gap() {
     );
 }
 
+/// Every element the reader tool bar ships after its divider, as its opening tag. Depth-tracked, so the icon inside a button is not one of them.
+fn reader_toolbar_tags_after_divider(html: &str) -> Vec<&str> {
+    let bar = html
+        .find("<div id=\"readerToolbar\"")
+        .expect("the shell ships a reader tool bar");
+    let rest = &html[bar..];
+    let divider_at = rest
+        .find("<span class=\"reader-tool-divider\"")
+        .expect("the reader tool bar ships a divider");
+
+    let mut tags = Vec::new();
+    let mut depth = 0usize;
+    let mut seen_divider = false;
+    let mut at = 0usize;
+    while let Some(open) = rest[at..].find('<') {
+        let start = at + open;
+        // A comment is not an element, and its text can hold a `>`.
+        if rest[start..].starts_with("<!--") {
+            match rest[start..].find("-->") {
+                Some(shut) => at = start + shut + 3,
+                None => break,
+            }
+            continue;
+        }
+        let Some(shut) = rest[start..].find('>') else {
+            break;
+        };
+        let tag = &rest[start..start + shut + 1];
+        at = start + shut + 1;
+        if tag.starts_with("</") {
+            depth = depth.saturating_sub(1);
+            if depth == 0 {
+                break;
+            }
+            continue;
+        }
+        if depth == 1 && seen_divider {
+            tags.push(tag);
+        }
+        if start == divider_at {
+            seen_divider = true;
+        }
+        depth += 1;
+    }
+    tags
+}
+
+#[test]
+fn the_reader_bar_divider_goes_when_nothing_beside_it_is_drawn() {
+    // The divider stands between the view buttons and the editing ones, so an editing half with nothing drawn in it leaves the divider dividing nothing. The rule used to name each button that can stand to its right, which is the markup's own list kept twice: Redo reached the markup a commit before it reached the rule, and the bar drew Redo alone with no divider while every check passed. Asking whether any sibling after the divider is drawn needs no list — what it needs instead is that every element shipped after the divider can be hidden, which is what the last assertion holds and nothing else in the tree would notice.
+    let css = reading_mode_css();
+    let html = app_shell_html();
+
+    let emptied = rule_body(
+        css,
+        "\n.reader-toolbar:not(:has(.reader-tool-divider ~ *:not([hidden]))) .reader-tool-divider {",
+    );
+    assert!(
+        emptied.contains("display: none;"),
+        "a divider with nothing drawn beside it is not drawn: {emptied}"
+    );
+    assert!(
+        !css.contains(".undo-button[hidden]") && !css.contains(".redo-button[hidden]"),
+        "the divider must be found by drawn sibling, not by naming each button, which the next button added beside it defeats"
+    );
+
+    let after = reader_toolbar_tags_after_divider(&html);
+    assert!(
+        !after.is_empty(),
+        "the reader tool bar ships editing buttons after its divider"
+    );
+    for tag in after {
+        assert!(
+            tag.contains(" hidden"),
+            "an element after the reader bar's divider must ship hidden, or the divider can never go: {tag}"
+        );
+    }
+}
+
 #[test]
 fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
     let css = reading_mode_css();
