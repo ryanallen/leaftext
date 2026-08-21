@@ -658,7 +658,7 @@ fn reader_toolbar_tags_after_divider(html: &str) -> Vec<&str> {
 
 #[test]
 fn the_reader_bar_divider_goes_when_nothing_beside_it_is_drawn() {
-    // The divider stands between the view buttons and the editing ones, so an editing half with nothing drawn in it leaves the divider dividing nothing. The rule used to name each button that can stand to its right, which is the markup's own list kept twice: Redo reached the markup a commit before it reached the rule, and the bar drew Redo alone with no divider while every check passed. Asking whether any sibling after the divider is drawn needs no list — what it needs instead is that every element shipped after the divider can be hidden, which is what the last assertion holds and nothing else in the tree would notice.
+    // The divider stands between the view buttons and the editing ones, so an editing half with nothing drawn in it leaves the divider dividing nothing. Naming each button that can stand to its right is the markup's own list kept twice: Redo reached the markup a commit before it reached that list, and the bar drew Redo alone with no divider while every check passed. Asking whether any sibling after the divider is drawn needs no list — what it needs instead is that every element shipped after the divider can be hidden, which is what the last assertion holds and nothing else in the tree would notice.
     let css = reading_mode_css();
     let html = app_shell_html();
 
