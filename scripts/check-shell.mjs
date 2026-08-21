@@ -231,8 +231,6 @@ function pageElements() {
   const markup = pageMarkup();
   const voids = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
   const byId = new Map();
-  // First element carrying a class answers a query for it, the way querySelector's first match does.
-  const byClass = new Map();
   const open = [];
   for (const tag of markup.matchAll(/<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g)) {
     const [, closing, rawName, attrs] = tag;
@@ -251,26 +249,34 @@ function pageElements() {
       // Shipped hidden in the markup, which is how the window's own three buttons reach a browser: only a native window frame reveals them, and a stand-in that started every element visible could not tell the two apart. `aria-hidden` is not this, so the boundary matters.
       if (/(^|\s)hidden(\s|=|$)/.test(attrs)) node.hidden = true;
       if (id) byId.set(id, node);
-      for (const one of classAttr.split(/\s+/)) if (one && !byClass.has(one)) byClass.set(one, node);
       const holder = [...open].reverse().find((one) => one.node);
       if (holder) holder.node.appendChild(node);
     }
     if (!voids.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
   }
-  return { byId, byClass };
+  return { byId };
 }
 
 function fakePage() {
-  const { byId, byClass } = pageElements();
+  const { byId } = pageElements();
   // Every id the markup declares has a stand-in, including any the walker's nesting missed.
   for (const id of elementIds()) if (!byId.has(id)) byId.set(id, fakeElement(id));
-  // Only what the page really declares gets an answer. A selector for a class or id the markup does not have returns null, the way it would in the app. An element taken out of the page stops answering, the way it does in a browser: a query only finds what is still in the document.
+  // Only what the page really has gets an answer. An id the markup does not declare returns null, the way it would in the app. An element taken out of the page stops answering, the way it does in a browser: a query only finds what is still in the document.
   const standing = (node) => (node && node.isConnected !== false ? node : null);
+  // A class query reads the page as it stands rather than an index filled at boot, because most of what carries a class is drawn while the app runs -- the growl, the menus, the sheets, the rename box -- and a frozen map answers null while one of them is standing, which is the same answer as nothing being there, so a guard reading it takes one branch for ever and can never be seen to be wrong. Everything the markup nests hangs off the app surface, and the surface carries `app-surface` itself, so the walk starts at it rather than at its children. First match in document order, which is what querySelector means, and the same element every time because it is the page's own rather than a fresh one per call.
+  const wearing = (node, name) => {
+    if (!standing(node)) return null;
+    if (String(node.className || '').split(/\s+/).includes(name)) return node;
+    for (const child of node.children || []) {
+      const found = wearing(child, name);
+      if (found) return found;
+    }
+    return null;
+  };
   const find = (selector) => {
     const one = String(selector).trim();
     if (one.startsWith('#')) return standing(byId.get(one.slice(1)));
-    // The page's own element, not a fresh one each call: two fragments asking for the same container have to get the same container, or one of them writes into a copy nobody reads.
-    if (/^\.[A-Za-z0-9_-]+$/.test(one)) return standing(byClass.get(one.slice(1)));
+    if (/^\.[A-Za-z0-9_-]+$/.test(one)) return wearing(byId.get('appSurface'), one.slice(1));
     return null;
   };
   const document = {
@@ -904,6 +910,43 @@ check('the stand-in page lets the old holder go on every way of taking a child o
   fakeElement('releasedDisconnected').appendChild(going);
   going.remove();
   if (going.isConnected || under.isConnected) throw new Error('remove left the node or something under it connected');
+});
+
+// ---- 2i. a class query finds what the page drew -----------------------------
+//
+// The class index was built once off the markup and never added to, so a query for a class the app drew — a growl, a menu, a sheet, the rename box — answered null while the thing was standing on the surface. That is the same answer as nothing being there, so code that finds an element by class could not be checked at all, and a guard reading the reflex took the same branch on every run and could never be seen to be wrong.
+
+check('the stand-in page finds a class the page drew, and stops finding it once it goes', () => {
+  // Its own boot rather than the shared one: the query reads the page as it stands, so a growl an earlier check left standing on the shared surface would let this pass with nothing drawn.
+  const page = runShell(source);
+  const surface = page.document.getElementById('appSurface');
+  if (page.document.querySelector('.app-toast')) throw new Error('a growl was standing before one was drawn');
+  page.leafToast('probe growl');
+  const growl = page.document.querySelector('.app-toast');
+  if (!growl) throw new Error('a growl standing on the surface is not found by its class');
+  if (!surface.children.includes(growl)) throw new Error('the class query answered with something the surface is not holding');
+  if (String(growl.textContent) !== 'probe growl') throw new Error(`the class query found some other element: ${growl.textContent}`);
+  // The surface carries the class the walk starts at, so a walk over its children alone would answer null for this one.
+  if (page.document.querySelector('.app-surface') !== surface) throw new Error('the surface is not found by its own class');
+  // A class the markup declares still answers, and with the page's own element every time — two fragments asking for the same container have to get the same container.
+  const lead = page.document.querySelector('.app-bar-lead');
+  if (!lead || lead !== page.document.querySelector('.app-bar-lead')) throw new Error('a class the markup declares stopped answering, or answered twice with different elements');
+  // Deeper than the surface's own children, which is where every drawn control that is not a growl lands.
+  const nested = page.document.createElement('div');
+  nested.className = 'probe-nested';
+  lead.appendChild(nested);
+  if (page.document.querySelector('.probe-nested') !== nested) throw new Error('a class drawn below the surface\'s own children is not found');
+  // One of several classes on an element answers, the way a real class attribute does.
+  nested.className = 'probe-nested probe-second';
+  if (page.document.querySelector('.probe-second') !== nested) throw new Error('the second of two classes on an element is not found');
+  // Marked gone by hand while still listed in its holder, which is how several checks retire a line: refused, the same as an id taken out of the page is.
+  nested.isConnected = false;
+  if (page.document.querySelector('.probe-nested')) throw new Error('an element marked gone is still found by its class');
+  nested.isConnected = true;
+  growl.remove();
+  nested.remove();
+  if (page.document.querySelector('.app-toast')) throw new Error('a growl taken out of the page is still found by its class');
+  if (page.document.querySelector('.probe-nested')) throw new Error('an element taken out of the page is still found by its class');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
