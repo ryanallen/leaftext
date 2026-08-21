@@ -198,14 +198,14 @@ function fakeElement(id = '') {
     configurable: true,
     enumerable: true,
   });
-  // Writing either name empties the element, because that is how the app clears a container before drawing it again — a write of '' in 22 places. Held as plain strings the children would survive, so one container drawn twice would read back as both drawings and no check could tell a redraw from a doubling. Neither name parses markup: a check that needs real children builds them with createElement.
+  // Writing either name empties the element, which is how the app clears a container before drawing it again — a write of '' in 22 places. Kept as a plain string the children survive, and a container drawn twice reads back as both drawings. Neither name parses markup: a check that needs real children builds them with createElement.
   const held = { textContent: '', innerHTML: '' };
   for (const name of ['textContent', 'innerHTML']) {
     Object.defineProperty(element, name, {
       get: () => held[name],
       set: (value) => {
         held[name] = String(value ?? '');
-        // Emptied by this name and never childNodes: no move here writes that one, so it is not a child list — it is the name eight checks rebind to hand-made text to stand in for a line being typed on.
+        // By this name and never childNodes: no move here writes that one, so it is not a child list — it is what eight checks rebind to hand-made text for a line being typed on.
         element.children.length = 0;
       },
       configurable: true,
@@ -817,7 +817,7 @@ check('the stand-in page takes several children in one call, and a string among 
 
 // ---- 2g. an emptied container is empty --------------------------------------
 //
-// Writing text into an element empties it, which is how the app clears a container before drawing it again — a write of '' in 22 places across the fragments, the right-click menu on every open among them. Held as a plain string the children survived, so one container drawn twice read back as both drawings and no check could tell a redraw from a doubling: a harness pressed a picture option the app had already taken off the screen, and passed.
+// A stand-in that keeps what a container was told to drop cannot tell a redraw from a doubling — and a check pressing a control the app has already taken off the screen finds it and passes.
 
 check('the stand-in page empties a container when its text or its markup is written', () => {
   const { document } = fakePage();
@@ -834,7 +834,7 @@ check('the stand-in page empties a container when its text or its markup is writ
     if (parent.children.length) throw new Error(`a nonempty ${name} left the children standing`);
     if (parent[name] !== 'a line') throw new Error(`${name} read back as ${JSON.stringify(parent[name])} rather than what was written`);
   }
-  // The other name is left standing on purpose: no move here writes childNodes, so it is not a child list — it is what eight checks rebind to hand-made text to stand in for a line being typed on.
+  // The other name is left standing on purpose: eight checks rebind it to hand-made text for a line being typed on.
   const typed = fakeElement('emptied-typed-on');
   typed.childNodes = [document.createTextNode('what was typed')];
   typed.textContent = '';
@@ -4743,7 +4743,7 @@ if (booted) {
         });
       }
 
-      // A newer box has since been opened, so the older answer belongs to somebody who has already moved on: dropped, and no word chases them. The second box is opened the way a reader opens one — fold the row, expand it again, press the picture — because the first box clears the row as it draws, so that option is no longer on the screen to press.
+      // A newer box has since been opened, so the older answer belongs to somebody who has already moved on: dropped, and no word chases them. The second box is opened the way a reader opens one, because the first clears the row as it draws and takes that option off the screen.
       said.length = 0;
       noteGutter(note, ({ block, sent }) => {
         const after = block(9, end);
