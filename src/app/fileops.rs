@@ -475,7 +475,7 @@ fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Res
 
 /// The same render on a Mac, and the same file at the end of it: the web view's own print operation with both panels switched off, the sheet the page measured as the paper, and the path the reader already chose as where the job saves to.
 ///
-/// A plain `print()` is what raised the panel — the helper behind it leaves both panels on and writes its margins into the app's session-wide print settings — so this builds an `NSPrintInfo` of its own, which costs nothing and changes nothing a later print reads.
+/// A plain `print()` raises the panel: the helper behind it leaves both panels on and writes its margins into the app's session-wide print settings. So this builds an `NSPrintInfo` of its own, which costs nothing and changes nothing a later print reads.
 ///
 /// A page size is written in points here and in inches on the Windows side: a point is a seventy-second of an inch against a CSS pixel's ninety-sixth. Same sheet, same arithmetic above, two units.
 ///
@@ -501,7 +501,7 @@ fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Res
     settings.setBottomMargin(0.0);
     settings.setLeftMargin(0.0);
     settings.setRightMargin(0.0);
-    // One to one, said out loud. Fitting shrinks the document onto the sheet, and the sheet is already the document's own size — which is the blank paper the Windows half spent rounds on.
+    // One to one, said out loud. Fitting shrinks the document onto the sheet, and the sheet is already the document's own size, so fitting is only ever blank paper under the last line.
     settings.setScalingFactor(1.0);
     let destination = NSURL::fileURLWithPath(&NSString::from_str(&target.to_string_lossy()));
     // The job saves rather than spools, and the file it saves to is the one the reader named in the dialog before any of this ran.
