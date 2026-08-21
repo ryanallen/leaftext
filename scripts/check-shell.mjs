@@ -68,6 +68,8 @@ function detachChild(child) {
   if (!held) return;
   const at = held.indexOf(child);
   if (at >= 0) held.splice(at, 1);
+  // Released as well as delisted, because "has it still a parent" is how the page asks whether the thing it is closing is standing: the diagram menu and its label box both close that way, and a holder kept after the drop leaves each of those guards on one branch for ever. Every move assigns its new holder straight after this call, so a move is unharmed.
+  child.parentElement = null;
 }
 
 /** A stand-in element: enough surface to be wired up, and inert when used. */
@@ -205,8 +207,8 @@ function fakeElement(id = '') {
       get: () => held[name],
       set: (value) => {
         held[name] = String(value ?? '');
-        // By this name and never childNodes: no move here writes that one, so it is not a child list — it is what eight checks rebind to hand-made text for a line being typed on.
-        element.children.length = 0;
+        // By this name and never childNodes: no move here writes that one, so it is not a child list — it is what eight checks rebind to hand-made text for a line being typed on. Each child leaves through the same detach a removal uses, so a whole redraw's worth of dropped children are not left naming the container that dropped them.
+        for (const child of [...element.children]) detachChild(child);
       },
       configurable: true,
       enumerable: true,
@@ -847,6 +849,61 @@ check('the stand-in page empties a container when its text or its markup is writ
   const markup = fakeElement('emptied-markup');
   markup.innerHTML = '<div></div>';
   if (markup.children.length) throw new Error('innerHTML built elements out of a string');
+});
+
+// ---- 2h. a node taken out has no holder -------------------------------------
+//
+// Taking a node out of the page sets its parent to nothing, and that is how the page asks whether the thing it is closing is still standing: the diagram menu and the box its label is typed into both close that way. A stand-in keeping the old holder leaves each of those guards on one branch for ever — a check closing a menu twice proves nothing about the second close, and a guard broken the other way, so that it stops taking a live node out, passes exactly the same.
+
+check('the stand-in page lets the old holder go on every way of taking a child out', () => {
+  const { document } = fakePage();
+  const ways = {
+    removeChild: (parent, child) => parent.removeChild(child),
+    remove: (parent, child) => child.remove(),
+    textContent: (parent) => {
+      parent.textContent = '';
+    },
+    innerHTML: (parent) => {
+      parent.innerHTML = '';
+    },
+  };
+  for (const [name, take] of Object.entries(ways)) {
+    const parent = fakeElement(`released-${name}`);
+    const child = document.createElement('div');
+    parent.appendChild(child);
+    if (child.parentElement !== parent || child.parentNode !== parent) throw new Error(`a child appended before ${name} never named the parent holding it`);
+    take(parent, child);
+    if (parent.children.includes(child)) throw new Error(`${name} left the child listed in the parent`);
+    if (child.parentElement !== null) throw new Error(`${name} left parentElement naming ${child.parentElement.id}`);
+    if (child.parentNode !== null) throw new Error(`${name} left parentNode naming ${child.parentNode.id}`);
+  }
+  // A move is not a removal: the same detach runs first and the new holder is assigned straight after it, by either route in.
+  const from = fakeElement('releasedMoveFrom');
+  const to = fakeElement('releasedMoveTo');
+  const moved = document.createElement('div');
+  from.appendChild(moved);
+  to.appendChild(moved);
+  if (from.children.includes(moved)) throw new Error('a moved child is still listed in the parent that was holding it');
+  if (moved.parentElement !== to || moved.parentNode !== to) throw new Error('a moved child does not name the parent it was moved to');
+  from.prepend(moved);
+  if (moved.parentElement !== from) throw new Error('a child put at the front of a parent does not name it');
+  // Losing a holder is not leaving the rendered page: only remove says a node and everything under it is disconnected.
+  const kept = fakeElement('releasedConnected');
+  const staying = document.createElement('div');
+  kept.appendChild(staying);
+  kept.removeChild(staying);
+  if (!staying.isConnected) throw new Error('removeChild marked a node disconnected; only remove does that');
+  const emptied = fakeElement('releasedConnectedEmptied');
+  const alsoStaying = document.createElement('div');
+  emptied.appendChild(alsoStaying);
+  emptied.textContent = '';
+  if (!alsoStaying.isConnected) throw new Error('emptying the text marked a node disconnected; only remove does that');
+  const going = document.createElement('div');
+  const under = document.createElement('span');
+  going.appendChild(under);
+  fakeElement('releasedDisconnected').appendChild(going);
+  going.remove();
+  if (going.isConnected || under.isConnected) throw new Error('remove left the node or something under it connected');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
