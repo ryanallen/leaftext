@@ -503,7 +503,7 @@ pub(super) fn diagram_export_file(
 ) -> DiagramExportFile {
     let (extension, label, bytes) = match format {
         "md" => return DiagramExportFile::Write("md", "Markdown", data.as_bytes().to_vec()),
-        // The page sends pixels rather than a PNG, because on a real diagram ours writes 80 KB where the canvas's own PNG is 167 KB. See src/png.rs.
+        // The page sends pixels rather than a PNG, because on a real diagram ours writes 77 KB where the canvas's own PNG is 153 KB. See src/png.rs.
         "png" => (
             "png",
             "PNG image",

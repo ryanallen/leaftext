@@ -1908,7 +1908,7 @@ function diagramCanvas(svgText) {
   });
 }
 
-// The drawing, as pixels for the host to encode. `toDataURL('image/png')` writes 32-bit color with a per-row filter, and on a real diagram that is 167 KB where ours is 80 KB. See src/png.rs.
+// The drawing, as pixels for the host to encode. `toDataURL('image/png')` writes 32-bit color with a per-row filter, and on a real diagram that is 153 KB where ours is 77 KB. See src/png.rs.
 async function diagramPngBase64(svgText) {
   const canvas = await diagramCanvas(svgText);
   const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;

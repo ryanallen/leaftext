@@ -29,7 +29,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
 | [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
-| [Exporting a diagram](#export) | The diagram's own corner, and the flowchart sheet, write it out as its own file — Markdown or PNG |
+| [Exporting a diagram](#export) | The diagram's own corner, and the flowchart sheet, write it out as its own file — Markdown, PNG or WebP |
 | [The format bar](#the-format-bar) | Highlight words and a bar appears over them: bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | [A table keeps its spacing](#inline-editing-the-reading-view) | Type in one cell and only that cell is rewritten, so a table you lined up by hand stays lined up |
@@ -269,10 +269,11 @@ The sheet is the whole window, so its header stands in for the app bar while it 
 
 ### Export
 
-**Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes. The same two rows are in the corner of every [drawn diagram](01-rendering.md#mermaid-diagrams) in a page, with no need to open this sheet and with the padlock shut.
+**Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes. The same three rows are in the corner of every [drawn diagram](01-rendering.md#mermaid-diagrams) in a page, with no need to open this sheet and with the padlock shut.
 
 - **Markdown** — the Mermaid text in a `mermaid` fence, as a document of its own.
-- **PNG** — the drawing as a picture, at twice life size, on the page color behind it. The page hands the host raw pixels and the host writes the file: a diagram is flat fill and few colors, so it goes out as a palette image, one byte a pixel and exactly the colors drawn.
+- **PNG** — the drawing as a picture, at twice life size, on the page color behind it. The page hands the host raw pixels and the host writes the file.
+- **WebP** — the same picture at about half the file, which is what a chat, a slide or a web page wants. The page writes this one itself and hands over finished bytes. It is lossy, and a drawing over 16,383 pixels a side is more than the format holds, so that one is refused out loud and the PNG row takes it.
 
 There is no SVG. Mermaid's SVG is a web page in an SVG's clothing — a stylesheet keyed to a generated id, labels that are really HTML, a font list full of CSS keywords no font is named after — and drawing programs read those as instructions they cannot follow.
 
