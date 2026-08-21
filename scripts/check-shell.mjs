@@ -79,17 +79,31 @@ function detachChild(child) {
   child.parentElement = null;
 }
 
-/** What an element's own subtree answers a query with, in document order: a comma list of tags and classes. One matcher behind every stand-in element, so nothing is ever told it is holding something it has not got — a guard asking a line whether it carries a picture reads an answer of "yes, always" as itself having fired. */
-function matchingDescendants(el, selector) {
-  const wants = String(selector)
+/** The one selectors in a comma list, each trimmed. */
+function selectorParts(selector) {
+  return String(selector)
     .split(',')
     .map((one) => one.trim())
     .filter(Boolean);
-  const wears = (node, name) => !!(node.classList && node.classList.contains(name));
+}
+
+/** Whether one node answers one selector: a class, an attribute in brackets, or a tag name. Asked both walking down a subtree and walking up from a node, so a query and a `closest` can never disagree about what a selector means. An attribute is asked for by name alone — a `data-` name of `dataset`, which is where both the markup walker and a check setting one by hand write it, and anything else of the element's own attributes. The reading render finds every block carrying a source range that way, so a matcher blind to it sends the returning reader back to the top of the document. */
+function matchesSelector(node, one) {
+  if (one.startsWith('.')) return !!(node.classList && node.classList.contains(one.slice(1)));
+  if (one.startsWith('[')) {
+    const name = one.slice(1, one.endsWith(']') ? -1 : undefined).trim();
+    if (!name.startsWith('data-')) return !!(node.hasAttribute && node.hasAttribute(name));
+    const key = name.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    return !!node.dataset && node.dataset[key] !== undefined;
+  }
+  return String(node.tagName || '').toLowerCase() === one.split(/[ :]/)[0];
+}
+
+/** What an element's own subtree answers a query with, in document order: a comma list of tags, classes and attributes. One matcher behind every stand-in element, so nothing is ever told it is holding something it has not got — a guard asking a line whether it carries a picture reads an answer of "yes, always" as itself having fired. */
+function matchingDescendants(el, selector) {
+  const wants = selectorParts(selector);
   const walk = (from) => (from.children || []).flatMap((child) => [child, ...walk(child)]);
-  return walk(el).filter((child) =>
-    wants.some((one) => (one.startsWith('.') ? wears(child, one.slice(1)) : String(child.tagName || '').toLowerCase() === one.split(/[ :]/)[0])),
-  );
+  return walk(el).filter((child) => wants.some((one) => matchesSelector(child, one)));
 }
 
 /** What an element says: everything written inside it joined in the order it was written, each child asked the same question in turn. A guard asking a line whether it says anything reads an answer of "no, always" as itself having fired, so a panel the page really drew with a sentence in it has to come back with that sentence. */
@@ -205,7 +219,14 @@ function fakeElement(id = '') {
     click() {},
     select() {},
     scrollIntoView() {},
-    closest: () => null,
+    // A real walk up, from this element outwards, because that is how the page asks which block a place in the document belongs to: the source button takes the source offset of the block at the top of the view by asking the element under it for its nearest block, and an answer of null for ever leaves every toggle with no offset to land on.
+    closest: (selector) => {
+      const wants = selectorParts(selector);
+      for (let node = element; node; node = node.parentElement) {
+        if (wants.some((one) => matchesSelector(node, one))) return node;
+      }
+      return null;
+    },
     matches: () => false,
     contains: () => false,
     // Its own children and nothing else, so an element holding nothing says so.
@@ -224,6 +245,12 @@ function fakeElement(id = '') {
   // The other name for the same holder, defined rather than assigned because Object.assign copies a getter's value once. A menu takes itself out of the page through this one, and a stand-in without it leaves every menu it opens standing.
   Object.defineProperty(element, 'parentNode', {
     get: () => element.parentElement,
+    configurable: true,
+    enumerable: true,
+  });
+  // The first element this one is holding, and nothing when it holds none. The reading render takes the whole document's layout out of the surface through this name and hands it to the frontmatter pass, so a stand-in without it throws before the first decoration runs.
+  Object.defineProperty(element, 'firstElementChild', {
+    get: () => element.children[0] || null,
     configurable: true,
     enumerable: true,
   });
@@ -1172,6 +1199,73 @@ check('the words in the markup the page draws come with the elements', () => {
   // And a redraw with nothing in it does not answer with what the container said before.
   drawn.innerHTML = '';
   if (drawn.textContent !== '') throw new Error(`a redrawn container still says ${JSON.stringify(drawn.textContent)}`);
+});
+
+// ---- 2m. an element hands over the first thing it is holding ----------------
+//
+// The reading render draws a document as one string and takes the layout it just drew back out of the surface by this name, then hands it to the pass that asks a document's fields for a growl. A stand-in without the name hands over nothing, and the pass throws on the first line of it — which is why nothing in this check has ever run a document through the render at all.
+
+check('an element hands over the first element it is holding, and nothing when it holds none', () => {
+  const empty = fakeElement('first-empty');
+  if (empty.firstElementChild !== null) throw new Error('an element holding nothing handed over something');
+  const drawn = fakeElement('first-drawn');
+  drawn.innerHTML = '<div class="reader-layout"><div class="document-body"><p>a line</p></div></div>';
+  const layout = drawn.children[0];
+  if (drawn.firstElementChild !== layout) throw new Error('the first element the markup declared is not the one handed over');
+  if (layout.firstElementChild !== layout.children[0]) throw new Error('the name does not follow down into what the layout is holding');
+  // Words with no tag around them are contents and not children, so the first *element* is still the element.
+  const worded = fakeElement('first-worded');
+  worded.innerHTML = 'a run of words<span>and a child</span>';
+  if (worded.firstElementChild !== worded.children[0]) throw new Error('a run of words before the first child was handed over as the first element');
+  // It follows the children rather than being read once, which is what an assignment beside them would do.
+  const moving = fakeElement('first-moving');
+  const one = fakeElement('first-one');
+  const two = fakeElement('first-two');
+  moving.append(one, two);
+  if (moving.firstElementChild !== one) throw new Error('the first of two children is not the one handed over');
+  one.remove();
+  if (moving.firstElementChild !== two) throw new Error('the first child going left the name still answering with it');
+  // A redraw empties it, the way it empties everything else the container was holding.
+  moving.innerHTML = '';
+  if (moving.firstElementChild !== null) throw new Error('a redrawn container still hands over what it used to hold');
+});
+
+// ---- 2n. an attribute the markup declared is something a query can find -----
+//
+// A rendered block carries where it starts in the source as an attribute, and both landings that put a returning reader back where they were ask for it: the render asks the document body for every block carrying one, and the source button asks the element under the reader for its nearest. A matcher that reads a tag and a class and nothing else answers the first with an empty list and the second with null for ever — so the landing falls through to the top of the document and the toggle arms nothing, on every run, with no way to see it.
+
+check('a query and a nearest walk both find the block the markup declared by its source start', () => {
+  const body = fakeElement('src-body');
+  body.innerHTML = '<div class="document-body"><h1 data-src-start="0">Title</h1><p data-src-start="12">A line <em>with a word in it</em></p><p class="stray">no range</p></div>';
+  const found = body.querySelectorAll('[data-src-start]');
+  if (found.length !== 2) throw new Error(`the blocks carrying a source range came back as ${found.length}`);
+  if (found[0].dataset.srcStart !== '0' || found[1].dataset.srcStart !== '12') throw new Error('the blocks came back out of the order the markup declared them');
+  // The single form answers with the first of them, the way the list's first entry does.
+  if (body.querySelector('[data-src-start]') !== found[0]) throw new Error('the single query answered with something other than the first block');
+  // A name the markup never declared finds nothing, or every block in every document would answer as the one the reader is on.
+  if (body.querySelectorAll('[data-line-start]').length) throw new Error('a name the markup did not declare was found on something');
+  if (body.querySelector('[data-line-start]') !== null) throw new Error('the single query answered for a name the markup did not declare');
+  // The walk up, which is the question the source button asks: from the word the reader is on, out to the block holding it.
+  const word = found[1].children[0];
+  if (word.closest('[data-src-start]') !== found[1]) throw new Error('the walk up from a word inside a block did not answer with the block');
+  // Starting at the element itself, the way the platform's does.
+  if (found[1].closest('[data-src-start]') !== found[1]) throw new Error('a block carrying a source range did not answer with itself');
+  // Past a block that carries none, to the first one above it that does — nothing here stops at the first parent.
+  const stray = body.querySelector('.stray');
+  if (stray.closest('[data-src-start]') !== null) throw new Error('a block outside every source range answered with one');
+  const deep = fakeElement('src-deep');
+  deep.innerHTML = '<section data-src-start="40"><div class="wrap"><span class="leaf">word</span></div></section>';
+  const leaf = deep.querySelector('.leaf');
+  if (leaf.closest('[data-src-start]') !== deep.children[0]) throw new Error('the walk up stopped at a holder carrying no source range');
+  // A class and a tag answer the walk up too, since the page asks it for all three.
+  if (leaf.closest('.wrap') !== deep.querySelector('.wrap')) throw new Error('the walk up no longer answers a class');
+  if (leaf.closest('section') !== deep.children[0]) throw new Error('the walk up no longer answers a tag');
+  if (leaf.closest('.no-such-class') !== null) throw new Error('the walk up answered a class nothing wears');
+  // An attribute with no data- in front of it is asked of the element's own attributes.
+  const flagged = fakeElement('src-flagged');
+  flagged.innerHTML = '<button type="button" disabled>Save</button>';
+  if (flagged.querySelectorAll('[type]').length !== 1) throw new Error('an attribute with no data- in front of it was not found');
+  if (flagged.querySelectorAll('[name]').length) throw new Error('an attribute the markup did not declare was found');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
@@ -10319,6 +10413,131 @@ check('a published site draws no vault switcher, no pane trail row and no Sync b
   }
 });
 
+// ---- 4c. the reading view's own render ---------------------------------------
+//
+// Every file a reader opens comes through this render, and until the stand-in element could hand over the layout it had just drawn nothing here had ever run a line of it. What the checks below drive is the end of it: the guard that drops a landing armed on another document, and the three landings after it — the reader's own pixel, the block holding a source line, and the reset that catches what neither of those answered.
+//
+// Geometry is each check's own, never the stand-in element's. Every pixel a landing writes goes through the clamp, which measures the surface, the body and the body's first block, so a check standing none of them in reads every landing back as zero and passes on numbers nobody chose.
+
+/** Hand a page one document and stand in the geometry the landing chain measures. `blocks` are the source offsets the rendered blocks carry and the pixel each one sits at down the document; the rects follow `app.scrollTop` the way a browser's do, or the second measurement of a landing reads back whatever the first one just wrote. */
+function renderReadingDocument(context, options = {}) {
+  const { path = 'C:\\Notes\\one.md', blocks = [], height = 10000, viewport = 1000, tall = 100 } = options;
+  const app = context.document.getElementById('app');
+  const title = String(path).split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
+  const html = `<div class="document-body">${blocks.map((block, at) => `<p data-src-start="${block.srcStart}">block ${at}</p>`).join('')}</div>`;
+  app.scrollHeight = height;
+  app.clientHeight = viewport;
+  context.window.leafSetState({
+    recent: [],
+    favorites: [],
+    tabs: [{ title, path }],
+    active: 0,
+    document: { title, path, html, minimap: { lines: [], headings: [] }, format: 'Markdown', blocks: [], tasks: [], source: '' },
+  });
+  const body = app.querySelector('.document-body');
+  app.getBoundingClientRect = () => ({ left: 0, top: 0, right: VIEW_WIDTH, bottom: viewport, width: VIEW_WIDTH, height: viewport });
+  const rectAt = (top, deep) => () => ({ left: 0, top: top - app.scrollTop, right: VIEW_WIDTH, bottom: top - app.scrollTop + deep, width: VIEW_WIDTH, height: deep });
+  if (body) {
+    body.scrollHeight = height;
+    body.getBoundingClientRect = rectAt(0, height);
+    body.children.forEach((child, at) => {
+      child.getBoundingClientRect = rectAt(blocks[at] && Number.isFinite(blocks[at].top) ? blocks[at].top : at * tall, tall);
+    });
+  }
+  return { app, body };
+}
+
+/** A page of its own with one document open on it, so a render never leaves the shared page holding a document the next check would read as its own. */
+function bootReading(options) {
+  const context = runShell(source);
+  const page = renderReadingDocument(context, options);
+  return { context, ...page };
+}
+
+check('a document handed to the page is rendered into the reading view', () => {
+  const { context, app, body } = bootReading({ path: 'C:\\Notes\\opened.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }] });
+  if (!String(app.className).includes('has-document')) throw new Error(`the surface reads ${JSON.stringify(String(app.className))} rather than one holding a document`);
+  const layout = app.firstElementChild;
+  if (!layout || !String(layout.className).includes('reader-layout')) throw new Error('the surface is not holding a reading layout');
+  if (!body || body.parentElement !== layout) throw new Error("the document's own body is not standing under the layout");
+  if (body.children.length !== 2) throw new Error(`the body holds ${body.children.length} blocks rather than the two the document declared`);
+  // Drawn hidden and revealed once every pass over it has run, which is the last thing the render does before it lands.
+  if (layout.style.getPropertyValue('display') === 'none') throw new Error('the finished document was left hidden');
+  // The page took the document's own name as the window's, which is the cheapest proof the render read the document rather than the tab.
+  if (!String(context.document.title).startsWith('opened')) throw new Error(`the window is titled ${JSON.stringify(context.document.title)}`);
+});
+
+check("a document opened with the reader's own pixel armed comes to rest on it", () => {
+  const path = 'C:\\Notes\\exact.md';
+  const context = runShell(source);
+  // Everything one press of the source button leaves behind when the code view never moved: the pixel the reading view was on, and the arm that says it may simply be handed back.
+  vm.runInContext(`viewHandoff = { path: ${JSON.stringify(path)}, readerScrollTop: 321, codeScrollTop: 0, readerLanded: 321, codeLanded: 0, restoreExact: true };`, context);
+  const { app } = renderReadingDocument(context, { path, blocks: [{ srcStart: 0 }, { srcStart: 40 }, { srcStart: 90 }] });
+  context.__frames.drain();
+  if (app.scrollTop !== 321) throw new Error(`the reader came to rest at ${app.scrollTop} rather than the pixel it was on`);
+  // One landing per toggle: a second render of the same document must not spend it again.
+  if (vm.runInContext('viewHandoff.restoreExact', context) !== false) throw new Error('the pixel was left armed for the next render as well');
+  // And it is the landing that ran, not the reset underneath it.
+  if (vm.runInContext('resetReaderScrollOnNextRender', context) !== false) throw new Error('the reset was left armed under the landing that beat it');
+});
+
+check('a document opened with a source line armed comes to rest on the block holding it', () => {
+  const path = 'C:\\Notes\\line.md';
+  const blocks = [{ srcStart: 0, top: 0 }, { srcStart: 40, top: 900 }, { srcStart: 90, top: 1800 }];
+  const arm = (context, offset) =>
+    vm.runInContext(`pendingViewLandingPath = ${JSON.stringify(path)}; pendingReadingSrcOffset = ${offset}; pendingViewScrollFraction = 0.5; pendingViewAtTop = false;`, context);
+  const first = runShell(source);
+  arm(first, 60);
+  const landed = renderReadingDocument(first, { path, blocks });
+  first.__frames.drain();
+  // 60 falls inside the second block, which starts at 40 — so the block holding that line is the one the reader lands on.
+  if (landed.app.scrollTop !== 900) throw new Error(`the reader came to rest at ${landed.app.scrollTop} rather than on the block holding the line`);
+  if (vm.runInContext('pendingReadingSrcOffset', first) !== null) throw new Error('the source line was left armed for the next render as well');
+
+  // A document whose blocks carry no source range at all: the landing has nothing to aim at, so the render falls back to the fraction the toggle carried across, which is half way down 9,000px of range.
+  const bare = runShell(source);
+  arm(bare, 60);
+  const empty = renderReadingDocument(bare, { path, blocks: [] });
+  empty.app.scrollTop = 4000;
+  bare.__frames.drain();
+  if (empty.app.scrollTop !== 4500) throw new Error(`a document with no block to land on came to rest at ${empty.app.scrollTop} rather than at the fraction the toggle carried`);
+
+  // And with no fraction either, the content start — never wherever the last document left the reader.
+  const plain = runShell(source);
+  vm.runInContext(`pendingViewLandingPath = ${JSON.stringify(path)}; pendingReadingSrcOffset = 60; pendingViewScrollFraction = null; pendingViewAtTop = false;`, plain);
+  const start = renderReadingDocument(plain, { path, blocks: [] });
+  start.app.scrollTop = 4000;
+  plain.__frames.drain();
+  if (start.app.scrollTop !== 0) throw new Error(`a document with nothing to land on came to rest at ${start.app.scrollTop} rather than at its content start`);
+});
+
+check('the source button writes down where the reader is, whose document it is, and the block at the top', () => {
+  const path = 'C:\\Notes\\toggled.md';
+  const { context, app } = bootReading({
+    path,
+    blocks: [{ srcStart: 0, top: 0 }, { srcStart: 40, top: 100 }, { srcStart: 90, top: 200 }, { srcStart: 150, top: 300 }],
+  });
+  context.__frames.drain();
+  const sent = [];
+  context.ipc = { postMessage: (text) => sent.push(JSON.parse(text)) };
+  // Part way down, with the third block at the top edge.
+  app.scrollTop = 250;
+  context.toggleCodeView();
+  const read = (name) => vm.runInContext(name, context);
+  if (read('pendingViewLandingPath') !== path) throw new Error(`the landing was stamped with ${JSON.stringify(read('pendingViewLandingPath'))} rather than the document it was taken from`);
+  if (read('viewHandoff.readerScrollTop') !== 250) throw new Error(`the reader's pixel was written down as ${read('viewHandoff.readerScrollTop')}`);
+  if (read('pendingViewAtTop') !== false) throw new Error('a reader part way down a document was recorded as sitting at the top');
+  if (read('pendingCodeViewSrcOffset') !== 90) throw new Error(`the source view was sent to ${read('pendingCodeViewSrcOffset')} rather than the block at the top of the reading view`);
+  if (!sent.some((one) => one.command === 'enterCodeView')) throw new Error(`the press asked the host for nothing: ${JSON.stringify(sent)}`);
+
+  // From the very top there is no block to align on, so the other view is told to land flush at its own top.
+  app.scrollTop = 0;
+  vm.runInContext('pendingViewAtTop = false;', context);
+  context.toggleCodeView();
+  if (read('pendingViewAtTop') !== true) throw new Error('a reader at the top of the document was not recorded as being there');
+  if (read('pendingCodeViewSrcOffset') !== 0) throw new Error(`the top of the document took the offset ${read('pendingCodeViewSrcOffset')}`);
+});
+
 // ---- 5. the rows on the start screen ----------------------------------------
 
 // A row on the start screen is one button carrying the path twice: `data-path` opens it, and `data-reveal-path` is the only thing the right-click menu finds a start-screen row by — so a rewritten row that dropped it would take Favorite and Reveal off the screen with nothing failing.
@@ -10574,7 +10793,7 @@ if (booted) {
         'JSON.stringify([pendingViewLandingPath, pendingViewScrollFraction, pendingViewAtTop, pendingCodeViewSrcOffset, pendingReadingSrcOffset])',
         booted
       );
-    const source = 'aaaa\n'.repeat(40);
+    const sourceText = 'aaaa\n'.repeat(40);
     const fakeEditor = (scrollTop) => ({
       __scrollTop: scrollTop,
       __revealed: null,
@@ -10597,7 +10816,7 @@ if (booted) {
       front(next);
       vm.runInContext('pendingCodeViewFraction = 0.4;', booted);
       const opened = buildEditor(0);
-      booted.landNewCodeEditor(source);
+      booted.landNewCodeEditor(sourceText);
       if (opened.__revealed !== null) {
         throw new Error(`a source line armed on another document was revealed at line ${opened.__revealed}`);
       }
@@ -10612,28 +10831,39 @@ if (booted) {
       front(armed);
       vm.runInContext('pendingCodeViewFraction = null;', booted);
       const revisited = buildEditor(2200);
-      booted.landNewCodeEditor(source);
+      booted.landNewCodeEditor(sourceText);
       if (revisited.__revealed !== null || revisited.getScrollTop() !== 2200) {
         throw new Error('the document that armed the landing spent it on a later visit');
       }
 
-      // The reading view: a fraction armed on one document opens another document at the top of itself.
-      vm.runInContext('monacoEditor = null; viewHandoff = null; app.scrollTop = 0;', booted);
-      arm(armed);
-      front(next);
-      booted.resetReaderScrollToContentStart();
-      booted.__frames.drain();
-      if (vm.runInContext('app.scrollTop', booted) !== 0) {
-        throw new Error(`a fresh document opened ${vm.runInContext('app.scrollTop', booted)}px down at another document's fraction`);
+      // The reading view, through the render itself rather than by calling the reset by hand: the guard sits at the head of the render, so a document arriving with another document's landing armed drops it before any of the four landings below can spend it. The second block holds the armed source offset, so an unguarded render would open a file 900px down. On a page of its own, because a document left standing on the shared page is what the next check reads as its own.
+      const openedOn = (whose) => {
+        const page = runShell(source);
+        vm.runInContext(
+          `pendingViewLandingPath = ${JSON.stringify(whose)}; pendingViewScrollFraction = 0.5; pendingViewAtTop = false; pendingCodeViewSrcOffset = 30; pendingReadingSrcOffset = 30;`,
+          page
+        );
+        const rendered = renderReadingDocument(page, { path: next, blocks: [{ srcStart: 0, top: 0 }, { srcStart: 30, top: 900 }] });
+        page.__frames.drain();
+        return { page, ...rendered };
+      };
+      const wrong = openedOn(armed);
+      if (
+        vm.runInContext(
+          'JSON.stringify([pendingViewLandingPath, pendingViewScrollFraction, pendingViewAtTop, pendingCodeViewSrcOffset, pendingReadingSrcOffset])',
+          wrong.page
+        ) !== '[null,null,false,null,null]'
+      ) {
+        throw new Error("the render spent another document's landing rather than dropping it");
+      }
+      if (wrong.app.scrollTop !== 0) {
+        throw new Error(`a fresh document opened ${wrong.app.scrollTop}px down at another document's landing`);
       }
 
       // And the same document's own landing still lands, or the guard would have taken the toggle with it.
-      vm.runInContext('app.scrollTop = 0;', booted);
-      arm(next);
-      booted.resetReaderScrollToContentStart();
-      booted.__frames.drain();
-      if (vm.runInContext('app.scrollTop', booted) !== 4500) {
-        throw new Error(`the toggle's own fraction no longer lands: ${vm.runInContext('app.scrollTop', booted)}`);
+      const right = openedOn(next);
+      if (right.app.scrollTop !== 900) {
+        throw new Error(`the toggle's own landing no longer lands: ${right.app.scrollTop}`);
       }
     } finally {
       vm.runInContext(
