@@ -79,8 +79,6 @@ function fakeElement(id = '') {
     checked: false,
     disabled: false,
     value: '',
-    textContent: '',
-    innerHTML: '',
     scrollTop: 0,
     scrollLeft: 0,
     scrollHeight: 0,
@@ -200,6 +198,20 @@ function fakeElement(id = '') {
     configurable: true,
     enumerable: true,
   });
+  // Writing either name empties the element, because that is how the app clears a container before drawing it again — a write of '' in 22 places. Held as plain strings the children would survive, so one container drawn twice would read back as both drawings and no check could tell a redraw from a doubling. Neither name parses markup: a check that needs real children builds them with createElement.
+  const held = { textContent: '', innerHTML: '' };
+  for (const name of ['textContent', 'innerHTML']) {
+    Object.defineProperty(element, name, {
+      get: () => held[name],
+      set: (value) => {
+        held[name] = String(value ?? '');
+        // Emptied by this name and never childNodes: no move here writes that one, so it is not a child list — it is the name eight checks rebind to hand-made text to stand in for a line being typed on.
+        element.children.length = 0;
+      },
+      configurable: true,
+      enumerable: true,
+    });
+  }
   // A raw-source block is read back through innerText and written through textContent, so a stand-in keeping the two apart would say the block is empty while showing a file's own bytes.
   Object.defineProperty(element, 'innerText', {
     get: () => element.textContent,
@@ -801,6 +813,40 @@ check('the stand-in page takes several children in one call, and a string among 
   const fragment = document.createDocumentFragment();
   fragment.append(document.createElement('span'), ' ', document.createElement('span'));
   if (fragment.children.length !== 3) throw new Error('the fragment the page builds in cannot take children in one call');
+});
+
+// ---- 2g. an emptied container is empty --------------------------------------
+//
+// Writing text into an element empties it, which is how the app clears a container before drawing it again — a write of '' in 22 places across the fragments, the right-click menu on every open among them. Held as a plain string the children survived, so one container drawn twice read back as both drawings and no check could tell a redraw from a doubling: a harness pressed a picture option the app had already taken off the screen, and passed.
+
+check('the stand-in page empties a container when its text or its markup is written', () => {
+  const { document } = fakePage();
+  for (const name of ['textContent', 'innerHTML']) {
+    const parent = fakeElement(`emptied-${name}`);
+    parent.appendChild(document.createElement('div'));
+    parent.appendChild(document.createElement('div'));
+    parent[name] = '';
+    if (parent.children.length) throw new Error(`writing ${name} left ${parent.children.length} children standing`);
+    if (parent[name] !== '') throw new Error(`${name} read back as ${JSON.stringify(parent[name])}`);
+    // A nonempty write is the same write: the string is held and read back, and the children still go.
+    parent.appendChild(document.createElement('div'));
+    parent[name] = 'a line';
+    if (parent.children.length) throw new Error(`a nonempty ${name} left the children standing`);
+    if (parent[name] !== 'a line') throw new Error(`${name} read back as ${JSON.stringify(parent[name])} rather than what was written`);
+  }
+  // The other name is left standing on purpose: no move here writes childNodes, so it is not a child list — it is what eight checks rebind to hand-made text to stand in for a line being typed on.
+  const typed = fakeElement('emptied-typed-on');
+  typed.childNodes = [document.createTextNode('what was typed')];
+  typed.textContent = '';
+  if (typed.childNodes.length !== 1) throw new Error('emptying the text took down a childNodes a check had rebound');
+  // Still one holder behind the two names, so a raw-source block reads back the bytes it was given.
+  const block = fakeElement('emptied-source');
+  block.innerText = '# Title\n';
+  if (block.textContent !== '# Title\n' || block.innerText !== '# Title\n') throw new Error('innerText stopped mirroring the text');
+  // Neither name parses markup. A check that needs real children builds them with createElement.
+  const markup = fakeElement('emptied-markup');
+  markup.innerHTML = '<div></div>';
+  if (markup.children.length) throw new Error('innerHTML built elements out of a string');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
@@ -4697,21 +4743,25 @@ if (booted) {
         });
       }
 
-      // A newer box has since been opened, so the older answer belongs to somebody who has already moved on: dropped, and no word chases them.
+      // A newer box has since been opened, so the older answer belongs to somebody who has already moved on: dropped, and no word chases them. The second box is opened the way a reader opens one — fold the row, expand it again, press the picture — because the first box clears the row as it draws, so that option is no longer on the screen to press.
       said.length = 0;
       noteGutter(note, ({ block, sent }) => {
-        const row = openedInsertRow(block(9, end));
+        const after = block(9, end);
+        const row = openedInsertRow(after);
+        let again = row;
         try {
           row.press('image');
           const old = read('blockImageToken');
-          row.press('image');
+          row.done();
+          again = openedInsertRow(after);
+          again.press('image');
           booted.leafImagePicked(old, 'shots/leaf.png', 'A leaf');
           if (sent.some((one) => one.command === 'editBlock')) {
             throw new Error(`a stale token still wrote ${JSON.stringify(sent)}`);
           }
           if (said.length) throw new Error(`a stale token said ${JSON.stringify(said)}`);
         } finally {
-          row.done();
+          again.done();
         }
       });
     } finally {
@@ -8193,8 +8243,9 @@ if (booted) {
     const paragraph = (children, text = '') => {
       const block = fakeElement('p');
       block.tagName = 'P';
-      block.children = children;
+      // The text first, then the children it holds: writing text empties an element here, as it does on a real page.
       block.textContent = text;
+      block.children = children;
       return block;
     };
     const picture = () => {
@@ -8837,9 +8888,8 @@ if (booted) {
     return menu;
   }
 
-  /** Open the page menu at the pointer. The rows of the last one are dropped first: the stand-in page keeps a container's children when the app empties its textContent, so two opens would otherwise read as one long menu. */
+  /** Open the page menu at the pointer. Nothing is dropped first: the menu empties itself as it draws, so the checks calling this twice are the proof that two opens leave one menu. */
   function openPageMenu() {
-    contextMenuElement().children.length = 0;
     booted.showContextMenu(120, 300, NOTE, 'page');
   }
 
