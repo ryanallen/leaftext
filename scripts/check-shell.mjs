@@ -79,7 +79,7 @@ function detachChild(child) {
   child.parentElement = null;
 }
 
-/** The one selectors in a comma list, each trimmed. */
+/** The selectors in a comma list, each trimmed. */
 function selectorParts(selector) {
   return String(selector)
     .split(',')
@@ -87,7 +87,7 @@ function selectorParts(selector) {
     .filter(Boolean);
 }
 
-/** Whether one node answers one selector: a class, an attribute in brackets, or a tag name. Asked both walking down a subtree and walking up from a node, so a query and a `closest` can never disagree about what a selector means. An attribute is asked for by name alone — a `data-` name of `dataset`, which is where both the markup walker and a check setting one by hand write it, and anything else of the element's own attributes. The reading render finds every block carrying a source range that way, so a matcher blind to it sends the returning reader back to the top of the document. */
+/** Whether one node answers one selector: a class, an attribute in brackets, or a tag name. Asked both walking down a subtree and walking up from a node, so a query and a `closest` cannot disagree about what a selector means. An attribute is asked for by name alone — a `data-` name of `dataset`, where both the markup walker and a check setting one by hand write it, and anything else of the element's own attributes. */
 function matchesSelector(node, one) {
   if (one.startsWith('.')) return !!(node.classList && node.classList.contains(one.slice(1)));
   if (one.startsWith('[')) {
@@ -219,7 +219,7 @@ function fakeElement(id = '') {
     click() {},
     select() {},
     scrollIntoView() {},
-    // A real walk up, from this element outwards, because that is how the page asks which block a place in the document belongs to: the source button takes the source offset of the block at the top of the view by asking the element under it for its nearest block, and an answer of null for ever leaves every toggle with no offset to land on.
+    // A real walk up, from this element outwards, because that is how the page asks which block a place in the document belongs to. An answer of null for ever leaves the source button with no offset to land on.
     closest: (selector) => {
       const wants = selectorParts(selector);
       for (let node = element; node; node = node.parentElement) {
@@ -248,7 +248,7 @@ function fakeElement(id = '') {
     configurable: true,
     enumerable: true,
   });
-  // The first element this one is holding, and nothing when it holds none. The reading render takes the whole document's layout out of the surface through this name and hands it to the frontmatter pass, so a stand-in without it throws before the first decoration runs.
+  // The first element this one is holding, and nothing when it holds none. The reading render takes a document's layout out of the surface through this name and hands it on, so a stand-in without it throws before the first decoration pass.
   Object.defineProperty(element, 'firstElementChild', {
     get: () => element.children[0] || null,
     configurable: true,
@@ -1203,7 +1203,7 @@ check('the words in the markup the page draws come with the elements', () => {
 
 // ---- 2m. an element hands over the first thing it is holding ----------------
 //
-// The reading render draws a document as one string and takes the layout it just drew back out of the surface by this name, then hands it to the pass that asks a document's fields for a growl. A stand-in without the name hands over nothing, and the pass throws on the first line of it — which is why nothing in this check has ever run a document through the render at all.
+// The reading render draws a document as one string and takes the layout it just drew back out of the surface by this name, then hands it to the pass that asks a document's fields for a growl. A stand-in without the name hands over nothing, and that pass throws on the first line of it — so the whole render is unreachable without this.
 
 check('an element hands over the first element it is holding, and nothing when it holds none', () => {
   const empty = fakeElement('first-empty');
@@ -10415,7 +10415,7 @@ check('a published site draws no vault switcher, no pane trail row and no Sync b
 
 // ---- 4c. the reading view's own render ---------------------------------------
 //
-// Every file a reader opens comes through this render, and until the stand-in element could hand over the layout it had just drawn nothing here had ever run a line of it. What the checks below drive is the end of it: the guard that drops a landing armed on another document, and the three landings after it — the reader's own pixel, the block holding a source line, and the reset that catches what neither of those answered.
+// Every file a reader opens comes through this render. What the checks below drive is the end of it: the guard that drops a landing armed on another document, and the three landings after it — the reader's own pixel, the block holding a source line, and the reset that catches what neither of those answered.
 //
 // Geometry is each check's own, never the stand-in element's. Every pixel a landing writes goes through the clamp, which measures the surface, the body and the body's first block, so a check standing none of them in reads every landing back as zero and passes on numbers nobody chose.
 
