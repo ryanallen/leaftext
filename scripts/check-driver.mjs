@@ -190,7 +190,7 @@ for (const [what, pattern] of PROFILE) {
   if (!pattern.test(text)) problems.push(`the shot profile no longer starts every run with ${what}`);
 }
 
-// A documentation shot has to leave the copy the owner is reading alone, which is what the account name above buys: the app names its instance slot and its ask pipe after %USERNAME%, so a copy launched under a name nobody else uses opens its own window and hears its own quit. What that replaced was a sweep of every process called leaftext, so the sweep not coming back matters as much as the quit going out.
+// A documentation shot has to leave the copy the owner is reading alone, which is what the account name above buys: the app names its instance slot and its ask pipe after %USERNAME%, so a copy launched under a name nobody else uses opens its own window and hears its own quit. The sweep staying away matters as much as the quit going out, so the refusal below is read for as well as the four shutdown steps.
 const SAFE_SHUTDOWN = [
   ['closes its own copy by asking rather than stopping it', /--ask '\{\\"ask\\":\\"quit\\"\}'/],
   ['waits for that copy to go before it says anything', /\$proc\.WaitForExit\(/],
@@ -200,7 +200,7 @@ const SAFE_SHUTDOWN = [
 for (const [what, pattern] of SAFE_SHUTDOWN) {
   if (!pattern.test(text)) problems.push(`the documentation shot no longer ${what}`);
 }
-// Any of them, at any depth: `Get-Process leaftext | Stop-Process` closed the owner's window, and `Stop-Process -Id` on a copy of the app throws its window place away instead of saving it. -Attach never had a copy of its own to stop.
+// Any of them, at any depth: `Get-Process leaftext | Stop-Process` takes the owner's window down with the shot copy, and `Stop-Process -Id` on a copy of the app throws its window place away instead of saving it. -Attach has no copy of its own to stop.
 if (/Stop-Process/.test(text)) {
   problems.push('the documentation shot can stop a process again, and it cannot tell the owner\'s copy from its own');
 }

@@ -318,7 +318,7 @@ else {
     if (Test-Path $stale) { Remove-Item $stale -Force }
   }
 
-  # Every variable the throwaway profile writes over, kept so the block at the foot of the script can put them back. This process outlives the shot when it is called from another script, and one of them is now the account name the app is asked questions under — so a run that left it rewritten would point everything after it at a copy that has already closed.
+  # Every variable the throwaway profile writes over, kept so the block at the foot of the script can put them back. This process outlives the shot when another script calls it, and one of these is the account name the app is asked questions under — so a run leaving it rewritten points everything after it at a copy that has already closed.
   $shotEnvBefore = [ordered]@{}
   foreach ($name in 'APPDATA', 'LOCALAPPDATA', 'USERPROFILE', 'USERNAME', 'OneDrive', 'OneDriveConsumer', 'OneDriveCommercial') {
     $shotEnvBefore[$name] = [Environment]::GetEnvironmentVariable($name)
@@ -341,13 +341,12 @@ else {
 function Stop-ShotCopy($proc) {
   # Closed by asking, the way the close button does it, and only ever the copy this
   # script launched. Nothing here reaches for a process by name: `Get-Process
-  # leaftext` answers with the owner's window too, and stopping that was the whole
-  # reason a picture could not be retaken while somebody was reading. The quit goes
-  # down the ask pipe named after the account name the profile block invented, so it
-  # is heard by this copy and by nothing else.
+  # leaftext` answers with the owner's window too. The quit goes down the ask pipe
+  # named after the account name the profile block invented, so this copy hears it
+  # and nothing else does.
   #
-  # The backslashes are for cmd and PowerShell both: a bare double quote inside a
-  # single-quoted argument reaches node stripped, and the wrapper wants JSON.
+  # The backslashes are load-bearing: a bare double quote inside a single-quoted
+  # argument reaches node stripped, and the wrapper wants JSON.
   if (-not $proc -or $proc.HasExited) { return }
   & node (Join-Path $root 'scripts\mcp-leaftext.mjs') --ask '{\"ask\":\"quit\"}' | Out-Null
   if (-not $proc.WaitForExit(10000)) {
