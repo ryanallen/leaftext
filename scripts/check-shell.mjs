@@ -263,7 +263,7 @@ function fakePage() {
   for (const id of elementIds()) if (!byId.has(id)) byId.set(id, fakeElement(id));
   // Only what the page really has gets an answer. An id the markup does not declare returns null, the way it would in the app. An element taken out of the page stops answering, the way it does in a browser: a query only finds what is still in the document.
   const standing = (node) => (node && node.isConnected !== false ? node : null);
-  // A class query reads the page as it stands rather than an index filled at boot, because most of what carries a class is drawn while the app runs -- the growl, the menus, the sheets, the rename box -- and a frozen map answers null while one of them is standing, which is the same answer as nothing being there, so a guard reading it takes one branch for ever and can never be seen to be wrong. Everything the markup nests hangs off the app surface, and the surface carries `app-surface` itself, so the walk starts at it rather than at its children. First match in document order, which is what querySelector means, and the same element every time because it is the page's own rather than a fresh one per call.
+  // The page as it stands, not an index filled at boot: most of what carries a class is drawn while the app runs — the growl, the menus, the sheets, the rename box — and an index cannot hold what the markup never named. Everything hangs off the app surface, which carries `app-surface` itself, so the walk starts at the surface rather than at its children. First match in document order, which is what querySelector means.
   const wearing = (node, name) => {
     if (!standing(node)) return null;
     if (String(node.className || '').split(/\s+/).includes(name)) return node;
@@ -914,7 +914,7 @@ check('the stand-in page lets the old holder go on every way of taking a child o
 
 // ---- 2i. a class query finds what the page drew -----------------------------
 //
-// The class index was built once off the markup and never added to, so a query for a class the app drew — a growl, a menu, a sheet, the rename box — answered null while the thing was standing on the surface. That is the same answer as nothing being there, so code that finds an element by class could not be checked at all, and a guard reading the reflex took the same branch on every run and could never be seen to be wrong.
+// A page answering only for the classes its markup declares says null for every control the app draws — a growl, a menu, a sheet, the rename box — while the thing is standing on the surface. That is the same answer as nothing being there, so code that finds an element by class cannot be checked at all, and a guard reading it takes the same branch on every run and can never be seen to be wrong.
 
 check('the stand-in page finds a class the page drew, and stops finding it once it goes', () => {
   // Its own boot rather than the shared one: the query reads the page as it stands, so a growl an earlier check left standing on the shared surface would let this pass with nothing drawn.
