@@ -79,24 +79,119 @@ function detachChild(child) {
   child.parentElement = null;
 }
 
-/** The selectors in a comma list, each trimmed. */
+/** The selectors in a comma list, each trimmed and its spacing squeezed. Split only where the comma is the list's own: a comma inside `:is(...)` or a bracket separates selectors within one entry, and cutting there hands the matcher fragments that are not selectors at all. The same rule as `wearer_list` in `src/tests/app_shell_chrome.rs`, which splits the page's scrollbar-wearer list on the Rust side. */
 function selectorParts(selector) {
-  return String(selector)
-    .split(',')
-    .map((one) => one.trim())
-    .filter(Boolean);
+  const parts = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of String(selector)) {
+    if (ch === ',' && depth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    if (ch === '(' || ch === '[') depth += 1;
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    current += ch;
+  }
+  parts.push(current);
+  return parts.map((one) => one.trim().replace(/\s+/g, ' ')).filter(Boolean);
 }
 
-/** Whether one node answers one selector: a class, an attribute in brackets, or a tag name. Asked both walking down a subtree and walking up from a node, so a query and a `closest` cannot disagree about what a selector means. An attribute is asked for by name alone — a `data-` name of `dataset`, where both the markup walker and a check setting one by hand write it, and anything else of the element's own attributes. */
-function matchesSelector(node, one) {
-  if (one.startsWith('.')) return !!(node.classList && node.classList.contains(one.slice(1)));
-  if (one.startsWith('[')) {
-    const name = one.slice(1, one.endsWith(']') ? -1 : undefined).trim();
+/** One compound selector's own parts — a tag, a class, an attribute, a pseudo-class — each kept whole, so a bracket or the brackets of an `:is(...)` are never cut in half. */
+function compoundPieces(one) {
+  const pieces = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of one) {
+    if (depth === 0 && current && (ch === '.' || ch === '[' || ch === ':')) {
+      pieces.push(current);
+      current = '';
+    }
+    if (ch === '(' || ch === '[') depth += 1;
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    current += ch;
+  }
+  if (current) pieces.push(current);
+  return pieces;
+}
+
+/** Whether one node answers one piece of a compound. An attribute is asked for by name alone — a `data-` name of `dataset`, where both the markup walker and a check setting one by hand write it, and anything else of the element's own attributes. A tag is the whole piece, since everything that is not one has already been split off: comparing a tag to everything before the first space called a `pre` a `pre > code`. */
+function matchesPiece(node, piece) {
+  if (piece.startsWith('.')) return !!(node.classList && node.classList.contains(piece.slice(1)));
+  if (piece.startsWith('[')) {
+    const name = piece.slice(1, piece.endsWith(']') ? -1 : undefined).trim();
     if (!name.startsWith('data-')) return !!(node.hasAttribute && node.hasAttribute(name));
     const key = name.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
     return !!node.dataset && node.dataset[key] !== undefined;
   }
-  return String(node.tagName || '').toLowerCase() === one.split(/[ :]/)[0];
+  if (piece.startsWith(':')) {
+    const open = piece.indexOf('(');
+    // A pseudo-class with no brackets is a state nothing here models, and answering yes to one would be the stub this whole matcher replaced.
+    if (open === -1) return false;
+    const inside = selectorParts(piece.slice(open + 1, piece.endsWith(')') ? -1 : undefined));
+    const name = piece.slice(1, open);
+    if (name === 'not') return inside.every((want) => !matchesSelector(node, want));
+    if (name === 'is' || name === 'where') return inside.some((want) => matchesSelector(node, want));
+    return false;
+  }
+  if (piece === '*') return true;
+  return String(node.tagName || '').toLowerCase() === piece.toLowerCase();
+}
+
+/** Whether one node answers one whole compound: every piece of it, on the same node. */
+function matchesCompound(node, one) {
+  const pieces = compoundPieces(one);
+  return pieces.length > 0 && pieces.every((piece) => matchesPiece(node, piece));
+}
+
+/** One selector's steps, each with the combinator leading into it — a space for a descendant, `>` for a child, and nothing on the first. Split at the selector's own level, so a space inside `:is(...)` or a bracket names no step. */
+function selectorSteps(one) {
+  const steps = [];
+  let depth = 0;
+  let current = '';
+  let combinator = null;
+  for (const ch of one) {
+    if (depth === 0 && (ch === ' ' || ch === '>')) {
+      if (current) {
+        steps.push({ combinator, compound: current });
+        current = '';
+        combinator = ' ';
+      }
+      if (ch === '>') combinator = '>';
+      continue;
+    }
+    if (ch === '(' || ch === '[') depth += 1;
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    current += ch;
+  }
+  if (current) steps.push({ combinator, compound: current });
+  return steps;
+}
+
+/** Whether the holders above a node answer the steps before it: a child step asks the one holder, a descendant step asks every holder up to the top. */
+function matchesAbove(node, steps, combinator) {
+  if (!steps.length) return true;
+  const step = steps[steps.length - 1];
+  const rest = steps.slice(0, -1);
+  if (combinator === '>') {
+    const holder = node.parentElement;
+    return !!holder && matchesCompound(holder, step.compound) && matchesAbove(holder, rest, step.combinator);
+  }
+  for (let holder = node.parentElement; holder; holder = holder.parentElement) {
+    if (matchesCompound(holder, step.compound) && matchesAbove(holder, rest, step.combinator)) return true;
+  }
+  return false;
+}
+
+/** Whether one node answers one selector, the holders above it included. Asked walking down a subtree, walking up from a node, and by an element about itself, so a query, a `closest` and a `matches` cannot disagree about what a selector means. */
+function matchesSelector(node, one) {
+  const selector = String(one).trim().replace(/\s+/g, ' ');
+  if (!selector) return false;
+  const steps = selectorSteps(selector);
+  const last = steps[steps.length - 1];
+  if (!last || !matchesCompound(node, last.compound)) return false;
+  return matchesAbove(node, steps.slice(0, -1), last.combinator);
 }
 
 /** What an element's own subtree answers a query with, in document order: a comma list of tags, classes and attributes. One matcher behind every stand-in element, so nothing is ever told it is holding something it has not got — a guard asking a line whether it carries a picture reads an answer of "yes, always" as itself having fired. */
@@ -227,7 +322,8 @@ function fakeElement(id = '') {
       }
       return null;
     },
-    matches: () => false,
+    // The one guard in the front end that asks a box what it is rather than being told: whether the pointer near an edge is on that box's own scrollbar gutter. An answer of no for ever leaves that branch unreachable.
+    matches: (selector) => selectorParts(selector).some((one) => matchesSelector(element, one)),
     contains: () => false,
     // Its own children and nothing else, so an element holding nothing says so.
     querySelector: (selector) => matchingDescendants(element, selector)[0] || null,
@@ -1266,6 +1362,45 @@ check('a query and a nearest walk both find the block the markup declared by its
   flagged.innerHTML = '<button type="button" disabled>Save</button>';
   if (flagged.querySelectorAll('[type]').length !== 1) throw new Error('an attribute with no data- in front of it was not found');
   if (flagged.querySelectorAll('[name]').length) throw new Error('an attribute the markup did not declare was found');
+});
+
+// ---- 2o. one node against one whole selector --------------------------------
+//
+// The page has one guard that asks a box what it is rather than being told: whether the pointer resting near an edge is on that box's own scrollbar gutter, which is what raises the bar so it can be grabbed. It asks with the list of boxes that wear one, and that list spends a refusal, a child step, a descendant step and an either-of list — none of which a matcher reading a class, a bare attribute or a tag can answer. Worse than a no: comparing a tag to everything before the first space read `pre > code` as `pre`, so every code block's holder answered yes to a wearer it is not.
+
+check('one selector is read as its own parts rather than as its first word', () => {
+  const wearers = '.leaf-scroll, .library-scroll, .reader-shell:not(.has-minimap), .table-lane > table, .document-body :is(pre, pre > code, .math-display, .frontmatter, table)';
+  const entries = selectorParts(wearers);
+  // Five wearers, not nine pieces: the commas inside `:is(...)` group selectors within one entry, and cutting there hands the matcher `.document-body :is(pre` and `table)`, which are not selectors at all.
+  if (entries.length !== 5) throw new Error(`the wearer list came back as ${entries.length} pieces: ${entries.join(' | ')}`);
+  if (entries[4] !== '.document-body :is(pre, pre > code, .math-display, .frontmatter, table)') throw new Error(`the either-of list did not arrive whole: ${entries[4]}`);
+
+  const holder = fakeElement('selector-holder');
+  holder.innerHTML = '<p class="leaf-editable" data-src-start="4">A line</p><p class="leaf-editable">No range</p><pre class="hljs">code</pre><section class="reader-shell">reading</section><section class="reader-shell has-minimap">reading</section>';
+  const [ranged, plain, block, bare, mapped] = holder.children;
+  // The walk up starts at the node itself, so it is how one node is asked one selector until the element answers for itself.
+  const asks = (node, selector) => node.closest(selector) === node;
+
+  // A compound is every part of it answering on the one node, so a part that does not answer refuses the whole.
+  if (!asks(ranged, 'p.leaf-editable[data-src-start]')) throw new Error('a node wearing every part of a compound was refused by it');
+  if (asks(plain, 'p.leaf-editable[data-src-start]')) throw new Error('a node missing one part of a compound was matched by it');
+  if (asks(block, 'p.leaf-editable')) throw new Error('a compound matched a node of another tag');
+
+  // A refusal, each way round.
+  if (!asks(bare, '.reader-shell:not(.has-minimap)')) throw new Error('a reading surface with no minimap was refused by the one entry that names it');
+  if (asks(mapped, '.reader-shell:not(.has-minimap)')) throw new Error('a reading surface that has a minimap answered the entry that refuses one');
+
+  // An either-of list, each way round.
+  if (!asks(block, ':is(pre, .math-display)')) throw new Error('a node named by an either-of list was refused by it');
+  if (asks(plain, ':is(pre, .math-display)')) throw new Error('a node named by no part of an either-of list answered it');
+
+  // The false yes this check exists for: a tag is the whole piece, so `pre > code` is not the tag `pre`.
+  if (asks(block, 'pre > code')) throw new Error('a code block holder answered a selector naming what is inside it');
+  if (!asks(block, 'pre')) throw new Error('a tag on its own stopped answering');
+
+  // And the query down reads the same selector the same way, since both ask the one matcher.
+  if (holder.querySelectorAll('.reader-shell:not(.has-minimap)').length !== 1) throw new Error('the query down disagreed with the walk up about a refusal');
+  if (holder.querySelectorAll('pre > code').length) throw new Error('the query down answered a code block holder for what is inside it');
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
@@ -11731,11 +11866,11 @@ if (booted) {
 
   // The gutter sits outside the box's own width, so the pointer being on the bar is an offset past `clientWidth` — or past `clientHeight`, on a sideways bar. Both directions here, because the wide table wears the same rule with its bar along the bottom.
   check('the pointer in a box’s own gutter raises that box’s bar, and neither reason cancels the other', () => {
-    const classes = new Set();
+    // The wearer class is in the same store the stamps go into, because the box answers the page's own list by what it wears rather than by being told yes.
+    const classes = new Set(['leaf-scroll']);
     const box = Object.assign(fakeElement('gutter'), {
       clientWidth: 286,
       clientHeight: 400,
-      matches: () => true,
       classList: {
         add: (name) => classes.add(name),
         remove: (name) => classes.delete(name),
@@ -11750,7 +11885,7 @@ if (booted) {
     at(120, 404);
     if (!classes.has('is-pointing')) throw new Error('a sideways bar’s gutter along the bottom is never seen');
     // A box made after boot is covered the same way, and one it is not a wearer at all is never stamped.
-    const other = Object.assign(fakeElement('plain'), { matches: () => false, clientWidth: 0, clientHeight: 0 });
+    const other = Object.assign(fakeElement('plain'), { clientWidth: 0, clientHeight: 0 });
     booted.leafMarkPointing({ target: other, offsetX: 40, offsetY: 40 });
     if (classes.has('is-pointing')) throw new Error('moving off onto something else left the bar up');
     // The two reasons are independent: a wheel while the pointer is already there, then the pointer leaving, must leave the bar up until the box has been still.
@@ -11770,6 +11905,35 @@ if (booted) {
       classes.clear();
       booted.leafMarkPointing(null);
     }
+  });
+
+  // The one refusal in the wearer list, and the one child step in it. Neither is a class a box can simply wear, so until the matcher read them the pointer check could only be handed its own answer.
+  check('the wearer list refuses a reading surface with a minimap and takes a table only inside its lane', () => {
+    const gutter = (box) => {
+      booted.leafMarkPointing({ target: box, offsetX: box.clientWidth + 4, offsetY: 20 });
+      const raised = box.classList.contains('is-pointing');
+      booted.leafMarkPointing(null);
+      return raised;
+    };
+    const sized = (box) => Object.assign(box, { clientWidth: 200, clientHeight: 300 });
+
+    const readers = fakeElement('reader-pair');
+    readers.innerHTML = '<section class="reader-shell">plain</section><section class="reader-shell has-minimap">mapped</section>';
+    if (!gutter(sized(readers.children[0]))) throw new Error('a reading surface with no minimap was refused by the entry that names it');
+    if (gutter(sized(readers.children[1]))) throw new Error('a reading surface with a minimap raised a bar the list refuses it');
+
+    const lane = fakeElement('table-pair');
+    lane.innerHTML = '<div class="table-lane"><table>inside</table></div><table>outside</table>';
+    if (!gutter(sized(lane.children[0].children[0]))) throw new Error('a table inside its lane was refused by the child step that names it');
+    if (gutter(sized(lane.children[1]))) throw new Error('a table with no lane above it answered a child step');
+
+    // The descendant step, and the entry inside it that used to answer yes for the wrong reason: a code block's holder is not what `pre > code` names.
+    const doc = fakeElement('document-pair');
+    doc.innerHTML = '<div class="document-body"><pre>fenced<code>inner</code></pre></div><pre>loose</pre>';
+    const fenced = doc.children[0].children[0];
+    if (!gutter(sized(fenced))) throw new Error('a code block inside the document body was refused by the descendant step that names it');
+    if (gutter(sized(doc.children[1]))) throw new Error('a code block with no document body above it answered a descendant step');
+    if (!gutter(sized(fenced.children[0]))) throw new Error('the code inside a fenced block was refused by the entry that names it');
   });
 
   // The stand-in page takes document listeners and drops them, so the registration cannot be reached through it. Read off the fragment instead, the way the canvas's own listeners are.
