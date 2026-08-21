@@ -53,7 +53,7 @@ flowchart LR
 | Library button | Opens and closes the [library pane](01-features/03-library.md) |
 | Back / Forward | Moves through document and scroll history |
 | Tab bar | Keeps multiple documents open |
-| Open, **+**, Settings | Open a file, start a [new document](01-features/07-editing.md#new-document), change [preferences](01-features/05-settings.md) |
+| Palette, Open, **+**, Export PDF | Choose a [theme](01-features/06-themes.md#choose), open a file, start a [new document](01-features/07-editing.md#new-document), and [write the page you are reading as a PDF](01-features/02-navigation.md#export-a-pdf). There is no Settings button — every control stands where it applies, so [preferences](01-features/05-settings.md) are wherever they are used |
 
 ### The page itself
 

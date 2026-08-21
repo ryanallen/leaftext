@@ -648,13 +648,11 @@ function strikeSelfTest() {
   return fails;
 }
 
-// The page teaching a reader what the top of the window holds walks the bar left to right, so its sentence has to name the controls at the right in the order the bar draws them. It shipped naming them palette, Export PDF, Open, plus while the bar drew palette, Open, plus, Export PDF — and the alt text two lines above that sentence already named them the drawn way, so the page contradicted itself in two lines that touch.
+// The page teaching a reader what the top of the window holds walks the bar left to right, so its sentence names the controls at the right in the order the bar draws them. It shipped naming them palette, Export PDF, Open, plus against a bar drawing palette, Open, plus, Export PDF.
 //
-// The order is never written down here. It is read off `src/assets/app-shell.html`, because the four are siblings in one container and nothing reorders them at any width, and because a list of them in this file is a second copy of the bar that rots the first time a control moves. Holding the sentence to the alt text instead would catch the two disagreeing and never catch them drifting together, which is the failure that just shipped.
+// The order is never written down here. It is read off `src/assets/app-shell.html`, because the four are siblings in one container that nothing reorders at any width, and because a list of them in this file is a second copy of the bar that rots the first time a control moves. Holding one line to the other catches them disagreeing and never catches them drifting together.
 //
-// What is written down is only how each button is *spelled* in prose, which no markup can answer: `newButton` is `**+**` in the paragraph and "plus" in the alt text.
-//
-// A control added to that group with no spelling here fails the check, which is right — a new button in the bar owes the page a mention.
+// What is written down is only how each button is *spelled* in prose, which no markup can answer: `newButton` is `**+**` in the paragraph and "plus" in the alt text. A control added to that group with no spelling here fails the check — a new button in the bar owes the page a mention.
 //
 // **What this cannot see: a control in that group that is not an `icon-button`.** The update bell is one, and the page names it in its own paragraph rather than in the left-to-right walk.
 const APP_BAR_SHELL = 'src/assets/app-shell.html';
