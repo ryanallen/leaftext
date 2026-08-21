@@ -309,10 +309,7 @@ fn the_normal_width_toggle_moves_the_pane_bar_and_page_together() {
         "function startLibraryMotion(direction, done) {\n  // Settle any motion still running, so a re-toggle retargets from where the rail is. Told it is arming another, so it leaves the zone unmeasured.\n  endLibraryMotion(true);",
     );
     // The minimap's width write reacts to the reader resizing one frame in; mid-toggle it would change a grid column and retarget the pane's transition, so it is dropped and the motion's own end asks again. Re-arming it here instead drew a frame for every frame of the gesture.
-    assert_contains(
-        &html,
-        "if (/is-library-/.test(document.body.className)) return;",
-    );
+    assert_contains(&html, "if (libraryPaneIsMoving()) return;");
     assert!(
         !html.contains("      scheduleMinimapWidthSync();\n      return;"),
         "the rail's width must wait to be told, not ask every frame"

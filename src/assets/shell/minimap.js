@@ -80,7 +80,7 @@ function scheduleMinimapWidthSync() {
   minimapWidthFrame = requestAnimationFrame(() => {
     minimapWidthFrame = 0;
     // Mid library-toggle this write changes a grid column and retargets the pane's transition, desyncing it from the bar. Drop it — the motion's own end asks again. Re-arming here instead keeps the page drawing frames for the whole gesture.
-    if (/is-library-/.test(document.body.className)) return;
+    if (libraryPaneIsMoving()) return;
     syncMinimapWidthToCodeView();
   });
 }

@@ -9016,22 +9016,39 @@ if (booted) {
 
   // Nothing in the page may put itself straight back on the frame queue: a job that does keeps the window drawing for as long as its condition holds, and the condition here is a 600ms pane motion. Draining has to reach a fixed point, and the pane finishing is what asks again.
   check('the rail waits for the library pane instead of asking every frame', () => {
-    const frames = booted.__frames;
-    const body = booted.document.body;
-    const wasClass = body.className;
-    try {
-      frames.drain();
-      body.className = 'is-library-opening';
-      booted.scheduleMinimapWidthSync();
-      const ran = frames.drain();
-      if (ran !== 1) throw new Error(`one request for the rail's width ran ${ran} frames`);
-      body.className = '';
-      booted.endLibraryMotion();
-      if (frames.drain() !== 1) throw new Error('the pane finishing its motion never asked for the width it held back');
-    } finally {
-      body.className = wasClass;
-      frames.drain();
-    }
+    // Its own page, because it moves the pane and the app bar's fold with it, and the shared one is read by every check after this.
+    const page = runShell(source);
+    const frames = page.__frames;
+    const root = page.document.documentElement;
+    const minimapWidth = () => root.style.getPropertyValue('--minimap-width');
+    // A code character's width, so the ruler below answers a number the arithmetic can spend. Any width does; this is a monospace face at the size Monaco measures at.
+    const RULER_CHAR = 8.4;
+    // The width the guard holds back is measured off a ruler the page appends, and every rectangle the stand-in answers is zero wide — so the width came out zero, nothing was ever written on the root, and this check read an unwritten property whether the write was dropped or made. It passed with the guard lifted out of the file altogether. A ruler as wide as what is written into it is the whole of what makes the dropped write visible.
+    const madeElement = page.document.createElement;
+    page.document.createElement = (tag) => {
+      const made = madeElement(tag);
+      made.getBoundingClientRect = () => ({ top: 0, left: 0, right: 0, bottom: 0, height: 0, width: String(made.textContent || '').length * RULER_CHAR });
+      return made;
+    };
+    root.style.setProperty('--code-font', 'monospace');
+    root.style.setProperty('--reader-gutter', '24px');
+    page.document.getElementById('libraryShell').clientWidth = VIEW_WIDTH;
+    root.style.removeProperty('--minimap-width');
+    frames.drain();
+    // The app's own toggle, never a class name typed in here: the names the guard reads belong to library.js, and a check spelling them itself goes on passing the day that fragment spells them differently.
+    page.toggleLibrary();
+    if (!page.libraryPaneIsMoving()) throw new Error('the toggle never armed the pane motion');
+    // Arming settles whatever was running, and that settle asks for the width — so a held-back request is already standing here.
+    frames.drain();
+    if (minimapWidth()) throw new Error(`the rail took its width as the pane started moving: ${minimapWidth()}`);
+    page.scheduleMinimapWidthSync();
+    const ran = frames.drain();
+    if (ran !== 1) throw new Error(`one request for the rail's width ran ${ran} frames`);
+    if (minimapWidth()) throw new Error(`the rail took its width mid-motion: ${minimapWidth()}`);
+    page.endLibraryMotion();
+    // The frames the end asks for are the width and the bar's own refit beside it, and what proves the held-back write was taken is the width landing.
+    if (!frames.drain()) throw new Error('the pane finishing its motion never asked for the width it held back');
+    if (!/^[\d.]+px$/.test(minimapWidth())) throw new Error(`the pane stopped and the rail was left at ${minimapWidth() || 'nothing'}`);
   });
 }
 
