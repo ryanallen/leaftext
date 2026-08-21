@@ -4,9 +4,10 @@
 #   pwsh scripts/capture-screenshot.ps1 -Attach -Do 'scroll:500,400,-8' -Out <out.png>
 #   pwsh scripts/capture-screenshot.ps1 -DryRun -Do 'click:20,20' -Out <ignored>
 #
-# Unattached is the documentation shot: it kills every copy, launches one against a
-# throwaway profile at a pinned size and theme, photographs it and kills it again.
-# That is what makes a picture reproducible.
+# Unattached is the documentation shot: it launches its own copy under an account
+# name of its own, against a throwaway profile at a pinned size and theme,
+# photographs it and asks it to close. That is what makes a picture reproducible,
+# and the name is what lets it run while the owner keeps reading in their window.
 #
 # `-Attach` drives the copy that is already open — the owner's. It launches nothing,
 # kills nothing, and writes no profile of any kind, so every flag that would have
@@ -317,6 +318,12 @@ else {
     if (Test-Path $stale) { Remove-Item $stale -Force }
   }
 
+  # Every variable the throwaway profile writes over, kept so the block at the foot of the script can put them back. This process outlives the shot when it is called from another script, and one of them is now the account name the app is asked questions under — so a run that left it rewritten would point everything after it at a copy that has already closed.
+  $shotEnvBefore = [ordered]@{}
+  foreach ($name in 'APPDATA', 'LOCALAPPDATA', 'USERPROFILE', 'USERNAME', 'OneDrive', 'OneDriveConsumer', 'OneDriveCommercial') {
+    $shotEnvBefore[$name] = [Environment]::GetEnvironmentVariable($name)
+  }
+
   $env:APPDATA = $appdata
   $env:LOCALAPPDATA = $local
   # A home folder with nothing in it. src/known_folders.rs is the only thing in the app that reads these four, and it makes a vault of every cloud folder it finds under them — which is how a picture of the vault list came to show this machine's folders. Starved rather than switched off, so the app needs no branch that exists only for a screenshot.
@@ -326,14 +333,26 @@ else {
   $env:OneDrive = ''
   $env:OneDriveConsumer = ''
   $env:OneDriveCommercial = ''
+
+  # An account name of its own, which is what keeps a documentation shot away from the copy the owner is reading. src/single_instance.rs names the instance slot after %USERNAME% and src/pipe.rs names the ask pipe after it, so a copy launched under a name nobody else is using gets its own window instead of handing its file to whatever is already up, and answers a quit nothing else hears. Unique per run: a copy that wedges is then holding a name no later run goes looking for.
+  $env:USERNAME = "leaftext-shot-$PID"
 }
 
-function Stop-Leaftext {
-  # The app is single-instance: launched while one is already up, the second copy
-  # hands the file to the first and exits, leaving no window to photograph — and
-  # the running copy has the owner's theme and window size, not the ones set here.
-  Get-Process leaftext -ErrorAction SilentlyContinue | Stop-Process -Force
-  Start-Sleep -Milliseconds 500
+function Stop-ShotCopy($proc) {
+  # Closed by asking, the way the close button does it, and only ever the copy this
+  # script launched. Nothing here reaches for a process by name: `Get-Process
+  # leaftext` answers with the owner's window too, and stopping that was the whole
+  # reason a picture could not be retaken while somebody was reading. The quit goes
+  # down the ask pipe named after the account name the profile block invented, so it
+  # is heard by this copy and by nothing else.
+  #
+  # The backslashes are for cmd and PowerShell both: a bare double quote inside a
+  # single-quoted argument reaches node stripped, and the wrapper wants JSON.
+  if (-not $proc -or $proc.HasExited) { return }
+  & node (Join-Path $root 'scripts\mcp-leaftext.mjs') --ask '{\"ask\":\"quit\"}' | Out-Null
+  if (-not $proc.WaitForExit(10000)) {
+    Write-Warning "the shot copy would not close when asked; it is still running as pid $($proc.Id) under the name $env:USERNAME, which nothing else looks for"
+  }
 }
 
 # A vault is a row in manifest.db and nothing else (src/store/vaults.rs), so the
@@ -343,11 +362,9 @@ function Stop-Leaftext {
 # profile setup above deleted any earlier one, so this is always a fresh database.
 if (-not $Attach -and $Vault.Count) {
   if (-not (Test-Path $manifest)) {
-    Stop-Leaftext
     $warm = Start-Process -FilePath $Exe -PassThru
     for ($i = 0; $i -lt 60 -and -not (Test-Path $manifest); $i++) { Start-Sleep -Milliseconds 250 }
-    if (-not $warm.HasExited) { Stop-Process -Id $warm.Id -Force }
-    Start-Sleep -Milliseconds 500
+    Stop-ShotCopy $warm
     if (-not (Test-Path $manifest)) { throw 'the app never wrote a manifest.db' }
   }
   node (Join-Path $root 'scripts\shot-add-vault.mjs') $manifest @Vault | Out-Null
@@ -518,8 +535,6 @@ try {
     }
   }
   else {
-    Stop-Leaftext
-
     $launch = @{ FilePath = $Exe; PassThru = $true }
     # Quoted: a folder with a space in it would otherwise reach the app as two
     # arguments, and it opens the home screen instead of the file you asked for.
@@ -601,7 +616,13 @@ try {
 }
 finally {
   if ($buttonDown) { [LeafShot]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) }
-  # Only the copy this script launched. An attached run leaves the owner's app up
-  # — killing it is the whole reason the two halves could not be used together.
-  if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+  # Only the copy this script launched, and asked rather than stopped. An attached
+  # run has no copy of its own, so it leaves the owner's app up.
+  Stop-ShotCopy $proc
+  # After the quit, never before it: the account name is what addresses the pipe.
+  if ($shotEnvBefore) {
+    foreach ($name in $shotEnvBefore.Keys) {
+      [Environment]::SetEnvironmentVariable($name, $shotEnvBefore[$name])
+    }
+  }
 }

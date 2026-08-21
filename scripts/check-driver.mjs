@@ -184,9 +184,25 @@ const PROFILE = [
   ['manifest.db', /Remove-Item \$stale -Force/],
   ['a home folder with no cloud client under it', /\$env:USERPROFILE = \$shotHome/],
   ['the three OneDrive variables', /\$env:OneDriveCommercial = ''/],
+  ['an account name of its own, unique to the run', /\$env:USERNAME = "leaftext-shot-\$PID"/],
 ];
 for (const [what, pattern] of PROFILE) {
   if (!pattern.test(text)) problems.push(`the shot profile no longer starts every run with ${what}`);
+}
+
+// A documentation shot has to leave the copy the owner is reading alone, which is what the account name above buys: the app names its instance slot and its ask pipe after %USERNAME%, so a copy launched under a name nobody else uses opens its own window and hears its own quit. What that replaced was a sweep of every process called leaftext, so the sweep not coming back matters as much as the quit going out.
+const SAFE_SHUTDOWN = [
+  ['closes its own copy by asking rather than stopping it', /--ask '\{\\"ask\\":\\"quit\\"\}'/],
+  ['waits for that copy to go before it says anything', /\$proc\.WaitForExit\(/],
+  ['closes the warm copy the vault registry needs the same way', /Stop-ShotCopy \$warm/],
+  ['puts the account name and the profile roots back when the run ends', /SetEnvironmentVariable\(\$name, \$shotEnvBefore\[\$name\]\)/],
+];
+for (const [what, pattern] of SAFE_SHUTDOWN) {
+  if (!pattern.test(text)) problems.push(`the documentation shot no longer ${what}`);
+}
+// Any of them, at any depth: `Get-Process leaftext | Stop-Process` closed the owner's window, and `Stop-Process -Id` on a copy of the app throws its window place away instead of saving it. -Attach never had a copy of its own to stop.
+if (/Stop-Process/.test(text)) {
+  problems.push('the documentation shot can stop a process again, and it cannot tell the owner\'s copy from its own');
 }
 
 // Two development copies can be open at once, each built under its own checkout, so -Attach has to pick the one belonging to the checkout it was run from rather than refuse because it found two windows. With no copy from this checkout running it still takes whatever is up, which is the installed copy the owner reads.
@@ -201,5 +217,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, a documentation shot runs under a name of its own and closes only that copy by asking, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );
