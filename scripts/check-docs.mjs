@@ -650,19 +650,38 @@ function strikeSelfTest() {
 
 // The page teaching a reader what the top of the window holds walks the bar left to right, so its sentence names the controls at the right in the order the bar draws them. It shipped naming them palette, Export PDF, Open, plus against a bar drawing palette, Open, plus, Export PDF.
 //
+// Two published pages draw that bar and each is read in the shape it is written in: the reference page as a picture with a paragraph under it, the tour as a table with a row per area. The tour is the page a new reader is sent to first, and it named a Settings button the app does not have.
+//
 // The order is never written down here. It is read off `src/assets/app-shell.html`, because the four are siblings in one container that nothing reorders at any width, and because a list of them in this file is a second copy of the bar that rots the first time a control moves. Holding one line to the other catches them disagreeing and never catches them drifting together.
 //
 // What is written down is only how each button is *spelled* in prose, which no markup can answer: `newButton` is `**+**` in the paragraph and "plus" in the alt text. A control added to that group with no spelling here fails the check — a new button in the bar owes the page a mention.
 //
 // **What this cannot see: a control in that group that is not an `icon-button`.** The update bell is one, and the page names it in its own paragraph rather than in the left-to-right walk.
 const APP_BAR_SHELL = 'src/assets/app-shell.html';
-const APP_BAR_PAGE = 'docs/01-features/02-navigation.md';
 const APP_BAR_GROUP = 'app-actions-items';
-const APP_BAR_HEADING = /^###[ \t]+The app bar[ \t]*$/;
+
+const APP_BAR_NAVIGATION = 'docs/01-features/02-navigation.md';
+const APP_BAR_QUICKSTART = 'docs/03-quickstart.md';
+
+/** Every published page that draws the bar: the section it draws it in, the shape that section is written in, and the reader that pulls the ordered names out of it. */
+const APP_BAR_PAGES = [
+  {
+    page: APP_BAR_NAVIGATION,
+    heading: /^###[ \t]+The app bar[ \t]*$/,
+    shape: 'picture with a paragraph under it',
+    read: appBarLines,
+  },
+  {
+    page: APP_BAR_QUICKSTART,
+    heading: /^###[ \t]+The app bar, across the top[ \t]*$/,
+    shape: 'table with a row for the right-hand controls',
+    read: appBarTableCell,
+  },
+];
 
 /** How each right-hand control is spelled where the page names it. More than one because the alt text and the paragraph beneath it say the same button different ways. */
 const APP_BAR_PHRASES = {
-  themeSheetOpen: ['palette'],
+  themeSheetOpen: ['palette', 'Palette'],
   openButton: ['Open'],
   newButton: ['**+**', 'plus'],
   exportPdfButton: ['Export PDF'],
@@ -694,9 +713,9 @@ export function appBarControls(html) {
 }
 
 /** The picture's alt text and the paragraph under it, out of the page's app bar section; null where either is missing. */
-export function appBarLines(text) {
+export function appBarLines(text, heading) {
   const lines = text.split('\n');
-  const at = lines.findIndex((line) => APP_BAR_HEADING.test(line));
+  const at = lines.findIndex((line) => heading.test(line));
   if (at === -1) return null;
   let alt = null;
   for (let i = at + 1; i < lines.length; i++) {
@@ -709,9 +728,33 @@ export function appBarLines(text) {
       alt = picture[1];
       continue;
     }
-    return { alt, paragraph: line };
+    return [
+      { where: "the picture's alt text", line: alt },
+      { where: 'the paragraph under the picture', line },
+    ];
   }
   return null;
+}
+
+/** The controls the tour names, out of the first cell of the last row of its app bar table; null where that table is not there. The row's other cell is never read — it says the same things again in prose, in whatever order the sentence wants. A row added below the controls one is read instead, which fails by name rather than passing quietly. */
+export function appBarTableCell(text, heading) {
+  const lines = text.split('\n');
+  const at = lines.findIndex((line) => heading.test(line));
+  if (at === -1) return null;
+  let ruled = false;
+  let cell = null;
+  for (let i = at + 1; i < lines.length; i++) {
+    if (/^#{1,6}\s/.test(lines[i])) break;
+    const line = lines[i].trim();
+    if (!line.startsWith('|')) continue;
+    const first = (line.split('|')[1] ?? '').trim();
+    if (/^:?-{3,}:?$/.test(first)) {
+      ruled = true;
+      continue;
+    }
+    if (ruled) cell = first;
+  }
+  return cell === null ? null : [{ where: 'the controls row of the app bar table', line: cell }];
 }
 
 // Case-sensitive, and whole-word where the spelling has word edges — so "opens the theme picker" is not the Open button, while `**+**` still matches with no word character in it.
@@ -722,33 +765,39 @@ function namedAt(line, spelling) {
   return line.search(new RegExp(`${lead}${literal}${tail}`));
 }
 
-/** Every way the page's two lines disagree with the order the markup draws the bar's right-hand controls in. */
-export function appBarOrderFaults(html, text, phrases = APP_BAR_PHRASES) {
+/** Every way a line on a page that draws the bar disagrees with the order the markup draws the bar's right-hand controls in. Each page's text comes in under its own path. */
+export function appBarOrderFaults(html, texts, phrases = APP_BAR_PHRASES) {
   const controls = appBarControls(html);
   if (controls === null || !controls.length) return [`${APP_BAR_SHELL}  ->  no controls found inside .${APP_BAR_GROUP}`];
   const unspelled = controls.filter((id) => !phrases[id]);
   if (unspelled.length) return unspelled.map((id) => `${APP_BAR_SHELL}  ->  #${id} is in the bar and the page has no word for it`);
-  const lines = appBarLines(text);
-  if (lines === null) return [`${APP_BAR_PAGE}  ->  the app bar section has no picture with a paragraph under it`];
   const drawn = controls.map((id) => phrases[id][0]);
   const out = [];
-  for (const [where, line] of [["the picture's alt text", lines.alt], ['the paragraph under the picture', lines.paragraph]]) {
-    const found = controls.map((id) => ({ id, at: Math.min(...phrases[id].map((word) => namedAt(line, word)).filter((i) => i !== -1), Infinity) }));
-    const missing = found.filter((control) => control.at === Infinity);
-    if (missing.length) {
-      for (const control of missing) out.push(`${APP_BAR_PAGE}  ->  ${where} never names ${phrases[control.id][0]}`);
+  for (const target of APP_BAR_PAGES) {
+    const lines = target.read(texts[target.page] ?? '', target.heading);
+    if (lines === null) {
+      out.push(`${target.page}  ->  the app bar section has no ${target.shape}`);
       continue;
     }
-    const said = [...found].sort((a, b) => a.at - b.at).map((control) => phrases[control.id][0]);
-    if (said.join(', ') !== drawn.join(', ')) out.push(`${APP_BAR_PAGE}  ->  ${where} names them ${said.join(', ')}; the bar draws them ${drawn.join(', ')}`);
+    for (const { where, line } of lines) {
+      const found = controls.map((id) => ({ id, at: Math.min(...phrases[id].map((word) => namedAt(line, word)).filter((i) => i !== -1), Infinity) }));
+      const missing = found.filter((control) => control.at === Infinity);
+      if (missing.length) {
+        for (const control of missing) out.push(`${target.page}  ->  ${where} never names ${phrases[control.id][0]}`);
+        continue;
+      }
+      const said = [...found].sort((a, b) => a.at - b.at).map((control) => phrases[control.id][0]);
+      if (said.join(', ') !== drawn.join(', ')) out.push(`${target.page}  ->  ${where} names them ${said.join(', ')}; the bar draws them ${drawn.join(', ')}`);
+    }
   }
   return out;
 }
 
 const APP_BAR_ADVICE = [
-  'the page walks the bar left to right, so it names the controls at the right in the order the markup puts them',
-  'inside `.app-actions-items` — both in the picture\'s alt text and in the paragraph under it. Reorder the words, or,',
-  'where a control was added to the bar, give it a phrase in `APP_BAR_PHRASES` and a mention on the page.',
+  'each page that draws the bar walks it left to right, so it names the controls at the right in the order the markup',
+  'puts them inside `.app-actions-items` — in the reference page\'s alt text and paragraph, and in the first cell of the',
+  'tour\'s controls row. Reorder the words, or, where a control was added to the bar, give it a phrase in',
+  '`APP_BAR_PHRASES` and a mention on every page in `APP_BAR_PAGES`.',
 ];
 
 const APP_BAR_MARKUP = [
@@ -766,59 +815,97 @@ const APP_BAR_MARKUP = [
 
 const appBarPage = (alt, paragraph) => `## The chrome\n\n### The app bar\n\n![${alt}](../../imgs/navigation.png)\n\n${paragraph}\n\n### Export a PDF\n`;
 
+const quickstartPage = (cell) => `## 2. Know what you are looking at\n\n### The app bar, across the top\n\n| Area | What it does |\n| --- | --- |\n| Leaf mark | Returns to the home screen |\n| ${cell} | Choose a theme, open a file, start a new document, and write the page as a PDF |\n\n### The page itself\n`;
+
+const DRAWN_CELL = 'Palette, Open, **+**, Export PDF';
+
+/** One case's text for every page that draws the bar, so a case says what one of them holds while the rest stay as they ship. */
+const appBarTexts = (navigation, quickstart = quickstartPage(DRAWN_CELL)) => ({
+  [APP_BAR_NAVIGATION]: navigation,
+  [APP_BAR_QUICKSTART]: quickstart,
+});
+
 const DRAWN_ALT = 'The Leaftext app bar: the leaf mark, then the theme palette, Open, plus and Export PDF at the right';
 const DRAWN_PARAGRAPH = 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-a-pdf).';
 const SHIPPED_PARAGRAPH = 'At the right the palette that opens the [theme picker](06-themes.md#choose), [Export PDF](#export-a-pdf), Open, and **+** ([new document](07-editing.md#new-document)).';
 const OUT_OF_ORDER = 'palette, Export PDF, Open, **+**; the bar draws them palette, Open, **+**, Export PDF';
 
 const APP_BAR_CASES = [
-  ['both lines naming them the way the bar draws them passes, and the update panel inside the group does not end it early', APP_BAR_MARKUP, appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), []],
+  ['both lines naming them the way the bar draws them passes, and the update panel inside the group does not end it early', APP_BAR_MARKUP, appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH)), []],
   [
     'the order the page shipped with is refused, naming the line and both orders',
     APP_BAR_MARKUP,
-    appBarPage(DRAWN_ALT, SHIPPED_PARAGRAPH),
-    [`${APP_BAR_PAGE}  ->  the paragraph under the picture names them ${OUT_OF_ORDER}`],
+    appBarTexts(appBarPage(DRAWN_ALT, SHIPPED_PARAGRAPH)),
+    [`${APP_BAR_NAVIGATION}  ->  the paragraph under the picture names them ${OUT_OF_ORDER}`],
   ],
   [
     'the alt text is held to the same source, so the two lines cannot drift together either',
     APP_BAR_MARKUP,
-    appBarPage('The Leaftext app bar: the theme palette, Export PDF, Open and plus at the right', SHIPPED_PARAGRAPH),
+    appBarTexts(appBarPage('The Leaftext app bar: the theme palette, Export PDF, Open and plus at the right', SHIPPED_PARAGRAPH)),
     [
-      `${APP_BAR_PAGE}  ->  the picture's alt text names them ${OUT_OF_ORDER}`,
-      `${APP_BAR_PAGE}  ->  the paragraph under the picture names them ${OUT_OF_ORDER}`,
+      `${APP_BAR_NAVIGATION}  ->  the picture's alt text names them ${OUT_OF_ORDER}`,
+      `${APP_BAR_NAVIGATION}  ->  the paragraph under the picture names them ${OUT_OF_ORDER}`,
     ],
   ],
   [
     'a button added to the group with no word on the page is refused',
     APP_BAR_MARKUP.replace('<button type="button" id="exportPdfButton"', '<button type="button" id="printButton" class="icon-button print-button"></button>\n<button type="button" id="exportPdfButton"'),
-    appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH),
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH)),
     [`${APP_BAR_SHELL}  ->  #printButton is in the bar and the page has no word for it`],
   ],
   [
     'a line that never names one of them is refused as missing rather than as out of order',
     APP_BAR_MARKUP,
-    appBarPage(DRAWN_ALT, 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, and [Export PDF](#export-a-pdf).'),
-    [`${APP_BAR_PAGE}  ->  the paragraph under the picture never names **+**`],
+    appBarTexts(appBarPage(DRAWN_ALT, 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, and [Export PDF](#export-a-pdf).')),
+    [`${APP_BAR_NAVIGATION}  ->  the paragraph under the picture never names **+**`],
   ],
   [
     'the word that opens the theme picker is not read as the Open button',
     APP_BAR_MARKUP,
-    appBarPage(DRAWN_ALT, 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-a-pdf).'),
+    appBarTexts(appBarPage(DRAWN_ALT, 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-a-pdf).')),
     [],
   ],
   [
     'a page whose app bar section has lost its picture is refused',
     APP_BAR_MARKUP,
-    '## The chrome\n\n### The app bar\n\nAt the right the palette, Open, **+** and [Export PDF](#export-a-pdf).\n',
-    [`${APP_BAR_PAGE}  ->  the app bar section has no picture with a paragraph under it`],
+    appBarTexts('## The chrome\n\n### The app bar\n\nAt the right the palette, Open, **+** and [Export PDF](#export-a-pdf).\n'),
+    [`${APP_BAR_NAVIGATION}  ->  the app bar section has no picture with a paragraph under it`],
   ],
-  ['markup with no actions group at all is refused', '<div class="app-trailing"></div>\n', appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), [`${APP_BAR_SHELL}  ->  no controls found inside .${APP_BAR_GROUP}`]],
+  ['markup with no actions group at all is refused', '<div class="app-trailing"></div>\n', appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH)), [`${APP_BAR_SHELL}  ->  no controls found inside .${APP_BAR_GROUP}`]],
+  ['the tour naming them the way the bar draws them passes, capital P and all', APP_BAR_MARKUP, appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), quickstartPage(DRAWN_CELL)), []],
+  [
+    'the row the tour shipped with is refused for the two controls it never names',
+    APP_BAR_MARKUP,
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), quickstartPage('Open, **+**, Settings')),
+    [
+      `${APP_BAR_QUICKSTART}  ->  the controls row of the app bar table never names palette`,
+      `${APP_BAR_QUICKSTART}  ->  the controls row of the app bar table never names Export PDF`,
+    ],
+  ],
+  [
+    'a tour row naming all four out of order is refused as out of order',
+    APP_BAR_MARKUP,
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), quickstartPage('Palette, Export PDF, Open, **+**')),
+    [`${APP_BAR_QUICKSTART}  ->  the controls row of the app bar table names them ${OUT_OF_ORDER}`],
+  ],
+  [
+    'the explanation cell beside the controls is never read, so the prose in it cannot put them out of order',
+    APP_BAR_MARKUP,
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), `## 2. Know what you are looking at\n\n### The app bar, across the top\n\n| Area | What it does |\n| --- | --- |\n| ${DRAWN_CELL} | Export PDF writes the page, Open opens a file, **+** starts one, Palette chooses a theme |\n\n### The page itself\n`),
+    [],
+  ],
+  [
+    'a tour whose app bar table has gone is refused',
+    APP_BAR_MARKUP,
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), '## 2. Know what you are looking at\n\n### The app bar, across the top\n\nPalette, Open, **+** and Export PDF sit at the right.\n\n### The page itself\n'),
+    [`${APP_BAR_QUICKSTART}  ->  the app bar section has no table with a row for the right-hand controls`],
+  ],
 ];
 
 function appBarSelfTest() {
   const fails = [];
-  for (const [name, html, text, want] of APP_BAR_CASES) {
-    const got = appBarOrderFaults(html, text);
+  for (const [name, html, texts, want] of APP_BAR_CASES) {
+    const got = appBarOrderFaults(html, texts);
     if (got.join('\n') !== want.join('\n')) fails.push(`${name}: got [${got.join(' | ') || 'nothing'}], want [${want.join(' | ') || 'nothing'}]`);
   }
   return fails;
@@ -1111,11 +1198,11 @@ if (dead.length) {
 
 const outOfOrder = appBarOrderFaults(
   readFileSync(join(root, APP_BAR_SHELL), 'utf8'),
-  readFileSync(join(root, APP_BAR_PAGE), 'utf8'),
+  Object.fromEntries(APP_BAR_PAGES.map((target) => [target.page, readFileSync(join(root, target.page), 'utf8')])),
 );
 
 if (outOfOrder.length) {
-  console.error('the app bar page does not name the bar\'s right-hand controls the way the bar draws them:');
+  console.error('a page that draws the app bar does not name the bar\'s right-hand controls the way the bar draws them:');
   for (const line of outOfOrder) console.error(`  ${line}`);
   for (const line of APP_BAR_ADVICE) console.error(line);
   process.exit(1);
@@ -1123,4 +1210,4 @@ if (outOfOrder.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, the app bar page naming the bar's right-hand controls in the order the markup draws them, every date written since 19 August 2026 saying what time it was, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date written since 19 August 2026 saying what time it was, ${links}`);
