@@ -72,7 +72,7 @@ function detachChild(child) {
   child.parentElement = null;
 }
 
-/** What an element's own subtree answers a query with, in document order: a comma list of tags and classes, which is the whole grammar the front end asks an element with. One matcher behind every stand-in element, so nothing on the page is ever told it is holding something it has not got — a guard asking a line whether it carries a picture reads an answer of "yes, always" as itself having fired. */
+/** What an element's own subtree answers a query with, in document order: a comma list of tags and classes. One matcher behind every stand-in element, so nothing is ever told it is holding something it has not got — a guard asking a line whether it carries a picture reads an answer of "yes, always" as itself having fired. */
 function matchingDescendants(el, selector) {
   const wants = String(selector)
     .split(',')
@@ -88,6 +88,8 @@ function matchingDescendants(el, selector) {
 
 /** A stand-in element: enough surface to be wired up, and inert when used. */
 function fakeElement(id = '') {
+  // The one place a class lives, reached by both names below. A browser has one, and two stores that never meet leave every guard asking whether an element wears a class the markup or a name write gave it answering no for ever.
+  const classes = new Set();
   const element = Object.assign(new FakeElement(), {
     id,
     tagName: 'DIV',
@@ -119,15 +121,12 @@ function fakeElement(id = '') {
       };
     })(),
     // A real set, because a class is how the page changes a whole layout without touching a single element: an embed takes the bar, the pane and the floating toolbar down with one on the body. A stub that always answered false would let a check watching for one pass with nothing added.
-    classList: (() => {
-      const held = new Set();
-      return {
-        add: (...names) => names.forEach((name) => held.add(name)),
-        remove: (...names) => names.forEach((name) => held.delete(name)),
-        toggle: (name, on) => (on === undefined ? (held.has(name) ? held.delete(name) : held.add(name)) : on ? held.add(name) : held.delete(name)),
-        contains: (name) => held.has(name),
-      };
-    })(),
+    classList: {
+      add: (...names) => names.forEach((name) => classes.add(name)),
+      remove: (...names) => names.forEach((name) => classes.delete(name)),
+      toggle: (name, on) => (on === undefined ? (classes.has(name) ? classes.delete(name) : classes.add(name)) : on ? classes.add(name) : classes.delete(name)),
+      contains: (name) => classes.has(name),
+    },
     children: [],
     // Every element has one, so a stand-in without it turns "this block is empty" into a crash in whatever walks it.
     childNodes: [],
@@ -210,6 +209,16 @@ function fakeElement(id = '') {
   // The other name for the same holder, defined rather than assigned because Object.assign copies a getter's value once. A menu takes itself out of the page through this one, and a stand-in without it leaves every menu it opens standing.
   Object.defineProperty(element, 'parentNode', {
     get: () => element.parentElement,
+    configurable: true,
+    enumerable: true,
+  });
+  // The set's other name, and the one the markup walker and 105 lines of the front end write. Reading joins it, writing replaces it — so a class arriving either way is found either way, and the spelling that comes back is the set's rather than the string's.
+  Object.defineProperty(element, 'className', {
+    get: () => [...classes].join(' '),
+    set: (value) => {
+      classes.clear();
+      for (const name of String(value ?? '').split(/\s+/)) if (name) classes.add(name);
+    },
     configurable: true,
     enumerable: true,
   });
@@ -344,7 +353,7 @@ function fakePage() {
     querySelector: find,
     // Nothing is loaded at boot, so a list query is legitimately empty.
     querySelectorAll: () => [],
-    // The tag it was asked for and no id nobody gave it: a query over an element's children matches on the tag, so a picture built here has to be found by a guard asking whether the line is holding one.
+    // The tag it was asked for, and no id: a query over an element's children matches on the tag, so a picture built here has to be found by a guard asking what the line is holding.
     createElement: (tag) => {
       const made = fakeElement('');
       made.tagName = String(tag).toUpperCase();
@@ -1061,6 +1070,36 @@ check('a stand-in element answers a query about its own children, and answers no
   if (drawn.querySelectorAll('.block-insert-row').length !== 2) throw new Error('the list query missed one of the two ways a class is written');
   // Document order, so the first result is the first one drawn.
   if (drawn.querySelectorAll('span')[1] !== written) throw new Error('the list query answered out of the order the children stand in');
+});
+
+// ---- 2k. one class, reached by either name ----------------------------------
+//
+// A browser keeps a class in one place. Two stores that never meet mean a class put on through the list is invisible to the name and a class written by name is invisible to the list — so eight guards asking an element whether it wears a class the markup, a rendered document or a name write gave it are told no for ever, and every check that needs the other answer hand-rolls an element beside the press.
+
+check('a class on the stand-in element is one class, whichever name put it there', () => {
+  // Its own boot, so the probes below are the only ones on the surface and the markup's own class is read off a page nothing has edited.
+  const page = runShell(source);
+  const element = page.document.createElement('div');
+  // In through the list, out through the name — and found by the page's class query, which is written over the name.
+  element.classList.add('probe-listed');
+  if (element.className !== 'probe-listed') throw new Error(`a class added through the list reads back by name as ${JSON.stringify(element.className)}`);
+  page.document.getElementById('appSurface').appendChild(element);
+  if (page.document.querySelector('.probe-listed') !== element) throw new Error('a class added through the list is not found by the page');
+  // In through the name, out through the list — both of them, because one write carries several classes.
+  element.className = 'probe-written probe-second';
+  if (!element.classList.contains('probe-written') || !element.classList.contains('probe-second')) {
+    throw new Error(`a class written by name did not reach the list: ${element.className}`);
+  }
+  // All of them come back, not the first: an element wears every class it was written with.
+  if (element.className !== 'probe-written probe-second') throw new Error(`two classes written by name read back as ${JSON.stringify(element.className)}`);
+  // A write replaces what was there rather than adding to it, the way the attribute does.
+  if (element.classList.contains('probe-listed')) throw new Error('a write by name left the class it replaced standing on the list');
+  // Out through the list, and what is left still reads back by name.
+  element.classList.remove('probe-written');
+  if (element.className !== 'probe-second') throw new Error(`a removal through the list left ${JSON.stringify(element.className)} behind the name`);
+  // The class the app-shell markup declares, which arrives by name and is the one those eight guards ask the list about.
+  const surface = page.document.getElementById('appSurface');
+  if (!surface.classList.contains('app-surface')) throw new Error(`a class the markup declared does not reach the list: ${surface.className}`);
 });
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
