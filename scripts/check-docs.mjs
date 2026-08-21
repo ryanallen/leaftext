@@ -648,9 +648,9 @@ function strikeSelfTest() {
   return fails;
 }
 
-// The page teaching a reader what the top of the window holds walks the bar left to right, so its sentence names the controls at the right in the order the bar draws them. It shipped naming them palette, Export PDF, Open, plus against a bar drawing palette, Open, plus, Export PDF.
+// Two published pages teach a reader what the top of the window holds, and each walks the bar left to right, so each names the controls at the right in the order the bar draws them. The reference page shipped naming them palette, Export PDF, Open, plus against a bar drawing palette, Open, plus, Export PDF, and the tour — the page a new reader is sent to first — named a Settings button the app does not have.
 //
-// Two published pages draw that bar and each is read in the shape it is written in: the reference page as a picture with a paragraph under it, the tour as a table with a row per area. The tour is the page a new reader is sent to first, and it named a Settings button the app does not have.
+// Each is read in the shape it is written in: the reference page as a picture with a paragraph under it, the tour as a table with a row per area.
 //
 // The order is never written down here. It is read off `src/assets/app-shell.html`, because the four are siblings in one container that nothing reorders at any width, and because a list of them in this file is a second copy of the bar that rots the first time a control moves. Holding one line to the other catches them disagreeing and never catches them drifting together.
 //
@@ -679,7 +679,7 @@ const APP_BAR_PAGES = [
   },
 ];
 
-/** How each right-hand control is spelled where the page names it. More than one because the alt text and the paragraph beneath it say the same button different ways. */
+/** How each right-hand control is spelled where a page names it. More than one because the same button is said different ways: `**+**` in the paragraph and "plus" in the alt text beside it, palette on the reference page and Palette in the tour. The first spelling is the one a refusal reports. */
 const APP_BAR_PHRASES = {
   themeSheetOpen: ['palette', 'Palette'],
   openButton: ['Open'],
