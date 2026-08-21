@@ -349,7 +349,7 @@ pub fn error_toast_script(message: &str) -> String {
     format!("window.leafShowError({message});")
 }
 
-/// The same, for something that worked — a file written where the person asked for it. Silence reads as nothing having happened.
+/// The same, for something that worked and names no file: silence reads as nothing having happened. A growl naming a file uses `file_written_notice_script` instead, so its path reaches the page as a press.
 pub fn notice_toast_script(message: &str) -> String {
     let message = serde_json::to_string(message).expect("toast message serializes");
     format!("window.leafShowNotice({message});")
