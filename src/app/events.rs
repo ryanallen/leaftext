@@ -473,12 +473,16 @@ pub(crate) enum IpcCommand {
     /// Show the image picker for the reading view's insert box. The page keeps the insertion point against `token` and writes the block itself once the path comes back — the host only answers "which file".
     #[serde(rename = "pickImage")]
     PickImage { token: u64 },
-    /// Write the flowchart sheet's diagram out as a file of its own. `format` is `md`, `png` or `webp`; `data` is the text for the first and base64 for the two pictures, since IPC carries a string and a picture is bytes. The page has already made the file — the host only asks where it goes and puts it there.
+    /// Ask where a diagram goes, before anything is drawn. The save window carries every format, so the ending on the name the reader chooses is what the page then encodes — which is how exactly one picture is ever made. The page keeps the diagram against `token` and does the rest once the path comes back.
+    #[serde(rename = "pickDiagramPath")]
+    PickDiagramPath { token: u64 },
+    /// Write the flowchart sheet's diagram out as a file of its own. `format` is `md`, `png` or `webp`; `data` is the text for the first and base64 for the two pictures, since IPC carries a string and a picture is bytes. `path` is where it goes, answered by `pickDiagramPath` a moment earlier — the host opens no window of its own here.
     #[serde(rename = "exportDiagram")]
     /// `data` is Markdown for a `md` export, base64 RGBA pixels for a `png` one — the page sends pixels so the host's encoder does the writing — and a finished WebP file for a `webp` one, which the canvas writes itself.
     ExportDiagram {
         format: String,
         data: String,
+        path: String,
         #[serde(default)]
         width: u32,
         #[serde(default)]

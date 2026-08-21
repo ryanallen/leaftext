@@ -3456,7 +3456,7 @@ fn a_diagram_export_writes_the_page_s_own_bytes_or_none_at_all() {
     let written = |format: &str, data: &str, width: u32, height: u32| match diagram_export_file(
         format, data, width, height,
     ) {
-        DiagramExportFile::Write(extension, label, bytes) => Some((extension, label, bytes)),
+        DiagramExportFile::Write(bytes) => Some(bytes),
         _ => None,
     };
     let refused = |format: &str, data: &str| {
@@ -3473,13 +3473,12 @@ flowchart TD
 ";
     assert_eq!(
         written("md", text, 0, 0),
-        Some(("md", "Markdown", text.as_bytes().to_vec())),
+        Some(text.as_bytes().to_vec()),
         "Markdown goes out as the text the page sent"
     );
 
     // Base64 of one opaque white pixel, which is what the page sends for a PNG.
-    let (extension, label, bytes) = written("png", "/////w==", 1, 1).expect("a pixel encodes");
-    assert_eq!((extension, label), ("png", "PNG image"));
+    let bytes = written("png", "/////w==", 1, 1).expect("a pixel encodes");
     assert_eq!(
         &bytes[..8],
         &[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a],
@@ -3489,7 +3488,7 @@ flowchart TD
     // A WebP is already a file when it arrives: the canvas wrote it, so the bytes go out exactly as they came in.
     assert_eq!(
         written("webp", "UklGRg==", 0, 0),
-        Some(("webp", "WebP image", b"RIFF".to_vec())),
+        Some(b"RIFF".to_vec()),
         "the finished file was re-encoded instead of written straight out"
     );
 
@@ -3501,8 +3500,28 @@ flowchart TD
             diagram_export_file("svg", "anything", 1, 1),
             DiagramExportFile::Unoffered
         ),
-        "a format the menu does not offer is nothing anybody asked for"
+        "a format the save window does not offer is nothing anybody asked for"
     );
+
+    // One table, so the window and the encoder cannot drift: every ending the window offers is one the encoder writes, and Markdown is first because Windows names a file with no ending off the first filter.
+    assert_eq!(
+        DIAGRAM_EXPORT_FORMATS,
+        &[
+            ("md", "Markdown"),
+            ("png", "PNG image"),
+            ("webp", "WebP image")
+        ],
+        "the save window offers a format the encoder does not write, or lists them in an order that names a bare file wrongly"
+    );
+    for (extension, _) in DIAGRAM_EXPORT_FORMATS {
+        assert!(
+            !matches!(
+                diagram_export_file(extension, "", 1, 1),
+                DiagramExportFile::Unoffered
+            ),
+            "the window offers {extension} and the encoder has never heard of it"
+        );
+    }
 }
 
 /// An address only this test uses, so a running copy of the app is never the thing answering — a named pipe on Windows, a socket file elsewhere.
@@ -4725,6 +4744,18 @@ fn the_undo_names_the_file_it_means_to_put_back() {
         }
         other => panic!("the undo did not arrive: {other:?}"),
     }
+}
+
+/// Where a diagram is to go, answered against the export that asked. The path travels as its own value because the page reads the format off its ending — a path mangled into a sentence would name no format at all.
+#[test]
+fn the_answer_to_where_a_diagram_goes_carries_the_path_against_its_own_export() {
+    let script = diagram_path_picked_script(7, r#"C:\charts\a "quoted" diagram.webp"#);
+    assert!(script.starts_with("window.leafDiagramPathPicked(7, "));
+    // JSON, so a backslash in a Windows path and a quote in a name reach the page as themselves rather than ending the string early.
+    assert!(
+        script.contains(r#""C:\\charts\\a \"quoted\" diagram.webp""#),
+        "{script}"
+    );
 }
 
 /// What the host says after a delete, and the two things the page reads off it: the path it may ask back, and the name to show.

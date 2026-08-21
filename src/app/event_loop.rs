@@ -1261,19 +1261,36 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         );
                     }
                 }
+                IpcCommand::PickDiagramPath { token } => {
+                    // The window blocks this thread, like Open's does. The active document only names the file it suggests; nothing about it is read or written.
+                    let stem = reader
+                        .workspace
+                        .active_path()
+                        .and_then(Path::file_stem)
+                        .map(|stem| stem.to_string_lossy().into_owned())
+                        .filter(|stem| !stem.is_empty())
+                        .unwrap_or_else(|| "diagram".to_string());
+                    if let Some(target) = pick_diagram_path(&format!("{stem}-diagram.md")) {
+                        run_page_script(
+                            reader.page(),
+                            &diagram_path_picked_script(token, &target.display().to_string()),
+                            "Failed to answer where a diagram goes",
+                        );
+                    }
+                }
                 IpcCommand::ExportDiagram {
                     format,
                     data,
+                    path,
                     width,
                     height,
                 } => {
-                    // The dialog blocks this thread, like Open's does. The active document only names the file it suggests; nothing about it is read or written.
-                    let document = reader.workspace.active_path().map(Path::to_path_buf);
+                    // No window here: the page asked where it goes before it drew anything, so this is the write and nothing else.
                     export_diagram(
                         reader.page(),
-                        document.as_deref(),
                         &format,
                         &data,
+                        Path::new(&path),
                         width,
                         height,
                     );

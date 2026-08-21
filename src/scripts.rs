@@ -452,6 +452,12 @@ pub fn image_picked_script(token: u64, destination: &str, alt: &str) -> String {
     format!("window.leafImagePicked({token}, {destination}, {alt});")
 }
 
+/// Hand the page the path a diagram is to be written to. `token` is the export that opened the window — the page reads the format off the path's own ending and encodes only that one, which is why nothing is drawn before this answer arrives.
+pub fn diagram_path_picked_script(token: u64, path: &str) -> String {
+    let path = serde_json::to_string(path).expect("path serializes");
+    format!("window.leafDiagramPathPicked({token}, {path});")
+}
+
 /// Report the outcome of a save for `path`: `error` is null on success and a message string when the write failed.
 pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
     let path = serde_json::to_string(path).expect("path serializes");

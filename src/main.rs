@@ -20,11 +20,11 @@ use leaftext::{
     bundled_asset_response, clone_into_vault, cloud_folders, cloud_folders_script,
     cloud_folders_to_register, code_intel_headings_script, code_intel_hover_script,
     code_intel_lint_script, code_intel_notes_script, code_view_fetch_script, code_view_payload,
-    config_file_path, corpus_note_items, create_repo_on_github, document_headings,
-    document_pager_html, encode_rgba, encode_rgba_paletted, error_toast_script, failure_message,
-    favorites_missing_script, file_deleted_script, file_written_notice_script, filter_hints_script,
-    find_note, folder_note_items, folder_note_names, fragment_scroll_script, git_tooling,
-    glossary_failed_script, glossary_sheet_script, graph_script, image_picked_script,
+    config_file_path, corpus_note_items, create_repo_on_github, diagram_path_picked_script,
+    document_headings, document_pager_html, encode_rgba, encode_rgba_paletted, error_toast_script,
+    failure_message, favorites_missing_script, file_deleted_script, file_written_notice_script,
+    filter_hints_script, find_note, folder_note_items, folder_note_names, fragment_scroll_script,
+    git_tooling, glossary_failed_script, glossary_sheet_script, graph_script, image_picked_script,
     image_refresh_script, init_vault_repo, initial_document_exts_script, initial_settings_script,
     initial_state_script, initial_update_script, initial_vaults_script, initial_version_script,
     inspect_vault_repo, is_local_image_path, is_supported_document_path, known_note_names,
@@ -589,23 +589,22 @@ fn pick_save_path(current: &Path) -> Option<PathBuf> {
     dialog.add_filter("All files", &["*"]).save_file()
 }
 
-/// Where an exported flowchart goes. One filter, for the format the sheet was asked for: an export is one file of one kind, so offering the others would only be a way to name it wrong.
-fn pick_export_path(name: &str, label: &str, extension: &str) -> Option<PathBuf> {
-    pick_export_path_titled("Export Diagram", name, label, extension)
+/// Where an exported diagram goes. Every format it can be written as, so the window is the one place the format is asked — the page encodes whatever the chosen name ends in.
+fn pick_diagram_path(name: &str) -> Option<PathBuf> {
+    let filters: Vec<(&str, &str)> = DIAGRAM_EXPORT_FORMATS
+        .iter()
+        .map(|(extension, label)| (*label, *extension))
+        .collect();
+    pick_export_path_titled("Export Diagram", name, &filters)
 }
 
-/// The same dialog under its own title. A reader saving the page as a PDF is not exporting a diagram, and the title bar is the only thing in that window that says which.
-fn pick_export_path_titled(
-    title: &str,
-    name: &str,
-    label: &str,
-    extension: &str,
-) -> Option<PathBuf> {
-    FileDialog::new()
-        .set_title(title)
-        .set_file_name(name)
-        .add_filter(label, &[extension])
-        .save_file()
+/// A save window under the caller's own title, offering the formats it is handed. A reader saving the page as a PDF is not exporting a diagram, and the title bar is the only thing in that window that says which.
+fn pick_export_path_titled(title: &str, name: &str, filters: &[(&str, &str)]) -> Option<PathBuf> {
+    let mut dialog = FileDialog::new().set_title(title).set_file_name(name);
+    for (label, extension) in filters {
+        dialog = dialog.add_filter(*label, &[*extension]);
+    }
+    dialog.save_file()
 }
 
 /// The Insert image dialog. Filtered to what a web view can draw, since a document can only show what the page can.

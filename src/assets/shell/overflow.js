@@ -154,23 +154,11 @@ function pageExportSize() {
   return size;
 }
 if (exportPdfButton) {
+  // Straight to the save window, which is where the format is asked. The hold goes on before the send and is released by the host's answer: it is what makes the render lay the page out under the same paper rules the size was measured under, and what stops the render's own light color scheme repainting the app for as long as the file is being written.
   exportPdfButton.addEventListener('click', () => {
-    const spot = exportPdfButton.getBoundingClientRect();
-    openFlowMenuWith(
-      spot.left,
-      spot.bottom + 6,
-      PAGE_EXPORTS.map((kind) => ({
-        label: kind.label,
-        hint: kind.hint,
-        // The hold goes on before the send and is released by the host's answer: it is what makes the render lay the page out under the same paper rules the size was measured under, and what stops the render's own light color scheme repainting the app for as long as the file is being written.
-        run: () => {
-          if (window.leafHoldAppearance) window.leafHoldAppearance(true);
-          const size = pageExportSize();
-          send({ command: 'exportPdf', format: kind.id, width: size.width, height: size.height });
-        },
-      })),
-      appSurface,
-    );
+    if (window.leafHoldAppearance) window.leafHoldAppearance(true);
+    const size = pageExportSize();
+    send({ command: 'exportPdf', format: PAGE_EXPORTS[0].id, width: size.width, height: size.height });
   });
 }
 homeButton.addEventListener('click', () => send({ command: 'goHome' }));

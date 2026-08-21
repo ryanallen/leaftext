@@ -1140,14 +1140,13 @@ function addMermaidViewControls(diagram) {
   diagram.appendChild(row);
 }
 
-// The menu the flowchart editor's Export button drops, opened on a diagram anywhere. The text is the block's own — an overlay is a second drawing of a block still in the page, so it exports what that block holds. The host is what the menu hangs off: the page's block sits in the reader, which scrolls and would clip it.
+// Export, pressed on a diagram anywhere: the corner of a drawn block, or the full-window view. The text is the block's own — an overlay is a second drawing of a block still in the page, so it exports what that block holds. Nothing opens over the page: the save window carries the formats.
 function openMermaidExportMenu(button) {
   const overlay = button.closest('.diagram-overlay');
   const block = overlay ? overlay.__diagramBlock : button.closest('pre.mermaid');
   const source = block ? block.__mermaidSource : null;
   if (!source) return;
-  const spot = button.getBoundingClientRect();
-  openDiagramExportMenu(spot.left, spot.bottom + 6, source, overlay || appSurface);
+  exportDiagram(source);
 }
 
 // ---- the drawing inside its box --------------------------------------------

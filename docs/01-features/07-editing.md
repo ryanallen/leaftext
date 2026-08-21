@@ -269,7 +269,7 @@ The sheet is the whole window, so its header stands in for the app bar while it 
 
 ### Export
 
-**Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes. A quiet note in the bottom-right corner names the file when it is written, and the name is a press that opens it. The same three rows are in the corner of every [drawn diagram](01-rendering.md#mermaid-diagrams) in a page, with no need to open this sheet and with the padlock shut.
+**Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes, offering Markdown, PNG and WebP there: the ending on the name you give is the format it writes. A quiet note in the bottom-right corner names the file when it is written, and the name is a press that opens it. The same button is in the corner of every [drawn diagram](01-rendering.md#mermaid-diagrams) in a page, with no need to open this sheet and with the padlock shut.
 
 - **Markdown** — the Mermaid text in a `mermaid` fence, as a document of its own.
 - **PNG** — the drawing as a picture, at twice life size, on the page color behind it. The page hands the host raw pixels and the host writes the file.

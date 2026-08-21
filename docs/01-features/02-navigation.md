@@ -80,7 +80,7 @@ The leaf mark at the left is the way home — click it to return to the no-file 
 
 ### Export a PDF
 
-The export button in the app bar — shown only while a rendered document is in front of you — opens a small chooser. Pick **PDF**, say where the file goes, and the page you are reading is written as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line. A quiet note names the file when it is written, and the name is a press — click it to open the PDF in whatever reads them on your machine. The button steps aside on the home screen, in the [source view](07-editing.md#code-view) and on the [graph](03-library.md#graph), since none of those is a page to print.
+The export button in the app bar — shown only while a rendered document is in front of you — asks where the file goes. Say where, and the page you are reading is written as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line. A quiet note names the file when it is written, and the name is a press — click it to open the PDF in whatever reads them on your machine. The button steps aside on the home screen, in the [source view](07-editing.md#code-view) and on the [graph](03-library.md#graph), since none of those is a page to print.
 
 **There is no Settings button.** Every control stands where it applies — see [Settings](05-settings.md). The one thing that comes and goes is the [update](05-settings.md#updates) bell, which is in the bar only while there is something to download or install.
 

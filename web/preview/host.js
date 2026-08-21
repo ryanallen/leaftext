@@ -145,6 +145,7 @@ export const COMMANDS = {
   renameField: [LATER, 'web-app-commands'],
   moveBlock: [LATER, 'web-app-commands'],
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
+  pickDiagramPath: [LATER, 'web-export'],
   exportDiagram: [LATER, 'web-export'],
   exportPdf: [ANSWERED],
   undoEdit: [LATER, 'web-app-commands'],

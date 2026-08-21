@@ -343,8 +343,7 @@ pub(crate) fn export_page_pdf(
     let Some(target) = pick_export_path_titled(
         "Save as PDF",
         &format!("{stem}.{extension}"),
-        label,
-        extension,
+        &[(label, extension)],
     ) else {
         release(page);
         return;
@@ -482,14 +481,28 @@ fn write_page_pdf(page: &WebView, _target: &Path, _width: f64, _height: f64) -> 
     page.print().map_err(|error| error.to_string())
 }
 
-/// What one diagram export comes to: the extension, the words the Save dialog puts on the file, and the bytes — or why there are none.
+/// What one diagram export comes to: the bytes to write, or why there are none. Where the file goes was answered by the save window before any of this ran.
 pub(super) enum DiagramExportFile {
-    /// Extension, dialog label, bytes.
-    Write(&'static str, &'static str, Vec<u8>),
+    Write(Vec<u8>),
     /// The payload did not decode, so the file would be one nobody can open.
     Unreadable,
-    /// Not a format the menu offers, so not a file anyone asked for.
+    /// Not a format the app offers, so not a file anyone asked for.
     Unoffered,
+}
+
+/// Every format a diagram can be written as: the ending, and the words the save window shows beside it. The window lists them in this order and Windows names a file with no ending off the first, so the order is the order the app has always offered them in. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else.
+pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &str)] = &[
+    ("md", "Markdown"),
+    ("png", "PNG image"),
+    ("webp", "WebP image"),
+];
+
+/// The words the save window shows for one of those endings.
+fn diagram_export_label(extension: &str) -> Option<&'static str> {
+    DIAGRAM_EXPORT_FORMATS
+        .iter()
+        .find(|(ending, _)| *ending == extension)
+        .map(|(_, label)| *label)
 }
 
 /// Turn what the page sent into the file it wants written.
@@ -501,38 +514,38 @@ pub(super) fn diagram_export_file(
     width: u32,
     height: u32,
 ) -> DiagramExportFile {
-    let (extension, label, bytes) = match format {
-        "md" => return DiagramExportFile::Write("md", "Markdown", data.as_bytes().to_vec()),
+    // Asked of the one table first, so a format the save window never offered cannot reach the encoder below.
+    if diagram_export_label(format).is_none() {
+        return DiagramExportFile::Unoffered;
+    }
+    let bytes = match format {
+        "md" => return DiagramExportFile::Write(data.as_bytes().to_vec()),
         // The page sends pixels rather than a PNG, because on a real diagram ours writes 77 KB where the canvas's own PNG is 153 KB. See src/png.rs.
-        "png" => (
-            "png",
-            "PNG image",
-            decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)),
-        ),
+        "png" => decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)),
         // Already a finished file: the canvas writes the WebP itself, about half the PNG on the same drawing, and refuses a drawing too wide for the format before it sends one.
-        "webp" => ("webp", "WebP image", decode_base64(data)),
+        "webp" => decode_base64(data),
         _ => return DiagramExportFile::Unoffered,
     };
     match bytes {
-        Some(bytes) if !bytes.is_empty() => DiagramExportFile::Write(extension, label, bytes),
+        Some(bytes) if !bytes.is_empty() => DiagramExportFile::Write(bytes),
         // A half-decoded picture is worse than none, so nothing is written.
         _ => DiagramExportFile::Unreadable,
     }
 }
 
-/// Write the flowchart sheet's diagram out as its own file. The page made the bytes; this asks where they go, puts them there, and says how it went.
+/// Write the flowchart sheet's diagram out as its own file. The page asked where it goes first and made the bytes for that answer; this puts them there and says how it went.
 ///
 /// Nothing about the open document changes. An export is a file beside it.
 pub(crate) fn export_diagram(
     webview: Option<&WebView>,
-    document: Option<&Path>,
     format: &str,
     data: &str,
+    target: &Path,
     width: u32,
     height: u32,
 ) {
-    let (extension, label, bytes) = match diagram_export_file(format, data, width, height) {
-        DiagramExportFile::Write(extension, label, bytes) => (extension, label, bytes),
+    let bytes = match diagram_export_file(format, data, width, height) {
+        DiagramExportFile::Write(bytes) => bytes,
         DiagramExportFile::Unreadable => {
             report_file_action_failure(
                 webview,
@@ -542,16 +555,7 @@ pub(crate) fn export_diagram(
         }
         DiagramExportFile::Unoffered => return,
     };
-    let stem = document
-        .and_then(Path::file_stem)
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .filter(|stem| !stem.is_empty())
-        .unwrap_or_else(|| "diagram".to_string());
-    let Some(target) = pick_export_path(&format!("{stem}-diagram.{extension}"), label, extension)
-    else {
-        return;
-    };
-    match fs::write(&target, &bytes) {
+    match fs::write(target, &bytes) {
         Ok(()) => run_page_script(
             webview,
             &file_written_notice_script(&target.display().to_string()),

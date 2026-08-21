@@ -7911,6 +7911,12 @@ if (booted) {
     return row;
   };
   const press = (row) => (row.listeners.get('click') || []).forEach((handler) => handler());
+  // Export asks where the file goes and draws nothing until the answer comes back, so choosing a format is answering the save window with a name that ends in it.
+  const answerSaveWindow = (sent, ending) => {
+    const ask = sent.filter((one) => one.command === 'pickDiagramPath').pop();
+    if (!ask) throw new Error('Export asked nobody where the file goes, so no save window ever opened');
+    booted.window.leafDiagramPathPicked(ask.token, '/out/diagram.' + ending);
+  };
   // The press hands off to a chain of promises, so the check waits for it to reach an answer rather than for a number of turns somebody counted.
   const settle = async (answered, turns = 40) => {
     for (let at = 0; at < turns && !answered(); at += 1) await Promise.resolve();
@@ -7948,25 +7954,74 @@ if (booted) {
     }
   });
 
-  check('the export menu belongs to the app surface, clamped there, and the editor keeps the sheet', () => {
+  check('a diagram asks where it goes and opens nothing over the page', () => {
+    const surface = booted.document.getElementById('appSurface');
+    const wasSend = booted.ipc.postMessage;
+    const sent = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      const block = drawnDiagram('flowchart TD\n  K1 --> K2');
+      booted.addMermaidControls(block);
+      booted.openMermaidExportMenu(exportChipOn(block));
+      // The save window carries the three formats, so a menu here would be the same question asked twice.
+      if (exportMenuOn(surface)) throw new Error('Export opened a menu over the page, where the save window is already asking');
+      const asked = sent.filter((one) => one.command === 'pickDiagramPath');
+      if (asked.length !== 1) throw new Error(`pressing Export asked ${asked.length} times where the file goes`);
+      if (!(asked[0].token > 0)) throw new Error(`the ask carried no export to answer: ${JSON.stringify(asked[0])}`);
+      // Nothing is drawn before the answer: that is what stops two pictures nobody asked for being made.
+      if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('a diagram was encoded before anybody said where it goes');
+    } finally {
+      booted.ipc.postMessage = wasSend;
+    }
+  });
+
+  check('an ending the app does not write is refused, and nothing is', () => {
+    const wasSend = booted.ipc.postMessage;
+    const wasToast = booted.leafToast;
+    const sent = [];
+    const said = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.leafToast = (words) => said.push(words);
+    try {
+      const block = drawnDiagram('flowchart TD\n  K3 --> K4');
+      booted.addMermaidControls(block);
+      booted.openMermaidExportMenu(exportChipOn(block));
+      answerSaveWindow(sent, 'svg');
+      if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('a name ending in svg was written as some format nobody asked for');
+      if (said.length !== 1) throw new Error(`it said ${said.join(' / ') || 'nothing'}`);
+      // The refusal names the three it does write, so the reader knows what to type instead.
+      if (!/Markdown/.test(said[0]) || !/PNG/.test(said[0]) || !/WebP/.test(said[0])) {
+        throw new Error(`the refusal left the reader nowhere to go: ${said[0]}`);
+      }
+
+      // A second answer to an export already spent is ignored: the window is gone and the source with it.
+      const ask = sent.filter((one) => one.command === 'pickDiagramPath').pop();
+      booted.window.leafDiagramPathPicked(ask.token, '/out/diagram.md');
+      if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('an answer to a finished export wrote a file anyway');
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      booted.leafToast = wasToast;
+    }
+  });
+
+  check('a menu given a host is clamped inside it, and the editor keeps the sheet', () => {
     const surface = booted.document.getElementById('appSurface');
     const wasRect = surface.getBoundingClientRect;
     surface.getBoundingClientRect = () => ({ left: 0, top: 0, right: 900, bottom: 700, width: 900, height: 700 });
+    const rows = [{ label: 'Duplicate', run: () => {} }, { label: 'Detach', run: () => {} }];
     try {
-      const block = drawnDiagram('flowchart TD\n  X3 --> X4');
-      booted.addMermaidControls(block);
-      booted.openMermaidExportMenu(exportChipOn(block));
       // Not the reader, which is the scrolling box: a menu hung inside it is cut off at its edge.
+      booted.openFlowMenuWith(2000, 40, rows, surface);
       const menu = exportMenuOn(surface);
-      if (!menu) throw new Error('the page menu was not put on the app surface');
+      if (!menu) throw new Error('a menu given the app surface was not put on it');
       if (menu.style.left !== '892px') throw new Error(`the menu sits at ${menu.style.left} rather than clamped inside the surface`);
       booted.closeFlowMenu();
 
       // The editor asks for no host and keeps the one it always had.
-      booted.openFlowMenuWith(10, 10, [{ label: 'Markdown', run: () => {} }]);
+      booted.openFlowMenuWith(10, 10, rows);
       const sheet = booted.document.getElementById('flowSheet');
-      if (!exportMenuOn(sheet)) throw new Error('the flowchart editor’s own menu left the sheet');
-      if (exportMenuOn(surface)) throw new Error('the editor’s menu was put on the page instead');
+      if (!exportMenuOn(sheet)) throw new Error('the flowchart canvas’s own menu left the sheet');
+      if (exportMenuOn(surface)) throw new Error('the canvas’s menu was put on the page instead');
     } finally {
       booted.closeFlowMenu();
       surface.getBoundingClientRect = wasRect;
@@ -7982,24 +8037,27 @@ if (booted) {
       const first = drawnDiagram('flowchart TD\n  M1 --> M2');
       booted.addMermaidControls(first);
       booted.openMermaidExportMenu(exportChipOn(first));
-      press(exportRow(surface, 'Markdown'));
-      if (sent.length !== 1 || sent[0].command !== 'exportDiagram' || sent[0].format !== 'md') {
-        throw new Error(`pressing Markdown sent ${sent.map((one) => one.command).join(', ') || 'nothing'}`);
+      answerSaveWindow(sent, 'md');
+      const written = sent.filter((one) => one.command === 'exportDiagram');
+      if (written.length !== 1 || written[0].format !== 'md') {
+        throw new Error(`naming a file .md sent ${sent.map((one) => one.command).join(', ') || 'nothing'}`);
       }
-      if (sent[0].data !== '```mermaid\nflowchart TD\n  M1 --> M2\n```\n') {
-        throw new Error(`the file would hold ${JSON.stringify(sent[0].data)}`);
+      if (written[0].data !== '```mermaid\nflowchart TD\n  M1 --> M2\n```\n') {
+        throw new Error(`the file would hold ${JSON.stringify(written[0].data)}`);
       }
+      // The path the reader chose travels with the bytes, so the host opens no second window.
+      if (written[0].path !== '/out/diagram.md') throw new Error(`the write carried ${JSON.stringify(written[0].path)} rather than the name the reader gave`);
 
       // The second diagram in the page exports its own text, not the first one's: the chip holds nothing, and the source is read off the block it was pressed on.
       const second = drawnDiagram('sequenceDiagram\n  M3->>M4: hello');
       booted.addMermaidControls(second);
       booted.openMermaidExportMenu(exportChipOn(second));
-      press(exportRow(surface, 'Markdown'));
-      if (sent.length !== 2 || !sent[1].data.includes('M3->>M4')) {
+      answerSaveWindow(sent, 'md');
+      const both = sent.filter((one) => one.command === 'exportDiagram');
+      if (both.length !== 2 || !both[1].data.includes('M3->>M4')) {
         throw new Error('the second diagram exported the first one’s text');
       }
     } finally {
-      booted.closeFlowMenu();
       booted.ipc.postMessage = wasSend;
     }
   });
@@ -8022,7 +8080,7 @@ if (booted) {
     // Only the export, because a check running beside this one reports its own faults down the same pipe.
     booted.ipc.postMessage = (text) => {
       const one = JSON.parse(text);
-      if (one.command === 'exportDiagram') sent.push(one);
+      if (one.command === 'exportDiagram' || one.command === 'pickDiagramPath') sent.push(one);
     };
     booted.leafToast = (words) => said.push(words);
     booted.diagramDrawingSvg = async () => '<svg viewBox="0 0 200 100"></svg>';
@@ -8063,34 +8121,32 @@ if (booted) {
     };
   };
 
-  checkPicture('the menu offers three rows, and WebP sends a finished file where PNG sends pixels', async () => {
-    const surface = booted.document.getElementById('appSurface');
+  checkPicture('the ending the reader chose is the one encoded, and WebP sends a finished file where PNG sends pixels', async () => {
     const lent = withCanvas({});
+    const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
     try {
       const block = drawnDiagram('flowchart TD\n  W1 --> W2');
       booted.addMermaidControls(block);
       booted.openMermaidExportMenu(exportChipOn(block));
-      const menu = exportMenuOn(surface);
-      const rows = menu.children.map((child) => (child.children[0] || {}).textContent);
-      if (rows.join(', ') !== 'Markdown, PNG, WebP') throw new Error(`the menu offers ${rows.join(', ') || 'nothing'}`);
-
-      press(exportRow(surface, 'WebP'));
-      await settle(() => lent.sent.length || lent.said.length);
+      answerSaveWindow(lent.sent, 'webp');
+      await settle(() => written().length || lent.said.length);
       if (lent.said.length) throw new Error(`WebP refused: ${lent.said.join(' / ')}`);
-      const webp = lent.sent[0];
-      if (!webp || webp.format !== 'webp') throw new Error(`pressing WebP sent ${JSON.stringify(webp) || 'nothing'}`);
-      // The file itself, not pixels for the host to encode — which is the whole of why the row is cheaper than PNG.
+      const webp = written()[0];
+      if (!webp || webp.format !== 'webp') throw new Error(`a name ending in webp sent ${JSON.stringify(webp) || 'nothing'}`);
+      // The file itself, not pixels for the host to encode — which is the whole of why WebP is cheaper than PNG.
       if (webp.data !== 'V0VCUA==') throw new Error(`WebP sent ${JSON.stringify(webp.data)} rather than the canvas's own bytes`);
       if (webp.width || webp.height) throw new Error('a finished file was sent with pixel dimensions beside it');
 
       booted.openMermaidExportMenu(exportChipOn(block));
-      press(exportRow(surface, 'PNG'));
-      await settle(() => lent.sent.length > 1 || lent.said.length);
-      const png = lent.sent[1];
-      if (!png || png.format !== 'png') throw new Error(`pressing PNG sent ${JSON.stringify(png) || 'nothing'}`);
+      answerSaveWindow(lent.sent, 'png');
+      await settle(() => written().length > 1 || lent.said.length);
+      const png = written()[1];
+      if (!png || png.format !== 'png') throw new Error(`a name ending in png sent ${JSON.stringify(png) || 'nothing'}`);
       if (png.data !== '/////w==' || png.width !== 400 || png.height !== 200) {
         throw new Error(`PNG sent ${JSON.stringify(png.data)} at ${png.width}×${png.height} rather than pixels at twice life size`);
       }
+      // One picture per export, never all three: nothing is drawn until the window has answered.
+      if (written().length !== 2) throw new Error(`two exports made ${written().length} files`);
     } finally {
       lent.done();
     }
@@ -8098,16 +8154,16 @@ if (booted) {
 
   // v1.24.0 measured it: a fifty-step left-to-right flowchart is 16,872 pixels across at export size, so this is a diagram somebody draws rather than a guard against the absurd. The canvas answers an empty URL rather than throwing, so a row that did not check would save a six-byte file.
   checkPicture('a drawing too big for WebP is refused out loud, and a window that cannot write one says so instead', async () => {
-    const surface = booted.document.getElementById('appSurface');
     for (const [answer, expected] of [[{ wide: 9000 }, /too big/i], [{ cannotWriteWebp: true }, /cannot write WebP/i]]) {
       const lent = withCanvas(answer);
+      const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
       try {
         const block = drawnDiagram('flowchart LR\n  W3 --> W4');
         booted.addMermaidControls(block);
         booted.openMermaidExportMenu(exportChipOn(block));
-        press(exportRow(surface, 'WebP'));
-        await settle(() => lent.sent.length || lent.said.length);
-        if (lent.sent.length) throw new Error('a refused WebP asked for a file anyway');
+        answerSaveWindow(lent.sent, 'webp');
+        await settle(() => written().length || lent.said.length);
+        if (written().length) throw new Error('a refused WebP asked for a file anyway');
         if (lent.said.length !== 1 || !expected.test(lent.said[0])) throw new Error(`it said ${lent.said.join(' / ') || 'nothing'}`);
         // Both refusals point at the row that can still write the drawing.
         if (!/PNG/.test(lent.said[0])) throw new Error(`the refusal left the reader nowhere to go: ${lent.said[0]}`);
@@ -8145,12 +8201,11 @@ if (booted) {
       const block = drawnDiagram('flowchart TD\n  N1 --> N2');
       booted.addMermaidControls(block);
       booted.openMermaidExportMenu(exportChipOn(block));
-      press(exportRow(surface, 'PNG'));
-      await settle(() => said.length || sent.length);
+      answerSaveWindow(sent, 'png');
+      await settle(() => said.length || sent.some((one) => one.command === 'exportDiagram'));
       if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('a window that cannot draw a picture asked for a file anyway');
       if (said.length !== 1 || !/picture/i.test(said[0])) throw new Error(`it said ${said.join(' / ') || 'nothing'}`);
     } finally {
-      booted.closeFlowMenu();
       booted.ipc.postMessage = was.send;
       booted.leafToast = was.toast;
       booted.diagramDrawingSvg = was.drawing;
@@ -8402,17 +8457,23 @@ if (booted) {
 
     chip.closest = (selector) => (String(selector) === '.diagram-overlay' ? overlay : null);
     chip.getBoundingClientRect = () => ({ left: 700, top: 40, right: 728, bottom: 68, width: 28, height: 28 });
+    const wasSend = booted.ipc.postMessage;
+    const sent = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     try {
       booted.openMermaidExportMenu(chip);
+      // The overlay's Export asks where the file goes like every other one, and puts nothing over the drawing it is showing.
+      const asked = sent.filter((one) => one.command === 'pickDiagramPath');
+      if (asked.length !== 1) throw new Error(`the full-window Export asked ${asked.length} times where the file goes`);
       const surface = booted.document.getElementById('appSurface');
-      if (!overlay.children.some((child) => String(child.className || '') === 'flow-menu')) {
-        throw new Error('the full-window menu was not put on the overlay');
+      if (overlay.children.some((child) => String(child.className || '') === 'flow-menu')) {
+        throw new Error('the full-window Export opened a menu over the drawing');
       }
       if (surface.children.some((child) => String(child.className || '') === 'flow-menu')) {
-        throw new Error('the full-window menu went to the surface under the overlay');
+        throw new Error('the full-window Export opened a menu on the surface under the overlay');
       }
     } finally {
-      booted.closeFlowMenu();
+      booted.ipc.postMessage = wasSend;
     }
   });
 
@@ -10472,7 +10533,30 @@ if (booted) {
     }
   });
 
-  check('Export opens the app own chooser and sends the page size with the format', () => {
+  check('a menu draws whatever it holds, one row or many', () => {
+    const surface = booted.document.getElementById('appSurface');
+    const menuOn = () => surface.children.find((child) => String(child.className || '') === 'flow-menu');
+    const run = [];
+    try {
+      // No export opens a menu any more, so nothing here may quietly run a row on the reader's behalf: this is the flowchart canvas's own right-click menu, and a list that comes down to one row is still a list.
+      booted.openFlowMenuWith(10, 10, [{ label: 'Detach', run: () => run.push('Detach') }], surface);
+      const one = menuOn();
+      if (!one) throw new Error('a menu of one row drew nothing, so a right-click acted without being pressed');
+      if (run.length) throw new Error(`opening a menu ran one of its rows: ${run.join(',')}`);
+      booted.closeFlowMenu();
+
+      booted.openFlowMenuWith(10, 10, [{ label: 'Duplicate', run: () => run.push('Duplicate') }, { label: 'Detach', run: () => run.push('Detach') }], surface);
+      const menu = menuOn();
+      if (!menu) throw new Error('a menu of two rows opened nothing');
+      const rows = menu.children.filter((child) => child.className === 'flow-menu-item');
+      if (rows.length !== 2) throw new Error(`the menu drew ${rows.length} rows rather than both`);
+      if (run.length) throw new Error(`opening a menu ran one of its rows: ${run.join(',')}`);
+    } finally {
+      booted.closeFlowMenu();
+    }
+  });
+
+  check('Export asks for the file straight away and sends the page size with the format', () => {
     const sent = [];
     const ipc = booted.window.ipc;
     booted.window.ipc = { postMessage: (message) => sent.push(JSON.parse(message)) };
@@ -10481,15 +10565,14 @@ if (booted) {
       const button = booted.document.getElementById('exportPdfButton');
       (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
       const surface = booted.document.getElementById('appSurface');
-      const menu = surface.children.find((child) => String(child.className || '') === 'flow-menu');
-      if (!menu) throw new Error('pressing Export opened no chooser of ours, which leaves the platform panel as the only thing a reader meets');
-      const rows = menu.children.filter((child) => child.className === 'flow-menu-item');
-      if (!rows.length) throw new Error('the chooser came up with no rows to press');
-      (rows[0].listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      // The page offers one format, so there is nothing to pick: a menu here would be a second press to answer a question with a single answer.
+      if (surface.children.some((child) => String(child.className || '') === 'flow-menu')) {
+        throw new Error('pressing Export opened a menu holding the one format the page can write');
+      }
       const asked = sent.filter((one) => one.command === 'exportPdf');
-      if (asked.length !== 1) throw new Error(`pressing a row sent ${asked.length} exports`);
+      if (asked.length !== 1) throw new Error(`pressing Export sent ${asked.length} exports`);
       // Only the page knows how tall the document is, and that height is the whole of what makes the file one continuous page instead of a document chopped across sheets.
-      if (asked[0].format !== 'pdf') throw new Error(`the row sent ${asked[0].format} rather than its own format`);
+      if (asked[0].format !== 'pdf') throw new Error(`Export sent ${asked[0].format} rather than the one format the page writes`);
       if (!(asked[0].height > 0) || !(asked[0].width > 0)) throw new Error(`the export carried no page size: ${JSON.stringify(asked[0])}`);
     } finally {
       booted.window.ipc = ipc;
@@ -10523,12 +10606,8 @@ if (booted) {
       booted.renderReaderToolbar(true);
       const button = booted.document.getElementById('exportPdfButton');
       (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
-      const menu = surface.children.find((child) => String(child.className || '') === 'flow-menu');
-      if (!menu) throw new Error('pressing Export opened no chooser of ours');
-      const rows = menu.children.filter((child) => child.className === 'flow-menu-item');
-      (rows[0].listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
       const asked = sent.filter((one) => one.command === 'exportPdf');
-      if (asked.length !== 1) throw new Error(`pressing a row sent ${asked.length} exports`);
+      if (asked.length !== 1) throw new Error(`pressing Export sent ${asked.length} exports`);
       if (heldWhenMeasured !== true) throw new Error('the page measured itself before it was wearing the paper rules, which is the screen layout and not the sheet');
       if (asked[0].height !== paper.height || asked[0].width !== paper.width) {
         throw new Error(`the sheet was asked for at ${asked[0].width} x ${asked[0].height} rather than the ${paper.width} x ${paper.height} the paper rules lay out`);

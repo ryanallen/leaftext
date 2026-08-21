@@ -99,6 +99,7 @@ export const COMMANDS = {
   renameField: [ANSWERED],
   moveBlock: [ANSWERED],
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
+  pickDiagramPath: [LATER, 'web-export'],
   exportDiagram: [LATER, 'web-export'],
   exportPdf: [ANSWERED],
   undoEdit: [ANSWERED],

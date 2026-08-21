@@ -1821,10 +1821,11 @@ function flowPickerChoices(caption, options, current, chip, apply) {
 // Twice life size, so a picture pasted somewhere and scaled up still reads.
 const DIAGRAM_PNG_SCALE = 2;
 
+// The endings a diagram can be saved under. The save window is what offers them, so this is the page's copy of the same three the host lists in `DIAGRAM_EXPORT_FORMATS` — held here to read the reader's chosen ending back and to name the three in the message when it is none of them.
 const DIAGRAM_EXPORTS = [
-  { id: 'md', label: 'Markdown', hint: 'The mermaid text, in a document of its own' },
-  { id: 'png', label: 'PNG', hint: 'The drawing as a picture, to paste anywhere' },
-  { id: 'webp', label: 'WebP', hint: 'The same picture, about half the file' },
+  { id: 'md', label: 'Markdown' },
+  { id: 'png', label: 'PNG' },
+  { id: 'webp', label: 'WebP' },
 ];
 
 let diagramExportSeq = 0;
@@ -1936,25 +1937,53 @@ async function diagramWebpBase64(svgText) {
   return url.slice(url.indexOf(',') + 1);
 }
 
-// The host is handed finished bytes and asked only where they go: it shows the Save dialog, writes the file, and says how it went. The source is passed in, because the same exports serve the editor's own session and a diagram drawn in the page, which has no session at all.
-async function exportDiagramAs(kind, source) {
+// Where a diagram was asked to go, against the export that asked. The host answers with a path and nothing else, so the source has to be waiting here for it — and one entry is not enough: a reader can leave one save window standing and press Export on another diagram.
+const diagramExportsWaiting = new Map();
+let diagramExportToken = 0;
+
+// Ask first, draw after. The save window carries every format, so the ending on the name the reader chooses is what gets encoded — which is why nothing is drawn until it comes back. The source is passed in, because the same export serves the editor's own session and a diagram drawn in the page, which has no session at all.
+function exportDiagram(source) {
   if (!source) return;
   closeFlowMenu();
+  diagramExportToken += 1;
+  diagramExportsWaiting.set(diagramExportToken, source);
+  send({ command: 'pickDiagramPath', token: diagramExportToken });
+}
+
+// The host's answer: where the reader said it goes. The format is the ending they left on the name, so a reader who types one gets it.
+window.leafDiagramPathPicked = (token, path) => {
+  const source = diagramExportsWaiting.get(token);
+  if (source === undefined) return;
+  diagramExportsWaiting.delete(token);
+  const text = String(path);
+  const dot = text.lastIndexOf('.');
+  const kind = dot < 0 ? '' : text.slice(dot + 1).toLowerCase();
+  if (!DIAGRAM_EXPORTS.some((one) => one.id === kind)) {
+    const names = DIAGRAM_EXPORTS.map((one) => one.label).join(', ');
+    leafToast('A diagram is written as ' + names + '. Nothing was written.', 'error');
+    return;
+  }
+  exportDiagramAs(kind, source, path);
+};
+
+// The bytes for the one format the reader named, handed to the host with the path it already answered with.
+async function exportDiagramAs(kind, source, path) {
   try {
     if (kind === 'md') {
-      send({ command: 'exportDiagram', format: 'md', data: '```mermaid\n' + source + '\n```\n' });
+      send({ command: 'exportDiagram', format: 'md', path, data: '```mermaid\n' + source + '\n```\n' });
       return;
     }
     const drawing = await diagramDrawingSvg(source);
     if (!drawing) return;
     if (kind === 'webp') {
-      send({ command: 'exportDiagram', format: 'webp', data: await diagramWebpBase64(drawing) });
+      send({ command: 'exportDiagram', format: 'webp', path, data: await diagramWebpBase64(drawing) });
       return;
     }
     const picture = await diagramPngBase64(drawing);
     send({
       command: 'exportDiagram',
       format: 'png',
+      path,
       data: picture.pixels,
       width: picture.width,
       height: picture.height,
@@ -1964,38 +1993,13 @@ async function exportDiagramAs(kind, source) {
   }
 }
 
-// The menu, on any diagram: the corner of a drawn block in the page, the full-window view, or the editor's own bar below. Its rows only ever need the text, which is why one menu serves all three.
-function openDiagramExportMenu(x, y, source, host) {
-  openFlowMenuWith(
-    x,
-    y,
-    DIAGRAM_EXPORTS.map((kind) => ({
-      label: kind.label,
-      hint: kind.hint,
-      run: () => exportDiagramAs(kind.id, source),
-    })),
-    host,
-  );
-}
-
 if (flowSheetExport) {
   flowSheetExport.addEventListener('click', () => {
-    const spot = flowSheetExport.getBoundingClientRect();
-    openFlowMenuWith(
-      spot.left,
-      spot.bottom + 6,
-      DIAGRAM_EXPORTS.map((kind) => ({
-        label: kind.label,
-        hint: kind.hint,
-        // Flushed at the press, not at the click that opened the menu: the code pane's last keystroke is still unparsed until it is, and the session's text is what gets written out.
-        run: () => {
-          if (!flowSession) return;
-          closeFlowLabelBox(true);
-          flushFlowCode();
-          exportDiagramAs(kind.id, flowSession.text);
-        },
-      })),
-    );
+    if (!flowSession) return;
+    // Flushed at the press: the code pane's last keystroke is still unparsed until it is, and the session's text is what gets written out.
+    closeFlowLabelBox(true);
+    flushFlowCode();
+    exportDiagram(flowSession.text);
   });
 }
 
