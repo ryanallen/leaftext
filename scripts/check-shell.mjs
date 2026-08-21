@@ -979,7 +979,7 @@ if (booted) restoreSharedPage = pageSnapshot(booted, source);
 
 // ---- 2a. the page is handed back the way it was found -----------------------
 //
-// The page boots once and every check after it reads the same one, so a check that drives the app — opens the pane, folds the bar, switches a view — used to leave the next check standing in whatever it left behind. A check written for the minimap's rail opened the library pane and failed two app-bar checks two hundred lines below it, neither of which names the library. These two are the proof that the hand-back happens; they are a pair because the page holds what it is in two places, its tree and its own values, and a walk over one reaches nothing of the other.
+// The page boots once and every check after it reads the same one, so without the hand-back a check that drives the app — opens the pane, folds the bar, switches a view — leaves the next check standing in whatever it left behind, failing on something it never names: the rail check opened the library pane and took two app-bar checks two hundred lines below it with it. These two are the proof the hand-back happens, and they are a pair because the page holds what it is in two places, its tree and its own values, and a walk over one reaches nothing of the other.
 
 check('a check that drives the shared page leaves the next one reading the page the boot made', () => {
   const shell = booted.document.getElementById('libraryShell');
