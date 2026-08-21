@@ -981,6 +981,13 @@ window.addEventListener('resize', () => {
 window.leafShowError = (message) => leafToast(message, 'error');
 // The other half: something the person asked for that worked, said where they are looking rather than left silent.
 window.leafShowNotice = (message) => leafToast(message, 'ok');
+// A file was written where the person asked for it, and the path is pressable: the thing they wanted next is to look at it, and going and finding it is the step this saves.
+window.leafFileWritten = (path) => {
+  leafToast('Saved ', 'ok', null, {
+    text: path,
+    run: () => send({ command: 'openExternal', url: path }),
+  });
+};
 window.leafShowOpenError = (path, reason) => {
   window.leafShowError(`Failed to open ${path}: ${reason}`);
 };

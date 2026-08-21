@@ -625,6 +625,23 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 );
                 let _ = reply.try_send(answer);
             }
+            // The Export button's own render with the dialog taken out of the way, so a session can make one of these files and read it back. The loop is inside the render, which is why this ask gets a longer wait than the rest.
+            Event::UserEvent(UserEvent::PipeExport {
+                path,
+                width,
+                height,
+                reply,
+            }) => {
+                let answer =
+                    write_page_pdf_at(reader.webview.as_ref(), &path, width, height).map(|()| {
+                        serde_json::json!({
+                            "wrote": path.display().to_string(),
+                            "width": width,
+                            "height": height,
+                        })
+                    });
+                let _ = reply.try_send(answer);
+            }
             Event::UserEvent(UserEvent::PipeQuit { reply }) => {
                 // Answer only. The asker still has nothing in hand, and a loop that stopped here would take the reply with it.
                 let _ = reply.try_send(Ok(serde_json::json!({ "closing": true })));
@@ -1292,6 +1309,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         width,
                         height,
                     );
+                }
+                IpcCommand::ExportPdf {
+                    format,
+                    width,
+                    height,
+                } => {
+                    // The dialog blocks this thread, like Open's does, and so does the render after it. The active document only names the file it suggests; nothing about it is read or written.
+                    let document = reader.workspace.active_path().map(Path::to_path_buf);
+                    export_page_pdf(reader.page(), document.as_deref(), &format, width, height);
                 }
                 IpcCommand::UndoEdit => {
                     // Pop the buffer back one edit, re-render, and resync so undoing the only edit also clears the Save button.

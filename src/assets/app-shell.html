@@ -59,6 +59,11 @@
     <!-- Beside the folder: that one opens a document that exists, this one
          starts a document that doesn't. -->
     <button type="button" id="newButton" class="icon-button new-button" aria-label="New document" title="New document"><span class="lt-icon lt-icon-new"></span></button>
+    <!-- The page as it stands, handed to the platform's print panel, where Save as
+         PDF lives. Last in the group because it is about the document on screen
+         rather than about opening or starting one, and it stands only while there
+         is a rendered page to print. -->
+    <button type="button" id="exportPdfButton" class="icon-button export-button" aria-label="Export PDF" title="Export the page as a PDF" hidden><span class="lt-icon lt-icon-export"></span></button>
     </div>
     <div class="window-controls" id="windowControls" hidden aria-hidden="true">
       <button type="button" class="window-control" id="winMinimize" tabindex="-1" aria-label="Minimize" title="Minimize"><span class="lt-icon lt-icon-window-minimize"></span></button>

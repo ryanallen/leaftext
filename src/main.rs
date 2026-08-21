@@ -22,8 +22,8 @@ use leaftext::{
     code_intel_lint_script, code_intel_notes_script, code_view_fetch_script, code_view_payload,
     config_file_path, corpus_note_items, create_repo_on_github, document_headings,
     document_pager_html, encode_rgba, encode_rgba_paletted, error_toast_script, failure_message,
-    favorites_missing_script, file_deleted_script, filter_hints_script, find_note,
-    folder_note_items, folder_note_names, fragment_scroll_script, git_tooling,
+    favorites_missing_script, file_deleted_script, file_written_notice_script, filter_hints_script,
+    find_note, folder_note_items, folder_note_names, fragment_scroll_script, git_tooling,
     glossary_failed_script, glossary_sheet_script, graph_script, image_picked_script,
     image_refresh_script, init_vault_repo, initial_document_exts_script, initial_settings_script,
     initial_state_script, initial_update_script, initial_vaults_script, initial_version_script,
@@ -591,8 +591,18 @@ fn pick_save_path(current: &Path) -> Option<PathBuf> {
 
 /// Where an exported flowchart goes. One filter, for the format the sheet was asked for: an export is one file of one kind, so offering the others would only be a way to name it wrong.
 fn pick_export_path(name: &str, label: &str, extension: &str) -> Option<PathBuf> {
+    pick_export_path_titled("Export Diagram", name, label, extension)
+}
+
+/// The same dialog under its own title. A reader saving the page as a PDF is not exporting a diagram, and the title bar is the only thing in that window that says which.
+fn pick_export_path_titled(
+    title: &str,
+    name: &str,
+    label: &str,
+    extension: &str,
+) -> Option<PathBuf> {
     FileDialog::new()
-        .set_title("Export Diagram")
+        .set_title(title)
         .set_file_name(name)
         .add_filter(label, &[extension])
         .save_file()

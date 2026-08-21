@@ -102,6 +102,42 @@ window.__lt = Object.assign(window.__lt || {}, { assets: {{ASSET_URLS}} });
     daylightTimer = setTimeout(() => { apply(); scheduleDaylight(); }, delay);
   };
 
+  // Held while a page is being rendered for paper. A print render emulates a light color scheme, which fires the system listener below and repaints the whole app in the light family for the duration — so a dark theme came out on white paper in dark ink. What is being printed is what is on screen, and the screen has not changed.
+  //
+  // The text size is held with it, and for the same reason. Every size in the app is a multiple of one that grows with the window, and the window a render lays out in is the sheet — so the paper came out in smaller type than the screen, a shorter document than the page had measured, and the difference as blank paper under the last line. Pinned to the size on screen for the render and let go after, so the sheet is the page as it stands.
+  //
+  // The room a lane has on the paper is written down with it. On screen a wide picture or table breaks out of the text measure through a container query, and in the print render that query is self-referential — the container spans whatever the layout overflows to, growing with the very overflow it causes — so the page does the container's arithmetic here and the paper rules read the one finished number.
+  let holdingAppearance = 0;
+  // A style element rather than inline properties on the root: the print render lays the page out from the stylesheets and never sees an inline style script wrote onto the root, which is how a pin that held on screen was silently ignored on paper.
+  let paperStyle = null;
+  window.leafHoldAppearance = (held) => {
+    holdingAppearance = Math.max(0, holdingAppearance + (held ? 1 : -1));
+    // The page as paper: the stylesheet's whole print block is on this class, so the same rules the render lays out under are the ones the page measured itself under.
+    document.body.classList.toggle('leaf-paper', holdingAppearance > 0);
+    if (!holdingAppearance) {
+      if (paperStyle) paperStyle.remove();
+      paperStyle = null;
+      return;
+    }
+    if (paperStyle) return;
+    // Read off the document rather than off the custom property: a property answers with the arithmetic it was written as, and what is wanted is what that came to.
+    const drawn = document.querySelector('.document-body');
+    const size = drawn && getComputedStyle(drawn).fontSize;
+    const surface = document.getElementById('appSurface');
+    let lane = 0;
+    if (surface) {
+      const worn = getComputedStyle(surface);
+      const inset = parseFloat(worn.getPropertyValue('--reader-lane-inset')) || 0;
+      const pad = parseFloat(worn.getPropertyValue('--reader-content-pad')) || 0;
+      lane = surface.getBoundingClientRect().width - 2 * inset - 2 * pad;
+    }
+    paperStyle = document.createElement('style');
+    paperStyle.textContent = `body.leaf-paper {${size ? ` --type-base: ${size};` : ''}${lane > 0 ? ` --leaf-paper-lane: ${lane}px;` : ''} }`;
+    document.head.appendChild(paperStyle);
+  };
+  window.addEventListener('beforeprint', () => window.leafHoldAppearance(true));
+  window.addEventListener('afterprint', () => window.leafHoldAppearance(false));
+
   window.leafTheme = {
     getMode: () => mode,
     getFamily: () => familyPreference,
@@ -126,7 +162,7 @@ window.__lt = Object.assign(window.__lt || {}, { assets: {{ASSET_URLS}} });
   };
 
   if (media) {
-    const onSystemThemeChange = () => { if (mode === 'system') { apply(); } };
+    const onSystemThemeChange = () => { if (mode === 'system' && !holdingAppearance) { apply(); } };
     if (media.addEventListener) {
       media.addEventListener('change', onSystemThemeChange);
     } else if (media.addListener) {

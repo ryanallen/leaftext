@@ -58,6 +58,11 @@ const READER_LOADING_HEAVY_HTML = 250000;
 // Invalidates a deferred heavy render when a newer render supersedes it.
 let readerRenderToken = 0;
 
+// ---- the app bar's Export PDF action (overflow.js, graph.js) ---------------
+
+// The page as it stands, handed to the platform's print panel. overflow.js wires the press; graph.js is what knows whether there is a rendered page to print at all, so it is what shows and hides the button.
+const exportPdfButton = document.getElementById('exportPdfButton');
+
 // ---- the code view and saving (code-view.js) -------------------------------
 
 const saveButton = document.getElementById('saveButton');

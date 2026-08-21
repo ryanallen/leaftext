@@ -468,11 +468,8 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
     // The bar is one sequence of places to go, so every space it declares between the leaf, the history pair and the two trailing rows is the same 16px. Unequal gaps made the same row read as loosely assembled clusters. Three groups are the exceptions: the window buttons, below, where three read as one control set rather than three more stops along the row, back and forward, which are one paired control on that same tight gap, and the tab strip, which is a list of open documents rather than a run of unrelated controls. The leaf is a fourth of another kind: the gap it declares is the row's, and the gap a reader sees is 4px wider because its mark stops short of its box, so it is the one control that hands an inset back.
     let css = reading_mode_css();
 
-    for selector in [
-        "\n.app-bar-lead {",
-        "\n.app-trailing-items {",
-        "\n.app-actions-items {",
-    ] {
+    // The two that hold groups rather than buttons: the leaf beside the library button and the history pair, and the actions beside the window controls.
+    for selector in ["\n.app-bar-lead {", "\n.app-trailing-items {"] {
         let body = rule_body(css, selector);
         assert!(
             body.contains("gap: var(--lt-space-16);"),
@@ -480,12 +477,14 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         );
     }
 
-    // Back and forward are one control, not two stops along the row, so they close up to the same 4px the window buttons take.
-    let history = rule_body(css, "\n.history-actions {");
-    assert!(
-        history.contains("gap: var(--lt-space-4);"),
-        "the back and forward buttons sit tight against each other: {history}"
-    );
+    // Back and forward are one control, not two stops along the row, so they close up to the same 4px the window buttons take. The theme switch, the folder, the plus and the page export are the same reading: one set of things to press, and the last run on the bar to join them.
+    for selector in ["\n.history-actions {", "\n.app-actions-items {"] {
+        let body = rule_body(css, selector);
+        assert!(
+            body.contains("gap: var(--lt-space-4);"),
+            "{selector} is a run of buttons, so it closes up rather than taking the gap between groups: {body}"
+        );
+    }
 
     // Inside the strip the tabs close up to 4px so they read as one set, while each end of the strip keeps the row's 16px: that inset is what the flares below are capped by, and the strip carries it while the two zones either side add none.
     let strip = rule_body(css, "\n.tab-bar {");
@@ -614,11 +613,12 @@ fn an_emptied_actions_group_stops_taking_a_gap() {
 fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
     let css = reading_mode_css();
 
-    // Open and New are the same button twice, so they share both rules rather than repeating them.
+    // Open, New and Export are the same button three times over, and share both rules with the theme switch rather than repeating them.
     let rest = rule_body(
         css,
         ".open-button,
-.new-button {",
+.new-button,
+.export-button {",
     );
     assert_contains(rest, "border-color: transparent;");
     assert_contains(rest, "background: transparent;");
@@ -627,7 +627,8 @@ fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
     let hover = rule_body(
         css,
         ".open-button:hover,
-.new-button:hover {",
+.new-button:hover,
+.export-button:hover {",
     );
     assert_contains(
         hover,
@@ -975,7 +976,7 @@ fn app_shell_theme_bootstrap_resolves_manual_and_system_modes() {
     assert_contains(&html, "setFamily(nextFamily) {");
     assert_contains(
         &html,
-        "const onSystemThemeChange = () => { if (mode === 'system') { apply(); } };",
+        "const onSystemThemeChange = () => { if (mode === 'system' && !holdingAppearance) { apply(); } };",
     );
     assert_contains(&html, "root.dataset.themeMode = mode;");
     assert_contains(&html, "root.dataset.theme = theme.resolvedTheme;");
@@ -1581,4 +1582,63 @@ fn nothing_in_the_front_end_adds_a_floating_thing_to_the_window() {
         "the page still works out a divider color for a frame that draws nothing with it"
     );
     assert_contains(script, "command: 'setWindowChrome',");
+}
+
+/// Every action in the app bar rests the same way. A button that carries only the icon-button component takes that component's own fill, which is the filled primary look the bar spends on saying which view you are in — so a new action ships reading as the one thing already pressed, which is what the fourth one did. The list is read off the markup rather than written here, so the fifth is held to it without anybody remembering to add a name.
+#[test]
+fn every_action_in_the_app_bar_rests_muted_rather_than_filled() {
+    let css = reading_mode_css();
+    let html = crate::APP_SHELL_HTML;
+
+    let group = html
+        .split_once(r#"id="appActionsItems""#)
+        .and_then(|(_, rest)| rest.split_once(r#"<div class="window-controls""#))
+        .map(|(group, _)| group)
+        .expect("the actions group");
+
+    // Every button standing in the group. The update bell is a `<summary>` inside its own component and is only ever there when there is something to install, so it is not one of these.
+    let mut found = 0;
+    for piece in group.split(r#"class="icon-button "#).skip(1) {
+        let classes = piece.split('"').next().expect("the class list closes");
+        let class = classes.split_whitespace().next().expect("a second class");
+        found += 1;
+        for state in ["", ":hover"] {
+            let listed = format!(".{class}{state},");
+            let alone = format!(".{class}{state} {{");
+            assert!(
+                css.contains(&listed) || css.contains(&alone),
+                ".{class} rests on the bar's own muted fill rather than the filled primary the views wear"
+            );
+        }
+    }
+    assert!(found >= 4, "the actions group holds {found} buttons");
+}
+
+/// The theme survives being printed. A print render emulates a light color scheme, and the bootstrap follows the system scheme whenever the mode is `system` — so the listener fired mid-print and repainted the whole app in the light family for exactly as long as the picture was being taken, which is how a dark theme came out on white paper in dark ink. The hold is what stops it, and it is read here because the bootstrap is an inline script the front-end check never boots.
+#[test]
+fn the_theme_is_held_while_a_page_is_being_rendered_for_paper() {
+    let boot = include_str!("../assets/theme-bootstrap.js");
+
+    // The guard itself, on the one listener that can change the appearance without anybody asking.
+    assert_contains(boot, "mode === 'system' && !holdingAppearance");
+
+    // A browser's own print says when it starts and stops. The desktop renders the page without the page hearing about it at all, so the press turns the hold on and the host's answer turns it off — which is why it is a count rather than a flag.
+    assert_contains(boot, "window.addEventListener('beforeprint'");
+    assert_contains(boot, "window.addEventListener('afterprint'");
+    assert_contains(boot, "Math.max(0, holdingAppearance + (held ? 1 : -1))");
+
+    // Both ends of the desktop pair: the press holds, and every way out of the export releases.
+    assert_contains(
+        include_str!("../assets/shell/overflow.js"),
+        "window.leafHoldAppearance(true)",
+    );
+    let export = include_str!("../app/fileops.rs");
+    assert_contains(
+        export,
+        "window.leafHoldAppearance && window.leafHoldAppearance(false);",
+    );
+    assert!(
+        export.matches("release(page)").count() >= 3,
+        "the appearance is released on the cancel, the write and the failure alike"
+    );
 }

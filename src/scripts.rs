@@ -355,6 +355,12 @@ pub fn notice_toast_script(message: &str) -> String {
     format!("window.leafShowNotice({message});")
 }
 
+/// Say a file was written, and where. The path travels as its own value rather than inside the sentence, because the page draws it as a press: the file just written is opened from the growl instead of gone looking for.
+pub fn file_written_notice_script(path: &str) -> String {
+    let path = serde_json::to_string(path).expect("path serializes");
+    format!("window.leafFileWritten({path});")
+}
+
 /// Say a file went to the bin, and can come back. The page arms its Undo off this rather than off the asking, so a build with nothing behind the delete never draws an offer it could not keep.
 pub fn file_deleted_script(path: &str, name: &str) -> String {
     let path = serde_json::to_string(path).expect("path serializes");

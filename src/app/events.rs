@@ -105,6 +105,13 @@ pub(crate) enum UserEvent {
         expect: String,
         reply: PipeReply,
     },
+    /// Somebody on the ask pipe wants the page written out as a PDF at a path they name, skipping the save dialog they cannot answer. The same render the Export button runs, so what comes out is the sheet a reader would get.
+    PipeExport {
+        path: PathBuf,
+        width: f64,
+        height: f64,
+        reply: PipeReply,
+    },
     /// Somebody on the ask pipe wants the app closed. This one only answers that the loop heard: closing here would end the process with the reply still in the pipe, where it is thrown away.
     PipeQuit { reply: PipeReply },
     /// Close now — the pipe thread saying the asker has taken its answer. The second half of `PipeQuit`, and the only thing that closes the app on its behalf.
@@ -476,6 +483,15 @@ pub(crate) enum IpcCommand {
         width: u32,
         #[serde(default)]
         height: u32,
+    },
+    /// Write the page as it stands out as a file of its own. `format` is `pdf` or `png`; `width` and `height` are the page's own CSS pixels, which is how the host sizes one continuous page instead of chopping the document across sheets — only the page knows how tall it is. `@media print` in the stylesheet is what makes that page the whole document in its theme rather than one screen of app frame. Nothing about the open document is read or written.
+    #[serde(rename = "exportPdf")]
+    ExportPdf {
+        format: String,
+        #[serde(default)]
+        width: f64,
+        #[serde(default)]
+        height: f64,
     },
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]

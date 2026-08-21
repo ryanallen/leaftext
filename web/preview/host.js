@@ -146,6 +146,7 @@ export const COMMANDS = {
   moveBlock: [LATER, 'web-app-commands'],
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
   exportDiagram: [LATER, 'web-export'],
+  exportPdf: [ANSWERED],
   undoEdit: [LATER, 'web-app-commands'],
   redoEdit: [LATER, 'web-app-commands'],
   updateChecked: [REFUSED, 'a published site is already the version it serves'],
@@ -495,6 +496,8 @@ export async function startLeaftext({ documents, name = '', read }) {
       run(`window.leafSetFavoritesMissing && window.leafSetFavoritesMissing(${JSON.stringify({ paths, vaults: [] })});`);
     },
     openGlossary: ({ href }) => run(core.glossaryScript(href)),
+    // The browser's own print, which is the only route a page has: a site cannot open a save dialog or write a file, so the panel is what asks where the PDF goes here. The desktop writes the file itself and shows no panel at all. The page a browser prints is prepared by the same `@media print` block, which keys on the classes a site draws its documents through, so the sheets carry the whole document in its theme either way.
+    exportPdf: () => window.print(),
     loadPager: ({ path }) => run(`window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`),
   };
 

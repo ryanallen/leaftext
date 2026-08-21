@@ -10,7 +10,7 @@ Four files under `design/` are the source. Each is plain Markdown, so Leaftext o
 | `design/colors.md` | 82 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
 | `design/tokens.md` | 162 values that do not change with the theme | `src/assets/tokens.css` |
 | `design/icons.md` | 63 icons | `src/assets/icons.css`, one mask class each |
-| `design/components.md` | 67 components, and the markup each is drawn with | `src/assets/gallery.html` |
+| `design/components.md` | 68 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
 ## Colors
 
@@ -60,7 +60,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 
 ## Components
 
-67 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
+68 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
 
 | Component | Class family |
 | --- | --- |
@@ -75,6 +75,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 | Theme button | `.theme-button` |
 | Open button | `.open-button` |
 | New-document button | `.new-button` |
+| Export-PDF button | `.export-button` |
 | Theme mode button | `.theme-mode-btn` |
 | Document button | `.leaf-md-button` |
 | Flowchart sheet | `.flow-sheet` |

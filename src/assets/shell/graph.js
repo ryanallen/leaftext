@@ -60,12 +60,20 @@ function applyGraphView() {
   document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';
   renderReaderToolbar(!!activeDocumentPath());
 }
+// Export PDF stands only where there is a rendered page to print. Not on the home screen, which has no document; not in the source view, where Monaco realizes the lines it is drawing and nothing else, so a print gives whatever happened to be on screen; and not on the map, which the print rules take down with the rest of the app's controls. Hidden and then refit, the way the update bell does it — an action that comes and goes mid-session changes what fits beside the tabs.
+function renderExportPdfAction(hasDocument) {
+  if (!exportPdfButton) return;
+  const wasHidden = exportPdfButton.hidden;
+  exportPdfButton.hidden = !hasDocument || codeViewActive || graphViewOpen;
+  if (wasHidden !== exportPdfButton.hidden) refitAppBar();
+}
 // The bar: the views of the open document, one of them pressed, then whatever edits apply.
 //
 // No document, no bar. The three views are three ways of showing one thing, and on the home screen there is no thing — a toggle there would be flipping between the recent files and a map, which is navigation, not a view. The pane beside it already does that, and does it better.
 //
 // All three are always enterable, so none of them ever grays out: the map is of the open document, and the bar is only up when there is one.
 function renderReaderToolbar(hasDocument) {
+  renderExportPdfAction(hasDocument);
   if (!readerToolbar) return;
   readerToolbar.hidden = !hasDocument;
   if (!hasDocument) return;

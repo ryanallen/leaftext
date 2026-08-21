@@ -473,6 +473,11 @@ function runShell(source, extras = {}) {
     Element: FakeElement,
     // No cascade here, but a custom property set on the element itself does come back out of a real browser's computed style, and the page reads its own writes that way.
     getComputedStyle: (element) => ({ getPropertyValue: (name) => (element && element.style && typeof element.style.getPropertyValue === 'function' ? element.style.getPropertyValue(name) : ''), color: 'rgb(0, 0, 0)' }),
+    // The one call both browser hosts answer Export PDF with. Counted rather than swallowed: the whole of that command is "did the page's own print reach the browser", so a stub that returned nothing would leave the arm proved only by not throwing.
+    print: () => {
+      sandbox.__printed += 1;
+    },
+    __printed: 0,
     // A page always has one, even with nothing in it — a check that draws a caret replaces this, and everything else reads "no selection" rather than finding no such call.
     getSelection: () => null,
     matchMedia: () => ({
@@ -9256,7 +9261,7 @@ if (booted) {
       booted.refitAppBar();
       const order = inside.map((el) => el.id);
       // Back leads because a reader opens this menu to go back a page; the window buttons are last, so close is not the first thing under the pointer. They fold last of all, which is exactly why inserting as they left put them on top.
-      const expected = ['backButton', 'forwardButton', 'themeSheetOpen', 'openButton', 'newButton', 'windowControls'];
+      const expected = ['backButton', 'forwardButton', 'themeSheetOpen', 'openButton', 'newButton', 'exportPdfButton', 'windowControls'];
       if (order.join(',') !== expected.join(',')) {
         throw new Error(`the menu came out as ${order.join(',')}, not ${expected.join(',')}`);
       }
@@ -9376,8 +9381,8 @@ if (booted) {
       // One pass alone stops the moment the bar fits, and it fits before the chevron it is about to raise is standing on it.
       booted.foldAppBar();
       const onePass = bar.folded();
-      if (onePass.length !== 2) {
-        throw new Error(`a single pass folded ${onePass.join(',') || 'nothing'}, expected two`);
+      if (onePass.length !== 3) {
+        throw new Error(`a single pass folded ${onePass.join(',') || 'nothing'}, expected three`);
       }
       if (bar.bar.scrollWidth <= BAR_WIDTH) {
         throw new Error('the chevron cost the bar nothing, so this proves nothing about a second pass');
@@ -9387,7 +9392,7 @@ if (booted) {
       vm.runInContext('overflowChevronUp = false;', booted);
       booted.refitAppBar();
       const settled = bar.folded();
-      if (settled.length !== 3) {
+      if (settled.length !== 4) {
         throw new Error(`the refit folded ${settled.join(',')}, expected one more than a single pass`);
       }
       if (bar.bar.scrollWidth > BAR_WIDTH) {
@@ -9440,12 +9445,12 @@ if (booted) {
     }
   });
 
-  check('the group the actions leave behind holds only the hidden update bell, and holds all four again once the bar widens', () => {
+  check('the group the actions leave behind holds only the hidden update bell, and holds all five again once the bar widens', () => {
     // The condition the stylesheet keys on: `.app-actions-items:not(:has(> *:not([hidden])))` stops the group being drawn, so the trailing zone's 16px gap has nothing to land against beside the window buttons. The bell never folds, so what has to be proved is that the group is left holding it alone and hidden — which is the state a bare `:has()` cannot tell from a full group.
     const bar = measuredAppBar();
     const group = booted.document.querySelector('.app-actions-items');
     try {
-      // Narrow past every candidate, so all three actions are certainly in the menu rather than only the one the bar's own width happened to buy.
+      // Narrow past every candidate, so all four actions are certainly in the menu rather than only the one the bar's own width happened to buy.
       bar.bar.clientWidth = 0;
       booted.refitAppBar();
       const left = group.children.map((el) => el.id);
@@ -9459,12 +9464,133 @@ if (booted) {
       bar.bar.clientWidth = 900;
       booted.refitAppBar();
       const backOn = group.children.map((el) => el.id);
-      if (backOn.join(',') !== 'updateMenu,themeSheetOpen,openButton,newButton') {
+      if (backOn.join(',') !== 'updateMenu,themeSheetOpen,openButton,newButton,exportPdfButton') {
         throw new Error(`a wide bar put the group back as ${backOn.join(',') || 'empty'}`);
       }
     } finally {
       bar.done();
     }
+  });
+
+  check('Export opens the app own chooser and sends the page size with the format', () => {
+    const sent = [];
+    const ipc = booted.window.ipc;
+    booted.window.ipc = { postMessage: (message) => sent.push(JSON.parse(message)) };
+    try {
+      booted.renderReaderToolbar(true);
+      const button = booted.document.getElementById('exportPdfButton');
+      (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      const surface = booted.document.getElementById('appSurface');
+      const menu = surface.children.find((child) => String(child.className || '') === 'flow-menu');
+      if (!menu) throw new Error('pressing Export opened no chooser of ours, which leaves the platform panel as the only thing a reader meets');
+      const rows = menu.children.filter((child) => child.className === 'flow-menu-item');
+      if (!rows.length) throw new Error('the chooser came up with no rows to press');
+      (rows[0].listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      const asked = sent.filter((one) => one.command === 'exportPdf');
+      if (asked.length !== 1) throw new Error(`pressing a row sent ${asked.length} exports`);
+      // Only the page knows how tall the document is, and that height is the whole of what makes the file one continuous page instead of a document chopped across sheets.
+      if (asked[0].format !== 'pdf') throw new Error(`the row sent ${asked[0].format} rather than its own format`);
+      if (!(asked[0].height > 0) || !(asked[0].width > 0)) throw new Error(`the export carried no page size: ${JSON.stringify(asked[0])}`);
+    } finally {
+      booted.window.ipc = ipc;
+      booted.renderReaderToolbar(false);
+    }
+  });
+
+  check('The page sends the paper the document needs and not the room its own controls take', () => {
+    const sent = [];
+    const ipc = booted.window.ipc;
+    const surface = booted.document.getElementById('appSurface');
+    const wasRect = surface.getBoundingClientRect;
+    booted.window.ipc = { postMessage: (message) => sent.push(JSON.parse(message)) };
+    // The sheet is the app surface's own box while the page is wearing the paper rules, and nothing else: three rounds of subtracting the reader's own measurements from a screen layout each left blank paper under the last line. So the surface answers one box while the class is on and a window-shaped one while it is off, and only the first may be sent.
+    const paper = { width: 1277, height: 28207, top: 0, left: 0, right: 1277, bottom: 28207 };
+    const screen = { width: 1611, height: 1281, top: 0, left: 0, right: 1611, bottom: 1281 };
+    // The hold lives in the theme bootstrap, an inline script this harness never boots, so it stands in here doing the one thing the page depends on: the class.
+    const wasHold = booted.window.leafHoldAppearance;
+    let holding = 0;
+    booted.window.leafHoldAppearance = (held) => {
+      holding = Math.max(0, holding + (held ? 1 : -1));
+      booted.document.body.classList.toggle('leaf-paper', holding > 0);
+    };
+    let heldWhenMeasured = null;
+    surface.getBoundingClientRect = () => {
+      const held = booted.document.body.classList.contains('leaf-paper');
+      heldWhenMeasured = held;
+      return held ? paper : screen;
+    };
+    try {
+      booted.renderReaderToolbar(true);
+      const button = booted.document.getElementById('exportPdfButton');
+      (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      const menu = surface.children.find((child) => String(child.className || '') === 'flow-menu');
+      if (!menu) throw new Error('pressing Export opened no chooser of ours');
+      const rows = menu.children.filter((child) => child.className === 'flow-menu-item');
+      (rows[0].listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      const asked = sent.filter((one) => one.command === 'exportPdf');
+      if (asked.length !== 1) throw new Error(`pressing a row sent ${asked.length} exports`);
+      if (heldWhenMeasured !== true) throw new Error('the page measured itself before it was wearing the paper rules, which is the screen layout and not the sheet');
+      if (asked[0].height !== paper.height || asked[0].width !== paper.width) {
+        throw new Error(`the sheet was asked for at ${asked[0].width} x ${asked[0].height} rather than the ${paper.width} x ${paper.height} the paper rules lay out`);
+      }
+      // The rules stay on until the host answers, so the render is laid out under the ones that were measured.
+      if (!booted.document.body.classList.contains('leaf-paper')) {
+        throw new Error('the paper rules came off before the render, so the sheet is sized for a layout the render will not use');
+      }
+    } finally {
+      booted.window.leafHoldAppearance(false);
+      booted.window.leafHoldAppearance = wasHold;
+      surface.getBoundingClientRect = wasRect;
+      booted.window.ipc = ipc;
+      booted.renderReaderToolbar(false);
+    }
+  });
+
+  check('Export PDF stands only where there is a rendered page to print', () => {
+    const button = booted.document.getElementById('exportPdfButton');
+    const set = (source) => vm.runInContext(source, booted);
+    try {
+      // The home screen. The three views are three ways of showing one document, and here there is no document, so there is nothing to hand a print panel.
+      booted.renderReaderToolbar(false);
+      if (!button.hidden) throw new Error('the export action stood on the home screen, where there is no page to print');
+
+      booted.renderReaderToolbar(true);
+      if (button.hidden) throw new Error('a rendered document left the export action hidden');
+
+      // The source view. Monaco realizes the lines it is drawing and nothing else, so what a print would give is whatever happened to be on screen rather than the file.
+      set('codeViewActive = true;');
+      booted.renderReaderToolbar(true);
+      if (!button.hidden) throw new Error('the export action stood in the source view, where a print gives only the realized lines');
+
+      // The map, which the print rules take down with the rest of the app's own controls, so a print there is a blank sheet.
+      set('codeViewActive = false; graphViewOpen = true;');
+      booted.renderReaderToolbar(true);
+      if (!button.hidden) throw new Error('the export action stood on the map, which the print rules hide');
+    } finally {
+      set('codeViewActive = false; graphViewOpen = false;');
+      booted.renderReaderToolbar(false);
+    }
+  });
+
+  check('The saved growl opens the file it names', () => {
+    // Its own boot: the growl slot replaces itself, so a shared page carries whatever an earlier check left in it.
+    const sent = [];
+    const page = runShell(source, { ipc: { postMessage: (message) => sent.push(JSON.parse(message)) } });
+    const written = 'C:\\Users\\reader\\Documents\\quarterly review.pdf';
+    page.window.leafFileWritten(written);
+    const surface = page.document.getElementById('appSurface');
+    const growl = surface.children.filter((child) => String(child.className || '').includes('app-toast')).pop();
+    if (!growl) throw new Error('a file was written and nothing was said');
+    // The path itself takes the press, not a button beside it: it is what the reader reaches for.
+    const pressable = (growl.children || []).find((child) => String(child.className || '') === 'app-toast-link');
+    if (!pressable) throw new Error(`the path was drawn as plain words, so there is nothing to press: ${(growl.children || []).map((child) => child.className).join(',') || growl.textContent}`);
+    if (String(pressable.textContent) !== written) throw new Error(`the press carried ${pressable.textContent} rather than the file`);
+    (pressable.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+    const asked = sent.filter((one) => one.command === 'openExternal');
+    if (asked.length !== 1) throw new Error(`pressing the path sent ${asked.length} opens`);
+    if (asked[0].url !== written) throw new Error(`the open asked for ${asked[0].url} rather than the file just written`);
+    // Gone as it is pressed: the file has been handed to another program, so a second press on the same offer is not left standing.
+    if (surface.children.includes(growl)) throw new Error('the growl stayed up after its path was pressed');
   });
 }
 
@@ -12556,6 +12682,8 @@ checkSettled('a command the browser host has no arm for is refused where somethi
     'setLibraryLayout',
     'getFolder',
     'loadPager',
+    // The page as it stands, through the browser's own print — the same call wry makes on Windows, over the same print rules.
+    'exportPdf',
   ];
   if (answered.join(',') !== expected.join(',')) {
     throw new Error(`the table says these are answered: ${answered.join(',')}`);
@@ -12565,6 +12693,8 @@ checkSettled('a command the browser host has no arm for is refused where somethi
   }
   await settle();
   if (leaf.refused.length !== 1) throw new Error(`an arm the table calls answered was refused: ${JSON.stringify(leaf.refused)}`);
+  // Export PDF is the one arm above whose whole job is a call out to the browser, so an arm that quietly did nothing would pass the sweep. The page's own print is what a site has instead of a print panel the host opens.
+  if (!context.window.__printed) throw new Error('the site host answered exportPdf and never reached the browser print it is written as');
 });
 
 checkSettled("the browser's own Back walks the site and lands on the paragraph the reader left", async () => {

@@ -527,9 +527,10 @@ body.mac-frame.is-fullscreen::before {
   align-self: stretch;
   gap: var(--lt-space-16);
 }
+/* A run of buttons is 4px and a gap between groups is 16px, and this is a run: the theme switch, the folder, the plus and the page export are one set of things to press rather than four unrelated stops along the row. It was the only run on the bar still spaced like a gap — the history pair, the tabs and the window buttons were already here — which is what made three actions read as three separate stops and would have cost the bar a further 48px for a fourth. `.app-trailing-items` above keeps its 16px: that is the gap out to the window buttons, and it is a gap between groups. */
 .app-actions-items {
   display: flex;
-  gap: var(--lt-space-16);
+  gap: var(--lt-space-4);
   align-items: center;
 }
 /* Once the fold has taken the theme, open and new buttons into the chevron menu, the group is a zero-wide box the trailing zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Asked of drawn children only: the update bell stays in the group hidden, and its own summary and panel are descendants nothing marks hidden, so a bare `:has(*)` never fires here. */
@@ -965,22 +966,28 @@ button {
   border-radius: var(--lt-radius-lg);
   padding: 0;
 }
+/* A `display` of our own beats the browser's own `[hidden] { display: none }`, so an icon button told to hide has to be told again here. Said on the component rather than on each button that comes and goes, because the next one added would ship drawn and nothing but a reader would see it. */
+.icon-button[hidden] {
+  display: none;
+}
 .icon-button .lt-icon {
   width: 16px;
   height: 16px;
   pointer-events: none;
 }
-/* Themes, Open and New are the same button three times over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. */
+/* Themes, Open, New and Export PDF are the same button four times over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. A button added to this run without its name here rests filled, which reads as the one action already pressed. */
 .theme-button,
 .open-button,
-.new-button {
+.new-button,
+.export-button {
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
 }
 .theme-button:hover,
 .open-button:hover,
-.new-button:hover {
+.new-button:hover,
+.export-button:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
@@ -2501,6 +2508,24 @@ body:has(#readerToolbar:not([hidden])) {
 .app-toast-action:hover {
   border-color: var(--lt-border-strong);
   background: var(--lt-wash-hover);
+}
+/* A path the growl names and can open, pressed inside the sentence rather than beside it. Stripped back to text so it reads as the path it is, and wrapping anywhere because a path is long and has no spaces to break at. */
+.app-toast-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lt-link);
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.app-toast-link:hover {
+  /* Clear the app-wide button fill, which would otherwise paint a path that is drawn as a link. */
+  background: none;
+  border-color: transparent;
+  color: var(--lt-link-hover);
 }
 /* The first-run bubble. Floats over the window rather than being wedged into a row, so nothing on screen moves to make room and it takes the width it needs. Deaf to the pointer: nothing in it can be pressed, a pointer crossing it on the way somewhere else must not lose the words mid-sentence, and it must not stand between the pointer and whatever it is laid over. */
 .hint-bubble {
@@ -6663,4 +6688,108 @@ body.is-home-row-dragging .home-list-scroll li {
 ::highlight(leaf-find-current),
 .leaf-find-current {
   background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
+}
+/* Printing, which is also the Save as PDF every desktop print panel offers — the app's one route to a PDF of the page it is drawing. A browser prints the page as it is laid out, and this page is laid out to fill a window exactly once: the app surface is fixed and paint-contained, the reader carries its own scroller, and the window's overflow is hidden. Unprepared, that prints a single sheet holding the app's frame and whatever of the document happened to be on screen. These rules unwind those three, drop everything on the page that is a control rather than the document, and force the colors so the panel's own Background graphics box cannot take the theme away.
+
+   Keyed on `.app-surface` and `body:has(.app-surface)`, never on a bare `html`, `body` or `:root`: this whole file is what leaftext.com and empty.guru are handed too, and `scripts/check-page-frame.mjs` refuses a rule here that would take somebody else's page frame. Both sites draw their documents through these same classes, so a reader printing from one of them gets this printable page as well, which is wanted rather than a leak. */
+/* The page as it is handed to paper. On a class rather than in `@media print`, because the page has to be able to measure the sheet it is about to ask for: the height a document comes to under these rules is nothing the app can work out from the screen by subtracting things, and every attempt to came out as blank paper under the last line. The class goes on for the measurement and for the render, and comes off after both — `leafHoldAppearance` owns it, and `beforeprint` puts it on for a browser's own print. */
+/* No page-box rule here on purpose. A page margin written in CSS outranks the one the app sets when it renders the page itself, and the app sizes that page to the whole document so it comes out as one continuous page rather than a document chopped across sheets — a margin written here would be added to a height already decided and push the last inch onto a second sheet. */
+/* The window's overflow, and the shadow band the app throws over the strip of window it is held off by. Paper has no window to be held off. The body also wears the theme's own page color: the sheet is sized off a measurement and rounds up to the hundredth of an inch, so a few pixels of it always outlive the layout — painted here they are the page, unpainted they are a white strip under the last line. */
+body.leaf-paper:has(.app-surface) {
+  overflow: visible;
+  background: var(--lt-markdown-background);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+body.leaf-paper:has(.app-surface)::before {
+  display: none;
+}
+/* The app becomes a box on the page instead of a rectangle pinned to the window: static so it takes the height of what it holds, uncontained so nothing inside is clipped to one screen, and unframed because the card edge and the rounded corner are the window's drawing rather than the document's. `print-color-adjust` is what keeps the theme — a print panel leaves Background graphics unticked by default, which drops every painted background and prints a dark theme as dark ink on white paper. */
+body.leaf-paper .app-surface {
+  position: static;
+  contain: none;
+  inset: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+/* The grid holding a rail, a minimap column and the gutters the page is inset by. With everything but the page hidden there is nothing left for it to place, and its own texture is the chrome's rather than the document's. */
+body.leaf-paper .library-shell {
+  display: block;
+  height: auto;
+  background: none;
+}
+/* The reader's own scroller is the second thing pinning the document to one screen: it is what holds five thousand pixels of document inside twelve hundred of window, so unwinding it is what makes the print more than one sheet. The top padding is room for a fixed app bar nothing draws here, and the left margin is the window frame the card was held off. Two classes deep so the closed-library margin, which is written that way, is the rule being answered. */
+body.leaf-paper .library-shell .reader-shell {
+  overflow: visible;
+  height: auto;
+  padding-top: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+/* The room the page keeps at its foot for the floating toolbar, which nothing draws here. Left in, it is blank paper under the last line, and the height the page sends already has it taken off — so the sheet would be shorter than what is laid out on it. */
+body.leaf-paper .document-body {
+  padding-bottom: var(--reader-content-pad);
+}
+/* The lanes a wide picture or table break out of the text measure into are what shrank the paper. On screen the lane sizes itself with `100cqi` and centers itself by sliding half a measure right and transforming back; the print render measures overflow on the untransformed box, so the slid lane hung past the sheet, the renderer shrank the whole page to fit that phantom width, and the shrunken page stopped a fifth short of the sheet's foot, unpainted white — the container query is also self-referential there, growing with the very overflow it causes. So on paper a lane is a plain block: as wide as the room the page wrote down when it measured the sheet, centered by margin arithmetic the render was measured computing exactly, with nothing slid and nothing transformed. The fallback is the text measure, for a page printed before any script has run. */
+body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {
+  position: static;
+  transform: none;
+  width: var(--leaf-paper-lane, 100%);
+  max-width: none;
+  margin-left: calc((100% - var(--leaf-paper-lane, 100%)) / 2);
+}
+/* The lane is now a fixed-width box, so what sits in it says its own size again: a small picture keeps its own width and centers, a wide one fills the lane, and a table narrower than the lane centers rather than hugging the left edge. */
+body.leaf-paper .document-body > p.image-lane {
+  text-align: center;
+}
+body.leaf-paper .document-body > p.image-lane > img {
+  width: auto;
+  max-width: 100%;
+}
+body.leaf-paper .table-lane > table {
+  margin-inline: auto;
+}
+/* The home list breaks out the same way and prints only through a browser's own print of the home screen: it needs the overflow gone, not the breakout kept. */
+body.leaf-paper .home-list-grid {
+  position: static;
+  transform: none;
+  max-width: 100%;
+}
+/* Everything on the page that is a control rather than the document, named one at a time. Not written as "whatever the reader does not hold": the reader holds controls too — a block's gutter, the toolbar a selection raises, a diagram's own corner and its opened stage — so a rule keeping the reader's children would print those onto the paper. The Previous and Next strip is here for the same reason: it is a way to somewhere else, which paper has none of. The first-run bubble is the one control that floats over the window rather than sitting in it, which is how it stayed off the first reading of this list. */
+body.leaf-paper :is(.docs-pager,
+.hint-bubble,
+.app-bar,
+.app-overflow-panel,
+.reader-corner,
+.library-pane,
+.library-divider,
+.filter-menu,
+.reader-graph,
+.reader-toolbar,
+.find-bar,
+.reader-edge-fade,
+.reader-minimap,
+.reader-loading,
+.lt-backdrop,
+.leaf-sheet,
+.flow-sheet,
+.confirm-dialog,
+.context-menu,
+.crumb-menu,
+.rename-box,
+.link-hover-tip,
+.app-toast,
+.block-gutter,
+.block-gap-line,
+.block-drag-ghost,
+.selection-toolbar,
+.mermaid-tools,
+.diagram-overlay) {
+  display: none;
 }

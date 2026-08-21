@@ -304,6 +304,184 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
     }
 }
 
+/// Write the page as it stands out as a file of its own, asking where it goes first.
+///
+/// No print panel. The reader asked for a file, not a printer to choose, so the chooser is the app's own two rows and the only question after it is where the file goes. What makes the file the whole document in its theme, rather than one screen of app frame, is the stylesheet's `@media print` block.
+///
+/// One continuous page rather than a document chopped across sheets: the page carries its own size here, so the sheet is made as tall as the document is.
+///
+/// Nothing about the open document changes. The file is written beside it.
+pub(crate) fn export_page_pdf(
+    webview: Option<&WebView>,
+    document: Option<&Path>,
+    format: &str,
+    width: f64,
+    height: f64,
+) {
+    let Some(page) = webview else { return };
+    // The page held its appearance the moment it sent this, so the render's own light color scheme could not repaint the app underneath it. Released whichever way this goes, canceling included.
+    let release = |page| {
+        run_page_script(
+            Some(page),
+            "window.leafHoldAppearance && window.leafHoldAppearance(false);",
+            "Failed to let the page follow the system theme again",
+        )
+    };
+    let (extension, label) = match format {
+        "pdf" => ("pdf", "PDF document"),
+        // Not a row the chooser offers, so not a file anybody asked for.
+        _ => {
+            release(page);
+            return;
+        }
+    };
+    let stem = document
+        .and_then(Path::file_stem)
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .filter(|stem| !stem.is_empty())
+        .unwrap_or_else(|| "document".to_string());
+    let Some(target) = pick_export_path_titled(
+        "Save as PDF",
+        &format!("{stem}.{extension}"),
+        label,
+        extension,
+    ) else {
+        release(page);
+        return;
+    };
+    let outcome = write_page_pdf(page, &target, width, height);
+    release(page);
+    match outcome {
+        Ok(()) => run_page_script(
+            Some(page),
+            &file_written_notice_script(&target.display().to_string()),
+            "Failed to report a page export",
+        ),
+        Err(error) => report_file_action_failure(
+            Some(page),
+            &format!("That file could not be written. {error}"),
+        ),
+    }
+}
+
+/// The same render with the destination already chosen, and nothing said on screen about it.
+///
+/// What the ask pipe's `export` runs. The dialog above is the reason nothing here could ever read one of these files, and reading one is the only way to know how tall the sheet came out against how tall the page said the document was. It holds the appearance across the render the way the button's own press does, so the file carries the theme on screen rather than the light one a render emulates.
+pub(crate) fn write_page_pdf_at(
+    webview: Option<&WebView>,
+    target: &Path,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    let Some(page) = webview else {
+        return Err("there is no page to render".to_string());
+    };
+    run_page_script(
+        Some(page),
+        "window.leafHoldAppearance && window.leafHoldAppearance(true);",
+        "Failed to hold the page's appearance for an export",
+    );
+    let outcome = write_page_pdf(page, target, width, height);
+    run_page_script(
+        Some(page),
+        "window.leafHoldAppearance && window.leafHoldAppearance(false);",
+        "Failed to let the page follow the system theme again",
+    );
+    outcome
+}
+
+/// A CSS pixel is a ninety-sixth of an inch by definition, which is the only conversion between what the page measured and what a page size is written in.
+#[cfg(target_os = "windows")]
+const CSS_PIXELS_PER_INCH: f64 = 96.0;
+
+/// Four pixels of slack under the last line, so a sheet is never a fraction shorter than what is laid out on it. A fraction short is not a fraction of blank paper — it is a whole second page with almost nothing on it.
+#[cfg(target_os = "windows")]
+const HAIR_OF_PAPER: f64 = 4.0;
+
+/// How long a side of a PDF page can be. The format's own ceiling rather than anything chosen here, so a document taller than this cannot be one continuous page whatever the app asks for.
+#[cfg(target_os = "windows")]
+const LONGEST_PAGE_INCHES: f64 = 200.0;
+
+/// The height of each sheet for a document `inches` tall: its own height where that fits on one page, and an equal share of it where it does not.
+///
+/// Cut at the ceiling instead and a document a little past it is one full sheet followed by a mostly blank one, which is the blank paper a reader meets and cannot explain. Divided, every sheet is full and the last one ends at the last line.
+#[cfg(target_os = "windows")]
+pub(super) fn sheet_inches(inches: f64) -> f64 {
+    let sheets = (inches / LONGEST_PAGE_INCHES).ceil().max(1.0);
+    // Rounded up to the hundredth the page size is written in. Rounded down instead, a sheet comes out a fraction of a pixel shorter than what is on it, and that fraction is a second, nearly empty page — which is most of what a reader sees as blank paper.
+    let sheet = (inches / sheets * 100.0).ceil() / 100.0;
+    sheet.clamp(1.0, LONGEST_PAGE_INCHES)
+}
+
+/// Render the open page to a PDF at `target`, with no panel and on one continuous page.
+///
+/// WebView2 has the call itself, off a later revision of its own interface, and `wry` hands back the raw one to ask for it. It renders asynchronously while the message loop is pumped, which is the same shape as the file dialog above: this thread waits, and the window stays alive.
+///
+/// The page size is the document's own, so nothing is cut across a sheet boundary. The height is taken as the page gave it, with a hair added against rounding and nothing more: a proportional allowance was tried and on a document twenty screens tall it is most of a sheet of white below the last line.
+#[cfg(target_os = "windows")]
+fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Result<(), String> {
+    use webview2_com::Microsoft::Web::WebView2::Win32::{
+        ICoreWebView2Environment6, ICoreWebView2_7,
+    };
+    use webview2_com::PrintToPdfCompletedHandler;
+    use windows::core::{Interface, HSTRING};
+    use wry::WebViewExtWindows;
+
+    let printer = page
+        .webview()
+        .cast::<ICoreWebView2_7>()
+        .map_err(|_| "This copy of the web view runtime cannot write a PDF.".to_string())?;
+    let settings = page
+        .environment()
+        .cast::<ICoreWebView2Environment6>()
+        .ok()
+        .and_then(|environment| unsafe { environment.CreatePrintSettings() }.ok());
+    if let Some(settings) = settings.as_ref() {
+        let inches = |pixels: f64| (pixels / CSS_PIXELS_PER_INCH).clamp(1.0, LONGEST_PAGE_INCHES);
+        unsafe {
+            settings.SetPageWidth(inches(width)).ok();
+            settings
+                .SetPageHeight(sheet_inches((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH))
+                .ok();
+            // One to one, said out loud. Left alone, the renderer lays the page out at its own width and shrinks the result to fit the sheet — which is how a sheet sized for the document ends up a fifth of it in blank paper.
+            settings.SetScaleFactor(1.0).ok();
+            settings.SetMarginTop(0.0).ok();
+            settings.SetMarginBottom(0.0).ok();
+            settings.SetMarginLeft(0.0).ok();
+            settings.SetMarginRight(0.0).ok();
+            // The theme is a painted background, and a renderer leaves those out unless it is told. The stylesheet forces the colors as well; both together are what keep a dark theme dark.
+            settings.SetShouldPrintBackgrounds(true).ok();
+            // A date, a title and a page number in somebody else's font, over a page that is the document and nothing else.
+            settings.SetShouldPrintHeaderAndFooter(false).ok();
+        }
+    }
+    let path = HSTRING::from(target.as_os_str());
+    let wrote = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let written = std::sync::Arc::clone(&wrote);
+    PrintToPdfCompletedHandler::wait_for_async_operation(
+        Box::new(move |handler| unsafe {
+            Ok(printer.PrintToPdf(&path, settings.as_ref(), &handler)?)
+        }),
+        Box::new(move |error, ok| {
+            error?;
+            written.store(ok, std::sync::atomic::Ordering::Relaxed);
+            Ok(())
+        }),
+    )
+    .map_err(|error| error.to_string())?;
+    if wrote.load(std::sync::atomic::Ordering::Relaxed) {
+        Ok(())
+    } else {
+        Err("The page could not be rendered.".to_string())
+    }
+}
+
+/// The same on a Mac, through the panel, until `WKWebView`'s own page-to-PDF call is written: [`mac-saves-a-pdf-through-a-panel`](../../../docs/features/reading/mac-saves-a-pdf-through-a-panel.md) owns that. A reader here still gets a PDF and still gets the page the print rules prepare; what they also get is a sheet asking about paper, which is what the Windows side no longer shows. The path they chose and the size the page measured are both spent, because the panel asks again.
+#[cfg(target_os = "macos")]
+fn write_page_pdf(page: &WebView, _target: &Path, _width: f64, _height: f64) -> Result<(), String> {
+    page.print().map_err(|error| error.to_string())
+}
+
 /// Write the flowchart sheet's diagram out as its own file. The page made the bytes; this asks where they go, puts them there, and says how it went.
 ///
 /// Nothing about the open document changes. An export is a file beside it.

@@ -100,6 +100,7 @@ export const COMMANDS = {
   moveBlock: [ANSWERED],
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
   exportDiagram: [LATER, 'web-export'],
+  exportPdf: [ANSWERED],
   undoEdit: [ANSWERED],
   redoEdit: [ANSWERED],
   updateChecked: [REFUSED, 'an embed is whatever version the product shipped'],
@@ -204,6 +205,8 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
     // A link is the product to follow: an embed holds one document, and where its links point is something only the thing that handed the document over can know. Answered rather than refused, because a link a reader clicks has to reach somebody.
     openLink: (command) => tell({ kind: 'link', href: String(command.href || ''), newPage: !!command.newPage }),
     openGlossary: (command) => run(module.glossaryScript(command.href)),
+    // The browser's own print, which is the only route a page has. What comes out is whatever the product's page holds — the document, and the product's frame around it, since the `@media print` block only takes down Leaftext's own controls. A product that wants more off the paper writes its own print rules the way it writes the rest of its page.
+    exportPdf: () => window.print(),
     // A waiting state is a promise. The page draws the Previous/Next strip empty and waits for this; an embed has no neighbors, so the answer is an empty strip rather than a skeleton that spins for ever.
     loadPager: (command) => run(`window.leafSetPager(${JSON.stringify({ path: command.path, html: '' })});`),
   };

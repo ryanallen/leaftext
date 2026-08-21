@@ -301,6 +301,8 @@ function makeSheetDraggable(sheet, grip, dismiss) {
 const TOAST_MS = 5000;
 const TOAST_ERROR_MS = 8000;
 let toastTimer = 0;
+// The one that is up. Held rather than queried back out of the page: this is the only code that ever puts one there, so it already knows which element it is.
+let toastElement = null;
 // What to run when the current toast leaves, whether it timed out or another replaced it. An offer riding on a toast is only good while the toast is up, so whatever armed it is told the moment it is not.
 let toastGone = null;
 function endToast() {
@@ -308,10 +310,12 @@ function endToast() {
   toastGone = null;
   if (gone) gone();
 }
-// `action` is an optional { label, run, gone } -- a single button on the toast, which is the only thing on one that has ever been pressable.
-function leafToast(message, tone, action) {
-  const existing = document.querySelector('.app-toast');
-  if (existing) existing.remove();
+// `action` is an optional { label, run, gone } -- a single button beside the words. `link` is an optional { text, run } pressed inside the sentence instead, for the growl that names a file it can open: the path is what the reader reaches for, so the path is what takes the press.
+function leafToast(message, tone, action, link) {
+  if (toastElement) {
+    toastElement.remove();
+    toastElement = null;
+  }
   if (toastTimer) {
     clearTimeout(toastTimer);
     toastTimer = 0;
@@ -340,15 +344,36 @@ function leafToast(message, tone, action) {
     });
     toast.appendChild(button);
     toastGone = action.gone || null;
+  } else if (link) {
+    const said = document.createElement('span');
+    said.className = 'app-toast-text';
+    said.textContent = message;
+    toast.appendChild(said);
+    const pressable = document.createElement('button');
+    pressable.type = 'button';
+    pressable.className = 'app-toast-link';
+    pressable.textContent = link.text;
+    // Gone as it is pressed, like the offer above: the file is being handed to another program, so the growl has said its piece.
+    pressable.addEventListener('click', () => {
+      const run = link.run;
+      leafToast('');
+      run();
+    });
+    toast.appendChild(pressable);
   } else {
     toast.textContent = message;
   }
   appSurface.appendChild(toast);
+  toastElement = toast;
   // A frame later, so the transition has a start state to move away from.
   window.requestAnimationFrame(() => toast.classList.add('is-shown'));
   toastTimer = setTimeout(() => {
     toast.classList.remove('is-shown');
-    setTimeout(() => toast.remove(), 200);
+    // It fades out before it goes, so the slot is only free once it is actually gone -- a growl arriving mid-fade must take this one down rather than leave it fading behind itself.
+    setTimeout(() => {
+      toast.remove();
+      if (toastElement === toast) toastElement = null;
+    }, 200);
     endToast();
   }, error ? TOAST_ERROR_MS : TOAST_MS);
 }

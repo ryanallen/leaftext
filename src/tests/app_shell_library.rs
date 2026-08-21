@@ -593,15 +593,17 @@ fn one_growl_serves_every_thing_worth_saying_in_passing() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // One growl for both tones, rather than a second thing in the same corner doing the same job. The third argument is the one offer a toast may carry.
-    assert!(html.contains("function leafToast(message, tone, action) {"));
+    // One growl for both tones, rather than a second thing in the same corner doing the same job. The third argument is the one offer a toast may carry, and the fourth is a press inside the sentence — the path of a file it just named.
+    assert!(html.contains("function leafToast(message, tone, action, link) {"));
     assert!(html.contains("window.leafShowError = (message) => leafToast(message, 'error');"));
     assert!(!html.contains("error.className = 'app-error';"));
     assert!(css.contains(".app-toast {"));
     assert!(css.contains(".app-toast.is-error {"));
 
-    // One slot, replaced. A stack is a thing that then needs managing.
-    assert!(html.contains("document.querySelector('.app-toast')"));
+    // One slot, replaced — and the one it replaces is held rather than looked up, since this is the only code that ever puts one on the page.
+    assert!(html.contains("let toastElement = null;"));
+    assert!(html.contains("toastElement.remove();"));
+    assert!(!html.contains("document.querySelector('.app-toast')"));
     // A failure holds longer than a success: one is read at a glance and never again, the other has to be finished and acted on.
     assert!(html.contains("const TOAST_MS = 5000;"));
     assert!(html.contains("const TOAST_ERROR_MS = 8000;"));

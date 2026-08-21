@@ -144,3 +144,12 @@ windows-sys = { version = "0.59", features = [
     # function is only compiled in when both features are on.
     "Win32_UI_WindowsAndMessaging",
 ] }
+# Writing the open page out as a PDF, which is WebView2's own `PrintToPdf` and
+# nothing else: it renders the page straight to a file and raises no print
+# panel, which is the whole of what the reader asked for. Both crates already
+# compile into this binary through `wry`, at these versions, so naming them adds
+# no code to the tree — what it buys is the name to call that method by. `wry`
+# re-exports neither, and the only alternative is the print panel the reader
+# refused.
+webview2-com = "0.38.2"
+windows = { version = "0.61.3", features = ["Win32_Foundation"] }

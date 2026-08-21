@@ -19,6 +19,9 @@ const REPLY_TIMEOUT: Duration = Duration::from_secs(2);
 /// What the asker is told when the window never filled the reply in.
 const NO_REPLY: &str = "the app did not answer in time — its window thread is busy or stuck";
 
+/// How long an export gets instead. Rendering a twenty-screen document to paper is real work and the loop is inside it, so the wait every other ask gets would report a stuck app over a file that was about to be written.
+const EXPORT_TIMEOUT: Duration = Duration::from_secs(60);
+
 /// The page's own account of what the reader can see. A function in the shell rather than a line of JavaScript here, so `check-shell` calls it against its fake page and a renamed element fails the suite instead of the next ask.
 const READER_STATE: &str = "window.leafReaderState()";
 
@@ -72,6 +75,15 @@ pub(crate) enum Ask {
     /// Refused for a document that has never been named: naming one opens a dialog, and that is the owner's to answer.
     #[serde(rename = "save")]
     Save { path: PathBuf, expect: String },
+    /// Write the page at the front out as a PDF at `path`, with no save dialog in the way.
+    ///
+    /// The one file the app makes that nothing here could ever read: the Export button opens a dialog, and no session can answer one. So the sheet it produces — how tall it came out against how tall the page said the document was — had never been seen by anything but a person. `width` and `height` are the page's own measurement; `eval` `pageExportSize()` for them rather than working them out, or the reading is of somebody's arithmetic instead of the app's.
+    #[serde(rename = "export")]
+    Export {
+        path: PathBuf,
+        width: f64,
+        height: f64,
+    },
     /// Wait for the page to finish rendering, then answer. What a driven pass asks instead of guessing a sleep: guessing costs three seconds a command for a render that takes a fraction of that.
     #[serde(rename = "idle")]
     Idle,
@@ -134,7 +146,9 @@ where
                  {{\"ask\":\"edit\",\"path\":\"notes/a.md\",\"start\":0,\"end\":0,\
                  \"text\":\"new\",\"expect\":\"the fingerprint doc answered\"}}, \
                  {{\"ask\":\"save\",\"path\":\"notes/a.md\",\
-                 \"expect\":\"the fingerprint doc answered\"}}, {{\"ask\":\"idle\"}}, \
+                 \"expect\":\"the fingerprint doc answered\"}}, \
+                 {{\"ask\":\"export\",\"path\":\"page.pdf\",\"width\":1280,\"height\":5819}}, \
+                 {{\"ask\":\"idle\"}}, \
                  {{\"ask\":\"version\"}}, {{\"ask\":\"quit\"}}"
             ))
         }
@@ -227,6 +241,11 @@ where
 /// This is [`crate::app::off_loop`] run backwards: that takes work off the window thread and posts the answer back as an event, this takes an answer off it.
 fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Value, String>> {
     let (reply, answers) = mpsc::sync_channel(1);
+    // Read before the ask is spent building the event: an export is the one that takes real time on the loop.
+    let budget = match ask {
+        Ask::Export { .. } => EXPORT_TIMEOUT,
+        _ => REPLY_TIMEOUT,
+    };
     let event = match ask {
         // The reader flag is answered above this, by a second ask through the page: the loop only ever builds the workspace half.
         Ask::State { .. } => UserEvent::PipeState { reply },
@@ -251,13 +270,23 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
             expect,
             reply,
         },
+        Ask::Export {
+            path,
+            width,
+            height,
+        } => UserEvent::PipeExport {
+            path,
+            width,
+            height,
+            reply,
+        },
         // Whether the loop heard, and nothing else: the closing itself is [`UserEvent::PipeCloseNow`], sent after the reply is out.
         Ask::Quit => UserEvent::PipeQuit { reply },
         // Answered before this is reached.
         _ => return None,
     };
     proxy.send_event(event).ok()?;
-    answers.recv_timeout(REPLY_TIMEOUT).ok()
+    answers.recv_timeout(budget).ok()
 }
 
 /// Start answering. Silent on failure: the app opens whether or not anything can ask it questions.

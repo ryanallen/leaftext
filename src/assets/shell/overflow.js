@@ -136,4 +136,41 @@ const openButton = document.getElementById('openButton');
 const newButton = document.getElementById('newButton');
 if (openButton) openButton.addEventListener('click', () => send({ command: 'open' }));
 if (newButton) newButton.addEventListener('click', () => send({ command: 'newDocument' }));
+// What Export writes. The app's own chooser rather than a file dialog leading with a file type, and the same two-row menu the flowchart sheet opens over its own Export, so there is one of these in the app and not two.
+const PAGE_EXPORTS = [{ id: 'pdf', label: 'PDF', hint: 'The whole document as one continuous page, in the theme on screen' }];
+// The sheet the document needs, read off the page wearing the paper rules rather than worked out from the screen.
+//
+// Three rounds were spent subtracting things from the reader's own measurement — the app bar's room, the toolbar's room, the strip at the foot — and every one of them left blank paper under the last line, because what the render lays out is a different layout and not the screen's minus a list. So the page puts the paper class on, reads the one box that is the whole sheet, and takes it off again: the surface, which under those rules is static, uncontained and as tall as everything it holds.
+//
+// The class is `leafHoldAppearance`'s, so the render that follows is laid out under exactly the rules this measured.
+function pageExportSize() {
+  const surface = document.getElementById('appSurface');
+  if (!surface) return { width: 1, height: 1 };
+  const held = document.body.classList.contains('leaf-paper');
+  if (!held && window.leafHoldAppearance) window.leafHoldAppearance(true);
+  const box = surface.getBoundingClientRect();
+  const size = { width: Math.max(Math.round(box.width), 1), height: Math.max(box.height, 1) };
+  if (!held && window.leafHoldAppearance) window.leafHoldAppearance(false);
+  return size;
+}
+if (exportPdfButton) {
+  exportPdfButton.addEventListener('click', () => {
+    const spot = exportPdfButton.getBoundingClientRect();
+    openFlowMenuWith(
+      spot.left,
+      spot.bottom + 6,
+      PAGE_EXPORTS.map((kind) => ({
+        label: kind.label,
+        hint: kind.hint,
+        // The hold goes on before the send and is released by the host's answer: it is what makes the render lay the page out under the same paper rules the size was measured under, and what stops the render's own light color scheme repainting the app for as long as the file is being written.
+        run: () => {
+          if (window.leafHoldAppearance) window.leafHoldAppearance(true);
+          const size = pageExportSize();
+          send({ command: 'exportPdf', format: kind.id, width: size.width, height: size.height });
+        },
+      })),
+      appSurface,
+    );
+  });
+}
 homeButton.addEventListener('click', () => send({ command: 'goHome' }));

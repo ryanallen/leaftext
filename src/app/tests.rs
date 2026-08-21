@@ -3492,6 +3492,48 @@ fn the_pipe_answers_and_refuses_out_loud() {
     assert_eq!(reply["answer"], "ran 1+1");
 }
 
+/// The one file nothing here could ever read. The Export button opens a save dialog and no session can answer one, so a sheet had never been measured against the height the page said the document needed. This is that ask: a destination on the wire, no dialog, and a longer wait than every other ask because the loop is inside the render.
+#[test]
+fn the_export_ask_carries_a_destination_and_the_size_the_page_measured() {
+    let ask = serde_json::from_str::<pipe::Ask>(
+        r#"{"ask":"export","path":"C:\\out\\page.pdf","width":1280,"height":5819}"#,
+    );
+    assert!(matches!(
+        ask,
+        Ok(pipe::Ask::Export { ref path, width, height })
+            if path == Path::new(r#"C:\out\page.pdf"#) && width == 1280.0 && height == 5819.0
+    ));
+
+    // No dialog on the write path the ask runs, and the appearance held across it the way the button's own press holds it — a render emulates a light color scheme, and without the hold the file comes out in the light theme.
+    let write = include_str!("fileops.rs");
+    let body = write
+        .split("pub(crate) fn write_page_pdf_at")
+        .nth(1)
+        .and_then(|rest| {
+            rest.split(
+                "
+/// ",
+            )
+            .next()
+        })
+        .expect("the ask's own write");
+    assert!(
+        !body.contains("pick_export_path"),
+        "the ask must not open a dialog nobody can answer: {body}"
+    );
+    assert!(
+        body.contains("leafHoldAppearance(true)") && body.contains("leafHoldAppearance(false)"),
+        "the appearance is held across the render and released after it: {body}"
+    );
+
+    // Its own wait. Two seconds is what every other ask gets, and a twenty-screen document takes longer than that to render.
+    let source = include_str!("../pipe.rs");
+    assert!(
+        source.contains("Ask::Export { .. } => EXPORT_TIMEOUT,"),
+        "an export that outlasts the ordinary wait would be reported as a stuck app"
+    );
+}
+
 #[test]
 fn the_doc_ask_answers_the_buffer_and_refuses_a_path_that_will_not_open() {
     // The read half of the agent's document workflow, without a window: bring a file to the front, then answer off the same buffer the reader types into.
@@ -4495,6 +4537,18 @@ fn the_message_after_a_delete_carries_the_path_and_the_name() {
     assert!(script.contains(r#""a \"quoted\" note.md""#), "{script}");
 }
 
+/// What the host says after a file is written, and the one thing the page reads off it: the path, as its own value, so the growl can draw it as a press rather than dig it back out of the sentence.
+#[test]
+fn the_message_after_a_file_is_written_carries_the_path_it_can_open() {
+    let script = file_written_notice_script(r#"C:\reports\a "quoted" page.pdf"#);
+    assert!(script.starts_with("window.leafFileWritten("));
+    // JSON, so a backslash in a Windows path and a quote in a name reach the page as themselves rather than ending the string early.
+    assert!(
+        script.contains(r#""C:\\reports\\a \"quoted\" page.pdf""#),
+        "{script}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // The HTTP call a remote vault needs
 // ---------------------------------------------------------------------------
@@ -5142,6 +5196,92 @@ fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
         assert!(
             window_event_could_have_changed_anything(&event),
             "{event:?} has an arm, so the tail still runs"
+        );
+    }
+}
+
+/// Export, which is one press and one file: the chooser picks a format, the page measures itself so the host can make one continuous page of it, and the save dialog says where it goes. The open document only names the file that is suggested — nothing about it is read or written, and what makes the rendered page a document rather than one screen of app frame is the stylesheet, not this.
+#[test]
+fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
+    let parsed = serde_json::from_str::<IpcCommand>(
+        r#"{"command":"exportPdf","format":"pdf","width":1280,"height":5819}"#,
+    );
+    assert!(matches!(
+        parsed,
+        Ok(IpcCommand::ExportPdf { ref format, width, height })
+            if format == "pdf" && width == 1280.0 && height == 5819.0
+    ));
+
+    let source = include_str!("event_loop.rs");
+    let arm = source
+        .split("IpcCommand::ExportPdf")
+        .nth(1)
+        .and_then(|rest| rest.split("IpcCommand::").next())
+        .expect("the export arm");
+    assert!(
+        arm.contains("export_page_pdf(reader.page(), document.as_deref(), &format, width, height)"),
+        "the arm hands the chooser's format and the page's own size straight on: {arm}"
+    );
+
+    // The open document is read for its name and nothing else: a chosen path and a page size are all the write needs, so the home screen exports too.
+    let write = include_str!("fileops.rs");
+    let body = write
+        .split("pub(crate) fn export_page_pdf")
+        .nth(1)
+        .and_then(|rest| {
+            rest.split(
+                "
+/// ",
+            )
+            .next()
+        })
+        .expect("the export body");
+    assert!(
+        body.contains("Path::file_stem") && !body.contains("active_edit"),
+        "the export names the file after the document and reads nothing else of it: {body}"
+    );
+
+    // The sheet is the height the page measured, plus a hair against rounding, divided into equal pages only where one page cannot hold it. A proportional allowance was tried and on a document twenty screens tall it is most of a sheet of white below the last line.
+    assert!(
+        write.contains(
+            ".SetPageHeight(sheet_inches((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH))"
+        ),
+        "the page height is taken as given rather than scaled"
+    );
+    assert!(
+        write.contains("const HAIR_OF_PAPER: f64 = 4.0;"),
+        "the allowance is a pixel count rather than a share of the document"
+    );
+    // Rounded up rather than down: a sheet a fraction shorter than what is laid out on it is a whole second page with almost nothing on it.
+    assert!(
+        write.contains("let sheet = (inches / sheets * 100.0).ceil() / 100.0;"),
+        "the sheet is never rounded to less than the document needs"
+    );
+}
+
+/// The ceiling on a PDF page, and what a document past it comes out as. Cut at the ceiling, a document a little over is one full sheet and a mostly blank one — which is the blank paper a reader meets and cannot explain. Divided, every sheet is full and the last ends at the last line.
+#[cfg(target_os = "windows")]
+#[test]
+fn a_document_taller_than_a_pdf_page_is_divided_into_equal_sheets() {
+    use crate::app::fileops::sheet_inches;
+
+    // Under the ceiling it is its own height, so one continuous page stays one continuous page.
+    assert_eq!(sheet_inches(60.0), 60.0);
+    assert_eq!(sheet_inches(200.0), 200.0);
+
+    // A hair over, and the answer is two half sheets rather than a full one and a sliver.
+    assert_eq!(sheet_inches(202.0), 101.0);
+    // The document read on a running copy: 292 inches over a 200-inch ceiling.
+    assert_eq!(sheet_inches(292.0), 146.0);
+    // Nothing is ever asked for past the ceiling, whatever the arithmetic came to.
+    for tall in [1.0, 199.9, 200.1, 401.0, 100_000.0] {
+        let sheet = sheet_inches(tall);
+        assert!(sheet > 0.0 && sheet <= 200.0, "{tall} gave {sheet}");
+        // And every sheet holds its share: the pages multiply back to at least the document.
+        let sheets = (tall as f64 / sheet).ceil();
+        assert!(
+            sheet * sheets >= tall - 0.001,
+            "{tall} over {sheets} sheets of {sheet}"
         );
     }
 }

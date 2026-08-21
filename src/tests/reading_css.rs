@@ -251,9 +251,11 @@ fn the_hand_is_left_to_links_alone() {
         let open = css[..at].rfind('{').expect("the rule opens");
         let start = css[..open].rfind(['}', '/']).map_or(0, |i| i + 1);
         let selector = css[start..open].trim();
+        // A button can be drawn as a plain link, and then the hand is right on it. What says so is the link color, in the same rule that writes the hand — asked rather than listed, so the next one is held without anybody remembering.
+        let close = css[at..].find('}').map_or(css.len(), |i| at + i);
+        let painted_as_a_link = css[open..close].contains("color: var(--lt-link)");
         assert!(
-            // "Open the full glossary" is a button drawn as a plain link, link color included, so it is read as one.
-            names_an_anchor(selector) || selector.contains(".glossary-sheet-fulllink"),
+            names_an_anchor(selector) || painted_as_a_link,
             "only something drawn as a link may write the hand, and `{selector}` is not"
         );
     }
@@ -2670,4 +2672,110 @@ fn a_wrapped_run_of_document_buttons_does_not_touch() {
         "margin: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) 0;",
     );
     assert_contains(button, "display: inline-flex;");
+}
+
+#[test]
+fn the_print_block_hands_the_whole_document_to_the_paper() {
+    let css = reading_mode_css();
+    // The rules are on a class rather than in a media block, because the page has to be able to measure the layout it is about to ask a sheet for.
+    let print = &css[css
+        .find("body.leaf-paper:has(.app-surface) {")
+        .expect("the paper rules")..];
+
+    // The three things pinning this page to one screen, and a print that leaves any of them gives a single sheet. The surface is a fixed box with `contain: paint`, so it is what every overlay is measured from and clipped to; the reader carries its own scroller, which is what holds a whole document inside a window's height; and the window's own overflow is what stops the page scrolling at all.
+    let surface = rule_body(print, "body.leaf-paper .app-surface {");
+    assert_contains(surface, "position: static;");
+    assert_contains(surface, "contain: none;");
+    let reader = rule_body(print, "body.leaf-paper .library-shell .reader-shell {");
+    assert_contains(reader, "overflow: visible;");
+    assert_contains(reader, "height: auto;");
+    let paper_body = rule_body(print, "body.leaf-paper:has(.app-surface) {");
+    assert_contains(paper_body, "overflow: visible;");
+    // The sheet always outlives the layout by the rounding slack, so the body wears the page's own color: painted, the slack is the page; unpainted, it is a white strip under the last line.
+    assert_contains(paper_body, "background: var(--lt-markdown-background);");
+    assert_contains(paper_body, "print-color-adjust: exact;");
+
+    // A print panel leaves Background graphics unticked by default, which drops every painted background — so a dark theme prints as dark ink on white paper. Both boxes the theme's page color lands on force it instead, which takes that checkbox out of the reader's hands.
+    for painted in [
+        "body.leaf-paper .app-surface {",
+        "body.leaf-paper .library-shell .reader-shell {",
+    ] {
+        let body = rule_body(print, painted);
+        assert_contains(body, "print-color-adjust: exact;");
+        assert_contains(body, "-webkit-print-color-adjust: exact;");
+    }
+
+    // No page rule of our own: the app sizes the page to the whole document when it renders one, and a CSS page margin outranks what it sets, so the last inch of a document would be pushed onto a second sheet.
+    assert!(
+        !print.contains("@page"),
+        "the print block leaves the page box to whatever is doing the rendering"
+    );
+
+    // Every control on the page, named one at a time. Never written as "whatever the reader does not hold": the reader holds controls too — a block's gutter, the toolbar a selection raises, a diagram's corner and its opened stage — and a rule keeping the reader's children would print those onto the paper.
+    let hidden = rule_body(print, "body.leaf-paper :is(.docs-pager,");
+    for control in [
+        // A way to somewhere else, which paper has none of. Its own waiting state was still pulsing on a sheet a reader was handed.
+        "body.leaf-paper :is(.docs-pager,",
+        // The first-run bubble floats over the window rather than sitting in it, which is how it printed onto a sheet after every control in the window was hidden.
+        ".hint-bubble,",
+        ".app-bar,",
+        ".app-overflow-panel,",
+        ".reader-corner,",
+        ".library-pane,",
+        ".library-divider,",
+        ".filter-menu,",
+        ".reader-graph,",
+        ".reader-toolbar,",
+        ".find-bar,",
+        ".reader-edge-fade,",
+        ".reader-minimap,",
+        ".reader-loading,",
+        ".lt-backdrop,",
+        ".leaf-sheet,",
+        ".flow-sheet,",
+        ".confirm-dialog,",
+        ".context-menu,",
+        ".crumb-menu,",
+        ".rename-box,",
+        ".link-hover-tip,",
+        ".app-toast,",
+        ".block-gutter,",
+        ".block-gap-line,",
+        ".block-drag-ghost,",
+        ".selection-toolbar,",
+        ".mermaid-tools,",
+        ".diagram-overlay) {",
+    ] {
+        assert_contains(hidden, control);
+    }
+    assert_contains(hidden, "display: none;");
+
+    // The shadow band the app throws over the strip of window it is held off by. Paper has no window to be held off.
+    assert_contains(
+        rule_body(print, "body.leaf-paper:has(.app-surface)::before {"),
+        "display: none;",
+    );
+
+    // The room the page keeps at its foot for the floating toolbar, which nothing draws here. The height the page sends already has it taken off, so leaving it laid out makes the sheet shorter than what is on it.
+    assert_contains(
+        rule_body(print, "body.leaf-paper .document-body {"),
+        "padding-bottom: var(--reader-content-pad);",
+    );
+
+    // The break-out lanes are what shrank the paper: the print render measures overflow on the untransformed box, so a lane slid half a measure right hung past the sheet and the renderer shrank the whole page to fit the phantom width — the foot of the sheet unpainted. On paper a lane is a plain block at the width the page wrote down, centered by margins, nothing slid and nothing transformed.
+    let lanes = rule_body(
+        print,
+        "body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {",
+    );
+    assert_contains(lanes, "position: static;");
+    assert_contains(lanes, "transform: none;");
+    assert_contains(lanes, "width: var(--leaf-paper-lane, 100%);");
+    assert_contains(
+        lanes,
+        "margin-left: calc((100% - var(--leaf-paper-lane, 100%)) / 2);",
+    );
+    assert_contains(
+        rule_body(print, "body.leaf-paper .home-list-grid {"),
+        "transform: none;",
+    );
 }
