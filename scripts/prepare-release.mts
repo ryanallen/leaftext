@@ -14,19 +14,15 @@
 //
 // Every command the release runs goes through one runner, so the self-test can hand it a fixture and read back the order: what must not happen after a failed gate is proved by the commands that were never reached.
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { PLAN_ROOT_ENV, dirtyPaths, withPlanSnapshot } from "./plan-tree.mjs";
-import { TOUCHED, othersTouched } from "./gate-touched.mjs";
 
 type CommandResult = { status: number; stdout: string };
 type RunOptions = { capture?: boolean; env?: Record<string, string | undefined> };
 type Runner = (command: string, args: string[], options?: RunOptions) => CommandResult;
-/// What one other session has edited, so a path left out can be named with whoever owns it.
-type Touched = { session: string; paths: string[] };
 type ReleaseHost = {
   run: Runner;
   enterRepoRoot: () => void;
@@ -35,7 +31,6 @@ type ReleaseHost = {
   recordTag: (tag: string) => void;
   changedPaths: () => string[];
   tagsOnHead: () => string[];
-  otherSessionsTouched: () => Touched[];
 };
 type ReleaseOptions = { signCommit: boolean; host?: ReleaseHost };
 
@@ -82,37 +77,8 @@ export function liveHost(): ReleaseHost {
     },
     changedPaths: () => dirtyPaths(process.cwd()),
     tagsOnHead: () => required(host, "git", ["tag", "--points-at", "HEAD"], { capture: true }).split("\n").map((line) => line.trim()).filter(Boolean),
-    // Every session's record of what it edited except this one's, which is found through the same environment variable the keycode reporter already depends on. No id at all answers nothing, so the staging is left exactly as it is today.
-    otherSessionsTouched: () => othersTouched((process.env.CLAUDE_CODE_SESSION_ID ?? "").trim()),
   };
   return host;
-}
-
-// The work being released is whatever is dirty, less whatever another session has edited: two agents share this checkout on an ordinary morning, and a release that staged the whole dirty tree published eighty-five lines of a second session's measuring code in v1.21.2 and a whole second ticket in v1.21.5. **It subtracts theirs rather than keeping only mine**, because the gate's compile rewrites `Cargo.lock`, the bundlers rewrite the generated stylesheets and the gallery and `scripts/seo-gen.mjs` rewrites the discovery files — none of that goes through an edit tool, so nobody's record claims it and it stays with the release that produced it. A file both sessions edited is left out on purpose: it stays dirty and the next landing takes it, which costs one command, where the other way round costs a published release carrying somebody's half-written work.
-export function stagingFor(dirty: string[], others: Touched[]): { staged: string[]; left: Array<{ path: string; session: string }> } {
-  const owner = new Map<string, string>();
-  for (const { session, paths } of others) {
-    for (const path of paths) if (!owner.has(path)) owner.set(path, session);
-  }
-  const staged: string[] = [];
-  const left: Array<{ path: string; session: string }> = [];
-  for (const path of dirty) {
-    const session = owner.get(path);
-    if (session) left.push({ path, session });
-    else staged.push(path);
-  }
-  return { staged, left };
-}
-
-/// Said out loud, one line per path: a file still dirty after a release is otherwise a mystery nobody can trace back to the session that owns it.
-export function leftOutLines(left: Array<{ path: string; session: string }>, what: string): string[] {
-  return left.map(({ path, session }) => `${what}: leaving ${path} out — another session (${session}) has edited it. It stays in the tree for whoever owns it.`);
-}
-
-function narrowed(host: ReleaseHost, dirty: string[], what: string): string[] {
-  const { staged, left } = stagingFor(dirty, host.otherSessionsTouched());
-  for (const line of leftOutLines(left, what)) console.log(line);
-  return staged;
 }
 
 function normalizeVersion(version: string): string {
@@ -177,8 +143,7 @@ export function landWork(message: string, options: ReleaseOptions = { signCommit
   const named = requireMessage(message, "landing");
   const host = options.host ?? liveHost();
   host.enterRepoRoot();
-  // What is dirty, less what another session has edited — read before the empty check, so a landing whose whole tree belongs to somebody else writes nothing rather than committing it.
-  const changed = narrowed(host, host.changedPaths(), "landing");
+  const changed = host.changedPaths();
   if (!changed.length) {
     return [];
   }
@@ -209,8 +174,7 @@ export function prepareRelease(version: string, message: string, options: Releas
   host.withSnapshot((root) => {
     required(host, "just", ["verify"], { env: { ...process.env, [PLAN_ROOT_ENV]: root } });
     // Read again, because the gate compiles and a compile rewrites `Cargo.lock` with the package's own version in it: staging the earlier list commits a bump whose lockfile still names the version before it, and both release builds pass `--locked`, so they die on their first command with the tag already up and nothing published under it. v1.15.4 went out that way. The gate is the only thing between the two reads, and every file it writes into this checkout is one the release is supposed to carry.
-    // The narrowing goes here rather than on the first read: the gate hour is the widest window a second session has to type into this tree, and everything it wrote lands in this read. A release whose own work is entirely in files somebody else also touched empties here and is refused by the commit, which is truer than a "nothing to release" an hour earlier.
-    const staging = narrowed(host, host.changedPaths(), "release");
+    const staging = host.changedPaths();
     // Only now: a gate that stops here leaves the last released tag exactly where it was.
     retireOldTags(host, tag);
     required(host, "git", ["add", "--", ...staging]);
@@ -276,8 +240,6 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
       record("tags on HEAD read");
       return [];
     },
-    // Nobody else working, which is what every case not about the narrowing wants.
-    otherSessionsTouched: () => [],
     ...overrides,
   };
   return { host, calls, envs };
@@ -404,60 +366,6 @@ function selfTest(): void {
   // The landing commit is the message it was handed, so the history names the work rather than repeating one title.
   if (!landed.calls.includes("git -c commit.gpgsign=false commit --no-gpg-sign -m Fix the find bar")) fails.push("a landing commit did not carry the name of the work");
 
-  // Another session working beside this one. v1.21.2 published eighty-five lines of a second session's measuring code and v1.21.5 carried its whole ticket, because a release stages every dirty path by name whoever wrote it — so the record is read through the real reader here rather than a made-up list, which is what proves a session's own record never subtracts its own work.
-  const MINE = "aaaaaaaa-1111-1111-1111-111111111111";
-  const THEIRS = "bbbbbbbb-2222-2222-2222-222222222222";
-  const records = mkdtempSync(join(tmpdir(), "leaftext-releasetest-"));
-  try {
-    writeFileSync(join(records, `${TOUCHED}${MINE}.json`), JSON.stringify({ session: MINE, paths: ["Cargo.toml"] }) + "\n");
-    writeFileSync(join(records, `${TOUCHED}${THEIRS}.json`), JSON.stringify({ session: THEIRS, paths: ["src/lib.rs", "docs/nobody-touched-this.md"] }) + "\n");
-    const theirs = () => othersTouched(MINE, records);
-
-    // A landing: their file stays dirty, and mine is staged even though my own record names it too.
-    const shared = fixture(() => null, { otherSessionsTouched: theirs });
-    const landedBeside = landWork("Fix the find bar", { signCommit: false, host: shared.host });
-    if (landedBeside.join(" ") !== "Cargo.toml") fails.push(`a landing beside another session put ${landedBeside.join(" ") || "nothing"} on main rather than its own work alone`);
-    if (!shared.calls.includes("git add -- Cargo.toml")) fails.push(`a landing staged something other than the paths no other session had edited: ${shared.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
-    if (shared.calls.some((call) => call.includes("src/lib.rs"))) fails.push("a landing staged a file another session was mid-edit on");
-
-    // A release: the same subtraction on the read after the gate, which is the widest window anybody else has to type into this tree. The lockfile the gate's own compile rewrote is kept, because no edit tool wrote it and no record claims it.
-    const duringGate = fixture(() => null, {
-      otherSessionsTouched: theirs,
-      changedPaths: (() => {
-        let reads = 0;
-        return () => {
-          reads += 1;
-          return reads > 1 ? ["Cargo.toml", "Cargo.lock", "src/lib.rs"] : ["Cargo.toml"];
-        };
-      })(),
-    });
-    prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: duringGate.host });
-    if (!duringGate.calls.includes("git add -- Cargo.toml Cargo.lock")) fails.push(`a release did not keep the lockfile the gate rewrote while dropping the file another session typed during it: ${duringGate.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
-    if (duringGate.calls.some((call) => call.includes("src/lib.rs"))) fails.push("a release staged a file another session wrote during the gate hour");
-
-    // A record naming a file nobody has changed is nobody's collision, so it moves nothing.
-    if (stagingFor(["Cargo.toml"], theirs()).staged.join(" ") !== "Cargo.toml") fails.push("a record naming a file that is not dirty changed what was staged");
-
-    // A file left behind is named with the session that owns it, or it is a file still dirty after a release for no reason anybody can trace.
-    const said = leftOutLines(stagingFor(["Cargo.toml", "src/lib.rs"], theirs()).left, "release");
-    if (said.length !== 1) fails.push(`a release said ${said.length} things about what it left out rather than one`);
-    if (!said[0]?.includes("src/lib.rs") || !said[0]?.includes(THEIRS)) fails.push(`a path left out was not named with the session that owns it: ${said[0] ?? "nothing was said"}`);
-
-    // No session id at all: nothing can be told apart, so everything dirty is staged — a host that changed shape must not start dropping files.
-    const blind = fixture(() => null, { otherSessionsTouched: () => othersTouched("", records) });
-    landWork("Fix the find bar", { signCommit: false, host: blind.host });
-    if (!blind.calls.includes("git add -- Cargo.toml src/lib.rs")) fails.push("a landing with no session id to go on dropped a file rather than staging everything dirty");
-
-    // A tree holding nothing but another session's work: the landing writes nothing at all rather than committing it.
-    const allTheirs = fixture(() => null, { otherSessionsTouched: theirs, changedPaths: () => ["src/lib.rs"] });
-    if (landWork("Fix the find bar", { signCommit: false, host: allTheirs.host }).length) fails.push("a landing whose whole tree belonged to another session claimed to have put something on main");
-    for (const call of allTheirs.calls) {
-      if (isTagWork(call)) fails.push(`a landing with nothing of its own still ran ${call}`);
-    }
-  } finally {
-    rmSync(records, { recursive: true, force: true });
-  }
-
   // A landing or a release with no message: refused before the repository is touched, so a placeholder title can never reach the history.
   const unnamedLanding = fixture();
   const unnamedLandingFailed = refused(() => landWork("  ", { signCommit: false, host: unnamedLanding.host }));
@@ -548,7 +456,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean one and again after the gate, so the lockfile a compile rewrote is committed with the bump that moved it; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen; and a landing or a release beside another session stages what is dirty less whatever that session has edited, keeping the lockfile the gate rewrote, keeping a file its own record names, naming every path it leaves behind with the session that owns it, writing nothing where the whole tree is somebody else's, and staging everything dirty where there is no session id to tell anybody apart)");
+  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean one and again after the gate, so the lockfile a compile rewrote is committed with the bump that moved it; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
 }
 
 function isMainModule(): boolean {

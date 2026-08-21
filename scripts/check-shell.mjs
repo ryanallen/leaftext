@@ -7141,8 +7141,121 @@ if (booted) {
     }
   });
 
+  // The picture checks all lend the same globals — a canvas, an `Image`, `btoa` — so they run one after another. `checkSettled` starts every body at once, and two of these interleaved leave each one reading the other's window.
+  let pictureQueue = Promise.resolve();
+  const checkPicture = (name, run) => {
+    const mine = pictureQueue.then(run);
+    // Each waits for the one before to finish either way, and still reports its own failure as its own.
+    pictureQueue = mine.catch(() => {});
+    checkSettled(name, () => mine);
+  };
+
+  // A window that can draw one, which is where the two picture rows part: PNG hands the host raw pixels to encode, WebP hands it a file the canvas already wrote. The stand-in page has no canvas at all, so one is lent for the length of the check.
+  const withCanvas = (answer) => {
+    const original = booted.document.createElement;
+    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, drawing: booted.diagramDrawingSvg, image: booted.Image, btoa: booted.btoa };
+    const sent = [];
+    const said = [];
+    // Only the export, because a check running beside this one reports its own faults down the same pipe.
+    booted.ipc.postMessage = (text) => {
+      const one = JSON.parse(text);
+      if (one.command === 'exportDiagram') sent.push(one);
+    };
+    booted.leafToast = (words) => said.push(words);
+    booted.diagramDrawingSvg = async () => '<svg viewBox="0 0 200 100"></svg>';
+    booted.btoa = (binary) => Buffer.from(binary, 'binary').toString('base64');
+    booted.Image = class {
+      set src(unused) {
+        this.naturalWidth = answer.wide || 200;
+        this.naturalHeight = 100;
+        Promise.resolve().then(() => this.onload && this.onload());
+      }
+    };
+    booted.document.createElement = (tag) => {
+      const made = original.call(booted.document, tag);
+      if (String(tag).toLowerCase() === 'canvas') {
+        made.getContext = () => ({
+          fillRect: () => {},
+          drawImage: () => {},
+          // Four bytes, one white pixel: what the PNG row reads off the canvas.
+          getImageData: () => ({ data: new Uint8ClampedArray([255, 255, 255, 255]) }),
+        });
+        // A real canvas asked for a type it cannot write answers a PNG, which is the case the type check exists for.
+        made.toDataURL = () => (answer.cannotWriteWebp ? 'data:image/png;base64,UE5H' : 'data:image/webp;base64,V0VCUA==');
+      }
+      return made;
+    };
+    return {
+      sent,
+      said,
+      done: () => {
+        booted.closeFlowMenu();
+        booted.document.createElement = original;
+        booted.ipc.postMessage = was.send;
+        booted.leafToast = was.toast;
+        booted.diagramDrawingSvg = was.drawing;
+        booted.Image = was.image;
+        booted.btoa = was.btoa;
+      },
+    };
+  };
+
+  checkPicture('the menu offers three rows, and WebP sends a finished file where PNG sends pixels', async () => {
+    const surface = booted.document.getElementById('appSurface');
+    const lent = withCanvas({});
+    try {
+      const block = drawnDiagram('flowchart TD\n  W1 --> W2');
+      booted.addMermaidControls(block);
+      booted.openMermaidExportMenu(exportChipOn(block));
+      const menu = exportMenuOn(surface);
+      const rows = menu.children.map((child) => (child.children[0] || {}).textContent);
+      if (rows.join(', ') !== 'Markdown, PNG, WebP') throw new Error(`the menu offers ${rows.join(', ') || 'nothing'}`);
+
+      press(exportRow(surface, 'WebP'));
+      await settle(() => lent.sent.length || lent.said.length);
+      if (lent.said.length) throw new Error(`WebP refused: ${lent.said.join(' / ')}`);
+      const webp = lent.sent[0];
+      if (!webp || webp.format !== 'webp') throw new Error(`pressing WebP sent ${JSON.stringify(webp) || 'nothing'}`);
+      // The file itself, not pixels for the host to encode — which is the whole of why the row is cheaper than PNG.
+      if (webp.data !== 'V0VCUA==') throw new Error(`WebP sent ${JSON.stringify(webp.data)} rather than the canvas's own bytes`);
+      if (webp.width || webp.height) throw new Error('a finished file was sent with pixel dimensions beside it');
+
+      booted.openMermaidExportMenu(exportChipOn(block));
+      press(exportRow(surface, 'PNG'));
+      await settle(() => lent.sent.length > 1 || lent.said.length);
+      const png = lent.sent[1];
+      if (!png || png.format !== 'png') throw new Error(`pressing PNG sent ${JSON.stringify(png) || 'nothing'}`);
+      if (png.data !== '/////w==' || png.width !== 400 || png.height !== 200) {
+        throw new Error(`PNG sent ${JSON.stringify(png.data)} at ${png.width}×${png.height} rather than pixels at twice life size`);
+      }
+    } finally {
+      lent.done();
+    }
+  });
+
+  // v1.24.0 measured it: a fifty-step left-to-right flowchart is 16,872 pixels across at export size, so this is a diagram somebody draws rather than a guard against the absurd. The canvas answers an empty URL rather than throwing, so a row that did not check would save a six-byte file.
+  checkPicture('a drawing too big for WebP is refused out loud, and a window that cannot write one says so instead', async () => {
+    const surface = booted.document.getElementById('appSurface');
+    for (const [answer, expected] of [[{ wide: 9000 }, /too big/i], [{ cannotWriteWebp: true }, /cannot write WebP/i]]) {
+      const lent = withCanvas(answer);
+      try {
+        const block = drawnDiagram('flowchart LR\n  W3 --> W4');
+        booted.addMermaidControls(block);
+        booted.openMermaidExportMenu(exportChipOn(block));
+        press(exportRow(surface, 'WebP'));
+        await settle(() => lent.sent.length || lent.said.length);
+        if (lent.sent.length) throw new Error('a refused WebP asked for a file anyway');
+        if (lent.said.length !== 1 || !expected.test(lent.said[0])) throw new Error(`it said ${lent.said.join(' / ') || 'nothing'}`);
+        // Both refusals point at the row that can still write the drawing.
+        if (!/PNG/.test(lent.said[0])) throw new Error(`the refusal left the reader nowhere to go: ${lent.said[0]}`);
+      } finally {
+        lent.done();
+      }
+    }
+  });
+
   // This window has no canvas, which is the branch the refusal is written for, so what is held is that it refuses out loud and writes nothing — a row failing quietly leaves a reader waiting on a Save dialog that never opens. The drawing step stands in: everything after it is what is under test.
-  checkSettled('the picture refuses in a toast when the window cannot draw one, and sends nothing', async () => {
+  checkPicture('the picture refuses in a toast when the window cannot draw one, and sends nothing', async () => {
     const surface = booted.document.getElementById('appSurface');
     const was = {
       send: booted.ipc.postMessage,

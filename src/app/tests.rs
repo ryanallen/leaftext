@@ -3426,6 +3426,61 @@ fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
     assert_eq!(decode_base64("Zm9-v"), None);
 }
 
+#[test]
+fn a_diagram_export_writes_the_page_s_own_bytes_or_none_at_all() {
+    // The write itself is behind a Save dialog no test can answer, so this is the whole of the decision. Two of the three formats reach the file differently — the page sends pixels for a PNG and a finished file for a WebP — and a payload that does not decode has to end as nothing rather than as a file that will not open.
+    let written = |format: &str, data: &str, width: u32, height: u32| match diagram_export_file(
+        format, data, width, height,
+    ) {
+        DiagramExportFile::Write(extension, label, bytes) => Some((extension, label, bytes)),
+        _ => None,
+    };
+    let refused = |format: &str, data: &str| {
+        matches!(
+            diagram_export_file(format, data, 1, 1),
+            DiagramExportFile::Unreadable
+        )
+    };
+
+    let text = "```mermaid
+flowchart TD
+  A --> B
+```
+";
+    assert_eq!(
+        written("md", text, 0, 0),
+        Some(("md", "Markdown", text.as_bytes().to_vec())),
+        "Markdown goes out as the text the page sent"
+    );
+
+    // Base64 of one opaque white pixel, which is what the page sends for a PNG.
+    let (extension, label, bytes) = written("png", "/////w==", 1, 1).expect("a pixel encodes");
+    assert_eq!((extension, label), ("png", "PNG image"));
+    assert_eq!(
+        &bytes[..8],
+        &[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a],
+        "the host encoded the pixels rather than writing them out raw"
+    );
+
+    // A WebP is already a file when it arrives: the canvas wrote it, so the bytes go out exactly as they came in.
+    assert_eq!(
+        written("webp", "UklGRg==", 0, 0),
+        Some(("webp", "WebP image", b"RIFF".to_vec())),
+        "the finished file was re-encoded instead of written straight out"
+    );
+
+    assert!(refused("webp", "not base64!"), "a broken WebP payload");
+    assert!(refused("png", "not base64!"), "a broken picture payload");
+    assert!(refused("webp", ""), "an empty file is not a file");
+    assert!(
+        matches!(
+            diagram_export_file("svg", "anything", 1, 1),
+            DiagramExportFile::Unoffered
+        ),
+        "a format the menu does not offer is nothing anybody asked for"
+    );
+}
+
 /// An address only this test uses, so a running copy of the app is never the thing answering — a named pipe on Windows, a socket file elsewhere.
 fn test_pipe_address(name: &str) -> String {
     #[cfg(windows)]

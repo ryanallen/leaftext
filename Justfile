@@ -210,7 +210,7 @@ check-hooks:
     node scripts/gate-voice.mjs --check
     node scripts/gate-keycode.mjs --check
     node scripts/gate-checklist.mjs --check
-    node scripts/gate-touched.mjs --check
+    node scripts/gate-sample.mjs --check
     node scripts/gate-design.mjs --check
 
 # Run the WebView front-end against a fake page: that it parses, that it boots

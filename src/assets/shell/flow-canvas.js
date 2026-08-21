@@ -1812,7 +1812,7 @@ function flowPickerChoices(caption, options, current, chip, apply) {
 
 // ---- taking the diagram out ------------------------------------------------
 
-// Two files, one diagram: the mermaid text as a Markdown document of its own, or the drawing as a picture. Nothing here touches the document the diagram came out of — an export is a file beside it, and Save is still the only thing that writes into the page.
+// Three files, one diagram: the mermaid text as a Markdown document of its own, or the drawing as a picture in either of two formats. Nothing here touches the document the diagram came out of — an export is a file beside it, and Save is still the only thing that writes into the page.
 //
 // The drawing is always asked for again rather than lifted off the page: what is on screen carries whatever it has been zoomed and dragged to, and in the editor its selection ring and handles as well.
 //
@@ -1824,6 +1824,7 @@ const DIAGRAM_PNG_SCALE = 2;
 const DIAGRAM_EXPORTS = [
   { id: 'md', label: 'Markdown', hint: 'The mermaid text, in a document of its own' },
   { id: 'png', label: 'PNG', hint: 'The drawing as a picture, to paste anywhere' },
+  { id: 'webp', label: 'WebP', hint: 'The same picture, about half the file' },
 ];
 
 let diagramExportSeq = 0;
@@ -1883,8 +1884,8 @@ async function diagramDrawingSvg(source) {
   return new XMLSerializer().serializeToString(root);
 }
 
-// The drawing, as pixels. The markup goes in as a data URL, which is why the page's img-src allows `data:`.
-function diagramPngBase64(svgText) {
+// The drawing, painted at export size, which both picture rows start from. The markup goes in as a data URL, which is why the page's img-src allows `data:`.
+function diagramCanvas(svgText) {
   return new Promise((resolve, reject) => {
     const picture = new Image();
     picture.onload = () => {
@@ -1896,24 +1897,46 @@ function diagramPngBase64(svgText) {
         reject(new Error('This window cannot make a picture.'));
         return;
       }
-      // Painted again here: a PNG has no transparency to fall back on once it is dropped into something with a page color of its own.
+      // Painted again here: a picture has no transparency to fall back on once it is dropped into something with a page color of its own.
       ink.fillStyle = diagramExportBackground();
       ink.fillRect(0, 0, canvas.width, canvas.height);
       ink.drawImage(picture, 0, 0, canvas.width, canvas.height);
-      // The pixels go to the host, not a PNG. `toDataURL` writes 32-bit color with a per-row filter, and a diagram of flat fills is the one shape both choices cost on — the host's encoder palettes it instead. See src/png.rs.
-      const pixels = ink.getImageData(0, 0, canvas.width, canvas.height).data;
-      let text = '';
-      for (let at = 0; at < pixels.length; at += 8192) {
-        text += String.fromCharCode.apply(null, pixels.subarray(at, at + 8192));
-      }
-      resolve({ width: canvas.width, height: canvas.height, pixels: btoa(text) });
+      resolve(canvas);
     };
     picture.onerror = () => reject(new Error('The drawing could not be turned into a picture.'));
     picture.src = 'data:image/svg+xml;base64,' + diagramBase64(svgText);
   });
 }
 
-// The host is handed finished bytes and asked only where they go: it shows the Save dialog, writes the file, and says how it went. The source is passed in, because the same two exports serve the editor's own session and a diagram drawn in the page, which has no session at all.
+// The drawing, as pixels for the host to encode. `toDataURL('image/png')` writes 32-bit color with a per-row filter, and on a real diagram that is 167 KB where ours is 80 KB. See src/png.rs.
+async function diagramPngBase64(svgText) {
+  const canvas = await diagramCanvas(svgText);
+  const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+  let text = '';
+  for (let at = 0; at < pixels.length; at += 8192) {
+    text += String.fromCharCode.apply(null, pixels.subarray(at, at + 8192));
+  }
+  return { width: canvas.width, height: canvas.height, pixels: btoa(text) };
+}
+
+// WebP holds no more than this many pixels a side, and an ordinary diagram reaches it: a fifty-step left-to-right flowchart is 16,872 across at export size. Past it the canvas answers an empty URL rather than failing, so the refusal has to be ours.
+const DIAGRAM_WEBP_LIMIT = 16383;
+
+// The drawing, as a finished file this time: the canvas writes the WebP itself. No quality argument on purpose — that is the encoder's own default and the smallest file it writes, 41 KB on a real diagram against 77 KB for the same pixels as PNG. Every named quality is larger: 44 KB at 82, 54 KB at 90, and asking for 1 switches to lossless at 265 KB, which is three times the PNG.
+async function diagramWebpBase64(svgText) {
+  const canvas = await diagramCanvas(svgText);
+  if (canvas.width > DIAGRAM_WEBP_LIMIT || canvas.height > DIAGRAM_WEBP_LIMIT) {
+    throw new Error('This diagram is too big for WebP to hold. Export it as PNG instead.');
+  }
+  const url = canvas.toDataURL('image/webp');
+  // A canvas asked for a type it cannot write answers a PNG instead, so the type in the answer is the only thing that says a WebP was written rather than a PNG about to be saved under the wrong name. Second, so the too-wide case above keeps its own words.
+  if (!/^data:image\/webp[;,]/.test(url)) {
+    throw new Error('This window cannot write WebP. Export it as PNG instead.');
+  }
+  return url.slice(url.indexOf(',') + 1);
+}
+
+// The host is handed finished bytes and asked only where they go: it shows the Save dialog, writes the file, and says how it went. The source is passed in, because the same exports serve the editor's own session and a diagram drawn in the page, which has no session at all.
 async function exportDiagramAs(kind, source) {
   if (!source) return;
   closeFlowMenu();
@@ -1924,6 +1947,10 @@ async function exportDiagramAs(kind, source) {
     }
     const drawing = await diagramDrawingSvg(source);
     if (!drawing) return;
+    if (kind === 'webp') {
+      send({ command: 'exportDiagram', format: 'webp', data: await diagramWebpBase64(drawing) });
+      return;
+    }
     const picture = await diagramPngBase64(drawing);
     send({
       command: 'exportDiagram',
@@ -1937,7 +1964,7 @@ async function exportDiagramAs(kind, source) {
   }
 }
 
-// The two-row menu, on any diagram: the corner of a drawn block in the page, the full-window view, or the editor's own bar below. Its rows only ever need the text, which is why one menu serves all three.
+// The menu, on any diagram: the corner of a drawn block in the page, the full-window view, or the editor's own bar below. Its rows only ever need the text, which is why one menu serves all three.
 function openDiagramExportMenu(x, y, source, host) {
   openFlowMenuWith(
     x,

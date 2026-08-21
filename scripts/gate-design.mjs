@@ -8,7 +8,7 @@
 //
 // Only a message naming the build skill with its host's sign and carrying a path into the plan tree is read. A path that cannot be opened is somebody else's refusal — a hook that guesses at a missing file wedges a session over a typo.
 //
-// It also writes down which ticket the turn is building, because it is the one hook that sees the message that names one. The edit hook samples that ticket's boxes and the stop hook reads the samples, and neither can find the ticket for itself: the step list records a skill rather than its argument, and the release's touched-file record drops the plan tree as another repository. A message naming no build clears the last one, so a later turn is never judged against a ticket it is not working.
+// It also writes down which ticket the turn is building, because it is the one hook that sees the message that names one. The edit hook samples that ticket's boxes and the stop hook reads the samples, and neither can find the ticket for itself, because the step list records a skill rather than its argument. A message naming no build clears the last one, so a later turn is never judged against a ticket it is not working.
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

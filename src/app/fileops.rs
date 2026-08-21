@@ -482,6 +482,44 @@ fn write_page_pdf(page: &WebView, _target: &Path, _width: f64, _height: f64) -> 
     page.print().map_err(|error| error.to_string())
 }
 
+/// What one diagram export comes to: the extension, the words the Save dialog puts on the file, and the bytes — or why there are none.
+pub(super) enum DiagramExportFile {
+    /// Extension, dialog label, bytes.
+    Write(&'static str, &'static str, Vec<u8>),
+    /// The payload did not decode, so the file would be one nobody can open.
+    Unreadable,
+    /// Not a format the menu offers, so not a file anyone asked for.
+    Unoffered,
+}
+
+/// Turn what the page sent into the file it wants written.
+///
+/// Its own function because the write itself sits behind a save dialog no test can answer, so this is the whole of the decision a test can reach.
+pub(super) fn diagram_export_file(
+    format: &str,
+    data: &str,
+    width: u32,
+    height: u32,
+) -> DiagramExportFile {
+    let (extension, label, bytes) = match format {
+        "md" => return DiagramExportFile::Write("md", "Markdown", data.as_bytes().to_vec()),
+        // The page sends pixels rather than a PNG, because on a real diagram ours writes 80 KB where the canvas's own PNG is 167 KB. See src/png.rs.
+        "png" => (
+            "png",
+            "PNG image",
+            decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)),
+        ),
+        // Already a finished file: the canvas writes the WebP itself, about half the PNG on the same drawing, and refuses a drawing too wide for the format before it sends one.
+        "webp" => ("webp", "WebP image", decode_base64(data)),
+        _ => return DiagramExportFile::Unoffered,
+    };
+    match bytes {
+        Some(bytes) if !bytes.is_empty() => DiagramExportFile::Write(extension, label, bytes),
+        // A half-decoded picture is worse than none, so nothing is written.
+        _ => DiagramExportFile::Unreadable,
+    }
+}
+
 /// Write the flowchart sheet's diagram out as its own file. The page made the bytes; this asks where they go, puts them there, and says how it went.
 ///
 /// Nothing about the open document changes. An export is a file beside it.
@@ -493,27 +531,16 @@ pub(crate) fn export_diagram(
     width: u32,
     height: u32,
 ) {
-    let (extension, label) = match format {
-        "md" => ("md", "Markdown"),
-        "png" => ("png", "PNG image"),
-        // Not a format the sheet offers, so not a file anyone asked for.
-        _ => return,
-    };
-    let bytes = if extension == "png" {
-        // The page sends pixels, not a PNG: ours palettes the drawing and writes it unfiltered, which the canvas cannot do. See src/png.rs.
-        match decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)) {
-            Some(bytes) if !bytes.is_empty() => bytes,
-            // A half-decoded picture is worse than none, so nothing is written.
-            _ => {
-                report_file_action_failure(
-                    webview,
-                    "That picture could not be read, so nothing was written.",
-                );
-                return;
-            }
+    let (extension, label, bytes) = match diagram_export_file(format, data, width, height) {
+        DiagramExportFile::Write(extension, label, bytes) => (extension, label, bytes),
+        DiagramExportFile::Unreadable => {
+            report_file_action_failure(
+                webview,
+                "That picture could not be read, so nothing was written.",
+            );
+            return;
         }
-    } else {
-        data.as_bytes().to_vec()
+        DiagramExportFile::Unoffered => return,
     };
     let stem = document
         .and_then(Path::file_stem)
