@@ -102,7 +102,7 @@ pub(crate) enum ResizeDragStep {
     Nothing,
 }
 
-/// The step this phase of a resize drag is. `platform_drives_it` is the Windows path, where only the press is answered and everything after it belongs to the platform's own loop.
+/// The step this phase of a resize drag is. `platform_drives_it` is the Windows path, where only the press is answered.
 pub(crate) fn resize_drag_step(
     platform_drives_it: bool,
     direction: &str,

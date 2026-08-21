@@ -739,11 +739,9 @@ pub(crate) fn watched_change_steps(
         steps.push(WatchedChangeStep::ReloadActiveDocument);
         return steps;
     }
-    // The pane lists one folder off the disk, so a file added, renamed or removed in that folder changes what it shows.
     if change_affects_pane(state, changed) {
         steps.push(WatchedChangeStep::RereadPaneFolder(state.folder.clone()));
     }
-    // And the vault's text is a cache of the disk, so it is patched a file at a time rather than re-read. Rebuilding the graph for a pane nobody is looking at is what makes a burst of saves lock the window.
     steps.push(WatchedChangeStep::PatchCorpus {
         redraw_graph: state.graph_open,
     });
