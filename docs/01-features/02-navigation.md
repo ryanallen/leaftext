@@ -18,6 +18,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Recent files](#recent-files) | Reopen a recently opened file from the home screen, showing the vault you are standing in |
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
+| [Export a PDF](#export-a-pdf) | Save the page you are reading as one continuous PDF, in the theme on screen |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, and the opening of a linked note |
 | [The pointer](#the-pointer) | The arrow stays the arrow over every control, and turns into the hand only over a link |
@@ -75,7 +76,11 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ![The Leaftext app bar across the top of the window: the leaf mark, the library button, Back and Forward, the tab strip, then the theme palette, Open and plus at the right](../../imgs/navigation.png)
 
-The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), Open, and **+** ([new document](07-editing.md#new-document)). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
+The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), [Export PDF](#export-a-pdf), Open, and **+** ([new document](07-editing.md#new-document)). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
+
+### Export a PDF
+
+The export button in the app bar — shown only while a rendered document is in front of you — opens a small chooser. Pick **PDF**, say where the file goes, and the page you are reading is written as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line. A quiet note names the file when it is written, and the name is a press — click it to open the PDF in whatever reads them on your machine. The button steps aside on the home screen, in the [source view](07-editing.md#code-view) and on the [graph](03-library.md#graph), since none of those is a page to print.
 
 **There is no Settings button.** Every control stands where it applies — see [Settings](05-settings.md). The one thing that comes and goes is the [update](05-settings.md#updates) bell, which is in the bar only while there is something to download or install.
 
