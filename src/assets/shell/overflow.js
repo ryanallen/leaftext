@@ -136,7 +136,7 @@ const openButton = document.getElementById('openButton');
 const newButton = document.getElementById('newButton');
 if (openButton) openButton.addEventListener('click', () => send({ command: 'open' }));
 if (newButton) newButton.addEventListener('click', () => send({ command: 'newDocument' }));
-// What Export writes. The app's own chooser rather than a file dialog leading with a file type, and the same two-row menu the flowchart sheet opens over its own Export, so there is one of these in the app and not two.
+// What Export writes. One entry today, and the save window is what offers it — a second here becomes a second filter on that window, never a menu over the page.
 const PAGE_EXPORTS = [{ id: 'pdf', label: 'PDF', hint: 'The whole document as one continuous page, in the theme on screen' }];
 // The sheet the document needs, read off the page wearing the paper rules rather than worked out from the screen.
 //

@@ -507,7 +507,7 @@ fn diagram_export_label(extension: &str) -> Option<&'static str> {
 
 /// Turn what the page sent into the file it wants written.
 ///
-/// Its own function because the write itself sits behind a save dialog no test can answer, so this is the whole of the decision a test can reach.
+/// Its own function because the write itself is a disk call into a path a native window answered with, so this is the whole of the decision a test can reach.
 pub(super) fn diagram_export_file(
     format: &str,
     data: &str,

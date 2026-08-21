@@ -3452,7 +3452,7 @@ fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
 
 #[test]
 fn a_diagram_export_writes_the_page_s_own_bytes_or_none_at_all() {
-    // The write itself is behind a Save dialog no test can answer, so this is the whole of the decision. Two of the three formats reach the file differently — the page sends pixels for a PNG and a finished file for a WebP — and a payload that does not decode has to end as nothing rather than as a file that will not open.
+    // The write itself is a disk call into a path a native window answered with, so this is the whole of the decision. Two of the three formats reach the file differently — the page sends pixels for a PNG and a finished file for a WebP — and a payload that does not decode has to end as nothing rather than as a file that will not open.
     let written = |format: &str, data: &str, width: u32, height: u32| match diagram_export_file(
         format, data, width, height,
     ) {
@@ -5434,7 +5434,7 @@ fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
     }
 }
 
-/// Export, which is one press and one file: the chooser picks a format, the page measures itself so the host can make one continuous page of it, and the save dialog says where it goes. The open document only names the file that is suggested — nothing about it is read or written, and what makes the rendered page a document rather than one screen of app frame is the stylesheet, not this.
+/// Export, which is one press and one file: the page measures itself so the host can make one continuous page of it, and the save window says where it goes and in what format. The open document only names the file that is suggested — nothing about it is read or written, and what makes the rendered page a document rather than one screen of app frame is the stylesheet, not this.
 #[test]
 fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
     let parsed = serde_json::from_str::<IpcCommand>(
