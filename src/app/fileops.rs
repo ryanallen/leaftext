@@ -484,7 +484,7 @@ fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Res
 fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Result<(), String> {
     use objc2::runtime::ProtocolObject;
     use objc2_app_kit::{NSPrintInfo, NSPrintJobSavingURL, NSPrintSaveJob};
-    use objc2_foundation::{NSCopying, NSSize, NSString, NSURL};
+    use objc2_foundation::{NSSize, NSString, NSURL};
     use wry::WebViewExtMacOS;
 
     /// A point is a seventy-second of an inch, which is what a Mac page size is written in.
