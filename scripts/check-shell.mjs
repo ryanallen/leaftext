@@ -1980,6 +1980,64 @@ if (booted) {
     if (booted.blockAcceptsInsert(quote(true))) throw new Error("pressing the plus there would write over the footnote's line");
   });
 
+  // ---- a checkbox is armed against the document the reader is looking at ------
+  //
+  // A checkbox is bound by position: the page counts the boxes in the drawn document, pairs them one for one against the task list the front tab answered, and sends the Nth box's index back. So the binding is only right while exactly one drawn document stands inside the reader — and nothing in the page says so. Four elements wear `.document-body`, three of them outside the reader, and a table opened full-window builds a fourth inside it. That one lands after the drawn document, so the first is still the reader's own; it is right by the order of two appends and by nothing else. Get that order wrong and a tick is written into a file nobody was looking at, silently, because the count guard passes whenever the two documents hold the same number of tasks.
+  check('the boxes a press arms are the drawn document inside the reader, not a second one standing beside it', () => {
+    const appEl = booted.document.getElementById('app');
+    // The boxes answer their own body rather than the page's matcher: the stand-in reads `input[type="checkbox"]` as one long attribute name and finds nothing (`the-stand-in-page-cannot-read-an-attribute-with-a-value`). Which body the binding takes is the page's own query, and that is what is under test here, so it is left alone.
+    const drawn = (count) => {
+      const body = fakeElement('');
+      body.className = 'document-body';
+      const boxes = [];
+      for (let at = 0; at < count; at += 1) {
+        const box = fakeElement('');
+        box.tagName = 'INPUT';
+        body.appendChild(box);
+        boxes.push(box);
+      }
+      const wasQuery = body.querySelectorAll;
+      body.querySelectorAll = (selector) => (String(selector) === 'input[type="checkbox"]' ? boxes : wasQuery.call(body, selector));
+      return { body, boxes };
+    };
+    const armed = (boxes) => boxes.map((box) => box.dataset.taskIndex);
+    const press = (box) => (box.listeners.get('change') || []).forEach((handler) => handler({}));
+
+    const reader = drawn(3);
+    const table = drawn(3);
+    const wasSend = booted.ipc.postMessage;
+    const sent = [];
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      appEl.appendChild(reader.body);
+      booted.bindTaskCheckboxes(['one', 'two', 'three']);
+      if (armed(reader.boxes).join(',') !== '0,1,2') throw new Error(`the drawn document's boxes were armed as ${JSON.stringify(armed(reader.boxes))}`);
+      // And the index a press sends is the box's own place in that document, which is what the host writes into the front tab.
+      press(reader.boxes[1]);
+      if (JSON.stringify(sent) !== JSON.stringify([{ command: 'toggleTask', index: 1 }])) throw new Error(`pressing the second box sent ${JSON.stringify(sent)}`);
+
+      // A table opened full-window stands a second element of the same name inside the reader, appended after the document. Binding again must still take the first.
+      appEl.appendChild(table.body);
+      for (const box of [...reader.boxes, ...table.boxes]) delete box.dataset.taskIndex;
+      booted.bindTaskCheckboxes(['one', 'two', 'three']);
+      if (armed(reader.boxes).join(',') !== '0,1,2') throw new Error(`with a table standing beside it the drawn document's boxes were armed as ${JSON.stringify(armed(reader.boxes))}`);
+      if (armed(table.boxes).some((index) => index !== undefined)) throw new Error(`the full-window table's own boxes were armed as ${JSON.stringify(armed(table.boxes))}`);
+      // The second bind wired the same boxes a second time, so a press now sends twice — the index each time is still the reader's own.
+      sent.length = 0;
+      press(reader.boxes[2]);
+      if (sent.some((message) => message.index !== 2)) throw new Error(`a press after the second bind sent ${JSON.stringify(sent)}`);
+      // The table's boxes send nothing at all: this path never reached them, so nothing is standing between its clicks and the reader's task list.
+      sent.length = 0;
+      press(table.boxes[0]);
+      if (sent.length) throw new Error(`a box inside the full-window table sent ${JSON.stringify(sent)}`);
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      reader.body.remove();
+      table.body.remove();
+    }
+    if (appEl.querySelector('.document-body')) throw new Error('the check left a drawn document standing in the reader');
+  });
+
   // The ask pipe's reader half is one call into this function (`READER_STATE` in src/pipe.rs), so nothing else in the suite notices when an element it reads is renamed — the next `{"ask":"state","reader":true}` would be the first to find out, and what it loses is silent.
   check('the page can say what the reader sees', () => {
     const readerState = () => booted.window.leafReaderState();

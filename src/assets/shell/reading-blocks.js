@@ -99,7 +99,7 @@ function attachMarkdownBlockRanges(body, blocks, source) {
   }
 }
 
-// The document-order checkboxes the reader may toggle: every body checkbox not in a table cell. Table-cell markers are synthesized (not `TaskListMarker`s), so the host's offsets exclude them; excluding them here keeps the Nth checkbox aligned.
+// The document-order checkboxes the reader may toggle: every body checkbox not in a table cell. Table-cell markers are synthesized (not `TaskListMarker`s), so the host's offsets exclude them; excluding them here keeps the Nth checkbox aligned. The first `.document-body` is the front tab's own: a render replaces the reader whole, so only one document is ever drawn in it, and the full-window table's grid — which wears the same name — is appended after. `check-shell.mjs` holds that order.
 function readingTaskCheckboxes() {
   const body = app.querySelector('.document-body');
   if (!body) return [];
