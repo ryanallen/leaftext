@@ -72,9 +72,9 @@ pub use code_intel::{
 };
 mod editing;
 pub use editing::{
-    block_source_map, kind_is_editable, table_cell_replacement, table_source_map,
+    block_source_map, kind_is_editable, table_cell_replacement, table_source_map, task_entries,
     task_marker_offsets, BlockSpan, EditableDocument, TableCellMap, TableComment, TableMap,
-    TableRowMap,
+    TableRowMap, TaskEntry,
 };
 mod encoding;
 pub use encoding::{

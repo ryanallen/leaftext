@@ -374,17 +374,53 @@ pub(crate) fn autosave_active_buffer(workspace: &mut Workspace, file_watch: &mut
     }
 }
 
-/// Toggle a task-list checkbox from the reading view. Seeds the tab's edit buffer from disk on the first edit, flips the marker, writes it straight to disk, then reports the refreshed task offsets and dirty state so the reading view stays in sync without a full re-render — the checkbox's own checked state is already flipped in the DOM by the frontend. A checkbox toggle auto-saves and records no undo step, so it works even with reading-view editing turned off.
+/// Toggle a task-list checkbox from the reading view. Everything it does is `flip_task_and_save`'s; the reading view has nowhere to put a refusal, so one is printed rather than answered.
 pub(crate) fn toggle_task_marker(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     index: usize,
 ) {
+    if let Err(why) = flip_task_and_save(webview, workspace, file_watch, index) {
+        eprintln!("Toggle task: {why}");
+    }
+}
+
+/// Flip one task marker and write the file, or say why nothing was written.
+///
+/// The whole of what a checkbox does, shared by the reading view and the ask pipe so neither can write a file it did not change: the marker is looked up before anything is spliced, and an index naming no task is refused rather than saved over. Seeds the tab's edit buffer from disk on the first edit, writes straight to disk, then reports the refreshed task offsets and dirty state so the reading view stays in sync without a full re-render — the checkbox's own checked state is already flipped in the DOM by the frontend. A checkbox toggle auto-saves and records no undo step, so it works even with reading-view editing turned off.
+fn flip_task_and_save(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    file_watch: &mut FileWatch,
+    index: usize,
+) -> Result<serde_json::Value, String> {
     let Some((_, edit)) = seeded_active_edit(workspace, "Toggle task") else {
-        return;
+        return Err("no document is open".to_string());
     };
+    if edit.format != DocumentFormat::Markdown {
+        return Err(format!(
+            "{} is not Markdown, so it has no tasks to check",
+            edit.path.display()
+        ));
+    }
+    let markers = task_marker_offsets(edit.text());
+    let Some(&offset) = markers.get(index) else {
+        return Err(match markers.len() {
+            0 => format!("{} has no tasks", edit.path.display()),
+            count => format!(
+                "there is no task {index} — {} has {count}",
+                edit.path.display()
+            ),
+        });
+    };
+    // Read after the flip, off the same buffer the write goes to, so the answer is what the file now says rather than what the caller meant.
     edit.toggle_task_without_undo(index);
+    let checked = edit
+        .text()
+        .as_bytes()
+        .get(offset)
+        .is_some_and(|byte| *byte != b' ');
     let text = edit.text().to_string();
     match DesktopHost::default().save(
         &edit.path,
@@ -397,11 +433,15 @@ pub(crate) fn toggle_task_marker(
             edit.mark_saved();
             file_watch.active_hash = Some(content_hash(&text));
         }
-        Err(error) => eprintln!(
-            "Toggle task: auto-save failed for {}: {error}",
-            edit.path.display()
-        ),
+        // The marker moved in the buffer, so the answer below says what the reader is now looking at; the file behind it did not, and that is what this line is for.
+        Err(error) => {
+            return Err(format!(
+                "the box was ticked and the file could not be written: {} — {error}",
+                edit.path.display()
+            ))
+        }
     }
+    let saved = edit.path.display().to_string();
     let tasks = edit.task_offsets();
     let dirty = edit.is_dirty();
     let can_undo = edit.can_undo();
@@ -413,6 +453,12 @@ pub(crate) fn toggle_task_marker(
         &blocks_resynced_script(&tasks, dirty, can_undo, can_redo, Some(&text)),
         "Toggle task: failed to resync reading view",
     );
+    Ok(serde_json::json!({
+        "path": saved,
+        "index": index,
+        "checked": checked,
+        "fingerprint": source_fingerprint(&text),
+    }))
 }
 
 /// What a document's source is worth as one short string, and the value a write over the ask pipe has to quote back.
@@ -483,9 +529,15 @@ pub(crate) fn pipe_bring_to_front(workspace: &mut Workspace, path: &Path) -> Res
     Ok(true)
 }
 
-/// What the ask pipe answers about the document at the front: its source as the buffer holds it, how its file is spelled, whether it has edits nobody has saved, and the fingerprint a write has to quote back.
+/// What the ask pipe answers about the document at the front: its source as the buffer holds it, how its file is spelled, whether it has edits nobody has saved, the fingerprint a write has to quote back, and its tasks.
+///
+/// The tasks carry no byte offset on purpose: a caller names one by its place in the list, which is the arithmetic the task ask exists to remove, and the source is right here for anything that genuinely needs a byte.
 pub(crate) fn pipe_document_answer(workspace: &mut Workspace) -> Result<serde_json::Value, String> {
     let (path, edit) = pipe_active_edit(workspace)?;
+    let tasks: Vec<serde_json::Value> = document_tasks(edit)
+        .into_iter()
+        .map(|task| serde_json::json!({ "checked": task.checked, "text": task.text }))
+        .collect();
     Ok(serde_json::json!({
         "path": path.display().to_string(),
         "text": edit.text(),
@@ -493,7 +545,17 @@ pub(crate) fn pipe_document_answer(workspace: &mut Workspace) -> Result<serde_js
         "unsaved": edit.is_dirty(),
         "untitled": edit.untitled,
         "fingerprint": source_fingerprint(edit.text()),
+        "tasks": tasks,
     }))
+}
+
+/// The tasks in a buffer, in document order. Empty for anything that is not Markdown, which is the one format a task marker means something in.
+fn document_tasks(edit: &EditableDocument) -> Vec<TaskEntry> {
+    if edit.format == DocumentFormat::Markdown {
+        task_entries(edit.text())
+    } else {
+        Vec::new()
+    }
 }
 
 /// A write refused because the document moved on under it, saying what it is now so the asker reads it again rather than guessing.
@@ -525,6 +587,26 @@ pub(crate) fn pipe_edit_document(
         "unsaved": edit.is_dirty(),
         "fingerprint": source_fingerprint(edit.text()),
     }))
+}
+
+/// The pipe's task toggle: check or clear the `index`-th task of the document at the front and write it at once, the way the reader's own checkbox does.
+///
+/// Every refusal lands before anything is written — a document that is not at the front, a fingerprint that has moved, a document with no tasks, an index naming none. That is the whole of what this adds over the page command it shares its body with, which takes no path, checks no fingerprint and answers nothing.
+pub(crate) fn pipe_toggle_task(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    file_watch: &mut FileWatch,
+    path: &Path,
+    index: usize,
+    expect: &str,
+) -> Result<serde_json::Value, String> {
+    front_document(workspace, path)?;
+    let (_, edit) = pipe_active_edit(workspace)?;
+    let holding = source_fingerprint(edit.text());
+    if holding != expect {
+        return Err(stale_fingerprint(&holding));
+    }
+    flip_task_and_save(webview, workspace, file_watch, index)
 }
 
 /// The pipe's save: write the document at the front to its file, through the same host save the page's own Save runs.

@@ -743,6 +743,63 @@ pub fn task_marker_offsets(markdown: &str) -> Vec<usize> {
     offsets
 }
 
+/// One task in a document, as something outside the app can name it: whether it is checked, and the words it carries.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TaskEntry {
+    pub checked: bool,
+    pub text: String,
+}
+
+/// Every list task in document order, so a caller can name one by its position instead of computing a byte offset. The order is `task_marker_offsets`' own, and the same markers: a `[ ]` in a table cell is plain text and is not one.
+///
+/// The words are the item's own, with its nested lists left out — a task reads as the line somebody wrote, not as everything filed under it.
+pub fn task_entries(markdown: &str) -> Vec<TaskEntry> {
+    let mut entries: Vec<TaskEntry> = Vec::new();
+    // The task being read, and how many list items were open when its marker fired. Only items are counted: a loose list wraps its words in a paragraph, which must not read as nesting, while a nested list's items must.
+    let mut open: Option<(bool, String, usize)> = None;
+    let mut items = 0usize;
+    let close = |open: &mut Option<(bool, String, usize)>, entries: &mut Vec<TaskEntry>| {
+        if let Some((checked, text, _)) = open.take() {
+            entries.push(TaskEntry {
+                checked,
+                text: text.split_whitespace().collect::<Vec<_>>().join(" "),
+            });
+        }
+    };
+    for event in Parser::new_ext(markdown, markdown_options()) {
+        match event {
+            Event::Start(Tag::Item) => items += 1,
+            Event::TaskListMarker(checked) => {
+                close(&mut open, &mut entries);
+                open = Some((checked, String::new(), items));
+            }
+            Event::End(TagEnd::Item) => {
+                items = items.saturating_sub(1);
+                if open.as_ref().is_some_and(|(_, _, at)| items < *at) {
+                    close(&mut open, &mut entries);
+                }
+            }
+            Event::Text(words) | Event::Code(words) => {
+                if let Some((_, text, at)) = open.as_mut() {
+                    if items == *at {
+                        text.push_str(&words);
+                    }
+                }
+            }
+            Event::SoftBreak | Event::HardBreak => {
+                if let Some((_, text, at)) = open.as_mut() {
+                    if items == *at {
+                        text.push(' ');
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    close(&mut open, &mut entries);
+    entries
+}
+
 /// Locate the state character inside a `[ ]` / `[x]` task marker whose source spans `[start, end)`. Returns the byte offset of the character between the brackets, or `None` if the slice does not hold a well-formed `[?]` marker.
 fn task_marker_state_offset(markdown: &str, start: usize, end: usize) -> Option<usize> {
     let slice = markdown.get(start..end)?;

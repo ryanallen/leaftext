@@ -54,7 +54,11 @@ function askApp(request) {
 
 // The whole document workflow in one line, carried in the description of every tool that is part of it, since a tool set is read one description at a time.
 const WORKFLOW =
-  'The workflow for working on a document is leaftext_doc to read it and take its fingerprint, leaftext_edit for each change, leaftext_idle to wait for the window to redraw, leaftext_save to write it, then leaftext_state to see it is no longer unsaved.';
+  'The workflow for working on ordinary text is leaftext_doc to read it and take its fingerprint, leaftext_edit for each change, leaftext_idle to wait for the window to redraw, leaftext_save to write it, then leaftext_state to see it is no longer unsaved. A task checkbox is not that: it is leaftext_doc then leaftext_toggle_task, which writes the file itself.';
+
+// The shorter one, for the checkbox path: two calls rather than five, and no byte offset at either end.
+const TASK_WORKFLOW =
+  'A task checkbox is leaftext_doc to read the document and its task list, then leaftext_toggle_task on the task you want — it writes the file itself, so there is no leaftext_edit and no leaftext_save.';
 
 // One entry per ask in `Ask` (src/pipe.rs). A new variant there is a new row here and nothing else.
 const TOOLS = [
@@ -94,7 +98,7 @@ const TOOLS = [
   {
     name: 'leaftext_doc',
     description:
-      `A document's source, as the app holds it. Opens the file, or brings it to the front if it is already open, so the window shows what you are working on. Answers the text, how the file is spelled (its encoding and whether it has a byte order mark), whether it has edits nobody has saved, and a fingerprint. Read a file this way rather than through the shell, and write it back the same way: the app keeps the spelling the file arrived with, which is what rewriting a file through terminal text output loses. ${WORKFLOW}`,
+      `A document's source, as the app holds it. Opens the file, or brings it to the front if it is already open, so the window shows what you are working on. Answers the text, how the file is spelled (its encoding and whether it has a byte order mark), whether it has edits nobody has saved, a fingerprint, and its \`tasks\` — every Markdown checkbox in document order, each with its checked state and its own words. **That list is what a checkbox is addressed by**: hand its position to leaftext_toggle_task rather than working out a marker offset from the source beside it. Read a file this way rather than through the shell, and write it back the same way: the app keeps the spelling the file arrived with, which is what rewriting a file through terminal text output loses. ${WORKFLOW}`,
     inputSchema: {
       type: 'object',
       properties: { path: { type: 'string', description: 'The file to read' } },
@@ -123,6 +127,26 @@ const TOOLS = [
       start: Number(args.start ?? 0),
       end: Number(args.end ?? 0),
       text: String(args.text ?? ''),
+      expect: String(args.expect ?? ''),
+    }),
+  },
+  {
+    name: 'leaftext_toggle_task',
+    description:
+      `Check or clear one task of the document at the front, and write the file at once — the same action a person clicking that checkbox makes, so there is no separate save. \`index\` is the task's place in the \`tasks\` list leaftext_doc answered, counting from zero: name a task by that position rather than working out a byte offset. \`expect\` is the fingerprint that answer carried; if the document has changed since, nothing is written and the refusal says what the fingerprint is now, so read it again. It also refuses a document that is not at the front, a document that is not Markdown, and an index naming no task — in every case before a byte is written. Answers the path, the task's new checked state, and the fresh fingerprint. ${TASK_WORKFLOW}`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'The document holding the task' },
+        index: { type: 'number', description: "The task's place in the list leaftext_doc answered, from zero" },
+        expect: { type: 'string', description: 'The fingerprint leaftext_doc answered' },
+      },
+      required: ['path', 'index', 'expect'],
+    },
+    ask: (args) => ({
+      ask: 'task',
+      path: String(args.path ?? ''),
+      index: Number(args.index ?? 0),
       expect: String(args.expect ?? ''),
     }),
   },

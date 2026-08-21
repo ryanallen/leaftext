@@ -70,6 +70,15 @@ pub(crate) enum Ask {
         text: String,
         expect: String,
     },
+    /// Check or clear one task of the document at the front, and write it at once — the same action the reader's own checkbox is, which is why it needs no separate save.
+    ///
+    /// `index` is the task's place in the `tasks` list [`Ask::Doc`] answered, counting from zero, so nothing here computes a byte offset. `expect` is that answer's fingerprint, and everything the guard refuses — a document that is not at the front, a fingerprint that has moved, a document with no tasks, an index naming none — is refused before a byte is written.
+    #[serde(rename = "task")]
+    Task {
+        path: PathBuf,
+        index: usize,
+        expect: String,
+    },
     /// Write the document at the front to its file, the way the page's own Save does — through the host, so the file is written back the way it was spelled. Guarded by the same fingerprint as [`Ask::Edit`].
     ///
     /// Refused for a document that has never been named: naming one opens a dialog, and that is the owner's to answer.
@@ -145,6 +154,8 @@ where
                  {{\"ask\":\"doc\",\"path\":\"notes/a.md\"}}, \
                  {{\"ask\":\"edit\",\"path\":\"notes/a.md\",\"start\":0,\"end\":0,\
                  \"text\":\"new\",\"expect\":\"the fingerprint doc answered\"}}, \
+                 {{\"ask\":\"task\",\"path\":\"notes/a.md\",\"index\":0,\
+                 \"expect\":\"the fingerprint doc answered\"}}, \
                  {{\"ask\":\"save\",\"path\":\"notes/a.md\",\
                  \"expect\":\"the fingerprint doc answered\"}}, \
                  {{\"ask\":\"export\",\"path\":\"page.pdf\",\"width\":1280,\"height\":5819}}, \
@@ -262,6 +273,16 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
             start,
             end,
             text,
+            expect,
+            reply,
+        },
+        Ask::Task {
+            path,
+            index,
+            expect,
+        } => UserEvent::PipeTask {
+            path,
+            index,
             expect,
             reply,
         },

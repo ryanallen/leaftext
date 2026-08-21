@@ -3776,6 +3776,196 @@ fn a_write_through_the_pipe_is_guarded_by_the_fingerprint_and_lands_on_disk() {
     let _ = fs::remove_dir_all(&dir);
 }
 
+/// What the task ask refuses, and that it writes nothing when it does. Each guard is the half the page command it shares a body with has none of, so each is checked to have left the file alone.
+#[test]
+fn a_task_toggle_through_the_pipe_refuses_before_it_writes_anything() {
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-task-refusals-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("tasks.md");
+    fs::write(&note, "- [ ] one\n- [x] two\n").expect("the fixture is written");
+    let plain = dir.join("plain.json");
+    fs::write(&plain, "{\"a\": 1}\n").expect("the second fixture is written");
+
+    let mut workspace = Workspace::default();
+    let mut file_watch = FileWatch::default();
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    let good = read["fingerprint"]
+        .as_str()
+        .expect("a fingerprint")
+        .to_string();
+    let untouched = fs::read(&note).expect("the file is read");
+
+    let stale = pipe_toggle_task(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &note,
+        0,
+        "0000000000000000",
+    )
+    .expect_err("a fingerprint that is not the buffer's is refused");
+    assert!(stale.contains("changed since that fingerprint"), "{stale}");
+
+    let missing = pipe_toggle_task(None, &mut workspace, &mut file_watch, &note, 9, &good)
+        .expect_err("an index naming no task is refused");
+    assert!(
+        missing.contains("no task 9") && missing.contains("has 2"),
+        "{missing}"
+    );
+
+    // The document at the front is the note, so an ask aimed at the other file is refused before it can land on this one.
+    let elsewhere = pipe_toggle_task(None, &mut workspace, &mut file_watch, &plain, 0, &good)
+        .expect_err("a document that is not at the front is refused");
+    assert!(
+        elsewhere.contains("is the document at the front"),
+        "{elsewhere}"
+    );
+
+    // The JSON file at the front: a format with no task markers in it at all.
+    pipe_bring_to_front(&mut workspace, &plain).expect("the second file opens");
+    let other = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    assert_eq!(
+        other["tasks"],
+        serde_json::json!([]),
+        "a data file has no tasks"
+    );
+    let wrong_format = pipe_toggle_task(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &plain,
+        0,
+        other["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect_err("a document that is not Markdown is refused");
+    assert!(wrong_format.contains("not Markdown"), "{wrong_format}");
+
+    // The whole point of refusing before writing: four refusals, and the file is byte for byte what it was.
+    assert_eq!(
+        fs::read(&note).expect("the file is read"),
+        untouched,
+        "a refused toggle wrote to the file anyway"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// A toggle that lands: one marker moves, the rest of the file does not, the document is not left dirty, the answer carries the fresh fingerprint, and a file spelled UTF-16 comes back spelled that way.
+#[test]
+fn a_task_toggle_through_the_pipe_moves_one_marker_and_keeps_the_file_spelling() {
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-task-toggle-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("wide-tasks.md");
+    let spelling = SourceSpelling {
+        encoding: SourceEncoding::Utf16Le,
+        mark: true,
+    };
+    let source = "- [ ] one\n- [ ] two\n- [x] three\n";
+    fs::write(&note, leaftext::encode_source(source, spelling)).expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    let mut file_watch = FileWatch::default();
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+
+    let answer = pipe_toggle_task(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &note,
+        1,
+        read["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect("the toggle lands");
+    assert_eq!(answer["index"], 1);
+    assert_eq!(
+        answer["checked"], true,
+        "the answer says what the file now holds"
+    );
+
+    let bytes = fs::read(&note).expect("the file is read");
+    assert_eq!(
+        &bytes[..2],
+        &[0xFF, 0xFE],
+        "the byte order mark is written back"
+    );
+    let back = leaftext::decode_source(&bytes).expect("the file still decodes");
+    assert_eq!(back.text, "- [ ] one\n- [x] two\n- [x] three\n");
+    assert_eq!(back.spelling, spelling);
+
+    // Saved on the spot, the way the reader's own checkbox is: nothing is left for a later save ask.
+    let after = pipe_document_answer(&mut workspace).expect("the buffer answers again");
+    assert_eq!(after["unsaved"], false);
+    assert_eq!(
+        after["fingerprint"], answer["fingerprint"],
+        "the answer's fingerprint is the one a next write has to quote"
+    );
+
+    // Clearing it puts the file back exactly as it arrived.
+    pipe_toggle_task(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &note,
+        1,
+        after["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect("the second toggle lands");
+    let cleared = leaftext::decode_source(&fs::read(&note).expect("the file is read"))
+        .expect("the file still decodes");
+    assert_eq!(cleared.text, source);
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// The task list the document read answers: what a caller names a task by. Its order and its checked states are the source's, and a `[ ]` that is not a list marker is not in it.
+#[test]
+fn the_document_read_answers_the_tasks_a_caller_can_name() {
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-task-list-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("list.md");
+    // The table cell and the fenced block are the two places a `[ ]` is text rather than a task.
+    fs::write(
+        &note,
+        "- [ ] open one\n- [x] done one\n  - [ ] nested\n\n| Step | Done |\n| --- | --- |\n| a | [ ] |\n\n```\n- [ ] in a fence\n```\n",
+    )
+    .expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    let tasks = read["tasks"].as_array().expect("a task list").clone();
+
+    assert_eq!(
+        tasks.len(),
+        3,
+        "the table cell or the fence was counted: {tasks:?}"
+    );
+    assert_eq!(
+        tasks[0],
+        serde_json::json!({ "checked": false, "text": "open one" })
+    );
+    // A nested task is its own entry, and the one holding it carries only its own words.
+    assert_eq!(
+        tasks[1],
+        serde_json::json!({ "checked": true, "text": "done one" })
+    );
+    assert_eq!(
+        tasks[2],
+        serde_json::json!({ "checked": false, "text": "nested" })
+    );
+
+    // The list is what the toggle counts by, so its order and the marker order are one thing.
+    assert_eq!(
+        tasks.len(),
+        leaftext::task_marker_offsets(read["text"].as_str().expect("the source")).len(),
+        "the list a caller reads and the markers the toggle flips disagree"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn a_document_written_through_the_pipe_keeps_the_spelling_it_arrived_with() {
     // The whole reason the feature exists: a file rewritten through terminal text output comes back UTF-8 with its mark gone, and the owner has paid for that once. Through the asks it goes out spelled the way it came in.

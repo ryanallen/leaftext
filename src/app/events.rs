@@ -99,6 +99,13 @@ pub(crate) enum UserEvent {
         expect: String,
         reply: PipeReply,
     },
+    /// Somebody on the ask pipe wants one task of the document at the front checked or cleared and the file written at once — the same action the reader's own checkbox is, guarded by a path, a fingerprint and the task list the read answered.
+    PipeTask {
+        path: PathBuf,
+        index: usize,
+        expect: String,
+        reply: PipeReply,
+    },
     /// Somebody on the ask pipe wants the document at the front written to its file, through the same save the page's own Save button runs.
     PipeSave {
         path: PathBuf,

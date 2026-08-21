@@ -581,6 +581,23 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 let _ = reply.try_send(answer);
             }
+            Event::UserEvent(UserEvent::PipeTask {
+                path,
+                index,
+                expect,
+                reply,
+            }) => {
+                // No render: one marker byte changed, and the resync inside the toggle is what the reader's own checkbox does with it.
+                let answer = pipe_toggle_task(
+                    reader.webview.as_ref(),
+                    &mut reader.workspace,
+                    &mut file_watch,
+                    &path,
+                    index,
+                    &expect,
+                );
+                let _ = reply.try_send(answer);
+            }
             Event::UserEvent(UserEvent::PipeSave {
                 path,
                 expect,
