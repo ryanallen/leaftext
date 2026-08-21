@@ -554,7 +554,7 @@ pub(crate) fn export_diagram(
     match fs::write(&target, &bytes) {
         Ok(()) => run_page_script(
             webview,
-            &notice_toast_script(&format!("Saved {}", target.display())),
+            &file_written_notice_script(&target.display().to_string()),
             "Failed to report a diagram export",
         ),
         Err(error) => report_file_action_failure(
