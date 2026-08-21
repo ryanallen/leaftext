@@ -68,7 +68,7 @@ function detachChild(child) {
   if (!held) return;
   const at = held.indexOf(child);
   if (at >= 0) held.splice(at, 1);
-  // Released as well as delisted, because "has it still a parent" is how the page asks whether the thing it is closing is standing: the diagram menu and its label box both close that way, and a holder kept after the drop leaves each of those guards on one branch for ever. Every move assigns its new holder straight after this call, so a move is unharmed.
+  // The holder is let go as well as dropped from its list, because "has it a parent" is how the page asks whether the thing it is closing is still standing: the diagram menu and the box its label is typed into both close that way, and a parent kept after the drop leaves each of those guards on one branch for ever. Every move assigns its new holder straight after this call, so a move is unharmed.
   child.parentElement = null;
 }
 
