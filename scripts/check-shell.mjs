@@ -10,11 +10,15 @@ import { POLICY, sitePage } from './web-page.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const failures = [];
+// Set once the page has booted. The page is shared by every check after that, so a check that drives the app — opens the pane, folds the bar, switches a view — would otherwise leave the next check standing in whatever it left behind, failing on something it never names.
+let restoreSharedPage = null;
 const check = (name, run) => {
   try {
     run();
   } catch (error) {
     failures.push(`${name}: ${error && error.message ? error.message : error}`);
+  } finally {
+    if (restoreSharedPage) restoreSharedPage();
   }
 };
 // For a check that has to let the page's own promises settle before it can look. Its failure lands in the same list, and the report at the foot waits for every one of them.
@@ -210,6 +214,8 @@ function composedText(node) {
 function fakeElement(id = '') {
   // The one place a class lives, reached by both names below. A browser has one, and two stores that never meet leave every guard asking whether an element wears a class the markup or a name write gave it answering no for ever.
   const classes = new Set();
+  // Declared out here so the snapshot below can copy it whole. Reading the names out of the fragment sources instead would miss a property whose name the source never spells.
+  const styleProperties = new Map();
   const element = Object.assign(new FakeElement(), {
     id,
     tagName: 'DIV',
@@ -228,18 +234,15 @@ function fakeElement(id = '') {
     isConnected: true,
     dataset: {},
     // A real record, because a custom property set on an element is how the page changes a layout without a class: the published site closes the pane's breadcrumb band by taking its height to zero, and a stub that answered '' would let a test watching for it pass with nothing set.
-    style: (() => {
-      const held = new Map();
-      return {
-        setProperty(name, value) {
-          held.set(name, value);
-        },
-        removeProperty(name) {
-          held.delete(name);
-        },
-        getPropertyValue: (name) => held.get(name) ?? '',
-      };
-    })(),
+    style: {
+      setProperty(name, value) {
+        styleProperties.set(name, value);
+      },
+      removeProperty(name) {
+        styleProperties.delete(name);
+      },
+      getPropertyValue: (name) => styleProperties.get(name) ?? '',
+    },
     // A real set, because a class is how the page changes a whole layout without touching a single element: an embed takes the bar, the pane and the floating toolbar down with one on the body. A stub that always answered false would let a check watching for one pass with nothing added.
     classList: {
       add: (...names) => names.forEach((name) => classes.add(name)),
@@ -362,6 +365,12 @@ function fakeElement(id = '') {
   });
   // Writing either name empties the element, which is how the app clears a container before drawing it again — a write of '' in 22 places. Each name keeps its own string, so a container written by one name still reads back by the other. Only the markup becomes children: the page draws whole panels as one string and reaches straight back into what it drew, and the text is what eight checks rebind to hand-made words for a line being typed on.
   const held = { textContent: '', innerHTML: '' };
+  // The harness's own way in to what this element closes over, so the page can be handed back the way it was found after a check drove it. Not enumerable: nothing the page runs may see it.
+  Object.defineProperty(element, '__stores', {
+    value: { classes, style: styleProperties, text: held },
+    enumerable: false,
+    configurable: true,
+  });
   for (const name of ['textContent', 'innerHTML']) {
     Object.defineProperty(element, name, {
       // The text an element says is what was written inside it, in that order, each child asked the same question in turn. The held string is the answer only while nothing was written inside, which is where an element a check builds by assigning `children` outright lands.
@@ -504,6 +513,10 @@ function fakePage() {
   };
   const document = {
     documentElement: fakeElement('documentElement'),
+    // The harness's own index of every element the markup declared, so a snapshot reaches one a check has taken out of the tree. Not enumerable: nothing the page runs may see it.
+    get __elements() {
+      return byId;
+    },
     body: fakeElement('body'),
     head: fakeElement('head'),
     // Unknown ids answer null, exactly as the real page does — so code that guards on a missing element is exercised, not papered over. An id taken out of the page is one of them.
@@ -775,6 +788,8 @@ function runShell(source, extras = {}) {
 
   // Run every frame the page has asked for, and every frame those ask for in turn, until there are none left. A job that re-arms itself never reaches that point, so the cap is the failure rather than a hang.
   sandbox.__frames = {
+    // The queue itself, so the walk that hands the page back can take off a callback one check left waiting rather than letting it run inside the next.
+    queue: frames,
     waiting: () => frames.size,
     drain: (cap = 200) => {
       let ran = 0;
@@ -797,6 +812,155 @@ function runShell(source, extras = {}) {
   return context;
 }
 
+/** Every top-level `let` and `var` the fragments declare. Scanned rather than written down, so a value added next week is put back the day it is written — a declaration at the start of a line is top level, since everything inside a function is indented. */
+function topLevelNames(script) {
+  const found = new Set();
+  for (const line of script.split('\n')) {
+    const declared = line.match(/^(?:let|var)\s+([A-Za-z_$][\w$]*(?:\s*,\s*[A-Za-z_$][\w$]*)*)\s*(?:=|;|$)/);
+    if (declared) for (const name of declared[1].split(',')) found.add(name.trim());
+  }
+  return [...found];
+}
+
+/** Every element the page holds: the ones the markup declared, the three roots, and everything standing under them. */
+function everyElement(context) {
+  const seen = new Set();
+  const walk = (node) => {
+    if (!node || typeof node !== 'object' || seen.has(node)) return;
+    seen.add(node);
+    for (const child of node.children || []) walk(child);
+  };
+  for (const node of [context.document.documentElement, context.document.body, context.document.head]) walk(node);
+  for (const node of context.document.__elements.values()) walk(node);
+  return [...seen];
+}
+
+/** One value, taken so it can be put back. A list, a map, a set or a plain object is kept by identity as well as by contents, because a check that empties one is not the same as a check that swaps a new one in — and both happen. What is inside one is taken the same way, so the list of handlers a listener map holds against an event name is refilled rather than replaced: a handler armed after a restore would otherwise be pushed into the very list the snapshot is holding. */
+function takeValue(value, depth = 0) {
+  if (depth < 4) {
+    if (Array.isArray(value)) return { kind: 'list', ref: value, items: value.map((one) => takeValue(one, depth + 1)) };
+    if (value instanceof Map) return { kind: 'map', ref: value, items: [...value].map(([k, v]) => [k, takeValue(v, depth + 1)]) };
+    if (value instanceof Set) return { kind: 'set', ref: value, items: [...value] };
+    if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+      return { kind: 'plain', ref: value, items: Object.entries(value).map(([k, v]) => [k, takeValue(v, depth + 1)]) };
+    }
+  }
+  return { kind: 'value', ref: value };
+}
+
+/** Put one taken value back, contents and all. */
+function putValue(taken) {
+  const { ref } = taken;
+  if (taken.kind === 'list') {
+    ref.length = 0;
+    for (const one of taken.items) ref.push(putValue(one));
+  } else if (taken.kind === 'map') {
+    ref.clear();
+    for (const [key, one] of taken.items) ref.set(key, putValue(one));
+  } else if (taken.kind === 'set') {
+    ref.clear();
+    for (const one of taken.items) ref.add(one);
+  } else if (taken.kind === 'plain') {
+    for (const key of Object.keys(ref)) delete ref[key];
+    for (const [key, one] of taken.items) ref[key] = putValue(one);
+  }
+  return ref;
+}
+
+/** One element's own properties, taken whole. Every own name is read rather than a list of fields anybody keeps, so a class, a layout number, a child list, a style property, a method a check swapped out and a property a check defined are all covered — including ones nobody has written yet. */
+function takeElement(el) {
+  const own = new Map();
+  for (const name of Object.getOwnPropertyNames(el)) {
+    const at = Object.getOwnPropertyDescriptor(el, name);
+    own.set(name, at.get || at.set ? { accessor: at } : { data: takeValue(at.value), writable: at.writable, enumerable: at.enumerable, configurable: at.configurable });
+  }
+  return {
+    el,
+    own,
+    // The three stores an element closes over, which no own name reaches.
+    stores: el.__stores ? { classes: [...el.__stores.classes], style: [...el.__stores.style], text: { ...el.__stores.text } } : null,
+  };
+}
+
+/** Hand one element back the way it was found. */
+function putElement(taken) {
+  const { el, own } = taken;
+  for (const name of Object.getOwnPropertyNames(el)) {
+    if (own.has(name)) continue;
+    // Defined by a check and never taken away — `childElementCount` is the one the file already deletes by hand.
+    try {
+      delete el[name];
+    } catch {
+      // A property nothing can remove is one nothing can have added.
+    }
+  }
+  for (const [name, was] of own) {
+    const now = Object.getOwnPropertyDescriptor(el, name);
+    if (was.accessor) {
+      if (!now || now.get !== was.accessor.get || now.set !== was.accessor.set) Object.defineProperty(el, name, was.accessor);
+      continue;
+    }
+    const value = putValue(was.data);
+    if (!now || now.get || now.set) Object.defineProperty(el, name, { value, writable: was.writable, enumerable: was.enumerable, configurable: was.configurable });
+    else if (now.value !== value) el[name] = value;
+  }
+  if (taken.stores) {
+    const { classes, style, text } = el.__stores;
+    classes.clear();
+    for (const name of taken.stores.classes) classes.add(name);
+    style.clear();
+    for (const [name, value] of taken.stores.style) style.set(name, value);
+    for (const key of Object.keys(text)) delete text[key];
+    Object.assign(text, taken.stores.text);
+  }
+}
+
+/** Everything the page is surrounded by that no element holds: the window's own listeners, every watcher it registered, the frames it has queued, and whatever a check swapped out on the window itself. Taken the same way an element is — every own property, by identity as well as by contents — so a handler armed by one check does not fire inside the next. */
+function takeSurroundings(context) {
+  const own = new Map();
+  for (const name of Object.getOwnPropertyNames(context)) {
+    if (name === '__leafTakenValues') continue;
+    const at = Object.getOwnPropertyDescriptor(context, name);
+    if (at.get || at.set || !at.writable) continue;
+    // `window`, `self` and `globalThis` are the page itself, and taking one by contents would empty the page rather than copy it.
+    own.set(name, { data: at.value === context ? { kind: 'value', ref: at.value } : takeValue(at.value), enumerable: at.enumerable, configurable: at.configurable });
+  }
+  return () => {
+    for (const [name, was] of own) {
+      const value = putValue(was.data);
+      if (context[name] !== value) context[name] = value;
+    }
+  };
+}
+
+/** The shared page as the boot left it, and a way to hand it back. Nothing here is a list of fields somebody keeps: the tree is walked, every own property of every element is taken with it, and the page's own values are scanned out of the script — so a class, a layout number, a custom property, a swapped-out method or a value nobody thought of is covered the day it arrives.
+ *
+ * The page's own values are read and written through scripts run in its context rather than off the context object, because a top-level `let` lives in the script's own scope and never reaches the global object — reading `context.name` for one answers undefined and writing it makes a second name the page cannot see. */
+function pageSnapshot(context, script) {
+  const elements = everyElement(context).map(takeElement);
+  const putSurroundings = takeSurroundings(context);
+  const taken = Object.create(null);
+  const names = topLevelNames(script).filter((name) => {
+    try {
+      taken[name] = vm.runInContext(name, context);
+      return true;
+    } catch {
+      // A name at the start of a line that is not a declaration the page can see — inside a template literal, say.
+      return false;
+    }
+  });
+  context.__leafTakenValues = taken;
+  const putValues = new vm.Script(
+    names.map((name) => `try { if (${name} !== __leafTakenValues.${name}) ${name} = __leafTakenValues.${name}; } catch {}`).join('\n'),
+    { filename: 'put-page-values.js' },
+  );
+  return () => {
+    for (const one of elements) putElement(one);
+    putSurroundings();
+    putValues.runInContext(context);
+  };
+}
+
 // ---- 1. it parses -----------------------------------------------------------
 
 const { names, source } = shellSource();
@@ -809,6 +973,78 @@ check('the page parses', () => {
 let booted = null;
 check('the page boots', () => {
   booted = runShell(source);
+});
+// From here every check is handed the page the boot made, whatever the check before it did to it.
+if (booted) restoreSharedPage = pageSnapshot(booted, source);
+
+// ---- 2a. the page is handed back the way it was found -----------------------
+//
+// The page boots once and every check after it reads the same one, so a check that drives the app — opens the pane, folds the bar, switches a view — used to leave the next check standing in whatever it left behind. A check written for the minimap's rail opened the library pane and failed two app-bar checks two hundred lines below it, neither of which names the library. These two are the proof that the hand-back happens; they are a pair because the page holds what it is in two places, its tree and its own values, and a walk over one reaches nothing of the other.
+
+check('a check that drives the shared page leaves the next one reading the page the boot made', () => {
+  const shell = booted.document.getElementById('libraryShell');
+  const surface = booted.document.getElementById('appSurface');
+  const closed = shell.classList.contains('library-closed');
+  const wasChildren = surface.children.length;
+  const wasRail = booted.document.documentElement.style.getPropertyValue('--library-rail-width');
+
+  // The gesture that found this: opening the pane refits the bar around it and leaves a rail width on the page.
+  shell.clientWidth = 1280;
+  booted.toggleLibrary();
+  const drawn = booted.document.createElement('div');
+  drawn.className = 'left-behind';
+  surface.appendChild(drawn);
+  booted.document.documentElement.style.setProperty('--library-rail-width', '999px');
+
+  // Put back by the harness, not by this check: what is read here is the state the *next* check would meet, so the restore is run rather than waited for.
+  restoreSharedPage();
+
+  if (shell.classList.contains('library-closed') !== closed) throw new Error('the pane was left standing in the state a check put it in');
+  if (surface.children.length !== wasChildren) throw new Error('an element a check drew was left on the page');
+  if (booted.document.documentElement.style.getPropertyValue('--library-rail-width') !== wasRail) throw new Error('a custom property a check wrote was left on the page');
+});
+
+check('a check that writes one of the page own values leaves the next one reading the value the boot left', () => {
+  const read = (name) => vm.runInContext(name, booted);
+  // Two of the page's own top-level values, neither of which any element holds: one the app bar reads on every refit, and one the reader's own state.
+  const wasChevron = read('overflowChevronUp');
+  const wasCode = read('codeViewActive');
+  vm.runInContext('overflowChevronUp = true; codeViewActive = true;', booted);
+
+  restoreSharedPage();
+
+  if (read('overflowChevronUp') !== wasChevron) throw new Error('a value a check wrote was left standing');
+  if (read('codeViewActive') !== wasCode) throw new Error('a second value a check wrote was left standing');
+  // And the list is scanned rather than written down, so a value added to a fragment next week is covered without anybody being told.
+  const scanned = topLevelNames(source);
+  if (!scanned.includes('overflowChevronUp') || !scanned.includes('codeViewActive')) throw new Error('the scan of the page own values missed one the fragments declare');
+  if (scanned.length < 200) throw new Error(`the scan found only ${scanned.length} of the page own values`);
+});
+
+check('a check that arms a handler or queues a frame leaves neither standing for the next one', () => {
+  const button = booted.document.getElementById('openButton');
+  const wasOnButton = (button.listeners.get('click') || []).length;
+  const wasOnWindow = (booted.__windowListeners.get('resize') || []).length;
+  const wasWatchers = booted.__watchers.length;
+  const wasWaiting = booted.__frames.waiting();
+
+  let fired = 0;
+  button.addEventListener('click', () => (fired += 1));
+  booted.window.addEventListener('resize', () => (fired += 1));
+  new booted.ResizeObserver(() => (fired += 1)).observe(button, {});
+  booted.requestAnimationFrame(() => (fired += 1));
+
+  restoreSharedPage();
+
+  if ((button.listeners.get('click') || []).length !== wasOnButton) throw new Error('a handler armed on an element was left standing');
+  if ((booted.__windowListeners.get('resize') || []).length !== wasOnWindow) throw new Error('a handler armed on the window was left standing');
+  if (booted.__watchers.length !== wasWatchers) throw new Error('a watcher a check registered was left standing');
+  if (booted.__frames.waiting() !== wasWaiting) throw new Error('a frame a check queued was left waiting for the next one');
+
+  // And nothing the check armed runs afterwards, which is the whole of what a left-behind handler costs.
+  (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+  booted.__frames.drain();
+  if (fired) throw new Error(`${fired} of the handlers a check armed ran after the page was handed back`);
 });
 
 // ---- 2b. an update that did not install says so at boot ---------------------
@@ -3632,6 +3868,10 @@ if (booted) {
       booted.bindReadingEditor(doc, { deferCaret: true });
       return read('currentDocumentBindsAnything');
     };
+    // A drawn document, because the bind walks away from a page holding none — and then the answer read back is whatever was in the value before it was asked.
+    const drawn = booted.document.createElement('div');
+    drawn.className = 'document-body';
+    booted.document.getElementById('app').appendChild(drawn);
     try {
       if (!bind({ format: 'markdown', blocks: [], source: '' })) {
         throw new Error('an empty note lost the padlock it is unlocked to type into');
@@ -7395,7 +7635,7 @@ if (booted) {
   });
 
   // Mermaid writes a whole stylesheet into every drawing it makes, scoped by that drawing's own svg id — so a document of 67 diagrams carries 67 sheets, 44 of them byte-identical, and that is what makes a settled page of drawings scroll badly. One copy per distinct sheet in the page's head, scoped by a class the drawing wears instead.
-  const sheetHolder = () => (booted.document.head.children || []).find((child) => child.id === 'leaf-mermaid-sheets');
+  const sheetHolder = (page = booted) => (page.document.head.children || []).find((child) => child.id === 'leaf-mermaid-sheets');
   const standInDrawing = (id, css) => {
     const worn = new Set();
     const style = {
@@ -7440,12 +7680,14 @@ if (booted) {
 
   // A rule that names no id — an animation, and anything mermaid's themeCSS appends — has nothing to normalize out, so it would otherwise be written once per distinct sheet rather than once for the page. Kept when the theme changes, too: it carries no color.
   check('an animation a drawing shares is written once, not once per drawing', () => {
-    const { shareMermaidSheet, forgetMermaidSheets } = booted;
+    // A page of its own, because every animation the page has ever been shown is kept for the life of it — so a run of this on a page another check has drawn into is asking whether the animation arrives at all, not whether it arrives once.
+    const page = runShell(source);
+    const { shareMermaidSheet, forgetMermaidSheets } = page;
     forgetMermaidSheets();
     shareMermaidSheet(standInDrawing('mermaid-3', flowchartSheet('mermaid-3')));
     // A different kind of diagram: its own sheet, the same animation inside it.
     shareMermaidSheet(standInDrawing('mermaid-4', `#mermaid-4 .pieCircle{stroke:#333;}@keyframes dash{to{stroke-dashoffset:0;}}`));
-    const sheet = sheetHolder();
+    const sheet = sheetHolder(page);
     const written = sheet.textContent.split('@keyframes dash').length - 1;
     if (written !== 1) throw new Error(`the animation was written ${written} times`);
     if (sheet.textContent.includes('@keyframes dash{to{stroke-dashoffset:0;}}#')) {
@@ -7455,12 +7697,14 @@ if (booted) {
 
   // Every rule in there paints the theme it was drawn in, so a reader trying six themes would otherwise end with six sets of rules in the page and five of them dead. The animations stay — they carry no color — and a drawing restored out of the picture memo can still put its own sheet back, which is what a theme left and come back to needs.
   check('the page-level sheet is emptied when the theme changes', () => {
-    const { shareMermaidSheet, forgetMermaidSheets, ensureMermaidSheets } = booted;
+    // Its own page for the same reason as the check above: what a theme change leaves behind is the animations, and a page already holding them cannot show that they were kept.
+    const page = runShell(source);
+    const { shareMermaidSheet, forgetMermaidSheets, ensureMermaidSheets } = page;
     forgetMermaidSheets();
     const drawing = standInDrawing('mermaid-5', flowchartSheet('mermaid-5'));
     shareMermaidSheet(drawing);
     const cls = drawing.worn().find((name) => name.startsWith('lt-mmd-'));
-    const sheet = sheetHolder();
+    const sheet = sheetHolder(page);
     forgetMermaidSheets();
     if (sheet.textContent.includes(`.${cls} .node rect`)) throw new Error('the sheets written for the theme being left were kept');
     if (!sheet.textContent.includes('@keyframes dash')) throw new Error('the animations went with them');
@@ -10000,6 +10244,8 @@ if (booted) {
       appendChild: (child) => inside.push(move(child)) && child,
     });
     Object.defineProperty(panel, 'childElementCount', { get: () => inside.length, configurable: true });
+    // A rendered document, because Export PDF stands only where there is a page to print — and where it does not stand, the menu it folds into is one item short.
+    booted.renderReaderToolbar(true);
     // A strip that can never fit, so every candidate folds.
     tabBar.scrollWidth = 900;
     tabBar.clientWidth = 100;
@@ -10057,6 +10303,9 @@ if (booted) {
 
   /** The bar measured the way a window measures it: scrollWidth is what is still standing on it, so a fold frees real width and the chevron costs its own — which is the whole reason a pass can measure wrong. */
   function measuredAppBar() {
+    // The bar is measured with every button it can carry, so both of these come first — while the bar is unmeasured and the refit each of them fires folds nothing. The window's own three are priced into the model below and the fold skips a hidden button, so a hidden set is a bar measured wider than the one being folded; Export PDF stands only where there is a page to print, and it is a candidate the fold reaches.
+    booted.document.getElementById('windowControls').hidden = false;
+    booted.renderReaderToolbar(true);
     const bar = booted.document.getElementById('appBar');
     const panel = booted.document.getElementById('appOverflowPanel');
     const tabBar = booted.document.getElementById('tabBar');
@@ -10198,6 +10447,8 @@ if (booted) {
     // The condition the stylesheet keys on: `.app-actions-items:not(:has(> *:not([hidden])))` stops the group being drawn, so the trailing zone's 16px gap has nothing to land against beside the window buttons. The bell never folds, so what has to be proved is that the group is left holding it alone and hidden — which is the state a bare `:has()` cannot tell from a full group.
     const bar = measuredAppBar();
     const group = booted.document.querySelector('.app-actions-items');
+    // A rendered document, or Export PDF is hidden and the group it is meant to leave is one button short of empty.
+    booted.renderReaderToolbar(true);
     try {
       // Narrow past every candidate, so all four actions are certainly in the menu rather than only the one the bar's own width happened to buy.
       bar.bar.clientWidth = 0;
