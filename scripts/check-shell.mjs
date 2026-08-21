@@ -237,11 +237,11 @@ function fakeElement(id = '') {
     configurable: true,
     enumerable: true,
   });
-  // Writing either name empties the element, which is how the app clears a container before drawing it again — a write of '' in 22 places. The string is kept and reads back, so a container drawn twice reads back as both drawings. Only the markup becomes children: the page draws whole panels as one string and reaches straight back into what it drew, and the text is what eight checks rebind to hand-made words for a line being typed on.
+  // Writing either name empties the element, which is how the app clears a container before drawing it again — a write of '' in 22 places. Each name keeps its own string, so a container written by one name still reads back by the other. Only the markup becomes children: the page draws whole panels as one string and reaches straight back into what it drew, and the text is what eight checks rebind to hand-made words for a line being typed on.
   const held = { textContent: '', innerHTML: '' };
   for (const name of ['textContent', 'innerHTML']) {
     Object.defineProperty(element, name, {
-      // The text an element says is what was written inside it, in that order, each child asked the same question in turn. The held string is the answer only while nothing was written inside — which is what an element a check builds by assigning `children` outright has, so it answers exactly what it answers today.
+      // The text an element says is what was written inside it, in that order, each child asked the same question in turn. The held string is the answer only while nothing was written inside, which is where an element a check builds by assigning `children` outright lands.
       get: () => (name === 'textContent' && element.contents.length ? composedText(element) : held[name]),
       set: (value) => {
         held[name] = String(value ?? '');
@@ -319,7 +319,7 @@ function elementsFromMarkup(markup) {
     if (!VOID_TAGS.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
   }
   keepRun(text.length);
-  // The whole of what was parsed, runs included, so the container this is written into says the words as well as holding the elements. One line in the file parses markup, so there is no second caller reading the old shape.
+  // The whole of what was parsed, runs included, so the container this is written into says the words as well as holding the elements. One line in the file parses markup, so nothing else has to read this shape.
   const built = [...root.contents];
   for (const child of root.children) child.parentElement = null;
   root.children.length = 0;
@@ -1139,7 +1139,7 @@ check('a class on the stand-in element is one class, whichever name put it there
 
 // ---- 2l. the words come with the markup -------------------------------------
 //
-// The page draws whole panels as one string and reaches straight back into what it drew. The markup becomes real children; nothing carried the words between the tags, so a heading written as `<h1>Open a file</h1>` read back saying nothing. That is an answer that is always the same, in the direction that reads as a guard having fired: `blockIsEmpty` calls a line empty on its text alone, so every panel the page really drew with a sentence in it passed the emptiness test.
+// The page draws whole panels as one string and reaches straight back into what it drew, so the words between the tags have to come with the elements. A container that held only the elements says nothing for every panel alike, which is an answer that is always the same in the direction that reads as a guard having fired: `blockIsEmpty` calls a line empty on its text alone, so every panel the page really drew with a sentence in it would pass the emptiness test.
 
 check('the words in the markup the page draws come with the elements', () => {
   const drawn = fakeElement('worded-panel');
