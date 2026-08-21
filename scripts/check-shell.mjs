@@ -127,7 +127,7 @@ function matchesPiece(node, piece) {
   }
   if (piece.startsWith(':')) {
     const open = piece.indexOf('(');
-    // A pseudo-class with no brackets is a state nothing here models, and answering yes to one would be the stub this whole matcher replaced.
+    // A pseudo-class with no brackets is a state nothing here models, and answering yes to one is the single answer this matcher exists to stop.
     if (open === -1) return false;
     const inside = selectorParts(piece.slice(open + 1, piece.endsWith(')') ? -1 : undefined));
     const name = piece.slice(1, open);
@@ -1366,7 +1366,7 @@ check('a query and a nearest walk both find the block the markup declared by its
 
 // ---- 2o. one node against one whole selector --------------------------------
 //
-// The page has one guard that asks a box what it is rather than being told: whether the pointer resting near an edge is on that box's own scrollbar gutter, which is what raises the bar so it can be grabbed. It asks with the list of boxes that wear one, and that list spends a refusal, a child step, a descendant step and an either-of list — none of which a matcher reading a class, a bare attribute or a tag can answer. Worse than a no: comparing a tag to everything before the first space read `pre > code` as `pre`, so every code block's holder answered yes to a wearer it is not.
+// The page has one guard that asks a box what it is rather than being told: whether the pointer resting near an edge is on that box's own scrollbar gutter, which is what raises the bar so it can be grabbed. It asks with the list of boxes that wear one, and that list spends a refusal, a child step, a descendant step and an either-of list — none of which a matcher reading a class, a bare attribute or a tag can answer. Worse than a no: comparing a tag to everything before the first space reads `pre > code` as `pre`, so every code block's holder answers yes to a wearer it is not.
 
 check('one selector is read as its own parts rather than as its first word', () => {
   const wearers = '.leaf-scroll, .library-scroll, .reader-shell:not(.has-minimap), .table-lane > table, .document-body :is(pre, pre > code, .math-display, .frontmatter, table)';
@@ -1378,7 +1378,7 @@ check('one selector is read as its own parts rather than as its first word', () 
   const holder = fakeElement('selector-holder');
   holder.innerHTML = '<p class="leaf-editable" data-src-start="4">A line</p><p class="leaf-editable">No range</p><pre class="hljs">code</pre><section class="reader-shell">reading</section><section class="reader-shell has-minimap">reading</section>';
   const [ranged, plain, block, bare, mapped] = holder.children;
-  // The walk up starts at the node itself, so it is how one node is asked one selector until the element answers for itself.
+  // Asked through the walk up, which starts at the node itself, so the walk and the query below are held to reading one selector the same way.
   const asks = (node, selector) => node.closest(selector) === node;
 
   // A compound is every part of it answering on the one node, so a part that does not answer refuses the whole.
@@ -1394,7 +1394,7 @@ check('one selector is read as its own parts rather than as its first word', () 
   if (!asks(block, ':is(pre, .math-display)')) throw new Error('a node named by an either-of list was refused by it');
   if (asks(plain, ':is(pre, .math-display)')) throw new Error('a node named by no part of an either-of list answered it');
 
-  // The false yes this check exists for: a tag is the whole piece, so `pre > code` is not the tag `pre`.
+  // The false yes this check exists for: a selector is read as its steps and a tag as a whole word, so `pre > code` is not the tag `pre`.
   if (asks(block, 'pre > code')) throw new Error('a code block holder answered a selector naming what is inside it');
   if (!asks(block, 'pre')) throw new Error('a tag on its own stopped answering');
 
@@ -11907,7 +11907,7 @@ if (booted) {
     }
   });
 
-  // The one refusal in the wearer list, and the one child step in it. Neither is a class a box can simply wear, so until the matcher read them the pointer check could only be handed its own answer.
+  // The one refusal in the wearer list, and the one child step in it. Neither is a class a box can simply wear, so a matcher reading only a class leaves the pointer check handing itself the answer.
   check('the wearer list refuses a reading surface with a minimap and takes a table only inside its lane', () => {
     const gutter = (box) => {
       booted.leafMarkPointing({ target: box, offsetX: box.clientWidth + 4, offsetY: 20 });
@@ -11927,7 +11927,7 @@ if (booted) {
     if (!gutter(sized(lane.children[0].children[0]))) throw new Error('a table inside its lane was refused by the child step that names it');
     if (gutter(sized(lane.children[1]))) throw new Error('a table with no lane above it answered a child step');
 
-    // The descendant step, and the entry inside it that used to answer yes for the wrong reason: a code block's holder is not what `pre > code` names.
+    // The descendant step, and the entry inside it that names what is inside a code block rather than the block's own holder.
     const doc = fakeElement('document-pair');
     doc.innerHTML = '<div class="document-body"><pre>fenced<code>inner</code></pre></div><pre>loose</pre>';
     const fenced = doc.children[0].children[0];
