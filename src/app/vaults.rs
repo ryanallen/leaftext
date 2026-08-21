@@ -704,3 +704,80 @@ pub(crate) fn push_vaults(webview: Option<&WebView>, state: &VaultState) {
         "Failed to update the vault switcher",
     );
 }
+
+/// Which vault's git state to read again, or none. Asked by the watcher on every change and by the window coming back to the front: a commit made in a terminal writes nothing but `.git`, which the watcher does not report, so nothing else would ever correct the header's count, and coming back to the window is the gesture that follows committing elsewhere. Losing focus asks nothing.
+pub(crate) fn vault_to_reread(state: &VaultState) -> Option<i64> {
+    (state.active != 0).then_some(state.active)
+}
+
+/// One thing the watcher does about a path that changed on disk.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum WatchedChangeStep {
+    /// Read this vault's git state again, so the header's count moves.
+    RereadVaultStatus(i64),
+    /// The document on screen changed under the reader, so it is loaded again.
+    ReloadActiveDocument,
+    /// The pane lists this one folder off the disk, and the change is in it.
+    RereadPaneFolder(String),
+    /// Patch the vault's own text, redrawing the graph only where the graph is the view on screen.
+    PatchCorpus { redraw_graph: bool },
+    /// A picture rather than a document: the text is unchanged, so only the page's images are refreshed.
+    RefreshImages,
+}
+
+/// What the watcher does about a changed path, in the order it has to happen. The status read comes above the split, or it misses the commonest change of all — saving the document you are reading takes the active-document branch. Unfiltered on purpose: a containment check here compares the watcher's canonicalised path against the registry's plain one and so discards every event, and one `git status`, off the loop, on an already-debounced event, is cheaper than being wrong.
+pub(crate) fn watched_change_steps(
+    state: &VaultState,
+    changed: &Path,
+    is_active_document: bool,
+) -> Vec<WatchedChangeStep> {
+    let mut steps = Vec::new();
+    if let Some(id) = vault_to_reread(state) {
+        steps.push(WatchedChangeStep::RereadVaultStatus(id));
+    }
+    if is_active_document {
+        steps.push(WatchedChangeStep::ReloadActiveDocument);
+        return steps;
+    }
+    // The pane lists one folder off the disk, so a file added, renamed or removed in that folder changes what it shows.
+    if change_affects_pane(state, changed) {
+        steps.push(WatchedChangeStep::RereadPaneFolder(state.folder.clone()));
+    }
+    // And the vault's text is a cache of the disk, so it is patched a file at a time rather than re-read. Rebuilding the graph for a pane nobody is looking at is what makes a burst of saves lock the window.
+    steps.push(WatchedChangeStep::PatchCorpus {
+        redraw_graph: state.graph_open,
+    });
+    if is_local_image_path(changed) {
+        steps.push(WatchedChangeStep::RefreshImages);
+    }
+    steps
+}
+
+/// One thing removing a vault does.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum VaultRemovalStep {
+    /// The registry was the only record of what that id meant, so the favorites inside it go too.
+    ForgetFavorites(i64),
+    /// The shorter list first, because the registry push below is what redraws the start screen. The other way round it is drawn from favorites naming a vault the registry no longer has.
+    RedrawTabStrip,
+    /// Stop watching the vault's folder. Before the row goes, because the row is where the folder is written down — and before the folder goes, because a recursive watch reports every file in a folder being deleted and the whole point is that none of that is news.
+    ReleaseWatch(PathBuf),
+    /// The registry row itself, whose push to the page is what redraws the start screen.
+    RemoveRow(i64),
+    /// Removing the vault on screen lands back at the top of the whole library.
+    ShowLibraryRoot,
+}
+
+/// What removing a vault does, in the order it has to happen.
+pub(crate) fn vault_removal_steps(state: &VaultState, id: i64) -> Vec<VaultRemovalStep> {
+    let mut steps = vec![
+        VaultRemovalStep::ForgetFavorites(id),
+        VaultRemovalStep::RedrawTabStrip,
+    ];
+    if let Some(root) = vault_root_path(state, id) {
+        steps.push(VaultRemovalStep::ReleaseWatch(root));
+    }
+    steps.push(VaultRemovalStep::RemoveRow(id));
+    steps.push(VaultRemovalStep::ShowLibraryRoot);
+    steps
+}

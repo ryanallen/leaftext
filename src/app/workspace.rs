@@ -523,3 +523,72 @@ pub(crate) fn active_tab_path(workspace: &Workspace) -> Option<(usize, PathBuf)>
     let path = workspace.tabs.get(index)?.history.current()?.clone();
     Some((index, path))
 }
+
+/// What a change to the tabs leaves to be drawn, which is the whole difference between a strip that got shorter and a document that changed. Answered as a value rather than done, so a close and a reorder are held by a test with no window to render into.
+#[derive(Clone)]
+pub(crate) enum TabDraw {
+    /// Nothing closed and nothing moved, so nothing is drawn.
+    Nothing,
+    /// The strip alone: the document on screen is untouched.
+    Strip,
+    /// A different document is on screen, opened with this intent.
+    Render(ScrollIntent),
+}
+
+/// What closing the tab at `index` leaves to be drawn. A tab beside the one being read redraws the strip and nothing else, because a render of any intent rereads the file and pushes the whole document back to a page that did not ask for it; the tab coming forward instead opens where it was left, which is the same question a tab switch asks.
+pub(crate) fn close_tab_draw(workspace: &mut Workspace, index: usize) -> TabDraw {
+    match workspace.close_tab(index) {
+        TabClose::Nothing => TabDraw::Nothing,
+        TabClose::StripOnly => TabDraw::Strip,
+        TabClose::ReaderMoved => {
+            TabDraw::Render(restore_front_tab_intent(workspace).unwrap_or(ScrollIntent::Reset))
+        }
+        TabClose::HomeScreen => TabDraw::Render(ScrollIntent::Reset),
+    }
+}
+
+/// What dragging a tab from one slot to another leaves to be drawn, which is only ever the strip. The page has already put the tab in its slot; this is the host agreeing. The title, the image folder and Back/Forward all describe the active document, which a reorder never changes — and a full render would reread the file and rebuild a source editor at the top of it.
+pub(crate) fn move_tab_draw(workspace: &mut Workspace, from: usize, to: usize) -> TabDraw {
+    if workspace.move_tab(from, to) {
+        TabDraw::Strip
+    } else {
+        TabDraw::Nothing
+    }
+}
+
+/// The intent a followed rename renders with, or nothing where no tab was on the file. The file moved under whatever tab is sitting on it, so the tab moves with it and redraws under the new name — and this is the one in-place render that names a source place, because the page will not spend the place it captured off the editor it is replacing once the document's path has moved. The tab's own saved fraction goes instead.
+pub(crate) fn followed_rename_intent(
+    workspace: &mut Workspace,
+    from: &Path,
+    to: &Path,
+) -> Option<ScrollIntent> {
+    workspace
+        .follow_rename(from, to)
+        .then(|| ScrollIntent::Preserve {
+            code: workspace.front_saved_code_scroll_for(to),
+        })
+}
+
+/// What an export is: the chosen format, the size the page measured itself at, and the document that names the file the save dialog suggests. Nothing of that document is read or written, which is why the home screen exports too.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct PageExport {
+    pub(crate) document: Option<PathBuf>,
+    pub(crate) format: String,
+    pub(crate) width: f64,
+    pub(crate) height: f64,
+}
+
+/// The export the page asked for, with the open document read for its name and nothing else.
+pub(crate) fn page_export_request(
+    workspace: &Workspace,
+    format: String,
+    width: f64,
+    height: f64,
+) -> PageExport {
+    PageExport {
+        document: workspace.active_path().map(Path::to_path_buf),
+        format,
+        width,
+        height,
+    }
+}

@@ -1050,21 +1050,29 @@ fn renaming_a_file_no_tab_holds_changes_no_tab() {
 
 #[test]
 fn renaming_the_open_document_renders_with_the_place_its_tab_is_holding() {
-    // Every other in-place rebuild sends no place, because the page carries one off the editor it is replacing. A rename moves the path that capture is keyed on, so this is the arm that has to name a place — read off the arm itself, since the rename lives inside the loop and the render it makes needs a window.
-    let source = include_str!("event_loop.rs");
-    let arm = source
-        .split("IpcCommand::RenameFile")
-        .nth(1)
-        .and_then(|rest| rest.split("IpcCommand::").next())
-        .expect("the rename arm");
-    assert!(
-        arm.contains("front_saved_code_scroll_for(&renamed)"),
-        "the place comes off the tab, under the name it has just followed"
-    );
-    assert!(
-        arm.contains("reader.render(ScrollIntent::Preserve { code })"),
-        "and it is still an in-place render, so the reading view neither flashes a spinner nor re-anchors"
-    );
+    // Every other in-place rebuild sends no place, because the page carries one off the editor it is replacing. A rename moves the path that capture is keyed on, so this is the one that has to name a place.
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("notes.md"));
+    workspace.tabs[0].saved_code_scroll = Some(0.42);
+
+    match followed_rename_intent(&mut workspace, Path::new("notes.md"), Path::new("renamed.md")) {
+        Some(ScrollIntent::Preserve { code }) => assert_eq!(
+            code,
+            Some(0.42),
+            "the place comes off the tab, under the name it has just followed"
+        ),
+        _ => panic!(
+            "a followed rename is still an in-place render, so the reading view neither flashes a spinner nor re-anchors"
+        ),
+    }
+
+    // A file no tab is on moved, so there is nothing to draw again.
+    assert!(followed_rename_intent(
+        &mut workspace,
+        Path::new("elsewhere.md"),
+        Path::new("moved.md")
+    )
+    .is_none());
 }
 
 #[test]
@@ -1489,24 +1497,21 @@ fn reading_a_vaults_git_state_is_itself_a_change_the_watcher_would_report() {
 
 #[test]
 fn coming_back_to_the_window_rereads_the_vault_you_are_in_and_does_it_once() {
-    // An arm that spawns a thread has no return value to assert on, so this is held as source the way the watcher's own boundary is.
-    let source = include_str!("event_loop.rs");
-    let at = source
-        .find("event: WindowEvent::Focused(true),")
-        .expect("the loop hears the window being focused again");
-    let arm = &source[at..source.len().min(at + 700)];
+    // A commit made in a terminal writes nothing but `.git`, which the watcher does not report, so coming back to the window is the gesture that has to correct the header's count. The once is the guard the read goes through, held by `a_burst_of_saves_reads_a_vaults_git_state_once`.
+    let mut state = VaultState::load(None);
 
-    assert!(
-        arm.contains("if vault_state.active != 0 {"),
+    assert_eq!(
+        vault_to_reread(&state),
+        None,
         "with no vault there is nothing to read"
     );
-    // Through phase 2's guard rather than around it: the `&mut` is what carries it, and a window flicked in and out of focus would otherwise spawn a thread and five git processes a time.
-    assert!(
-        arm.contains("refresh_vault_status(&mut vault_state, &proxy, active);"),
-        "the focus arm must read the vault's git state through the same call the watcher makes"
+
+    state.active = 7;
+    assert_eq!(
+        vault_to_reread(&state),
+        Some(7),
+        "the vault the reader is in is the one whose git state is read again"
     );
-    // Losing focus does nothing.
-    assert!(!source.contains("WindowEvent::Focused(false)"));
 }
 
 #[test]
@@ -2711,24 +2716,23 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
 #[test]
 fn dragging_a_tab_redraws_the_strip_and_leaves_the_document_alone() {
     // A reorder changes the strip and nothing else, and a full render is not free: it rereads the file, rewrites the recents, and a tab showing source is thrown away and built again at the top of the file with the caret and the editor's undo stack.
-    let source = include_str!("event_loop.rs");
-    let arm = source
-        .split("IpcCommand::MoveTab")
-        .nth(1)
-        .and_then(|rest| rest.split("IpcCommand::").next())
-        .expect("the move-tab arm");
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/docs/a.md"));
+    workspace.open_path(PathBuf::from("/docs/b.md"));
+
     assert!(
-        arm.contains("refresh_tab_strip"),
-        "the strip carries everything a reorder changes"
+        matches!(move_tab_draw(&mut workspace, 1, 0), TabDraw::Strip),
+        "the strip carries everything a reorder changes, and a reorder never changes which document is on screen"
     );
-    assert!(
-        !arm.contains("render("),
-        "a reorder never changes which document is on screen, so nothing about it may be drawn again"
-    );
-    assert!(
-        arm.contains("move_tab(from, to)"),
-        "the guard that refuses a drag landing where it started stays"
-    );
+    // The guard that refuses a drag landing where it started, and one naming no tab: neither draws anything.
+    assert!(matches!(
+        move_tab_draw(&mut workspace, 0, 0),
+        TabDraw::Nothing
+    ));
+    assert!(matches!(
+        move_tab_draw(&mut workspace, 1, 9),
+        TabDraw::Nothing
+    ));
 }
 
 #[test]
@@ -2854,18 +2858,40 @@ fn the_home_screen_has_no_place_to_be_put_back_to() {
 
 #[test]
 fn closing_the_tab_being_read_restores_rather_than_resetting() {
-    let source = include_str!("event_loop.rs");
-    let arm = source
-        .split("IpcCommand::CloseTab")
-        .nth(1)
-        .and_then(|rest| rest.split("IpcCommand::").next())
-        .expect("the close-tab arm");
+    let anchor = ScrollAnchor {
+        section: Some("halfway".to_string()),
+        block: 7,
+        offset_y: -12.0,
+    };
+    let mut neighbor = Tab {
+        saved_code_scroll: Some(0.61),
+        ..Tab::default()
+    };
+    neighbor.history.record(PathBuf::from("/docs/a.md"));
+    neighbor.history.stamp_current(anchor.clone());
+    let mut being_read = Tab::default();
+    being_read.history.record(PathBuf::from("/docs/b.md"));
+    let mut workspace = Workspace {
+        tabs: vec![neighbor, being_read],
+        active: Some(1),
+    };
+
+    match close_tab_draw(&mut workspace, 1) {
+        TabDraw::Render(ScrollIntent::Restore {
+            anchor: Some(saved),
+            code: Some(code),
+        }) => {
+            assert_eq!(saved, anchor);
+            assert_eq!(code, 0.61);
+        }
+        _ => panic!("the tab coming forward opens where it was left"),
+    }
+
     assert!(
-        arm.contains("TabClose::ReaderMoved => {") && arm.contains("restore_front_tab_intent"),
-        "the tab coming forward opens where it was left"
-    );
-    assert!(
-        arm.contains("TabClose::HomeScreen => reader.render(ScrollIntent::Reset)"),
+        matches!(
+            close_tab_draw(&mut workspace, 0),
+            TabDraw::Render(ScrollIntent::Reset)
+        ),
         "the home screen still starts from scratch"
     );
 }
@@ -2873,18 +2899,16 @@ fn closing_the_tab_being_read_restores_rather_than_resetting() {
 #[test]
 fn closing_a_background_tab_redraws_the_strip_instead_of_the_document() {
     // The answer is only half of it: a render of any intent reads the file off the disk and pushes the whole document back to a page that did not ask for it.
-    let source = include_str!("event_loop.rs");
-    let arm = source
-        .split("IpcCommand::CloseTab")
-        .nth(1)
-        .and_then(|rest| rest.split("IpcCommand::").next())
-        .expect("the close-tab arm");
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/docs/a.md"));
+    workspace.open_path(PathBuf::from("/docs/b.md"));
+
     assert!(
-        arm.contains("TabClose::StripOnly => reader.refresh_tab_strip()"),
+        matches!(close_tab_draw(&mut workspace, 0), TabDraw::Strip),
         "a tab beside the one being read redraws the strip and nothing else"
     );
     assert!(
-        arm.contains("TabClose::Nothing => {}"),
+        matches!(close_tab_draw(&mut workspace, 9), TabDraw::Nothing),
         "an index that names no tab draws nothing"
     );
 }
@@ -4345,6 +4369,59 @@ fn a_press_in_the_shadow_band_resizes_the_window() {
     // Anything else is dropped rather than guessed at: a wrong guess resizes the wrong edge under the pointer.
     assert_eq!(resize_direction("north"), None);
     assert_eq!(resize_direction(""), None);
+
+    // The press is the whole of it on Windows: the platform's own loop runs the gesture and reports nothing back.
+    assert_eq!(
+        resize_drag_step(true, "se", "start", 10.0, 20.0, None),
+        ResizeDragStep::HandToPlatform(SouthEast)
+    );
+    for phase in ["move", "end"] {
+        assert_eq!(
+            resize_drag_step(true, "se", phase, 10.0, 20.0, None),
+            ResizeDragStep::Nothing
+        );
+    }
+    assert_eq!(
+        resize_drag_step(true, "north", "start", 0.0, 0.0, None),
+        ResizeDragStep::Nothing
+    );
+
+    // A Mac is refused that call, so the host holds the window as it stood and sets it from every move.
+    let held = ResizeDrag {
+        direction: "e".to_string(),
+        window: WindowRect {
+            x: 100.0,
+            y: 200.0,
+            width: 900.0,
+            height: 700.0,
+        },
+        pointer: (500.0, 500.0),
+    };
+    assert_eq!(
+        resize_drag_step(false, "e", "start", 500.0, 500.0, None),
+        ResizeDragStep::HoldWindow {
+            direction: "e".to_string(),
+            pointer: (500.0, 500.0)
+        }
+    );
+    assert_eq!(
+        resize_drag_step(false, "e", "move", 540.0, 500.0, Some(&held)),
+        ResizeDragStep::SetWindow(WindowRect {
+            width: 940.0,
+            ..held.window
+        })
+    );
+    // A move with nothing held is a drag that never started.
+    assert_eq!(
+        resize_drag_step(false, "e", "move", 540.0, 500.0, None),
+        ResizeDragStep::Nothing
+    );
+    assert_eq!(
+        resize_drag_step(false, "e", "end", 0.0, 0.0, Some(&held)),
+        ResizeDragStep::Forget
+    );
+
+    // The one thing about this handler no value can answer: the direction reaches a window library call, on a window no test can build.
     let source = include_str!("event_loop.rs");
     assert!(
         source.contains("reader.window.drag_resize_window(direction)"),
@@ -4410,39 +4487,110 @@ fn the_band_below_a_mac_frames_own_edge_moves_the_window_it_was_grabbed_by() {
 
 #[test]
 fn full_screen_is_read_off_the_window_not_off_a_gesture() {
-    // Full screen is reachable from the green dot's menu, the View menu and a shortcut, and only one of the three is a click the page ever sees. The resize every one of them causes is what the loop reads, so the bar's room for the dots cannot be left behind by whichever route was taken.
-    let source = include_str!("event_loop.rs");
+    // Full screen is reachable from the green dot's menu, the View menu and a shortcut, and only one of the three is a click the page ever sees. The resize every one of them causes is what the loop reads, so the bar's room for the dots cannot be left behind by whichever route was taken — which is why the answer is a comparison of two window states rather than of two gestures.
+    let plain = WindowState {
+        maximized: false,
+        fullscreen: false,
+    };
+
     assert!(
-        source.contains("reader.window.fullscreen().is_some()"),
-        "the window is the source of truth for full screen"
+        window_state_lines(plain, plain).is_empty(),
+        "a resize that moved neither says nothing"
     );
-    assert!(
-        source.contains("window.leafSetFullscreen({fullscreen});"),
+    assert_eq!(
+        window_state_lines(
+            plain,
+            WindowState {
+                fullscreen: true,
+                ..plain
+            }
+        ),
+        vec!["window.leafSetFullscreen(true);".to_string()],
         "the page is told when it changes"
+    );
+    assert_eq!(
+        window_state_lines(
+            WindowState {
+                fullscreen: true,
+                ..plain
+            },
+            plain
+        ),
+        vec!["window.leafSetFullscreen(false);".to_string()],
+        "and told again when it goes back"
+    );
+    assert_eq!(
+        window_state_lines(
+            plain,
+            WindowState {
+                maximized: true,
+                ..plain
+            }
+        ),
+        vec!["window.leafSetWindowMaximized(true);".to_string()],
+        "the custom title bar's own icon is the other half"
     );
 }
 
 #[test]
 fn removing_a_vault_left_its_favorites_drawn_on_the_start_screen() {
     // A vault going takes its favorites with it, and the registry push is what redraws the start screen. So the page has to be handed the shorter list first: the other way round, the screen is drawn from rows naming a vault the registry no longer has, and every one of them falls into a second group called "Outside a vault".
-    let source = include_str!("event_loop.rs");
-    let arm = source
-        .split("IpcCommand::RemoveVault")
-        .nth(1)
-        .and_then(|rest| rest.split("IpcCommand::").next())
-        .expect("the remove-vault arm");
-    let forget = arm
-        .find("forget_vault_favorites")
-        .expect("the favorites inside the vault are forgotten");
-    let tell = arm
-        .find("refresh_tab_strip")
-        .expect("the page is told the favorites have gone");
-    let row = arm
-        .find("remove_vault_row")
-        .expect("the registry row is removed");
-    assert!(
-        forget < tell && tell < row,
-        "the registry push has to land last, so the start screen is redrawn against the corrected favorites"
+    let dir = scratch_dir("removing_a_vault_left_its_favorites_drawn_on_the_start_screen");
+    let root = dir.join("vault");
+    fs::create_dir_all(&root).expect("test directory is created");
+    let state = VaultState::load(Some(&dir));
+    let vault = add_vault(
+        state.conn.as_ref().expect("the registry opens"),
+        &root,
+        "vault",
+        VaultKind::Folder,
+    )
+    .expect("the vault is registered");
+
+    assert_eq!(
+        vault_removal_steps(&state, vault.id),
+        vec![
+            VaultRemovalStep::ForgetFavorites(vault.id),
+            VaultRemovalStep::RedrawTabStrip,
+            VaultRemovalStep::ReleaseWatch(PathBuf::from(&vault.root_path)),
+            VaultRemovalStep::RemoveRow(vault.id),
+            VaultRemovalStep::ShowLibraryRoot,
+        ],
+        "the registry push has to land last, so the start screen is redrawn against the corrected favorites — and the watch is released before the row that is the only record of where the folder is"
+    );
+
+    drop(state);
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+/// The watcher's own branch, which is where saving the file you are looking at lands.
+#[test]
+fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
+    // A change to the open document takes the live-reload branch; a change to anything else takes the other one. A status refresh in only the second leaves the commonest edit there is — saving the file you are looking at — with the header's count stale until something else happens to move.
+    let mut state = VaultState::load(None);
+    state.active = 3;
+
+    assert_eq!(
+        watched_change_steps(&state, Path::new("/vault/notes.md"), true),
+        vec![
+            WatchedChangeStep::RereadVaultStatus(3),
+            WatchedChangeStep::ReloadActiveDocument,
+        ],
+        "the status read comes above the split, or it only fires for files you are not editing"
+    );
+
+    // And nothing between the event and the read. A containment check here discards every event: the watcher reports paths under what it watched, and that is canonicalised — a `\\?\` verbatim prefix on Windows, which does not share a component with the plain `C:\…` the vault registry holds. One `git status` off the loop is cheaper than being wrong.
+    assert_eq!(
+        watched_change_steps(&state, Path::new("/nowhere/near/it.md"), false).first(),
+        Some(&WatchedChangeStep::RereadVaultStatus(3)),
+        "a path that looks like it is outside the vault still moves the count"
+    );
+
+    // With no vault there is no count to move.
+    state.active = 0;
+    assert_eq!(
+        watched_change_steps(&state, Path::new("/vault/notes.md"), true),
+        vec![WatchedChangeStep::ReloadActiveDocument]
     );
 }
 
@@ -5267,15 +5415,23 @@ fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
             if format == "pdf" && width == 1280.0 && height == 5819.0
     ));
 
-    let source = include_str!("event_loop.rs");
-    let arm = source
-        .split("IpcCommand::ExportPdf")
-        .nth(1)
-        .and_then(|rest| rest.split("IpcCommand::").next())
-        .expect("the export arm");
-    assert!(
-        arm.contains("export_page_pdf(reader.page(), document.as_deref(), &format, width, height)"),
-        "the arm hands the chooser's format and the page's own size straight on: {arm}"
+    // The chooser's format and the page's own size go straight on.
+    let mut workspace = Workspace::default();
+    assert_eq!(
+        page_export_request(&workspace, "pdf".to_string(), 1280.0, 5819.0),
+        PageExport {
+            document: None,
+            format: "pdf".to_string(),
+            width: 1280.0,
+            height: 5819.0,
+        },
+        "the home screen exports too, with no document to name the file after"
+    );
+    workspace.open_path(PathBuf::from("/docs/notes.md"));
+    assert_eq!(
+        page_export_request(&workspace, "pdf".to_string(), 1280.0, 5819.0).document,
+        Some(PathBuf::from("/docs/notes.md")),
+        "and the open document names the file the save dialog suggests"
     );
 
     // The open document is read for its name and nothing else: a chosen path and a page size are all the write needs, so the home screen exports too.

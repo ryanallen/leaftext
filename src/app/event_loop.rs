@@ -78,10 +78,80 @@ fn window_rect(window: &tao::window::Window) -> Option<WindowRect> {
 }
 
 /// The window as it stood when a page-driven drag began, and where the pointer was on the screen. Held only between the press and the release.
-struct ResizeDrag {
-    direction: String,
-    window: WindowRect,
-    pointer: (f64, f64),
+pub(crate) struct ResizeDrag {
+    pub(crate) direction: String,
+    pub(crate) window: WindowRect,
+    pub(crate) pointer: (f64, f64),
+}
+
+/// What one report of a page-driven window resize amounts to. Windows hands the whole gesture to the platform on the press and hears nothing more: that loop brings snapping, the size limits and the live redraw. A Mac is refused that call, so the host holds the window as it stood and sets it from every move.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum ResizeDragStep {
+    /// Hand the platform this direction and let its own loop run the gesture.
+    HandToPlatform(tao::window::ResizeDirection),
+    /// Remember the window as it stands, against this direction and the pointer that grabbed it.
+    HoldWindow {
+        direction: String,
+        pointer: (f64, f64),
+    },
+    /// Put the window here.
+    SetWindow(WindowRect),
+    /// The gesture is over, so forget what was held.
+    Forget,
+    /// Nothing to do.
+    Nothing,
+}
+
+/// The step this phase of a resize drag is. `platform_drives_it` is the Windows path, where only the press is answered and everything after it belongs to the platform's own loop.
+pub(crate) fn resize_drag_step(
+    platform_drives_it: bool,
+    direction: &str,
+    phase: &str,
+    x: f64,
+    y: f64,
+    held: Option<&ResizeDrag>,
+) -> ResizeDragStep {
+    if platform_drives_it {
+        return match (phase, resize_direction(direction)) {
+            ("start", Some(direction)) => ResizeDragStep::HandToPlatform(direction),
+            _ => ResizeDragStep::Nothing,
+        };
+    }
+    match phase {
+        "start" => ResizeDragStep::HoldWindow {
+            direction: direction.to_string(),
+            pointer: (x, y),
+        },
+        "move" => match held {
+            Some(drag) => ResizeDragStep::SetWindow(resized_window(
+                drag.window,
+                &drag.direction,
+                x - drag.pointer.0,
+                y - drag.pointer.1,
+            )),
+            None => ResizeDragStep::Nothing,
+        },
+        _ => ResizeDragStep::Forget,
+    }
+}
+
+/// The two things about a window the page has to be told, both read off the window rather than off a gesture: the green button, the View menu and the shortcut all reach us as a resize and nothing else.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct WindowState {
+    pub(crate) maximized: bool,
+    pub(crate) fullscreen: bool,
+}
+
+/// The lines the page owes now the window has been resized, and none where neither of the two moved. The custom title bar's maximize/restore icon is one; the other is full screen, which takes Apple's three dots away with the rest of the chrome, so the room the app bar leaves for them goes too.
+pub(crate) fn window_state_lines(was: WindowState, now: WindowState) -> Vec<String> {
+    let mut lines = Vec::new();
+    if now.maximized != was.maximized {
+        lines.push(format!("window.leafSetWindowMaximized({});", now.maximized));
+    }
+    if now.fullscreen != was.fullscreen {
+        lines.push(format!("window.leafSetFullscreen({});", now.fullscreen));
+    }
+    lines
 }
 
 /// Apply a page command that records a setting; the one caller persists when this returns true. A new persisted toggle is its command plus an arm here.
@@ -243,26 +313,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 {
                     last_windowed_size = size.to_logical(reader.window.scale_factor());
                 }
-                // Keep the custom title bar's maximize/restore icon in sync with the real window state whenever it changes.
-                let maximized = reader.window.is_maximized();
-                if maximized != last_maximized {
-                    last_maximized = maximized;
-                    run_page_script(
-                        reader.page(),
-                        &format!("window.leafSetWindowMaximized({maximized});"),
-                        "Failed to sync the maximize button",
-                    );
+                let was = WindowState {
+                    maximized: last_maximized,
+                    fullscreen: last_fullscreen,
+                };
+                let now = WindowState {
+                    maximized: reader.window.is_maximized(),
+                    fullscreen: reader.window.fullscreen().is_some(),
+                };
+                for line in window_state_lines(was, now) {
+                    run_page_script(reader.page(), &line, "Failed to sync the window state");
                 }
-                // Full screen takes Apple's three dots away with the rest of the chrome, so the room the app bar leaves for them goes too. Read off the window, not off a gesture: the green button, the menu item and the shortcut all reach us as a resize and nothing else.
-                let fullscreen = reader.window.fullscreen().is_some();
-                if fullscreen != last_fullscreen {
-                    last_fullscreen = fullscreen;
-                    run_page_script(
-                        reader.page(),
-                        &format!("window.leafSetFullscreen({fullscreen});"),
-                        "Failed to sync the full-screen inset",
-                    );
-                }
+                last_maximized = now.maximized;
+                last_fullscreen = now.fullscreen;
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -278,10 +341,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 event: WindowEvent::Focused(true),
                 ..
             } => {
-                // A commit made in a terminal writes nothing but `.git`, which the watcher does not report, so nothing else would ever correct the header's count. Coming back to the window is the gesture that follows committing elsewhere. Losing focus does nothing.
-                if vault_state.active != 0 {
-                    let active = vault_state.active;
-                    refresh_vault_status(&mut vault_state, &proxy, active);
+                if let Some(id) = vault_to_reread(&vault_state) {
+                    refresh_vault_status(&mut vault_state, &proxy, id);
                 }
             }
             // macOS delivers a double-clicked document as an Apple Event, not an argument, so file associations there are inert without this. Before the page is up the path waits with the command-line one.
@@ -341,29 +402,25 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     .workspace
                     .active_file()
                     .is_some_and(|current| paths_refer_to_same_document(&changed, current));
-                // Above the split, or it misses the commonest change of all — saving the document you are reading takes the other branch. Unfiltered on purpose: a containment check here compares the watcher's canonicalised path against the registry's plain one and so discards every event. One `git status`, off the loop, on an already-debounced event, is cheaper than being wrong.
-                if vault_state.active != 0 {
-                    let active = vault_state.active;
-                    refresh_vault_status(&mut vault_state, &proxy, active);
-                }
-                if is_active_document {
-                    reload_active_document(&mut reader, &mut file_watch);
-                } else {
-                    // The pane lists one folder off the disk, so a file added, renamed or removed in that folder changes what it shows.
-                    if change_affects_pane(&vault_state, &changed) {
-                        let folder = vault_state.folder.clone();
-                        request_folder(&vault_state, &proxy, folder);
-                    }
-                    // And the vault's text is a cache of the disk, so it is patched a file at a time rather than re-read. The graph is only redrawn when the graph is the view on screen — rebuilding it for a pane nobody is looking at is what makes a burst of saves lock the window.
-                    let graph_showing = vault_state.graph_open;
-                    refresh_corpus_path(&mut vault_state, &proxy, &changed, graph_showing);
-                    // An image, not a document: the text is unchanged, so the reload above would hash-gate itself out.
-                    if is_local_image_path(&changed) {
-                        run_page_script(
+                for step in watched_change_steps(&vault_state, &changed, is_active_document) {
+                    match step {
+                        WatchedChangeStep::RereadVaultStatus(id) => {
+                            refresh_vault_status(&mut vault_state, &proxy, id)
+                        }
+                        WatchedChangeStep::ReloadActiveDocument => {
+                            reload_active_document(&mut reader, &mut file_watch)
+                        }
+                        WatchedChangeStep::RereadPaneFolder(folder) => {
+                            request_folder(&vault_state, &proxy, folder)
+                        }
+                        WatchedChangeStep::PatchCorpus { redraw_graph } => {
+                            refresh_corpus_path(&mut vault_state, &proxy, &changed, redraw_graph)
+                        }
+                        WatchedChangeStep::RefreshImages => run_page_script(
                             reader.page(),
                             &image_refresh_script(),
                             "Live reload: failed to refresh images",
-                        );
+                        ),
                     }
                 }
             }
@@ -713,12 +770,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::RenameFile { path, new_name } => match rename_file(&path, &new_name) {
                     Ok(renamed) => {
-                        // The file moved under whatever tab is sitting on it, so the tab moves with it and redraws under the new name. The watcher re-aims itself at the active document every turn and needs nothing here.
-                        if reader.workspace.follow_rename(&path, &renamed) {
-                            // The one in-place render that names a source place: the page will not spend the place it captured off the editor it is replacing once the document's path has moved, so the tab's own saved fraction goes instead.
-                            let code = reader.workspace.front_saved_code_scroll_for(&renamed);
+                        // The watcher re-aims itself at the active document every turn and needs nothing here.
+                        if let Some(intent) =
+                            followed_rename_intent(&mut reader.workspace, &path, &renamed)
+                        {
                             reader.record_recent(renamed);
-                            reader.render(ScrollIntent::Preserve { code });
+                            reader.render(intent);
                         }
                         refresh_library_folder(reader.page());
                     }
@@ -775,18 +832,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         );
                     }
                 }
-                IpcCommand::CloseTab { index } => match reader.workspace.close_tab(index) {
-                    // Only the strip changed, so the document on screen is left exactly as the reader had it — the same answer a page opened behind them already gets.
-                    TabClose::StripOnly => reader.refresh_tab_strip(),
-                    // A different document is on screen now, so it opens where that tab was left — the same question a tab switch asks.
-                    TabClose::ReaderMoved => {
-                        let intent = restore_front_tab_intent(&reader.workspace)
-                            .unwrap_or(ScrollIntent::Reset);
-                        reader.render(intent);
+                IpcCommand::CloseTab { index } => {
+                    match close_tab_draw(&mut reader.workspace, index) {
+                        TabDraw::Strip => reader.refresh_tab_strip(),
+                        TabDraw::Render(intent) => reader.render(intent),
+                        TabDraw::Nothing => {}
                     }
-                    TabClose::HomeScreen => reader.render(ScrollIntent::Reset),
-                    TabClose::Nothing => {}
-                },
+                }
                 IpcCommand::SwitchTab {
                     index,
                     scroll_anchor,
@@ -811,9 +863,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::MoveTab { from, to } => {
-                    if reader.workspace.move_tab(from, to) {
-                        // The page has already put the tab in its slot; this is the host agreeing. The title, the image folder and Back/Forward all describe the active document, which a reorder never changes — and a full render would reread the file and rebuild a source editor at the top of it.
-                        reader.refresh_tab_strip();
+                    match move_tab_draw(&mut reader.workspace, from, to) {
+                        TabDraw::Strip => reader.refresh_tab_strip(),
+                        TabDraw::Render(intent) => reader.render(intent),
+                        TabDraw::Nothing => {}
                     }
                 }
                 IpcCommand::GoHome => {
@@ -1230,9 +1283,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     width,
                     height,
                 } => {
-                    // The dialog blocks this thread, like Open's does, and so does the render after it. The active document only names the file it suggests; nothing about it is read or written.
-                    let document = reader.workspace.active_path().map(Path::to_path_buf);
-                    export_page_pdf(reader.page(), document.as_deref(), &format, width, height);
+                    // The dialog blocks this thread, like Open's does, and so does the render after it.
+                    let export = page_export_request(&reader.workspace, format, width, height);
+                    export_page_pdf(
+                        reader.page(),
+                        export.document.as_deref(),
+                        &export.format,
+                        export.width,
+                        export.height,
+                    );
                 }
                 IpcCommand::UndoEdit => {
                     // Pop the buffer back one edit, re-render, and resync so undoing the only edit also clears the Save button.
@@ -1281,42 +1340,35 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     x,
                     y,
                 } => {
-                    // Windows hands the whole gesture to the platform on the press and hears nothing more: that loop brings snapping, the size limits and the live redraw. A Mac is refused that call, so the host holds the window as it stood and sets it from every move.
-                    if cfg!(windows) {
-                        if phase == "start" {
-                            if let Some(direction) = resize_direction(&direction) {
-                                let _ = reader.window.drag_resize_window(direction);
-                            }
+                    match resize_drag_step(
+                        cfg!(windows),
+                        &direction,
+                        &phase,
+                        x,
+                        y,
+                        resize_drag.as_ref(),
+                    ) {
+                        ResizeDragStep::HandToPlatform(direction) => {
+                            let _ = reader.window.drag_resize_window(direction);
                         }
-                    } else {
-                        match phase.as_str() {
-                            "start" => {
-                                resize_drag =
-                                    window_rect(&reader.window).map(|window| ResizeDrag {
-                                        direction,
-                                        window,
-                                        pointer: (x, y),
-                                    });
-                            }
-                            "move" => {
-                                if let Some(drag) = &resize_drag {
-                                    let end = resized_window(
-                                        drag.window,
-                                        &drag.direction,
-                                        x - drag.pointer.0,
-                                        y - drag.pointer.1,
-                                    );
-                                    // Size before place: the platform anchors a size change at the top-left, so a drag on the north or west edge sets the size it will end at and then moves that corner to where the pointer put it.
-                                    reader
-                                        .window
-                                        .set_inner_size(LogicalSize::new(end.width, end.height));
-                                    reader.window.set_outer_position(
-                                        tao::dpi::LogicalPosition::new(end.x, end.y),
-                                    );
-                                }
-                            }
-                            _ => resize_drag = None,
+                        ResizeDragStep::HoldWindow { direction, pointer } => {
+                            resize_drag = window_rect(&reader.window).map(|window| ResizeDrag {
+                                direction,
+                                window,
+                                pointer,
+                            });
                         }
+                        ResizeDragStep::SetWindow(end) => {
+                            // Size before place: the platform anchors a size change at the top-left, so a drag on the north or west edge sets the size it will end at and then moves that corner to where the pointer put it.
+                            reader
+                                .window
+                                .set_inner_size(LogicalSize::new(end.width, end.height));
+                            reader
+                                .window
+                                .set_outer_position(tao::dpi::LogicalPosition::new(end.x, end.y));
+                        }
+                        ResizeDragStep::Forget => resize_drag = None,
+                        ResizeDragStep::Nothing => {}
                     }
                 }
                 IpcCommand::WindowMinimize => {
@@ -1431,18 +1483,23 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::RemoveVault { id } => {
-                    // The registry was the only record of what that id meant, so the favorites inside it go too.
-                    reader.forget_vault_favorites(id);
-                    // The shorter list first, because the registry push below is what redraws the start screen. The other way round it is drawn from favorites naming a vault the registry no longer has.
-                    reader.refresh_tab_strip();
-                    // Before the row goes, because the row is where the folder is written down — and before the folder goes, because a recursive watch reports every file in a folder being deleted and the whole point is that none of that is news. The sync at the end of this turn puts back whatever is still wanted.
-                    if let Some(root) = vault_root_path(&vault_state, id) {
-                        file_watch.release(&root);
+                    // The sync at the end of this turn puts back whatever watch is still wanted.
+                    for step in vault_removal_steps(&vault_state, id) {
+                        match step {
+                            VaultRemovalStep::ForgetFavorites(id) => {
+                                reader.forget_vault_favorites(id)
+                            }
+                            VaultRemovalStep::RedrawTabStrip => reader.refresh_tab_strip(),
+                            VaultRemovalStep::ReleaseWatch(root) => file_watch.release(&root),
+                            VaultRemovalStep::RemoveRow(id) => {
+                                remove_vault_row(id, &mut vault_state, reader.page())
+                            }
+                            VaultRemovalStep::ShowLibraryRoot => {
+                                vault_state.folder.clear();
+                                request_folder(&vault_state, &proxy, String::new());
+                            }
+                        }
                     }
-                    remove_vault_row(id, &mut vault_state, reader.page());
-                    // Removing the vault on screen lands back at the top of the whole library.
-                    vault_state.folder.clear();
-                    request_folder(&vault_state, &proxy, String::new());
                 }
                 IpcCommand::GetFolder { path } => {
                     request_folder(&vault_state, &proxy, path);

@@ -566,26 +566,6 @@ fn only_a_document_that_moved_redraws_the_map() {
 }
 
 #[test]
-fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
-    let source = include_str!("../app/event_loop.rs");
-
-    // A change to the open document takes the live-reload branch; a change to anything else takes the other one. A status refresh in only the second leaves the commonest edit there is -- saving the file you are looking at -- with the header's count stale until something else happens to move.
-    let refresh = source
-        .find("refresh_vault_status(&mut vault_state, &proxy, active);")
-        .expect("the watcher refreshes the vault's status");
-    let branch = source
-        .find("if is_active_document {")
-        .expect("the watcher splits on the active document");
-    assert!(
-        refresh < branch,
-        "the status refresh must run before the branch, or it only fires for          files you are not editing"
-    );
-
-    // And nothing between the event and the refresh. A containment check here discards every event: the watcher reports paths under what it watched, and that is canonicalised — a `\?\` verbatim prefix on Windows, which does not share a component with the plain `C:\…` the vault registry holds. One `git status` off the loop is cheaper than being wrong.
-    assert!(!source.contains("changed.starts_with(root)"));
-}
-
-#[test]
 fn one_growl_serves_every_thing_worth_saying_in_passing() {
     let html = app_shell_page();
     let css = reading_mode_css();
