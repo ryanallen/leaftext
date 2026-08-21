@@ -507,8 +507,8 @@ body.mac-frame.is-fullscreen::before {
   gap: var(--lt-space-4);
   align-items: center;
 }
-/* Once the fold has taken both arrows into the chevron menu, the strip is a zero-wide box the bar's left zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Not `:empty`: the markup writes the strip over eight lines, so three whitespace text nodes stay behind when the buttons leave. */
-.history-actions:not(:has(*)) {
+/* Once the fold has taken both arrows into the chevron menu, the strip is a zero-wide box the bar's left zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Not `:empty`: the markup writes the strip over eight lines, so three whitespace text nodes stay behind when the buttons leave. Written in the actions group's shape below rather than a narrower `:has(*)` of its own, so both emptied groups are asked one question — the arrows are `disabled` and never `hidden`, so a drawn child is every child the strip has. */
+.history-actions:not(:has(> *:not([hidden]))) {
   display: none;
 }
 /* The trailing group: the action buttons plus the window controls. Anchors the collapsed overflow dropdown; padded off the window edge (frameless windows let the flush window controls own that edge instead — see below). */

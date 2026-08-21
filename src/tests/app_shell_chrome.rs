@@ -579,17 +579,17 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
 
 #[test]
 fn an_emptied_history_strip_stops_taking_a_gap() {
-    // The gap above lands between every pair of the lead's children, so the strip the fold leaves behind is 16px spent on nothing at the one moment the bar has no room. `:empty` cannot see that state: the markup writes the strip over eight lines, so three whitespace text nodes stay when the two buttons go.
+    // The gap above lands between every pair of the lead's children, so the strip the fold leaves behind is 16px spent on nothing at the one moment the bar has no room. `:empty` cannot see that state: the markup writes the strip over eight lines, so three whitespace text nodes stay when the two buttons go. The child combinator and the attribute are the actions group's shape rather than anything the strip needs — its arrows are `disabled` and never `hidden` — and both containers are written in it so a reader meets one question rather than two.
     let css = reading_mode_css();
 
-    let emptied = rule_body(css, "\n.history-actions:not(:has(*)) {");
+    let emptied = rule_body(css, "\n.history-actions:not(:has(> *:not([hidden]))) {");
     assert!(
         emptied.contains("display: none;"),
-        "a history strip holding no element is not drawn: {emptied}"
+        "a history strip with nothing drawn in it is not drawn: {emptied}"
     );
     assert!(
-        !css.contains(".history-actions:empty"),
-        "the emptied strip must be found by element, not by `:empty`, which the markup's whitespace defeats"
+        !css.contains(".history-actions:empty") && !css.contains(".history-actions:not(:has(*))"),
+        "the emptied strip must be found by drawn child, not by `:empty`, which the markup's whitespace defeats, nor by a bare `:has()`, which is the narrow shape this rule left behind"
     );
 }
 
