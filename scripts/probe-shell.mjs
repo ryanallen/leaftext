@@ -221,6 +221,8 @@ function fakeElement(id = '') {
     }),
     getContext: () => null,
   });
+  Object.defineProperty(element, 'firstElementChild', { get: () => element.children[0] || null, configurable: true });
+  Object.defineProperty(element, 'lastElementChild', { get: () => element.children[element.children.length - 1] || null, configurable: true });
   // The other name for the same holder, defined rather than assigned because Object.assign copies a getter's value once. A menu takes itself out of the page through this one, and a stand-in without it leaves every menu it opens standing.
   Object.defineProperty(element, 'parentNode', {
     get: () => element.parentElement,
@@ -14031,13 +14033,30 @@ check('a Mac follows the whole drag, and Windows hands the press over and hears 
   }
 });
 
-// ---- report -----------------------------------------------------------------
 
+// ---- PROBE ------------------------------------------------------------------
 await Promise.all(settled);
-
-if (failures.length) {
-  console.error('front-end check failed:');
-  for (const failure of failures) console.error(`  - ${failure}`);
-  process.exit(1);
+{
+  const page = runShell(source);
+  const doc = {
+    title: 'Notes',
+    path: 'notes.md',
+    html: '<div class="document-body"><p data-src-start="0">One line.</p></div>',
+    minimap: { lines: [], headings: [] },
+    format: 'Markdown',
+    blocks: [],
+    tasks: [],
+    source: 'One line.\n',
+  };
+  try {
+    page.leafSetState({ recent: [], favorites: [], tabs: [{ title: 'Notes', path: 'notes.md' }], active: 0, document: doc });
+    console.log('PROBE: leafSetState with a real document returned with no throw');
+    const app = page.document.getElementById('app');
+    console.log('PROBE: app.className =', app.className);
+    console.log('PROBE: app children =', app.children.map((c) => c.tagName + '.' + c.className).join(' | '));
+    const body = page.document.querySelector('.document-body');
+    console.log('PROBE: .document-body found =', !!body);
+  } catch (error) {
+    console.log('PROBE THREW:', error && error.stack ? error.stack.split('\n').slice(0, 8).join('\n') : error);
+  }
 }
-console.log(`front-end: ${names.length} fragments parse, boot, and agree on edit offsets — and the two browser hosts answer ${webAnswered} commands for a published site and ${embedAnswered} for an embedded document, each over a stand-in module`);
