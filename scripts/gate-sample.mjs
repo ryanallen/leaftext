@@ -32,7 +32,7 @@ export const SAMPLED_TOOLS = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Bas
 /// Whether this tool's use is worth a sample: it wrote a file, or it ran a command that may have.
 export const sampled = (name) => EDIT_TOOLS.test(name ?? '') || SHELL_TOOLS.test(name ?? '');
 
-/// The tools this samples that no `PostToolUse` row hands it. A row is the only thing that runs a hook, so a tool named here and matched by none is a branch nothing ever reaches: the rule is off, on disk, passing its own self-test. That is this file's own bug wearing a different hat, and until this read it nothing failed when a row was deleted. The host reads a matcher as an unanchored pattern, so this tests one the same way — which is why `Edit` covers `MultiEdit` and no row spells it.
+/// The tools this samples that no `PostToolUse` row hands it. A row is the only thing that runs a hook, so a tool named here and matched by none is a branch nothing ever reaches: the rule is off, on disk, passing its own self-test. That is this file's own bug wearing a different hat, and nothing else fails when a row is deleted. The host reads a matcher as an unanchored pattern, so this tests one the same way — which is why `Edit` covers `MultiEdit` and no row spells it.
 export function unrowedTools(settingsText, names = SAMPLED_TOOLS) {
   let rows = [];
   try {
