@@ -530,25 +530,26 @@ fn exported_picture_address(
     if let Some(name) = written.get(&source) {
         return Some(exported_picture_url(name));
     }
-    let name = free_assets_name(assets, &source);
-    // A file that is not there is still named: the browser draws its own broken mark, which says what an empty space cannot.
-    let _ = fs::copy(&source, assets.join(&name));
+    let (name, copy) = assets_name_for(assets, &source);
+    if copy {
+        // A file that is not there is still named: the browser draws its own broken mark, which says what an empty space cannot.
+        let _ = fs::copy(&source, assets.join(&name));
+    }
     let url = exported_picture_url(&name);
     written.insert(source, name);
     Some(url)
 }
 
-/// The name a picture takes in the `assets` folder: its own, or the next number beside it where that one is taken.
+/// The name a picture takes in the `assets` folder, and whether its bytes still have to be written there.
 ///
-/// Two documents exported into one folder is the ordinary case here rather than the odd one, so a name already there belongs to a page somebody exported earlier and is never written over.
-fn free_assets_name(assets: &Path, source: &Path) -> String {
+/// Two documents exported into one folder is the ordinary case here rather than the odd one, so a name already there belongs to a page somebody exported earlier and is never written over. A name holding the very same file is this document's own earlier export, so it is addressed and nothing is written — otherwise exporting one page twice leaves a second copy of every picture, addressed by nothing.
+///
+/// The comparison walks every name the numbering would reach rather than only the plain one: a folder already holding another document's picture under that name is exactly the folder the numbering exists for, and comparing one name would send every export of this document to a fresh number for ever.
+fn assets_name_for(assets: &Path, source: &Path) -> (String, bool) {
     let name = source
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| "picture".to_string());
-    if !assets.join(&name).exists() {
-        return name;
-    }
     let stem = source
         .file_stem()
         .map(|stem| stem.to_string_lossy().into_owned())
@@ -557,14 +558,31 @@ fn free_assets_name(assets: &Path, source: &Path) -> String {
         .extension()
         .map(|ending| format!(".{}", ending.to_string_lossy()))
         .unwrap_or_default();
+    // Read at the first name that is taken, and only once however many names are then walked.
+    let mut bytes: Option<Option<Vec<u8>>> = None;
     // A ceiling rather than a loop with no end, set far past any folder a reader fills by hand.
-    for number in 2..1000 {
-        let numbered = format!("{stem}-{number}{ending}");
-        if !assets.join(&numbered).exists() {
-            return numbered;
+    for number in 1..1000 {
+        let candidate = if number == 1 {
+            name.clone()
+        } else {
+            format!("{stem}-{number}{ending}")
+        };
+        let taken = assets.join(&candidate);
+        if !taken.exists() {
+            return (candidate, true);
+        }
+        // A source that cannot be read has no bytes to match, so the walk falls through to the first free name and the copy fails the way it already does.
+        let Some(source_bytes) = bytes.get_or_insert_with(|| fs::read(source).ok()).as_ref() else {
+            continue;
+        };
+        // The length first, because two files of different length are different and that is a single ask of the folder.
+        if taken.metadata().map(|there| there.len()).ok() == Some(source_bytes.len() as u64)
+            && fs::read(&taken).ok().as_deref() == Some(source_bytes.as_slice())
+        {
+            return (candidate, false);
         }
     }
-    name
+    (name, true)
 }
 
 /// The same render with the destination already chosen, and nothing said on screen about it.

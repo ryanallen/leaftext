@@ -6004,6 +6004,96 @@ fn an_exported_page_copies_each_picture_once_and_never_over_one_already_there() 
     );
 }
 
+/// Exporting one document twice is what a reader does — export, spot a typo, fix it, export again — and the folder beside the page has to hold one copy of its picture however many times they do it.
+///
+/// Watched before this: three exports left three copies of one picture, all but the newest addressed by nothing. The naming asked whether a name was taken and had to ask whether it was taken by something else — at every name the numbering walks through, because a folder already holding another document's picture under that name is the folder the numbering exists for and would otherwise climb a number per export for ever.
+#[test]
+fn re_exporting_a_page_addresses_the_picture_it_already_wrote() {
+    use crate::app::fileops::{write_exported_page, PageHtmlExport};
+
+    let root = scratch_dir("exported-page-re-export");
+    let notes = root.join("notes");
+    let out = root.join("out");
+    for folder in [notes.join("imgs"), out.clone()] {
+        fs::create_dir_all(&folder).expect("the fixture folders are made");
+    }
+    fs::write(notes.join("imgs/shot.png"), b"the picture").expect("the picture is written");
+
+    let export = |stamp: u32| {
+        PageHtmlExport {
+        markup: format!(
+            "<p><img src=\"http://leaf-image.local/imgs/shot.png?leaf-epoch={stamp}\" alt=\"one\"></p>"
+        ),
+        sheet: String::new(),
+        theme: "moss".to_string(),
+        appearance: "dark".to_string(),
+        title: "Notes".to_string(),
+    }
+    };
+
+    // The same document to the same place three times, which is the gesture the Web page row of the save window makes.
+    for stamp in 1..=3 {
+        write_exported_page(&out.join("notes.html"), &export(stamp), Some(&notes))
+            .expect("the page is written");
+        let page = fs::read_to_string(out.join("notes.html")).expect("the page reads back");
+        assert!(
+            page.contains("src=\"assets/shot.png\""),
+            "export {stamp} pointed somewhere other than the one copy: {page}"
+        );
+    }
+    let copies: Vec<String> = fs::read_dir(out.join("assets"))
+        .expect("the assets folder reads back")
+        .map(|entry| {
+            entry
+                .expect("the entry reads")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .filter(|name| name.ends_with(".png"))
+        .collect();
+    assert_eq!(
+        copies,
+        vec!["shot.png".to_string()],
+        "re-exporting left another copy of the picture: {copies:?}"
+    );
+
+    // The folder the numbering exists for: another document's picture already sitting under this one's name. The first export takes the number beside it and every export after that has to take the same one.
+    let other = root.join("other");
+    let elsewhere = root.join("elsewhere");
+    for folder in [other.join("imgs"), elsewhere.clone()] {
+        fs::create_dir_all(&folder).expect("the fixture folders are made");
+    }
+    fs::write(other.join("imgs/shot.png"), b"a different picture")
+        .expect("the second picture is written");
+    fs::create_dir_all(elsewhere.join("assets")).expect("the assets folder is made");
+    fs::write(
+        elsewhere.join("assets/shot.png"),
+        b"somebody else's picture",
+    )
+    .expect("the picture already there is written");
+
+    for stamp in 1..=2 {
+        write_exported_page(&elsewhere.join("other.html"), &export(stamp), Some(&other))
+            .expect("the page is written");
+        let page = fs::read_to_string(elsewhere.join("other.html")).expect("the page reads back");
+        assert!(
+            page.contains("src=\"assets/shot-2.png\""),
+            "export {stamp} climbed past the copy it had already written: {page}"
+        );
+    }
+    assert!(
+        !elsewhere.join("assets/shot-3.png").exists(),
+        "a second copy was written beside the one already there"
+    );
+    assert_eq!(
+        fs::read(elsewhere.join("assets/shot.png"))
+            .expect("the picture already there is still there"),
+        b"somebody else's picture",
+        "the export wrote over a picture belonging to a page somebody exported earlier"
+    );
+}
+
 /// A picture the app could not load is not a picture in the live markup at all: the page swaps its source for a transparent pixel and paints our own broken-picture mark over it. The page puts the address back before it sends the markup, so what the export names is the file the document asked for — and the browser draws its own mark where it is still not there, which says what an empty space cannot.
 #[test]
 fn an_exported_page_names_a_missing_picture_rather_than_our_own_mark() {
