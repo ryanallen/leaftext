@@ -38,7 +38,7 @@ export function bucketOf(hook, raw) {
   try {
     tool = String(JSON.parse(raw ?? '').tool_name ?? '');
   } catch {
-    return `${hook}-other`; // Worked out before the parse the sampling below depends on, so a payload that will not open is still filed rather than dropped.
+    return `${hook}-other`; // Named before the parse the entry point needs, so a payload that will not open is filed rather than dropped.
   }
   if (EDIT_TOOLS.test(tool)) return `${hook}-edit`;
   if (SHELL_TOOLS.test(tool)) return `${hook}-shell`;
