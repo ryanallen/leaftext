@@ -1821,11 +1821,11 @@ function flowPickerChoices(caption, options, current, chip, apply) {
 // Twice life size, so a picture pasted somewhere and scaled up still reads.
 const DIAGRAM_PNG_SCALE = 2;
 
-// The endings a diagram can be saved under. The save window is what offers them, so this is the page's copy of the same three the host lists in `DIAGRAM_EXPORT_FORMATS` — held here to read the reader's chosen ending back and to name the three in the message when it is none of them.
+// The endings a diagram can be saved under. The save window is what offers them on Windows, so this is the page's copy of the same three the host lists in `DIAGRAM_EXPORT_FORMATS` — held here to draw the menu a Mac gets instead, to read the reader's chosen ending back, and to name the three in the message when it is none of them.
 const DIAGRAM_EXPORTS = [
-  { id: 'md', label: 'Markdown' },
-  { id: 'png', label: 'PNG' },
-  { id: 'webp', label: 'WebP' },
+  { id: 'md', label: 'Markdown', hint: 'The mermaid text, in a document of its own' },
+  { id: 'png', label: 'PNG', hint: 'The drawing as a picture, to paste anywhere' },
+  { id: 'webp', label: 'WebP', hint: 'The same picture, about half the file' },
 ];
 
 let diagramExportSeq = 0;
@@ -1941,13 +1941,54 @@ async function diagramWebpBase64(svgText) {
 const diagramExportsWaiting = new Map();
 let diagramExportToken = 0;
 
-// Ask first, draw after. The save window carries every format, so the ending on the name the reader chooses is what gets encoded — which is why nothing is drawn until it comes back. The source is passed in, because the same export serves the editor's own session and a diagram drawn in the page, which has no session at all.
-function exportDiagram(source) {
+// Ask first, draw after. The ending on the name that comes back is what gets encoded, so nothing is drawn until it does. The source is passed in, because the same export serves the editor's own session and a diagram drawn in the page, which has no session at all. `format` travels only where the reader has already been asked, and leaves the save window that one row to offer.
+function exportDiagram(source, format) {
   if (!source) return;
   closeFlowMenu();
   diagramExportToken += 1;
   diagramExportsWaiting.set(diagramExportToken, source);
-  send({ command: 'pickDiagramPath', token: diagramExportToken });
+  const ask = { command: 'pickDiagramPath', token: diagramExportToken };
+  if (format) ask.format = format;
+  send(ask);
+}
+
+// The menu a Mac gets, on any diagram: the corner of a drawn block in the page, the full-window view, or the editor's own bar. Its rows only ever need the text, which is why one menu serves all three.
+function openDiagramExportMenu(x, y, source, host) {
+  openFlowMenuWith(
+    x,
+    y,
+    DIAGRAM_EXPORTS.map((kind) => ({
+      label: kind.label,
+      hint: kind.hint,
+      run: () => exportDiagram(source, kind.id),
+    })),
+    host,
+  );
+}
+
+// The same menu for a note with no file, drawn off the formats the host injected at boot rather than a list kept here — so a sixth readable format appears in it the day `src/format.rs` gains one. It lives beside the export's menu because both are the one menu the app draws, and it opens on a Mac for the same reason: that panel shows no format at all.
+function openSaveFormatMenu(button, pick) {
+  const formats = window.__leafDocumentFormats || [];
+  if (!formats.length) return false;
+  const spot = button.getBoundingClientRect();
+  openFlowMenuWith(
+    spot.left,
+    spot.bottom + 6,
+    formats.map((format) => ({ label: format.label, run: () => pick(format.ext) })),
+    appSurface,
+  );
+  return true;
+}
+
+// Which platform asks the format, and where. Windows draws the formats as a dropdown inside the save window, so the window is the only question and nothing opens over the page. A Mac panel throws every label away and permits all three endings at once, so a reader there is shown a name with no ending and nothing to change it with — the menu asks first, and the window is then left the one format they picked. `host` is what that menu hangs off and is clamped inside; the editor's own bar wants none, and gets the sheet.
+function beginDiagramExport(source, button, host) {
+  if (!source) return;
+  if (!isMacPlatform) {
+    exportDiagram(source);
+    return;
+  }
+  const spot = button.getBoundingClientRect();
+  openDiagramExportMenu(spot.left, spot.bottom + 6, source, host);
 }
 
 // The host's answer: where the reader said it goes. The format is the ending they left on the name, so a reader who types one gets it.
@@ -1999,7 +2040,7 @@ if (flowSheetExport) {
     // Flushed at the press: the code pane's last keystroke is still unparsed until it is, and the session's text is what gets written out.
     closeFlowLabelBox(true);
     flushFlowCode();
-    exportDiagram(flowSession.text);
+    beginDiagramExport(flowSession.text, flowSheetExport);
   });
 }
 

@@ -25,7 +25,7 @@ const RULES = [
       '.agents/skills/ticket/SKILL.md',
       '.agents/skills/git-release/SKILL.md',
       '../docs/GLOSSARY.md',
-      '../docs/learn/ticket-workflow-medium/README.md',
+      '../docs/learn/ticket-workflow-medium/leaftext-workflow.md',
     ],
   },
 ];

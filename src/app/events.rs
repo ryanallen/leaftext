@@ -416,9 +416,12 @@ pub(crate) enum IpcCommand {
     /// The code-view editor changed; carries the full buffer text (debounced).
     #[serde(rename = "updateSource")]
     UpdateSource { text: String },
-    /// Write the active document's buffer to disk.
+    /// Write the active document's buffer to disk. `format` is the one the reader picked before the window opened, and only a note that has never had a file ever opens one — a Mac panel shows no format at all, so the page asks there first and the window is left that one ending with a name already wearing it. Without it the window carries every readable format and Windows draws them as its own dropdown.
     #[serde(rename = "saveDocument")]
-    SaveDocument,
+    SaveDocument {
+        #[serde(default)]
+        format: Option<String>,
+    },
     /// The code view's popup wants the notes `[[` can complete to.
     #[serde(rename = "codeCompleteNotes")]
     CodeCompleteNotes { token: u64 },
@@ -480,9 +483,13 @@ pub(crate) enum IpcCommand {
     /// Show the image picker for the reading view's insert box. The page keeps the insertion point against `token` and writes the block itself once the path comes back — the host only answers "which file".
     #[serde(rename = "pickImage")]
     PickImage { token: u64 },
-    /// Ask where a diagram goes, before anything is drawn. The save window carries every format, so the ending on the name the reader chooses is what the page then encodes — which is how exactly one picture is ever made. The page keeps the diagram against `token` and does the rest once the path comes back.
+    /// Ask where a diagram goes, before anything is drawn. `format` is the one the reader has already picked: a Mac panel shows no format at all, so the page asks there first and the window is left that one ending with a name already wearing it. Without it the window carries every format and the ending on the name the reader chooses is what the page then encodes. Either way exactly one picture is ever made — the page keeps the diagram against `token` and does the rest once the path comes back.
     #[serde(rename = "pickDiagramPath")]
-    PickDiagramPath { token: u64 },
+    PickDiagramPath {
+        token: u64,
+        #[serde(default)]
+        format: Option<String>,
+    },
     /// Write the flowchart sheet's diagram out as a file of its own. `format` is `md`, `png` or `webp`; `data` is the text for the first and base64 for the two pictures, since IPC carries a string and a picture is bytes. `path` is where it goes, answered by `pickDiagramPath` a moment earlier — the host opens no window of its own here.
     #[serde(rename = "exportDiagram")]
     /// `data` is Markdown for a `md` export, base64 RGBA pixels for a `png` one — the page sends pixels so the host's encoder does the writing — and a finished WebP file for a `webp` one, which the canvas writes itself.

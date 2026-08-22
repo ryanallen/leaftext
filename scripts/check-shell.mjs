@@ -7944,8 +7944,8 @@ if (booted) {
     return node;
   };
 
-  const drawnDiagram = (source) => {
-    const block = booted.document.createElement('pre');
+  const drawnDiagram = (source, page = booted) => {
+    const block = page.document.createElement('pre');
     block.className = 'mermaid';
     block.__mermaidSource = source;
     return answeringForItsOwnChildren(block);
@@ -8012,7 +8012,7 @@ if (booted) {
     }
   });
 
-  check('a diagram asks where it goes and opens nothing over the page', () => {
+  check('on Windows a diagram asks where it goes and opens nothing over the page', () => {
     const surface = booted.document.getElementById('appSurface');
     const wasSend = booted.ipc.postMessage;
     const sent = [];
@@ -8021,16 +8021,130 @@ if (booted) {
       const block = drawnDiagram('flowchart TD\n  K1 --> K2');
       booted.addMermaidControls(block);
       booted.openMermaidExportMenu(exportChipOn(block));
-      // The save window carries the three formats, so a menu here would be the same question asked twice.
-      if (exportMenuOn(surface)) throw new Error('Export opened a menu over the page, where the save window is already asking');
+      // On Windows the save window carries the three formats in its own dropdown, so a menu here would be the same question asked twice. The check below boots a Mac, where that dropdown does not exist and the menu is the only place the question is ever put.
+      if (exportMenuOn(surface)) throw new Error('on Windows Export opened a menu over the page, where the save window is already asking');
       const asked = sent.filter((one) => one.command === 'pickDiagramPath');
       if (asked.length !== 1) throw new Error(`pressing Export asked ${asked.length} times where the file goes`);
       if (!(asked[0].token > 0)) throw new Error(`the ask carried no export to answer: ${JSON.stringify(asked[0])}`);
+      // Nobody was asked, so the window is handed no answer and keeps every row in its dropdown.
+      if ('format' in asked[0]) throw new Error(`on Windows the ask named ${asked[0].format}, which takes the other two out of the dropdown`);
       // Nothing is drawn before the answer: that is what stops two pictures nobody asked for being made.
       if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('a diagram was encoded before anybody said where it goes');
     } finally {
       booted.ipc.postMessage = wasSend;
     }
+  });
+
+  // The one branch nothing in this suite had ever run: every page it boots reports its platform as `test`, so the Mac half of the export was unread. A page of its own is booted rather than the shared one repointed, because the platform is read once as the page loads into a value the fragments then share.
+  check('on a Mac Export asks the format first, and the answer reaches the save window', () => {
+    const mac = runShell(source, {
+      navigator: { userAgent: 'leaf-check', platform: 'MacIntel', clipboard: { writeText: () => {} } },
+    });
+    const surface = mac.document.getElementById('appSurface');
+    const sent = [];
+    mac.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+
+    const block = drawnDiagram('flowchart TD\n  Q1 --> Q2', mac);
+    mac.addMermaidControls(block);
+    mac.openMermaidExportMenu(exportChipOn(block));
+
+    const menu = exportMenuOn(surface);
+    if (!menu) throw new Error('a Mac was handed a save window with no format in it and nothing asked beforehand');
+    const rows = menu.children.map((child) => (child.children[0] || {}).textContent);
+    if (String(rows) !== 'Markdown,PNG,WebP') throw new Error(`the menu offers ${rows.join(', ') || 'nothing'}`);
+    // Nothing is asked and nothing is drawn until a row is pressed: a save window opened here would be the second question.
+    if (sent.length) throw new Error(`opening the menu already sent ${sent.map((one) => one.command).join(', ')}`);
+
+    press(exportRow(surface, 'PNG'));
+    if (exportMenuOn(surface)) throw new Error('the menu stayed open over the page after a format was picked');
+    const asked = sent.filter((one) => one.command === 'pickDiagramPath');
+    if (asked.length !== 1) throw new Error(`picking a format asked ${asked.length} times where the file goes`);
+    if (asked[0].format !== 'png') throw new Error(`the save window was told ${JSON.stringify(asked[0].format)} rather than the format that was picked`);
+    if (!(asked[0].token > 0)) throw new Error(`the ask carried no export to answer: ${JSON.stringify(asked[0])}`);
+    // Still nothing drawn: the picture is made once the path comes back, which is what stops one nobody asked for.
+    if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('a diagram was encoded before anybody said where it goes');
+
+    // The flowchart sheet's own Export is the third button and the second call site, and it drops its menu on the sheet rather than on the page under it.
+    vm.runInContext('flowCode.value = "flowchart TD\\n  S1 --> S2"; flowSession = { text: flowCode.value };', mac);
+    const sheetExport = mac.document.getElementById('flowSheetExport');
+    (sheetExport.listeners.get('click') || []).forEach((handler) => handler());
+    const sheet = mac.document.getElementById('flowSheet');
+    if (!exportMenuOn(sheet)) throw new Error('the flowchart sheet’s Export opened no menu on a Mac');
+    if (exportMenuOn(surface)) throw new Error('the sheet’s menu was put on the page under it');
+    press(exportRow(sheet, 'WebP'));
+    const fromSheet = sent.filter((one) => one.command === 'pickDiagramPath').pop();
+    if (fromSheet.format !== 'webp') throw new Error(`the sheet asked for ${JSON.stringify(fromSheet.format)}`);
+  });
+
+  // The other window that panel opens, and the same silence: the first Save of a note that has never had a file. The formats are handed in rather than written here, which is how the page is held to keeping none of its own — the host injects them off `src/format.rs`, and a sixth row appears because the table gained one.
+  check('on a Mac the first Save of a new note asks the format first, and on Windows it does not', () => {
+    const readable = [
+      { label: 'Markdown', ext: 'md' },
+      { label: 'XML', ext: 'xml' },
+      { label: 'JSON', ext: 'json' },
+      { label: 'YAML', ext: 'yaml' },
+      { label: 'Email', ext: 'eml' },
+    ];
+    const jobs = [];
+    const boot = (platform, formats) => {
+      const page = runShell(source, {
+        navigator: { userAgent: 'leaf-check', platform, clipboard: { writeText: () => {} } },
+        // The save waits a turn for whatever is being typed to commit, and the stand-in page swallows a timer by default.
+        setTimeout: (fn) => {
+          jobs.push(fn);
+          return 0;
+        },
+        __leafDocumentFormats: formats,
+      });
+      jobs.length = 0;
+      const note = { title: 'Untitled', path: 'Untitled.md', dirty: true, undoable: false, redoable: false, untitled: true };
+      vm.runInContext(`currentState = { recent: [], favorites: [], tabs: [${JSON.stringify(note)}], active: 0, document: null }; dirtyByPath.set('Untitled.md', true);`, page);
+      const button = page.document.getElementById('saveButton');
+      button.getBoundingClientRect = () => ({ left: 240, top: 8, right: 300, bottom: 36, width: 60, height: 28 });
+      return { page, button };
+    };
+    const drain = () => {
+      while (jobs.length) jobs.shift()();
+    };
+
+    const mac = boot('MacIntel', readable);
+    const macSent = [];
+    mac.page.ipc.postMessage = (text) => macSent.push(JSON.parse(text));
+    (mac.button.listeners.get('click') || []).forEach((handler) => handler());
+    drain();
+    const surface = mac.page.document.getElementById('appSurface');
+    const menu = exportMenuOn(surface);
+    if (!menu) throw new Error('a Mac was handed the Save Document As window with no format in it and nothing asked beforehand');
+    const rows = menu.children.map((child) => (child.children[0] || {}).textContent);
+    if (String(rows) !== String(readable.map((one) => one.label))) throw new Error(`the menu offers ${rows.join(', ') || 'nothing'}`);
+    // A note cannot become a format nobody picked: nothing is written while the question stands.
+    if (macSent.length) throw new Error(`opening the menu already sent ${macSent.map((one) => one.command).join(', ')}`);
+
+    press(exportRow(surface, 'YAML'));
+    drain();
+    const saved = macSent.filter((one) => one.command === 'saveDocument');
+    if (saved.length !== 1) throw new Error(`picking a format saved ${saved.length} times`);
+    if (saved[0].format !== 'yaml') throw new Error(`the save window was told ${JSON.stringify(saved[0].format)} rather than the format that was picked`);
+
+    // The rows are the host's list and nothing else: a table with a sixth format in it draws six.
+    const sixth = boot('MacIntel', readable.concat([{ label: 'Rich text', ext: 'rtf' }]));
+    sixth.page.ipc.postMessage = () => {};
+    (sixth.button.listeners.get('click') || []).forEach((handler) => handler());
+    drain();
+    const grown = exportMenuOn(sixth.page.document.getElementById('appSurface'));
+    const grownRows = grown ? grown.children.map((child) => (child.children[0] || {}).textContent) : [];
+    if (String(grownRows.slice(-1)) !== 'Rich text') throw new Error(`a format added to the app's table drew ${grownRows.join(', ') || 'nothing'}`);
+
+    // Windows asks inside the window it opens, so the press writes straight through and nothing stands over the page.
+    const win = boot('Win32', readable);
+    const winSent = [];
+    win.page.ipc.postMessage = (text) => winSent.push(JSON.parse(text));
+    (win.button.listeners.get('click') || []).forEach((handler) => handler());
+    drain();
+    if (exportMenuOn(win.page.document.getElementById('appSurface'))) throw new Error('on Windows Save opened a menu over the page, where the window is already asking');
+    const wrote = winSent.filter((one) => one.command === 'saveDocument');
+    if (wrote.length !== 1) throw new Error(`on Windows Save sent ${winSent.map((one) => one.command).join(', ') || 'nothing'}`);
+    if ('format' in wrote[0]) throw new Error(`on Windows the save named ${wrote[0].format}, which takes the other four out of the dropdown`);
   });
 
   check('an ending the app does not write is refused, and nothing is', () => {
@@ -8520,15 +8634,15 @@ if (booted) {
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     try {
       booted.openMermaidExportMenu(chip);
-      // The overlay's Export asks where the file goes like every other one, and puts nothing over the drawing it is showing.
+      // The overlay's Export asks where the file goes like every other one, and on Windows puts nothing over the drawing it is showing.
       const asked = sent.filter((one) => one.command === 'pickDiagramPath');
       if (asked.length !== 1) throw new Error(`the full-window Export asked ${asked.length} times where the file goes`);
       const surface = booted.document.getElementById('appSurface');
       if (overlay.children.some((child) => String(child.className || '') === 'flow-menu')) {
-        throw new Error('the full-window Export opened a menu over the drawing');
+        throw new Error('on Windows the full-window Export opened a menu over the drawing');
       }
       if (surface.children.some((child) => String(child.className || '') === 'flow-menu')) {
-        throw new Error('the full-window Export opened a menu on the surface under the overlay');
+        throw new Error('on Windows the full-window Export opened a menu on the surface under the overlay');
       }
     } finally {
       booted.ipc.postMessage = wasSend;

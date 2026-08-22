@@ -327,8 +327,8 @@ pub(crate) fn export_page_pdf(
             "Failed to let the page follow the system theme again",
         )
     };
-    let (extension, label) = match format {
-        "pdf" => ("pdf", "PDF document"),
+    let (extension, filters): (&str, &[(&str, &[&str])]) = match format {
+        "pdf" => ("pdf", &[("PDF document", &["pdf"])]),
         // Not a row the chooser offers, so not a file anybody asked for.
         _ => {
             release(page);
@@ -340,11 +340,9 @@ pub(crate) fn export_page_pdf(
         .map(|stem| stem.to_string_lossy().into_owned())
         .filter(|stem| !stem.is_empty())
         .unwrap_or_else(|| "document".to_string());
-    let Some(target) = pick_export_path_titled(
-        "Save as PDF",
-        &format!("{stem}.{extension}"),
-        &[(label, extension)],
-    ) else {
+    let Some(target) =
+        pick_export_path_titled("Save as PDF", &format!("{stem}.{extension}"), filters)
+    else {
         release(page);
         return;
     };
@@ -535,19 +533,57 @@ pub(super) enum DiagramExportFile {
     Unoffered,
 }
 
-/// Every format a diagram can be written as: the ending, and the words the save window shows beside it. The window lists them in this order and Windows names a file with no ending off the first, so the order is the order the app has always offered them in. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else.
-pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &str)] = &[
-    ("md", "Markdown"),
-    ("png", "PNG image"),
-    ("webp", "WebP image"),
+/// Every format a diagram can be written as: the words the save window shows, and the endings they name. The window lists them in this order and Windows names a file with no ending off the first, so the order is the order the app has always offered them in. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else.
+pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &[&str])] = &[
+    ("Markdown", &["md"]),
+    ("PNG image", &["png"]),
+    ("WebP image", &["webp"]),
 ];
 
 /// The words the save window shows for one of those endings.
 fn diagram_export_label(extension: &str) -> Option<&'static str> {
     DIAGRAM_EXPORT_FORMATS
         .iter()
-        .find(|(ending, _)| *ending == extension)
-        .map(|(_, label)| *label)
+        .find(|(_, endings)| endings.contains(&extension))
+        .map(|(label, _)| *label)
+}
+
+/// What a save window opens with: the rows it offers, and the name it suggests.
+pub(crate) struct SaveWindowOffer {
+    /// The label first, then the endings it permits — the order a filter is added in.
+    pub(crate) filters: Vec<(&'static str, &'static [&'static str])>,
+    pub(crate) name: String,
+}
+
+/// A save window's own arithmetic, with the window left outside so this much can be tested: every format it could offer, the one the reader has already picked, and the stem its suggested name is built on.
+///
+/// With no answer the window keeps every row and suggests the first format's ending. Windows draws those rows as a dropdown and asks there, so the window is the whole question. A Mac panel throws every label away and permits all the endings at once, so nothing there says what is about to be written — it is asked before the window opens and arrives here with the answer, leaving one row and a name already ending in it, which is also the ending AppKit appends to a name the reader clears.
+///
+/// A format no row names leaves every row standing, so a window always offers something a reader can save.
+pub(crate) fn save_window_offer(
+    formats: &[(&'static str, &'static [&'static str])],
+    chosen: Option<&str>,
+    stem: &str,
+) -> SaveWindowOffer {
+    let picked = chosen.and_then(|wanted| {
+        formats.iter().find(|(_, endings)| {
+            endings
+                .iter()
+                .any(|ending| ending.eq_ignore_ascii_case(wanted))
+        })
+    });
+    let filters: Vec<(&'static str, &'static [&'static str])> = match picked {
+        Some(one) => vec![*one],
+        None => formats.to_vec(),
+    };
+    let ending = filters
+        .first()
+        .and_then(|(_, endings)| endings.first().copied());
+    let name = match ending {
+        Some(ending) => format!("{stem}.{ending}"),
+        None => stem.to_string(),
+    };
+    SaveWindowOffer { filters, name }
 }
 
 /// Turn what the page sent into the file it wants written.

@@ -25,13 +25,14 @@ use leaftext::{
     failure_message, favorites_missing_script, file_deleted_script, file_written_notice_script,
     filter_hints_script, find_note, folder_note_items, folder_note_names, fragment_scroll_script,
     git_tooling, glossary_failed_script, glossary_sheet_script, graph_script, image_picked_script,
-    image_refresh_script, init_vault_repo, initial_document_exts_script, initial_settings_script,
-    initial_state_script, initial_update_script, initial_vaults_script, initial_version_script,
-    inspect_vault_repo, is_local_image_path, is_supported_document_path, known_note_names,
-    library_folder_script, library_refresh_script, line_count_script, link_preview_script,
-    link_vault_remote, lint_links, load_favorites, load_recent_files, load_settings,
-    local_image_protocol_response, local_image_source_dir, markdown_image_insert_destination,
-    navigation_state_script, nearest_glossary_file, note_preview, open_error_state_script,
+    image_refresh_script, init_vault_repo, initial_document_exts_script,
+    initial_document_formats_script, initial_settings_script, initial_state_script,
+    initial_update_script, initial_vaults_script, initial_version_script, inspect_vault_repo,
+    is_local_image_path, is_supported_document_path, known_note_names, library_folder_script,
+    library_refresh_script, line_count_script, link_preview_script, link_vault_remote, lint_links,
+    load_favorites, load_recent_files, load_settings, local_image_protocol_response,
+    local_image_source_dir, markdown_image_insert_destination, navigation_state_script,
+    nearest_glossary_file, note_preview, open_error_state_script,
     opened_document_from_source_with_host, pager_loaded_script, read_folder_listing,
     read_folder_note, read_source, read_source_head, reading_mode_css, render_markdown_document,
     repo_name_for_vault, rgba_from_bmp, save_favorites, save_recent_files, save_result_script,
@@ -386,6 +387,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             workspace.active,
         ))
         .with_initialization_script(initial_document_exts_script())
+        .with_initialization_script(initial_document_formats_script())
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script(
             platform::platform_update_asset_suffix(),
@@ -578,32 +580,42 @@ fn pick_document_file() -> Option<PathBuf> {
     dialog.add_filter("All files", &["*"]).pick_file()
 }
 
-/// Where a document that has never had a file goes. The same filters as Open, off the same table, with the name it has been wearing as the suggestion — so the first save of a new document is a Save As and nothing is written until someone has said where.
-fn pick_save_path(current: &Path) -> Option<PathBuf> {
-    let mut dialog = FileDialog::new().set_title("Save Document As");
-    if let Some(name) = current.file_name().and_then(|name| name.to_str()) {
-        dialog = dialog.set_file_name(name);
+/// Where a document that has never had a file goes. The same filters as Open, off the same table, with the stem it has been wearing as the suggestion — so the first save of a new document is a Save As and nothing is written until someone has said where. With a format named the window carries that one alone, because a Mac panel shows none of them and the page has already asked.
+fn pick_save_path(current: &Path, format: Option<&str>) -> Option<PathBuf> {
+    let readable: Vec<(&'static str, &'static [&'static str])> = DocumentFormat::ALL
+        .iter()
+        .map(|format| (format.display_name(), format.extensions()))
+        .collect();
+    let stem = current
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .unwrap_or(UNTITLED_STEM);
+    let offer = save_window_offer(&readable, format, stem);
+    let mut dialog = FileDialog::new()
+        .set_title("Save Document As")
+        .set_file_name(&offer.name);
+    for (label, extensions) in &offer.filters {
+        dialog = dialog.add_filter(*label, extensions);
     }
-    for format in DocumentFormat::ALL {
-        dialog = dialog.add_filter(format.display_name(), format.extensions());
-    }
+    // Last, so it never names a bare file: a reader who clears the ending still gets the format above it.
     dialog.add_filter("All files", &["*"]).save_file()
 }
 
-/// Where an exported diagram goes. Every format it can be written as, so the window is the one place the format is asked — the page encodes whatever the chosen name ends in.
-fn pick_diagram_path(name: &str) -> Option<PathBuf> {
-    let filters: Vec<(&str, &str)> = DIAGRAM_EXPORT_FORMATS
-        .iter()
-        .map(|(extension, label)| (*label, *extension))
-        .collect();
-    pick_export_path_titled("Export Diagram", name, &filters)
+/// Where an exported diagram goes. With no format named the window carries all three and the page encodes whatever the chosen name ends in; with one, it carries that one alone, because a Mac panel shows no format at all and the page has already asked.
+fn pick_diagram_path(stem: &str, format: Option<&str>) -> Option<PathBuf> {
+    let offer = save_window_offer(DIAGRAM_EXPORT_FORMATS, format, stem);
+    pick_export_path_titled("Export Diagram", &offer.name, &offer.filters)
 }
 
 /// A save window under the caller's own title, offering the formats it is handed. A reader saving the page as a PDF is not exporting a diagram, and the title bar is the only thing in that window that says which.
-fn pick_export_path_titled(title: &str, name: &str, filters: &[(&str, &str)]) -> Option<PathBuf> {
+fn pick_export_path_titled(
+    title: &str,
+    name: &str,
+    filters: &[(&str, &[&str])],
+) -> Option<PathBuf> {
     let mut dialog = FileDialog::new().set_title(title).set_file_name(name);
-    for (label, extension) in filters {
-        dialog = dialog.add_filter(*label, &[*extension]);
+    for (label, extensions) in filters {
+        dialog = dialog.add_filter(*label, extensions);
     }
     dialog.save_file()
 }

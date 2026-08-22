@@ -198,6 +198,8 @@ pub unsafe extern "C" fn leaf_document_script(
         dirty: false,
         undoable: false,
         redoable: false,
+        // A browser's document arrives under a name of its own, so Save never opens a window over it.
+        untitled: false,
     }];
     into_length_prefixed(
         leaftext::workspace_state_script(
@@ -381,6 +383,7 @@ pub extern "C" fn leaf_buffer_document_script(handle: u32) -> *mut u8 {
         dirty,
         undoable,
         redoable,
+        untitled: false,
     }];
     let state = leaftext::workspace_state_script(
         &[],

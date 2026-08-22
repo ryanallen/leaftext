@@ -481,6 +481,7 @@ impl Workspace {
                     dirty: edit.is_some_and(EditableDocument::is_dirty),
                     undoable: edit.is_some_and(EditableDocument::can_undo),
                     redoable: edit.is_some_and(EditableDocument::can_redo),
+                    untitled: tab.shows_untitled_buffer(),
                 }
             })
             .collect()

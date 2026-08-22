@@ -1171,8 +1171,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::CodeLint { token } => {
                     code_lint(&mut vault_state, &proxy, &reader.workspace, token);
                 }
-                IpcCommand::SaveDocument => {
-                    match name_untitled_document(&mut reader, pick_save_path) {
+                IpcCommand::SaveDocument { format } => {
+                    match name_untitled_document(&mut reader, |path| {
+                        pick_save_path(path, format.as_deref())
+                    }) {
                         SaveReady::Canceled => {}
                         ready => {
                             // The page has already been told how it went; nobody else is waiting on this one.
@@ -1278,7 +1280,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         );
                     }
                 }
-                IpcCommand::PickDiagramPath { token } => {
+                IpcCommand::PickDiagramPath { token, format } => {
                     // The window blocks this thread, like Open's does. The active document only names the file it suggests; nothing about it is read or written.
                     let stem = reader
                         .workspace
@@ -1287,7 +1289,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         .map(|stem| stem.to_string_lossy().into_owned())
                         .filter(|stem| !stem.is_empty())
                         .unwrap_or_else(|| "diagram".to_string());
-                    if let Some(target) = pick_diagram_path(&format!("{stem}-diagram.md")) {
+                    if let Some(target) =
+                        pick_diagram_path(&format!("{stem}-diagram"), format.as_deref())
+                    {
                         run_page_script(
                             reader.page(),
                             &diagram_path_picked_script(token, &target.display().to_string()),

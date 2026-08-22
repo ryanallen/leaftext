@@ -205,6 +205,13 @@ function activeDocumentPath() {
   if (active == null || !tabs[active]) return null;
   return tabs[active].path || null;
 }
+// Whether the document on screen is a note that has never had a file, which is the one case where Save opens a window. The host is the only thing that knows, because a note's tab can follow a link to a real document and keep its no-file buffer.
+function activeDocumentIsUntitled() {
+  const tabs = (currentState && currentState.tabs) || [];
+  const active = currentState && currentState.active;
+  if (active == null || !tabs[active]) return false;
+  return tabs[active].untitled === true;
+}
 // What the pager came back as, per document. Every render emits the skeleton and waits to be told what to put there, which flashes a pulsing box at the foot of the page on every edit. The remembered answer goes back before the paint; the ask still goes out, so a neighbor added since still lands.
 const pagerHtmlByPath = new Map();
 

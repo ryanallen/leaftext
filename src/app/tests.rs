@@ -95,6 +95,7 @@ fn a_workspace_restores_saved_regular_files_in_order_and_nearest_tab() {
                 dirty: false,
                 undoable: false,
                 redoable: false,
+                untitled: false,
             },
             TabSummary {
                 title: "Second title".to_string(),
@@ -102,6 +103,7 @@ fn a_workspace_restores_saved_regular_files_in_order_and_nearest_tab() {
                 dirty: false,
                 undoable: false,
                 redoable: false,
+                untitled: false,
             },
         ]
     );
@@ -240,6 +242,7 @@ fn a_new_note_comes_back_with_its_words_its_name_its_place_and_its_dot() {
                 dirty: false,
                 undoable: false,
                 redoable: false,
+                untitled: false,
             },
             TabSummary {
                 title: "Untitled".to_string(),
@@ -247,6 +250,7 @@ fn a_new_note_comes_back_with_its_words_its_name_its_place_and_its_dot() {
                 dirty: true,
                 undoable: true,
                 redoable: false,
+                untitled: true,
             },
         ]
     );
@@ -519,6 +523,7 @@ fn a_tab_that_followed_a_link_out_of_its_unsaved_words_comes_back_sitting_on_the
             dirty: true,
             undoable: true,
             redoable: false,
+            untitled: false,
         }]
     );
     assert_eq!(
@@ -557,6 +562,7 @@ fn a_note_a_tab_followed_a_link_out_of_comes_back_as_a_note_with_its_words() {
             dirty: true,
             undoable: true,
             redoable: false,
+            untitled: true,
         }]
     );
     assert_eq!(
@@ -626,6 +632,8 @@ fn a_file_gone_from_the_disk_brings_its_words_back_as_a_note_wearing_the_name_it
             dirty: true,
             undoable: true,
             redoable: false,
+            // Its file has gone, so its words live only in the buffer and Save has to ask where they go.
+            untitled: true,
         }]
     );
     let edit = restored.tabs[0].edit.as_ref().expect("the words come back");
@@ -3507,21 +3515,64 @@ flowchart TD
     assert_eq!(
         DIAGRAM_EXPORT_FORMATS,
         &[
-            ("md", "Markdown"),
-            ("png", "PNG image"),
-            ("webp", "WebP image")
+            ("Markdown", &["md"][..]),
+            ("PNG image", &["png"][..]),
+            ("WebP image", &["webp"][..])
         ],
         "the save window offers a format the encoder does not write, or lists them in an order that names a bare file wrongly"
     );
-    for (extension, _) in DIAGRAM_EXPORT_FORMATS {
-        assert!(
-            !matches!(
-                diagram_export_file(extension, "", 1, 1),
-                DiagramExportFile::Unoffered
-            ),
-            "the window offers {extension} and the encoder has never heard of it"
-        );
+    for (_, endings) in DIAGRAM_EXPORT_FORMATS {
+        for extension in *endings {
+            assert!(
+                !matches!(
+                    diagram_export_file(extension, "", 1, 1),
+                    DiagramExportFile::Unoffered
+                ),
+                "the window offers {extension} and the encoder has never heard of it"
+            );
+        }
     }
+}
+
+/// A save window opens with rows and a suggested name, and the window itself cannot be reached from here — so this is the whole of what is decided before one opens.
+///
+/// The two answers are two platforms. Windows is asked nothing beforehand and keeps every row as its dropdown. A Mac shows no format at all, so the page asks first and the answer arrives here: one row, and a name already ending in it, which is also the ending AppKit appends to a name the reader clears.
+#[test]
+fn save_window_offers_one_format_once_the_reader_has_picked_one() {
+    let unasked = save_window_offer(DIAGRAM_EXPORT_FORMATS, None, "README-diagram");
+    assert_eq!(
+        unasked.filters,
+        DIAGRAM_EXPORT_FORMATS.to_vec(),
+        "a window nobody was asked ahead of dropped a format Windows offers in its dropdown"
+    );
+    assert_eq!(
+        unasked.name, "README-diagram.md",
+        "the name a window suggests stopped ending in the first format's own ending"
+    );
+
+    let picked = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some("webp"), "README-diagram");
+    assert_eq!(
+        picked.filters,
+        vec![("WebP image", &["webp"][..])],
+        "a Mac panel was left more than the one ending the reader picked, so it says nothing again"
+    );
+    assert_eq!(
+        picked.name, "README-diagram.webp",
+        "the reader picked WebP and the name still says something else"
+    );
+
+    // A format's other spellings name it too, and the name comes out under the canonical one — the ending the panel appends is the first permitted type, not whatever was asked with.
+    let spelled = save_window_offer(
+        &[("Markdown", &["md", "markdown"])],
+        Some("MARKDOWN"),
+        "Untitled",
+    );
+    assert_eq!(spelled.name, "Untitled.md");
+
+    // Nothing the table names, so every row stands: a window that offered nothing is one a reader cannot save from at all.
+    let unknown = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some("svg"), "README-diagram");
+    assert_eq!(unknown.filters, DIAGRAM_EXPORT_FORMATS.to_vec());
+    assert_eq!(unknown.name, "README-diagram.md");
 }
 
 /// An address only this test uses, so a running copy of the app is never the thing answering — a named pipe on Windows, a socket file elsewhere.

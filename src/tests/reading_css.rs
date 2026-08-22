@@ -2695,7 +2695,7 @@ fn the_print_block_hands_the_whole_document_to_the_paper() {
     assert_contains(paper_body, "background: var(--lt-markdown-background);");
     assert_contains(paper_body, "print-color-adjust: exact;");
 
-    // A print panel leaves Background graphics unticked by default, which drops every painted background — so a dark theme prints as dark ink on white paper. Both boxes the theme's page color lands on force it instead, which takes that checkbox out of the reader's hands.
+    // A print render drops every painted background unless it is told otherwise, so a dark theme would reach the file as dark ink on white paper. Both boxes the theme's page color lands on force it instead, on both desktops, which is why no reader is ever asked.
     for painted in [
         "body.leaf-paper .app-surface {",
         "body.leaf-paper .library-shell .reader-shell {",

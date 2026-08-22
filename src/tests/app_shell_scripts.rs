@@ -10,6 +10,7 @@ fn strip_tab(title: &str, path: &str) -> TabSummary {
         dirty: false,
         undoable: false,
         redoable: false,
+        untitled: false,
     }
 }
 
@@ -46,7 +47,7 @@ fn initial_state_script_carries_restored_tab_labels_without_a_document() {
 
     assert_contains(
         &script,
-        r#""tabs":[{"dirty":false,"path":"guide.md","redoable":false,"title":"Guide","undoable":false}]"#,
+        r#""tabs":[{"dirty":false,"path":"guide.md","redoable":false,"title":"Guide","undoable":false,"untitled":false}]"#,
     );
     assert_contains(&script, r#""active":0"#);
     assert_contains(&script, r#""document":null"#);
@@ -56,11 +57,12 @@ fn initial_state_script_carries_restored_tab_labels_without_a_document() {
         dirty: true,
         undoable: true,
         redoable: true,
+        untitled: false,
         ..strip_tab("Guide", "guide.md")
     }];
     assert_contains(
         &initial_state_script(&[], &Favorites::default(), &restored, Some(0)),
-        r#""tabs":[{"dirty":true,"path":"guide.md","redoable":true,"title":"Guide","undoable":true}]"#,
+        r#""tabs":[{"dirty":true,"path":"guide.md","redoable":true,"title":"Guide","undoable":true,"untitled":false}]"#,
     );
 }
 

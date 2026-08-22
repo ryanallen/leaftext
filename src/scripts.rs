@@ -18,6 +18,8 @@ pub struct TabSummary {
     pub dirty: bool,
     pub undoable: bool,
     pub redoable: bool,
+    /// Whether this tab is showing a note that has never had a file. The page reads it at the press: the first Save of one opens a save window, and on a Mac that window says nothing about format, so the format is asked before it opens.
+    pub untitled: bool,
 }
 
 /// Initial workspace state as `window.__leafInitialState`. Run as an init script (before any page script) so the boot bootstrap applies it on the first render. Both lists, because the start screen draws both and a cold launch is the one render nothing else answers for.
@@ -161,6 +163,23 @@ pub fn initial_document_exts_script() -> String {
     )
 }
 
+/// Every readable format as `window.__leafDocumentFormats` — the words a reader is offered, and the ending each one writes. Off the same table as the flat list above, in the order the save window offers them, because a Mac panel shows none of them and the menu the page draws instead is the only place they are ever said. A sixth format appears there the day it is added here.
+pub fn initial_document_formats_script() -> String {
+    let formats: Vec<serde_json::Value> = DocumentFormat::ALL
+        .iter()
+        .map(|format| {
+            serde_json::json!({
+                "label": format.display_name(),
+                "ext": format.extensions()[0],
+            })
+        })
+        .collect();
+    format!(
+        "window.__leafDocumentFormats = {};",
+        serde_json::json!(formats)
+    )
+}
+
 /// The running app version as `window.__leafVersion`. Run as an init script so the frontend's update check can compare it against the latest GitHub release.
 pub fn initial_version_script() -> String {
     format!(
@@ -220,7 +239,7 @@ fn workspace_payload(
     let tabs: Vec<serde_json::Value> = tabs
         .iter()
         .map(|tab| {
-            serde_json::json!({ "title": tab.title, "path": tab.path, "dirty": tab.dirty, "undoable": tab.undoable, "redoable": tab.redoable })
+            serde_json::json!({ "title": tab.title, "path": tab.path, "dirty": tab.dirty, "undoable": tab.undoable, "redoable": tab.redoable, "untitled": tab.untitled })
         })
         .collect();
     serde_json::json!({

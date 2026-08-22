@@ -1140,13 +1140,13 @@ function addMermaidViewControls(diagram) {
   diagram.appendChild(row);
 }
 
-// Export, pressed on a diagram anywhere: the corner of a drawn block, or the full-window view. The text is the block's own — an overlay is a second drawing of a block still in the page, so it exports what that block holds. Nothing opens over the page: the save window carries the formats.
+// Export, pressed on a diagram anywhere: the corner of a drawn block, or the full-window view. The text is the block's own — an overlay is a second drawing of a block still in the page, so it exports what that block holds. On Windows nothing opens over the page, because the save window carries the formats; the host is what the menu a Mac gets hangs off, since the page's block sits in the reader, which scrolls and would clip it.
 function openMermaidExportMenu(button) {
   const overlay = button.closest('.diagram-overlay');
   const block = overlay ? overlay.__diagramBlock : button.closest('pre.mermaid');
   const source = block ? block.__mermaidSource : null;
   if (!source) return;
-  exportDiagram(source);
+  beginDiagramExport(source, button, overlay || appSurface);
 }
 
 // ---- the drawing inside its box --------------------------------------------

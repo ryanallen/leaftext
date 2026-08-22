@@ -153,6 +153,8 @@ window.leafResyncSource = () => {
 };
 
 // Write the words on screen. Whatever is being typed in commits first — the dirty state is read after that, so a save whose only edit is the one still under the caret goes through instead of refusing.
+//
+// A note that has never had a file opens a save window instead of writing, and on a Mac that window says nothing about format — so the format is asked here, under the Save button, and travels with the save. Windows draws the same five as a dropdown inside the window and is asked nothing. The menu opens under the button whichever way Save was reached, because the shortcut has no place of its own to open under.
 function saveActiveDocument() {
   const path = activeDocumentPath();
   if (!path) return;
@@ -160,6 +162,10 @@ function saveActiveDocument() {
   afterActiveEditCommits(() => {
     if (activeDocumentPath() !== path || !isDocumentDirty(path)) return;
     flushSourceUpdate();
+    if (isMacPlatform && activeDocumentIsUntitled() && saveButton) {
+      // A menu with nothing in it would leave Save doing nothing at all, so the window opens as it always did.
+      if (openSaveFormatMenu(saveButton, (ext) => send({ command: 'saveDocument', format: ext }))) return;
+    }
     send({ command: 'saveDocument' });
   });
 }

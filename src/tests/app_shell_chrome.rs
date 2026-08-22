@@ -1473,6 +1473,35 @@ fn document_extensions_ride_to_the_page_from_the_format_table() {
     }
 }
 
+/// The menu a Mac gets before its save window opens, which is the only place those formats are ever said there — so what the page draws is the format table itself, in its own order, and never a list written beside it.
+#[test]
+fn readable_formats_ride_to_the_page_from_the_format_table() {
+    let script = initial_document_formats_script();
+    assert!(script.starts_with("window.__leafDocumentFormats = ["));
+    let listed: serde_json::Value = serde_json::from_str(
+        script
+            .trim_start_matches("window.__leafDocumentFormats = ")
+            .trim_end_matches(';'),
+    )
+    .expect("the page is handed a list it can read");
+    let expected: Vec<serde_json::Value> = DocumentFormat::ALL
+        .iter()
+        .map(|format| {
+            serde_json::json!({ "label": format.display_name(), "ext": format.extensions()[0] })
+        })
+        .collect();
+    assert_eq!(
+        listed,
+        serde_json::Value::Array(expected),
+        "the menu offers a format the app cannot read, misses one it can, or names it something the rest of the app does not"
+    );
+    // The ending each row writes is the canonical one, not an accepted spelling: a note saved as YAML gets .yaml.
+    assert!(
+        script.contains("\"ext\":\"yaml\"") && !script.contains("\"ext\":\"yml\""),
+        "a row would write a file under a spelling the app only accepts: {script}"
+    );
+}
+
 #[test]
 fn the_front_end_shares_its_repeated_plumbing() {
     // Three things every part of the front-end needs, written once. A second copy is how two menus end up clamping to different margins, or one drag losing the pointer where another keeps it.
