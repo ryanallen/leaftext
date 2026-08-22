@@ -8074,6 +8074,14 @@ if (booted) {
     press(exportRow(sheet, 'WebP'));
     const fromSheet = sent.filter((one) => one.command === 'pickDiagramPath').pop();
     if (fromSheet.format !== 'webp') throw new Error(`the sheet asked for ${JSON.stringify(fromSheet.format)}`);
+
+    // The menu is a suggestion, the typed name is the answer. A reader who picks one format and then types another ending gets what they typed — the format is never read back off the ask, so no second answer exists to reconcile with the path.
+    mac.window.leafDiagramPathPicked(fromSheet.token, '/out/diagram.md');
+    const written = sent.filter((one) => one.command === 'exportDiagram').pop();
+    if (!written || written.format !== 'md') {
+      throw new Error(`picking WebP and typing a name ending in md wrote ${JSON.stringify((written || {}).format) || 'nothing'}`);
+    }
+    if (written.path !== '/out/diagram.md') throw new Error(`the write carried ${JSON.stringify(written.path)} rather than the name the reader typed`);
   });
 
   // The other window that panel opens, and the same silence: the first Save of a note that has never had a file. The formats are handed in rather than written here, which is how the page is held to keeping none of its own — the host injects them off `src/format.rs`, and a sixth row appears because the table gained one.
