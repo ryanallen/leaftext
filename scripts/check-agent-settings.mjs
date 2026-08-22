@@ -3,9 +3,10 @@
 //
 //   node scripts/check-agent-settings.mjs   (`just verify`)
 //
-import { existsSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SETTINGS = '.agents/settings.json';
@@ -70,13 +71,31 @@ for (const [name, text, shouldFail] of HOOK_CASES) {
   if (!shouldFail && found.length) problems.push(`this check fails ${name}: ${found[0]}`);
 }
 
+// Every hook must be importable without its body running: gate-voice.mjs imports three of its neighbors, so hook-imports-hook is the normal shape here, and an unguarded body reads a stream nobody is writing — the importer hangs with no message. The child's standard input is closed so an unguarded hook cannot hang this check: it exits the child before the sentinel prints, or runs its body instead, and either way the sentinel goes missing.
+function importProblems(dir = join(root, 'scripts')) {
+  const found = [];
+  for (const name of readdirSync(dir).filter((file) => /^gate-.*\.mjs$/.test(file)).sort()) {
+    const url = pathToFileURL(join(dir, name)).href;
+    let out = '';
+    try {
+      out = execFileSync(process.execPath, ['--input-type=module', '-e', `import ${JSON.stringify(url)}; console.log('imported');`], { input: '', encoding: 'utf8' });
+    } catch (error) {
+      found.push(`scripts/${name} cannot be imported without its body acting: ${String(error.message).split('\n')[0]}`);
+      continue;
+    }
+    if (out.trim() !== 'imported') found.push(`scripts/${name} ran its body on import, so the first thing that imports it wedges the turn`);
+  }
+  return found;
+}
+
 const settingsText = readFileSync(join(root, SETTINGS), 'utf8');
 problems.push(...settingsProblems(settingsText));
 problems.push(...hookProblems(settingsText, (name) => existsSync(join(root, 'scripts', name))));
+problems.push(...importProblems());
 
 if (problems.length) {
   console.error('the repo settings file is missing something an agent needs:');
   for (const problem of problems) console.error(`  ${problem}`);
   process.exit(1);
 }
-console.log('agent settings: every hook row runs a script that is here');
+console.log('agent settings: every hook row runs a script that is here, and every gate script imports without acting');

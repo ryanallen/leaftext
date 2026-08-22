@@ -488,7 +488,7 @@ pub(crate) fn write_exported_page(
 
 /// Copy every picture the document draws into `assets`, and point the markup at the copies.
 ///
-/// The page addresses a local picture on a scheme no browser can fetch, with a per-render stamp on the end of it, so every one has to be copied and re-addressed or the exported page is a page of broken pictures. One copy per file however many times the document draws it, and a picture served over the network is left addressed as it was, so the page still opens.
+/// The page addresses a local picture on a scheme no browser can fetch, so every one is copied and re-addressed or the exported page is a page of broken pictures. One copy per file however many times the document draws it; a picture served over the network is left as it was, so the page still opens.
 ///
 /// A picture whose file cannot be read is still named — the file the document asked for, in the folder beside the page — so the browser draws its own broken mark rather than nothing at all.
 fn copy_page_pictures(markup: &str, assets: &Path, source_dir: Option<&Path>) -> String {
@@ -518,7 +518,7 @@ fn copy_page_pictures(markup: &str, assets: &Path, source_dir: Option<&Path>) ->
 
 /// Where one `src` should point in the written page, or nothing where it is not a picture off this machine.
 ///
-/// The address arrives as it was written into an attribute, so its ampersands are entities — the epoch stamp the page adds is a query and the resolver reads only the path, but the URL has to parse before either is true.
+/// The address arrives as it was written into an attribute, so its ampersands are entities and have to come back before the URL will parse. The epoch stamp on the end is a query, which the resolver never reads.
 fn exported_picture_address(
     address: &str,
     assets: &Path,
@@ -557,7 +557,7 @@ fn free_assets_name(assets: &Path, source: &Path) -> String {
         .extension()
         .map(|ending| format!(".{}", ending.to_string_lossy()))
         .unwrap_or_default();
-    // Far past any folder a reader exports into by hand, and a ceiling rather than a loop with no end: a folder that somehow answers to every one of these has something wrong with it that writing forever would not fix.
+    // A ceiling rather than a loop with no end, set far past any folder a reader fills by hand.
     for number in 2..1000 {
         let numbered = format!("{stem}-{number}{ending}");
         if !assets.join(&numbered).exists() {

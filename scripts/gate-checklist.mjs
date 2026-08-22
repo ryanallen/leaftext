@@ -10,7 +10,6 @@
 //
 // The list is one file per session in the OS temp folder, rewritten at the start of every message the way the keycode record is, so it never grows and never reaches a context window.
 
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -137,17 +136,6 @@ function selfTest() {
   // A message naming two runs the one it leads with, whichever order the table happens to hold them in.
   if (skillFor('/dev the ticket then /check')?.name !== 'dev') fails.push('skillFor: took the second skill named');
   if (skillFor('/check it then /dev the next one')?.name !== 'check') fails.push('skillFor: took the second skill named');
-
-  // Imported rather than run, this file must do nothing. gate-voice.mjs imports it, and a hook body that read stdin on import would swallow the Stop hook's own payload — which turned the whole gate off silently the one time it did.
-  try {
-    const loaded = execFileSync(process.execPath, ['--input-type=module', '-e', `import ${JSON.stringify(import.meta.url)}; console.log('loaded');`], {
-      input: JSON.stringify({ prompt: '/check it' }),
-      encoding: 'utf8',
-    });
-    if (loaded.trim() !== 'loaded') fails.push('imported: the hook body ran on import');
-  } catch (error) {
-    fails.push(`imported: ${error.message}`);
-  }
 
   const drawn = render('check', ['1. Tests first', '2. `just verify`']);
   if (!drawn.includes('- 1. Tests first')) fails.push('render: a step did not become a bullet');

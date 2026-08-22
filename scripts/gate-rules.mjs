@@ -14,7 +14,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { open, requiredFor } from './gate-keycode.mjs';
 import { KEEP, LICENSE_DIR, RING, keep, licensePath, ringLines, sessionOf, sweep } from './hook-payload.mjs';
 
@@ -208,7 +208,12 @@ function selfTest() {
   console.log(`gate-rules: ok (Rule 1 is ${rule.split('\n').filter(Boolean).length} lines)`);
 }
 
-if (process.argv.includes('--check')) {
+// Only act when run directly: anything importing this for a function would otherwise read a stream nobody is writing, and the importer hangs with no message.
+const invoked = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+const args = invoked === import.meta.url ? process.argv.slice(2) : null;
+if (!args) {
+  // Imported, not run.
+} else if (args.includes('--check')) {
   selfTest();
 } else {
   const raw = readStdin();

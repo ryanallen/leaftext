@@ -6045,7 +6045,7 @@ fn an_exported_page_names_a_missing_picture_rather_than_our_own_mark() {
         "a file that is not there was invented"
     );
 
-    // The other half of it is the page's: the mark and the pixel are what the live markup carries, and putting the address back is what makes the markup above what arrives here.
+    // The other half is the page's: the live markup carries the mark and the pixel, and putting the address back is what makes it arrive here as above.
     let cleaner = include_str!("../assets/shell/overflow.js");
     assert!(
         cleaner.contains("copy.querySelectorAll('img').forEach(restoreMissingImage);"),

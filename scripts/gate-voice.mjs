@@ -18,7 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { clear, heldBy, listPath, pending } from './gate-checklist.mjs';
 import { buildRecord, buildingPath, forget } from './gate-design.mjs';
 import { close, outstanding, read } from './gate-keycode.mjs';
@@ -443,7 +443,12 @@ function selfTest() {
   console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read on every phase the turn moved — keycodes)`);
 }
 
-if (process.argv.includes('--check')) {
+// Only act when run directly: anything importing this for a function would otherwise read a stream nobody is writing, and the importer hangs with no message.
+const invoked = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+const args = invoked === import.meta.url ? process.argv.slice(2) : null;
+if (!args) {
+  // Imported, not run.
+} else if (args.includes('--check')) {
   selfTest();
 } else {
   let raw = '';

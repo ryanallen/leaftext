@@ -18,7 +18,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Recent files](#recent-files) | Reopen a recently opened file from the home screen, showing the vault you are standing in |
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
-| [Export a PDF](#export-a-pdf) | Save the page you are reading as one continuous PDF, in the theme on screen |
+| [Export the page](#export-the-page) | Save the page you are reading as one continuous PDF, or as a web page with its stylesheet and pictures in a folder beside it — either way in the theme on screen |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, and the opening of a linked note |
 | [The pointer](#the-pointer) | The arrow stays the arrow over every control, and turns into the hand only over a link |
@@ -76,13 +76,19 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ![The Leaftext app bar across the top of the window: the leaf mark, the library button, Back and Forward, the tab strip, then the theme palette, Open, plus and Export PDF at the right](../../imgs/navigation.png)
 
-The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-a-pdf). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
+The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-the-page). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
 
 **Open reaches any file, on either platform.** On Windows the dialog carries a list of the [formats the reader opens](03-library.md#file-types), with **All files** at the end for anything else. A Mac dialog has no such list, so it simply shows everything — which is the same answer, since a file whose ending Leaftext does not know is [read as Markdown](01-rendering.md) rather than refused.
 
-### Export a PDF
+### Export the page
 
-The export button in the app bar — shown only while a rendered document is in front of you — asks where the file goes. Say where, and the page you are reading is written as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line. A quiet note names the file when it is written, and the name is a press — click it to open the PDF in whatever reads them on your machine. The button steps aside on the home screen, in the [source view](07-editing.md#code-view) and on the [graph](03-library.md#graph), since none of those is a page to print.
+The export button in the app bar — shown only while a rendered document is in front of you — asks where the file goes, and which of two things it is. On Windows the save window carries both and the ending on the name is what gets written; on a Mac that window shows no format at all, so a short menu asks first and the window then carries the one you picked. The button steps aside on the home screen, in the [source view](07-editing.md#code-view) and on the [graph](03-library.md#graph), since none of those is a page to hand over.
+
+**PDF** writes the page as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line.
+
+**Web page** writes what is on screen as a web page anybody can open in a browser — the same theme, the same type, its diagrams drawn and its links live — with its stylesheet and every picture it draws in an `assets` folder beside it. That folder is shared: export a second document into the same place and it joins the first, and a picture whose name is already taken is written beside rather than over. A document with math in it carries the stylesheet that draws equations too; one without carries neither it nor its fonts.
+
+A quiet note names the file when it is written, and the name is a press — click it to open it in whatever your machine opens that kind with.
 
 **There is no Settings button.** Every control stands where it applies — see [Settings](05-settings.md). The one thing that comes and goes is the [update](05-settings.md#updates) bell, which is in the bar only while there is something to download or install.
 

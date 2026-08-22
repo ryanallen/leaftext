@@ -15,6 +15,7 @@
 //   node scripts/gate-git.mjs --check   self-test (`just verify`)
 
 import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { keep, licensePath, sessionOf } from './hook-payload.mjs';
 
 const LICENSE_MAX_AGE_MS = 4 * 60 * 60 * 1000;
@@ -500,7 +501,12 @@ function selfTest() {
   console.log(`gate-git: ok (${denied.length} refused, ${allowed.length} allowed)`);
 }
 
-if (process.argv.includes('--check')) {
+// Only act when run directly: anything importing this for a function would otherwise read a stream nobody is writing, and the importer hangs with no message.
+const invoked = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+const args = invoked === import.meta.url ? process.argv.slice(2) : null;
+if (!args) {
+  // Imported, not run.
+} else if (args.includes('--check')) {
   selfTest();
 } else {
   const raw = readStdin();
