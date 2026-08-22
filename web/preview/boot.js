@@ -29,6 +29,9 @@ try {
     read: async (path) => (await fetched(`source/${path}`)).text(),
   });
 
+  // Where the documents are served from, which is where their pictures are too. This page sits at the top of the site and every document sits under `source/`, so a picture beside a document is only reachable through that folder joined with the document's own — without this the page asks the top of the site for it and gets the broken-picture mark.
+  leaf.core.setImageBase('source');
+
   // The nearest glossary, which the desktop finds by walking folders and a browser cannot. Handing it over is what auto-links its terms.
   const glossary = documents.find((entry) => /(^|\/)glossary\.md$/i.test(entry.path));
   if (glossary) leaf.core.setGlossary(await (await fetched(`source/${glossary.path}`)).text());

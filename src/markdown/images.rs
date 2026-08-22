@@ -166,9 +166,15 @@ pub(crate) fn resolve_image_destination(
         };
     }
 
-    // A host that serves no folder of its own has no file to reach for, and no way to fetch one: a relative destination stays as written, and a path into somebody's disk answers with nothing rather than with a URL that can only fail.
+    // A host that serves no folder of its own has no file to reach for, and no way to fetch one: a relative destination stays as written unless the host says where it serves the document's neighbors from, and a path into somebody's disk answers with nothing rather than with a URL that can only fail.
     if !host.serves_local_images() {
-        return is_safe_relative_image_destination(destination).then(|| destination.to_string());
+        if !is_safe_relative_image_destination(destination) {
+            return None;
+        }
+        return match host.served_documents_url() {
+            Some(base) => Some(served_image_url(&base, source_path, destination)),
+            None => Some(destination.to_string()),
+        };
     }
 
     if Path::new(destination).is_absolute() {
@@ -215,6 +221,42 @@ pub(crate) fn local_image_url_for_absolute_path(path: &Path, source_path: &Path)
     match local_image_source_dir(source_path) {
         Some(source_dir) => local_image_protocol_url_for_path(path, &source_dir),
         None => local_image_protocol_url_for_absolute_path(path),
+    }
+}
+
+/// Where a picture beside the document is reached on a host that serves the documents under a folder of its own: that folder, the document's own folder, and the address as written, folded into one address.
+///
+/// A URL rather than a path, so it is forward slashes at every step and on every platform — the answer is fetched by a browser, not opened off a disk. `.` and `..` fold the way a browser folds them, which is what carries a tree keeping one shared pictures folder above its documents. A climb that would go above the served folder stops there, and so does an address written from a root, because nothing outside the folder the site was built from is reachable at all.
+pub(crate) fn served_image_url(base: &str, source_path: &Path, destination: &str) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+    let from_root = destination.starts_with('/');
+    if !from_root {
+        if let Some(source) = source_path.to_str() {
+            let mut folder: Vec<&str> = source.split(['/', '\\']).collect();
+            folder.pop();
+            fold_url_parts(&mut parts, folder);
+        }
+    }
+    fold_url_parts(&mut parts, destination.split('/'));
+
+    let base = base.trim_end_matches('/');
+    match (base.is_empty(), parts.is_empty()) {
+        (_, true) => base.to_string(),
+        (true, false) => parts.join("/"),
+        (false, false) => format!("{base}/{}", parts.join("/")),
+    }
+}
+
+/// Add each segment the way a browser resolves one: nothing for an empty segment or a `.`, one step back for a `..`, and never back past the start.
+fn fold_url_parts<'a>(parts: &mut Vec<&'a str>, segments: impl IntoIterator<Item = &'a str>) {
+    for part in segments {
+        match part {
+            "" | "." => {}
+            ".." => {
+                parts.pop();
+            }
+            _ => parts.push(part),
+        }
     }
 }
 

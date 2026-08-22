@@ -68,6 +68,11 @@ export async function instantiateCore(file) {
       api.leaf_set_glossary(at, length);
       api.leaf_free(at, length);
     },
+    setImageBase: (base) => {
+      const [at, length] = write(base || '');
+      api.leaf_set_image_base(at, length);
+      api.leaf_free(at, length);
+    },
     render: (source, path) => JSON.parse(withStrings(api.leaf_render, source, path) || 'null'),
     /** How much linear memory the module holds. Read rather than computed: a page opening and closing documents all day must not grow it. */
     memoryBytes: () => api.memory.buffer.byteLength,

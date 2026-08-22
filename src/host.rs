@@ -111,6 +111,13 @@ pub trait LeafHost {
         false
     }
 
+    /// Where a host that serves no folder of its own serves the open document's neighbors from, for a host whose page does not sit beside them.
+    ///
+    /// A document embedded in somebody else's page is fetched from beside its own pictures, so the address as written already resolves and the answer here is nothing. A published site is the other case: its page is one `index.html` at the top and every document sits under one folder below it, so a picture beside a document is only reachable through that folder joined with the document's own.
+    fn served_documents_url(&self) -> Option<String> {
+        None
+    }
+
     /// The reader's own choices, which the page cannot keep for itself — the app shell's opaque origin has no storage of its own.
     fn settings(&self) -> Settings {
         Settings::default()

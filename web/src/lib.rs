@@ -21,12 +21,23 @@ static GLOSSARY: Mutex<Vec<GlossaryTerm>> = Mutex::new(Vec::new());
 /// The glossary's own text, kept so the sheet a `glossary:` link raises can be rendered from it.
 static GLOSSARY_SOURCE: Mutex<String> = Mutex::new(String::new());
 
+/// Where the page serves the documents from, if they do not sit beside it. Empty is the ordinary case — a document embedded in somebody else's page is fetched from beside its own pictures — and a published site fills it in, because its page is one `index.html` at the top with every document under a folder below.
+static IMAGE_BASE: Mutex<String> = Mutex::new(String::new());
+
 /// A host with the one read a page can actually answer.
 struct PageHost;
 
 impl LeafHost for PageHost {
     fn glossary_terms(&self, _document_dir: &Path) -> Vec<GlossaryTerm> {
         GLOSSARY.lock().map(|held| held.clone()).unwrap_or_default()
+    }
+
+    fn served_documents_url(&self) -> Option<String> {
+        IMAGE_BASE
+            .lock()
+            .ok()
+            .filter(|held| !held.is_empty())
+            .map(|held| held.clone())
     }
 
     /// This host does know a document's neighbors — the page holds the list — so it draws the waiting state and fills it, the same bargain the desktop makes.
@@ -49,6 +60,18 @@ pub unsafe extern "C" fn leaf_set_glossary(ptr: *const u8, len: usize) {
     }
     if let Ok(mut held) = GLOSSARY_SOURCE.lock() {
         *held = borrow_str(ptr, len).unwrap_or_default().to_string();
+    }
+}
+
+/// Hand over where the page serves its documents from — a published site hands over the folder it fetches every document out of, so a picture beside a document is addressed through it. Empty text takes it away, which is what a document embedded in somebody else's page leaves it as: there the address the document wrote already resolves.
+///
+/// # Safety
+/// `ptr` must address `len` initialized bytes.
+#[no_mangle]
+pub unsafe extern "C" fn leaf_set_image_base(ptr: *const u8, len: usize) {
+    let base = borrow_str(ptr, len).unwrap_or_default().to_string();
+    if let Ok(mut held) = IMAGE_BASE.lock() {
+        *held = base;
     }
 }
 

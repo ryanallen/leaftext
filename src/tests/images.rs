@@ -780,3 +780,63 @@ fn local_image_protocol_loads_absolute_paths_outside_the_document_tree() {
     assert_eq!(response.status, 200, "an absolute path must load");
     assert_eq!(response.body, png);
 }
+
+/// A published site's page sits at the top and its documents sit under a folder, so every picture a document names is reached through that folder joined with the document's own — at any depth, through a raw HTML tag as well as a Markdown one, and folding a `..` the way a browser folds one so a tree keeping one shared pictures folder above its documents still finds them. Nothing may address a file outside the folder the site was built from: a climb that would go above it stops there, and so does an address written from a root.
+#[test]
+fn a_served_site_asks_for_a_picture_beside_the_document_that_names_it() {
+    let host = crate::tests::web_core::ServedDocumentsHost;
+    let asked_for = |source: &str, path: &str| {
+        render_markdown_document_with_host(source, Path::new(path), &host).html
+    };
+
+    // The document at the top of the site: its own folder is empty, so the picture sits directly under the served folder.
+    assert_contains(
+        &asked_for("![Shot](imgs/shot.png)", "README.md"),
+        "src=\"source/imgs/shot.png\"",
+    );
+    // And one in a folder of its own, which is the case that was watched asking the top of the site instead.
+    assert_contains(
+        &asked_for("![Deep](imgs/deep.png)", "notes/deep.md"),
+        "src=\"source/notes/imgs/deep.png\"",
+    );
+    // A raw HTML tag comes out the same way, since both spellings go through one resolver.
+    assert_contains(
+        &asked_for("<img src=\"imgs/raw.png\" alt=\"Raw\">", "notes/deep.md"),
+        "src=\"source/notes/imgs/raw.png\"",
+    );
+    // A tree keeping one shared pictures folder above its documents, which is what the plan folder next door is.
+    assert_contains(
+        &asked_for("![Up](../../imgs/up.png)", "fixes/plugins/one.md"),
+        "src=\"source/imgs/up.png\"",
+    );
+    // A diagram box's picture is the third spelling of the same thing.
+    assert_contains(
+        &asked_for(
+            "```mermaid\nflowchart TD\n  A@{ img: \"imgs/box.png\" }\n```",
+            "notes/deep.md",
+        ),
+        "source/notes/imgs/box.png",
+    );
+
+    // Nothing outside the folder the site was built from is addressable: a climb above it stops there, and an address written from a root is read as one under it.
+    for (source, expected) in [
+        (
+            "![Out](../../../../elsewhere/pic.png)",
+            "src=\"source/elsewhere/pic.png\"",
+        ),
+        ("![Rooted](/imgs/root.png)", "src=\"source/imgs/root.png\""),
+    ] {
+        let html = asked_for(source, "notes/deep.md");
+        assert_contains(&html, expected);
+        assert!(
+            !html.contains("src=\"/"),
+            "a picture was addressed above the served folder:\n{html}"
+        );
+    }
+
+    // An address the browser can fetch for itself is left exactly as it was written.
+    assert_contains(
+        &asked_for("![Remote](https://example.com/pic.png)", "notes/deep.md"),
+        "src=\"https://example.com/pic.png\"",
+    );
+}

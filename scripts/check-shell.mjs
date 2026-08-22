@@ -13843,6 +13843,9 @@ function standInModule() {
       leaf_set_glossary: (pointer, length) => {
         glossary = take(pointer, length);
       },
+      leaf_set_image_base: (pointer, length) => {
+        asked.push({ call: 'setImageBase', base: take(pointer, length) });
+      },
       leaf_document_script: (sourcePointer, sourceLength, pathPointer, pathLength) => {
         const path = take(pathPointer, pathLength);
         asked.push({ call: 'documentScript', path, source: take(sourcePointer, sourceLength) });
@@ -14016,7 +14019,7 @@ async function runSiteBoot(answer) {
   new vm.Script(host.replace(/^export /gm, ''), { filename: 'host.js' }).runInContext(context);
   const boot = readFileSync(join(root, 'web/preview/boot.js'), 'utf8');
   await new vm.Script(`(async () => {\n${boot.replace(/^import .*$/gm, '')}\n})()`, { filename: 'boot.js' }).runInContext(context);
-  return { context, state };
+  return { context, state, asked: module_.asked };
 }
 
 /** Every file a healthy site is served, answered from one listing. */
@@ -14053,6 +14056,19 @@ checkSettled('a file that did not arrive is named on the page instead of killing
   const shortOne = await runSiteBoot(async (url) => (url === 'source/README.md' ? { ok: false, status: 404, url } : served(url)));
   const missing = String(shortOne.context.document.getElementById('app').innerHTML || '');
   if (!missing.includes('source/README.md')) throw new Error(`a missing document was not named: ${missing.slice(0, 300)}`);
+});
+
+// A published site's page sits at the top and its documents sit under `source/`, so a picture beside a document is only reachable through that folder. Told rather than guessed: the module resolves the address, and without this call it resolves it against the top of the site and every picture comes back as the broken mark.
+checkSettled('the published boot tells the module where its pictures are served from', async () => {
+  const booted = await runSiteBoot(servedFiles([{ path: 'README.md' }, { path: 'notes/one.md' }]));
+  const told = booted.asked.filter((one) => one.call === 'setImageBase');
+  if (!told.length) throw new Error('the boot never told the module where the documents are served from, so every picture asks the top of the site');
+  if (told[0].base !== 'source') throw new Error(`the boot handed over ${JSON.stringify(told[0].base)} instead of the folder it fetches every document from`);
+  // Before the first document is rendered, or the page it lands on asks the wrong address for its pictures.
+  const rendered = booted.asked.findIndex((one) => one.call === 'documentScript');
+  if (rendered !== -1 && booted.asked.indexOf(told[0]) > rendered) {
+    throw new Error('the first document was rendered before the module was told, so its pictures were resolved against the top of the site');
+  }
 });
 
 checkSettled('the browser host follows a link inside the site and refuses one outside it', async () => {

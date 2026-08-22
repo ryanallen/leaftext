@@ -339,9 +339,17 @@ build-web:
 
 # A folder of documents as a static Leaftext site: no server, nothing to run at
 # the far end. Drop the result on any static host. Defaults to the Emptyguru
-# folder beside this repo; pass another.
+# folder beside this repo; pass another. Not in `verify` and it cannot be: it
+# needs the WebAssembly module, which the gate never builds. `check-export-pictures`
+# is the half a gate can hold, and this is the run that proves the whole of it.
 export-web folder="":
     node scripts/export-web.mjs {{ folder }}
+
+# Fail when the export stops reading the pictures a document asks for off its own
+# render: a published folder used to arrive with every local picture drawn as the
+# app's own broken mark. Offline, because the whole export needs the module above.
+check-export-pictures:
+    node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-export-pictures.mjs
 
 # The same export, served locally so it can be looked at — a page cannot fetch
 # its neighbors off file://. It serves the exported folder and nothing else.
@@ -366,7 +374,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-boot check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-boot check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

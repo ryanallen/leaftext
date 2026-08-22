@@ -12,6 +12,7 @@ import { existsSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
+import { picturesInRenderedHtml } from './site-pictures.mjs';
 import { sitePage } from './web-page.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -74,12 +75,38 @@ for (const name of ['boot.js', 'host.js', 'settings.js']) {
 // The runtimes the page fetches by name when a document turns out to need one: a diagram, some math, the map, the source view.
 await cp(join(root, 'src', 'assets', 'vendor'), join(out, 'assets'), { recursive: true });
 
-// The documents themselves, under the same paths the listing names.
+// Where the page is told its documents are served from, which is where their pictures are too. The render below joins it in, so the addresses that come back are the ones the browser will ask for rather than a second guess at them.
+const IMAGE_BASE = 'source';
+leaf.setImageBase(IMAGE_BASE);
+
+// The documents themselves, under the same paths the listing names — and each one rendered on the way past, so the pictures it asks for travel with it. A picture nothing points at is not copied, so an export carries no folder of unused images.
+const wanted = new Map();
 for (const entry of documents) {
-  const target = join(out, 'source', entry.path);
+  const from = join(source, entry.path.split('/').join(sep));
+  const target = join(out, IMAGE_BASE, entry.path);
   await mkdir(dirname(target), { recursive: true });
-  await cp(join(source, entry.path.split('/').join(sep)), target);
+  await cp(from, target);
+  const rendered = leaf.render(await readFile(from, 'utf8'), entry.path);
+  for (const picture of picturesInRenderedHtml((rendered && rendered.html) || '', IMAGE_BASE)) {
+    if (!wanted.has(picture.address)) wanted.set(picture.address, picture.file);
+  }
+}
+
+// Each one copied to exactly the address the render asked for. One the folder does not hold is counted rather than reported per file: a document tree carries broken links, and the page already draws that as the app's own broken-picture mark.
+let traveled = 0;
+let absent = 0;
+for (const [address, file] of wanted) {
+  const from = join(source, file.split('/').join(sep));
+  if (!existsSync(from)) {
+    absent += 1;
+    continue;
+  }
+  const target = join(out, address.split('/').join(sep));
+  await mkdir(dirname(target), { recursive: true });
+  await cp(from, target);
+  traveled += 1;
 }
 
 console.log(`${documents.length} documents from ${source}`);
+console.log(`${traveled} pictures beside them${absent ? `, and ${absent} the folder does not hold` : ''}`);
 console.log(`static site in ${out} — every file it needs is in there`);
