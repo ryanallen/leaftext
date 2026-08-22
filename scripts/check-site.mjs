@@ -222,7 +222,7 @@ if (!frontPageIsEmpty(read(FRONT_PAGE))) {
   if (!frontPageIsEmpty(read(FRONT_PAGE))) problems.push(`${FRONT_PAGE} stopped being an empty holder after a bake, so the preview would be putting a document into the tree`);
 }
 
-/// The local preview answers the published files out of the build it baked with, so a browser reads the page through the renderer somebody just made rather than through the copy the last publish left in `assets/leaftext/` — which is what made one front page two renderers. The paths it answers for itself are the published table itself: a renamed published file the preview did not answer would go back to being served off disk on that one path, silently, since a stale copy draws a page that looks right. Asked with a stand-in module and no module bytes, so this stays offline and needs no build.
+/// The local preview answers the published files out of the build it baked with, so the paths it answers for itself have to be the published table itself: one it misses goes back to being served off `assets/leaftext/`, and a stale copy there draws a page that looks right. Asked with a stand-in module and no module bytes, so this stays offline and needs no build.
 {
   const answered = [...publishedAssets({ styles: () => 'a stylesheet' }).keys()];
   if (answered.join(' ') !== PUBLISHED.join(' ')) {

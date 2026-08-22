@@ -5,11 +5,11 @@
 //   node scripts/serve-site.mjs --unbaked      the front page as the tree keeps it, which is the other branch its reader takes
 //   node scripts/serve-site.mjs --port 8181
 //
-// This is not `preview-web`, which serves a folder of somebody's documents written out as a static site. These are the repository's own `index.html` and `docs/index.html`, and until now nothing here served them — so a change to either, or to the stylesheet they share, was proved on `file://`, where a module script cannot be fetched at all and the page paints correctly and then sits empty for ever with nothing on it saying why, or on the live site after everybody already had it.
+// This is not `preview-web`, which serves a folder of somebody's documents written out as a static site. These are the repository's own `index.html` and `docs/index.html`. With nothing serving them, a change to either — or to the stylesheet they share — is proved on `file://`, where a module script cannot be fetched at all and the page paints correctly and then sits empty for ever with nothing on it saying why, or on the live site after everybody already has it.
 //
 // **The bake is in memory and nothing here reaches the tree.** `site-assets.mjs --write` puts the drawn README into the tracked `index.html`, and `check-site.mjs` then refuses that page until somebody puts it back — so a preview built on it would leave the gate red until it was undone by hand. The bake is already a pure function, so its answer goes straight to the browser.
 //
-// **The renderer a browser draws these pages through is the one that was just built.** The module, its stylesheet and its version are the three files the publish writes beside the pages, and nothing on this machine refreshes that folder — so served off the tree, a page is drawn through however old the last publish-shaped run left it, and the front page is drawn through two at once: baked through the build below, decorated through yesterday's copy. They are answered out of the same build instead, off `publishedAssets` in `site-assets.mjs`, which is the one table both this and the publish read.
+// **The renderer a browser draws these pages through is the one that was just built.** The module, its stylesheet and its version are answered out of the build below, off `publishedAssets` in `site-assets.mjs`, which is the one table this and the publish both read. Served off the tree they come from `assets/leaftext/`, which only the publish writes — so a page is drawn through however old the last publish-shaped run left that folder, and the front page through two renderers at once: baked through the build below, decorated through the copy on disk.
 //
 // **Baked and unbaked are two different first paints, and the reader branches on which it got.** Baked, the words are in the first response and the module arrives afterwards as a decoration; unbaked, the page waits on the module and fetches the document itself. Every visitor to leaftext.com gets the first, so that is what this serves; `--unbaked` is for reading the second.
 
@@ -41,7 +41,7 @@ const bakedPage = args.includes('--unbaked')
   ? null
   : bakeFrontPage(readFileSync(front, 'utf8'), leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT));
 
-// The three published files, as this build makes them rather than as the last publish-shaped run left them on disk. Nothing here writes `assets/leaftext/` — only the publish does — so a page served off the tree draws through however old that folder is, which made the front page two renderers at once: baked through the build above, decorated through yesterday's copy.
+// Keyed by the file each one lands at, so a request is answered by where its URL resolves rather than by what it says.
 const publishedHere = new Map([...publishedAssets(leaf, readFileSync(BUILT_MODULE))].map(([path, bytes]) => [join(root, path), bytes]));
 
 createServer(async (request, response) => {
