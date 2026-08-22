@@ -16,7 +16,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildRecord, buildingPath, forget } from './gate-design.mjs';
-import { keep, sessionOf, sessionTag } from './hook-payload.mjs';
+import { RING, keep, sessionOf, sessionTag } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -31,6 +31,19 @@ export const SAMPLED_TOOLS = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Bas
 
 /// Whether this tool's use is worth a sample: it wrote a file, or it ran a command that may have.
 export const sampled = (name) => EDIT_TOOLS.test(name ?? '') || SHELL_TOOLS.test(name ?? '');
+
+/// Which bucket of the payload ring this one belongs in. The ring keeps twenty per name, so an edit and a shell command sharing a name is a build's edit payloads gone within twenty commands — seconds on any real build, and the diagnostic is only ever read once something has already gone wrong. Three names a side, worked out from the tool the payload already carries rather than from a flag on the settings row, where a row added without it would land silently back in the edits' bucket. `-other` is the one that matters: a tool a widened row lets through and a payload nothing can parse both reach the ring under it, and the unparseable one is the largest and the most worth keeping.
+export function bucketOf(hook, raw) {
+  let tool = '';
+  try {
+    tool = String(JSON.parse(raw ?? '').tool_name ?? '');
+  } catch {
+    return `${hook}-other`; // Worked out before the parse the sampling below depends on, so a payload that will not open is still filed rather than dropped.
+  }
+  if (EDIT_TOOLS.test(tool)) return `${hook}-edit`;
+  if (SHELL_TOOLS.test(tool)) return `${hook}-shell`;
+  return `${hook}-other`;
+}
 
 /// The tools this samples that no `PostToolUse` row hands it. A row is the only thing that runs a hook, so a tool named here and matched by none is a branch nothing ever reaches: the rule is off, on disk, passing its own self-test. That is this file's own bug wearing a different hat, and nothing else fails when a row is deleted. The host reads a matcher as an unanchored pattern, so this tests one the same way — which is why `Edit` covers `MultiEdit` and no row spells it.
 export function unrowedTools(settingsText, names = SAMPLED_TOOLS) {
@@ -161,6 +174,32 @@ function selfTest() {
     } finally {
       forget(SIX);
     }
+
+    // Through the real entry point and into the real ring: an edit and a shell command have to come out under a name each, which is the whole ticket. Two lines rather than twenty — filling a bucket past its limit is `ringLines`' own claim and scripts/gate-rules.mjs makes it in memory, where a proof cannot flush the live diagnostic it is proving.
+    const SEVEN = `gate-sample-selftest-ring-${process.pid}`;
+    const ringNames = () => {
+      try {
+        return readFileSync(RING, 'utf8').split('\n').filter(Boolean).map((line) => {
+          try {
+            return JSON.parse(line).hook;
+          } catch {
+            return '';
+          }
+        });
+      } catch {
+        return []; // No ring to read is no proof either way, and the line below says so.
+      }
+    };
+    try {
+      firedAs(SEVEN, 'Edit', { file_path: onDisk }, '--after');
+      firedAs(SEVEN, 'Bash', { command: 'ls' }, '--after');
+      const landed = ringNames().slice(-2).join(' then ');
+      if (landed !== 'PostToolUse-edit then PostToolUse-shell') {
+        fails.push(`an edit and a shell command reached the ring as ${landed || 'nothing at all'} rather than under a bucket each, so twenty commands would push the edit payload out`);
+      }
+    } finally {
+      forget(SEVEN);
+    }
   } catch (error) {
     fails.push(`cycle: ${error.message}`);
   } finally {
@@ -173,6 +212,16 @@ function selfTest() {
   for (const name of ['Read', 'TodoWrite', 'Grep', 'Bash']) {
     if (EDIT_TOOLS.test(name)) fails.push(`${name} was read as a file-writing tool`);
   }
+
+  // The six bucket names, worked out from the tool alone. `-other` on each side is what a tool a widened row lets through and a payload nothing can parse both have to reach: folded into either of the others, this is the fault the split was made for.
+  for (const [tool, want] of [['Write', 'edit'], ['Edit', 'edit'], ['MultiEdit', 'edit'], ['NotebookEdit', 'edit'], ['Bash', 'shell'], ['PowerShell', 'shell'], ['Read', 'other']]) {
+    for (const hook of ['PostToolUse', 'PreToolUse']) {
+      const got = bucketOf(hook, JSON.stringify({ tool_name: tool }));
+      if (got !== `${hook}-${want}`) fails.push(`${tool} on ${hook} was filed under ${got} rather than ${hook}-${want}`);
+    }
+  }
+  if (bucketOf('PostToolUse', '{ not a payload') !== 'PostToolUse-other') fails.push('a payload nothing can parse was not filed under -other, where the largest and most worth keeping of them belong');
+  if (bucketOf('PreToolUse', JSON.stringify({})) !== 'PreToolUse-other') fails.push('a payload naming no tool was not filed under -other');
 
   // The row direction on settings files invented here, before the real one is opened. `rowed` is a pretend settings file: one `PostToolUse` row per matcher, each running this hook.
   const rowed = (...matchers) => JSON.stringify({
@@ -201,7 +250,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log('gate-sample: ok (every edit and every shell command of a build samples every phase of its ticket after the write, the plan tree included; a turn with no build in it samples nothing; and every tool sampled has a settings row that runs this)');
+  console.log('gate-sample: ok (every edit and every shell command of a build samples every phase of its ticket after the write, the plan tree included; a turn with no build in it samples nothing; every tool sampled has a settings row that runs this; and an edit and a shell command reach the payload ring under a bucket each, with anything unreadable under -other)');
 }
 
 // Only act when run directly: a hook body that read stdin on import would swallow whatever payload the importing hook was handed.
@@ -219,7 +268,7 @@ if (!args) {
     process.exit(0);
   }
   const after = args.includes('--after');
-  keep(after ? 'PostToolUse' : 'PreToolUse', raw);
+  keep(bucketOf(after ? 'PostToolUse' : 'PreToolUse', raw), raw);
   let payload = {};
   try {
     payload = JSON.parse(raw);

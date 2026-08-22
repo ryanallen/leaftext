@@ -14,7 +14,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 /// Untracked, beside the license the same payloads decide.
 export const RING = join(root, '.tmp', 'hook-payloads.jsonl');
 
-/// Per hook, not in total: the tool gate fires on every command, and a busy hook must not push the one turn's prompt out of the file.
+/// Per hook, not in total: the tool gate fires on every command, and a busy hook must not push the one turn's prompt out of the file. A hook that is busy in two ways owes itself a name per kind as well, because twenty slots between them is the same fault one step in: the sampler's edits and its shell commands shared one name and a build's edit payloads were gone within twenty commands, so `scripts/gate-sample.mjs` now hands this `PostToolUse-edit`, `-shell` or `-other`.
 export const KEEP = 20;
 
 /// The session id in a payload, or '' when it carries none.
