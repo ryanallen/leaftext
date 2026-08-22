@@ -445,6 +445,32 @@ fn every_icon_row_reaches_the_diagram_icon_set_and_nothing_else_does() {
     assert_contains(app_shell_script(), "mermaid.registerIconPacks([");
 }
 
+/// The diagram's save window reads back the ending the reader typed and looks for the row that permits it, so the page's Markdown row has to permit every spelling the app opens — otherwise a name ending `.markdown` is refused in the same sentence that offers Markdown.
+///
+/// The page keeps its list written out rather than injected: nothing hands the browser host a format table, so a derived row would leave the published site's Markdown row empty and silent. This is what holds the written list to `src/format.rs` instead.
+#[test]
+fn the_diagram_export_menu_permits_every_spelling_of_markdown() {
+    let script = app_shell_script();
+    let at = script
+        .find("{ id: 'md', endings: [")
+        .expect("the page carries a Markdown row in its diagram export list");
+    let opens = at + script[at..].find('[').expect("the row opens its endings");
+    let shuts = opens + script[opens..].find(']').expect("the row shuts them again");
+    let endings = &script[opens + 1..shuts];
+
+    for spelling in DocumentFormat::Markdown.extensions() {
+        assert!(
+            endings.contains(&format!("'{spelling}'")),
+            "the diagram export window refuses a name ending .{spelling}, which the app opens without complaint: {endings}"
+        );
+    }
+    // First, because a bare name is given the row's first ending and a reader who typed none expects `.md`.
+    assert!(
+        endings.trim_start().starts_with("'md'"),
+        "the Markdown row stopped leading with md, so a bare name comes out under another spelling: {endings}"
+    );
+}
+
 #[test]
 fn app_shell_styles_history_controls_with_neutral_icon_treatment() {
     let css = reading_mode_css();

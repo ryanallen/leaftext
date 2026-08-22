@@ -20,7 +20,9 @@ impl DocumentFormat {
     pub const ALL: [Self; 5] = [Self::Markdown, Self::Xml, Self::Json, Self::Yaml, Self::Eml];
 
     /// The extensions that name this format, lowercase and without the dot. The first is canonical; the rest are accepted spellings.
-    pub fn extensions(self) -> &'static [&'static str] {
+    ///
+    /// `const` so a const table can take its endings from here rather than restating them.
+    pub const fn extensions(self) -> &'static [&'static str] {
         match self {
             Self::Markdown => &["md", "markdown", "mdown"],
             Self::Xml => &["xml"],

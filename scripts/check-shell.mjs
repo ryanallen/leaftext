@@ -8195,6 +8195,34 @@ if (booted) {
     }
   });
 
+  // Every spelling of Markdown the app opens is one this window writes. `.markdown` was refused in the same sentence that offers Markdown, which reads as the app not knowing its own format.
+  check('a name ending in any spelling of Markdown is written, not refused', () => {
+    for (const ending of ['md', 'markdown', 'mdown']) {
+      const wasSend = booted.ipc.postMessage;
+      const wasToast = booted.leafToast;
+      const sent = [];
+      const said = [];
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.leafToast = (words) => said.push(words);
+      try {
+        const block = drawnDiagram('flowchart TD\n  M1 --> M2');
+        booted.addMermaidControls(block);
+        booted.openMermaidExportMenu(exportChipOn(block));
+        answerSaveWindow(sent, ending);
+        if (said.length) throw new Error(`a name ending in ${ending} was refused: ${said.join(' / ')}`);
+        const wrote = sent.filter((one) => one.command === 'exportDiagram');
+        if (wrote.length !== 1) throw new Error(`a name ending in ${ending} wrote ${wrote.length} files`);
+        // The row's own id, whichever spelling the reader typed: the host is asked one format and writes the mermaid text under it.
+        if (wrote[0].format !== 'md') throw new Error(`a name ending in ${ending} sent ${JSON.stringify(wrote[0].format)} rather than md`);
+        if (!String(wrote[0].data).includes('M1 --> M2')) throw new Error(`what went out under ${ending} is not the diagram: ${JSON.stringify(wrote[0].data)}`);
+        if (wrote[0].path !== '/out/diagram.' + ending) throw new Error(`the file went somewhere other than the name the reader typed: ${wrote[0].path}`);
+      } finally {
+        booted.ipc.postMessage = wasSend;
+        booted.leafToast = wasToast;
+      }
+    }
+  });
+
   check('a menu given a host is clamped inside it, and the editor keeps the sheet', () => {
     const surface = booted.document.getElementById('appSurface');
     const wasRect = surface.getBoundingClientRect;

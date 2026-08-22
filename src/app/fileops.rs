@@ -536,8 +536,10 @@ pub(super) enum DiagramExportFile {
 }
 
 /// Every format a diagram can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first, so the order is load-bearing. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else — the PDF included, which is printed rather than encoded and answers `Printed` there.
+///
+/// Markdown asks `src/format.rs` for its spellings instead of naming one, so this window writes every ending the app opens. The pictures are not formats it knows, so they stay written out.
 pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &[&str])] = &[
-    ("Markdown", &["md"]),
+    ("Markdown", DocumentFormat::Markdown.extensions()),
     ("PNG image", &["png"]),
     ("WebP image", &["webp"]),
     ("PDF document", &["pdf"]),
@@ -647,8 +649,11 @@ pub(super) fn diagram_export_file(
     if diagram_export_label(format).is_none() {
         return DiagramExportFile::Unoffered;
     }
+    // Every spelling of Markdown, asked of the one table: the row permits them all, so the label above answers for them all, and a match arm naming one would drop the rest through to a file nobody wrote and nothing said.
+    if DocumentFormat::Markdown.extensions().contains(&format) {
+        return DiagramExportFile::Write(data.as_bytes().to_vec());
+    }
     let bytes = match format {
-        "md" => return DiagramExportFile::Write(data.as_bytes().to_vec()),
         // The page sends pixels rather than a PNG, because on a real diagram ours writes 77 KB where the canvas's own PNG is 153 KB. See src/png.rs.
         "png" => decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)),
         // Already a finished file: the canvas writes the WebP itself, about half the PNG on the same drawing, and refuses a drawing too wide for the format before it sends one.

@@ -3479,11 +3479,14 @@ flowchart TD
   A --> B
 ```
 ";
-    assert_eq!(
-        written("md", text, 0, 0),
-        Some(text.as_bytes().to_vec()),
-        "Markdown goes out as the text the page sent"
-    );
+    // Every spelling `src/format.rs` names for Markdown, not just the one the page sends: the row permits them all, so any of them reaching here has to write the text rather than fall through to nothing.
+    for spelling in DocumentFormat::Markdown.extensions() {
+        assert_eq!(
+            written(spelling, text, 0, 0),
+            Some(text.as_bytes().to_vec()),
+            "a diagram saved as {spelling} did not go out as the text the page sent"
+        );
+    }
 
     // Base64 of one opaque white pixel, which is what the page sends for a PNG.
     let bytes = written("png", "/////w==", 1, 1).expect("a pixel encodes");
@@ -3534,7 +3537,7 @@ flowchart TD
     assert_eq!(
         DIAGRAM_EXPORT_FORMATS,
         &[
-            ("Markdown", &["md"][..]),
+            ("Markdown", DocumentFormat::Markdown.extensions()),
             ("PNG image", &["png"][..]),
             ("WebP image", &["webp"][..]),
             ("PDF document", &["pdf"][..]),
@@ -3582,13 +3585,21 @@ fn save_window_offers_one_format_once_the_reader_has_picked_one() {
         "the reader picked WebP and the name still says something else"
     );
 
-    // A format's other spellings name it too, and the name comes out under the canonical one — the ending the panel appends is the first permitted type, not whatever was asked with.
-    let spelled = save_window_offer(
-        &[("Markdown", &["md", "markdown"])],
-        Some("MARKDOWN"),
-        "Untitled",
-    );
-    assert_eq!(spelled.name, "Untitled.md");
+    // Every spelling `src/format.rs` names for Markdown names the row on the shipped table, not on one written here, and the name comes out under the canonical one — the ending the panel appends is the first permitted type, not whatever was asked with.
+    for spelling in DocumentFormat::Markdown.extensions() {
+        for asked in [spelling.to_string(), spelling.to_ascii_uppercase()] {
+            let spelled = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some(&asked), "Untitled");
+            assert_eq!(
+                spelled.filters,
+                vec![("Markdown", DocumentFormat::Markdown.extensions())],
+                "a Mac panel asked with {asked} was left more than the one row the reader picked"
+            );
+            assert_eq!(
+                spelled.name, "Untitled.md",
+                "the reader picked Markdown as {asked} and the suggested name does not end in the row's first spelling"
+            );
+        }
+    }
 
     // The PDF row is offered the same way the other three are, though the host renders it rather than encoding anything: what the window asks and what writes the file are separate questions.
     let printed = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some("pdf"), "README-diagram");
