@@ -50,7 +50,7 @@ export function frontPageIsEmpty(page) {
 /**
  * The front page with its document already in it — what the deploy uploads, never what the repository holds.
  *
- * A cold visitor used to read nothing at all until a 2.8 MB module and a second fetch had both crossed the network, and a connection that stalled on either left them reading nothing for ever. Baked, the words are in the first response and the module is a decoration that arrives after.
+ * Unbaked, a cold visitor reads nothing until a 2.8 MB module and a second fetch have both crossed the network, and a connection that stalls on either leaves them reading nothing at all. Baked, the words are in the first response and the module is a decoration that arrives after.
  */
 export function bakeFrontPage(page, drawn) {
   if (!CONTENT_HOLDER.test(page)) throw new Error(`${FRONT_PAGE} has no empty content element to write the document into`);

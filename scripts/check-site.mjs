@@ -22,7 +22,7 @@ const OPTIONAL = new Set([
   'README.xml', // the front page reads a TEI README if one is served instead
 ]);
 
-// A fetched document, and the glossary the sheet and the auto-linker load. Every page fetch goes through the watchdog in site/fetches.js, so the name is read with its ending open: a path stopped being checked once, when the plain `fetch` became `fetchWatched`.
+// A fetched document, and the glossary the sheet and the auto-linker load. Every page fetch goes through the watchdog in site/fetches.js, so the name is read with its ending open — a renamed call must not quietly stop a path being checked.
 const PATTERNS = [
   /fetch\w*\(\s*'([^']+)'/g,
   /glossaryUrl:\s*'([^']+)'/g,

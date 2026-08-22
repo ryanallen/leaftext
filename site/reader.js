@@ -187,7 +187,7 @@ function linkGlossaryTerms() {
 }
 
 async function main() {
-  // The publish writes the README's words straight into this page, so a cold visit reads the document out of the first response. The renderer then arrives as a decoration rather than as the thing the page is waiting on — and a connection that never delivers it costs the glossary links, not the document. A page served without them (a local checkout) draws the way it always did.
+  // The publish writes the README's words straight into this page, so a cold visit reads the document out of the first response. The renderer then arrives as a decoration rather than as the thing the page is waiting on — and a connection that never delivers it costs the glossary links, not the document. A page served without them, which is any local checkout, fetches the document and draws it here.
   if (content.childNodes.length) {
     decorate();
     createLeaftext()

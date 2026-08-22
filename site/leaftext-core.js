@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // The app's own renderer, loaded into a page.
 //
-// This is what replaced the three hand-written reader files that used to sit beside it. They were a second implementation of the desktop's renderer, and a third lived in the other site, so every fix had to land three times and two of them stopped agreeing. Now there is one: the desktop's own render path, compiled for the browser, fetched as a module.
+// There is one renderer and it is the desktop's own render path, compiled for the browser and fetched as a module. A hand-written copy beside this file, and a third in the other site, means every fix has to land three times — which is how two of the three came to disagree.
 //
 // **Where the module comes from is the page's to say**, in a `<meta name="leaftext-renderer">` in its head. leaftext.com serves its own; Emptyguru names leaftext.com's, because it has no Rust to build one with and GitHub Pages sends `access-control-allow-origin: *` on every asset. There is no default: a page that forgot the tag should say so plainly rather than quietly reaching across a network nobody asked it to.
 //

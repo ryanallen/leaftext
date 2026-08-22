@@ -1027,7 +1027,7 @@ const module_ = standInModule();
 
 const { rendererBase, createLeaftext } = await import(loader);
 // The deadline every page fetch now runs under. Its real limit is ten seconds of silence, which is a check that sits still for ten seconds, so the stall below sets its own and puts the real one back.
-const { setSilenceLimit } = await import(pathToFileURL(join(root, 'site/fetches.js')).href);
+const { setSilenceLimit, fetchWatched } = await import(pathToFileURL(join(root, 'site/fetches.js')).href);
 // The publish's own bake, run here rather than described: the page the front reader is booted over below is the page a visitor is served.
 const { bakeFrontPage } = await import(pathToFileURL(join(root, 'scripts/site-assets.mjs')).href);
 const { fillPager } = await import(pagerModule);
@@ -1241,6 +1241,34 @@ await check('a fetch that dies once is answered on the retry', async () => {
   await settled(() => content.childNodes.length > 0 && document.getElementById('status').hidden, 'a connection that dropped once and would have been answered the second time was never asked again, so the reader gave up on a page that was there');
   want(content.textContent.includes('drawn first and edited in place'), "the retry drew a page without the README's own words in it");
   want(fetch.asked().filter((path) => path === '/assets/leaftext/leaftext.wasm').length === 1, 'the module was asked for more than once after it answered, so the retry runs over a connection that did not fail');
+});
+
+await check('a body that stops halfway is not waited on for ever', async () => {
+  // The two boots above stall before the answer arrives. This one answers, hands over some of the body and then goes quiet — the case a deadline on the answer alone would sit through, and the reason the deadline is bumped by every chunk rather than set once.
+  setSilenceLimit(30);
+  const wasFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('the first bytes arrived'));
+          },
+        }),
+        { status: 200 },
+      );
+    let said = null;
+    try {
+      await fetchWatched('https://leaf.test/half-a-document.md');
+    } catch (error) {
+      said = message(error);
+    }
+    want(said, 'a body that arrived halfway and then went quiet was waited on for ever, which is the fault with the wait moved one step later');
+    want(said.includes('stopped waiting'), `the wait ended saying ${JSON.stringify(said)}`);
+  } finally {
+    globalThis.fetch = wasFetch;
+    setSilenceLimit();
+  }
 });
 
 await check('a front page baked at publish is read as drawn', async () => {
