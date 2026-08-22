@@ -151,6 +151,16 @@ check-ascii-art:
 check-site:
     node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-site.mjs
 
+# Fail when the other published site is drawing its pages with a different front end.
+# Both sites run one front end and only this one has a harness, so a fix written here
+# reaches the other only when somebody carries it — its reading column stayed a fixed
+# width for hours after this one became the app's own measure. It compares what the
+# code does rather than what the bytes are, because the other copy keeps the hard
+# comment wraps this tree joined, and it skips with a line saying so when that
+# checkout is not on the machine.
+check-other-site:
+    node scripts/check-other-site.mjs --check
+
 # Boot the code that draws the two published sites against a stand-in page, fetch
 # and renderer module — nothing else in the suite ever runs it, so a script that
 # throws as it loads reaches a reader as a blank page. Each boot is read for its
@@ -382,7 +392,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-boot check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
