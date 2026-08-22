@@ -599,7 +599,7 @@ fn pick_save_path(current: &Path, format: Option<&str>) -> Option<PathBuf> {
     dialog.save_file()
 }
 
-/// Where an exported diagram goes. With no format named the window carries all three and the page encodes whatever the chosen name ends in; with one, it carries that one alone, because a Mac panel shows no format at all and the page has already asked.
+/// Where an exported diagram goes. With no format named the window carries every row the table holds and the page encodes whatever the chosen name ends in; with one, it carries that one alone, because a Mac panel shows no format at all and the page has already asked.
 fn pick_diagram_path(stem: &str, format: Option<&str>) -> Option<PathBuf> {
     let offer = save_window_offer(DIAGRAM_EXPORT_FORMATS, format, stem);
     pick_export_path_titled("Export Diagram", &offer.name, &offer.filters)

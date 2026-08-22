@@ -8062,7 +8062,7 @@ if (booted) {
     const menu = exportMenuOn(surface);
     if (!menu) throw new Error('a Mac was handed a save window with no format in it and nothing asked beforehand');
     const rows = menu.children.map((child) => (child.children[0] || {}).textContent);
-    if (String(rows) !== 'Markdown,PNG,WebP,PDF') throw new Error(`the menu offers ${rows.join(', ') || 'nothing'}`);
+    if (String(rows) !== 'Markdown,PNG,WebP,PDF,JPEG') throw new Error(`the menu offers ${rows.join(', ') || 'nothing'}`);
     // Nothing is asked and nothing is drawn until a row is pressed: a save window opened here would be the second question.
     if (sent.length) throw new Error(`opening the menu already sent ${sent.map((one) => one.command).join(', ')}`);
 
@@ -8262,12 +8262,14 @@ if (booted) {
     checkSettled(name, () => mine);
   };
 
-  // A window that can draw one, which is where the two picture rows part: PNG hands the host raw pixels to encode, WebP hands it a file the canvas already wrote. The stand-in page has no canvas at all, so one is lent for the length of the check.
+  // A window that can draw one, which is where the three picture rows part: PNG hands the host raw pixels to encode, WebP and JPEG hand it a file the canvas already wrote. The stand-in page has no canvas at all, so one is lent for the length of the check.
   const withCanvas = (answer) => {
     const original = booted.document.createElement;
     const was = { send: booted.ipc.postMessage, toast: booted.leafToast, drawing: booted.diagramDrawingSvg, image: booted.Image, btoa: booted.btoa };
     const sent = [];
     const said = [];
+    // Every encode the canvas was asked for, so a row refused before it reached one is told apart from a row that encoded and threw.
+    const asked = [];
     // Only the export, because a check running beside this one reports its own faults down the same pipe.
     booted.ipc.postMessage = (text) => {
       const one = JSON.parse(text);
@@ -8292,14 +8294,21 @@ if (booted) {
           // Four bytes, one white pixel: what the PNG row reads off the canvas.
           getImageData: () => ({ data: new Uint8ClampedArray([255, 255, 255, 255]) }),
         });
-        // A real canvas asked for a type it cannot write answers a PNG, which is the case the type check exists for.
-        made.toDataURL = () => (answer.cannotWriteWebp ? 'data:image/png;base64,UE5H' : 'data:image/webp;base64,V0VCUA==');
+        // A real canvas asked for a type it cannot write answers a PNG, which is the case the type check exists for. The type asked for is honored otherwise, so a row that sent the wrong one is caught here rather than in a file somebody opens.
+        made.toDataURL = (type, quality) => {
+          asked.push({ type: String(type), quality });
+          if (answer.cannotWrite) return 'data:image/png;base64,UE5H';
+          // The first bytes of a real JPEG, so what the page forwards can be read as one rather than taken on trust.
+          if (String(type) === 'image/jpeg') return 'data:image/jpeg;base64,/9j/4AAQ';
+          return 'data:image/webp;base64,V0VCUA==';
+        };
       }
       return made;
     };
     return {
       sent,
       said,
+      asked,
       done: () => {
         booted.closeFlowMenu();
         booted.document.createElement = original;
@@ -8345,7 +8354,7 @@ if (booted) {
 
   // v1.24.0 measured it: a fifty-step left-to-right flowchart is 16,872 pixels across at export size, so this is a diagram somebody draws rather than a guard against the absurd. The canvas answers an empty URL rather than throwing, so a row that did not check would save a six-byte file.
   checkPicture('a drawing too big for WebP is refused out loud, and a window that cannot write one says so instead', async () => {
-    for (const [answer, expected] of [[{ wide: 9000 }, /too big/i], [{ cannotWriteWebp: true }, /cannot write WebP/i]]) {
+    for (const [answer, expected] of [[{ wide: 9000 }, /too big/i], [{ cannotWrite: true }, /cannot write WebP/i]]) {
       const lent = withCanvas(answer);
       const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
       try {
@@ -8361,6 +8370,53 @@ if (booted) {
       } finally {
         lent.done();
       }
+    }
+  });
+
+  // The JPEG row is the one in this menu whose own measurement argues against it — biggest of the three pictures on a diagram — so it exists for reach, and what has to hold is that the file really is a JPEG and that both spellings of the ending reach it.
+  checkPicture('a JPEG goes out as a finished JPEG, at the quality the page names, under either spelling of the ending', async () => {
+    for (const ending of ['jpg', 'jpeg']) {
+      const lent = withCanvas({});
+      const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
+      try {
+        const block = drawnDiagram('flowchart TD\n  J1 --> J2');
+        booted.addMermaidControls(block);
+        booted.openMermaidExportMenu(exportChipOn(block));
+        answerSaveWindow(lent.sent, ending);
+        await settle(() => written().length || lent.said.length);
+        if (lent.said.length) throw new Error(`a name ending in ${ending} was refused: ${lent.said.join(' / ')}`);
+        const jpeg = written()[0];
+        if (!jpeg || jpeg.format !== 'jpg') throw new Error(`a name ending in ${ending} sent ${JSON.stringify((jpeg || {}).format) || 'nothing'} rather than jpg`);
+        // The file itself, forwarded byte for byte: the host writes what the canvas wrote, exactly as it does for WebP.
+        const bytes = Buffer.from(jpeg.data, 'base64');
+        if (bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) throw new Error(`what went out does not start like a JPEG: ${JSON.stringify(jpeg.data)}`);
+        if (jpeg.width || jpeg.height) throw new Error('a finished file was sent with pixel dimensions beside it');
+        const encode = lent.asked.filter((one) => one.type === 'image/jpeg');
+        if (encode.length !== 1) throw new Error(`the canvas was asked for a JPEG ${encode.length} times`);
+        // Written down rather than inherited, so a web view update cannot move every exported diagram quietly.
+        if (encode[0].quality !== 0.92) throw new Error(`the JPEG was asked for at ${encode[0].quality} rather than the quality the page names`);
+      } finally {
+        lent.done();
+      }
+    }
+  });
+
+  // JPEG holds 65,535 pixels a side and, past it, a canvas answers an empty URL rather than throwing — the same trap the WebP guard was written for. Without a guard of its own the type check fires instead and tells a reader this window cannot write JPEG, sending them after a broken app rather than a diagram too wide.
+  checkPicture('a drawing too big for JPEG is refused before anything is encoded, and points at the row that can still write it', async () => {
+    const lent = withCanvas({ wide: 40000 });
+    const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
+    try {
+      const block = drawnDiagram('flowchart LR\n  J3 --> J4');
+      booted.addMermaidControls(block);
+      booted.openMermaidExportMenu(exportChipOn(block));
+      answerSaveWindow(lent.sent, 'jpg');
+      await settle(() => written().length || lent.said.length);
+      if (written().length) throw new Error('a refused JPEG asked for a file anyway');
+      if (lent.asked.length) throw new Error('the drawing was encoded before the size was refused, which is the work the guard exists to skip');
+      if (lent.said.length !== 1 || !/too big/i.test(lent.said[0])) throw new Error(`it said ${lent.said.join(' / ') || 'nothing'}`);
+      if (!/PNG/.test(lent.said[0])) throw new Error(`the refusal left the reader nowhere to go: ${lent.said[0]}`);
+    } finally {
+      lent.done();
     }
   });
 

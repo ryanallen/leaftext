@@ -3500,6 +3500,16 @@ flowchart TD
         "the finished file was re-encoded instead of written straight out"
     );
 
+    // Both spellings of the JPEG row reach the same arm, because Windows keeps a typed `.jpeg` where the chosen filter permits it. A JPEG arrives finished off the canvas, exactly as a WebP does.
+    for spelling in ["jpg", "jpeg"] {
+        assert_eq!(
+            written(spelling, "/9j/4AAQ", 0, 0),
+            Some(vec![0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+            "{spelling} was re-encoded instead of written straight out, or is a spelling the host never heard of"
+        );
+    }
+
+    assert!(refused("jpg", "not base64!"), "a broken JPEG payload");
     assert!(refused("webp", "not base64!"), "a broken WebP payload");
     assert!(refused("png", "not base64!"), "a broken picture payload");
     assert!(refused("webp", ""), "an empty file is not a file");
@@ -3527,7 +3537,8 @@ flowchart TD
             ("Markdown", &["md"][..]),
             ("PNG image", &["png"][..]),
             ("WebP image", &["webp"][..]),
-            ("PDF document", &["pdf"][..])
+            ("PDF document", &["pdf"][..]),
+            ("JPEG image", &["jpg", "jpeg"][..])
         ],
         "the save window offers a format the host does not write, or lists them in an order that names a bare file wrongly"
     );
@@ -3591,13 +3602,27 @@ fn save_window_offers_one_format_once_the_reader_has_picked_one() {
         "the reader picked PDF and the name still says something else"
     );
 
+    // The JPEG row permits two spellings and names its file off the first, so a reader who picked it on a Mac is handed `.jpg` however the row was asked for.
+    for asked in ["jpg", "jpeg", "JPEG"] {
+        let jpeg = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some(asked), "README-diagram");
+        assert_eq!(
+            jpeg.filters,
+            vec![("JPEG image", &["jpg", "jpeg"][..])],
+            "a Mac panel asked with {asked} was left more than the one row the reader picked"
+        );
+        assert_eq!(
+            jpeg.name, "README-diagram.jpg",
+            "the reader picked JPEG and the suggested name does not end in the row's first spelling"
+        );
+    }
+
     // Nothing the table names, so every row stands: a window that offered nothing is one a reader cannot save from at all.
     let unknown = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some("svg"), "README-diagram");
     assert_eq!(unknown.filters, DIAGRAM_EXPORT_FORMATS.to_vec());
     assert_eq!(unknown.name, "README-diagram.md");
     assert_eq!(
         unknown.filters.len(),
-        4,
+        5,
         "the window stopped offering every format the table names"
     );
 }
@@ -3651,7 +3676,7 @@ fn each_window_offers_what_its_platform_can_honestly_read() {
         "Open on Windows stopped leading with every readable ending at once"
     );
 
-    // The diagram export window never carried the row and must not gain one: it offers the three formats a diagram can be written as and nothing else, on both platforms.
+    // The diagram export window never carried the row and must not gain one: it offers the formats a diagram can be written as and nothing else, on both platforms.
     for (_, endings) in DIAGRAM_EXPORT_FORMATS {
         assert!(
             !endings.contains(&"*"),

@@ -490,9 +490,9 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         format: Option<String>,
     },
-    /// Write the flowchart sheet's diagram out as a file of its own. `format` is `md`, `png` or `webp`; `data` is the text for the first and base64 for the two pictures, since IPC carries a string and a picture is bytes. `path` is where it goes, answered by `pickDiagramPath` a moment earlier — the host opens no window of its own here.
+    /// Write the flowchart sheet's diagram out as a file of its own. `format` is `md`, `png`, `webp` or `jpg`; `data` is the text for the first and base64 for the three pictures, since IPC carries a string and a picture is bytes. The `pdf` row never arrives here — it is printed by `printDiagramPdf` instead. `path` is where it goes, answered by `pickDiagramPath` a moment earlier — the host opens no window of its own here.
     #[serde(rename = "exportDiagram")]
-    /// `data` is Markdown for a `md` export, base64 RGBA pixels for a `png` one — the page sends pixels so the host's encoder does the writing — and a finished WebP file for a `webp` one, which the canvas writes itself.
+    /// `data` is Markdown for a `md` export, base64 RGBA pixels for a `png` one — the page sends pixels so the host's encoder does the writing — and a finished file for `webp` and `jpg`, both of which the canvas writes itself.
     ExportDiagram {
         format: String,
         data: String,
