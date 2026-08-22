@@ -10948,20 +10948,30 @@ if (booted) {
     }
   });
 
-  // A rendered document with each of the app's own controls inside it, and a diagram already drawn. The parts are the copy: what is removed leaves the markup, which is what makes this a reading of the written page rather than of the selector.
+  // A rendered document with each of the app's own controls inside it, a diagram already drawn, and the correction the rail parks on the live body. The parts are the copy: what is removed leaves the markup, which is what makes this a reading of the written page rather than of the selector. `cloneNode` builds a fresh one, so the live element and the copy the export works on are two things, the way they are on the page.
   const drawnDocument = () => {
     const parts = [
       { html: '<h1>Release notes</h1>' },
       { html: '<pre class="mermaid" data-processed="true"><svg class="flowchart lt-mmd-0"></svg></pre>' },
+      // A style of the document's own, one element down: mermaid writes the drawn box's height there, so a copy that shed its whole attribute must still shed only its own.
+      { html: '<div class="mermaid-view" style="height: 420px"></div>' },
       { classes: ['code-copy'], html: '<button class="code-copy"></button>' },
       { classes: ['image-sheet-open'], html: '<button class="image-sheet-open"></button>' },
       { classes: ['mermaid-tools'], html: '<div class="mermaid-tools"></div>' },
       { classes: ['mermaid-zoom'], html: '<div class="mermaid-zoom"></div>' },
     ];
+    let style = '--reader-scroll-origin: 16px';
     return {
       get outerHTML() {
-        return `<div class="document-body">${parts.map((part) => part.html).join('')}</div>`;
+        return `<div class="document-body"${style ? ` style="${style}"` : ''}>${parts.map((part) => part.html).join('')}</div>`;
       },
+      get styleAttribute() {
+        return style;
+      },
+      removeAttribute: (name) => {
+        if (String(name) === 'style') style = null;
+      },
+      cloneNode: () => drawnDocument(),
       querySelectorAll: (selector) => {
         const wants = String(selector).split(',').map((one) => one.trim().replace(/^\./, ''));
         return parts
@@ -10971,13 +10981,13 @@ if (booted) {
     };
   };
 
-  // Stand the drawn document in front of the reader element, and hand back whatever the export made of it.
-  const exportedMarkup = () => {
+  // Stand the drawn document in front of the reader element, and hand back whatever the export made of it. A caller that wants to read the live element afterwards passes its own.
+  const exportedMarkup = (live) => {
     const reader = vm.runInContext('app', booted);
     const wasQuery = reader.querySelector;
-    const copy = drawnDocument();
+    const drawn = live || drawnDocument();
     reader.querySelector = (selector) =>
-      String(selector) === '.document-body' ? { cloneNode: () => copy } : wasQuery.call(reader, selector);
+      String(selector) === '.document-body' ? drawn : wasQuery.call(reader, selector);
     try {
       return vm.runInContext('pageExportMarkup', booted)();
     } finally {
@@ -11008,6 +11018,24 @@ if (booted) {
     // `has-minimap` is what sets the rail's column and the grid is what spends it, so a copy carrying it lays the document out beside an empty rail.
     if (markup.includes('has-minimap')) {
       throw new Error(`the export said it has a minimap it does not carry: ${markup}`);
+    }
+  });
+
+  check('The exported page starts where the document starts, not where the app bar was', () => {
+    const live = drawnDocument();
+    const markup = exportedMarkup(live);
+    // The rail writes this on the live body as a negative top margin, so the reader's scroll starts at the words rather than at the top of the box. An exported page has no bar, no card inset and no rail, so a copy wearing it opens with the title against the window's edge — or with as much of the document as the correction is wide scrolled off above it and no way back.
+    if (markup.includes('--reader-scroll-origin')) {
+      throw new Error(`the export carried the app's scroll-origin correction: ${markup}`);
+    }
+    // The whole attribute, because the renderer writes this element bare and the next correction parked there would be this fault over again.
+    if (/<div class="document-body" style=/.test(markup)) {
+      throw new Error(`the exported document body kept a style attribute: ${markup}`);
+    }
+    // Only the copy sheds it: the reader still needs the value, and everything inside the copy keeps its own.
+    if (!live.styleAttribute) throw new Error('the export took the correction off the live document');
+    if (!markup.includes('style="height: 420px"')) {
+      throw new Error(`the export stripped a style from inside the document: ${markup}`);
     }
   });
 
