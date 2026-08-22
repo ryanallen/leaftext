@@ -589,7 +589,7 @@ pub(crate) fn save_window_offer(
 /// One row a file window opens with: the words it shows, then the endings it permits.
 pub(crate) type WindowFilter = (&'static str, Vec<&'static str>);
 
-/// The row that reads as "anything" — and only on Windows, where the rows are a dropdown and this one becomes the spec `*.*`. A Mac panel has no dropdown: it throws every label away, pours all the endings into one permitted list, and matches a name's ending against it, so this row arrives there as an ending spelled `*` and permits nothing but a file actually named `note.*`. Every window below therefore leaves it out on a Mac and says what it can honestly say instead.
+/// The row that reads as "anything", and only on Windows, where the rows are a dropdown and this one becomes the spec `*.*`. A Mac panel has no dropdown: it drops every label, pours all the endings into one permitted list, and matches a name's ending against it — so this row arrives there as an ending spelled `*` and permits nothing but a file actually named `note.*`.
 fn all_files_row() -> WindowFilter {
     ("All files", vec!["*"])
 }

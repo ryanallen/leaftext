@@ -570,7 +570,7 @@ fn show_startup_error(message: &str) {
         .show();
 }
 
-/// The Open dialog: one filter per format plus a combined one, both derived from the format table so the picker can't offer or omit a format the renderer has — and on a Mac no filters at all, so every file is reachable. `open_window_filters` holds the reasoning and the test.
+/// The Open dialog. What it offers is `open_window_filters`, which holds the reasoning.
 fn pick_document_file() -> Option<PathBuf> {
     let mut dialog = FileDialog::new().set_title("Open Document");
     for (label, extensions) in open_window_filters(cfg!(target_os = "macos")) {
@@ -579,7 +579,7 @@ fn pick_document_file() -> Option<PathBuf> {
     dialog.pick_file()
 }
 
-/// Where a document that has never had a file goes. The same filters as Open, off the same table, with the stem it has been wearing as the suggestion — so the first save of a new document is a Save As and nothing is written until someone has said where. With a format named the window carries that one alone, because a Mac panel shows none of them and the page has already asked.
+/// Where a document that has never had a file goes: every readable format off the one table, with the stem it has been wearing as the suggestion — so the first save of a new document is a Save As and nothing is written until someone has said where. With a format named the window carries that one alone, because a Mac panel shows none of them and the page has already asked. `save_window_filters` decides the rows.
 fn pick_save_path(current: &Path, format: Option<&str>) -> Option<PathBuf> {
     let readable: Vec<(&'static str, &'static [&'static str])> = DocumentFormat::ALL
         .iter()
@@ -618,7 +618,7 @@ fn pick_export_path_titled(
     dialog.save_file()
 }
 
-/// The Insert image dialog. Filtered off the same table the reading view draws from, since a document can only show what the page can. `image_window_filters` holds the reasoning and the test.
+/// The Insert image dialog. Filtered off the same table the reading view draws from, since a document can only show what the page can. `image_window_filters` decides the rows.
 fn pick_image_file() -> Option<PathBuf> {
     let mut dialog = FileDialog::new().set_title("Choose an image");
     for (label, extensions) in image_window_filters(cfg!(target_os = "macos")) {

@@ -78,6 +78,8 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-a-pdf). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
 
+**Open reaches any file, on either platform.** On Windows the dialog carries a list of the [formats the reader opens](03-library.md#file-types), with **All files** at the end for anything else. A Mac dialog has no such list, so it simply shows everything — which is the same answer, since a file whose ending Leaftext does not know is [read as Markdown](01-rendering.md) rather than refused.
+
 ### Export a PDF
 
 The export button in the app bar — shown only while a rendered document is in front of you — asks where the file goes. Say where, and the page you are reading is written as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line. A quiet note names the file when it is written, and the name is a press — click it to open the PDF in whatever reads them on your machine. The button steps aside on the home screen, in the [source view](07-editing.md#code-view) and on the [graph](03-library.md#graph), since none of those is a page to print.

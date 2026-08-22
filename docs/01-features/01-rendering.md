@@ -243,7 +243,7 @@ Image paths are resolved against the open file: relative paths (including `../` 
 
 ![Leaftext](../../imgs/leaftext.png "Leaftext — refine your mind")
 
-Allowed image types include SVG, PNG, JPEG, GIF, APNG, AVIF, BMP, ICO, and WebP.
+Allowed image types include SVG, PNG, JPEG (`.jpg`, `.jpeg` and `.jfif`), GIF, APNG, AVIF, BMP, ICO, and WebP. The picker behind [Insert image](07-editing.md#images) offers exactly these and nothing else, so a picture you can choose is one the page draws.
 
 Every local picture is measured as the page is built — its size comes out of its own header — so the space it needs is held before it decodes and the words around it never jump. A picture Leaftext cannot find keeps its place too, marked with one glyph in the page's ink, with its alt text on hover. The same mark shows on both platforms.
 
