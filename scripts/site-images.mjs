@@ -5,7 +5,7 @@
 //   node scripts/site-images.mjs --write    encode every picture and move the pages onto it
 //   node scripts/site-images.mjs --check    self-test the rewrite, offline (`just verify`)
 //
-// **Nothing here ever reaches the repository.** The masters stay PNG, so `scripts/capture-screenshot.ps1`, `scripts/compose-shots.mjs`, `scripts/check-shot-edges.mjs` and the app's own three hand-written PNG codecs never learn a second format. The publish writes a WebP beside each master and rewrites the pages in the workspace `actions/upload-pages-artifact` takes, the same way `scripts/site-assets.mjs` bakes the front page.
+// **Nothing here ever reaches the repository.** The masters stay PNG, so the three hand-written PNG codecs that read them — `scripts/capture-screenshot.ps1`, `scripts/compose-shots.mjs` and `scripts/check-shot-edges.mjs` — never learn a second format. The publish writes a WebP beside each master and rewrites the pages in the workspace `actions/upload-pages-artifact` takes, the same way `scripts/site-assets.mjs` bakes the front page.
 //
 // The PNG stays beside the WebP in the deployed copy, so an address somebody has already linked to still answers.
 //

@@ -2,17 +2,15 @@ name: Publish the site
 
 # leaftext.com, with the app's own renderer built and served beside its pages.
 #
-# The site used to publish itself: GitHub Pages served this branch as it stood,
-# so a file the pages fetched was a file somebody had committed. That is what
-# this replaces. The module is 2.7 MB and the stylesheet is generated, and
-# neither belongs in a tree whose whole point is small files a person can read —
-# so `.gitignore` refuses them and this workflow builds them at publish time.
+# The module is 2.7 MB and the stylesheet is generated, and neither belongs in a
+# tree whose whole point is small files a person can read — so `.gitignore`
+# refuses them and this workflow builds them at publish time.
 #
 # The pictures go the same way. The repository keeps 61 PNG masters, because
 # the screenshot tool, the shot composer, the edge check and the app's own three
 # hand-written PNG codecs all read them; the publish writes a lossless WebP
 # beside each one and moves the pages onto it, so a reader is served 3,318 KB
-# where 5,336 KB used to go and not a pixel of it changes.
+# rather than the 5,336 KB the masters weigh, and not a pixel of it changes.
 #
 # A failure here leaves the last successful deployment standing: the site stops
 # updating rather than going dark, and nothing a reader touches waits on this
