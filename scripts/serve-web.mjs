@@ -5,14 +5,15 @@
 //   node scripts/serve-web.mjs <folder>              any folder of documents
 //   node scripts/serve-web.mjs <folder> --port 8181
 //
-// **Nothing here is part of the result.** `export-web.mjs` writes a folder that reads on any static host with no server at all — that is the whole point, and it is how Emptyguru is published today. This exists only because a page cannot fetch its neighbors off `file://`, so there is no other way to open the export locally. It serves the exported folder and nothing else: no rendering, no rewriting, no state.
+// **Nothing here is part of the result.** `export-web.mjs` writes a folder that reads on any static host with no server at all — that is the whole point, and it is how Emptyguru is published today. This exists only because a page cannot fetch its neighbors off `file://`, so there is no other way to open the export locally. It serves the exported folder and nothing else: no rendering, no rewriting, no state. The two pages leaftext.com is made of are somewhere else entirely, and `serve-site.mjs` is what opens those.
 
 import { createServer } from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { dirname, extname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fileWithin, typeOf } from './serve-static.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const site = join(root, 'web', 'dist', 'site');
@@ -33,40 +34,17 @@ if (!existsSync(join(site, 'index.html'))) {
   process.exit(1);
 }
 
-const TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.wasm': 'application/wasm',
-  '.md': 'text/markdown; charset=utf-8',
-  '.xml': 'text/xml; charset=utf-8',
-  '.yaml': 'text/yaml; charset=utf-8',
-  '.yml': 'text/yaml; charset=utf-8',
-  '.eml': 'message/rfc822',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf',
-};
-
 createServer(async (request, response) => {
-  const asked = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
   // Refuse anything outside the exported folder, whatever the URL says.
-  const file = resolve(site, '.' + (asked === '/' ? '/index.html' : asked));
-  if (!file.startsWith(site)) {
+  const file = fileWithin(site, request.url);
+  if (!file) {
     response.writeHead(403).end('no');
     return;
   }
   try {
     if (!(await stat(file)).isFile()) throw new Error('not a file');
     response.writeHead(200, {
-      'content-type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream',
+      'content-type': typeOf(file),
       'cache-control': 'no-store',
     });
     response.end(await readFile(file));

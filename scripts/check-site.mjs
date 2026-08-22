@@ -10,6 +10,7 @@ import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeLink } from '../site/link-tooltip.js';
 import { discoveryFiles } from './seo-gen.mjs';
+import { fileWithin, typeOf } from './serve-static.mjs';
 import { ASSET_DIR, FRONT_PAGE, MODULE_PATH, PUBLISHED, bakeFrontPage, frontPageIsEmpty } from './site-assets.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -213,6 +214,35 @@ if (!frontPageIsEmpty(read(FRONT_PAGE))) {
   if (!refused) problems.push(`the publish would write ${FRONT_PAGE} over a document the renderer drew nothing for, and a page baked empty is worse than one that was never baked`);
 }
 
+/// The local preview bakes the front page in memory and hands it to a browser. Nothing it does may reach the tree: `--write` overwrites the tracked page and the block above then fails the gate until somebody puts it back, so a preview built that way would leave every checkout it ran in red. Nothing else in the suite would notice.
+{
+  const before = read(FRONT_PAGE);
+  bakeFrontPage(before, { html: '<p>Served, never written.</p>' });
+  if (read(FRONT_PAGE) !== before) problems.push(`baking ${FRONT_PAGE} the way the local preview does wrote over the tracked page, which leaves the gate red until somebody puts it back by hand`);
+  if (!frontPageIsEmpty(read(FRONT_PAGE))) problems.push(`${FRONT_PAGE} stopped being an empty holder after a bake, so the preview would be putting a document into the tree`);
+}
+
+// Both preview servers name a file's type and refuse a path through one module, so there is one type table rather than two that drift and one refusal rather than one of them forgetting `..`. A URL is somebody else's string: what is checked is where it resolves to, never what it says.
+{
+  const served = join(root, 'web', 'dist', 'site');
+  for (const [url, wanted] of [['/', join(served, 'index.html')], ['/docs/', join(served, 'docs', 'index.html')], ['/site/styles.css', join(served, 'site', 'styles.css')]]) {
+    const got = fileWithin(served, url);
+    if (got !== wanted) problems.push(`a preview server would answer ${url} with ${got ?? 'nothing'} rather than ${wanted}`);
+  }
+  // A browser's own URL parser folds `..` away — encoded as `%2e%2e` too — so a plain climb lands back at the served root, exactly as it does on a static host. What survives it is an encoded slash, which is one segment to the parser and a climb once it is decoded, and that is the case this refusal is here for.
+  for (const url of ['/../AGENTS.md', '/a/../../AGENTS.md', '/%2e%2e/AGENTS.md']) {
+    const got = fileWithin(served, url);
+    if (got !== join(served, 'AGENTS.md')) problems.push(`a preview server answered ${url} with ${got ?? 'nothing'} rather than the file of that name inside the folder it serves`);
+  }
+  for (const url of ['/..%2fAGENTS.md', '/docs%2f..%2f..%2fAGENTS.md']) {
+    if (fileWithin(served, url)) problems.push(`a preview server would serve ${url}, which lands outside the folder it is serving`);
+  }
+  if (fileWithin(`${served}-elsewhere`, '/index.html')?.startsWith(served + '/')) problems.push('a preview server read a folder whose name merely starts with the served one as inside it');
+  for (const [file, wanted] of [['a/leaftext.wasm', 'application/wasm'], ['README.md', 'text/markdown; charset=utf-8'], ['x.HTML', 'text/html; charset=utf-8'], ['b/thing.unknown', 'application/octet-stream']]) {
+    if (typeOf(file) !== wanted) problems.push(`a preview server would hand ${file} over as ${typeOf(file)} rather than ${wanted}`);
+  }
+}
+
 // Nothing the publish writes may be a file somebody committed: a 2.7 MB compiled module and a generated stylesheet are a worse tree to work in than the drift they end.
 for (const path of PUBLISHED) {
   if (!gitIgnores(path)) problems.push(`.gitignore does not refuse ${path}, so a built file can enter the tree`);
@@ -295,5 +325,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window`
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window — plus the local preview, which bakes that page without touching the tracked one, names a file's type and refuses a path climbing out of the folder it serves`
 );

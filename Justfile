@@ -388,6 +388,14 @@ check-export-pictures:
 preview-web folder="":
     node scripts/serve-web.mjs {{ folder }}
 
+# leaftext.com itself — the two pages a visitor opens, not a folder of exported
+# documents. Needs the module: run `build-web` first or it says so and stops.
+# The front page is served baked, which is the first paint a real visitor gets;
+# `--unbaked` serves the empty holder the tree keeps, the branch a local
+# checkout takes. Nothing it does is written down.
+preview-site *flags:
+    node scripts/serve-site.mjs {{ flags }}
+
 # Press things in the exported site and read the page back — the browser half of
 # `just drive`. A check that passes is not a button that works.
 #   just drive-web http://localhost:8123/#README.md click:.docs-pager-next shot:out.png

@@ -31,12 +31,12 @@ export const VERSION_PATH = `${ASSET_DIR}/version.json`;
 
 export const PUBLISHED = [MODULE_PATH, STYLES_PATH, VERSION_PATH];
 
-/** The build these are cut from. Not published itself — it is what `just build-web` leaves behind. */
-const BUILT_MODULE = join(root, 'web', 'dist', 'leaftext-core.wasm');
+/** The build these are cut from. Not published itself — it is what `just build-web` leaves behind. The local preview draws the front page through this one too, so there is one answer to which module the site is read against. */
+export const BUILT_MODULE = join(root, 'web', 'dist', 'leaftext-core.wasm');
 
 /** The front page, and the document it draws: the publish writes the one into the other. */
 export const FRONT_PAGE = 'index.html';
-const FRONT_DOCUMENT = 'README.md';
+export const FRONT_DOCUMENT = 'README.md';
 
 /** The empty element the front page leaves for its document. */
 const CONTENT_HOLDER = /(<article\b[^>]*\bid="content"[^>]*>)(\s*)(<\/article>)/;
