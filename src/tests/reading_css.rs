@@ -2778,4 +2778,41 @@ fn the_print_block_hands_the_whole_document_to_the_paper() {
         rule_body(print, "body.leaf-paper .home-list-grid {"),
         "transform: none;",
     );
+
+    // The exported page wears `leaf-paper` for ever — no script runs there to take it off — so `leaf-web` hands its lanes back the screen width. Inside the screen media on purpose: the class cannot come off for a print, and a print that got this rule shrank the whole page to fit a slid lane's phantom width.
+    let adjacency = "@media screen {\n  body.leaf-paper.leaf-web .document-body > :is(.table-lane, p.image-lane) {";
+    assert_contains(print, adjacency);
+    let web_lanes = rule_body(print, adjacency);
+    assert_contains(web_lanes, "position: relative;");
+    assert_contains(
+        web_lanes,
+        "max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));",
+    );
+    assert_contains(web_lanes, "margin-left: 0;");
+}
+
+#[test]
+fn the_table_edge_bands_animate_only_where_a_scroll_can_drive_them() {
+    // A browser without scroll-driven animations drops only the timeline line, leaving a zero-second clock animation whose fill mode holds the last keyframe — the left band stuck on for ever over a table nobody scrolled, which is how an exported page looked in Firefox. Behind the guard such a browser keeps the bands' resting opacity and shows no band at all.
+    let css = reading_mode_css();
+    let bands = rule_body(&css, ".table-lane::before,\n.table-lane::after {");
+    assert_contains(bands, "opacity: 0;");
+    assert!(
+        !bands.contains("animation-"),
+        "the bands' resting rule must carry no animation of its own: {bands}"
+    );
+    let guard = "@supports (animation-timeline: scroll()) {";
+    let opens = css.find(guard).expect("the support guard exists");
+    let shuts = opens + css[opens..].find("\n}").expect("the guard closes");
+    let guarded = &css[opens..shuts];
+    assert_contains(guarded, "animation-timeline: --lt-table-scroll;");
+    for name in ["lt-table-edge-behind", "lt-table-edge-ahead"] {
+        let line = format!("animation-name: {name};");
+        assert_eq!(
+            css.matches(line.as_str()).count(),
+            1,
+            "{name} is named exactly once, so nothing animates it outside the guard"
+        );
+        assert_contains(guarded, &line);
+    }
 }

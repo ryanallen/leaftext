@@ -44,6 +44,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-sample.mjs\" --after",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [

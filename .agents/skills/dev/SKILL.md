@@ -45,6 +45,8 @@ Anything found while building that no phase in this ticket would have to build a
 
 Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase is not finished until it is green.
 
+**Another session's work is not this build's, whatever state it is in.** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Where the gate is red only on such a ticket, this build's own work is judged by everything else being green, and the hand-back says whose the red is and stops there.
+
 ### 7. Hand back at the owner's box
 
 Stop at the owner's box: never run `/done` or `/git-release` yourself, because retiring a ticket is the owner's word and nothing written in the ticket stands in for it. Hand back whether anything is broken and the gestures needed for it. If the work is complete but not shipped, say to run `/git-release` next.
@@ -58,6 +60,7 @@ Stop at the owner's box: never run `/done` or `/git-release` yourself, because r
 **Anything found while building that no phase in this ticket would have to build anyway is a second file, written in the same pass** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md), and named in this ticket's record so nobody reads it as covered. Never fixed in passing, never left in the hand-back. [`/ticket`](../ticket/SKILL.md) holds the rule; this is the pass that hits it hardest, because building is where the code is actually opened.
 
 - **A bug beside the one being fixed**, a test gap, a check that would have caught it, a rule nothing enforces: all the same answer. The test is scope, not size — a one-line fix out of this ticket's work is still a ticket.
+- **The one thing that is never a ticket is another session's work in flight** — step 6 holds the rule. A finding is something nobody is holding; a ticket somebody else is building already has its holder, and filing or fixing around it is the collision, not the diligence.
 - **The found line on that second file says the time as well as the day** — `Found 18 August 2026, 9:11pm while building …` — off this machine's clock (`Get-Date`) at the moment it is written. A build turns up several of these in an afternoon and they all land on one date, so the day alone cannot put them in the order they were found. `AGENTS.md` carries the rule for every date the workflow writes, and it holds for the not-built note, a box struck with a reason, and the record at the foot of a phase just as much as for the found line.
 - **The temptation here is the fix, not the box.** The code is open and the change is small, so it goes in and the ticket silently grows work the owner never read. A ticket about the find bar carrying a pager fix is one nobody can review.
 - **A round that grows past the ticket is the same thing.** Where what the owner asked for is a second job rather than a refinement of this one, it is its own file — see the rounds below.

@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// PostToolUse hook. Sample how the build's ticket stands after every edit, so the stop hook can tell a build that filled its boxes as it went from one that swept them at the end.
+// PostToolUse hook. Sample how the build's ticket stands after every edit and every shell command, so the stop hook can tell a build that filled its boxes as it went from one that swept them at the end.
 //
-//   node scripts/gate-sample.mjs --after   the edit tool's PostToolUse payload on stdin
+//   node scripts/gate-sample.mjs --after   the tool's PostToolUse payload on stdin
 //   node scripts/gate-sample.mjs --check   self-test (`just verify`)
 //
-// After each edit this appends one sample to the record gate-design.mjs wrote — every phase of the ticket with its boxes counted — and gate-voice.mjs reads the run of them at the end of the turn. It has to be sampled here rather than read once at the end, because a phase batch-ticked after the code stopped moving leaves a file identical to one filled in as the work finished. After rather than before, and every edit rather than only the ones inside this checkout, because the tick that finishes a box is itself an edit and the plan tree is where it is written: sampled the other way, a tick is only ever seen by whatever edit comes next and the last tick of a turn is seen by nothing.
+// After each one this appends one sample to the record gate-design.mjs wrote — every phase of the ticket with its boxes counted — and gate-voice.mjs reads the run of them at the end of the turn. It has to be sampled here rather than read once at the end, because a phase batch-ticked after the code stopped moving leaves a file identical to one filled in as the work finished. After rather than before, and every edit rather than only the ones inside this checkout, because the tick that finishes a box is itself an edit and the plan tree is where it is written: sampled the other way, a tick is only ever seen by whatever edit comes next and the last tick of a turn is seen by nothing.
+//
+// A shell command is sampled for the same reason and it is not a corner: a session in this mode is told to prefer a heredoc, a `sed` or a script for writing a file, so sampling the edit tools alone left the ordinary build with an empty list and nothing to read — and left a build that worked in the shell and ticked through an edit tool refused for ticking boxes back to back, with its work in commands nothing sampled.
 //
 // Nothing here refuses and nothing waits.
 
@@ -20,6 +22,35 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /// The tools that write a file. A name outside this list changes nothing, so there is nothing to sample — the settings row narrows it as well, and this is the half that holds if the row is ever widened.
 export const EDIT_TOOLS = /^(write|edit|multiedit|notebookedit)$/i;
+
+/// The tools that run a command. A shell line writes files too — a heredoc, a `sed`, a script — and a session in this mode is told to prefer them, so a build sampled on the edit tools alone is the ordinary build going unheld. A read is sampled as well: it changes no box, and a flat sample is exactly what separates one tick from the next.
+export const SHELL_TOOLS = /^(bash|powershell)$/i;
+
+/// Every tool name a sample is taken for, spelled the way the host spells it, so the settings rows can be held to the branch below rather than drifting from it.
+export const SAMPLED_TOOLS = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Bash', 'PowerShell'];
+
+/// Whether this tool's use is worth a sample: it wrote a file, or it ran a command that may have.
+export const sampled = (name) => EDIT_TOOLS.test(name ?? '') || SHELL_TOOLS.test(name ?? '');
+
+/// The tools this samples that no `PostToolUse` row hands it. A row is the only thing that runs a hook, so a tool named here and matched by none is a branch nothing ever reaches: the rule is off, on disk, passing its own self-test. That is this file's own bug wearing a different hat, and until this read it nothing failed when a row was deleted. The host reads a matcher as an unanchored pattern, so this tests one the same way — which is why `Edit` covers `MultiEdit` and no row spells it.
+export function unrowedTools(settingsText, names = SAMPLED_TOOLS) {
+  let rows = [];
+  try {
+    rows = JSON.parse(settingsText).hooks?.PostToolUse ?? [];
+  } catch {
+    return [...names]; // Settings nobody can read run no hook at all.
+  }
+  const matchers = [];
+  for (const row of rows ?? []) {
+    if (!(row.hooks ?? []).some((hook) => /gate-sample\.mjs/.test(String(hook.command ?? '')))) continue;
+    try {
+      matchers.push(new RegExp(row.matcher ?? ''));
+    } catch {
+      // A matcher the host cannot read matches nothing, and saying so is check-agent-settings.mjs's job rather than this one's.
+    }
+  }
+  return names.filter((name) => !matchers.some((matcher) => matcher.test(name)));
+}
 
 /// Every `### Phase` section of a ticket, with its boxes counted. Any other heading ends the section, so the owner's box and the per-phase `/check` box — each under a heading of its own — are never counted as a phase's work.
 export function phasesOf(ticket) {
@@ -94,10 +125,12 @@ function selfTest() {
     const FIVE = `gate-sample-selftest-${process.pid}`;
     const onDisk = join(dir, 'ticket.md');
     writeFileSync(onDisk, TICKET);
-    const edited = (file, ...flags) => execFileSync(process.execPath, [fileURLToPath(import.meta.url), ...flags], {
-      input: JSON.stringify({ session_id: FIVE, tool_name: 'Edit', tool_input: { file_path: file } }),
+    const firedAs = (session, tool, input, ...flags) => execFileSync(process.execPath, [fileURLToPath(import.meta.url), ...flags], {
+      input: JSON.stringify({ session_id: session, tool_name: tool, tool_input: input }),
       encoding: 'utf8',
     });
+    const fired = (tool, input, ...flags) => firedAs(FIVE, tool, input, ...flags);
+    const edited = (file, ...flags) => fired('Edit', { file_path: file }, ...flags);
     try {
       writeFileSync(buildingPath(FIVE), JSON.stringify({ session: sessionTag(FIVE), ticket: onDisk, samples: [] }) + '\n');
       edited(join(root, 'src', 'lib.rs'));
@@ -106,8 +139,27 @@ function selfTest() {
       if (buildRecord(FIVE)?.samples.length !== 1) fails.push('an edit was not sampled on the way out');
       edited(join(root, '..', 'docs', 'README.md'), '--after');
       if (buildRecord(FIVE)?.samples.length !== 2) fails.push('an edit to the plan tree was not sampled, so a tick would be seen by nothing');
+
+      // The shell, carrying a command rather than a file: the tool a session in this mode is told to prefer for writing one, and the payload's own input is never opened, so what the line touched decides nothing.
+      fired('Bash', { command: `sed -i 's/a/b/' ${join(root, 'src', 'lib.rs')}` }, '--after');
+      if (buildRecord(FIVE)?.samples.length !== 3) fails.push('a shell command was not sampled, so a build that writes with one reads as never having started');
+      fired('PowerShell', { command: 'Set-Content src/lib.rs "x"' }, '--after');
+      if (buildRecord(FIVE)?.samples.length !== 4) fails.push('the other shell was not sampled, so half a build would be held and half of it not');
+
+      // A tool that neither writes a file nor runs a command still samples nothing: the branch is narrowed here as well as by the settings rows, and this is the half that holds if a row is ever widened.
+      fired('Read', { file_path: onDisk }, '--after');
+      if (buildRecord(FIVE)?.samples.length !== 4) fails.push('a tool that neither writes nor runs anything was sampled');
     } finally {
       forget(FIVE);
+    }
+
+    // A shell command belonging to no build writes nothing at all. Every session runs commands and only some of them are building, so a hook now fired on every one of them has to leave the rest of the folder as it found it.
+    const SIX = `gate-sample-selftest-loose-${process.pid}`;
+    try {
+      firedAs(SIX, 'Bash', { command: 'ls' }, '--after');
+      if (buildRecord(SIX)) fails.push('a shell command in a session with no build record open wrote one');
+    } finally {
+      forget(SIX);
     }
   } catch (error) {
     fails.push(`cycle: ${error.message}`);
@@ -122,12 +174,34 @@ function selfTest() {
     if (EDIT_TOOLS.test(name)) fails.push(`${name} was read as a file-writing tool`);
   }
 
+  // The row direction on settings files invented here, before the real one is opened. `rowed` is a pretend settings file: one `PostToolUse` row per matcher, each running this hook.
+  const rowed = (...matchers) => JSON.stringify({
+    hooks: { PostToolUse: matchers.map((matcher) => ({ matcher, hooks: [{ type: 'command', command: 'node scripts/gate-sample.mjs --after' }] })) },
+  });
+  if (unrowedTools(rowed('Write|Edit|NotebookEdit', 'Bash|PowerShell')).length) fails.push('this check fails a settings file whose rows already cover every tool it samples');
+  if (unrowedTools(rowed('Write|Edit|NotebookEdit')).join(', ') !== 'Bash, PowerShell') fails.push('this check misses the shell rows going missing, which is the state this hook was widened out of');
+  if (unrowedTools(rowed()).length !== SAMPLED_TOOLS.length) fails.push('this check passes a settings file with no PostToolUse row at all');
+  if (unrowedTools(rowed('*(')).length !== SAMPLED_TOOLS.length) fails.push('this check read a matcher the host cannot parse as one that matches everything');
+  if (unrowedTools(JSON.stringify({ hooks: { PostToolUse: [{ matcher: 'Bash|PowerShell', hooks: [{ type: 'command', command: 'node scripts/gate-git.mjs' }] }] } })).length !== SAMPLED_TOOLS.length) {
+    fails.push('this check read a row running some other hook as one that samples');
+  }
+  if (unrowedTools('{').length !== SAMPLED_TOOLS.length) fails.push('this check read an unreadable settings file as one that runs every hook');
+
+  // The rows themselves, against the real settings file. A tool this samples with nothing to run it is a rule that is quietly off, and the next build nobody held is what notices.
+  try {
+    for (const name of unrowedTools(readFileSync(join(root, '.agents', 'settings.json'), 'utf8'))) {
+      fails.push(`${name} is sampled here and no PostToolUse row in .agents/settings.json matches it, so a build that reaches for it is held by nothing`);
+    }
+  } catch {
+    fails.push('.agents/settings.json will not open, so nothing says which tools run this hook');
+  }
+
   if (fails.length) {
     console.error('gate-sample: failed');
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log('gate-sample: ok (every edit of a build samples every phase of its ticket after the write, the plan tree included, and a turn with no build in it samples nothing)');
+  console.log('gate-sample: ok (every edit and every shell command of a build samples every phase of its ticket after the write, the plan tree included; a turn with no build in it samples nothing; and every tool sampled has a settings row that runs this)');
 }
 
 // Only act when run directly: a hook body that read stdin on import would swallow whatever payload the importing hook was handed.
@@ -152,7 +226,7 @@ if (!args) {
   } catch {
     process.exit(0); // An unreadable payload samples nothing.
   }
-  if (after && EDIT_TOOLS.test(payload.tool_name ?? '')) {
+  if (after && sampled(payload.tool_name)) {
     try {
       // How the ticket stands once the write has happened, so it is taken on the way out.
       sample(sessionOf(raw));

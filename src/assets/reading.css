@@ -4108,10 +4108,6 @@ body.is-block-dragging .document-body [data-src-start] {
   background-size: 2px 2px, 100% 100%;
   background-repeat: repeat, no-repeat;
   background-attachment: fixed, scroll;
-  animation-fill-mode: both;
-  animation-timing-function: var(--lt-ease-linear);
-  /* The table's own sideways scroll, not a clock. Left on under Reduce Motion for the same reason: it only moves when the reader moves it. */
-  animation-timeline: --lt-table-scroll;
 }
 .table-lane::before {
   left: 0;
@@ -4131,7 +4127,6 @@ body.is-block-dragging .document-body [data-src-start] {
     var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
     transparent
   );
-  animation-name: lt-table-edge-behind;
 }
 .table-lane::after {
   right: 0;
@@ -4151,7 +4146,21 @@ body.is-block-dragging .document-body [data-src-start] {
     var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
     transparent
   );
-  animation-name: lt-table-edge-ahead;
+}
+/* The bands ride the table's own sideways scroll, not a clock — so they join the page only where a scroll can drive them. A browser without scroll-driven animations (the export and both sites are handed this file) drops only the timeline line, and what is left is a zero-second clock animation whose fill mode holds the last keyframe: the left band stuck on over a table nobody scrolled. Behind the guard, such a browser keeps the resting `opacity: 0` and shows no band at all. Left on under Reduce Motion for the same reason it is scroll-driven: it only moves when the reader moves it. */
+@supports (animation-timeline: scroll()) {
+  .table-lane::before,
+  .table-lane::after {
+    animation-fill-mode: both;
+    animation-timing-function: var(--lt-ease-linear);
+    animation-timeline: --lt-table-scroll;
+  }
+  .table-lane::before {
+    animation-name: lt-table-edge-behind;
+  }
+  .table-lane::after {
+    animation-name: lt-table-edge-ahead;
+  }
 }
 /* Exempt by name: a zero duration lands a scroll-driven animation on its last keyframe and holds it there, which for the ahead band is `opacity: 0` — the cut edge unmarked on the very tables that need it. `auto` hands progress back to the scroll. */
 @media (prefers-reduced-motion: reduce) {
@@ -6743,6 +6752,16 @@ body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {
   width: var(--leaf-paper-lane, 100%);
   max-width: none;
   margin-left: calc((100% - var(--leaf-paper-lane, 100%)) / 2);
+}
+/* The exported page wears `leaf-paper` for ever — it runs no script, so nothing can raise the class for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. */
+@media screen {
+  body.leaf-paper.leaf-web .document-body > :is(.table-lane, p.image-lane) {
+    position: relative;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+    margin-left: 0;
+  }
 }
 /* The lane is now a fixed-width box, so what sits in it says its own size again: a small picture keeps its own width and centers, a wide one fills the lane, and a table narrower than the lane centers rather than hugging the left edge. */
 body.leaf-paper .document-body > p.image-lane {

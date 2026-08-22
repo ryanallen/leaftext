@@ -1088,7 +1088,7 @@ pub fn exported_page_document(
 <title>{title}</title>
 <link rel=\"stylesheet\" href=\"{EXPORTED_PAGE_STYLESHEET}\">
 {math}{sheet}</head>
-<body class=\"leaf-paper\">
+<body class=\"leaf-paper leaf-web\">
 {markup}
 </body>
 </html>

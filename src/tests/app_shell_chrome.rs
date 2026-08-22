@@ -1799,8 +1799,8 @@ fn an_exported_page_names_its_stylesheet_and_pins_the_theme_it_was_written_in() 
     // The folder the pictures go in is the same one, so the two are named together and nowhere else.
     assert_eq!(EXPORTED_PAGE_STYLESHEET, "assets/app.css");
     assert_contains(&page, "<link rel=\"stylesheet\" href=\"assets/app.css\">");
-    // What drops the app's own frame off the sheet, and what makes the browser scroll the body rather than the page carrying a scroller of its own.
-    assert_contains(&page, "<body class=\"leaf-paper\">");
+    // `leaf-paper` drops the app's own frame off the sheet and makes the browser scroll the body rather than the page carrying a scroller of its own; `leaf-web` hands a wide table or picture back its screen width, which the paper rules alone freeze at the text measure. The whole attribute, not a substring: the page runs no script, so these two classes are the page's entire state for ever.
+    assert_contains(&page, "<body class=\"leaf-paper leaf-web\">");
     assert_contains(&page, "<div class=\"app-surface\">the document</div>");
 
     // Inline, as the one element the page already holds it as: a second file in the folder would buy a fetch and another name for nothing.

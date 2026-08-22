@@ -23,6 +23,9 @@ function settingsProblems(settingsText) {
 // A hook row is a command the host runs before it will read a message, and a row naming a script that is not here fails silently: the host reports the miss to nobody, the rule that script held is simply off, and the next person to notice is whoever meets what it was stopping. So a deleted script has to take its row with it, and this is what says so.
 const SCRIPT_NAMED = /scripts[\\/]([A-Za-z0-9._-]+)/g;
 
+// A gate script is any scripts/gate-*.mjs. One definition, shared by the import guard and every direction below, so there is never a second glob to drift apart from this one.
+const GATE_SCRIPT = /^gate-.*\.mjs$/;
+
 function hookProblems(settingsText, hasScript) {
   let hooks;
   try {
@@ -42,6 +45,53 @@ function hookProblems(settingsText, hasScript) {
     }
   }
   return found;
+}
+
+// The other direction, which nothing held: a hook is the only code here that runs without anything calling it, so a gate script reached by no hook row is a rule that is simply off — still on disk, still passing its own --check, and inert. Reached means a hook row names it, or a reached gate script imports it: gate-keycode.mjs has no row on purpose — three rowed gates import it and the agent runs it by hand — so a bare no-row rule would fail a tree that is right.
+const IMPORTS_GATE = /^import\b[^\n]*?['"][^'"]*?(gate-[A-Za-z0-9._-]+\.mjs)['"]/gm;
+
+function reachProblems(settingsText, sources) {
+  let hooks;
+  try {
+    hooks = JSON.parse(settingsText).hooks ?? {};
+  } catch {
+    return [];
+  }
+  const reached = new Set();
+  for (const rows of Object.values(hooks)) {
+    for (const row of rows ?? []) {
+      for (const hook of row.hooks ?? []) {
+        for (const [, name] of String(hook.command ?? '').matchAll(SCRIPT_NAMED)) {
+          if (sources.has(name)) reached.add(name);
+        }
+      }
+    }
+  }
+  const queue = [...reached];
+  while (queue.length) {
+    for (const [, name] of String(sources.get(queue.pop()) ?? '').matchAll(IMPORTS_GATE)) {
+      if (sources.has(name) && !reached.has(name)) {
+        reached.add(name);
+        queue.push(name);
+      }
+    }
+  }
+  return [...sources.keys()].filter((name) => !reached.has(name)).sort()
+    .map((name) => `nothing reaches scripts/${name}: no hook row in ${SETTINGS} names it and no reached gate script imports it, so the rule it holds is off`);
+}
+
+// The justfile's check-hooks recipe is a hand list, one `--check` line per gate script, so a new script left off it has its self-test run by nothing. Held to the folder rather than generated: a justfile recipe is static text, and a build step writing the justfile is heavier than holding a few lines to a glob.
+function selfTestProblems(justfileText, names) {
+  const recipe = /^check-hooks:\r?\n((?:[ \t]+[^\n]*\n?)*)/m.exec(justfileText)?.[1] ?? '';
+  const run = new Set([...recipe.matchAll(/scripts[\\/](gate-[A-Za-z0-9._-]+\.mjs)\s+--check/g)].map((m) => m[1]));
+  return names.filter((name) => !run.has(name)).map((name) => `the justfile's check-hooks recipe never runs scripts/${name} --check, so its self-test runs nowhere`);
+}
+
+// The guide's ## Hooks section is the third hand list of the same scripts, and it had already drifted — six bullets while scripts/ held seven. The count stays out of the sentence above the bullets; a sentence with no number has no number to rot.
+function guideProblems(agentsText, names) {
+  const section = /^## Hooks\r?\n([\s\S]*?)(?=\r?\n## |(?![\s\S]))/m.exec(agentsText)?.[1] ?? '';
+  const listed = new Set([...section.matchAll(/^- `(gate-[A-Za-z0-9._-]+\.mjs)`/gm)].map((m) => m[1]));
+  return names.filter((name) => !listed.has(name)).map((name) => `AGENTS.md's ## Hooks list has no bullet for ${name}, so the guide does not say the rule exists`);
 }
 
 const problems = [];
@@ -71,10 +121,32 @@ for (const [name, text, shouldFail] of HOOK_CASES) {
   if (!shouldFail && found.length) problems.push(`this check fails ${name}: ${found[0]}`);
 }
 
+// The reach direction on made-up trees before the real one is opened. `src` is a pretend scripts folder: name to source text.
+const src = (...entries) => new Map(entries);
+const REACH_CASES = [
+  ['a gate script nothing names', '{}', src(['gate-a.mjs', '']), 1],
+  ['a gate script a hook row names', row('node scripts/gate-a.mjs'), src(['gate-a.mjs', '']), 0],
+  ['a gate script reached only by an import from a rowed one', row('node scripts/gate-a.mjs'), src(['gate-a.mjs', "import { x } from './gate-b.mjs';"], ['gate-b.mjs', '']), 0],
+  ['two rowless gate scripts importing only each other', '{}', src(['gate-c.mjs', "import './gate-d.mjs';"], ['gate-d.mjs', "import './gate-c.mjs';"]), 2],
+];
+for (const [name, settings, sources, count] of REACH_CASES) {
+  const found = reachProblems(settings, sources);
+  if (found.length !== count) problems.push(`this check reads ${name} wrong: expected ${count} problems, found ${found.length}`);
+}
+
+// The two list directions, on a recipe and a guide invented here. The second recipe proves a --check line outside check-hooks does not count.
+const RECIPE = 'check-hooks:\n    node scripts/gate-a.mjs --check\n\nother:\n    node scripts/gate-b.mjs --check\n';
+if (selfTestProblems(RECIPE, ['gate-a.mjs']).length) problems.push('this check misses a --check line that is in the recipe');
+if (!selfTestProblems(RECIPE, ['gate-b.mjs']).length) problems.push("this check reads a --check line in another recipe as check-hooks's");
+
+const GUIDE = '## Hooks\n\nOne sentence.\n\n- `gate-a.mjs` — what it holds.\n\n## Next\n';
+if (guideProblems(GUIDE, ['gate-a.mjs']).length) problems.push('this check misses a bullet that is in the guide');
+if (!guideProblems(GUIDE, ['gate-b.mjs']).length) problems.push('this check passes a gate script with no bullet in the guide');
+
 // Every hook must be importable without its body running: gate-voice.mjs imports three of its neighbors, so hook-imports-hook is the normal shape here, and an unguarded body reads a stream nobody is writing — the importer hangs with no message. The child's standard input is closed so an unguarded hook cannot hang this check: it exits the child before the sentinel prints, or runs its body instead, and either way the sentinel goes missing.
 function importProblems(dir = join(root, 'scripts')) {
   const found = [];
-  for (const name of readdirSync(dir).filter((file) => /^gate-.*\.mjs$/.test(file)).sort()) {
+  for (const name of readdirSync(dir).filter((file) => GATE_SCRIPT.test(file)).sort()) {
     const url = pathToFileURL(join(dir, name)).href;
     let out = '';
     try {
@@ -89,8 +161,12 @@ function importProblems(dir = join(root, 'scripts')) {
 }
 
 const settingsText = readFileSync(join(root, SETTINGS), 'utf8');
+const gateSources = new Map(readdirSync(join(root, 'scripts')).filter((file) => GATE_SCRIPT.test(file)).sort().map((name) => [name, readFileSync(join(root, 'scripts', name), 'utf8')]));
 problems.push(...settingsProblems(settingsText));
 problems.push(...hookProblems(settingsText, (name) => existsSync(join(root, 'scripts', name))));
+problems.push(...reachProblems(settingsText, gateSources));
+problems.push(...selfTestProblems(readFileSync(join(root, 'justfile'), 'utf8'), [...gateSources.keys()]));
+problems.push(...guideProblems(readFileSync(join(root, 'AGENTS.md'), 'utf8'), [...gateSources.keys()]));
 problems.push(...importProblems());
 
 if (problems.length) {
@@ -98,4 +174,4 @@ if (problems.length) {
   for (const problem of problems) console.error(`  ${problem}`);
   process.exit(1);
 }
-console.log('agent settings: every hook row runs a script that is here, and every gate script imports without acting');
+console.log('agent settings: every hook row runs a script that is here, every gate script is reached, self-tested and in the guide, and every one imports without acting');

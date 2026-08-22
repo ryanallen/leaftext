@@ -101,12 +101,13 @@ In [`.agents/skills/`](.agents/skills/), which `.claude/` and `.codex/` symlink 
 
 ## Hooks
 
-In [`.agents/settings.json`](.agents/settings.json), pointing at `scripts/`. Each holds its own rules in its header comment, runs by hand with `--check`, and `just verify` runs all six.
+In [`.agents/settings.json`](.agents/settings.json), pointing at `scripts/`. Each holds its own rules in its header comment, runs by hand with `--check`, and `just verify` runs every one.
 
 - `gate-rules.mjs` — prints Rule 1 before every message and records the git license, granted only when the message **starts** with `/git-release` or `$git-release`.
 - `gate-git.mjs` — refuses a git write, a command that throws the working tree away, and the release commands, unless this turn in this session was licensed. An edit is undone by editing it back, never by asking git for the old bytes; `git show <ref>:<path>` is a read and stays allowed.
 - `gate-checklist.mjs` — writes this turn's step list from the numbered headings of the skill the message names. **A bullet is a step, never work** — work is the ticket's boxes, which outlive the session.
-- `gate-sample.mjs` — samples the build ticket's boxes after each edit, so the reply hook can tell a build that filled them as it went from one that swept them at the end.
+- `gate-design.mjs` — refuses a build on a ticket with no dated `Designed` line, and writes down which ticket the turn is building for the sample and reply hooks to read.
+- `gate-sample.mjs` — samples the build ticket's boxes after each edit and each shell command, so the reply hook can tell a build that filled them as it went from one that swept them at the end. Both, because a session in this mode is told to prefer a shell command for writing a file, so the edit tools alone leave the ordinary build unsampled and every rule the reading carries off.
 - `gate-voice.mjs` — refuses to end the turn on a reply breaking the half of Rule 1 that names its own words, one owing a keycode or leaving a checklist bullet un-struck, or a build whose phase never gained a tick while its code was landing. It is the only `Stop` hook on purpose: the host allows one a turn.
 - `gate-keycode.mjs` — proof the rules were read rather than remembered. This file and every `SKILL.md` ends with a keycode; each message owes this file's plus any skill it names, reported with `node scripts/gate-keycode.mjs <file> <code>`.
 

@@ -120,6 +120,7 @@ A flag on something already listed, rather than a thing of its own. Anything sta
 | --- | --- |
 | open | A sheet, menu or panel is showing. |
 | leaf-paper | The page is being measured for paper, or rendered onto it. It carries every rule that turns the window into a sheet — the app frame gone, the reader's scroller unwound, the surface as tall as what it holds. On a class rather than in the print media so the page can measure the layout it is about to ask a sheet for; a browser's own print puts it on too. |
+| leaf-web | The page is an exported web page being read on a screen, so a wide table or picture gets its lane back the width the app gives it. Only ever beside `leaf-paper`, which the export wears for the rest of its jobs, and only inside the screen media — the exported page runs no script, so the class can never come off, and a browser printing one still gets the paper lanes. Written by `exported_page_document` alone. |
 | leaf-paper-diagram | A diagram is being printed on its own, so everything in the surface but the print container is off the sheet. Always beside `leaf-paper`, never instead of it: those rules are what turn the window into a sheet, and this one only decides what is left standing on it. |
 | shown | A link preview is fading in or fully visible. |
 | frameless | The window draws its own title bar, so the app bar is it. |
