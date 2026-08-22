@@ -3460,7 +3460,7 @@ fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
 
 #[test]
 fn a_diagram_export_writes_the_page_s_own_bytes_or_none_at_all() {
-    // The write itself is a disk call into a path a native window answered with, so this is the whole of the decision. Two of the four formats reach the file differently — the page sends pixels for a PNG and a finished file for a WebP — and a payload that does not decode has to end as nothing rather than as a file that will not open.
+    // The write itself is a disk call into a path a native window answered with, so this is the whole of the decision. No two kinds of row in the five reach the file the same way — the page sends the text for Markdown, pixels for a PNG, and a finished file for a WebP and a JPEG, while the PDF row is printed rather than encoded and never arrives here with bytes at all — and a payload that does not decode has to end as nothing rather than as a file that will not open.
     let written = |format: &str, data: &str, width: u32, height: u32| match diagram_export_file(
         format, data, width, height,
     ) {
