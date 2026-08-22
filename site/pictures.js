@@ -1,10 +1,10 @@
 // pictures.js
 // ---------------------------------------------------------------------------
-// The published pictures are WebP (scripts/site-images.mjs writes one beside each PNG master at publish, and scripts/doc-images.mjs moves every reference onto it). A browser older than Safari 14 cannot decode one and draws its own broken mark instead, which on the front page alone is 25 of them.
+// The published pictures are WebP, written beside each PNG master at publish. A browser older than Safari 14 cannot decode one and draws its own broken mark instead — 25 of them on the front page alone — so the page puts a failed picture back to the PNG already deployed beside it.
 //
-// So the page reacts to the picture that actually failed rather than asking the browser up front whether it reads WebP: the only cheap way to ask is `canvas.toDataURL('image/webp')`, and that reports whether the browser can *write* the format. Safari 14 through 16.3 decode WebP and cannot encode one, so a probe would take the pictures away from years of Safari readers to give them to Safari 13.
+// Never a capability probe. The only cheap way to ask a browser whether it reads WebP is `canvas.toDataURL('image/webp')`, which reports whether it can *write* the format; Safari 14 through 16.3 decode WebP and cannot encode one, so a probe takes the pictures away from years of Safari readers to give them to Safari 13. Reacting to the picture that actually failed cannot be wrong about it.
 //
-// The PNG is already deployed beside the WebP — the masters are committed and the publish uploads the whole workspace — so the fallback costs no second encode and no new file. A browser that reads WebP never fires the listener and pays nothing; one that cannot pays a wasted fetch per picture, and it is the rare reader who pays it.
+// A browser that reads WebP never fires the listener and pays nothing. One that cannot pays a wasted fetch per picture, and it is the rare reader who pays it.
 // ---------------------------------------------------------------------------
 
 /** A WebP address and the PNG sitting beside it, keeping any ?query or #fragment. Null for anything else, which is how a picture that was never WebP and a PNG that failed on its own are both left alone. */

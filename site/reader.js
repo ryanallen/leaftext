@@ -154,7 +154,7 @@ async function fetchDocument() {
 
 /** Everything a drawn document needs on the page, whether the publish baked it in or this script fetched and rendered it. */
 function decorate() {
-  // Every published picture is a WebP, so a browser too old to decode one draws a broken mark unless the page puts the address back to the PNG beside it. The listener goes on before the passes below and the sweep catches the pictures the publish baked into this page, which started loading before this module did.
+  // The pictures the publish baked into this page started loading before this module did, so the sweep is what catches the ones an old browser already failed on.
   installPictureFallback(content);
   // One README, so there is nothing either side of it: the renderer's waiting strip is a promise this page cannot keep, and it comes out.
   fillPager(content, null, null);

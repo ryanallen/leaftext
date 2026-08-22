@@ -486,7 +486,7 @@ async function render(route, anchor) {
     // The path, not just the text: the renderer's one format table is what decides whether this is Markdown, TEI, data or a message, and nothing here chooses.
     const drawn = renderDocument(source, file);
     contentEl.innerHTML = drawn.html;
-    // Every published picture is a WebP, so a browser too old to decode one draws a broken mark unless the page puts the address back to the PNG beside it. The listener goes on once and the sweep runs on every route, since each one is drawn into this same article.
+    // Every route is drawn into this same article, so the listener goes on once and only the sweep runs again.
     installPictureFallback(contentEl);
     // An in-page outline (table of contents) from this page's headings, tucked just under the title — distinct from the left nav sidebar, which lists pages, not the sections within a page. Built before the anchor pass so its link-only entries stay out of the block-numbering scheme.
     buildOutline(contentEl, { label: 'Outline' });
