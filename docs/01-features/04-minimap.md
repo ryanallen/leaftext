@@ -15,6 +15,7 @@
 | [The code view's rail](#the-code-views-minimap) | The editor's own map of the source, always present there |
 | [Responsive widths](#responsive-behavior) | The lane narrows with the window, and is never hidden |
 | [Toggle](#toggling-the-minimap) | On by default; **Settings** turns it off and the page widens out |
+| [On an exported page](#on-an-exported-page) | A page [exported as a web page](02-navigation.md#export-the-page) carries the rail too, so whoever you send it to can see the shape of the whole document |
 
 ## What it is
 
@@ -55,6 +56,12 @@ Both rails are **chrome, not page**: they stand on the window's textured surface
 
 > [!NOTE]
 > The reading view's rail is a real clone of the page; the code view's is the editor's drawing of the source. They look and behave alike on purpose, but the [minimap setting](#toggling-the-minimap) governs only the first — the code view always has its rail.
+
+## On an exported page
+
+A document [written out as a web page](02-navigation.md#export-the-page) carries the rail with it. That is the copy somebody without Leaftext reads, and they have none of the other ways to see the shape of what they were sent — no library pane, no outline, no tab strip. The rail behaves the way it does here: the whole document shrunk down the right edge, a box marking what is on screen, a click to jump and a drag to scrub. It is the only thing on that page that runs, it fetches nothing, and there is no button to turn it off — the exported page carries no controls at all, and the first one would be the start of a control surface.
+
+The rail needs room, so it stands on a browser window 721 pixels or wider and is simply not there below that; a phone gets the document and its own scrollbar. Printing the exported page never draws it either, since a rail pinned to the window would come out on every sheet.
 
 ## Responsive behavior
 
