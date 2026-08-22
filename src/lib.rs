@@ -32,7 +32,10 @@ pub use minimap::{
 };
 mod assets;
 pub(crate) use assets::*;
-pub use assets::{bundled_asset_response, source_payload_url, BundledAsset, LOCAL_ASSET_PROTOCOL};
+pub use assets::{
+    bundled_asset_response, source_payload_url, BundledAsset, KATEX_CSS, KATEX_FONTS,
+    LOCAL_ASSET_PROTOCOL,
+};
 mod format;
 pub use format::{all_document_extensions, is_supported_document_path, DocumentFormat};
 mod folder_tree;
@@ -1071,6 +1074,11 @@ pub fn exported_page_document(
 "
         ),
     };
+    // Named only where there is an equation to spend it on: it is 283,127 bytes with its faces, and nobody else should carry them.
+    let math = match markup_has_math(markup) {
+        true => format!("<link rel=\"stylesheet\" href=\"{EXPORTED_PAGE_MATH_STYLESHEET}\">\n"),
+        false => String::new(),
+    };
     format!(
         "<!DOCTYPE html>
 <html lang=\"en\" data-leaf-theme=\"{theme}\" data-leaf-appearance=\"{appearance}\">
@@ -1079,7 +1087,7 @@ pub fn exported_page_document(
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <title>{title}</title>
 <link rel=\"stylesheet\" href=\"{EXPORTED_PAGE_STYLESHEET}\">
-{sheet}</head>
+{math}{sheet}</head>
 <body class=\"leaf-paper\">
 {markup}
 </body>
@@ -1096,6 +1104,19 @@ pub const EXPORTED_PAGE_ASSETS_FOLDER: &str = "assets";
 
 /// The one stylesheet an exported page names: the whole of [`reading_mode_css`], which carries every theme's colors, the tokens, the icons and the reading rules. All of it rather than a trimmed copy — deciding which rules a document needs is a guess against a stylesheet that changes every week, and a rule missed is a page that looks wrong in a way nobody can see coming.
 pub const EXPORTED_PAGE_STYLESHEET: &str = "assets/app.css";
+
+/// Whether a document has math drawn in it.
+///
+/// The app draws every equation in the page rather than at render time, and KaTeX wraps each one in an element of its own — so this is the one mark saying the math stylesheet has work to do here. Watched in a real browser: without that stylesheet an equation prints twice on one line, because KaTeX renders two copies of itself and the sheet is what hides one of them.
+pub fn markup_has_math(markup: &str) -> bool {
+    markup.contains("class=\"katex")
+}
+
+/// The math stylesheet an exported page names, where it has math in it. A file of its own rather than part of the one above, because that one is compiled here and this is a vendored stylesheet addressing its own faces.
+pub const EXPORTED_PAGE_MATH_STYLESHEET: &str = "assets/katex.min.css";
+
+/// Where the faces that stylesheet asks for go. The folder name is the stylesheet's own — it addresses them as `fonts/…` beside itself — so this is that address read from the folder the page sits in.
+pub const EXPORTED_PAGE_MATH_FONTS_FOLDER: &str = "assets/fonts";
 
 /// Where one picture sits in an exported page: the `assets` folder beside it, under the name the copy was written as. Percent-encoded, because a picture on disk may be called anything a filesystem permits and the page addresses it as a URL.
 pub fn exported_picture_url(name: &str) -> String {

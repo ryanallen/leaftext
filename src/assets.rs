@@ -16,8 +16,8 @@ pub(crate) const D3_FORCE_JS: &[u8] = include_bytes!("assets/vendor/d3-force.min
 pub(crate) const MONACO_JS: &[u8] = include_bytes!("assets/vendor/monaco/monaco.js");
 pub(crate) const MONACO_CSS: &[u8] = include_bytes!("assets/vendor/monaco/monaco.css");
 pub(crate) const KATEX_JS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.js");
-pub(crate) const KATEX_CSS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.css");
-pub(crate) const KATEX_FONTS: &[(&str, &[u8])] = &[
+pub const KATEX_CSS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.css");
+pub const KATEX_FONTS: &[(&str, &[u8])] = &[
     (
         "KaTeX_AMS-Regular.woff2",
         include_bytes!("assets/vendor/katex/fonts/KaTeX_AMS-Regular.woff2"),

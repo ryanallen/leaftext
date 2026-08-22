@@ -6053,6 +6053,69 @@ fn an_exported_page_names_a_missing_picture_rather_than_our_own_mark() {
     );
 }
 
+/// Math is the one thing the reading stylesheet does not carry, so it is the one thing that has to travel beside a page with an equation in it — and only beside that page.
+///
+/// Watched in a real browser: with no math stylesheet the equation prints twice on one line, because KaTeX renders two copies of itself and the sheet is what hides one of them. It comes to 283,127 bytes with its twenty faces, which is why an ordinary document carries none of it.
+#[test]
+fn an_exported_page_carries_the_math_stylesheet_only_where_there_is_math() {
+    use crate::app::fileops::{write_exported_page, PageHtmlExport};
+
+    let root = scratch_dir("exported-page-math");
+    let with_math = root.join("with-math");
+    let plain = root.join("plain");
+    for folder in [with_math.clone(), plain.clone()] {
+        fs::create_dir_all(&folder).expect("the fixture folders are made");
+    }
+    let export = |markup: &str| PageHtmlExport {
+        markup: markup.to_string(),
+        sheet: String::new(),
+        theme: "moss".to_string(),
+        appearance: "dark".to_string(),
+        title: "Notes".to_string(),
+    };
+
+    write_exported_page(
+        &with_math.join("notes.html"),
+        &export("<p><span class=\"math math-inline\" data-math-rendered=\"true\"><span class=\"katex\">E</span></span></p>"),
+        None,
+    )
+    .expect("the page with math is written");
+    let page = fs::read_to_string(with_math.join("notes.html")).expect("the page reads back");
+
+    assert!(
+        page.contains("href=\"assets/katex.min.css\""),
+        "the page with an equation in it did not name the stylesheet that draws one: {page}"
+    );
+    assert!(
+        fs::read(with_math.join("assets/katex.min.css"))
+            .expect("the math stylesheet is written")
+            .len()
+            > 0
+    );
+    // The stylesheet addresses its faces as `fonts/…` beside itself, so that is the folder they go in.
+    let faces = fs::read_dir(with_math.join("assets/fonts"))
+        .expect("the faces folder is written")
+        .count();
+    assert_eq!(faces, 20, "every face the math stylesheet asks for travels");
+
+    // An ordinary document is the common case, and it stays the size the page and its own stylesheet come to.
+    write_exported_page(
+        &plain.join("notes.html"),
+        &export("<p>no math here</p>"),
+        None,
+    )
+    .expect("the plain page is written");
+    let plain_page = fs::read_to_string(plain.join("notes.html")).expect("the page reads back");
+    assert!(
+        !plain_page.contains("katex"),
+        "a document with no equation in it named the math stylesheet: {plain_page}"
+    );
+    assert!(
+        !plain.join("assets/katex.min.css").exists() && !plain.join("assets/fonts").exists(),
+        "a document with no equation in it carried the math stylesheet and its faces"
+    );
+}
+
 /// The ceiling on a PDF page, and what a document past it comes out as. Cut at the ceiling, a document a little over is one full sheet and a mostly blank one — which is the blank paper a reader meets and cannot explain. Divided, every sheet is full and the last ends at the last line. Both desktops ask it, so both desktops run this.
 #[test]
 fn a_document_taller_than_a_pdf_page_is_divided_into_equal_sheets() {

@@ -466,6 +466,16 @@ pub(crate) fn write_exported_page(
     fs::write(folder.join(EXPORTED_PAGE_STYLESHEET), reading_mode_css())
         .map_err(|error| error.to_string())?;
     let markup = copy_page_pictures(&export.markup, &assets, source_dir);
+    // Only where there is an equation to spend them on: the stylesheet and its twenty faces come to 283,127 bytes, and the reading stylesheet carries no math rule at all. The page names them off the same reading of the markup, so what is copied and what is named can never disagree.
+    if markup_has_math(&markup) {
+        let faces = folder.join(EXPORTED_PAGE_MATH_FONTS_FOLDER);
+        fs::create_dir_all(&faces).map_err(|error| error.to_string())?;
+        fs::write(folder.join(EXPORTED_PAGE_MATH_STYLESHEET), KATEX_CSS)
+            .map_err(|error| error.to_string())?;
+        for (name, bytes) in KATEX_FONTS {
+            fs::write(faces.join(name), bytes).map_err(|error| error.to_string())?;
+        }
+    }
     let page = exported_page_document(
         &export.theme,
         &export.appearance,
