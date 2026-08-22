@@ -163,7 +163,7 @@ function saveActiveDocument() {
     if (activeDocumentPath() !== path || !isDocumentDirty(path)) return;
     flushSourceUpdate();
     if (isMacPlatform && activeDocumentIsUntitled() && saveButton) {
-      // A menu with nothing in it would leave Save doing nothing at all, so the window opens as it always did.
+      // A menu with nothing in it would leave Save doing nothing at all, so the window opens instead.
       if (openSaveFormatMenu(saveButton, (ext) => send({ command: 'saveDocument', format: ext }))) return;
     }
     send({ command: 'saveDocument' });

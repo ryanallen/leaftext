@@ -597,7 +597,7 @@ fn pick_save_path(current: &Path, format: Option<&str>) -> Option<PathBuf> {
     for (label, extensions) in &offer.filters {
         dialog = dialog.add_filter(*label, extensions);
     }
-    // Last, so it never names a bare file: a reader who clears the ending still gets the format above it.
+    // Last, so Windows names a bare file off the format above it rather than off this row.
     dialog.add_filter("All files", &["*"]).save_file()
 }
 

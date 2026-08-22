@@ -3536,7 +3536,7 @@ flowchart TD
 
 /// A save window opens with rows and a suggested name, and the window itself cannot be reached from here — so this is the whole of what is decided before one opens.
 ///
-/// The two answers are two platforms. Windows is asked nothing beforehand and keeps every row as its dropdown. A Mac shows no format at all, so the page asks first and the answer arrives here: one row, and a name already ending in it, which is also the ending AppKit appends to a name the reader clears.
+/// The two answers are two platforms. Windows is asked nothing beforehand and keeps every row as its dropdown. A Mac shows no format at all, so the page asks first and the answer arrives here: one row, and a name already ending in it.
 #[test]
 fn save_window_offers_one_format_once_the_reader_has_picked_one() {
     let unasked = save_window_offer(DIAGRAM_EXPORT_FORMATS, None, "README-diagram");

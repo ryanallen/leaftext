@@ -57,7 +57,7 @@ The **+** beside Open in the app bar starts a blank document in a new tab. The h
 
 - It opens in the reading view, whose [padlock](#the-padlock) is turned off for you, with the caret on the first line — there is nothing to click before you type. `Enter` starts the next paragraph, as it does anywhere else in the reading view.
 - It has **no file** yet. The tab is called *Untitled* (*Untitled 2*, and so on, when one is already open), and nothing reaches your folders until you say so. Closing the window with words in it keeps them in the [saved session](05-settings.md#unsaved-edits) rather than losing them, and the next launch puts the note back under the same name with its dot lit; a note you never typed into does not come back, because there is nothing in it to keep.
-- The first **Save** opens your operating system's Save dialog: choose a folder and a name, and from then on it saves like any other document. Close the dialog without choosing and nothing is written.
+- The first **Save** opens your operating system's Save dialog: choose a folder and a name, and from then on it saves like any other document. On Windows that dialog lists every format the app reads; on a Mac it shows none of them, so a short menu asks which one first and the dialog then suggests a name already ending in it. Close the dialog without choosing and nothing is written.
 - Once it is saved, the tab, the window title, and [Recent files](02-navigation.md#recent-files) all take the real name, and you can keep typing — the padlock is a setting, not something the new name resets.
 
 ## Writing in the page
@@ -269,7 +269,7 @@ The sheet is the whole window, so its header stands in for the app bar while it 
 
 ### Export
 
-**Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes, offering Markdown, PNG and WebP there: the ending on the name you give is the format it writes. A quiet note in the bottom-right corner names the file when it is written, and the name is a press that opens it. The same button is in the corner of every [drawn diagram](01-rendering.md#mermaid-diagrams) in a page, with no need to open this sheet and with the padlock shut.
+**Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes: on Windows the save window offers Markdown, PNG and WebP and the ending on the name you give is the format it writes, and on a Mac a short menu asks first, since that window shows none of them. A quiet note in the bottom-right corner names the file when it is written, and the name is a press that opens it. The same button is in the corner of every [drawn diagram](01-rendering.md#mermaid-diagrams) in a page, with no need to open this sheet and with the padlock shut.
 
 - **Markdown** — the Mermaid text in a `mermaid` fence, as a document of its own.
 - **PNG** — the drawing as a picture, at twice life size, on the page color behind it. The page hands the host raw pixels and the host writes the file.
@@ -369,7 +369,7 @@ Saving is always explicit.
 
 - With no unsaved changes there is no save control at all. From your first keystroke, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-floating-toolbar) and the tab shows a dot beside its name — typing in the page counts, with nothing clicked out of. Take that typing back to where it started and both go out again.
 - Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. Whatever you are typing goes in first, so what is written is the words on screen. The button and dot clear on success.
-- A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything.
+- A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything — and on a Mac which format, since that dialog shows none.
 - Closing the window does not save, and does not throw the edits away either: they travel in the [saved session](05-settings.md#example) and are back, with the dot, at the next launch. Only the close carries them — a window left open writes nothing of what you have typed.
 - A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
 - A file is written in the [encoding it was read in](01-rendering.md#file-encodings). A UTF-16 document stays UTF-16; a file with no byte order mark does not gain one.

@@ -533,7 +533,7 @@ pub(super) enum DiagramExportFile {
     Unoffered,
 }
 
-/// Every format a diagram can be written as: the words the save window shows, and the endings they name. The window lists them in this order and Windows names a file with no ending off the first, so the order is the order the app has always offered them in. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else.
+/// Every format a diagram can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first, so the order is load-bearing. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else.
 pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &[&str])] = &[
     ("Markdown", &["md"]),
     ("PNG image", &["png"]),
@@ -557,7 +557,7 @@ pub(crate) struct SaveWindowOffer {
 
 /// A save window's own arithmetic, with the window left outside so this much can be tested: every format it could offer, the one the reader has already picked, and the stem its suggested name is built on.
 ///
-/// With no answer the window keeps every row and suggests the first format's ending. Windows draws those rows as a dropdown and asks there, so the window is the whole question. A Mac panel throws every label away and permits all the endings at once, so nothing there says what is about to be written — it is asked before the window opens and arrives here with the answer, leaving one row and a name already ending in it, which is also the ending AppKit appends to a name the reader clears.
+/// With no answer the window keeps every row and suggests the first format's ending. Windows draws those rows as a dropdown and asks there, so the window is the whole question. A Mac panel throws every label away and permits all the endings at once, so nothing there says what is about to be written — it is asked before the window opens and arrives here with the answer, leaving one row and a name already ending in it, which is the one ending that panel has to work from.
 ///
 /// A format no row names leaves every row standing, so a window always offers something a reader can save.
 pub(crate) fn save_window_offer(

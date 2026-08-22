@@ -203,7 +203,7 @@ Key `IpcCommand` variants include:
 | `exitCodeView`         | Toggle back from the code view to the rendered reading view |
 | `spliceSource`         | Debounced code-view edit, as the range it replaced: offset, length removed, text inserted, plus the buffer's new length so the host can prove the two copies still agree |
 | `updateSource`         | The whole buffer. Used for the first send, and to resynchronize if a `spliceSource` length check ever disagrees |
-| `saveDocument`         | The green [Save](../01-features/07-editing.md#save) button or `Ctrl+S` / `Cmd+S`: write the edit buffer to disk. A buffer with no file yet goes through the OS Save dialog first |
+| `saveDocument`         | The green [Save](../01-features/07-editing.md#save) button or `Ctrl+S` / `Cmd+S`: write the edit buffer to disk. A buffer with no file yet goes through the OS Save dialog first, and on a Mac carries the format the page asked for under the button, since that panel shows none |
 | `setCodeIntelEnabled`  | The [typing help](../01-features/07-editing.md#typing-help) wand on the code view's toolbar: Monaco's IntelliSense on or off |
 | `codeCompleteNotes`    | Typing `[[` in the code view: list the notes it can complete to |
 | `codeCompleteHeadings` | Typing `[[note#` (that note's headings) or `](#` (the open document's anchors) |
@@ -218,7 +218,7 @@ Key `IpcCommand` variants include:
 | `toggleTask`           | A reading-view [task checkbox](../01-features/07-editing.md#inline-editing-the-reading-view) click: flip the Nth `[ ]`/`[x]` marker |
 | `undoEdit`             | The [Undo](../01-features/07-editing.md#undo) button or `Ctrl+Z` / `Cmd+Z`: revert the most recent reading-view edit |
 | `redoEdit`             | The [Redo](../01-features/07-editing.md#undo) button, `Ctrl+Y` or `Ctrl+Shift+Z`: bring back the reading-view edit the last undo displaced |
-| `pickDiagramPath`      | [Export](../01-features/07-editing.md#export) pressed on a diagram, before anything is drawn: the host opens the save window carrying every format and answers with the path, against the token the page kept. The ending on that path is what the page then encodes, so exactly one picture is ever made |
+| `pickDiagramPath`      | [Export](../01-features/07-editing.md#export) pressed on a diagram, before anything is drawn: the host opens the save window and answers with the path, against the token the page kept. On Windows the window carries every format; on a Mac it carries the one the page asked for beforehand, since that panel shows none. The ending on the answered path is what the page then encodes, so exactly one picture is ever made |
 | `exportDiagram`        | The file itself, once `pickDiagramPath` has answered: Markdown arrives as text, a picture as base64 pixels with its width and height, and the host encodes it (`src/png.rs`) and writes it to the path that came with it. No window opens here |
 | `search`               | Library search box query, over the active vault's text |
 | `logError`             | Anything the page threw: `window.onerror`, a rejected promise, or a `console.error`, on its way to the log file. Carries how many times that same text has been seen, because `journal.js` collapses a repeat rather than sending every one |
