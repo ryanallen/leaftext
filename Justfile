@@ -185,6 +185,14 @@ check-site-boot:
 check-scratch-names:
     node scripts/check-scratch-names.mjs
 
+# Fail on a host-side success growl that builds a value into its own sentence, and on the
+# page's success call written anywhere but the one file that owns it. A path composed into
+# the words reaches the reader as words, where the same path handed over on its own is a
+# press that opens the file just written — which is the difference the diagram export
+# shipped for as long as it existed, in the same box the saved page draws as a press.
+check-growl-words:
+    node scripts/check-growl-words.mjs --check
+
 # Self-test the public release on a fixture that runs nothing: the order it goes in, and
 # what a failed gate, a plan tree that will not hold still, a clean tree or a wrong
 # version never reaches. Offline, and it touches no repository.
@@ -400,7 +408,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-growl-words check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
