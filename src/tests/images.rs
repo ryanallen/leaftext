@@ -235,6 +235,29 @@ fn keeps_explicit_image_title_over_alt_text() {
     );
 }
 
+/// The Insert image window and the reading view read one table, so a picture that can be picked can be drawn and a picture that can be drawn can be picked. They used to keep separate lists and disagreed on two endings.
+#[test]
+fn the_insert_image_window_offers_exactly_what_the_reading_view_draws() {
+    assert_eq!(
+        drawable_image_extensions(),
+        vec!["apng", "avif", "bmp", "gif", "ico", "jfif", "jpeg", "jpg", "png", "svg", "webp",]
+    );
+
+    for ending in drawable_image_extensions() {
+        assert!(
+            is_local_image_path(Path::new(&format!("picture.{ending}"))),
+            "the window offers .{ending} and the view will not draw it"
+        );
+    }
+
+    // A JPEG under the name Windows used to give it, which is the whole reason this table gained an ending.
+    assert_eq!(
+        local_image_mime_type(Path::new("scan.jfif")),
+        local_image_mime_type(Path::new("scan.jpg"))
+    );
+    assert!(!is_local_image_path(Path::new("archive.zip")));
+}
+
 #[test]
 fn changed_image_files_refresh_without_a_document_re_render() {
     // Only real image files take the refresh path; a changed .md is a document reload, and a stray file is neither.

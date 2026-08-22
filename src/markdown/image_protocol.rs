@@ -207,22 +207,37 @@ pub fn is_local_image_path(path: &Path) -> bool {
     local_image_mime_type(path).starts_with("image/")
 }
 
+/// Every picture the reading view can draw: the ending, and the type the web view is handed with the bytes. The Insert image window reads the same table, which is why an ending lives here and nowhere else.
+pub(crate) const DRAWABLE_IMAGE_TYPES: &[(&str, &str)] = &[
+    ("apng", "image/apng"),
+    ("avif", "image/avif"),
+    ("bmp", "image/bmp"),
+    ("gif", "image/gif"),
+    ("ico", "image/x-icon"),
+    ("jfif", "image/jpeg"),
+    ("jpeg", "image/jpeg"),
+    ("jpg", "image/jpeg"),
+    ("png", "image/png"),
+    ("svg", "image/svg+xml"),
+    ("webp", "image/webp"),
+];
+
+/// The endings the Insert image window offers, off the same table — so it can neither offer a picture the reading view will not draw nor hide one it would.
+pub fn drawable_image_extensions() -> Vec<&'static str> {
+    DRAWABLE_IMAGE_TYPES
+        .iter()
+        .map(|(ending, _)| *ending)
+        .collect()
+}
+
 pub(crate) fn local_image_mime_type(path: &Path) -> &'static str {
-    match path
-        .extension()
+    path.extension()
         .and_then(|extension| extension.to_str())
         .map(str::to_ascii_lowercase)
-        .as_deref()
-    {
-        Some("apng") => "image/apng",
-        Some("avif") => "image/avif",
-        Some("bmp") => "image/bmp",
-        Some("gif") => "image/gif",
-        Some("ico") => "image/x-icon",
-        Some("jpg" | "jpeg") => "image/jpeg",
-        Some("png") => "image/png",
-        Some("svg") => "image/svg+xml",
-        Some("webp") => "image/webp",
-        _ => "application/octet-stream",
-    }
+        .and_then(|ending| {
+            DRAWABLE_IMAGE_TYPES
+                .iter()
+                .find(|(candidate, _)| *candidate == ending)
+        })
+        .map_or("application/octet-stream", |(_, mime)| *mime)
 }

@@ -369,7 +369,7 @@ Saving is always explicit.
 
 - With no unsaved changes there is no save control at all. From your first keystroke, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-floating-toolbar) and the tab shows a dot beside its name — typing in the page counts, with nothing clicked out of. Take that typing back to where it started and both go out again.
 - Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. Whatever you are typing goes in first, so what is written is the words on screen. The button and dot clear on success.
-- A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything — and on a Mac which format, since that dialog shows none.
+- A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything — and on a Mac which format, since that dialog shows none. That menu opens under the **Save** button whichever way you asked, so the keyboard shortcut and the button land in the same place.
 - Closing the window does not save, and does not throw the edits away either: they travel in the [saved session](05-settings.md#example) and are back, with the dot, at the next launch. Only the close carries them — a window left open writes nothing of what you have typed.
 - A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
 - A file is written in the [encoding it was read in](01-rendering.md#file-encodings). A UTF-16 document stays UTF-16; a file with no byte order mark does not gain one.

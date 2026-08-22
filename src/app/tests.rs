@@ -3575,6 +3575,64 @@ fn save_window_offers_one_format_once_the_reader_has_picked_one() {
     assert_eq!(unknown.name, "README-diagram.md");
 }
 
+/// What the three windows carrying an `All files` row open with, on both platforms, since neither window can be opened from a test.
+///
+/// A Mac panel throws every label away and permits only the endings it is handed, so that row arrives there as an ending spelled `*` and lets through nothing but a file actually named `note.*`. Each window therefore says the one thing it can honestly say instead.
+#[test]
+fn each_window_offers_what_its_platform_can_honestly_read() {
+    // Open can hand back anything, because an ending the app does not know renders as Markdown. So a Mac gets no rows at all and rfd never calls the setter, which leaves the panel permitting every file.
+    assert!(
+        open_window_filters(true).is_empty(),
+        "Open on a Mac offered a row again, which is the panel permitting only what that row names"
+    );
+
+    // The first save of a note with no file keeps its one row on a Mac, because that is the ending the panel appends to a bare name — the reader was asked which format before the window opened.
+    let readable: Vec<(&'static str, &'static [&'static str])> = DocumentFormat::ALL
+        .iter()
+        .map(|format| (format.display_name(), format.extensions()))
+        .collect();
+    let offer = save_window_offer(&readable, Some("yaml"), "Untitled");
+    assert_eq!(offer.name, "Untitled.yaml");
+    assert_eq!(
+        save_window_filters(&offer, true),
+        vec![("YAML", vec!["yaml", "yml"])],
+        "the Mac save window lost the format the reader picked, or kept a row that permits no real file"
+    );
+
+    // Insert image keeps its endings on a Mac, off the one table the reading view draws from: permitting everything there would be the same lie the other way round, since a picked file the view cannot draw becomes the broken-image mark.
+    assert_eq!(
+        image_window_filters(true),
+        vec![("Images", drawable_image_extensions())],
+        "the Mac Insert image window offers something other than exactly what the reading view draws"
+    );
+
+    // Windows draws the rows as a dropdown, where `All files` becomes the spec `*.*` and does what it says. All three keep it, and it goes last so a bare name is never given its ending.
+    for (window, filters) in [
+        ("Open", open_window_filters(false)),
+        ("Save", save_window_filters(&offer, false)),
+        ("Insert image", image_window_filters(false)),
+    ] {
+        assert_eq!(
+            filters.last(),
+            Some(&("All files", vec!["*"])),
+            "{window} on Windows lost the row a reader presses to see everything, or stopped keeping it last"
+        );
+    }
+    assert_eq!(
+        open_window_filters(false).first(),
+        Some(&("Documents", all_document_extensions())),
+        "Open on Windows stopped leading with every readable ending at once"
+    );
+
+    // The diagram export window never carried the row and must not gain one: it offers the three formats a diagram can be written as and nothing else, on both platforms.
+    for (_, endings) in DIAGRAM_EXPORT_FORMATS {
+        assert!(
+            !endings.contains(&"*"),
+            "the diagram export window gained a row that permits no real file on a Mac"
+        );
+    }
+}
+
 /// An address only this test uses, so a running copy of the app is never the thing answering — a named pipe on Windows, a socket file elsewhere.
 fn test_pipe_address(name: &str) -> String {
     #[cfg(windows)]

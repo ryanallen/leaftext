@@ -21,10 +21,11 @@ use leaftext::{
     cloud_folders_to_register, code_intel_headings_script, code_intel_hover_script,
     code_intel_lint_script, code_intel_notes_script, code_view_fetch_script, code_view_payload,
     config_file_path, corpus_note_items, create_repo_on_github, diagram_path_picked_script,
-    document_headings, document_pager_html, encode_rgba, encode_rgba_paletted, error_toast_script,
-    failure_message, favorites_missing_script, file_deleted_script, file_written_notice_script,
-    filter_hints_script, find_note, folder_note_items, folder_note_names, fragment_scroll_script,
-    git_tooling, glossary_failed_script, glossary_sheet_script, graph_script, image_picked_script,
+    document_headings, document_pager_html, drawable_image_extensions, encode_rgba,
+    encode_rgba_paletted, error_toast_script, failure_message, favorites_missing_script,
+    file_deleted_script, file_written_notice_script, filter_hints_script, find_note,
+    folder_note_items, folder_note_names, fragment_scroll_script, git_tooling,
+    glossary_failed_script, glossary_sheet_script, graph_script, image_picked_script,
     image_refresh_script, init_vault_repo, initial_document_exts_script,
     initial_document_formats_script, initial_settings_script, initial_state_script,
     initial_update_script, initial_vaults_script, initial_version_script, inspect_vault_repo,
@@ -569,15 +570,13 @@ fn show_startup_error(message: &str) {
         .show();
 }
 
-/// The Open dialog: one filter per format plus a combined one, both derived from the format table so the picker can't offer or omit a format the renderer has.
+/// The Open dialog: one filter per format plus a combined one, both derived from the format table so the picker can't offer or omit a format the renderer has — and on a Mac no filters at all, so every file is reachable. `open_window_filters` holds the reasoning and the test.
 fn pick_document_file() -> Option<PathBuf> {
-    let mut dialog = FileDialog::new()
-        .set_title("Open Document")
-        .add_filter("Documents", &all_document_extensions());
-    for format in DocumentFormat::ALL {
-        dialog = dialog.add_filter(format.display_name(), format.extensions());
+    let mut dialog = FileDialog::new().set_title("Open Document");
+    for (label, extensions) in open_window_filters(cfg!(target_os = "macos")) {
+        dialog = dialog.add_filter(label, &extensions);
     }
-    dialog.add_filter("All files", &["*"]).pick_file()
+    dialog.pick_file()
 }
 
 /// Where a document that has never had a file goes. The same filters as Open, off the same table, with the stem it has been wearing as the suggestion — so the first save of a new document is a Save As and nothing is written until someone has said where. With a format named the window carries that one alone, because a Mac panel shows none of them and the page has already asked.
@@ -594,11 +593,10 @@ fn pick_save_path(current: &Path, format: Option<&str>) -> Option<PathBuf> {
     let mut dialog = FileDialog::new()
         .set_title("Save Document As")
         .set_file_name(&offer.name);
-    for (label, extensions) in &offer.filters {
-        dialog = dialog.add_filter(*label, extensions);
+    for (label, extensions) in save_window_filters(&offer, cfg!(target_os = "macos")) {
+        dialog = dialog.add_filter(label, &extensions);
     }
-    // Last, so Windows names a bare file off the format above it rather than off this row.
-    dialog.add_filter("All files", &["*"]).save_file()
+    dialog.save_file()
 }
 
 /// Where an exported diagram goes. With no format named the window carries all three and the page encodes whatever the chosen name ends in; with one, it carries that one alone, because a Mac panel shows no format at all and the page has already asked.
@@ -620,18 +618,13 @@ fn pick_export_path_titled(
     dialog.save_file()
 }
 
-/// The Insert image dialog. Filtered to what a web view can draw, since a document can only show what the page can.
+/// The Insert image dialog. Filtered off the same table the reading view draws from, since a document can only show what the page can. `image_window_filters` holds the reasoning and the test.
 fn pick_image_file() -> Option<PathBuf> {
-    FileDialog::new()
-        .set_title("Choose an image")
-        .add_filter(
-            "Images",
-            &[
-                "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "avif", "ico",
-            ],
-        )
-        .add_filter("All files", &["*"])
-        .pick_file()
+    let mut dialog = FileDialog::new().set_title("Choose an image");
+    for (label, extensions) in image_window_filters(cfg!(target_os = "macos")) {
+        dialog = dialog.add_filter(label, &extensions);
+    }
+    dialog.pick_file()
 }
 
 /// The New vault dialog: a folder, since a vault is a folder. Nothing is written into it — the app records the choice itself.

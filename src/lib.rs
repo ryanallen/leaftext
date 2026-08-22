@@ -16,8 +16,8 @@ pub(crate) use eml::*;
 mod theme;
 pub(crate) use markdown::*;
 pub use markdown::{
-    is_local_image_path, local_image_protocol_response, local_image_source_dir,
-    markdown_image_insert_destination,
+    drawable_image_extensions, is_local_image_path, local_image_protocol_response,
+    local_image_source_dir, markdown_image_insert_destination,
 };
 pub use theme::reading_mode_css;
 pub(crate) use theme::*;

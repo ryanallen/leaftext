@@ -586,6 +586,50 @@ pub(crate) fn save_window_offer(
     SaveWindowOffer { filters, name }
 }
 
+/// One row a file window opens with: the words it shows, then the endings it permits.
+pub(crate) type WindowFilter = (&'static str, Vec<&'static str>);
+
+/// The row that reads as "anything" — and only on Windows, where the rows are a dropdown and this one becomes the spec `*.*`. A Mac panel has no dropdown: it throws every label away, pours all the endings into one permitted list, and matches a name's ending against it, so this row arrives there as an ending spelled `*` and permits nothing but a file actually named `note.*`. Every window below therefore leaves it out on a Mac and says what it can honestly say instead.
+fn all_files_row() -> WindowFilter {
+    ("All files", vec!["*"])
+}
+
+/// What the Open window opens with. On a Mac, nothing at all: the app opens anything — a file whose ending it does not know renders as Markdown — so the honest permitted list is every file, and handing rfd no rows leaves the panel at its own default, which is exactly that. Windows keeps a row per format and the `All files` row above them all.
+pub(crate) fn open_window_filters(on_a_mac: bool) -> Vec<WindowFilter> {
+    if on_a_mac {
+        return Vec::new();
+    }
+    let mut filters = vec![("Documents", all_document_extensions())];
+    for format in DocumentFormat::ALL {
+        filters.push((format.display_name(), format.extensions().to_vec()));
+    }
+    filters.push(all_files_row());
+    filters
+}
+
+/// What the first save of a note with no file opens with: the rows `save_window_offer` decided, and the `All files` row on Windows only. This window keeps its rows on a Mac where Open drops them, because the panel appends its one permitted ending to a bare name — handing it none would take away the very format the reader was just asked for.
+pub(crate) fn save_window_filters(offer: &SaveWindowOffer, on_a_mac: bool) -> Vec<WindowFilter> {
+    let mut filters: Vec<WindowFilter> = offer
+        .filters
+        .iter()
+        .map(|(label, endings)| (*label, endings.to_vec()))
+        .collect();
+    if !on_a_mac {
+        // Last, so Windows names a bare file off the format above it rather than off this row.
+        filters.push(all_files_row());
+    }
+    filters
+}
+
+/// What the Insert image window opens with: the endings the reading view draws, and the `All files` row on Windows only. Permitting every file on a Mac would be the same lie pointing the other way, since a picked `.zip` becomes the broken-image mark.
+pub(crate) fn image_window_filters(on_a_mac: bool) -> Vec<WindowFilter> {
+    let mut filters = vec![("Images", drawable_image_extensions())];
+    if !on_a_mac {
+        filters.push(all_files_row());
+    }
+    filters
+}
+
 /// Turn what the page sent into the file it wants written.
 ///
 /// Its own function because the write itself is a disk call into a path a native window answered with, so this is the whole of the decision a test can reach.
