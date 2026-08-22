@@ -188,6 +188,11 @@ body {
   padding-right: var(--minimap-width);
 }
 
+/* The front page has nothing down its left, so the rail's reserve on the right alone leaves the column half a rail off center in the window somebody is looking at — 87 pixels of gap on the left against 171 on the right. Matching it on the left puts the column back in the middle of the window without moving the rail or narrowing the column. The docs reader is left out: it reserves a 264-pixel sidebar there. */
+body.front-page {
+  padding-left: var(--minimap-width);
+}
+
 .page {
   max-width: var(--content-width);
   margin: 0 auto;
@@ -695,6 +700,10 @@ body {
 :root[data-minimap='off'] body {
   padding-right: 0;
 }
+/* The front page reserves the rail on both sides, so both come back when it goes. */
+:root[data-minimap='off'] body.front-page {
+  padding-left: 0;
+}
 
 /* "Show library" hides the docs navigation (the sidebar and its mobile select). These elements only exist on the /docs reader; on the plain README site the selectors simply match nothing. */
 :root[data-library='off'] .docs-sidebar,
@@ -721,6 +730,9 @@ body {
 @media (max-width: 720px) {
   body {
     padding-right: 0;
+  }
+  body.front-page {
+    padding-left: 0;
   }
   .document-minimap {
     display: none;

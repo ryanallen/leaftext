@@ -238,6 +238,28 @@ if (!column) {
   );
 }
 
+// The front page has nothing down its left, so the rail's reserve on the right alone leaves the reading column half a rail off center in the window a visitor is looking at — 87 pixels of gap on one side against 171 on the other. The two reserves are held to each other here: the page naming itself, the rule that matches, and the same number of states giving each one back. Nothing offline lays a page out, so the fault is invisible in the source of any one of those three read alone.
+const stylesheet = read('site/styles.css');
+const namesItself = /<body\b[^>]*\bclass="[^"]*\bfront-page\b/;
+if (!namesItself.test(read(FRONT_PAGE))) {
+  problems.push(`${FRONT_PAGE} no longer names its body 'front-page', so the stylesheet cannot tell it from the docs reader and its column goes back to sitting half a rail left of center`);
+}
+if (namesItself.test(read('docs/index.html'))) {
+  problems.push("docs/index.html names its body 'front-page', which would give the docs reader a rail reserve on the left it already spends on its sidebar");
+}
+if (!/body\.front-page\s*\{\s*padding-left:\s*var\(--minimap-width\)/.test(stylesheet)) {
+  problems.push("site/styles.css no longer reserves the rail's width down the front page's left, so the column sits half a rail left of center in the window");
+}
+const givesRightBack = (stylesheet.match(/body\s*\{\s*padding-right:\s*0/g) || []).length;
+const givesLeftBack = (stylesheet.match(/body\.front-page\s*\{\s*padding-left:\s*0/g) || []).length;
+if (!givesRightBack) {
+  problems.push('site/styles.css no longer reclaims the rail reserve anywhere, so a page with no rail keeps a gap where it would have been');
+} else if (givesRightBack !== givesLeftBack) {
+  problems.push(
+    `site/styles.css gives the rail's right reserve back in ${givesRightBack} places and the front page's matching left reserve in ${givesLeftBack} — a state that reclaims one and not the other draws the column off center by half a rail`
+  );
+}
+
 /** Whether `.gitignore` refuses a path, by the folder rules it actually writes rather than by matching the whole name. */
 function gitIgnores(path) {
   const rules = readFileSync(join(root, '.gitignore'), 'utf8')
@@ -255,5 +277,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters`
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window`
 );
