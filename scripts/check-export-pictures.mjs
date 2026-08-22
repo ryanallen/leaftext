@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// A folder published as a static site used to arrive with every local picture drawn as the app's own broken mark, because the export copied documents and nothing else. What travels now is read off the render, and this holds that reading.
+// An export that copies documents and nothing else publishes a folder whose every local picture is drawn as the app's own broken mark: a `.png` beside a note is never even seen. What travels is read off the render instead, and this holds that reading.
 //
 //   node scripts/check-export-pictures.mjs   fail when the reading changes shape (`just verify`)
 //
