@@ -15,6 +15,7 @@ import { decorateAnchorLinks } from './anchors.js';
 import { decorateBlockquoteLines } from './blockquotes.js';
 import { installGlossary, installAutoGlossary } from './glossary.js';
 import { installLinkTooltip } from './link-tooltip.js';
+import { installPictureFallback } from './pictures.js';
 import { installSettings } from './settings.js';
 import { applySpeedReaderIfEnabled } from './speed-reader.js';
 
@@ -153,6 +154,8 @@ async function fetchDocument() {
 
 /** Everything a drawn document needs on the page, whether the publish baked it in or this script fetched and rendered it. */
 function decorate() {
+  // Every published picture is a WebP, so a browser too old to decode one draws a broken mark unless the page puts the address back to the PNG beside it. The listener goes on before the passes below and the sweep catches the pictures the publish baked into this page, which started loading before this module did.
+  installPictureFallback(content);
   // One README, so there is nothing either side of it: the renderer's waiting strip is a promise this page cannot keep, and it comes out.
   fillPager(content, null, null);
   decorateBlockquoteLines(content);

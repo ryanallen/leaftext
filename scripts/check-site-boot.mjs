@@ -1031,6 +1031,7 @@ const { setSilenceLimit, fetchWatched } = await import(pathToFileURL(join(root, 
 // The publish's own bake, run here rather than described: the page the front reader is booted over below is the page a visitor is served.
 const { bakeFrontPage } = await import(pathToFileURL(join(root, 'scripts/site-assets.mjs')).href);
 const { fillPager } = await import(pagerModule);
+const { installPictureFallback } = await import(pathToFileURL(join(root, 'site/pictures.js')).href);
 
 check('a page naming no renderer', () => {
   const bare = standInPage('<html><head><title>Nothing</title></head><body></body></html>', 'https://leaf.test/');
@@ -1101,6 +1102,30 @@ check('the pager takes the strip out', () => {
   bare.innerHTML = '<p>No strip in this one.</p>';
   fillPager(bare, { href: '#/one', label: 'One' }, null);
   want(bare.innerHTML === '<p>No strip in this one.</p>', 'a document the renderer left no strip in was written into anyway');
+});
+
+check('a picture a browser cannot decode falls back to the PNG beside it', () => {
+  const document = globalThis.document;
+  const content = document.createElement('article');
+  content.innerHTML = '<p><img src="imgs/one.webp" alt="one"><img src="imgs/two.webp" alt="two"><img src="imgs/three.png" alt="three"></p>';
+  const [one, two, three] = content.querySelectorAll('img');
+  // A stand-in element ends  with no width, which is exactly the state a picture the browser could not decode is left in; a picture that drew has a width.
+  two.naturalWidth = 800;
+  installPictureFallback(content);
+  want(one.getAttribute('src') === 'imgs/one.png', 'a picture that was already standing there failed and was left naming the WebP, which is the broken frame on the front page the publish bakes');
+  want(two.getAttribute('src') === 'imgs/two.webp', 'a picture that drew perfectly was moved onto the PNG, so every reader now fetches the heavier set');
+  want(three.getAttribute('src') === 'imgs/three.png', 'a picture that was never a WebP was rewritten');
+  // The other half: one that fails after the sweep has run, which is every picture on a page the reader drew itself.
+  two.naturalWidth = 0;
+  two.dispatchEvent(leafEvent('error', { target: two }));
+  want(two.getAttribute('src') === 'imgs/two.png', 'a picture that failed after the page was drawn kept its WebP address');
+  // The PNG failing too must not send it round again.
+  one.setAttribute('src', 'imgs/one.webp');
+  one.dispatchEvent(leafEvent('error', { target: one }));
+  want(one.getAttribute('src') === 'imgs/one.webp', 'a picture already put back once was swapped again, so a folder with no PNG loops');
+  // The docs reader draws every route into one article, so the second call must sweep without stacking a second listener.
+  installPictureFallback(content);
+  want((content.listeners.get('error') || []).length === 1, 'the listener went on twice, so one failure is answered twice');
 });
 
 // ---- phase 2: both entry readers --------------------------------------------
