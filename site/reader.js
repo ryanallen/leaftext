@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import { createLeaftext } from './leaftext-core.js';
+import { fetchWatched } from './fetches.js';
 import { fillPager } from './pager.js';
 import { initMinimap } from './minimap.js';
 import { buildOutline } from './outline.js';
@@ -20,9 +21,10 @@ import { applySpeedReaderIfEnabled } from './speed-reader.js';
 const content = document.getElementById('content');
 const statusEl = document.getElementById('status');
 
-// The renderer, loaded before anything is drawn. Every call below is behind main() having reached it.
+// The renderer. On a page the publish baked the document into it arrives after the words are already readable, so a glossary link pressed in that moment says so rather than throwing.
 let leaf = null;
 const renderDocument = (text, path) => {
+  if (!leaf) throw new Error('the reader has not arrived yet');
   const drawn = leaf.render(text, path);
   if (!drawn) throw new Error('the renderer refused ' + path);
   return drawn;
@@ -143,13 +145,61 @@ function scrollToHash() {
 async function fetchDocument() {
   for (const ext of leaf.formats) {
     const path = './README.' + ext;
-    const res = await fetch(path, { cache: 'no-cache' });
+    const res = await fetchWatched(path, { cache: 'no-cache' });
     if (res.ok) return { text: await res.text(), path };
   }
   throw new Error('no README this reader can open beside this page');
 }
 
+/** Everything a drawn document needs on the page, whether the publish baked it in or this script fetched and rendered it. */
+function decorate() {
+  // One README, so there is nothing either side of it: the renderer's waiting strip is a promise this page cannot keep, and it comes out.
+  fillPager(content, null, null);
+  decorateBlockquoteLines(content);
+  // A collapsed outline (table of contents) built from the document's headings, tucked just under the title. Built before the anchor pass so its link-only entries stay out of the block-numbering scheme.
+  buildOutline(content, { label: 'Outline' });
+  if (statusEl) statusEl.hidden = true;
+
+  // The document's own title, off the heading it drew. The publish does not know a reader's tab, and this is the same answer the renderer gives.
+  const heading = content.querySelector('h1');
+  if (heading) document.title = heading.textContent.trim().slice(0, 80);
+
+  // Render Mermaid diagrams and math (async; the minimap's resize observer picks up height changes), build the minimap, then jump to any #anchor. Run over every format: a document with no diagram and no fence in it costs each of these one query that finds nothing.
+  renderMermaidDiagrams();
+  renderMath();
+  highlightCode(content, HLJS_SRC);
+  decorateCodeBlocks(content);
+  decorateAnchorLinks(content);
+  // Clear any stale processed flag before anchoring the freshly rendered document (the settings boot may have run against this element while it was still empty), the same as the docs viewer does on every render.
+  delete content.dataset.speedReaderProcessed;
+  applySpeedReaderIfEnabled(content);
+  initMinimap(content);
+  scrollToHash();
+}
+
+/** The glossary's own pass, which needs the renderer: every word the glossary defines becomes a link to its entry. The glossary is a published doc page, so it is under docs/, not beside this one. */
+function linkGlossaryTerms() {
+  installAutoGlossary({
+    contentEl: content,
+    render: renderDocument,
+    glossaryUrl: 'docs/GLOSSARY.md',
+  });
+}
+
 async function main() {
+  // The publish writes the README's words straight into this page, so a cold visit reads the document out of the first response. The renderer then arrives as a decoration rather than as the thing the page is waiting on — and a connection that never delivers it costs the glossary links, not the document. A page served without them (a local checkout) draws the way it always did.
+  if (content.childNodes.length) {
+    decorate();
+    createLeaftext()
+      .then((loaded) => {
+        leaf = loaded;
+        linkGlossaryTerms();
+      })
+      .catch((err) => {
+        console.error('The reader could not be loaded, so the glossary links are not drawn:', err);
+      });
+    return;
+  }
   try {
     leaf = await createLeaftext();
   } catch (err) {
@@ -165,34 +215,9 @@ async function main() {
 
     const drawn = renderDocument(text, path);
     content.innerHTML = drawn.html;
-    // One README, so there is nothing either side of it: the renderer's waiting strip is a promise this page cannot keep, and it comes out.
-    fillPager(content, null, null);
-    decorateBlockquoteLines(content);
-    // A collapsed outline (table of contents) built from the document's headings, tucked just under the title. Built before the anchor pass so its link-only entries stay out of the block-numbering scheme.
-    buildOutline(content, { label: 'Outline' });
-    if (statusEl) statusEl.hidden = true;
-
-    // The document's own title, which the renderer works out the same way the app's tab strip does.
-    if (drawn.title) document.title = drawn.title.slice(0, 80);
-
-    // Render Mermaid diagrams and math (async; the minimap's resize observer picks up height changes), build the minimap, then jump to any #anchor. Run over every format: a document with no diagram and no fence in it costs each of these one query that finds nothing.
-    renderMermaidDiagrams();
-    renderMath();
-    highlightCode(content, HLJS_SRC);
-    decorateCodeBlocks(content);
-    decorateAnchorLinks(content);
-    // Clear any stale processed flag before anchoring the freshly rendered document (the settings boot may have run against this element while it was still empty), the same as the docs viewer does on every render.
-    delete content.dataset.speedReaderProcessed;
-    applySpeedReaderIfEnabled(content);
-    initMinimap(content);
-    scrollToHash();
-
-    // Auto-link glossary terms after the page is displayed. The glossary is a published doc page, so it is under docs/, not beside this one.
-    installAutoGlossary({
-      contentEl: content,
-      render: renderDocument,
-      glossaryUrl: 'docs/GLOSSARY.md',
-    });
+    decorate();
+    // Auto-link glossary terms after the page is displayed.
+    linkGlossaryTerms();
   } catch (err) {
     showStatus(
       'Could not load the document (' +

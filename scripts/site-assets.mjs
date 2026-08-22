@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// What the published site serves beside its pages: the app's own renderer as a module, its document stylesheet, and the version both were built from.
+// What the published site serves beside its pages: the app's own renderer as a module, its document stylesheet, the version both were built from — and the front page with its document already written into it.
 //
 //   node scripts/site-assets.mjs           name every published path and say whether it is there
 //   node scripts/site-assets.mjs --write   build them out of web/dist into the site tree
 //
 // **Not one of these files is ever committed.** `.gitignore` refuses the folder they land in, so the publish builds them and the repository keeps its seventeen small readable files instead of a compiled module nobody can read a diff of. The publish workflow runs this script; `scripts/check-site.mjs` reads the table below, so a renamed output shows up offline as a page fetching a file nobody writes rather than as a blank document on the live site.
+//
+// **The front page is baked, never committed the same way.** The repository keeps it with an empty content element; `--write` fills that element in the workspace the deploy uploads, so a cold visitor reads the words out of the first response instead of after a 2.8 MB module and a second fetch. `scripts/check-site.mjs` refuses a committed copy that already holds a document, which is the only way a baked page could reach the tree.
 //
 // The other site rides on these too. Emptyguru has no Rust and no app source, so its pages name leaftext.com for exactly these paths — which works because GitHub Pages sends `access-control-allow-origin: *` on every asset. That is why the names here are a contract with another repository and not an implementation detail.
 
@@ -31,6 +33,31 @@ export const PUBLISHED = [MODULE_PATH, STYLES_PATH, VERSION_PATH];
 
 /** The build these are cut from. Not published itself — it is what `just build-web` leaves behind. */
 const BUILT_MODULE = join(root, 'web', 'dist', 'leaftext-core.wasm');
+
+/** The front page, and the document it draws: the publish writes the one into the other. */
+export const FRONT_PAGE = 'index.html';
+const FRONT_DOCUMENT = 'README.md';
+
+/** The empty element the front page leaves for its document. */
+const CONTENT_HOLDER = /(<article\b[^>]*\bid="content"[^>]*>)(\s*)(<\/article>)/;
+
+/** Whether a front page is still the shape the repository keeps: an empty holder waiting for a document. */
+export function frontPageIsEmpty(page) {
+  const found = CONTENT_HOLDER.exec(page);
+  return Boolean(found) && found[2].trim() === '';
+}
+
+/**
+ * The front page with its document already in it — what the deploy uploads, never what the repository holds.
+ *
+ * A cold visitor used to read nothing at all until a 2.8 MB module and a second fetch had both crossed the network, and a connection that stalled on either left them reading nothing for ever. Baked, the words are in the first response and the module is a decoration that arrives after.
+ */
+export function bakeFrontPage(page, drawn) {
+  if (!CONTENT_HOLDER.test(page)) throw new Error(`${FRONT_PAGE} has no empty content element to write the document into`);
+  const body = drawn && drawn.html ? drawn.html.trim() : '';
+  if (!body) throw new Error(`the renderer drew no ${FRONT_DOCUMENT} to write into ${FRONT_PAGE}`);
+  return page.replace(CONTENT_HOLDER, (_, open, __, close) => open + body + close);
+}
 
 /** The app version, read where the release path reads it. */
 export function appVersion() {
@@ -66,6 +93,15 @@ async function main() {
   if (!styles?.includes('data-leaf-theme')) fail("the built module handed over a stylesheet with none of the app's themes in it");
   if (!styles?.includes('--lt-background')) fail("the built module handed over a stylesheet with none of the app's tokens in it");
 
+  // The front page's own document, drawn here rather than in the reader's browser. Asked for before anything is written, the same as the module is: a page baked empty is the blank page this whole change exists to end.
+  let baked = null;
+  try {
+    baked = bakeFrontPage(readFileSync(join(root, FRONT_PAGE), 'utf8'), leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT));
+    if (frontPageIsEmpty(baked)) fail(`${FRONT_PAGE} came out of the bake with no document in it`);
+  } catch (error) {
+    fail(error.message);
+  }
+
   if (problems.length) {
     console.error('the site has nothing worth publishing:');
     for (const problem of problems) console.error(`  ${problem}`);
@@ -77,5 +113,7 @@ async function main() {
   writeFileSync(join(root, STYLES_PATH), styles);
   writeFileSync(join(root, VERSION_PATH), `${JSON.stringify({ version: appVersion() }, null, 2)}\n`);
 
-  for (const path of PUBLISHED) console.log(`wrote ${path}`);
+  writeFileSync(join(root, FRONT_PAGE), baked);
+
+  for (const path of [...PUBLISHED, FRONT_PAGE]) console.log(`wrote ${path}`);
 }

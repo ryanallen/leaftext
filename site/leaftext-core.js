@@ -11,6 +11,8 @@
 // Strings cross as bytes: write with `leaf_alloc`, read a little-endian `u32` length off the front of an answer, free both. Nothing else here is a protocol.
 // ---------------------------------------------------------------------------
 
+import { fetchWatchedStream } from './fetches.js';
+
 const RENDERER_META = 'leaftext-renderer';
 const MODULE_FILE = 'leaftext.wasm';
 
@@ -26,15 +28,16 @@ export function rendererBase(doc = document) {
 
 /** One loaded module, and the reads and writes across its memory. */
 async function load(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${url}`);
-  // Streaming compiles as the bytes arrive; a host serving the module as anything but `application/wasm` falls back to the whole buffer rather than failing.
-  let instance;
-  try {
-    ({ instance } = await WebAssembly.instantiateStreaming(response.clone(), {}));
-  } catch (error) {
-    ({ instance } = await WebAssembly.instantiate(await response.arrayBuffer(), {}));
-  }
+  // Through the watchdog, because this is the biggest thing either site waits on and a stalled connection here is the whole page: the deadline and its one retry cover the compile as well as the fetch, so a body that goes quiet halfway is asked for again rather than left hanging.
+  const instance = await fetchWatchedStream(url, async (response) => {
+    if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${url}`);
+    // Streaming compiles as the bytes arrive; a host serving the module as anything but `application/wasm` falls back to the whole buffer rather than failing.
+    try {
+      return (await WebAssembly.instantiateStreaming(response.clone(), {})).instance;
+    } catch (error) {
+      return (await WebAssembly.instantiate(await response.arrayBuffer(), {})).instance;
+    }
+  });
   const api = instance.exports;
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();

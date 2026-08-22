@@ -10,7 +10,7 @@ import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeLink } from '../site/link-tooltip.js';
 import { discoveryFiles } from './seo-gen.mjs';
-import { ASSET_DIR, MODULE_PATH, PUBLISHED } from './site-assets.mjs';
+import { ASSET_DIR, FRONT_PAGE, MODULE_PATH, PUBLISHED, bakeFrontPage, frontPageIsEmpty } from './site-assets.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -22,9 +22,9 @@ const OPTIONAL = new Set([
   'README.xml', // the front page reads a TEI README if one is served instead
 ]);
 
-// A fetched document, and the glossary the sheet and the auto-linker load.
+// A fetched document, and the glossary the sheet and the auto-linker load. Every page fetch goes through the watchdog in site/fetches.js, so the name is read with its ending open: a path stopped being checked once, when the plain `fetch` became `fetchWatched`.
 const PATTERNS = [
-  /fetch\(\s*'([^']+)'/g,
+  /fetch\w*\(\s*'([^']+)'/g,
   /glossaryUrl:\s*'([^']+)'/g,
   /glossaryUrl:\s*\[([^\]]+)\]/g,
 ];
@@ -102,7 +102,7 @@ for (const [name, urls] of advertised) {
   }
 }
 
-// An entry page answers with a loading shell, so it has to name its own Markdown twice: in the head for a machine, in a `noscript` block for a body read without the script. An AI given the shell and neither guessed at a hostname that does not exist and gave up.
+// An entry page answers with a shell, so it has to name its own Markdown twice: in the head for a machine, in a `noscript` block for a body read without the script. An AI given the shell and neither guessed at a hostname that does not exist and gave up.
 const INDEXES = ['llms.txt', 'llms-full.txt'];
 for (const page of PAGES) {
   const html = read(page);
@@ -115,7 +115,9 @@ for (const page of PAGES) {
     if (!alternates.some((href) => resolve(href) === index)) problems.push(`${page} has no alternate link to ${index}`);
   }
   const noscript = /<noscript>([\s\S]*?)<\/noscript>/.exec(html);
-  if (!noscript) problems.push(`${page} has no noscript block, so a reader without the script sees Loading… for ever`);
+  if (!noscript) problems.push(`${page} has no noscript block, so a reader without the script is handed a blank page`);
+  // A waiting line is a promise about a thing the page cannot see the end of: the connection it is waiting on may never finish and never fail, and then the line stands for ever over a page that is never drawn. The status element stays and speaks only when something failed.
+  if (/Loading/i.test(html.replace(/<!--[\s\S]*?-->/g, ''))) problems.push(`${page} carries a waiting line, which is a promise it cannot keep when a connection stalls — the status element speaks only when something failed`);
   const links = [...alternates, ...(noscript ? matches(noscript[1], /<a[^>]*\bhref="([^"]+)"/g) : [])];
   for (const href of links) {
     const file = resolve(href);
@@ -195,6 +197,22 @@ for (const page of PAGES) {
   }
 }
 
+// The front page is the one published file that is also a committed one: the repository keeps it empty and the publish writes the document into the workspace copy the deploy uploads. Both halves are read here, because a baked page committed by hand would go stale the moment the README changed and nobody would see it until a reader met yesterday's words.
+if (!frontPageIsEmpty(read(FRONT_PAGE))) {
+  problems.push(`${FRONT_PAGE} already holds a document — the publish bakes one into the copy it uploads, and a baked page in the tree serves whatever the README said the day somebody committed it`);
+} else {
+  const baked = bakeFrontPage(read(FRONT_PAGE), { html: '<h1 id="baked">Baked</h1><p>The words are in the first response.</p>' });
+  if (frontPageIsEmpty(baked)) problems.push(`the publish would upload ${FRONT_PAGE} with its content element still empty, which is the blank page a reader waits in front of`);
+  if (!baked.includes('The words are in the first response.')) problems.push(`the bake dropped the document it was handed, so ${FRONT_PAGE} would be published without it`);
+  let refused = false;
+  try {
+    bakeFrontPage(read(FRONT_PAGE), { html: '' });
+  } catch {
+    refused = true;
+  }
+  if (!refused) problems.push(`the publish would write ${FRONT_PAGE} over a document the renderer drew nothing for, and a page baked empty is worse than one that was never baked`);
+}
+
 // Nothing the publish writes may be a file somebody committed: a 2.7 MB compiled module and a generated stylesheet are a worse tree to work in than the drift they end.
 for (const path of PUBLISHED) {
   if (!gitIgnores(path)) problems.push(`.gitignore does not refuse ${path}, so a built file can enter the tree`);
@@ -227,5 +245,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore`
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills`
 );

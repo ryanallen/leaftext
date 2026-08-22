@@ -22,6 +22,8 @@
 // where `route` is the clean path under the docs folder with ".md" dropped and every other extension kept (how "#/<route>" addresses it) and `path` is the real file to fetch. They match unless a file/folder carries a numeric ordering prefix (see stripOrder), or the file is not Markdown.
 // ---------------------------------------------------------------------------
 
+import { fetchWatched } from './fetches.js';
+
 // The extensions this build was told the renderer reads, and the two patterns every check below is made of. Set once per load by the public entry; Markdown alone until then, which is what the fallbacks in the callers already assume.
 let documentPattern = /\.md$/i;
 
@@ -124,7 +126,7 @@ async function fromAutoindex() {
 
   const crawl = async (rel) => {
     const url = rel ? rel + '/' : './';
-    const res = await fetch(url, { cache: 'no-cache' });
+    const res = await fetchWatched(url, { cache: 'no-cache' });
     if (!res.ok) throw new Error('no listing at ' + url);
     const html = await res.text();
 
@@ -161,7 +163,7 @@ async function fromGitHub(repo) {
   if (!owner || !name) throw new Error('no repo configured for GitHub fallback');
 
   const api = `https://api.github.com/repos/${owner}/${name}/git/trees/${branch}?recursive=1`;
-  const res = await fetch(api, { headers: { Accept: 'application/vnd.github+json' } });
+  const res = await fetchWatched(api, { headers: { Accept: 'application/vnd.github+json' } });
   if (!res.ok) throw new Error('GitHub API ' + res.status);
   const data = await res.json();
   if (!Array.isArray(data.tree)) throw new Error('unexpected GitHub response');

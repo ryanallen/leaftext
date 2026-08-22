@@ -82,10 +82,12 @@ jobs:
       - name: Build the browser modules
         run: just build-web
 
-      # The one table of what the site serves beside its pages. It refuses to
-      # write a module that does not render, which is what stops a broken build
-      # reaching the deploy step below.
-      - name: Write the renderer beside the pages
+      # The one table of what the site serves beside its pages, and the step
+      # that writes the front page's own document into it, so a cold visitor
+      # reads the words out of the first response. It refuses to write a module
+      # that does not render or a front page baked with nothing in it, which is
+      # what stops a broken build reaching the deploy step below.
+      - name: Write the renderer beside the pages and bake the front page
         run: node scripts/site-assets.mjs --write
 
       # Everything the build left behind. The pages fetch the copies written

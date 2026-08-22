@@ -193,7 +193,7 @@ body {
   padding: var(--content-pad);
 }
 
-/* Small loading / error note shown until the README is in. */
+/* The note a page shows when something failed. It says nothing while a document is on its way: a page cannot promise an end to a wait it cannot see the end of. */
 .status {
   color: var(--text-muted);
   font-size: 0.95em;

@@ -1026,6 +1026,10 @@ const module_ = standInModule();
 }
 
 const { rendererBase, createLeaftext } = await import(loader);
+// The deadline every page fetch now runs under. Its real limit is ten seconds of silence, which is a check that sits still for ten seconds, so the stall below sets its own and puts the real one back.
+const { setSilenceLimit } = await import(pathToFileURL(join(root, 'site/fetches.js')).href);
+// The publish's own bake, run here rather than described: the page the front reader is booted over below is the page a visitor is served.
+const { bakeFrontPage } = await import(pathToFileURL(join(root, 'scripts/site-assets.mjs')).href);
 const { fillPager } = await import(pagerModule);
 
 check('a page naming no renderer', () => {
@@ -1145,10 +1149,10 @@ async function settled(done, said) {
 let boots = 0;
 
 /** One reader, booted against its own page. Every import carries a fresh query, because Node keys its module cache on the resolved URL: without one a second boot returns the first instance, runs nothing, and reports a boot that never happened. */
-async function bootReader(file, page, address, files) {
-  const document = standInPage(read(page), address);
+async function bootReader(file, page, address, files, { wrap = null, markup = null } = {}) {
+  const document = standInPage(markup || read(page), address);
   const window = standInWindow(document, standInAddress(address));
-  const fetch = standInFetch(address, files);
+  const fetch = wrap ? wrap(standInFetch(address, files), address) : standInFetch(address, files);
   const module_ = standInModule();
   installGlobals({ document, window, fetch, wasm: standInWebAssembly(module_) });
   boots += 1;
@@ -1180,11 +1184,81 @@ await check('a boot that failed is not read as a pass', async () => {
   // The same reader, with no README anywhere: it catches the fault into its status line, and this is what stops that reading as a finished page.
   const page = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', { '/assets/leaftext/leaftext.wasm': 'a module nothing parses' });
   const status = page.document.getElementById('status');
-  // The page ships with its own waiting line standing, so what is waited for is that line being replaced — not that it is up, which it was before the boot began.
-  await settled(() => status.textContent !== 'Loading…', 'a boot with no document to draw never said so: its page still reads Loading…, which is a promise nothing is going to keep');
+  // The page ships with its status line hidden and empty, so what is waited for is that line speaking at all.
+  await settled(() => !status.hidden && status.textContent, 'a boot with no document to draw never said so: its page is still blank and silent, which is a reader who cannot tell a slow page from a dead one');
   want(!status.hidden, 'a reader that could not find a document said nothing');
   want(page.document.getElementById('content').childNodes.length === 0, 'a failed boot drew something anyway');
   want(status.textContent.includes('Could not load'), `the status line says ${JSON.stringify(status.textContent)}`);
+});
+
+/** A fetch that never answers for one path, which is the fault this whole ticket is about: a connection that neither finishes nor fails. */
+function stallsOn(path) {
+  return (base, address) => {
+    const fetch = async (url, options) => {
+      if (new URL(String(url), address).pathname === path) return new Promise(() => {});
+      return base(url, options);
+    };
+    fetch.asked = base.asked;
+    return fetch;
+  };
+}
+
+/** A fetch whose first attempt at one path dies, the way a dropped connection does, and whose second is answered. */
+function diesOnceOn(path) {
+  return (base, address) => {
+    let died = false;
+    const fetch = async (url, options) => {
+      if (new URL(String(url), address).pathname === path && !died) {
+        died = true;
+        throw new Error('the connection dropped');
+      }
+      return base(url, options);
+    };
+    fetch.asked = base.asked;
+    return fetch;
+  };
+}
+
+await check('a fetch that never answers ends as a sentence rather than a wait', async () => {
+  // Ten real seconds of silence is the live limit; this check sets its own and puts the real one back, which is the whole reason the limit is settable.
+  setSilenceLimit(30);
+  try {
+    const page = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', SITE_FILES, { wrap: stallsOn('/assets/leaftext/leaftext.wasm') });
+    const status = page.document.getElementById('status');
+    await settled(() => !status.hidden && status.textContent, 'a page whose renderer never answered is still sitting there silent, which is the fault: a reader cannot tell it from a slow one and only a refresh gets past it');
+    want(status.textContent.includes('could not be loaded'), `the status line says ${JSON.stringify(status.textContent)}`);
+    want(status.textContent.includes('stopped waiting'), 'the page gave up without saying the connection went quiet, so a reader is told the renderer is broken when it is the network');
+    want(page.document.getElementById('content').childNodes.length === 0, 'a page that drew nothing claimed to have drawn something');
+  } finally {
+    setSilenceLimit();
+  }
+});
+
+await check('a fetch that dies once is answered on the retry', async () => {
+  const page = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', SITE_FILES, { wrap: diesOnceOn('/assets/leaftext/leaftext.wasm') });
+  const { document, fetch } = page;
+  const content = document.getElementById('content');
+  await settled(() => content.childNodes.length > 0 && document.getElementById('status').hidden, 'a connection that dropped once and would have been answered the second time was never asked again, so the reader gave up on a page that was there');
+  want(content.textContent.includes('drawn first and edited in place'), "the retry drew a page without the README's own words in it");
+  want(fetch.asked().filter((path) => path === '/assets/leaftext/leaftext.wasm').length === 1, 'the module was asked for more than once after it answered, so the retry runs over a connection that did not fail');
+});
+
+await check('a front page baked at publish is read as drawn', async () => {
+  // What the publish uploads: the same markup, with the document already written into its content element. Nothing here is waited for, so nothing here can stall.
+  const baked = bakeFrontPage(read('index.html'), { html: drawnDocument(SITE_README, 'README.md').html });
+  const page = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', SITE_FILES, { markup: baked });
+  const { document, fetch } = page;
+  const content = document.getElementById('content');
+  want(content.textContent.includes('drawn first and edited in place'), 'the baked page lost the words the publish wrote into it');
+  await settled(() => content.querySelector('.document-outline'), 'the baked page was never decorated, so its words are there and nothing else is');
+  want(!fetch.asked().includes('/README.md'), 'the baked page fetched the README it was already holding, which is the second wait this change exists to remove');
+  want(document.getElementById('status').hidden, 'the baked page left a status line standing over a document it had already drawn');
+  want(document.title === 'Leaftext', `the browser tab reads ${JSON.stringify(document.title)}, not the document's own title`);
+  want(content.querySelector('.has-anchor-link'), 'no block on the baked page carries a gutter permalink, so the numbering pass did not run');
+  want(!content.querySelector('.docs-pager'), 'the baked page kept a Previous/Next strip, which is a promise a single-page site cannot keep');
+  want(document.querySelector('.document-minimap'), 'the baked page has no minimap rail');
+  // The renderer still arrives, and what it is for now is the glossary rather than the document: the auto-linker runs only once the module has answered.
+  await settled(() => fetch.asked().includes('/docs/GLOSSARY.md'), 'the renderer never reached the baked page, so the words the glossary defines would never be linked to their entries');
 });
 
 const docsPage = await check('the docs reader boots', async () => {

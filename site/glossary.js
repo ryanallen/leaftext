@@ -7,6 +7,8 @@
 // The host owns its own click handling, so this module does NOT register a document-wide listener. It returns `handleClick(event)`: call it first in the host's content click handler and bail out when it returns true.
 // ---------------------------------------------------------------------------
 
+import { fetchWatched } from './fetches.js';
+
 // The on-disk convention is GLOSSARY.md (like README.md). This is the comparison key only; the basename is lowercased before comparing, so a link to GLOSSARY.md or a legacy glossary.md both match.
 const GLOSSARY_FILE = 'glossary.md';
 
@@ -91,7 +93,7 @@ export function installGlossary({ glossaryUrl, render, onNavigate }) {
   function loadGlossaryHtml() {
     if (!loadPromise) {
       loadPromise = (async () => {
-        const res = await fetch(glossaryUrl, { cache: 'no-cache' });
+        const res = await fetchWatched(glossaryUrl, { cache: 'no-cache' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return render(await res.text(), glossaryUrl).html;
       })();
@@ -351,7 +353,7 @@ async function fetchGlossaryHtml(render, glossaryUrl) {
   for (const name of candidates) {
     let res;
     try {
-      res = await fetch(name, { cache: 'no-cache' });
+      res = await fetchWatched(name, { cache: 'no-cache' });
     } catch {
       continue;
     }

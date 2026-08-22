@@ -78,16 +78,13 @@
     <main class="page">
       <select class="docs-mobile-nav" id="mobileNav" aria-label="Documentation pages"></select>
       <article class="markdown-body" id="content" tabindex="-1"></article>
-      <p class="status" id="status">Loading…</p>
+      <!-- The status line speaks only when something failed. It carries no waiting
+           text: a page that cannot say when it will finish should not promise
+           that it will. -->
+      <p class="status" id="status" hidden></p>
       <!-- Nothing here is drawn when the script runs. Without it the page is
-           empty, so say where the text actually is; the style hides the
-           Loading… line that will never finish. -->
+           empty, so say where the text actually is. -->
       <noscript>
-        <style>
-          #status {
-            display: none;
-          }
-        </style>
         <p class="status">
           These pages are drawn from Markdown by a script. The full text of this one is
           <a href="README.md">README.md</a>. Every page of the documentation as Markdown:
