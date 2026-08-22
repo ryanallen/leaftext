@@ -188,7 +188,7 @@ body {
   padding-right: var(--minimap-width);
 }
 
-/* The front page has nothing down its left, so the rail's reserve on the right alone leaves the column half a rail off center in the window somebody is looking at — 87 pixels of gap on the left against 171 on the right. Matching it on the left puts the column back in the middle of the window without moving the rail or narrowing the column. The docs reader is left out: it reserves a 264-pixel sidebar there. */
+/* The front page has no left-hand chrome, so reserving the rail on the right alone leaves the column half a rail left of center. The docs reader is left out: it spends that side on its sidebar. */
 body.front-page {
   padding-left: var(--minimap-width);
 }
@@ -711,7 +711,8 @@ body.front-page {
   display: none;
 }
 @media (min-width: 901px) {
-  :root[data-library='off'] body {
+  /* Reclaiming the sidebar is the docs reader's alone; on the front page that side is the rail's reserve, and taking it draws the column off center. */
+  :root[data-library='off'] body:not(.front-page) {
     padding-left: 0;
   }
 }

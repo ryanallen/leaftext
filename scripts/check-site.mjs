@@ -238,7 +238,7 @@ if (!column) {
   );
 }
 
-// The front page has nothing down its left, so the rail's reserve on the right alone leaves the reading column half a rail off center in the window a visitor is looking at — 87 pixels of gap on one side against 171 on the other. The two reserves are held to each other here: the page naming itself, the rule that matches, and the same number of states giving each one back. Nothing offline lays a page out, so the fault is invisible in the source of any one of those three read alone.
+// The front page has no left-hand chrome, so the rail's reserve on the right alone leaves the reading column half a rail left of center in the window a visitor is looking at. The two reserves are held to each other here: the page naming itself, the rule that matches, the same number of states handing each one back, and no other rule taking the left one away on its own. Nothing offline lays a page out, so the fault is invisible in the source of any one of those read alone.
 const stylesheet = read('site/styles.css');
 const namesItself = /<body\b[^>]*\bclass="[^"]*\bfront-page\b/;
 if (!namesItself.test(read(FRONT_PAGE))) {
@@ -257,6 +257,16 @@ if (!givesRightBack) {
 } else if (givesRightBack !== givesLeftBack) {
   problems.push(
     `site/styles.css gives the rail's right reserve back in ${givesRightBack} places and the front page's matching left reserve in ${givesLeftBack} — a state that reclaims one and not the other draws the column off center by half a rail`
+  );
+}
+
+// A rule zeroing the body's left padding for something else — the docs reader reclaiming its sidebar — lands on the front page too and takes the rail's reserve with it, so the column goes off center again by whatever the reader last switched off.
+for (const [, whole] of stylesheet.matchAll(/^([^{}]*\bbody\b[^{}]*?)\{\s*padding-left:\s*0/gm)) {
+  // A selector reaches back over whatever comment sits above it, so the rule itself is the last line of the match.
+  const selector = whole.trimEnd().split('\n').pop().trim();
+  if (!/\bbody\b/.test(selector) || /front-page/.test(selector)) continue;
+  problems.push(
+    `site/styles.css zeroes the body's left padding for '${selector}' without saying whether it means the front page — there that padding is the rail's reserve, so taking it draws the column off center by half a rail`
   );
 }
 
