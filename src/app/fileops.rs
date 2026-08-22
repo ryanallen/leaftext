@@ -649,7 +649,7 @@ pub(super) fn diagram_export_file(
     if diagram_export_label(format).is_none() {
         return DiagramExportFile::Unoffered;
     }
-    // Every spelling of Markdown, asked of the one table: the row permits them all, so the label above answers for them all, and a match arm naming one would drop the rest through to a file nobody wrote and nothing said.
+    // Every spelling of Markdown, asked of the one table: the row permits them all, so an arm naming one drops the rest through to a file nobody wrote and nothing said.
     if DocumentFormat::Markdown.extensions().contains(&format) {
         return DiagramExportFile::Write(data.as_bytes().to_vec());
     }

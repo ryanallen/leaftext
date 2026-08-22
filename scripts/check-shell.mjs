@@ -8195,7 +8195,7 @@ if (booted) {
     }
   });
 
-  // Every spelling of Markdown the app opens is one this window writes. `.markdown` was refused in the same sentence that offers Markdown, which reads as the app not knowing its own format.
+  // Every spelling of Markdown the app opens is one this window writes: refusing `.markdown` in the sentence that offers Markdown reads as the app not knowing its own format.
   check('a name ending in any spelling of Markdown is written, not refused', () => {
     for (const ending of ['md', 'markdown', 'mdown']) {
       const wasSend = booted.ipc.postMessage;

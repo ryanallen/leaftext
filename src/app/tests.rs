@@ -3585,7 +3585,7 @@ fn save_window_offers_one_format_once_the_reader_has_picked_one() {
         "the reader picked WebP and the name still says something else"
     );
 
-    // Every spelling `src/format.rs` names for Markdown names the row on the shipped table, not on one written here, and the name comes out under the canonical one — the ending the panel appends is the first permitted type, not whatever was asked with.
+    // Every spelling of Markdown names the row, asked of the shipped table rather than one written here, and the name still comes out under the canonical one — the ending the panel appends is the first permitted type, not whatever was asked with.
     for spelling in DocumentFormat::Markdown.extensions() {
         for asked in [spelling.to_string(), spelling.to_ascii_uppercase()] {
             let spelled = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some(&asked), "Untitled");
