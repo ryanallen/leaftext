@@ -46,7 +46,7 @@ function shell() {
 
 // A real driven run of the browser driver: eight seconds on an empty page, which is past where one without the focus call goes hidden. A grep for that call would prove only that the string is in the file, which is the one thing nobody doubts.
 //
-// The same run lays the page out at two widths and reads each back, because a `size:` step that were quietly ignored would leave every reading taken through this driver a reading of the window it happened to open at. `about:blank` measures it as well as any page does: the question is whether the browser relaid out, not what it drew.
+// The same run lays the page out at two widths and reads each back: a `size:` step quietly ignored makes every reading taken through this driver a reading of the window it happened to open at. `about:blank` measures it as well as any page does — the question is whether the browser relaid out, not what it drew.
 const probe = spawnSync(
   process.execPath,
   [webDriver, 'about:blank', 'size:1280,900', 'eval:innerWidth', 'size:2530,1400', 'eval:innerWidth', 'wait:8000', 'eval:document.visibilityState'],
