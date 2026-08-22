@@ -477,6 +477,14 @@ pub fn diagram_path_picked_script(token: u64, path: &str) -> String {
     format!("window.leafDiagramPathPicked({token}, {path});")
 }
 
+/// Ask the page for the document it has already drawn, so it can be written out as a web page at `path`.
+///
+/// The page is what cleans the markup, because the page is what knows which of its own elements are controls, and it is what holds the drawings' own stylesheet. It answers with `exportPageHtml`.
+pub fn page_html_export_script(path: &str) -> String {
+    let path = serde_json::to_string(path).expect("path serializes");
+    format!("window.leafExportPageHtml({path});")
+}
+
 /// Report the outcome of a save for `path`: `error` is null on success and a message string when the write failed.
 pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
     let path = serde_json::to_string(path).expect("path serializes");

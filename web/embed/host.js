@@ -103,6 +103,7 @@ export const COMMANDS = {
   exportDiagram: [LATER, 'web-export'],
   printDiagramPdf: [LATER, 'web-export'],
   exportPdf: [ANSWERED],
+  exportPageHtml: [LATER, 'web-export'],
   undoEdit: [ANSWERED],
   redoEdit: [ANSWERED],
   updateChecked: [REFUSED, 'an embed is whatever version the product shipped'],

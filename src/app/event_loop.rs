@@ -1331,12 +1331,38 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 } => {
                     // The dialog blocks this thread, like Open's does, and so does the render after it.
                     let export = page_export_request(&reader.workspace, format, width, height);
-                    export_page_pdf(
+                    export_page(
                         reader.page(),
                         export.document.as_deref(),
                         &export.format,
                         export.width,
                         export.height,
+                    );
+                }
+                IpcCommand::ExportPageHtml {
+                    path,
+                    markup,
+                    sheet,
+                    theme,
+                    appearance,
+                    title,
+                } => {
+                    // Pictures are addressed against the folder the open document sits in, the same way the page addresses them on screen. No window here: the reader said where the page goes before it was asked for any of this.
+                    let source_dir = reader
+                        .workspace
+                        .active_path()
+                        .and_then(local_image_source_dir);
+                    export_page_html(
+                        reader.page(),
+                        Path::new(&path),
+                        &PageHtmlExport {
+                            markup,
+                            sheet,
+                            theme,
+                            appearance,
+                            title,
+                        },
+                        source_dir.as_deref(),
                     );
                 }
                 IpcCommand::UndoEdit => {

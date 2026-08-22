@@ -522,6 +522,24 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         height: f64,
     },
+    /// Write the page as it stands out as a web page at `path`, answered by the save window `exportPdf` opened a moment earlier.
+    ///
+    /// `markup` is the document as the page has already drawn it, its own controls taken out and wrapped in the ancestors every rule in the stylesheet is keyed on — the page builds that chain, because the page is what knows which of its own elements are controls. `sheet` is the drawings' own stylesheet, which mermaid writes per drawing and the page hoists into one element in its head: it is neither in the stylesheet nor inside the SVG, so a copy of the document alone comes out a page of black boxes. `theme` and `appearance` are the two attributes every theme's colors are keyed on, and `title` names the page in a browser tab.
+    ///
+    /// Its own command rather than a second format on `exportPdf`: that one ends in the web view's own print, and nothing on that path can write markup.
+    #[serde(rename = "exportPageHtml")]
+    ExportPageHtml {
+        path: String,
+        markup: String,
+        #[serde(default)]
+        sheet: String,
+        #[serde(default)]
+        theme: String,
+        #[serde(default)]
+        appearance: String,
+        #[serde(default)]
+        title: String,
+    },
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]
     UndoEdit,

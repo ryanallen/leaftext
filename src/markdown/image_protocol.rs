@@ -131,7 +131,7 @@ pub fn local_image_protocol_response(uri: &str, source_dir: Option<&Path>) -> Lo
     }
 }
 
-pub(crate) fn local_image_protocol_path(uri: &str, source_dir: &Path) -> Option<PathBuf> {
+pub fn local_image_protocol_path(uri: &str, source_dir: &Path) -> Option<PathBuf> {
     let url = Url::parse(uri).ok()?;
     if !is_local_image_request_url(&url) {
         return None;

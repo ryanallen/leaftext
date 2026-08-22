@@ -136,8 +136,11 @@ const openButton = document.getElementById('openButton');
 const newButton = document.getElementById('newButton');
 if (openButton) openButton.addEventListener('click', () => send({ command: 'open' }));
 if (newButton) newButton.addEventListener('click', () => send({ command: 'newDocument' }));
-// What Export writes. One entry today, and the save window is what offers it — a second here becomes a second filter on that window, never a menu over the page.
-const PAGE_EXPORTS = [{ id: 'pdf', label: 'PDF', hint: 'The whole document as one continuous page, in the theme on screen' }];
+// What Export writes. The save window is what offers these — a row here is a row in that window's own dropdown, never a menu over the page, except on a Mac where the panel shows no format at all.
+const PAGE_EXPORTS = [
+  { id: 'pdf', label: 'PDF', hint: 'The whole document as one continuous page, in the theme on screen' },
+  { id: 'html', label: 'Web page', hint: 'The page as it looks here, with its stylesheet and pictures in a folder beside it' },
+];
 // The sheet the document needs, read off the page wearing the paper rules rather than worked out from the screen.
 //
 // Three rounds were spent subtracting things from the reader's own measurement — the app bar's room, the toolbar's room, the strip at the foot — and every one of them left blank paper under the last line, because what the render lays out is a different layout and not the screen's minus a list. So the page puts the paper class on, reads the one box that is the whole sheet, and takes it off again: the surface, which under those rules is static, uncontained and as tall as everything it holds.
@@ -153,12 +156,65 @@ function pageExportSize() {
   if (!held && window.leafHoldAppearance) window.leafHoldAppearance(false);
   return size;
 }
+// Ask where the page goes, and in which format. The hold goes on before the send and is released by the host's answer: it is what makes a print lay the page out under the same paper rules the size was measured under, and what stops the render's own light color scheme repainting the app for as long as the file is being written. `format` travels only where the reader has already been asked, and leaves the save window that one row to offer.
+function askPageExport(format) {
+  if (window.leafHoldAppearance) window.leafHoldAppearance(true);
+  const size = pageExportSize();
+  send({ command: 'exportPdf', format: format || '', width: size.width, height: size.height });
+}
 if (exportPdfButton) {
-  // Straight to the save window, which is where the format is asked. The hold goes on before the send and is released by the host's answer: it is what makes the render lay the page out under the same paper rules the size was measured under, and what stops the render's own light color scheme repainting the app for as long as the file is being written.
+  // Which platform asks the format, and where — the same split the diagram export takes. Windows draws the formats as a dropdown inside the save window, so the window is the only question and nothing opens over the page. A Mac panel throws every label away and permits every ending at once, so the menu asks first and the window is then left the one format they picked.
   exportPdfButton.addEventListener('click', () => {
-    if (window.leafHoldAppearance) window.leafHoldAppearance(true);
-    const size = pageExportSize();
-    send({ command: 'exportPdf', format: PAGE_EXPORTS[0].id, width: size.width, height: size.height });
+    if (!isMacPlatform) {
+      askPageExport();
+      return;
+    }
+    const spot = exportPdfButton.getBoundingClientRect();
+    openFlowMenuWith(
+      spot.left,
+      spot.bottom + 6,
+      PAGE_EXPORTS.map((kind) => ({ label: kind.label, hint: kind.hint, run: () => askPageExport(kind.id) })),
+      appSurface,
+    );
   });
 }
+// The app's own controls inside a rendered document: the code blocks' copy buttons, the picture's opener, and the diagram's tools, zoom strip and closer. Every one of them does nothing on somebody else's machine, so none of them travels.
+const PAGE_EXPORT_CONTROLS = '.code-copy, .image-sheet-open, .mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close';
+// The document as a page of its own: a copy of what is drawn, its controls taken out, wrapped in the ancestors every rule in the stylesheet is keyed on.
+//
+// The chain is not decoration — a body without it renders unstyled. Two classes are left off rather than copied: the shell's `has-minimap` and the layout's rail, because the export carries no rail and the grid would otherwise reserve a column for one that is not there.
+function pageExportMarkup() {
+  const drawn = app ? app.querySelector('.document-body') : null;
+  if (!drawn) return '';
+  const copy = drawn.cloneNode(true);
+  copy.querySelectorAll(PAGE_EXPORT_CONTROLS).forEach((control) => control.remove());
+  // A picture the app could not load is not a picture in this markup: its source was replaced with a transparent pixel and our own broken-picture mark put over it, with its address parked on the element. Put the address back, so the export names the file the document asked for and the browser draws its own mark if it is still not there.
+  copy.querySelectorAll('img[data-image-missing="true"]').forEach(restoreMissingImage);
+  const surface = document.createElement('div');
+  surface.className = 'app-surface';
+  const shell = document.createElement('main');
+  shell.className = 'reader-shell has-document';
+  const layout = document.createElement('div');
+  layout.className = 'reader-layout reader-layout-no-minimap';
+  layout.appendChild(copy);
+  shell.appendChild(layout);
+  surface.appendChild(shell);
+  return surface.outerHTML;
+}
+// The host's answer for the Web page row: where the reader said it goes. The drawings' own stylesheet travels with the markup — mermaid writes one per drawing and the page hoists them into a single element in its head, so it is neither in the stylesheet nor inside the SVG, and a copy of the document alone comes out a page of black boxes.
+window.leafExportPageHtml = (path) => {
+  const markup = pageExportMarkup();
+  if (!markup) return;
+  const sheet = document.getElementById('leaf-mermaid-sheets');
+  const root = document.documentElement;
+  send({
+    command: 'exportPageHtml',
+    path: String(path),
+    markup,
+    sheet: sheet ? sheet.textContent || '' : '',
+    theme: root.dataset.leafTheme || '',
+    appearance: root.dataset.leafAppearance || '',
+    title: (currentState && currentState.document && currentState.document.title) || '',
+  });
+};
 homeButton.addEventListener('click', () => send({ command: 'goHome' }));

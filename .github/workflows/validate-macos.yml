@@ -1,0 +1,60 @@
+name: Validate macOS Build
+
+# Compiles the Mac half on every push to main, before any tag exists. Publishes
+# nothing, tags nothing, deletes nothing — the same shape as
+# validate-web-modules.yml, and for the same reason.
+#
+# Not a step inside either release workflow. Both of those hold `contents: write`
+# and delete the older releases as they publish, and a tag can never be
+# re-pushed — so a Mac-only compile error failing a step in one of them costs a
+# patch bump rather than a message. v1.28.0 did exactly that: an unused import
+# behind `#[cfg(target_os = "macos")]` passed the whole Windows gate, took a
+# version, got a tag, and stopped the Mac release build — the Windows installers
+# published and the Mac one did not. This runs on the push instead, where a
+# failure costs nothing, and the release reads its newest completed answer
+# before it makes a tag.
+#
+# `just verify` deliberately leaves this out: the gating machine has no way to
+# compile for a Mac, so a break behind the Mac gate has nowhere else to show up.
+# The command is the gate's own `check` recipe — `cargo check --all-targets` —
+# run on the one machine where that reads the Mac arms, tests included, with
+# `warnings = "deny"` making every warning an error here exactly as at home.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Read-only: this workflow must never be able to publish or delete a release.
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Compile the Mac half
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-check-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-check-
+
+      - name: Compile the app and its tests
+        run: cargo check --all-targets --locked

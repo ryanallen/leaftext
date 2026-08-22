@@ -16,8 +16,8 @@ pub(crate) use eml::*;
 mod theme;
 pub(crate) use markdown::*;
 pub use markdown::{
-    drawable_image_extensions, is_local_image_path, local_image_protocol_response,
-    local_image_source_dir, markdown_image_insert_destination,
+    drawable_image_extensions, is_local_image_path, local_image_protocol_path,
+    local_image_protocol_response, local_image_source_dir, markdown_image_insert_destination,
 };
 pub use theme::reading_mode_css;
 pub(crate) use theme::*;
@@ -1042,6 +1042,78 @@ pub fn app_shell_html_for_host(host: &dyn LeafHost) -> String {
         .replace("{{APP_CSS_URL}}", &asset("app.css"))
         .replace("{{THEME_ITEMS}}", &theme_items_html())
         .replace("{{KATEX_CSS_URL}}", &asset("katex/katex.min.css"))
+}
+
+/// The document as a page of its own: what a reader hands to somebody who does not have Leaftext.
+///
+/// `markup` is the document as the page has already drawn it, cleaned of the app's own controls and wrapped in the ancestors every rule in `reading.css` is keyed on — the page builds that chain, because the page is what knows which of its own elements are controls. Nothing here is fetched and nothing runs: a drawn diagram is already an SVG in that markup, an icon is a mask inside the stylesheet, and ordinary text takes the reader's own system font.
+///
+/// `sheet` is the drawings' own stylesheet. Mermaid writes one per drawing and the page hoists them into a single element in its head, so the rules are neither in the stylesheet nor inside the SVG — a copy of the document alone comes out a page of black boxes with clipped labels. It travels inline rather than as a second file because it is markup the page already holds as one string.
+///
+/// `theme` and `appearance` are the two attributes every theme's colors are keyed on, so the page opens in the theme it was written from with no script at all.
+pub fn exported_page_document(
+    theme: &str,
+    appearance: &str,
+    title: &str,
+    sheet: &str,
+    markup: &str,
+) -> String {
+    let title = match title.trim() {
+        "" => "Document",
+        named => named,
+    };
+    let sheet = match sheet.trim() {
+        "" => String::new(),
+        rules => format!(
+            "<style id=\"{MERMAID_SHEET_ELEMENT_ID}\">
+{rules}
+</style>
+"
+        ),
+    };
+    format!(
+        "<!DOCTYPE html>
+<html lang=\"en\" data-leaf-theme=\"{theme}\" data-leaf-appearance=\"{appearance}\">
+<head>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+<title>{title}</title>
+<link rel=\"stylesheet\" href=\"{EXPORTED_PAGE_STYLESHEET}\">
+{sheet}</head>
+<body class=\"leaf-paper\">
+{markup}
+</body>
+</html>
+",
+        theme = escape_html_text(theme),
+        appearance = escape_html_text(appearance),
+        title = escape_html_text(title),
+    )
+}
+
+/// Where an exported page's stylesheet goes, and the folder every picture beside it goes in. The same `assets` folder the static site export already writes, so a reader who has seen one knows the other.
+pub const EXPORTED_PAGE_ASSETS_FOLDER: &str = "assets";
+
+/// The one stylesheet an exported page names: the whole of [`reading_mode_css`], which carries every theme's colors, the tokens, the icons and the reading rules. All of it rather than a trimmed copy — deciding which rules a document needs is a guess against a stylesheet that changes every week, and a rule missed is a page that looks wrong in a way nobody can see coming.
+pub const EXPORTED_PAGE_STYLESHEET: &str = "assets/app.css";
+
+/// Where one picture sits in an exported page: the `assets` folder beside it, under the name the copy was written as. Percent-encoded, because a picture on disk may be called anything a filesystem permits and the page addresses it as a URL.
+pub fn exported_picture_url(name: &str) -> String {
+    format!(
+        "{EXPORTED_PAGE_ASSETS_FOLDER}/{}",
+        percent_encode_url_path_segment(name)
+    )
+}
+
+/// What the page calls the element it hoists every drawing's stylesheet into. Written here and read in `decorate.js`.
+const MERMAID_SHEET_ELEMENT_ID: &str = "leaf-mermaid-sheets";
+
+/// Text going into an attribute or between tags. Four characters, because that is all an attribute this app writes can carry — the values are a theme name, an appearance and a document title.
+fn escape_html_text(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }
 
 /// Selected-state check badge shown on the active theme card (Heroicons check-circle, stroked in the accent color via `currentColor`). Hidden until the card is `.is-active`.

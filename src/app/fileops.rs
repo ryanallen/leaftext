@@ -304,14 +304,48 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
     }
 }
 
+/// Every format the page can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first, so the order is load-bearing, and `page_export_kind` below reads the same table — which is why a format lives here and nowhere else.
+pub(crate) const PAGE_EXPORT_FORMATS: &[(&str, &[&str])] = &[
+    ("PDF document", &["pdf"]),
+    ("Web page", &["html", "htm"]),
+];
+
+/// Which of those two a chosen name is asking for.
+pub(crate) enum PageExportKind {
+    /// Rendered by the web view's own print, so there are no bytes here to write.
+    Printed,
+    /// Written from the markup the page has already drawn, with its stylesheet and its pictures beside it.
+    WebPage,
+}
+
+/// The words the save window shows for one of those endings.
+fn page_export_label(extension: &str) -> Option<&'static str> {
+    PAGE_EXPORT_FORMATS
+        .iter()
+        .find(|(_, endings)| endings.contains(&extension))
+        .map(|(label, _)| *label)
+}
+
+/// What the ending on a chosen name asks for. A reader may type one, and Windows keeps a typed ending where the chosen filter permits it, so every spelling a row offers is answered rather than only the one that names it.
+pub(crate) fn page_export_kind(target: &Path) -> Option<PageExportKind> {
+    let ending = target.extension()?.to_string_lossy().to_lowercase();
+    match ending.as_str() {
+        "pdf" => Some(PageExportKind::Printed),
+        "html" | "htm" => Some(PageExportKind::WebPage),
+        _ => None,
+    }
+}
+
 /// Write the page as it stands out as a file of its own, asking where it goes first.
 ///
-/// No print panel on either desktop. The reader asked for a file, not a printer to choose, so the chooser is the app's own two rows and the only question after it is where the file goes. What makes the file the whole document in its theme, rather than one screen of app frame, is the stylesheet's `leaf-paper` class, which the page raises before it sends this and which is why the page can measure the sheet it is about to ask for.
+/// No print panel on either desktop. The reader asked for a file, not a printer to choose, so the chooser is the app's own rows and the only question after it is where the file goes. What makes a printed file the whole document in its theme, rather than one screen of app frame, is the stylesheet's `leaf-paper` class, which the page raises before it sends this and which is why the page can measure the sheet it is about to ask for.
 ///
 /// One continuous page rather than a document chopped across sheets: the page carries its own size here, so the sheet is made as tall as the document is.
 ///
+/// A web page is the other row, and nothing on the print path can write markup — so that ending sends the ask back to the page, which holds the document it has already drawn and answers with `exportPageHtml`.
+///
 /// Nothing about the open document changes. The file is written beside it.
-pub(crate) fn export_page_pdf(
+pub(crate) fn export_page(
     webview: Option<&WebView>,
     document: Option<&Path>,
     format: &str,
@@ -327,38 +361,200 @@ pub(crate) fn export_page_pdf(
             "Failed to let the page follow the system theme again",
         )
     };
-    let (extension, filters): (&str, &[(&str, &[&str])]) = match format {
-        "pdf" => ("pdf", &[("PDF document", &["pdf"])]),
-        // Not a row the chooser offers, so not a file anybody asked for.
-        _ => {
-            release(page);
-            return;
-        }
-    };
     let stem = document
         .and_then(Path::file_stem)
         .map(|stem| stem.to_string_lossy().into_owned())
         .filter(|stem| !stem.is_empty())
         .unwrap_or_else(|| "document".to_string());
-    let Some(target) =
-        pick_export_path_titled("Save as PDF", &format!("{stem}.{extension}"), filters)
-    else {
+    // Empty where the reader has not been asked, which is Windows: that window draws the rows as a dropdown and asks there. A Mac panel shows no format at all, so the page asks first and the window is left the one row.
+    let chosen = (!format.is_empty()).then_some(format);
+    let offer = save_window_offer(PAGE_EXPORT_FORMATS, chosen, &stem);
+    // With two rows a window titled after one of them is wrong half the time.
+    let title = match chosen.and_then(page_export_label) {
+        Some(label) => format!("Save as {label}"),
+        None => "Export Page".to_string(),
+    };
+    let Some(target) = pick_export_path_titled(&title, &offer.name, &offer.filters) else {
         release(page);
         return;
     };
-    let outcome = write_page_pdf(page, &target, width, height);
-    release(page);
-    match outcome {
+    match page_export_kind(&target) {
+        Some(PageExportKind::Printed) => {
+            let outcome = write_page_pdf(page, &target, width, height);
+            release(page);
+            match outcome {
+                Ok(()) => run_page_script(
+                    Some(page),
+                    &file_written_notice_script(&target.display().to_string()),
+                    "Failed to report a page export",
+                ),
+                Err(error) => report_file_action_failure(
+                    Some(page),
+                    &format!("That file could not be written. {error}"),
+                ),
+            }
+        }
+        Some(PageExportKind::WebPage) => {
+            // Let go first: the paper rules are what a render is laid out under, and nothing is being rendered here. The page answers with the document it has already drawn.
+            release(page);
+            run_page_script(
+                Some(page),
+                &page_html_export_script(&target.display().to_string()),
+                "Failed to ask the page for the document it has drawn",
+            );
+        }
+        // Not a row the chooser offers, so not a file anybody asked for.
+        None => {
+            release(page);
+            let names: Vec<&str> = PAGE_EXPORT_FORMATS.iter().map(|(label, _)| *label).collect();
+            report_file_action_failure(
+                Some(page),
+                &format!(
+                    "A page is written as {}. Nothing was written.",
+                    names.join(", ")
+                ),
+            );
+        }
+    }
+}
+
+/// What one web-page export comes to: the document as the page drew it, the drawings' own stylesheet, and the theme it was drawn in.
+pub(crate) struct PageHtmlExport {
+    pub(crate) markup: String,
+    pub(crate) sheet: String,
+    pub(crate) theme: String,
+    pub(crate) appearance: String,
+    pub(crate) title: String,
+}
+
+/// Write the document out as a web page, with its stylesheet and its pictures in one folder beside it, and say on screen where it went.
+///
+/// Where the file goes was answered by the save window before the page was asked for any of this.
+pub(crate) fn export_page_html(
+    webview: Option<&WebView>,
+    target: &Path,
+    export: &PageHtmlExport,
+    source_dir: Option<&Path>,
+) {
+    match write_exported_page(target, export, source_dir) {
         Ok(()) => run_page_script(
-            Some(page),
+            webview,
             &file_written_notice_script(&target.display().to_string()),
             "Failed to report a page export",
         ),
         Err(error) => report_file_action_failure(
-            Some(page),
+            webview,
             &format!("That file could not be written. {error}"),
         ),
     }
+}
+
+/// The page where the reader pointed, and one `assets` folder beside it holding the stylesheet and every picture.
+///
+/// Beside rather than inside a folder of its own, because that is the shape the picture export writes: the file where they said, its assets in one folder next to it. Two documents exported into one folder therefore share that folder, which is why a name already taken is written beside rather than over.
+fn write_exported_page(
+    target: &Path,
+    export: &PageHtmlExport,
+    source_dir: Option<&Path>,
+) -> Result<(), String> {
+    let folder = target
+        .parent()
+        .ok_or_else(|| "there is nowhere beside it to put its assets.".to_string())?;
+    let assets = folder.join(EXPORTED_PAGE_ASSETS_FOLDER);
+    fs::create_dir_all(&assets).map_err(|error| error.to_string())?;
+    // The whole stylesheet, which is every theme's colors, the tokens, the icons and the reading rules — see `EXPORTED_PAGE_STYLESHEET` for why none of it is trimmed. The name carries the folder, so this is the one place the two are joined.
+    fs::write(folder.join(EXPORTED_PAGE_STYLESHEET), reading_mode_css())
+        .map_err(|error| error.to_string())?;
+    let markup = copy_page_pictures(&export.markup, &assets, source_dir);
+    let page = exported_page_document(
+        &export.theme,
+        &export.appearance,
+        &export.title,
+        &export.sheet,
+        &markup,
+    );
+    fs::write(target, page).map_err(|error| error.to_string())
+}
+
+/// Copy every picture the document draws into `assets`, and point the markup at the copies.
+///
+/// The page addresses a local picture on a scheme no browser can fetch, with a per-render stamp on the end of it, so every one has to be copied and re-addressed or the exported page is a page of broken pictures. One copy per file however many times the document draws it, and a picture served over the network is left addressed as it was, so the page still opens.
+///
+/// A picture whose file cannot be read is still named — the file the document asked for, in the folder beside the page — so the browser draws its own broken mark rather than nothing at all.
+fn copy_page_pictures(markup: &str, assets: &Path, source_dir: Option<&Path>) -> String {
+    let Some(source_dir) = source_dir else {
+        return markup.to_string();
+    };
+    let mut written: HashMap<PathBuf, String> = HashMap::new();
+    let mut out = String::with_capacity(markup.len());
+    let mut rest = markup;
+    while let Some(at) = rest.find("src=\"") {
+        let (before, tail) = rest.split_at(at + 5);
+        out.push_str(before);
+        let Some(end) = tail.find('"') else {
+            out.push_str(tail);
+            return out;
+        };
+        let (address, tail) = tail.split_at(end);
+        match exported_picture_address(address, assets, source_dir, &mut written) {
+            Some(copied) => out.push_str(&copied),
+            None => out.push_str(address),
+        }
+        rest = tail;
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Where one `src` should point in the written page, or nothing where it is not a picture off this machine.
+///
+/// The address arrives as it was written into an attribute, so its ampersands are entities — the epoch stamp the page adds is a query and the resolver reads only the path, but the URL has to parse before either is true.
+fn exported_picture_address(
+    address: &str,
+    assets: &Path,
+    source_dir: &Path,
+    written: &mut HashMap<PathBuf, String>,
+) -> Option<String> {
+    let uri = address.replace("&amp;", "&");
+    let source = local_image_protocol_path(&uri, source_dir)?;
+    if let Some(name) = written.get(&source) {
+        return Some(exported_picture_url(name));
+    }
+    let name = free_assets_name(assets, &source);
+    // A file that is not there is still named: the browser draws its own broken mark, which says what an empty space cannot.
+    let _ = fs::copy(&source, assets.join(&name));
+    let url = exported_picture_url(&name);
+    written.insert(source, name);
+    Some(url)
+}
+
+/// The name a picture takes in the `assets` folder: its own, or the next number beside it where that one is taken.
+///
+/// Two documents exported into one folder is the ordinary case here rather than the odd one, so a name already there belongs to a page somebody exported earlier and is never written over.
+fn free_assets_name(assets: &Path, source: &Path) -> String {
+    let name = source
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "picture".to_string());
+    if !assets.join(&name).exists() {
+        return name;
+    }
+    let stem = source
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "picture".to_string());
+    let ending = source
+        .extension()
+        .map(|ending| format!(".{}", ending.to_string_lossy()))
+        .unwrap_or_default();
+    // Far past any folder a reader exports into by hand, and a ceiling rather than a loop with no end: a folder that somehow answers to every one of these has something wrong with it that writing forever would not fix.
+    for number in 2..1000 {
+        let numbered = format!("{stem}-{number}{ending}");
+        if !assets.join(&numbered).exists() {
+            return numbered;
+        }
+    }
+    name
 }
 
 /// The same render with the destination already chosen, and nothing said on screen about it.

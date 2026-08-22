@@ -154,6 +154,7 @@ export const COMMANDS = {
   exportDiagram: [LATER, 'web-export'],
   printDiagramPdf: [LATER, 'web-export'],
   exportPdf: [ANSWERED],
+  exportPageHtml: [LATER, 'web-export'],
   undoEdit: [LATER, 'web-app-commands'],
   redoEdit: [LATER, 'web-app-commands'],
   updateChecked: [REFUSED, 'a published site is already the version it serves'],

@@ -123,6 +123,28 @@ function retireOldTags(host: ReleaseHost, keep: string): void {
   host.run("git", ["push", "origin", "--delete", ...others]);
 }
 
+// The Mac half compiles nowhere on this machine, so its newest completed answer on main is read before anything is spent: a failure there is v1.28.0 again — a tag up, the Windows installers published, the Mac one dead on a line nothing here compiles. Only a completed failure stops the release. No run yet, or GitHub not answering, stops nothing, because a release may never wait on a build — and the release commit's own run starts beside the release, so the fault this catches is the one that landed earlier.
+function assertMacHalfCompiles(host: ReleaseHost): void {
+  const asked = host.run(
+    "gh",
+    ["run", "list", "--workflow", "validate-macos.yml", "--branch", "main", "--status", "completed", "--limit", "1", "--json", "conclusion,url"],
+    { capture: true }
+  );
+  if (asked.status !== 0) {
+    return;
+  }
+  let runs: Array<{ conclusion?: string; url?: string }>;
+  try {
+    runs = JSON.parse(asked.stdout);
+  } catch {
+    return;
+  }
+  const newest = Array.isArray(runs) ? runs[0] : undefined;
+  if (newest?.conclusion === "failure") {
+    throw new Error(`The Mac half does not compile: the newest completed check on main failed — ${newest.url ?? "gh run list --workflow validate-macos.yml"}. No tag was made. Fix the Mac arm, land it, and release once that check is green.`);
+  }
+}
+
 function commitArgs(signCommit: boolean, message: string): string[] {
   return signCommit
     ? ["commit", "-S", "-m", message]
@@ -173,6 +195,8 @@ export function prepareRelease(version: string, message: string, options: Releas
   // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
   host.withSnapshot((root) => {
     required(host, "just", ["verify"], { env: { ...process.env, [PLAN_ROOT_ENV]: root } });
+    // After the gate, before anything is written: a stop here spends nothing.
+    assertMacHalfCompiles(host);
     // Read again, because the gate compiles and a compile rewrites `Cargo.lock` with the package's own version in it: staging the earlier list commits a bump whose lockfile still names the version before it, and both release builds pass `--locked`, so they die on their first command with the tag already up and nothing published under it. v1.15.4 went out that way. The gate is the only thing between the two reads, and every file it writes into this checkout is one the release is supposed to carry.
     const staging = host.changedPaths();
     // Only now: a gate that stops here leaves the last released tag exactly where it was.
@@ -310,6 +334,7 @@ function selfTest(): void {
     ["the work in the tree was read", clean.calls.indexOf("changed paths read")],
     ["the plan tree was copied", clean.calls.indexOf("snapshot taken")],
     ["the check suite ran", clean.calls.indexOf("just verify")],
+    ["the Mac half's newest completed answer was read", at("gh run list --workflow validate-macos.yml")],
     ["the tree was read again, now the gate has written its lockfile into it", clean.calls.lastIndexOf("changed paths read")],
     ["the old tags went", at("git tag -d")],
     ["the changed paths were staged", at("git add --")],
@@ -419,6 +444,41 @@ function selfTest(): void {
   }
   if (broken.calls.some((call) => call.includes("tag -d") || call.includes("--delete"))) fails.push("a failed gate took down the last released tag");
   if (!broken.calls.includes("snapshot removed")) fails.push("a failed gate left its copy of the plan tree behind");
+  if (broken.calls.some((call) => call.startsWith("gh run list"))) fails.push("a failed gate still asked GitHub for the Mac answer, which only a passed gate spends");
+
+  // A red Mac check on main: the release stops after the gate with nothing written, naming the failed run, so the tag is never the first reader of a Mac arm again.
+  const macRed = fixture((command, args) =>
+    command === "gh" && args[0] === "run"
+      ? { status: 0, stdout: JSON.stringify([{ conclusion: "failure", url: "https://github.com/example/runs/9" }]) }
+      : null
+  );
+  const macFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: macRed.host }));
+  if (!macFailed.includes("Mac half does not compile")) fails.push(`a red Mac check on main did not stop the release: ${macFailed || "it passed"}`);
+  if (!macFailed.includes("https://github.com/example/runs/9")) fails.push("a red Mac check did not name the run that failed");
+  if (macRed.calls.indexOf("just verify") < 0) fails.push("a red Mac check was read before the gate ran, so the read spends nothing yet stopped a release the gate might have stopped better");
+  for (const call of macRed.calls) {
+    if (isTagWork(call)) fails.push(`a red Mac check still ran ${call}`);
+  }
+  if (!macRed.calls.includes("snapshot removed")) fails.push("a red Mac check left the plan copy behind");
+
+  // GitHub silent, or no completed run yet: neither stops anything, because a release never waits on a build.
+  const macQuiet: Array<[string, CommandResult]> = [
+    ["GitHub not answering", { status: 1, stdout: "" }],
+    ["no completed run yet", { status: 0, stdout: "[]" }],
+  ];
+  for (const [state, answerSaid] of macQuiet) {
+    const quiet = fixture((command, args) => {
+      if (command === "gh" && args[0] === "run") return answerSaid;
+      return args[0] === "tag" && args[1] === "-l" ? { status: 0, stdout: "v1.0.0\n" } : null;
+    });
+    const quietTag = refused(() => {
+      const answered = prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: quiet.host });
+      if (answered !== "v1.2.3") throw new Error(`answered ${answered}`);
+    });
+    if (quietTag) fails.push(`${state} stopped a release, and a release never waits on a build: ${quietTag}`);
+  }
+
+  if (landed.calls.some((call) => call.startsWith("gh run list"))) fails.push("a landing asked GitHub for the Mac answer, and a landing is not a release");
 
   // Nothing the release does may outlive the plan copy the gate read: the old path was two processes, and the push in the second one had no copy behind it at all.
   const outside = clean.calls.indexOf("snapshot removed");
@@ -456,7 +516,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean one and again after the gate, so the lockfile a compile rewrote is committed with the bump that moved it; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes, and a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
+  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean one and again after the gate, so the lockfile a compile rewrote is committed with the bump that moved it; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes; the newest completed Mac answer on main is read after the gate and a failed one stops the release naming its run before any tag work, while GitHub silent or no run yet stops nothing; a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
 }
 
 function isMainModule(): boolean {
