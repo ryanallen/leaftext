@@ -8012,6 +8012,17 @@ if (booted) {
     }
   });
 
+  // The sheet a diagram is printed on. The shipped paper class does the opposite of what this needs on its own — it computes the full-window diagram to `display: none` and grows the surface to the whole document — so a print under it alone would be the note with the drawing missing. The cascade is what decides this and the stand-in page has none, so the rule is read off the stylesheet the way the other CSS checks here are.
+  check('a printed diagram is the only thing left on the sheet', () => {
+    if (!booted.document.getElementById('diagramPrint')) throw new Error('the page has no container to print a diagram in');
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    // Anchored at the start of a line, so a rule under a wider selector cannot answer for one keyed on the container itself.
+    const rule = (selector, paint) => css.includes('\n' + selector + ' {' + '\n' + '  ' + paint + ';');
+    if (!rule('.diagram-print', 'display: none')) throw new Error('the print container is not out of the layout until an export fills it');
+    if (!rule('body.leaf-paper-diagram .diagram-print', 'display: block')) throw new Error('the print state does not put the container on the sheet');
+    if (!rule('body.leaf-paper-diagram .app-surface > :not(.diagram-print)', 'display: none')) throw new Error('the print state leaves the rest of the app on the sheet');
+  });
+
   check('on Windows a diagram asks where it goes and opens nothing over the page', () => {
     const surface = booted.document.getElementById('appSurface');
     const wasSend = booted.ipc.postMessage;
@@ -8051,7 +8062,7 @@ if (booted) {
     const menu = exportMenuOn(surface);
     if (!menu) throw new Error('a Mac was handed a save window with no format in it and nothing asked beforehand');
     const rows = menu.children.map((child) => (child.children[0] || {}).textContent);
-    if (String(rows) !== 'Markdown,PNG,WebP') throw new Error(`the menu offers ${rows.join(', ') || 'nothing'}`);
+    if (String(rows) !== 'Markdown,PNG,WebP,PDF') throw new Error(`the menu offers ${rows.join(', ') || 'nothing'}`);
     // Nothing is asked and nothing is drawn until a row is pressed: a save window opened here would be the second question.
     if (sent.length) throw new Error(`opening the menu already sent ${sent.map((one) => one.command).join(', ')}`);
 
@@ -8391,6 +8402,99 @@ if (booted) {
       booted.diagramDrawingSvg = was.drawing;
       booted.Image = was.image;
       booted.btoa = was.btoa;
+    }
+  });
+
+  // A PDF is the one row nothing in the page encodes: the drawing goes into a box of its own, the sheet state takes the rest of the app off the page, and the host renders it. The size is the half that is easy to get wrong — measured in a running copy, a container holding a 268-wide drawing reports 1,864, which is the surface's width, and a sheet made to that comes out window-wide with the drawing stranded in white.
+  const withPrintedDiagram = (drawingBox) => {
+    const container = booted.document.getElementById('diagramPrint');
+    if (!container) throw new Error('the page has no container to print a diagram in');
+    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, drawing: booted.diagramDrawingSvg, hold: booted.window.leafHoldAppearance, child: Object.getOwnPropertyDescriptor(container, 'firstElementChild') };
+    const sent = [];
+    const said = [];
+    const held = [];
+    const asked = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.leafToast = (words) => said.push(words);
+    booted.diagramDrawingSvg = async (source) => {
+      asked.push(source);
+      return '<svg width="' + drawingBox.width + '" height="' + drawingBox.height + '"></svg>';
+    };
+    booted.window.leafHoldAppearance = (on) => held.push(on);
+    // The container is as wide as the surface under the paper rules, which is exactly the box that must not be the one measured. The drawing inside it says its own size.
+    container.getBoundingClientRect = () => ({ top: 0, left: 0, right: 1864, bottom: 0, width: 1864, height: 0 });
+    const drawn = booted.document.createElement('svg');
+    drawn.getBoundingClientRect = () => ({ top: 0, left: 0, right: drawingBox.width, bottom: drawingBox.height, width: drawingBox.width, height: drawingBox.height });
+    Object.defineProperty(container, 'firstElementChild', { get: () => (container.innerHTML ? drawn : null), configurable: true });
+    return {
+      sent,
+      said,
+      held,
+      asked,
+      container,
+      printed: () => sent.filter((one) => one.command === 'printDiagramPdf'),
+      wearing: () => booted.document.body.classList.contains('leaf-paper-diagram'),
+      done: () => {
+        booted.closeFlowMenu();
+        booted.window.leafDiagramPrinted();
+        booted.ipc.postMessage = was.send;
+        booted.leafToast = was.toast;
+        booted.diagramDrawingSvg = was.drawing;
+        booted.window.leafHoldAppearance = was.hold;
+        if (was.child) Object.defineProperty(container, 'firstElementChild', was.child);
+      },
+    };
+  };
+
+  checkPicture('a PDF prints the drawing on a sheet of its own, at the drawing’s size and not the box around it', async () => {
+    const lent = withPrintedDiagram({ width: 268, height: 108 });
+    try {
+      const block = drawnDiagram('flowchart TD\n  P1 --> P2');
+      booted.addMermaidControls(block);
+      booted.openMermaidExportMenu(exportChipOn(block));
+      answerSaveWindow(lent.sent, 'pdf');
+      await settle(() => lent.printed().length || lent.said.length);
+      if (lent.said.length) throw new Error(`the PDF refused: ${lent.said.join(' / ')}`);
+      const print = lent.printed()[0];
+      if (!print) throw new Error('a name ending in pdf asked for no print at all');
+      // Nothing the page could have made: a PDF is rendered, so the row that carries bytes must never be the one that runs.
+      if (lent.sent.some((one) => one.command === 'exportDiagram')) throw new Error('a PDF went out as bytes the page made, which is a .pdf full of something else');
+      if (print.path !== '/out/diagram.pdf') throw new Error(`the print carried ${JSON.stringify(print.path)} rather than the name the reader gave`);
+      if (print.width !== 268 || print.height !== 108) throw new Error(`the sheet was asked for at ${print.width}×${print.height} rather than the drawing's own 268×108`);
+      if (!lent.container.innerHTML) throw new Error('the drawing was never put anywhere the render could reach it');
+      if (!lent.wearing()) throw new Error('the sheet state was never raised, so the print would be the whole document with a drawing on the end of it');
+      if (String(lent.held) !== 'true') throw new Error(`the appearance was held ${lent.held.length} times: ${lent.held.join(', ') || 'never'}`);
+
+      // The host has answered. The page is the reader's document again however the print went — a state left on is a window holding a bare drawing.
+      booted.window.leafDiagramPrinted();
+      if (lent.wearing()) throw new Error('the sheet state stayed on after the host answered');
+      if (lent.container.innerHTML) throw new Error('the print container kept the drawing after the host answered');
+      if (String(lent.held) !== 'true,false') throw new Error(`the appearance hold was not let go exactly once: ${lent.held.join(', ')}`);
+      booted.window.leafDiagramPrinted();
+      if (String(lent.held) !== 'true,false') throw new Error(`a second answer let the appearance hold go twice: ${lent.held.join(', ')}`);
+    } finally {
+      lent.done();
+    }
+  });
+
+  // The three rows that ship all draw the diagram again on purpose, and the PDF has the most to lose by not: a zoomed diagram is absolutely placed inside a box of fixed height, so what is on screen is cropped to that box and a sheet made to it prints the piece somebody happened to be looking at.
+  checkPicture('a zoomed and dragged diagram still prints the whole drawing', async () => {
+    const lent = withPrintedDiagram({ width: 268, height: 108 });
+    try {
+      const block = drawnDiagram('flowchart TD\n  Z1 --> Z2');
+      booted.addMermaidControls(block);
+      // What a reader has zoomed and dragged: pinned to a box of fixed height, with the drawing translated inside it.
+      block.classList.add('is-moved');
+      block.getBoundingClientRect = () => ({ top: 0, left: 0, right: 900, bottom: 420, width: 900, height: 420 });
+      booted.openMermaidExportMenu(exportChipOn(block));
+      answerSaveWindow(lent.sent, 'pdf');
+      await settle(() => lent.printed().length || lent.said.length);
+      const print = lent.printed()[0];
+      if (!print) throw new Error('a name ending in pdf asked for no print at all');
+      if (lent.asked.length !== 1 || !lent.asked[0].includes('Z1 --> Z2')) throw new Error('the print did not draw the diagram again from its own text');
+      if (print.width !== 268 || print.height !== 108) throw new Error(`the sheet took the zoomed block's ${print.width}×${print.height} rather than the fresh drawing's 268×108`);
+    } finally {
+      lent.done();
     }
   });
 

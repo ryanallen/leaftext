@@ -531,13 +531,16 @@ pub(super) enum DiagramExportFile {
     Unreadable,
     /// Not a format the app offers, so not a file anyone asked for.
     Unoffered,
+    /// Written by printing a page rather than by encoding anything, so there are no bytes here to write. The one table still carries the row; this arm is what keeps a stray `exportDiagram` naming that ending from writing a file of raw bytes under it.
+    Printed,
 }
 
-/// Every format a diagram can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first, so the order is load-bearing. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else.
+/// Every format a diagram can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first, so the order is load-bearing. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else — the PDF included, which is printed rather than encoded and answers `Printed` there.
 pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &[&str])] = &[
     ("Markdown", &["md"]),
     ("PNG image", &["png"]),
     ("WebP image", &["webp"]),
+    ("PDF document", &["pdf"]),
 ];
 
 /// The words the save window shows for one of those endings.
@@ -649,6 +652,8 @@ pub(super) fn diagram_export_file(
         "png" => decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)),
         // Already a finished file: the canvas writes the WebP itself, about half the PNG on the same drawing, and refuses a drawing too wide for the format before it sends one.
         "webp" => decode_base64(data),
+        // Rendered by the host rather than encoded from anything the page sent, so this command is not the one that writes it — `print_diagram_pdf` is.
+        "pdf" => return DiagramExportFile::Printed,
         _ => return DiagramExportFile::Unoffered,
     };
     match bytes {
@@ -679,12 +684,41 @@ pub(crate) fn export_diagram(
             return;
         }
         DiagramExportFile::Unoffered => return,
+        // Nothing to write here, and nothing to say: the row is printed, and a message would be about a file the reader never asked this command for.
+        DiagramExportFile::Printed => return,
     };
     match fs::write(target, &bytes) {
         Ok(()) => run_page_script(
             webview,
             &file_written_notice_script(&target.display().to_string()),
             "Failed to report a diagram export",
+        ),
+        Err(error) => report_file_action_failure(
+            webview,
+            &format!("Could not write {}: {error}", target.display()),
+        ),
+    }
+}
+
+/// Print one diagram onto a sheet of its own, at the path the save window already answered with.
+///
+/// The page put a freshly drawn copy of the drawing in its print container and raised `leaf-paper-diagram`, which takes everything else in the surface off the sheet — so this is the same render the page export runs, with one thing left standing on the page. The size is the drawing's own, measured in the page, which is why nothing here works one out.
+///
+/// The page is told the moment the render is over, however it went: the print state is the page with the reader's document taken off it, and a state left on is a window holding a bare drawing.
+///
+/// Nothing about the open document changes. The file is written beside it.
+pub(crate) fn print_diagram_pdf(webview: Option<&WebView>, target: &Path, width: f64, height: f64) {
+    let outcome = write_page_pdf_at(webview, target, width, height);
+    run_page_script(
+        webview,
+        "window.leafDiagramPrinted && window.leafDiagramPrinted();",
+        "Failed to give the page back to the reader after a diagram print",
+    );
+    match outcome {
+        Ok(()) => run_page_script(
+            webview,
+            &file_written_notice_script(&target.display().to_string()),
+            "Failed to report a diagram print",
         ),
         Err(error) => report_file_action_failure(
             webview,

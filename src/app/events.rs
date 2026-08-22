@@ -502,6 +502,17 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         height: u32,
     },
+    /// Print one diagram onto a sheet of its own. `path` is where it goes, answered by `pickDiagramPath` a moment earlier; `width` and `height` are the sheet's own CSS pixels, read off the drawing the page put in its print container — never off the box around it, which under the paper rules is as wide as the whole surface.
+    ///
+    /// Its own command rather than a fourth `exportDiagram` format: that one carries finished bytes the page made, and a print carries none, while its size is a bitmap's whole pixels where a sheet is measured in fractions of one.
+    #[serde(rename = "printDiagramPdf")]
+    PrintDiagramPdf {
+        path: String,
+        #[serde(default)]
+        width: f64,
+        #[serde(default)]
+        height: f64,
+    },
     /// Write the page as it stands out as a file of its own. `format` is `pdf` or `png`; `width` and `height` are the page's own CSS pixels, which is how the host sizes one continuous page instead of chopping the document across sheets — only the page knows how tall it is. The stylesheet's `leaf-paper` class is what makes that page the whole document in its theme rather than one screen of app frame, and it is on a class rather than in a print block so the page can measure the sheet it is about to ask for. Nothing about the open document is read or written.
     #[serde(rename = "exportPdf")]
     ExportPdf {

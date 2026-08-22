@@ -1812,7 +1812,7 @@ function flowPickerChoices(caption, options, current, chip, apply) {
 
 // ---- taking the diagram out ------------------------------------------------
 
-// Three files, one diagram: the mermaid text as a Markdown document of its own, or the drawing as a picture in either of two formats. Nothing here touches the document the diagram came out of — an export is a file beside it, and Save is still the only thing that writes into the page.
+// Four files, one diagram: the mermaid text as a Markdown document of its own, the drawing as a picture in either of two formats, or the drawing printed onto a sheet of its own. Nothing here touches the document the diagram came out of — an export is a file beside it, and Save is still the only thing that writes into the page.
 //
 // The drawing is always asked for again rather than lifted off the page: what is on screen carries whatever it has been zoomed and dragged to, and in the editor its selection ring and handles as well.
 //
@@ -1821,11 +1821,12 @@ function flowPickerChoices(caption, options, current, chip, apply) {
 // Twice life size, so a picture pasted somewhere and scaled up still reads.
 const DIAGRAM_PNG_SCALE = 2;
 
-// The endings a diagram can be saved under. The save window is what offers them on Windows, so this is the page's copy of the same three the host lists in `DIAGRAM_EXPORT_FORMATS` — held here to draw the menu a Mac gets instead, to read the reader's chosen ending back, and to name the three in the message when it is none of them.
+// The endings a diagram can be saved under. The save window is what offers them on Windows, so this is the page's copy of the same four the host lists in `DIAGRAM_EXPORT_FORMATS` — held here to draw the menu a Mac gets instead, to read the reader's chosen ending back, and to name them in the message when it is none of them.
 const DIAGRAM_EXPORTS = [
   { id: 'md', label: 'Markdown', hint: 'The mermaid text, in a document of its own' },
   { id: 'png', label: 'PNG', hint: 'The drawing as a picture, to paste anywhere' },
   { id: 'webp', label: 'WebP', hint: 'The same picture, about half the file' },
+  { id: 'pdf', label: 'PDF', hint: 'The drawing on one page, sharp at any size' },
 ];
 
 let diagramExportSeq = 0;
@@ -1937,6 +1938,48 @@ async function diagramWebpBase64(svgText) {
   return url.slice(url.indexOf(',') + 1);
 }
 
+// Where a diagram goes to be printed on a sheet of its own. A PDF is rendered rather than encoded, so nothing here can make its bytes: the copy is put in this box, `leaf-paper-diagram` takes everything else off the sheet, and the host prints the page the way it prints a document.
+const diagramPrint = document.getElementById('diagramPrint');
+
+// Whether a print is standing, so the appearance hold is let go exactly once however the host answers.
+let diagramPrinting = false;
+
+// Everything a print put on the page, taken back off. Run on the failed print as well as the written one, or a reader is left looking at a bare drawing where their document was.
+function clearDiagramPrint() {
+  if (diagramPrint) diagramPrint.innerHTML = '';
+  document.body.classList.remove('leaf-paper-diagram');
+  if (!diagramPrinting) return;
+  diagramPrinting = false;
+  if (window.leafHoldAppearance) window.leafHoldAppearance(false);
+}
+
+// The host's answer, written or not: the page goes back to being the document.
+window.leafDiagramPrinted = () => clearDiagramPrint();
+
+// The drawing on a sheet of its own. The path was answered before anything was drawn and the copy is the one the picture rows are made from; what is new is putting it somewhere the render can be pointed at.
+//
+// The size is the drawing's own, read off the drawing rather than off the box around it: under the paper rules a container is as wide as the surface, and a sheet made to that comes out window-wide with the drawing stranded in the middle of it.
+function printDiagramAsPdf(drawing, path) {
+  if (!diagramPrint) throw new Error('This window cannot print a diagram.');
+  diagramPrint.innerHTML = drawing;
+  const drawn = diagramPrint.firstElementChild;
+  if (!drawn) {
+    clearDiagramPrint();
+    throw new Error('That diagram could not be printed.');
+  }
+  document.body.classList.add('leaf-paper-diagram');
+  // The paper rules are what the surface is laid out and measured under, and the hold is what keeps the render in the theme on screen rather than the light one a render emulates. Let go by the host's answer, whichever way the print goes.
+  diagramPrinting = true;
+  if (window.leafHoldAppearance) window.leafHoldAppearance(true);
+  const box = drawn.getBoundingClientRect();
+  send({
+    command: 'printDiagramPdf',
+    path,
+    width: Math.max(Math.round(box.width), 1),
+    height: Math.max(box.height, 1),
+  });
+}
+
 // Where a diagram was asked to go, against the export that asked. The host answers with a path and nothing else, so the source has to be waiting here for it — and one entry is not enough: a reader can leave one save window standing and press Export on another diagram.
 const diagramExportsWaiting = new Map();
 let diagramExportToken = 0;
@@ -2007,7 +2050,7 @@ window.leafDiagramPathPicked = (token, path) => {
   exportDiagramAs(kind, source, path);
 };
 
-// The bytes for the one format the reader named, handed to the host with the path it already answered with.
+// The one format the reader named, handed to the host with the path it already answered with: bytes for three of them, and for the PDF a page to print and the size to print it at.
 async function exportDiagramAs(kind, source, path) {
   try {
     if (kind === 'md') {
@@ -2016,6 +2059,10 @@ async function exportDiagramAs(kind, source, path) {
     }
     const drawing = await diagramDrawingSvg(source);
     if (!drawing) return;
+    if (kind === 'pdf') {
+      printDiagramAsPdf(drawing, path);
+      return;
+    }
     if (kind === 'webp') {
       send({ command: 'exportDiagram', format: 'webp', path, data: await diagramWebpBase64(drawing) });
       return;

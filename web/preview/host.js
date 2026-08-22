@@ -147,6 +147,7 @@ export const COMMANDS = {
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
   pickDiagramPath: [LATER, 'web-export'],
   exportDiagram: [LATER, 'web-export'],
+  printDiagramPdf: [LATER, 'web-export'],
   exportPdf: [ANSWERED],
   undoEdit: [LATER, 'web-app-commands'],
   redoEdit: [LATER, 'web-app-commands'],

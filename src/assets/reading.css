@@ -6793,3 +6793,14 @@ body.leaf-paper :is(.docs-pager,
 .diagram-overlay) {
   display: none;
 }
+/* A diagram on a sheet of its own, which is the same render with one thing left standing. The container holds a copy of the drawing made for the export — never the one on screen, which carries whatever it has been zoomed and dragged to, and in the editor its selection ring and handles as well — and it is out of the layout until an export fills it, so a reader never sees it. */
+.diagram-print {
+  display: none;
+}
+/* Worn beside `leaf-paper`, never instead of it: those rules are what make the surface static, uncontained and as tall as what it holds, and they are what the size was measured under. This leaves the container the only thing in the surface, so the sheet measures to the drawing. */
+body.leaf-paper-diagram .diagram-print {
+  display: block;
+}
+body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
+  display: none;
+}

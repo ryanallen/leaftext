@@ -1316,6 +1316,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         height,
                     );
                 }
+                IpcCommand::PrintDiagramPdf {
+                    path,
+                    width,
+                    height,
+                } => {
+                    // No window here: the page asked where it goes before it drew anything. The render blocks this thread, the way the page export's does.
+                    print_diagram_pdf(reader.page(), Path::new(&path), width, height);
+                }
                 IpcCommand::ExportPdf {
                     format,
                     width,

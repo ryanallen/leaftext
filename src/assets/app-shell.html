@@ -325,6 +325,8 @@
     <button type="button" id="confirmDialogAccept" class="confirm-dialog-button is-danger">Delete</button>
   </div>
 </div>
+<!-- Where a diagram goes to be printed on its own. The export draws the diagram again into this box and raises `leaf-paper-diagram`, which takes everything else off the sheet — so the page the host renders is the drawing and nothing around it. Empty and out of the layout the rest of the time. See .diagram-print in reading.css. -->
+<div id="diagramPrint" class="diagram-print" aria-hidden="true"></div>
 <!-- The front-end, over the asset protocol rather than inline: the page is handed
      to WebView2 as one string with a ceiling on it and this was 88% of it. A plain
      script tag, not a module, because the fragments are written as one shared

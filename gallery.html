@@ -9197,6 +9197,17 @@ body.leaf-paper :is(.docs-pager,
 .diagram-overlay) {
   display: none;
 }
+/* A diagram on a sheet of its own, which is the same render with one thing left standing. The container holds a copy of the drawing made for the export — never the one on screen, which carries whatever it has been zoomed and dragged to, and in the editor its selection ring and handles as well — and it is out of the layout until an export fills it, so a reader never sees it. */
+.diagram-print {
+  display: none;
+}
+/* Worn beside `leaf-paper`, never instead of it: those rules are what make the surface static, uncontained and as tall as what it holds, and they are what the size was measured under. This leaves the container the only thing in the surface, so the sheet measures to the drawing. */
+body.leaf-paper-diagram .diagram-print {
+  display: block;
+}
+body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
+  display: none;
+}
 </style>
 <style>
   html, body { overflow: visible; height: auto; }
@@ -9242,7 +9253,7 @@ body.leaf-paper :is(.docs-pager,
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 162 values that do not change with the theme, all 63 icons, and all 68 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 162 values that do not change with the theme, all 63 icons, and all 69 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -9264,7 +9275,7 @@ body.leaf-paper :is(.docs-pager,
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>162</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>63</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>68</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>69</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -9633,7 +9644,7 @@ body.leaf-paper :is(.docs-pager,
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">68 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">69 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -9893,6 +9904,10 @@ body.leaf-paper :is(.docs-pager,
 <section class="part">
 <header><h3>Full-window diagram</h3><code class="built">.diagram</code><span class="built">diagram-view.js</span></header>
 <div class="stage"><div class="diagram-overlay open" style="position:static;height:150px"><pre class="mermaid diagram-stage" data-processed="true"><svg viewBox="0 0 220 60" width="220" height="60"><rect x="1" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><rect x="133" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><path d="M87 30h46" fill="none" stroke="currentColor"></path></svg><button type="button" class="leaf-sheet-close diagram-close"><span class="lt-icon lt-icon-close"></span></button><div class="mermaid-view-controls"><button type="button" class="mermaid-export"><span class="lt-icon lt-icon-export"></span></button><div class="mermaid-zoom" role="group"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-fit"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></div></pre></div></div>
+</section>
+<section class="part">
+<header><h3>Diagram print sheet</h3><code class="built">.diagram-print</code><span class="built">flow-canvas.js, filled for one export and emptied on the answer</span></header>
+<div class="stage"><div class="diagram-print" style="display:block"><svg viewBox="0 0 220 60" width="220" height="60"><rect x="1" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><rect x="133" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><path d="M87 30h46" fill="none" stroke="currentColor"></path></svg></div></div>
 </section>
 <section class="part">
 <header><h3>Full-window table</h3><code class="built">.table-sheet</code><span class="built">table-sheet.js</span></header>

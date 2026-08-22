@@ -3460,7 +3460,7 @@ fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
 
 #[test]
 fn a_diagram_export_writes_the_page_s_own_bytes_or_none_at_all() {
-    // The write itself is a disk call into a path a native window answered with, so this is the whole of the decision. Two of the three formats reach the file differently — the page sends pixels for a PNG and a finished file for a WebP — and a payload that does not decode has to end as nothing rather than as a file that will not open.
+    // The write itself is a disk call into a path a native window answered with, so this is the whole of the decision. Two of the four formats reach the file differently — the page sends pixels for a PNG and a finished file for a WebP — and a payload that does not decode has to end as nothing rather than as a file that will not open.
     let written = |format: &str, data: &str, width: u32, height: u32| match diagram_export_file(
         format, data, width, height,
     ) {
@@ -3511,15 +3511,25 @@ flowchart TD
         "a format the save window does not offer is nothing anybody asked for"
     );
 
-    // One table, so the window and the encoder cannot drift: every ending the window offers is one the encoder writes, and Markdown is first because Windows names a file with no ending off the first filter.
+    // A PDF is rendered by the host, so the one command that carries bytes has none to carry for it. The row stays in the table and this arm is what stops those bytes reaching a file: `print_diagram_pdf` is what writes one.
+    assert!(
+        matches!(
+            diagram_export_file("pdf", "anything", 1, 1),
+            DiagramExportFile::Printed
+        ),
+        "a PDF was treated as bytes the page sent, which writes a .pdf full of something else"
+    );
+
+    // One table, so the window and the encoder cannot drift: every ending the window offers is one the host writes, and Markdown is first because Windows names a file with no ending off the first filter.
     assert_eq!(
         DIAGRAM_EXPORT_FORMATS,
         &[
             ("Markdown", &["md"][..]),
             ("PNG image", &["png"][..]),
-            ("WebP image", &["webp"][..])
+            ("WebP image", &["webp"][..]),
+            ("PDF document", &["pdf"][..])
         ],
-        "the save window offers a format the encoder does not write, or lists them in an order that names a bare file wrongly"
+        "the save window offers a format the host does not write, or lists them in an order that names a bare file wrongly"
     );
     for (_, endings) in DIAGRAM_EXPORT_FORMATS {
         for extension in *endings {
@@ -3528,7 +3538,7 @@ flowchart TD
                     diagram_export_file(extension, "", 1, 1),
                     DiagramExportFile::Unoffered
                 ),
-                "the window offers {extension} and the encoder has never heard of it"
+                "the window offers {extension} and the host has never heard of it"
             );
         }
     }
@@ -3569,10 +3579,27 @@ fn save_window_offers_one_format_once_the_reader_has_picked_one() {
     );
     assert_eq!(spelled.name, "Untitled.md");
 
+    // The PDF row is offered the same way the other three are, though the host renders it rather than encoding anything: what the window asks and what writes the file are separate questions.
+    let printed = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some("pdf"), "README-diagram");
+    assert_eq!(
+        printed.filters,
+        vec![("PDF document", &["pdf"][..])],
+        "a Mac panel was left more than the one ending the reader picked, so it says nothing again"
+    );
+    assert_eq!(
+        printed.name, "README-diagram.pdf",
+        "the reader picked PDF and the name still says something else"
+    );
+
     // Nothing the table names, so every row stands: a window that offered nothing is one a reader cannot save from at all.
     let unknown = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some("svg"), "README-diagram");
     assert_eq!(unknown.filters, DIAGRAM_EXPORT_FORMATS.to_vec());
     assert_eq!(unknown.name, "README-diagram.md");
+    assert_eq!(
+        unknown.filters.len(),
+        4,
+        "the window stopped offering every format the table names"
+    );
 }
 
 /// What the three windows carrying an `All files` row open with, on both platforms, since neither window can be opened from a test.
