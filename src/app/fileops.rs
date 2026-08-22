@@ -571,7 +571,7 @@ fn assets_name_for(assets: &Path, source: &Path) -> (String, bool) {
         if !taken.exists() {
             return (candidate, true);
         }
-        // A source that cannot be read has no bytes to match, so the walk falls through to the first free name and the copy fails the way it already does.
+        // A source that cannot be read has no bytes to match, so the walk falls through to the first free name and the copy fails, which is what leaves the browser its own broken mark.
         let Some(source_bytes) = bytes.get_or_insert_with(|| fs::read(source).ok()).as_ref() else {
             continue;
         };
