@@ -189,7 +189,7 @@ function pageExportMarkup() {
   const drawn = app ? app.querySelector('.document-body') : null;
   if (!drawn) return '';
   const copy = drawn.cloneNode(true);
-  // The whole `style` attribute, not one property: the renderer writes this element bare, so everything that ever lands there is a correction the app parked at runtime. Today that is the scroll origin canceling the room the app's own bar takes, and an exported page has no bar — wearing it opens the document with its title against the window's edge or scrolled off above it. Children keep their own.
+  // The whole attribute, not one property: the renderer writes this element bare, so anything on it is a correction the app parked — today the scroll origin canceling the room its own bar takes, which an exported page has no bar for. Children keep their own.
   copy.removeAttribute('style');
   copy.querySelectorAll(PAGE_EXPORT_CONTROLS).forEach((control) => control.remove());
   // A picture the app could not load is not a picture in this markup: its source was replaced with a transparent pixel and our own broken-picture mark put over it, with its address parked on the element. Put the address back, so the export names the file the document asked for and the browser draws its own mark if it is still not there.
