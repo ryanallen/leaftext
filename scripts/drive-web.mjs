@@ -3,10 +3,13 @@
 //
 //   node scripts/drive-web.mjs <url> [steps…]
 //
+//   size:<w>,<h>       lay the page out at that window size
 //   eval:<js>          run it in the page and print what it returns
 //   click:<selector>   click the first match
 //   wait:<ms>          let the page catch up
 //   shot:<file.png>    photograph the window
+//
+// The window opens at 1600x1000 and a `size:` step relays the page out at another width, as many times in one run as it is given — which is the only way anything here can read a column that is written to grow with the window.
 //
 // The desktop has `just drive` for exactly this reason: a check that passes is not a thing that works, and the only way to know a button does what it says is to press it. This is that, for the browser half — Edge headless over its own debugging port, no package added.
 
@@ -115,7 +118,14 @@ for (const step of steps) {
   const verb = step.slice(0, cut);
   const rest = step.slice(cut + 1);
   try {
-    if (verb === 'wait') {
+    if (verb === 'size') {
+      const [width, height] = rest.split(',').map(Number);
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) throw new Error('a size is <width>,<height> in pixels');
+      await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+      // The layout is new the moment the override lands, and nothing has drawn against it: the front end does all of its placing on an animation frame, so a step reading the page straight after would read the old one.
+      await new Promise((done) => setTimeout(done, 250));
+      console.log(`size ${width}x${height}`);
+    } else if (verb === 'wait') {
       await new Promise((done) => setTimeout(done, Number(rest)));
     } else if (verb === 'eval') {
       console.log(JSON.stringify(await evaluate(rest)));

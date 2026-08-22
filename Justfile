@@ -365,6 +365,8 @@ preview-web folder="":
 # Press things in the exported site and read the page back — the browser half of
 # `just drive`. A check that passes is not a button that works.
 #   just drive-web http://localhost:8123/#README.md click:.docs-pager-next shot:out.png
+# A `size:1280,900` step lays the page out at that width, as often in one run as
+# it is given, so anything written to grow with the window can be read at two of them.
 drive-web url *steps:
     node scripts/drive-web.mjs {{ url }} {{ steps }}
 

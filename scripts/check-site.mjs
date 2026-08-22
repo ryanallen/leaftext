@@ -228,6 +228,16 @@ if (!existsSync(publish)) {
   }
 }
 
+// The reading column is measured in characters, and it has to stay that way. The type on both published sites grows with the window on purpose, so a column frozen at a pixel count means the line gets *shorter* the bigger the screen — 104 characters at a 1280-wide window, 66 at 2530. Nothing offline can lay a page out and count them, so what is held here is the unit: a `ch` in the value is the one thing that makes the column grow alongside the type. The reading itself is driven, `just drive-web <url> size:2530,1400 …`.
+const column = /--content-width:\s*([^;]+);/.exec(read('site/styles.css'));
+if (!column) {
+  problems.push('site/styles.css no longer sets --content-width, and that is the one width every published page is read through');
+} else if (!/\d(?:\.\d+)?ch\b/.test(column[1])) {
+  problems.push(
+    `--content-width is '${column[1].trim()}', which has no character measure in it — the type above it grows with the window, so a column that does not gives a reader a shorter line the better their screen is`
+  );
+}
+
 /** Whether `.gitignore` refuses a path, by the folder rules it actually writes rather than by matching the whole name. */
 function gitIgnores(path) {
   const rules = readFileSync(join(root, '.gitignore'), 'utf8')
@@ -245,5 +255,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills`
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters`
 );

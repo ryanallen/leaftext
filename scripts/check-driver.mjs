@@ -45,13 +45,15 @@ function shell() {
 }
 
 // A real driven run of the browser driver: eight seconds on an empty page, which is past where one without the focus call goes hidden. A grep for that call would prove only that the string is in the file, which is the one thing nobody doubts.
+//
+// The same run lays the page out at two widths and reads each back, because a `size:` step that were quietly ignored would leave every reading taken through this driver a reading of the window it happened to open at. `about:blank` measures it as well as any page does: the question is whether the browser relaid out, not what it drew.
 const probe = spawnSync(
   process.execPath,
-  [webDriver, 'about:blank', 'wait:8000', 'eval:document.visibilityState'],
+  [webDriver, 'about:blank', 'size:1280,900', 'eval:innerWidth', 'size:2530,1400', 'eval:innerWidth', 'wait:8000', 'eval:document.visibilityState'],
   { encoding: 'utf8', timeout: 120000 }
 );
 const probeText = `${probe.stdout ?? ''}${probe.stderr ?? ''}`;
-let webSaid = 'the browser driver kept an empty page awake for eight seconds';
+let webSaid = 'the browser driver laid one page out at two widths, refused a size that is not two numbers, and kept an empty page awake for eight seconds';
 if (probeText.includes('no Edge or Chrome on this machine')) {
   // A skip, said out loud, for the same reason as the PowerShell one below.
   webSaid = 'the browser driver was not driven — no Edge or Chrome on this machine';
@@ -60,6 +62,20 @@ if (probeText.includes('no Edge or Chrome on this machine')) {
   console.error('the browser driver no longer keeps its page awake, so every step it reports is a step that may not have happened:');
   console.error(`  ${probeText.trim() || probe.error?.message || 'it printed nothing'}`);
   process.exit(1);
+}
+
+if (!probeText.includes('no Edge or Chrome on this machine')) {
+  if (!/^1280$/m.test(probeText) || !/^2530$/m.test(probeText)) {
+    console.error('the browser driver no longer lays its page out at the size a `size:` step asks for, so a reading taken at a named width is really a reading of whatever width the window opened at:');
+    console.error(`  ${probeText.trim() || 'it printed nothing'}`);
+    process.exit(1);
+  }
+  // And it refuses a size it cannot read rather than carrying on at the last one, which would report a width nobody asked for as though it had been set.
+  const refused = spawnSync(process.execPath, [webDriver, 'about:blank', 'size:wide'], { encoding: 'utf8', timeout: 120000 });
+  if (refused.status === 0) {
+    console.error('the browser driver accepted a size that is not two numbers, so a mistyped width would pass as a reading');
+    process.exit(1);
+  }
 }
 
 // The branch that fails a run on a hidden page cannot be reached by a live probe without a back door in the shipped driver, so it is read instead.

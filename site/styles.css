@@ -59,7 +59,8 @@
   --line-height: 1.6;
 
   /* ---- Layout ------------------------------------------------------- */
-  --content-width: 1012px; /* max width of the reading column */
+  /* The reading column: 75 characters, which is the app's own measure — `type-measure-body` in design/tokens.md, where a body line stops being readable past it. Written in `ch` so it grows with the type above, which a pixel width cannot: at 1012px the line fell from 104 characters to 66 as the window grew. The padding is added back because `.page` is a border box, so its max-width covers its own padding and a bare 75ch leaves 68 characters for words. */
+  --content-width: calc(75ch + var(--content-pad) * 2);
   --content-pad: 32px; /* space between text and the window edge */
   --radius: 6px; /* rounded corners on code blocks, etc. */
   --scroll-offset: 16px; /* gap above a heading you jumped to */
