@@ -1776,3 +1776,44 @@ fn the_theme_is_held_while_a_page_is_being_rendered_for_paper() {
         "the appearance is released on the cancel, the write and the failure alike"
     );
 }
+
+/// The page an export writes: the document as the page drew it, in the theme it was drawn in, naming the one stylesheet in the folder beside it.
+///
+/// Nothing is fetched and nothing runs. A theme is two attributes on the root and every theme's colors are in that one stylesheet, so the page opens in the right theme with no script at all. The drawings' own stylesheet is the exception that has to travel: mermaid writes one per drawing and the page hoists them into a single element in its head, so it is neither in the stylesheet nor inside the SVG — watched in a real browser, a page written without it is a page of black boxes with clipped labels.
+#[test]
+fn an_exported_page_names_its_stylesheet_and_pins_the_theme_it_was_written_in() {
+    let page = exported_page_document(
+        "moss",
+        "dark",
+        "Release notes",
+        ".lt-mmd-0 .node rect { fill: #123; }",
+        "<div class=\"app-surface\">the document</div>",
+    );
+
+    assert_contains(&page, "<!DOCTYPE html>");
+    assert_contains(&page, "data-leaf-theme=\"moss\"");
+    assert_contains(&page, "data-leaf-appearance=\"dark\"");
+    assert_contains(&page, "<title>Release notes</title>");
+    // The folder the pictures go in is the same one, so the two are named together and nowhere else.
+    assert_eq!(EXPORTED_PAGE_STYLESHEET, "assets/app.css");
+    assert_contains(&page, "<link rel=\"stylesheet\" href=\"assets/app.css\">");
+    // What drops the app's own frame off the sheet, and what makes the browser scroll the body rather than the page carrying a scroller of its own.
+    assert_contains(&page, "<body class=\"leaf-paper\">");
+    assert_contains(&page, "<div class=\"app-surface\">the document</div>");
+
+    // Inline, as the one element the page already holds it as: a second file in the folder would buy a fetch and another name for nothing.
+    assert_contains(&page, "<style id=\"leaf-mermaid-sheets\">");
+    assert_contains(&page, ".lt-mmd-0 .node rect { fill: #123; }");
+
+    // A document with no drawing in it carries no empty element for one.
+    let plain = exported_page_document("dusk", "light", "", "", "<p>hello</p>");
+    assert!(
+        !plain.contains("leaf-mermaid-sheets"),
+        "a document with no drawing carried a stylesheet for one: {plain}"
+    );
+    assert_contains(&plain, "<title>Document</title>");
+
+    // The three values the page hands over are a theme name, an appearance and somebody's document title, and a title is whatever they called their file.
+    let named = exported_page_document("moss", "dark", "Q1 \"final\" <notes>", "", "");
+    assert_contains(&named, "<title>Q1 &quot;final&quot; &lt;notes&gt;</title>");
+}

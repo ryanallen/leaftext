@@ -305,10 +305,8 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
 }
 
 /// Every format the page can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first, so the order is load-bearing, and `page_export_kind` below reads the same table — which is why a format lives here and nowhere else.
-pub(crate) const PAGE_EXPORT_FORMATS: &[(&str, &[&str])] = &[
-    ("PDF document", &["pdf"]),
-    ("Web page", &["html", "htm"]),
-];
+pub(crate) const PAGE_EXPORT_FORMATS: &[(&str, &[&str])] =
+    &[("PDF document", &["pdf"]), ("Web page", &["html", "htm"])];
 
 /// Which of those two a chosen name is asking for.
 pub(crate) enum PageExportKind {
@@ -406,7 +404,10 @@ pub(crate) fn export_page(
         // Not a row the chooser offers, so not a file anybody asked for.
         None => {
             release(page);
-            let names: Vec<&str> = PAGE_EXPORT_FORMATS.iter().map(|(label, _)| *label).collect();
+            let names: Vec<&str> = PAGE_EXPORT_FORMATS
+                .iter()
+                .map(|(label, _)| *label)
+                .collect();
             report_file_action_failure(
                 Some(page),
                 &format!(
@@ -442,17 +443,16 @@ pub(crate) fn export_page_html(
             &file_written_notice_script(&target.display().to_string()),
             "Failed to report a page export",
         ),
-        Err(error) => report_file_action_failure(
-            webview,
-            &format!("That file could not be written. {error}"),
-        ),
+        Err(error) => {
+            report_file_action_failure(webview, &format!("That file could not be written. {error}"))
+        }
     }
 }
 
 /// The page where the reader pointed, and one `assets` folder beside it holding the stylesheet and every picture.
 ///
 /// Beside rather than inside a folder of its own, because that is the shape the picture export writes: the file where they said, its assets in one folder next to it. Two documents exported into one folder therefore share that folder, which is why a name already taken is written beside rather than over.
-fn write_exported_page(
+pub(crate) fn write_exported_page(
     target: &Path,
     export: &PageHtmlExport,
     source_dir: Option<&Path>,

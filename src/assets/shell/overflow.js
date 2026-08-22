@@ -182,24 +182,17 @@ if (exportPdfButton) {
 const PAGE_EXPORT_CONTROLS = '.code-copy, .image-sheet-open, .mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close';
 // The document as a page of its own: a copy of what is drawn, its controls taken out, wrapped in the ancestors every rule in the stylesheet is keyed on.
 //
-// The chain is not decoration — a body without it renders unstyled. Two classes are left off rather than copied: the shell's `has-minimap` and the layout's rail, because the export carries no rail and the grid would otherwise reserve a column for one that is not there.
+// The chain is not decoration — a body without it renders unstyled. It is written here rather than cloned off the page because two of the classes on screen must not travel: the shell's `has-minimap` and the layout's rail, which set and spend the column the rail stands in, and the export carries no rail for it to hold.
+const PAGE_EXPORT_WRAPPER_OPEN = '<div class="app-surface"><main class="reader-shell has-document"><div class="reader-layout reader-layout-no-minimap">';
+const PAGE_EXPORT_WRAPPER_CLOSE = '</div></main></div>';
 function pageExportMarkup() {
   const drawn = app ? app.querySelector('.document-body') : null;
   if (!drawn) return '';
   const copy = drawn.cloneNode(true);
   copy.querySelectorAll(PAGE_EXPORT_CONTROLS).forEach((control) => control.remove());
   // A picture the app could not load is not a picture in this markup: its source was replaced with a transparent pixel and our own broken-picture mark put over it, with its address parked on the element. Put the address back, so the export names the file the document asked for and the browser draws its own mark if it is still not there.
-  copy.querySelectorAll('img[data-image-missing="true"]').forEach(restoreMissingImage);
-  const surface = document.createElement('div');
-  surface.className = 'app-surface';
-  const shell = document.createElement('main');
-  shell.className = 'reader-shell has-document';
-  const layout = document.createElement('div');
-  layout.className = 'reader-layout reader-layout-no-minimap';
-  layout.appendChild(copy);
-  shell.appendChild(layout);
-  surface.appendChild(shell);
-  return surface.outerHTML;
+  copy.querySelectorAll('img').forEach(restoreMissingImage);
+  return PAGE_EXPORT_WRAPPER_OPEN + copy.outerHTML + PAGE_EXPORT_WRAPPER_CLOSE;
 }
 // The host's answer for the Web page row: where the reader said it goes. The drawings' own stylesheet travels with the markup — mermaid writes one per drawing and the page hoists them into a single element in its head, so it is neither in the stylesheet nor inside the SVG, and a copy of the document alone comes out a page of black boxes.
 window.leafExportPageHtml = (path) => {

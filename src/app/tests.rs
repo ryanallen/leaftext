@@ -5889,7 +5889,7 @@ fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
     // The open document is read for its name and nothing else: a chosen path and a page size are all the write needs, so the home screen exports too.
     let write = include_str!("fileops.rs");
     let body = write
-        .split("pub(crate) fn export_page_pdf")
+        .split("pub(crate) fn export_page(")
         .nth(1)
         .and_then(|rest| {
             rest.split(
@@ -5919,6 +5919,137 @@ fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
     assert!(
         write.contains("let sheet = (inches / sheets * 100.0).ceil() / 100.0;"),
         "the sheet is never rounded to less than the document needs"
+    );
+}
+
+/// The other row in that window: the page as a web page, its stylesheet and its pictures in one `assets` folder beside it.
+///
+/// Every picture the app draws is addressed on a scheme no browser can fetch, with a per-render stamp on the end of it, so a page written from the live markup is a page of broken pictures until every one is copied and re-addressed. One copy per file however many times the document draws it, and two documents exported into one folder share that folder — which is why a name already there is written beside rather than over.
+#[test]
+fn an_exported_page_copies_each_picture_once_and_never_over_one_already_there() {
+    use crate::app::fileops::{write_exported_page, PageHtmlExport};
+
+    let root = scratch_dir("exported-page-pictures");
+    let notes = root.join("notes");
+    let other = root.join("other");
+    let out = root.join("out");
+    for folder in [notes.join("imgs"), other.join("imgs"), out.clone()] {
+        fs::create_dir_all(&folder).expect("the fixture folders are made");
+    }
+    fs::write(notes.join("imgs/shot.png"), b"first picture").expect("the first picture is written");
+    fs::write(other.join("imgs/shot.png"), b"second picture")
+        .expect("the second picture is written");
+
+    // The same picture twice, the way a document that draws it twice arrives, each carrying the epoch stamp the page adds so a replaced file is re-fetched rather than shown stale.
+    let drawn = |stamp: u32| {
+        format!(
+            "<p><img src=\"http://leaf-image.local/imgs/shot.png?leaf-epoch={stamp}\" alt=\"one\"><img src=\"http://leaf-image.local/imgs/shot.png?leaf-epoch={stamp}\" alt=\"again\"><img src=\"https://example.com/away.png\" alt=\"away\"></p>"
+        )
+    };
+    let export = |markup: String| PageHtmlExport {
+        markup,
+        sheet: String::new(),
+        theme: "moss".to_string(),
+        appearance: "dark".to_string(),
+        title: "Notes".to_string(),
+    };
+
+    write_exported_page(&out.join("notes.html"), &export(drawn(4)), Some(&notes))
+        .expect("the page is written");
+    let page = fs::read_to_string(out.join("notes.html")).expect("the page reads back");
+
+    assert_eq!(
+        fs::read(out.join("assets/shot.png")).expect("the picture is copied"),
+        b"first picture",
+        "the picture beside the note is the one that travels"
+    );
+    assert_eq!(
+        page.matches("src=\"assets/shot.png\"").count(),
+        2,
+        "both drawings point at the one copy: {page}"
+    );
+    assert!(
+        !page.contains("leaf-epoch") && !page.contains("leaf-image"),
+        "the exported page keeps no address only this app can fetch: {page}"
+    );
+    // A picture served over the network is nobody's file to copy, and leaving it addressed as it was is what keeps the page opening.
+    assert!(
+        page.contains("src=\"https://example.com/away.png\""),
+        "a picture off the network was rewritten: {page}"
+    );
+    assert!(
+        fs::read_to_string(out.join("assets/app.css"))
+            .expect("the stylesheet is written")
+            .contains(".app-surface"),
+        "the whole reading stylesheet travels beside the page"
+    );
+
+    // A second document into the same folder, whose picture has the same name and is a different file. Overwriting would silently replace a picture belonging to a page somebody exported yesterday.
+    write_exported_page(&out.join("other.html"), &export(drawn(9)), Some(&other))
+        .expect("the second page is written");
+    assert_eq!(
+        fs::read(out.join("assets/shot.png")).expect("the first picture is still there"),
+        b"first picture",
+        "the second export wrote over the first export's picture"
+    );
+    assert_eq!(
+        fs::read(out.join("assets/shot-2.png")).expect("the second picture is copied beside it"),
+        b"second picture"
+    );
+    let second = fs::read_to_string(out.join("other.html")).expect("the second page reads back");
+    assert_eq!(
+        second.matches("src=\"assets/shot-2.png\"").count(),
+        2,
+        "the second page points at its own copy: {second}"
+    );
+}
+
+/// A picture the app could not load is not a picture in the live markup at all: the page swaps its source for a transparent pixel and paints our own broken-picture mark over it. The page puts the address back before it sends the markup, so what the export names is the file the document asked for — and the browser draws its own mark where it is still not there, which says what an empty space cannot.
+#[test]
+fn an_exported_page_names_a_missing_picture_rather_than_our_own_mark() {
+    use crate::app::fileops::{write_exported_page, PageHtmlExport};
+
+    let root = scratch_dir("exported-page-missing-picture");
+    let notes = root.join("notes");
+    let out = root.join("out");
+    for folder in [notes.clone(), out.clone()] {
+        fs::create_dir_all(&folder).expect("the fixture folders are made");
+    }
+
+    write_exported_page(
+        &out.join("notes.html"),
+        &PageHtmlExport {
+            markup:
+                "<p><img src=\"http://leaf-image.local/imgs/gone.png?leaf-epoch=2\" alt=\"\"></p>"
+                    .to_string(),
+            sheet: String::new(),
+            theme: "moss".to_string(),
+            appearance: "light".to_string(),
+            title: "Notes".to_string(),
+        },
+        Some(&notes),
+    )
+    .expect("the page is written");
+    let page = fs::read_to_string(out.join("notes.html")).expect("the page reads back");
+
+    assert!(
+        page.contains("src=\"assets/gone.png\""),
+        "the page names the file the document asked for: {page}"
+    );
+    assert!(
+        !page.contains("data:image/gif"),
+        "the transparent pixel behind our broken-picture mark was exported as the picture: {page}"
+    );
+    assert!(
+        !out.join("assets/gone.png").exists(),
+        "a file that is not there was invented"
+    );
+
+    // The other half of it is the page's: the mark and the pixel are what the live markup carries, and putting the address back is what makes the markup above what arrives here.
+    let cleaner = include_str!("../assets/shell/overflow.js");
+    assert!(
+        cleaner.contains("copy.querySelectorAll('img').forEach(restoreMissingImage);"),
+        "the export's copy no longer puts a missing picture's own address back"
     );
 }
 

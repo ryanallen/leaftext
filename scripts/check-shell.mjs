@@ -10933,18 +10933,81 @@ if (booted) {
       const button = booted.document.getElementById('exportPdfButton');
       (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
       const surface = booted.document.getElementById('appSurface');
-      // The page offers one format, so there is nothing to pick: a menu here would be a second press to answer a question with a single answer.
+      // Windows draws the formats as a dropdown inside the save window, so the window is the whole question and nothing opens over the page. The menu is a Mac panel's answer, where no label survives at all.
       if (surface.children.some((child) => String(child.className || '') === 'flow-menu')) {
-        throw new Error('pressing Export opened a menu holding the one format the page can write');
+        throw new Error('pressing Export opened a menu over the page where the save window asks the format itself');
       }
       const asked = sent.filter((one) => one.command === 'exportPdf');
       if (asked.length !== 1) throw new Error(`pressing Export sent ${asked.length} exports`);
       // Only the page knows how tall the document is, and that height is the whole of what makes the file one continuous page instead of a document chopped across sheets.
-      if (asked[0].format !== 'pdf') throw new Error(`Export sent ${asked[0].format} rather than the one format the page writes`);
+      if (asked[0].format !== '') throw new Error(`Export named ${asked[0].format} rather than leaving the save window every row to offer`);
       if (!(asked[0].height > 0) || !(asked[0].width > 0)) throw new Error(`the export carried no page size: ${JSON.stringify(asked[0])}`);
     } finally {
       booted.window.ipc = ipc;
       booted.renderReaderToolbar(false);
+    }
+  });
+
+  // A rendered document with each of the app's own controls inside it, and a diagram already drawn. The parts are the copy: what is removed leaves the markup, which is what makes this a reading of the written page rather than of the selector.
+  const drawnDocument = () => {
+    const parts = [
+      { html: '<h1>Release notes</h1>' },
+      { html: '<pre class="mermaid" data-processed="true"><svg class="flowchart lt-mmd-0"></svg></pre>' },
+      { classes: ['code-copy'], html: '<button class="code-copy"></button>' },
+      { classes: ['image-sheet-open'], html: '<button class="image-sheet-open"></button>' },
+      { classes: ['mermaid-tools'], html: '<div class="mermaid-tools"></div>' },
+      { classes: ['mermaid-zoom'], html: '<div class="mermaid-zoom"></div>' },
+    ];
+    return {
+      get outerHTML() {
+        return `<div class="document-body">${parts.map((part) => part.html).join('')}</div>`;
+      },
+      querySelectorAll: (selector) => {
+        const wants = String(selector).split(',').map((one) => one.trim().replace(/^\./, ''));
+        return parts
+          .filter((part) => (part.classes || []).some((name) => wants.includes(name)))
+          .map((part) => ({ dataset: {}, remove: () => parts.splice(parts.indexOf(part), 1) }));
+      },
+    };
+  };
+
+  // Stand the drawn document in front of the reader element, and hand back whatever the export made of it.
+  const exportedMarkup = () => {
+    const reader = vm.runInContext('app', booted);
+    const wasQuery = reader.querySelector;
+    const copy = drawnDocument();
+    reader.querySelector = (selector) =>
+      String(selector) === '.document-body' ? { cloneNode: () => copy } : wasQuery.call(reader, selector);
+    try {
+      return vm.runInContext('pageExportMarkup', booted)();
+    } finally {
+      reader.querySelector = wasQuery;
+    }
+  };
+
+  check('The web page export hands over the document and none of the app that was drawn inside it', () => {
+    const markup = exportedMarkup();
+    // Nothing is drawn, fetched or run for the export: the diagram is already an SVG sitting in the document.
+    if (!markup.includes('<svg class="flowchart lt-mmd-0">')) {
+      throw new Error(`the drawn diagram did not travel with the document: ${markup}`);
+    }
+    if (!markup.includes('<h1>Release notes</h1>')) throw new Error(`the document itself did not travel: ${markup}`);
+    // Four kinds of control, every one of which does nothing on somebody else's machine. The copy button is one per fenced block, which is the one an earlier reading missed.
+    for (const control of ['code-copy', 'image-sheet-open', 'mermaid-tools', 'mermaid-zoom']) {
+      if (markup.includes(control)) throw new Error(`the export carried the app's own ${control}: ${markup}`);
+    }
+  });
+
+  check('The exported wrapper chain reserves no column for a rail it has not got', () => {
+    const markup = exportedMarkup();
+    // Every rule in the stylesheet is keyed on this chain, so a body without it renders unstyled.
+    if (!markup.startsWith('<div class="app-surface"><main class="reader-shell has-document"><div class="reader-layout reader-layout-no-minimap">')) {
+      throw new Error(`the exported document was not wrapped in the ancestors the stylesheet is keyed on: ${markup}`);
+    }
+    if (!markup.endsWith('</div></main></div>')) throw new Error(`the wrapper chain was left open: ${markup}`);
+    // `has-minimap` is what sets the rail's column and the grid is what spends it, so a copy carrying it lays the document out beside an empty rail.
+    if (markup.includes('has-minimap')) {
+      throw new Error(`the export said it has a minimap it does not carry: ${markup}`);
     }
   });
 
