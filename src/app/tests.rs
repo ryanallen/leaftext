@@ -3804,7 +3804,7 @@ fn the_export_ask_carries_a_destination_and_the_size_the_page_measured() {
     );
 }
 
-/// What a Mac reader gets when they press Export PDF. The arm is Mac code and nothing here compiles or runs it, so the proof is the source: the panel switched off, the chosen path named as where the job saves to, and the sheet the page measured spent rather than dropped. Read the same way as the ask above it, for the same reason.
+/// What a Mac reader gets when they press Export and pick the PDF row. The arm is Mac code and nothing here compiles or runs it, so the proof is the source: the panel switched off, the chosen path named as where the job saves to, and the sheet the page measured spent rather than dropped. Read the same way as the ask above it, for the same reason.
 #[test]
 fn the_mac_export_switches_the_print_panel_off_and_saves_to_the_chosen_path() {
     let write = include_str!("fileops.rs");

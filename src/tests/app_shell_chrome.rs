@@ -1136,6 +1136,8 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
         ">Choose file</button>",
         "Files you open show up here.",
         r#"aria-label="Themes" title="Themes""#,
+        // The window behind this press offers a PDF and a web page, so the button names the window rather than either format.
+        r#"aria-label="Export" title="Export the page""#,
         r#"<span class="reader-subselect-label">Graph size</span>"#,
     ] {
         assert_contains(&html, expected);

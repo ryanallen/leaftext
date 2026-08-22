@@ -60,7 +60,7 @@ function applyGraphView() {
   document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';
   renderReaderToolbar(!!activeDocumentPath());
 }
-// Export PDF stands only where there is a rendered page to print. Not on the home screen, which has no document; not in the source view, where Monaco realizes the lines it is drawing and nothing else, so a print gives whatever happened to be on screen; and not on the map, which the print rules take down with the rest of the app's controls. Hidden and then refit, the way the update bell does it — an action that comes and goes mid-session changes what fits beside the tabs.
+// Export stands only where there is a rendered page to print. Not on the home screen, which has no document; not in the source view, where Monaco realizes the lines it is drawing and nothing else, so a print gives whatever happened to be on screen; and not on the map, which the print rules take down with the rest of the app's controls. Hidden and then refit, the way the update bell does it — an action that comes and goes mid-session changes what fits beside the tabs.
 function renderExportPdfAction(hasDocument) {
   if (!exportPdfButton) return;
   const wasHidden = exportPdfButton.hidden;

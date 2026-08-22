@@ -75,7 +75,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 | Theme button | `.theme-button` |
 | Open button | `.open-button` |
 | New-document button | `.new-button` |
-| Export-PDF button | `.export-button` |
+| Export button | `.export-button` |
 | Theme mode button | `.theme-mode-btn` |
 | Document button | `.leaf-md-button` |
 | Flowchart sheet | `.flow-sheet` |

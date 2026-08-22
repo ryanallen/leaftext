@@ -10673,7 +10673,7 @@ if (booted) {
       appendChild: (child) => inside.push(move(child)) && child,
     });
     Object.defineProperty(panel, 'childElementCount', { get: () => inside.length, configurable: true });
-    // A rendered document, because Export PDF stands only where there is a page to print — and where it does not stand, the menu it folds into is one item short.
+    // A rendered document, because Export stands only where there is a page to print — and where it does not stand, the menu it folds into is one item short.
     booted.renderReaderToolbar(true);
     // A strip that can never fit, so every candidate folds.
     tabBar.scrollWidth = 900;
@@ -10732,7 +10732,7 @@ if (booted) {
 
   /** The bar measured the way a window measures it: scrollWidth is what is still standing on it, so a fold frees real width and the chevron costs its own — which is the whole reason a pass can measure wrong. */
   function measuredAppBar() {
-    // The bar is measured with every button it can carry, so both of these come first — while the bar is unmeasured and the refit each of them fires folds nothing. The window's own three are priced into the model below and the fold skips a hidden button, so a hidden set is a bar measured wider than the one being folded; Export PDF stands only where there is a page to print, and it is a candidate the fold reaches.
+    // The bar is measured with every button it can carry, so both of these come first — while the bar is unmeasured and the refit each of them fires folds nothing. The window's own three are priced into the model below and the fold skips a hidden button, so a hidden set is a bar measured wider than the one being folded; Export stands only where there is a page to print, and it is a candidate the fold reaches.
     booted.document.getElementById('windowControls').hidden = false;
     booted.renderReaderToolbar(true);
     const bar = booted.document.getElementById('appBar');
@@ -10876,7 +10876,7 @@ if (booted) {
     // The condition the stylesheet keys on: `.app-actions-items:not(:has(> *:not([hidden])))` stops the group being drawn, so the trailing zone's 16px gap has nothing to land against beside the window buttons. The bell never folds, so what has to be proved is that the group is left holding it alone and hidden — which is the state a bare `:has()` cannot tell from a full group.
     const bar = measuredAppBar();
     const group = booted.document.querySelector('.app-actions-items');
-    // A rendered document, or Export PDF is hidden and the group it is meant to leave is one button short of empty.
+    // A rendered document, or Export is hidden and the group it is meant to leave is one button short of empty.
     booted.renderReaderToolbar(true);
     try {
       // Narrow past every candidate, so all four actions are certainly in the menu rather than only the one the bar's own width happened to buy.
@@ -11056,7 +11056,7 @@ if (booted) {
     }
   });
 
-  check('Export PDF stands only where there is a rendered page to print', () => {
+  check('Export stands only where there is a rendered page to print', () => {
     const button = booted.document.getElementById('exportPdfButton');
     const set = (source) => vm.runInContext(source, booted);
     try {

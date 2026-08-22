@@ -74,9 +74,9 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ### The app bar
 
-![The Leaftext app bar across the top of the window: the leaf mark, the library button, Back and Forward, the tab strip, then the theme palette, Open, plus and Export PDF at the right](../../imgs/navigation.png)
+![The Leaftext app bar across the top of the window: the leaf mark, the library button, Back and Forward, the tab strip, then the theme palette, Open, plus and Export at the right](../../imgs/navigation.png)
 
-The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-the-page). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
+The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export](#export-the-page). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
 
 **Open reaches any file, on either platform.** On Windows the dialog carries a list of the [formats the reader opens](03-library.md#file-types), with **All files** at the end for anything else. A Mac dialog has no such list, so it simply shows everything — which is the same answer, since a file whose ending Leaftext does not know is [read as Markdown](01-rendering.md) rather than refused.
 

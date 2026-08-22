@@ -42,7 +42,7 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | speed-reader-off | speed-reader-off.svg | lucide | regular | — | The speed reader, stopped. |
 | wand | wand.svg | lucide | regular | — | Tidy the document. |
 | cloud | cloud.svg | lucide | regular | — | A vault whose saves reach somewhere else: a repository it pushes to, or a folder a sync client keeps. |
-| export | cloud-download.svg | lucide | regular | — | Save what is on screen as its own file: the page as a PDF, in the app bar, and a diagram as a file of its own, in the corner of a drawn diagram and on the full-window view. |
+| export | cloud-download.svg | lucide | regular | — | Save what is on screen as its own file: the page, in the app bar, and a diagram, in the corner of a drawn diagram and on the full-window view. |
 | computer | computer.svg | heroicons | regular | — | The whole library — everything on this machine, which is what the switcher's first row stands for rather than a vault. |
 | package-open | package-open.svg | lucide | regular | — | The vault you are in. |
 | package | package.svg | lucide | regular | — | A vault you are not in. |

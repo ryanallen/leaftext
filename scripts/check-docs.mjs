@@ -648,7 +648,7 @@ function strikeSelfTest() {
   return fails;
 }
 
-// Two published pages teach a reader what the top of the window holds, and each walks the bar left to right, so each names the controls at the right in the order the bar draws them. The reference page shipped naming them palette, Export PDF, Open, plus against a bar drawing palette, Open, plus, Export PDF, and the tour — the page a new reader is sent to first — named a Settings button the app does not have.
+// Two published pages teach a reader what the top of the window holds, and each walks the bar left to right, so each names the controls at the right in the order the bar draws them. The reference page shipped naming them palette, the export button, Open, plus against a bar drawing palette, Open, plus, the export button, and the tour — the page a new reader is sent to first — named a Settings button the app does not have.
 //
 // Each is read in the shape it is written in: the reference page as a picture with a paragraph under it, the tour as a table with a row per area.
 //
@@ -684,6 +684,11 @@ const APP_BAR_PHRASES = {
   themeSheetOpen: ['palette', 'Palette'],
   openButton: ['Open'],
   newButton: ['**+**', 'plus'],
+  exportPdfButton: ['Export'],
+};
+
+/** The spellings each control has retired, refused wherever a page that draws the bar still carries one. A rename otherwise green-lights itself: the spelling above is matched whole-word and `Export` is found inside `Export PDF`, so a page left at the old words reads as being in the right order. */
+const APP_BAR_RETIRED = {
   exportPdfButton: ['Export PDF'],
 };
 
@@ -766,7 +771,7 @@ function namedAt(line, spelling) {
 }
 
 /** Every way a line on a page that draws the bar disagrees with the order the markup draws the bar's right-hand controls in. Each page's text comes in under its own path. */
-export function appBarOrderFaults(html, texts, phrases = APP_BAR_PHRASES) {
+export function appBarOrderFaults(html, texts, phrases = APP_BAR_PHRASES, retired = APP_BAR_RETIRED) {
   const controls = appBarControls(html);
   if (controls === null || !controls.length) return [`${APP_BAR_SHELL}  ->  no controls found inside .${APP_BAR_GROUP}`];
   const unspelled = controls.filter((id) => !phrases[id]);
@@ -780,6 +785,12 @@ export function appBarOrderFaults(html, texts, phrases = APP_BAR_PHRASES) {
       continue;
     }
     for (const { where, line } of lines) {
+      // Before the order, because the retired words contain the current ones and a line carrying them reads as correctly placed.
+      const dead = controls.flatMap((id) => (retired[id] ?? []).filter((word) => namedAt(line, word) !== -1).map((word) => ({ id, word })));
+      if (dead.length) {
+        for (const { id, word } of dead) out.push(`${target.page}  ->  ${where} still names it ${word}; the control is ${phrases[id][0]} now`);
+        continue;
+      }
       const found = controls.map((id) => ({ id, at: Math.min(...phrases[id].map((word) => namedAt(line, word)).filter((i) => i !== -1), Infinity) }));
       const missing = found.filter((control) => control.at === Infinity);
       if (missing.length) {
@@ -797,7 +808,8 @@ const APP_BAR_ADVICE = [
   'each page that draws the bar walks it left to right, so it names the controls at the right in the order the markup',
   'puts them inside `.app-actions-items` — in the reference page\'s alt text and paragraph, and in the first cell of the',
   'tour\'s controls row. Reorder the words, or, where a control was added to the bar, give it a phrase in',
-  '`APP_BAR_PHRASES` and a mention on every page in `APP_BAR_PAGES`.',
+  '`APP_BAR_PHRASES` and a mention on every page in `APP_BAR_PAGES`. Where a control was renamed, its old spelling goes in',
+  '`APP_BAR_RETIRED` so the pages left at it are named rather than passing.',
 ];
 
 const APP_BAR_MARKUP = [
@@ -817,7 +829,7 @@ const appBarPage = (alt, paragraph) => `## The chrome\n\n### The app bar\n\n![${
 
 const quickstartPage = (cell) => `## 2. Know what you are looking at\n\n### The app bar, across the top\n\n| Area | What it does |\n| --- | --- |\n| Leaf mark | Returns to the home screen |\n| ${cell} | Choose a theme, open a file, start a new document, and write the page as a PDF |\n\n### The page itself\n`;
 
-const DRAWN_CELL = 'Palette, Open, **+**, Export PDF';
+const DRAWN_CELL = 'Palette, Open, **+**, Export';
 
 /** One case's text for every page that draws the bar, so a case says what one of them holds while the rest stay as they ship. */
 const appBarTexts = (navigation, quickstart = quickstartPage(DRAWN_CELL)) => ({
@@ -825,10 +837,13 @@ const appBarTexts = (navigation, quickstart = quickstartPage(DRAWN_CELL)) => ({
   [APP_BAR_QUICKSTART]: quickstart,
 });
 
-const DRAWN_ALT = 'The Leaftext app bar: the leaf mark, then the theme palette, Open, plus and Export PDF at the right';
-const DRAWN_PARAGRAPH = 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-a-pdf).';
-const SHIPPED_PARAGRAPH = 'At the right the palette that opens the [theme picker](06-themes.md#choose), [Export PDF](#export-a-pdf), Open, and **+** ([new document](07-editing.md#new-document)).';
-const OUT_OF_ORDER = 'palette, Export PDF, Open, **+**; the bar draws them palette, Open, **+**, Export PDF';
+const DRAWN_ALT = 'The Leaftext app bar: the leaf mark, then the theme palette, Open, plus and Export at the right';
+const DRAWN_PARAGRAPH = 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export](#export-a-pdf).';
+const SHIPPED_PARAGRAPH = 'At the right the palette that opens the [theme picker](06-themes.md#choose), [Export](#export-a-pdf), Open, and **+** ([new document](07-editing.md#new-document)).';
+const OUT_OF_ORDER = 'palette, Export, Open, **+**; the bar draws them palette, Open, **+**, Export';
+
+const RETIRED_ALT = 'The Leaftext app bar: the leaf mark, then the theme palette, Open, plus and Export PDF at the right';
+const RETIRED_PARAGRAPH = 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-a-pdf).';
 
 const APP_BAR_CASES = [
   ['both lines naming them the way the bar draws them passes, and the update panel inside the group does not end it early', APP_BAR_MARKUP, appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH)), []],
@@ -841,7 +856,7 @@ const APP_BAR_CASES = [
   [
     'the alt text is held to the same source, so the two lines cannot drift together either',
     APP_BAR_MARKUP,
-    appBarTexts(appBarPage('The Leaftext app bar: the theme palette, Export PDF, Open and plus at the right', SHIPPED_PARAGRAPH)),
+    appBarTexts(appBarPage('The Leaftext app bar: the theme palette, Export, Open and plus at the right', SHIPPED_PARAGRAPH)),
     [
       `${APP_BAR_NAVIGATION}  ->  the picture's alt text names them ${OUT_OF_ORDER}`,
       `${APP_BAR_NAVIGATION}  ->  the paragraph under the picture names them ${OUT_OF_ORDER}`,
@@ -856,19 +871,19 @@ const APP_BAR_CASES = [
   [
     'a line that never names one of them is refused as missing rather than as out of order',
     APP_BAR_MARKUP,
-    appBarTexts(appBarPage(DRAWN_ALT, 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, and [Export PDF](#export-a-pdf).')),
+    appBarTexts(appBarPage(DRAWN_ALT, 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, and [Export](#export-a-pdf).')),
     [`${APP_BAR_NAVIGATION}  ->  the paragraph under the picture never names **+**`],
   ],
   [
     'the word that opens the theme picker is not read as the Open button',
     APP_BAR_MARKUP,
-    appBarTexts(appBarPage(DRAWN_ALT, 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export PDF](#export-a-pdf).')),
+    appBarTexts(appBarPage(DRAWN_ALT, 'At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export](#export-a-pdf).')),
     [],
   ],
   [
     'a page whose app bar section has lost its picture is refused',
     APP_BAR_MARKUP,
-    appBarTexts('## The chrome\n\n### The app bar\n\nAt the right the palette, Open, **+** and [Export PDF](#export-a-pdf).\n'),
+    appBarTexts('## The chrome\n\n### The app bar\n\nAt the right the palette, Open, **+** and [Export](#export-a-pdf).\n'),
     [`${APP_BAR_NAVIGATION}  ->  the app bar section has no picture with a paragraph under it`],
   ],
   ['markup with no actions group at all is refused', '<div class="app-trailing"></div>\n', appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH)), [`${APP_BAR_SHELL}  ->  no controls found inside .${APP_BAR_GROUP}`]],
@@ -879,25 +894,40 @@ const APP_BAR_CASES = [
     appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), quickstartPage('Open, **+**, Settings')),
     [
       `${APP_BAR_QUICKSTART}  ->  the controls row of the app bar table never names palette`,
-      `${APP_BAR_QUICKSTART}  ->  the controls row of the app bar table never names Export PDF`,
+      `${APP_BAR_QUICKSTART}  ->  the controls row of the app bar table never names Export`,
     ],
   ],
   [
     'a tour row naming all four out of order is refused as out of order',
     APP_BAR_MARKUP,
-    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), quickstartPage('Palette, Export PDF, Open, **+**')),
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), quickstartPage('Palette, Export, Open, **+**')),
     [`${APP_BAR_QUICKSTART}  ->  the controls row of the app bar table names them ${OUT_OF_ORDER}`],
   ],
   [
     'the explanation cell beside the controls is never read, so the prose in it cannot put them out of order',
     APP_BAR_MARKUP,
-    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), `## 2. Know what you are looking at\n\n### The app bar, across the top\n\n| Area | What it does |\n| --- | --- |\n| ${DRAWN_CELL} | Export PDF writes the page, Open opens a file, **+** starts one, Palette chooses a theme |\n\n### The page itself\n`),
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), `## 2. Know what you are looking at\n\n### The app bar, across the top\n\n| Area | What it does |\n| --- | --- |\n| ${DRAWN_CELL} | Export writes the page, Open opens a file, **+** starts one, Palette chooses a theme |\n\n### The page itself\n`),
     [],
+  ],
+  [
+    'a page left at the words the control retired is refused by name, which the one-word spelling inside them cannot catch',
+    APP_BAR_MARKUP,
+    appBarTexts(appBarPage(RETIRED_ALT, RETIRED_PARAGRAPH)),
+    [
+      `${APP_BAR_NAVIGATION}  ->  the picture's alt text still names it Export PDF; the control is Export now`,
+      `${APP_BAR_NAVIGATION}  ->  the paragraph under the picture still names it Export PDF; the control is Export now`,
+    ],
+  ],
+  [
+    'the tour left at those words is refused the same way, from the cell its own reader pulls',
+    APP_BAR_MARKUP,
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), quickstartPage('Palette, Open, **+**, Export PDF')),
+    [`${APP_BAR_QUICKSTART}  ->  the controls row of the app bar table still names it Export PDF; the control is Export now`],
   ],
   [
     'a tour whose app bar table has gone is refused',
     APP_BAR_MARKUP,
-    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), '## 2. Know what you are looking at\n\n### The app bar, across the top\n\nPalette, Open, **+** and Export PDF sit at the right.\n\n### The page itself\n'),
+    appBarTexts(appBarPage(DRAWN_ALT, DRAWN_PARAGRAPH), '## 2. Know what you are looking at\n\n### The app bar, across the top\n\nPalette, Open, **+** and Export sit at the right.\n\n### The page itself\n'),
     [`${APP_BAR_QUICKSTART}  ->  the app bar section has no table with a row for the right-hand controls`],
   ],
 ];

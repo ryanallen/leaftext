@@ -975,7 +975,7 @@ button {
   height: 16px;
   pointer-events: none;
 }
-/* Themes, Open, New and Export PDF are the same button four times over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. A button added to this run without its name here rests filled, which reads as the one action already pressed. */
+/* Themes, Open, New and Export are the same button four times over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. A button added to this run without its name here rests filled, which reads as the one action already pressed. */
 .theme-button,
 .open-button,
 .new-button,
