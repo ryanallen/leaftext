@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { describeLink } from '../site/link-tooltip.js';
 import { discoveryFiles } from './seo-gen.mjs';
 import { fileWithin, typeOf } from './serve-static.mjs';
-import { ASSET_DIR, FRONT_PAGE, MODULE_PATH, PUBLISHED, bakeFrontPage, frontPageIsEmpty } from './site-assets.mjs';
+import { ASSET_DIR, FRONT_PAGE, MODULE_PATH, PUBLISHED, bakeFrontPage, frontPageIsEmpty, publishedAssets } from './site-assets.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -222,6 +222,14 @@ if (!frontPageIsEmpty(read(FRONT_PAGE))) {
   if (!frontPageIsEmpty(read(FRONT_PAGE))) problems.push(`${FRONT_PAGE} stopped being an empty holder after a bake, so the preview would be putting a document into the tree`);
 }
 
+/// The local preview answers the published files out of the build it baked with, so a browser reads the page through the renderer somebody just made rather than through the copy the last publish left in `assets/leaftext/` — which is what made one front page two renderers. The paths it answers for itself are the published table itself: a renamed published file the preview did not answer would go back to being served off disk on that one path, silently, since a stale copy draws a page that looks right. Asked with a stand-in module and no module bytes, so this stays offline and needs no build.
+{
+  const answered = [...publishedAssets({ styles: () => 'a stylesheet' }).keys()];
+  if (answered.join(' ') !== PUBLISHED.join(' ')) {
+    problems.push(`the local preview answers ${answered.join(', ') || 'nothing'} for itself where the publish writes ${PUBLISHED.join(', ')} — a published file it does not answer is served off disk, which is whatever the last publish left there`);
+  }
+}
+
 // Both preview servers name a file's type and refuse a path through one module, so there is one type table rather than two that drift and one refusal rather than one of them forgetting `..`. A URL is somebody else's string: what is checked is where it resolves to, never what it says.
 {
   const served = join(root, 'web', 'dist', 'site');
@@ -325,5 +333,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window — plus the local preview, which bakes that page without touching the tracked one, names a file's type and refuses a path climbing out of the folder it serves`
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window — plus the local preview, which bakes that page without touching the tracked one, answers all ${PUBLISHED.length} published files out of the build it baked with, names a file's type and refuses a path climbing out of the folder it serves`
 );

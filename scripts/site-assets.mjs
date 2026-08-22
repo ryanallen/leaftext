@@ -4,13 +4,13 @@
 //   node scripts/site-assets.mjs           name every published path and say whether it is there
 //   node scripts/site-assets.mjs --write   build them out of web/dist into the site tree
 //
-// **Not one of these files is ever committed.** `.gitignore` refuses the folder they land in, so the publish builds them and the repository keeps its seventeen small readable files instead of a compiled module nobody can read a diff of. The publish workflow runs this script; `scripts/check-site.mjs` reads the table below, so a renamed output shows up offline as a page fetching a file nobody writes rather than as a blank document on the live site.
+// **Not one of these files is ever committed.** `.gitignore` refuses the folder they land in, so the publish builds them and the repository keeps its seventeen small readable files instead of a compiled module nobody can read a diff of. The publish workflow runs this script; `scripts/check-site.mjs` reads the table below, so a renamed output shows up offline as a page fetching a file nobody writes rather than as a blank document on the live site. `scripts/serve-site.mjs` reads it too, and hands a browser what it says rather than whatever the last publish left on disk — there is one answer to which renderer the site is read through.
 //
 // **The front page is baked, never committed the same way.** The repository keeps it with an empty content element; `--write` fills that element in the workspace the deploy uploads, so a cold visitor reads the words out of the first response instead of after a 2.8 MB module and a second fetch. `scripts/check-site.mjs` refuses a committed copy that already holds a document, which is the only way a baked page could reach the tree.
 //
 // The other site rides on these too. Emptyguru has no Rust and no app source, so its pages name leaftext.com for exactly these paths — which works because GitHub Pages sends `access-control-allow-origin: *` on every asset. That is why the names here are a contract with another repository and not an implementation detail.
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
@@ -57,6 +57,19 @@ export function bakeFrontPage(page, drawn) {
   const body = drawn && drawn.html ? drawn.html.trim() : '';
   if (!body) throw new Error(`the renderer drew no ${FRONT_DOCUMENT} to write into ${FRONT_PAGE}`);
   return page.replace(CONTENT_HOLDER, (_, open, __, close) => open + body + close);
+}
+
+/**
+ * What each published file *is*, against the table above of what they are called: the module's bytes, the stylesheet the built module hands over, and the version out of `Cargo.toml`.
+ *
+ * The publish writes these to disk and the local preview answers them straight to a browser, so one table is what stops the preview drawing a page through the copy the last publish left beside it. It is handed the module's bytes rather than a file to copy, which is what lets the same answer serve a browser and write a folder.
+ */
+export function publishedAssets(leaf, moduleBytes) {
+  return new Map([
+    [MODULE_PATH, moduleBytes],
+    [STYLES_PATH, leaf.styles()],
+    [VERSION_PATH, `${JSON.stringify({ version: appVersion() }, null, 2)}\n`],
+  ]);
 }
 
 /** The app version, read where the release path reads it. */
@@ -109,9 +122,7 @@ async function main() {
   }
 
   mkdirSync(join(root, ASSET_DIR), { recursive: true });
-  copyFileSync(BUILT_MODULE, join(root, MODULE_PATH));
-  writeFileSync(join(root, STYLES_PATH), styles);
-  writeFileSync(join(root, VERSION_PATH), `${JSON.stringify({ version: appVersion() }, null, 2)}\n`);
+  for (const [path, bytes] of publishedAssets(leaf, readFileSync(BUILT_MODULE))) writeFileSync(join(root, path), bytes);
 
   writeFileSync(join(root, FRONT_PAGE), baked);
 
