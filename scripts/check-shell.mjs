@@ -8373,7 +8373,7 @@ if (booted) {
     }
   });
 
-  // The JPEG row is the one in this menu whose own measurement argues against it — biggest of the three pictures on a diagram — so it exists for reach, and what has to hold is that the file really is a JPEG and that both spellings of the ending reach it.
+  // What has to hold is that the file really is a JPEG, at the quality the page names, and that both spellings of the ending reach it.
   checkPicture('a JPEG goes out as a finished JPEG, at the quality the page names, under either spelling of the ending', async () => {
     for (const ending of ['jpg', 'jpeg']) {
       const lent = withCanvas({});
@@ -8401,7 +8401,7 @@ if (booted) {
     }
   });
 
-  // JPEG holds 65,535 pixels a side and, past it, a canvas answers an empty URL rather than throwing — the same trap the WebP guard was written for. Without a guard of its own the type check fires instead and tells a reader this window cannot write JPEG, sending them after a broken app rather than a diagram too wide.
+  // Past 65,535 pixels a side a canvas answers an empty URL rather than throwing, which is the trap the WebP guard was written for. With no guard of its own the type check catches it and says this window cannot write JPEG, which is the wrong thing to tell a reader.
   checkPicture('a drawing too big for JPEG is refused before anything is encoded, and points at the row that can still write it', async () => {
     const lent = withCanvas({ wide: 40000 });
     const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');

@@ -1939,13 +1939,13 @@ async function diagramWebpBase64(svgText) {
   return url.slice(url.indexOf(',') + 1);
 }
 
-// JPEG holds no more than this many pixels a side. Past it the canvas answers an empty URL rather than failing, exactly as it does for WebP, so without this the type check below would fire and tell a reader this window cannot write JPEG — sending them after a broken app rather than a diagram too wide.
+// JPEG holds no more than this many pixels a side, and past it the canvas answers an empty URL rather than failing. Without this the type check below catches it instead and says this window cannot write JPEG, which sends a reader after a broken app rather than a diagram too wide.
 const DIAGRAM_JPEG_LIMIT = 65535;
 
-// What the lettering costs. A diagram is text on flat fill, which is the one thing JPEG handles worst, so the failure a reader sees is ringing around glyphs rather than kilobytes. Measured on the export's own canvas, the worst error on a lettered pixel is 32 of 255 at 0.82 and 17 at 0.92, and the share of visibly wrong pixels 3.09% against 1.17%, for 18 KB on a file that is already the biggest of the three. Written down rather than left to the encoder's default, which is this same number today and could move under a web view update.
+// A diagram is text on flat fill, the one thing JPEG handles worst, so what a reader sees is ringing around glyphs rather than kilobytes: measured on the export's own canvas, the worst error on a lettered pixel is 32 of 255 at 0.82 against 17 at 0.92, for 18 KB. Named rather than left to the encoder's default, which is this same number today and could move under a web view update.
 const DIAGRAM_JPEG_QUALITY = 0.92;
 
-// The drawing as a finished JPEG, the way the WebP row makes a finished WebP. Bigger than both other pictures at every quality — this row is here for reach, for a tool that will not take a WebP, and for nothing else.
+// The drawing as a finished JPEG, the way the WebP row makes a finished WebP.
 async function diagramJpegBase64(svgText) {
   const canvas = await diagramCanvas(svgText);
   if (canvas.width > DIAGRAM_JPEG_LIMIT || canvas.height > DIAGRAM_JPEG_LIMIT) {

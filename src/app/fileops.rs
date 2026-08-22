@@ -653,7 +653,7 @@ pub(super) fn diagram_export_file(
         "png" => decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)),
         // Already a finished file: the canvas writes the WebP itself, about half the PNG on the same drawing, and refuses a drawing too wide for the format before it sends one.
         "webp" => decode_base64(data),
-        // The same again: a finished file off the canvas, at a quality the page names rather than inherits. The biggest of the three pictures on a diagram, and here for the tool that will not take a WebP.
+        // Already a finished file too, at a quality the page names rather than inherits, and refused before it is sent where the drawing is too wide for the format.
         "jpg" | "jpeg" => decode_base64(data),
         // Rendered by the host rather than encoded from anything the page sent, so this command is not the one that writes it — `print_diagram_pdf` is.
         "pdf" => return DiagramExportFile::Printed,
