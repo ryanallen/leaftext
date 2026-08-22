@@ -8,6 +8,12 @@ name: Publish the site
 # neither belongs in a tree whose whole point is small files a person can read —
 # so `.gitignore` refuses them and this workflow builds them at publish time.
 #
+# The pictures go the same way. The repository keeps 61 PNG masters, because
+# the screenshot tool, the shot composer, the edge check and the app's own three
+# hand-written PNG codecs all read them; the publish writes a lossless WebP
+# beside each one and moves the pages onto it, so a reader is served 3,318 KB
+# where 5,336 KB used to go and not a pixel of it changes.
+#
 # A failure here leaves the last successful deployment standing: the site stops
 # updating rather than going dark, and nothing a reader touches waits on this
 # build. `scripts/site-assets.mjs` asks the module to render before it writes
@@ -81,6 +87,37 @@ jobs:
 
       - name: Build the browser modules
         run: just build-web
+
+      # The WebP an earlier run already paid for. Full effort costs two and a
+      # half minutes across the set, and the key is the contents of the masters,
+      # so a restored picture is always the one this run would have written and
+      # a publish that changed no picture pays none of it.
+      - name: Cache the converted pictures
+        uses: actions/cache@v4
+        with:
+          path: imgs
+          key: ${{ runner.os }}-webp-${{ hashFiles('imgs/**/*.png') }}
+
+      # libwebp, installed rather than borrowed from whatever the runner image
+      # happens to carry: a tool that is there today because the image ships it
+      # is a tool that leaves without notice, and the failure would be the
+      # site's pictures rather than a red build.
+      - name: Install the picture encoder
+        run: sudo apt-get install -y webp
+
+      # The site serves 5,336 KB of paletted PNG; the same pixels as lossless
+      # WebP weigh 3,318 KB, and all 61 decode back identical. The masters stay
+      # PNG in the repository — this writes a WebP beside each one and moves the
+      # pages onto it in the workspace the upload step below takes. It refuses
+      # to move a page onto a picture nobody wrote, which is what stops a broken
+      # frame reaching the deploy.
+      #
+      # Ahead of the bake below on purpose: the front page's document is the
+      # README, and it draws 25 of these pictures. Baked first, the one page
+      # every visitor lands on would go on serving the PNGs while every page
+      # behind it served the WebP.
+      - name: Write the pictures as WebP and move the pages onto them
+        run: node scripts/site-images.mjs --write
 
       # The one table of what the site serves beside its pages, and the step
       # that writes the front page's own document into it, so a cold visitor

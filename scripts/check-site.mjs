@@ -226,6 +226,14 @@ if (!existsSync(publish)) {
   for (const step of ['just build-web', 'scripts/site-assets.mjs --write']) {
     if (!workflow.includes(step)) problems.push(`the publish workflow does not run \`${step}\`, so it deploys pages with no renderer beside them`);
   }
+  // The pictures are the third generated thing the publish writes and never commits. Taken out of the workflow it is not a broken site, which is why nothing else would ever notice: the pages go on naming the PNG masters and every reader pays 2,018 KB for it.
+  const pictures = workflow.indexOf('scripts/site-images.mjs --write');
+  if (pictures < 0) {
+    problems.push('the publish workflow does not run `scripts/site-images.mjs --write`, so it deploys 5,336 KB of PNG where 3,318 KB of WebP would serve the same pixels');
+  } else if (pictures > workflow.indexOf('scripts/site-assets.mjs --write')) {
+    // The front page's document is the README, which draws 25 pictures. Baked before they are moved, the one page every visitor lands on keeps the PNGs while every page behind it gets the WebP — and it is the front page, so nobody would think to look.
+    problems.push('the publish workflow moves the pages onto their WebP after it bakes the front page, so the front page is baked from a README still naming the PNGs');
+  }
 }
 
 // The reading column is measured in characters, and it has to stay that way. The type on both published sites grows with the window on purpose, so a column frozen at a pixel count means the line gets *shorter* the bigger the screen — 104 characters at a 1280-wide window, 66 at 2530. Nothing offline can lay a page out and count them, so what is held here is the unit: a `ch` in the value is the one thing that makes the column grow alongside the type. The reading itself is driven, `just drive-web <url> size:2530,1400 …`.

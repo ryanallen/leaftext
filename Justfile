@@ -151,6 +151,14 @@ check-ascii-art:
 check-site:
     node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-site.mjs
 
+# Fail when the publish would move a page onto a picture it does not write, or leave
+# one behind that it does. The pictures the site serves are PNG in the tree and WebP
+# on the runner, and the rewrite that moves the pages between them is the one part of
+# it nothing else can see — the encoder only ever runs at publish, so this reads the
+# rewrite alone and needs neither it nor a network.
+check-site-images:
+    node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/site-images.mjs --check
+
 # Fail when the other published site is drawing its pages with a different front end.
 # Both sites run one front end and only this one has a harness, so a fix written here
 # reaches the other only when somebody carries it — its reading column stayed a fixed
@@ -392,7 +400,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
