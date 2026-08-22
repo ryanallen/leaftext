@@ -99,7 +99,7 @@ Take the handle and a block lifts off the page; drop it where its neighbors have
 
 ![The flowchart editor open as a full-window sheet: a diagram on the canvas at left, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)
 
-A canvas beside the Mermaid text, each following the other. Double-click to add a box and name it, pick from [forty-seven shapes](docs/01-features/07-editing.md#what-it-can-draw) grouped by what they are for, drag a handle onto another box to connect them, and group boxes together. A box can also carry a link, one of the app's own icons, or a picture. Every other kind of diagram opens the same sheet as a live preview. Open it on any diagram already in a page, and [export](docs/01-features/01-rendering.md#mermaid-diagrams) any diagram as its own Markdown file or picture from the button in its corner. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
+A canvas beside the Mermaid text, each following the other. Double-click to add a box and name it, pick from [forty-seven shapes](docs/01-features/07-editing.md#what-it-can-draw) grouped by what they are for, drag a handle onto another box to connect them, and group boxes together. A box can also carry a link, one of the app's own icons, or a picture. Every other kind of diagram opens the same sheet as a live preview. Open it on any diagram already in a page, and [export](docs/01-features/01-rendering.md#mermaid-diagrams) any diagram as its own Markdown file, picture or PDF from the button in its corner. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
 
 ### Or work in the raw source
 
