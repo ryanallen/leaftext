@@ -17,6 +17,8 @@ pub(crate) const MONACO_JS: &[u8] = include_bytes!("assets/vendor/monaco/monaco.
 pub(crate) const MONACO_CSS: &[u8] = include_bytes!("assets/vendor/monaco/monaco.css");
 pub(crate) const KATEX_JS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.js");
 pub const KATEX_CSS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.css");
+// The minimap both published sites run, compiled in so an exported page can carry its own copy of it. One source in the tree for the rail's arithmetic: the desktop's rail, leaftext.com's, empty.guru's and an exported page's are all this file. Respelled for the exported page by `exported_page_minimap_script`, which is what makes it load off a disk.
+pub(crate) const SITE_MINIMAP_JS: &str = include_str!("../site/minimap.js");
 pub const KATEX_FONTS: &[(&str, &[u8])] = &[
     (
         "KaTeX_AMS-Regular.woff2",

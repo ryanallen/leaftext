@@ -1049,7 +1049,7 @@ pub fn app_shell_html_for_host(host: &dyn LeafHost) -> String {
 
 /// The document as a page of its own: what a reader hands to somebody who does not have Leaftext.
 ///
-/// `markup` is the document as the page has already drawn it, cleaned of the app's own controls and wrapped in the ancestors every rule in `reading.css` is keyed on — the page builds that chain, because the page is what knows which of its own elements are controls. Nothing here is fetched and nothing runs: a drawn diagram is already an SVG in that markup, an icon is a mask inside the stylesheet, and ordinary text takes the reader's own system font.
+/// `markup` is the document as the page has already drawn it, cleaned of the app's own controls and wrapped in the ancestors every rule in `reading.css` is keyed on — the page builds that chain, because the page is what knows which of its own elements are controls. Nothing here is fetched: a drawn diagram is already an SVG in that markup, an icon is a mask inside the stylesheet, and ordinary text takes the reader's own system font. One thing runs, off the folder beside the page — the minimap rail, which is the only way a reader handed this file can see the shape of the whole document.
 ///
 /// `sheet` is the drawings' own stylesheet. Mermaid writes one per drawing and the page hoists them into a single element in its head, so the rules are neither in the stylesheet nor inside the SVG — a copy of the document alone comes out a page of black boxes with clipped labels. It travels inline rather than as a second file because it is markup the page already holds as one string.
 ///
@@ -1087,6 +1087,7 @@ pub fn exported_page_document(
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <title>{title}</title>
 <link rel=\"stylesheet\" href=\"{EXPORTED_PAGE_STYLESHEET}\">
+<script src=\"{EXPORTED_PAGE_MINIMAP_SCRIPT}\" defer></script>
 {math}{sheet}</head>
 <body class=\"leaf-paper leaf-web\">
 {markup}
@@ -1104,6 +1105,27 @@ pub const EXPORTED_PAGE_ASSETS_FOLDER: &str = "assets";
 
 /// The one stylesheet an exported page names: the whole of [`reading_mode_css`], which carries every theme's colors, the tokens, the icons and the reading rules. All of it rather than a trimmed copy — deciding which rules a document needs is a guess against a stylesheet that changes every week, and a rule missed is a page that looks wrong in a way nobody can see coming.
 pub const EXPORTED_PAGE_STYLESHEET: &str = "assets/app.css";
+
+/// The one script an exported page names: the minimap rail, in the `assets` folder beside the stylesheet.
+pub const EXPORTED_PAGE_MINIMAP_SCRIPT: &str = "assets/minimap.js";
+
+/// That script's text: the minimap both published sites run, respelled so it loads off a disk.
+///
+/// Two changes and no more. The `export` mark comes off, because a browser refuses a module script on a page opened off a disk and opened off a disk is what an exported page is — watched as a rail that never appeared at all. And one call goes on the foot, since nothing on this page imports anything to make it. Respelled here rather than kept as a second copy in the tree, so the rail's arithmetic has one source.
+pub fn exported_page_minimap_script() -> String {
+    format!(
+        "{}
+initMinimap(document.querySelector('.document-body'));
+",
+        SITE_MINIMAP_JS.replacen(
+            "
+export function initMinimap",
+            "
+function initMinimap",
+            1
+        )
+    )
+}
 
 /// Whether a document has math drawn in it.
 ///

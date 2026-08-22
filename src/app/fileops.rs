@@ -465,6 +465,12 @@ pub(crate) fn write_exported_page(
     // The whole stylesheet, which is every theme's colors, the tokens, the icons and the reading rules — see `EXPORTED_PAGE_STYLESHEET` for why none of it is trimmed. The name carries the folder, so this is the one place the two are joined.
     fs::write(folder.join(EXPORTED_PAGE_STYLESHEET), reading_mode_css())
         .map_err(|error| error.to_string())?;
+    // The rail, which is the one thing on this page that runs. It goes beside the stylesheet on every export rather than only where the document is long: a page's own length is not the question — the reader handed it has no library pane, no outline and no tab strip whatever it holds.
+    fs::write(
+        folder.join(EXPORTED_PAGE_MINIMAP_SCRIPT),
+        exported_page_minimap_script(),
+    )
+    .map_err(|error| error.to_string())?;
     let markup = copy_page_pictures(&export.markup, &assets, source_dir);
     // Only where there is an equation to spend them on: the stylesheet and its twenty faces come to 283,127 bytes, and the reading stylesheet carries no math rule at all. The page names them off the same reading of the markup, so what is copied and what is named can never disagree.
     if markup_has_math(&markup) {

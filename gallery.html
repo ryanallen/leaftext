@@ -9157,7 +9157,7 @@ body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {
   max-width: none;
   margin-left: calc((100% - var(--leaf-paper-lane, 100%)) / 2);
 }
-/* The exported page wears `leaf-paper` for ever — it runs no script, so nothing can raise the class for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. */
+/* The exported page wears `leaf-paper` for ever — the one script it runs is the rail below, which never touches that class, so nothing there can raise it for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. */
 @media screen {
   body.leaf-paper.leaf-web .document-body > :is(.table-lane, p.image-lane) {
     position: relative;
@@ -9165,6 +9165,34 @@ body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {
     width: max-content;
     max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
     margin-left: 0;
+  }
+}
+/* Where the exported page's rail stands. The rail itself is the block up at `.document-minimap` — same component, same width — and these are the rules that place it, which on this page nothing else can: the script appends the rail straight to the body, outside `.app-surface`, so every other placement rule in this file is keyed too deep to reach it. `leaf-web` is written only by `exported_page_document`, which is what keeps leaftext.com and empty.guru out of them; each of those places its own rail in its own stylesheet.
+
+   Hidden is the default, and the default is also the print rule: the rail is fixed, and a fixed element repeats on every sheet. */
+body.leaf-web .document-minimap {
+  display: none;
+}
+/* Above the width the script itself gives up at (`HIDE_BELOW` in site/minimap.js): pinned to the top right over the document, on the page's own color so the thumbnail reads against something. A phone has no room for it. */
+@media screen and (min-width: 721px) {
+  body.leaf-web .document-minimap {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: var(--lt-z-30);
+    background: var(--lt-markdown-background);
+  }
+  /* The app lays its clone inside a frame element carrying the scale; this script has no such frame and writes the scale onto the clone itself, so the origin it is scaled from has to be said here or the thumbnail shrinks toward the middle of the rail. */
+  body.leaf-web .document-minimap-preview {
+    transform-origin: 0 0;
+  }
+  /* The rail is this page's scroll affordance, so the native bar goes while one stands — and a page whose script never arrived keeps its bar, which is the whole point of asking whether a rail is there. Two branches for the reason the reader's pair above are two: in Chromium `scrollbar-width` anywhere on the element kills every ::-webkit-scrollbar rule for it. */
+  body.leaf-web:has(.document-minimap) {
+    scrollbar-width: none;
+  }
+  body.leaf-web:has(.document-minimap)::-webkit-scrollbar {
+    width: 0;
   }
 }
 /* The lane is now a fixed-width box, so what sits in it says its own size again: a small picture keeps its own width and centers, a wide one fills the lane, and a table narrower than the lane centers rather than hugging the left edge. */

@@ -6094,6 +6094,50 @@ fn re_exporting_a_page_addresses_the_picture_it_already_wrote() {
     );
 }
 
+/// The rail's script goes into `assets` beside the stylesheet on every export, whatever the document holds.
+///
+/// Not conditional the way the math stylesheet is: a document's own length is not the question the rail answers. The reader handed this file has no library pane, no outline and no tab strip, so the rail is the only thing telling them the shape of what they were sent. It is the site's own script with the `export` mark off and a call on its foot, because a browser refuses a module script on a page opened off a disk.
+#[test]
+fn an_exported_page_writes_the_rails_script_beside_its_stylesheet() {
+    use crate::app::fileops::{write_exported_page, PageHtmlExport};
+
+    let root = scratch_dir("exported-page-minimap");
+    let out = root.join("out");
+    fs::create_dir_all(&out).expect("the fixture folder is made");
+
+    write_exported_page(
+        &out.join("notes.html"),
+        &PageHtmlExport {
+            markup: "<div class=\"app-surface\"><p>hello</p></div>".to_string(),
+            sheet: String::new(),
+            theme: "moss".to_string(),
+            appearance: "dark".to_string(),
+            title: "Notes".to_string(),
+        },
+        None,
+    )
+    .expect("the page is written");
+
+    let script =
+        fs::read_to_string(out.join("assets/minimap.js")).expect("the rail's script is written");
+    assert!(
+        script.contains("function initMinimap(source)") && !script.contains("export "),
+        "the script beside the page is still a module, which a browser will not load off a disk"
+    );
+    assert!(
+        script
+            .trim_end()
+            .ends_with("initMinimap(document.querySelector('.document-body'));"),
+        "the script beside the page never calls itself"
+    );
+    // Named off the same folder as the stylesheet, so the two are written and named together.
+    let page = fs::read_to_string(out.join("notes.html")).expect("the page reads back");
+    assert!(
+        page.contains("<script src=\"assets/minimap.js\" defer></script>"),
+        "the page does not name the script written beside it: {page}"
+    );
+}
+
 /// A picture the app could not load is not a picture in the live markup at all: the page swaps its source for a transparent pixel and paints our own broken-picture mark over it. The page puts the address back before it sends the markup, so what the export names is the file the document asked for — and the browser draws its own mark where it is still not there, which says what an empty space cannot.
 #[test]
 fn an_exported_page_names_a_missing_picture_rather_than_our_own_mark() {

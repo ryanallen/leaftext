@@ -2371,19 +2371,24 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
         );
     }
 
-    // Either standard scrollbar property silently kills every ::-webkit-scrollbar rule on the element it sits on. Only the two boxes meaning to draw no bar at all set one: the tab strip, and the reader while the picture down its side is up.
+    // Either standard scrollbar property silently kills every ::-webkit-scrollbar rule on the element it sits on. Only the three boxes meaning to draw no bar at all set one: the tab strip, the reader while the picture down its side is up, and an exported page while the same picture stands down its own.
     assert!(
         !css.contains("scrollbar-color:"),
         "scrollbar-color kills every rule painting the bar it is set on"
     );
     assert_eq!(
         css.matches("scrollbar-width:").count(),
-        2,
-        "a third box took a standard scrollbar property, so its bar can never be painted at all"
+        3,
+        "a fourth box took a standard scrollbar property, so its bar can never be painted at all"
     );
     assert_contains(rule_body(&css, "\n.tab-bar {"), "scrollbar-width: none;");
     assert_contains(
         rule_body(&css, "\n.reader-shell.has-minimap {"),
+        "scrollbar-width: none;",
+    );
+    // The third is that same decision on the one page that is not the app: an exported page has no reader pane, so the box the browser scrolls is the body itself and the rail down its edge is what replaces its bar. Asked of the rail rather than written flat, so a page whose script never arrived keeps the bar it still needs.
+    assert_contains(
+        rule_body(&css, "\n  body.leaf-web:has(.document-minimap) {"),
         "scrollbar-width: none;",
     );
 
