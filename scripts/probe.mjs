@@ -4,7 +4,7 @@
 //   node scripts/probe.mjs open [<document>] [--work <name>]
 //   node scripts/probe.mjs close [--work <name>]
 //
-// Here rather than as one line in the Justfile for the reason scripts/drive.mjs is: `just` runs a recipe through cmd.exe, cmd hands the quotes around an argument straight through to PowerShell instead of stripping them, and PowerShell then splits the quoted list at its spaces. Spawning PowerShell from here passes each argument as one argument.
+// Here rather than as one line in the Justfile for the reason scripts/drive.mjs is, written out there: spawning PowerShell from node passes each argument as one argument.
 //
 // Windows only, and it says so rather than launching something that cannot separate. The separation is `%USERNAME%`, which is what names the instance slot and the ask pipe there; the macOS socket is keyed on the home folder and that half is not designed yet.
 

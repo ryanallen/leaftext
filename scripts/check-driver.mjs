@@ -22,6 +22,8 @@ const script = join(root, 'scripts/capture-screenshot.ps1');
 // The throwaway profile both launchers run against, and the launcher that leaves its copy up. One file answers for both callers, which is what stops a probe writing into the owner's recent files while a shot stays clean.
 const profile = join(root, 'scripts/probe-profile.ps1');
 const launcher = join(root, 'scripts/probe-launch.ps1');
+// The one command behind both recipes, and the only thing that sees a launch and its pointer in the same process.
+const wrapper = join(root, 'scripts/probe.mjs');
 const webDriver = join(root, 'scripts/drive-web.mjs');
 const motionProbe = join(root, 'scripts/probe-motion.mjs');
 const out = join(tmpdir(), 'leaftext-driver-check.bmp');
@@ -199,6 +201,7 @@ else if (!attached.text.includes('the running copy')) {
 const text = readFileSync(script, 'utf8');
 const profileText = readFileSync(profile, 'utf8');
 const launcherText = readFileSync(launcher, 'utf8');
+const wrapperText = readFileSync(wrapper, 'utf8');
 const PROFILE = [
   ["settings.json", /Out-File -FilePath \(Join-Path \$config 'settings\.json'\)/],
   ['recent-files.json', /Out-File -FilePath \(Join-Path \$config 'recent-files\.json'\)/],
@@ -253,6 +256,17 @@ const LAUNCHER = [
   ['wait for that pipe to go away rather than for a process', /Wait-LeafPipe \$name \$false/],
   ['keep the work folder rather than empty it, so a saved window size comes back', /A work folder is kept rather than emptied/],
 ];
+// What the one command behind `just probe-copy` and `just probe-close` owes on either path. The pointer is written only after the launch has come back clean and removed only when the close has: a pointer written past a failure sends every later ask at a copy that is not there, which is the false answer the whole thing exists to remove.
+const WRAPPER = [
+  ['refuse a platform where a copy cannot be addressed at all', /process\.platform !== 'win32'/],
+  ['write the pointer only after a launch that came back clean', /remember\(\{ name, pid \}\)/],
+  ['remove it when the copy goes', /forget\(\)/],
+  ['stop before either of those on a launcher that failed', /if \(run\.status !== 0\) process\.exit/],
+];
+for (const [what, pattern] of WRAPPER) {
+  if (!pattern.test(wrapperText)) problems.push(`the probe command no longer knows how to ${what}`);
+}
+
 for (const [what, pattern] of LAUNCHER) {
   if (!pattern.test(launcherText)) problems.push(`the probe launcher no longer knows how to ${what}`);
 }
@@ -269,5 +283,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );

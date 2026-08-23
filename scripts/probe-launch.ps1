@@ -3,9 +3,9 @@
 #   pwsh scripts/probe-launch.ps1 -Doc <file> [-Work <name>]
 #   pwsh scripts/probe-launch.ps1 -Close [-Work <name>]
 #
-# The other launcher, scripts/capture-screenshot.ps1, photographs its copy and asks it to close in the same breath, so the copy is gone before the next command starts. A build needs four commands against one copy — ask, read, drive, ask again — which is what this one is for. Both run against the same throwaway profile, dot-sourced from scripts/probe-profile.ps1, so a probe cannot start writing into the owner's recent files while a shot stays clean.
+# The other launcher, scripts/capture-screenshot.ps1, photographs its copy and asks it to close in the same breath, so the copy is gone before the next command starts. A build needs four commands against one copy — ask, read, drive, ask again — which is what this one is for. Both share the throwaway profile in scripts/probe-profile.ps1.
 #
-# The account name is derived from the work folder rather than invented per run, which is the whole reason a close can stand alone: this process is gone by the time anyone asks the copy anything, so a name only it knew would be a name nothing could address. A second work folder is a second copy, up at the same time, under a name of its own.
+# The account name comes from the work folder rather than being invented per run — see Get-LeafProfileName. A second work folder is a second copy, up at the same time, under a name of its own.
 #
 # A work folder is kept rather than emptied. A shot wants a profile built from nothing every run — a picture of a reused one shows the last shot's vaults — and a probe wants the opposite: watching a window size come back needs the launch after the one that set it.
 #
