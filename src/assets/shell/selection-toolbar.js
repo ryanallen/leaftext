@@ -36,7 +36,6 @@ const BLOCK_FORMAT_KINDS = new Set(['paragraph', 'heading', 'blockquote']);
 // Rebuilt with the document, like the block gutter: renderState replaces the reader's markup and everything pointing into it goes with it.
 let selectionToolbar = null;
 let selectionToolbarRow = null;
-let selectionToolbarLinkRow = null;
 let selectionToolbarLinkInput = null;
 let selectionToolbarButtons = new Map();
 // The block the current selection lives in, and the range itself — held because the link box takes the focus, and a selection nobody remembers is one the URL has nothing to attach to.
@@ -368,7 +367,6 @@ function selectionToolbarButton(format, onPress) {
 function bindSelectionToolbar() {
   selectionToolbar = null;
   selectionToolbarRow = null;
-  selectionToolbarLinkRow = null;
   selectionToolbarLinkInput = null;
   selectionToolbarButtons = new Map();
   selectionToolbarBlock = null;
@@ -386,7 +384,6 @@ function bindSelectionToolbar() {
     '<div class="selection-link-row"><input type="text" class="selection-link-input" spellcheck="false" placeholder="Paste or type a link"></div>' +
     '<span class="selection-toolbar-point" aria-hidden="true"></span>';
   selectionToolbarRow = selectionToolbar.querySelector('.selection-format-row');
-  selectionToolbarLinkRow = selectionToolbar.querySelector('.selection-link-row');
   selectionToolbarLinkInput = selectionToolbar.querySelector('.selection-link-input');
 
   for (const format of INLINE_FORMATS) {

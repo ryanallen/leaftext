@@ -822,6 +822,30 @@ function topLevelNames(script) {
   return [...found];
 }
 
+/** Every one of those the page assigns after declaring and never reads. Only a bare `name =` is a write: `name += 1` and `name = name + 1` both read the value first, and so does every other mention. The declaration itself is neither, since the question is what happens to the value once it exists. */
+function writeOnlyNames(script) {
+  const lines = script.split('\n');
+  const dead = [];
+  for (const name of topLevelNames(script)) {
+    // A mention of the binding rather than of a property with the same name, with whatever follows it, which is what says write or read.
+    const mention = new RegExp(`(?<![\\w$.])${name}(?![\\w$])\\s*(\\S{0,2})`, 'g');
+    let writes = 0;
+    let reads = 0;
+    for (const line of lines) {
+      const declaration = line.match(/^(?:let|var)\s+([A-Za-z_$][\w$]*(?:\s*,\s*[A-Za-z_$][\w$]*)*)\s*(?:=|;|$)/);
+      const declaresThis = declaration && declaration[1].split(',').some((one) => one.trim() === name);
+      for (const found of line.matchAll(mention)) {
+        if (declaresThis && found.index < declaration[0].length) continue;
+        // `=>` is a parameter and `==` a comparison; a compound assignment carries its operator in front of the `=`, so neither reaches here as a write.
+        if (found[1].startsWith('=') && found[1][1] !== '=' && found[1][1] !== '>') writes += 1;
+        else reads += 1;
+      }
+    }
+    if (writes && !reads) dead.push(name);
+  }
+  return dead;
+}
+
 /** Every element the page holds: the ones the markup declared, the three roots, and everything standing under them. */
 function everyElement(context) {
   const seen = new Set();
@@ -966,6 +990,35 @@ function pageSnapshot(context, script) {
 const { names, source } = shellSource();
 check('the page parses', () => {
   new vm.Script(source, { filename: 'app-shell.js' });
+});
+
+// ---- 1a. nothing is written and never read ----------------------------------
+//
+// A top-level value the page writes and nobody reads is worse than no value at all: whoever opens the fragment has to prove the thing does not matter before they may touch the line, and whoever moves the code has to keep it right for a reader that does not exist. Two shipped at once — the point a flowchart menu was opened at, and a cached handle to the link row on the selection bar — which is what makes it a class rather than a slip. There is no allow-list: a binding named here is read by name, or it comes out.
+//
+// The planted source comes first because a scanner that finds nothing because it is broken passes exactly like one that finds nothing because the tree is clean.
+
+check('no value the page declares is written and never read', () => {
+  const planted = [
+    'let readAndWritten = 0;',
+    'let onlyWritten = null;',
+    'let countedUp = 0;',
+    'let itself = 1;',
+    'function drive() {',
+    '  readAndWritten = 1;',
+    '  onlyWritten = { x: 0 };',
+    '  countedUp = 0;',
+    '  countedUp += 1;',
+    '  itself = itself + 1;',
+    '  return readAndWritten;',
+    '}',
+  ].join('\n');
+  const plantedFound = writeOnlyNames(planted);
+  if (!plantedFound.includes('onlyWritten')) throw new Error('this scan missed a value written and never read');
+  if (plantedFound.length !== 1) throw new Error(`this scan named ${plantedFound.join(', ')} — a compound assignment and a self-referring one both read the value`);
+
+  const dead = writeOnlyNames(source);
+  if (dead.length) throw new Error(`${dead.join(', ')} is written and never read — read it by name, or take it out`);
 });
 
 // ---- 2. it boots ------------------------------------------------------------

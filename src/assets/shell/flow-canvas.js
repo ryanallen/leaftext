@@ -1313,7 +1313,6 @@ if (flowCanvas) {
 
 // Everything the canvas can do, named, on the thing it would do it to. The gestures are faster once they are known; this is where they are learned, and the only place the less common ones (duplicate, detach, flip) live at all.
 let flowMenu = null;
-let flowMenuAt = { x: 0, y: 0 };
 
 function flowMenuItems(spot) {
   const graph = flowSession.graph;
@@ -1413,14 +1412,12 @@ function flowGroupItems(graph, id) {
 }
 
 function openFlowMenu(x, y, spot) {
-  flowMenuAt = { x, y };
   openFlowMenuWith(x, y, flowMenuItems(spot));
 }
 
 // `host` is what the menu hangs off and is clamped inside. The editor's own menus leave it alone and get the sheet; a diagram in the page passes `appSurface`, because the reader that holds the block scrolls and would clip it, and the full-window view passes its own overlay.
 function openFlowMenuWith(x, y, items, host) {
   closeFlowMenu();
-  flowMenuAt = { x, y };
   const menu = document.createElement('div');
   menu.className = 'flow-menu';
   menu.setAttribute('role', 'menu');
