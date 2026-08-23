@@ -311,6 +311,23 @@ mcp:
 drive out *steps:
     node scripts/drive.mjs {{ out }} {{ steps }}
 
+# Launch a copy of the app beside the one the owner is reading and leave it up, so
+# a change can be watched in a real window without taking their place, their tabs
+# or whatever they were mid-way through. It runs under an account name and a
+# profile of its own, so it opens its own window and hears its own quit.
+#   just probe-copy README.md
+#   just probe-copy README.md --work startup
+# --work names the profile: the same name twice starts from the settings the last
+# launch left, which is how a saved window size is watched coming back, and two
+# names are two copies up at once.
+probe-copy *args:
+    node scripts/probe.mjs open {{ args }}
+
+# Ask that copy to close and wait for it to go. Asked, never killed: a kill throws
+# away the window size, place and maximized state that only a real close saves.
+probe-close *args:
+    node scripts/probe.mjs close {{ args }}
+
 # Prove a motion drew rather than that its classes ran: sample one element's
 # computed value every frame while a trigger runs, print time and value per
 # frame, and fail when the first frame is already at the resting value.

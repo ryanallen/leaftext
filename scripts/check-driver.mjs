@@ -19,6 +19,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const script = join(root, 'scripts/capture-screenshot.ps1');
+// The throwaway profile both launchers run against, and the launcher that leaves its copy up. One file answers for both callers, which is what stops a probe writing into the owner's recent files while a shot stays clean.
+const profile = join(root, 'scripts/probe-profile.ps1');
+const launcher = join(root, 'scripts/probe-launch.ps1');
 const webDriver = join(root, 'scripts/drive-web.mjs');
 const motionProbe = join(root, 'scripts/probe-motion.mjs');
 const out = join(tmpdir(), 'leaftext-driver-check.bmp');
@@ -194,16 +197,35 @@ else if (!attached.text.includes('the running copy')) {
 
 // Every file the shot profile is made of, written or removed on every unattached run. The recent list was already like this — the app appends to it as it opens files — and the vault registry has the same fault for the same reason: the app registers a cloud folder as a vault at every launch, so a database reused across a batch photographs whatever the earlier shots found.
 const text = readFileSync(script, 'utf8');
+const profileText = readFileSync(profile, 'utf8');
+const launcherText = readFileSync(launcher, 'utf8');
 const PROFILE = [
   ["settings.json", /Out-File -FilePath \(Join-Path \$config 'settings\.json'\)/],
   ['recent-files.json', /Out-File -FilePath \(Join-Path \$config 'recent-files\.json'\)/],
   ['manifest.db', /Remove-Item \$stale -Force/],
-  ['a home folder with no cloud client under it', /\$env:USERPROFILE = \$shotHome/],
-  ['the three OneDrive variables', /\$env:OneDriveCommercial = ''/],
-  ['an account name of its own, unique to the run', /\$env:USERNAME = "leaftext-shot-\$PID"/],
 ];
 for (const [what, pattern] of PROFILE) {
   if (!pattern.test(text)) problems.push(`the shot profile no longer starts every run with ${what}`);
+}
+
+// The separation itself, in the one file both launchers dot-source. Two copies of this block drift, and the drift shows up as a probe writing into the owner's recent files while a shot stays clean.
+const SHARED = [
+  ['a config root under the work folder', /\$env:APPDATA = \$appdata/],
+  ['a data root under the work folder', /\$env:LOCALAPPDATA = \$local/],
+  ['a home folder with no cloud client under it', /\$env:USERPROFILE = \$emptyHome/],
+  ['the three OneDrive variables', /\$env:OneDriveCommercial = ''/],
+  ['an account name of its own', /\$env:USERNAME = \$Name/],
+  ['every one of them saved before it is written over', /GetEnvironmentVariable\(\$varName\)/],
+  ['every one of them put back when the caller is done', /SetEnvironmentVariable\(\$varName, \$before\[\$varName\]\)/],
+];
+for (const [what, pattern] of SHARED) {
+  if (!pattern.test(profileText)) problems.push(`the shared throwaway profile no longer gives a copy ${what}`);
+}
+// Both callers reading it rather than carrying their own copy, which is the whole of what moving the block bought.
+for (const [who, caller] of [['the documentation shot', text], ['the probe launcher', launcherText]]) {
+  if (!/\. \(Join-Path \$PSScriptRoot 'probe-profile\.ps1'\)/.test(caller)) {
+    problems.push(`${who} no longer runs against the shared throwaway profile, so the two can drift apart`);
+  }
 }
 
 // A documentation shot has to leave the copy the owner is reading alone, which is what the account name above buys: the app names its instance slot and its ask pipe after %USERNAME%, so a copy launched under a name nobody else uses opens its own window and hears its own quit. The sweep staying away matters as much as the quit going out, so the refusal below is read for as well as the four shutdown steps.
@@ -211,14 +233,28 @@ const SAFE_SHUTDOWN = [
   ['closes its own copy by asking rather than stopping it', /--ask '\{\\"ask\\":\\"quit\\"\}'/],
   ['waits for that copy to go before it says anything', /\$proc\.WaitForExit\(/],
   ['closes the warm copy the vault registry needs the same way', /Stop-ShotCopy \$warm/],
-  ['puts the account name and the profile roots back when the run ends', /SetEnvironmentVariable\(\$name, \$shotEnvBefore\[\$name\]\)/],
+  ['puts the account name and the profile roots back when the run ends', /Exit-LeafProfile \$shotEnvBefore/],
 ];
 for (const [what, pattern] of SAFE_SHUTDOWN) {
   if (!pattern.test(text)) problems.push(`the documentation shot no longer ${what}`);
 }
 // Any of them, at any depth: `Get-Process leaftext | Stop-Process` takes the owner's window down with the shot copy, and `Stop-Process -Id` on a copy of the app throws its window place away instead of saving it. -Attach has no copy of its own to stop.
-if (/Stop-Process/.test(text)) {
-  problems.push('the documentation shot can stop a process again, and it cannot tell the owner\'s copy from its own');
+for (const [who, caller] of [['the documentation shot', text], ['the probe launcher', launcherText], ['the shared profile', profileText]]) {
+  if (/Stop-Process/.test(caller)) {
+    problems.push(`${who} can stop a process again, and it cannot tell the owner's copy from its own`);
+  }
+}
+
+// The launcher's own half: a copy still up when the command that started it has returned, addressable by a second command, and closed by asking.
+const LAUNCHER = [
+  ['leave its copy running when it returns', /Start-Process -FilePath \$Exe/],
+  ['name that copy off its work folder, so a close run later can address it', /Get-LeafProfileName \$workDir/],
+  ['close it by asking down its own pipe', /--ask '\{\\"ask\\":\\"quit\\"\}'/],
+  ['wait for that pipe to go away rather than for a process', /Wait-LeafPipe \$name \$false/],
+  ['keep the work folder rather than empty it, so a saved window size comes back', /A work folder is kept rather than emptied/],
+];
+for (const [what, pattern] of LAUNCHER) {
+  if (!pattern.test(launcherText)) problems.push(`the probe launcher no longer knows how to ${what}`);
 }
 
 // Two development copies can be open at once, each built under its own checkout, so -Attach has to pick the one belonging to the checkout it was run from rather than refuse because it found two windows. With no copy from this checkout running it still takes whatever is up, which is the installed copy the owner reads.
@@ -233,5 +269,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, a documentation shot runs under a name of its own and closes only that copy by asking, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );

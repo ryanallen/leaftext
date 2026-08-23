@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { probeName } from './probe-copy.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const pipe = readFileSync(join(root, 'src/pipe.rs'), 'utf8');
@@ -74,6 +75,26 @@ if (!pipe.includes(PIPE_NAME)) {
 // The socket half is a path, not a name, and it is built from the data folder.
 if (!wrapper.includes('journal.sock') || !pipe.includes('journal.sock')) {
   problems.push('the socket file is named differently at the two ends');
+}
+
+// ---- which copy an ask lands on ---------------------------------------------
+
+// The wrapper asks scripts/probe-copy.mjs before it reads the account name, so a copy `just probe-copy` launched is the one a build talks to. Read back on made-up pointers rather than on a live one, the way the registration above is: this stays offline and needs no app.
+const POINTER_CASES = [
+  ['a pointer naming a copy that is up', { pointer: { name: 'leaftext-probe-default', pid: 7 }, running: () => true }, 'leaftext-probe-default'],
+  ['a pointer naming a process that is gone', { pointer: { name: 'leaftext-probe-default', pid: 7 }, running: () => false }, null],
+  ['no pointer at all', { pointer: null, running: () => true }, null],
+  ['a live pointer off Windows, where the socket is named after the home folder', { pointer: { name: 'leaftext-probe-default', pid: 7 }, running: () => true, platform: 'darwin' }, null],
+  ['a caller that has already named the copy it means', { pointer: { name: 'leaftext-probe-default', pid: 7 }, running: () => true, accountOnly: true }, null],
+];
+for (const [name, given, wanted] of POINTER_CASES) {
+  const got = probeName({ platform: 'win32', accountOnly: false, ...given });
+  if (got !== wanted) {
+    problems.push(`with ${name} an ask should go to ${wanted ?? 'the account it is running under'}, and it goes to ${got ?? 'the account it is running under'}`);
+  }
+}
+if (!wrapper.includes('probeName()')) {
+  problems.push('the wrapper no longer asks which copy a build launched before it reads the account name, so a probe copy is invisible to every question again');
 }
 
 // ---- the registration reaches the wrapper -----------------------------------
@@ -164,4 +185,4 @@ if (problems.length) {
   console.error('The wrapper wraps src/pipe.rs; adding an ask there is what adds a tool.');
   process.exit(1);
 }
-console.log(`mcp: ${asks.length} asks, each with a tool, on the address the app listens on, and "${SERVER}" registered at the wrapper`);
+console.log(`mcp: ${asks.length} asks, each with a tool, on the address the app listens on, an ask landing on the copy a build launched in ${POINTER_CASES.length} readings, and "${SERVER}" registered at the wrapper`);

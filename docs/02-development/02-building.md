@@ -239,4 +239,20 @@ That samples the element's computed `transform` every frame while the trigger ru
 
 Two things about real input. A wheel notch and a key press go to whatever has focus, not to what the pointer is over, and bringing a window forward does not put focus inside the page — so lead with a click on the document, as above, or the notches land somewhere else and the app sits where it was. And `^` is cmd's escape character, so `key:^{HOME}` reaches the script as `key:{HOME}`; a keyboard shortcut is better sent through `eval`, which needs no focus at all and works on both platforms.
 
+### Driving a copy that is not the one you are reading
+
+A change can be watched in a real window without taking your place, your tabs or whatever you were mid-way through. `just probe-copy <document>` launches a copy beside yours and **leaves it up**, under an account name and a set of profile folders of its own, so it opens its own window and hears its own quit:
+
+```bash
+just probe-copy README.md
+just probe-copy README.md --work startup
+just probe-close
+```
+
+It prints the name it launched under, its process id and the folder it was given, and writes all of that to `.tmp/probe-copy.json`. From then on every `just ask` and every MCP tool lands on that copy rather than on the one you are reading, and says so on the error stream when it does — the reply itself is unchanged, because that is what an agent reads. `just probe-close` asks the copy to quit, waits for it to go, and removes the pointer.
+
+`--work` names the profile: the same name twice starts from the settings the last launch left, which is how a saved window size is watched coming back, and two names are two copies up at once. The folder is kept rather than emptied — the opposite of a documentation shot, which builds its profile from nothing every run so a picture cannot carry the last one's vaults. Both run against the same block in `scripts/probe-profile.ps1`, so the two cannot drift apart.
+
+The pointer is guarded by that process id: a session that crashes with a probe up leaves the file behind, and an ask then finds the process gone and goes back to your own copy rather than answering into nothing. `just drive` needs none of this — it already picks the copy built from this checkout. Windows only so far: the ask channel on macOS is named after the home folder rather than the account, so a copy launched under a name of its own cannot be addressed there.
+
 That split is worth knowing before driving anything: everything the page handles — every shortcut, every click on an element, every command the page sends — can go through `eval`, and only what the web view itself handles needs real input: the wheel, a real drag, a native menu, the file dialog. A `WheelEvent` dispatched into the page moves nothing, and setting `scrollTop` is a different gesture from a wheel.

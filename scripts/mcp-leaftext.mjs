@@ -11,13 +11,29 @@
 import net from 'node:net';
 import process from 'node:process';
 import readline from 'node:readline';
+import { probeName } from './probe-copy.mjs';
 
 // The address the app listens on. Written in src/pipe.rs — `address()` — and the folder it sits in comes from `project_data_local_dir()` in src/lib.rs. scripts/check-mcp.mjs fails if the pipe's name here and there drift apart.
 const PIPE_NAME = 'leaftext-journal-';
 
+// Said on the error stream, because the reply on the output stream is what MCP reads, and said only when it changes. A person running one ask in a terminal is otherwise guessing which window answered.
+const UNSAID = Symbol('nothing said yet');
+let saidCopy = UNSAID;
+function announce(name) {
+  if (saidCopy === name) return;
+  const first = saidCopy === UNSAID;
+  saidCopy = name;
+  const account = process.env.USERNAME ?? 'this account';
+  if (name) console.error(`answered by the probe copy launched under ${name}, not by the one running as ${account} — 'just probe-close' hands it back`);
+  else if (!first) console.error(`answered by the copy running as ${account} again`);
+}
+
 function address() {
   if (process.platform === 'win32') {
-    return `\\\\.\\pipe\\${PIPE_NAME}${process.env.USERNAME ?? ''}`;
+    // A copy this session launched with `just probe-copy` is the one it asks, so a build can watch a change in a real window without taking the one the owner is reading. The fallback is the ambient account: no pointer, a pointer naming a process that is gone, or a caller that has already set the account name to the copy it means. Read fresh every ask rather than once at startup, because this process is long-lived when it speaks MCP and a probe is usually launched after it.
+    const probe = probeName();
+    announce(probe);
+    return `\\\\.\\pipe\\${PIPE_NAME}${probe ?? process.env.USERNAME ?? ''}`;
   }
   return `${process.env.HOME ?? ''}/Library/Application Support/com.ryanallen.leaftext/journal.sock`;
 }

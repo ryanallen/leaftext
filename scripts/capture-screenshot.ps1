@@ -55,14 +55,16 @@
 #     coordinate goes on meaning a pixel in the picture, and -Crop is measured off
 #     the app rather than off the window around it.
 #
-# The app resolves its config and data roots from %APPDATA% and %LOCALAPPDATA%
-# (`project_config_dir`), so an unattached shot runs against a throwaway profile
-# under -Work rather than the owner's. Nothing here reads or writes the real
-# settings, recent files, or vault registry — a screenshot is not worth risking
-# them, and an earlier version that swapped the owner's settings out and back lost
-# them to any kill that beat its restore. %USERPROFILE% and the OneDrive variables
-# go with them, because the app makes a vault of every cloud folder it finds under
-# them and a picture of the vault list then shows this machine's folders.
+# An unattached shot runs against the throwaway profile in scripts/probe-profile.ps1
+# — its own account name and its own config, data and home roots under -Work — so
+# nothing here reads or writes the owner's settings, recent files or vault registry.
+# A screenshot is not worth risking them, and an earlier version that swapped the
+# owner's settings out and back lost them to any kill that beat its restore. That
+# file is shared with scripts/probe-launch.ps1, which leaves its copy up instead of
+# photographing it; what stays here is only what a shot builds from nothing on top
+# of it — the settings, the recent list and the vault registry, all three written or
+# removed every run, because a profile carrying the last shot's vaults photographs
+# them.
 
 param(
   # Empty opens the no-file home screen.
@@ -206,6 +208,9 @@ public class LeafShot {
 
 $root = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
 
+# The throwaway profile, shared with scripts/probe-launch.ps1 so a shot and a probe cannot drift apart.
+. (Join-Path $PSScriptRoot 'probe-profile.ps1')
+
 # The rectangle the app draws into, in screen pixels. See note 6.
 function Get-VisibleRect([IntPtr]$hwnd, $window) {
   $client = New-Object LeafShot+RECT
@@ -261,11 +266,11 @@ else {
   if (-not (Test-Path $Exe)) { throw "no binary at $Exe - run 'cargo build' first" }
   if (-not $Work) { $Work = Join-Path ([System.IO.Path]::GetTempPath()) "leaftext-shot" }
 
-  $appdata = Join-Path $Work 'roaming'
-  $local = Join-Path $Work 'local'
-  $config = Join-Path $appdata 'ryanallen\leaftext\config'
-  New-Item -ItemType Directory -Force -Path $config | Out-Null
-  New-Item -ItemType Directory -Force -Path (Join-Path $local 'ryanallen\leaftext\data') | Out-Null
+  # Unique per run: a copy that wedges is then holding a name no later run goes looking for. A probe copy is named the other way round, off its work folder, because a second command has to address it.
+  $shotProfile = Enter-LeafProfile -Work $Work -Name "leaftext-shot-$PID"
+  $shotEnvBefore = $shotProfile.Before
+  $local = $shotProfile.Local
+  $config = $shotProfile.Config
 
   # See notes 3 and 4: the window size and the theme both come from here.
   $shot = [ordered]@{
@@ -313,29 +318,10 @@ else {
     Out-File -FilePath (Join-Path $config 'recent-files.json') -Encoding utf8
 
   # The vault registry, for the reason written above the recent list: a vault registered for one picture is still registered for the next, and the app registers cloud folders itself at every launch. Deleted rather than emptied — the app owns the schema and builds it.
-  $manifest = Join-Path $local 'ryanallen\leaftext\data\manifest.db'
+  $manifest = $shotProfile.Manifest
   foreach ($stale in @($manifest, "$manifest-wal", "$manifest-shm")) {
     if (Test-Path $stale) { Remove-Item $stale -Force }
   }
-
-  # Every variable the throwaway profile writes over, kept so the block at the foot of the script can put them back. This process outlives the shot when another script calls it, and one of these is the account name the app is asked questions under — so a run leaving it rewritten points everything after it at a copy that has already closed.
-  $shotEnvBefore = [ordered]@{}
-  foreach ($name in 'APPDATA', 'LOCALAPPDATA', 'USERPROFILE', 'USERNAME', 'OneDrive', 'OneDriveConsumer', 'OneDriveCommercial') {
-    $shotEnvBefore[$name] = [Environment]::GetEnvironmentVariable($name)
-  }
-
-  $env:APPDATA = $appdata
-  $env:LOCALAPPDATA = $local
-  # A home folder with nothing in it. src/known_folders.rs is the only thing in the app that reads these four, and it makes a vault of every cloud folder it finds under them — which is how a picture of the vault list came to show this machine's folders. Starved rather than switched off, so the app needs no branch that exists only for a screenshot.
-  $shotHome = Join-Path $Work 'home'
-  New-Item -ItemType Directory -Force -Path $shotHome | Out-Null
-  $env:USERPROFILE = $shotHome
-  $env:OneDrive = ''
-  $env:OneDriveConsumer = ''
-  $env:OneDriveCommercial = ''
-
-  # An account name of its own, which is what keeps a documentation shot away from the copy the owner is reading. src/single_instance.rs names the instance slot after %USERNAME% and src/pipe.rs names the ask pipe after it, so a copy launched under a name nobody else is using gets its own window instead of handing its file to whatever is already up, and answers a quit nothing else hears. Unique per run: a copy that wedges is then holding a name no later run goes looking for.
-  $env:USERNAME = "leaftext-shot-$PID"
 }
 
 function Stop-ShotCopy($proc) {
@@ -347,8 +333,16 @@ function Stop-ShotCopy($proc) {
   #
   # The backslashes are load-bearing: a bare double quote inside a single-quoted
   # argument reaches node stripped, and the wrapper wants JSON.
+  #
+  # LEAFTEXT_ASK_ACCOUNT_ONLY because the account name above is already the copy this means. Without it the wrapper follows the pointer file scripts/probe-copy.mjs keeps, and a shot taken while a probe copy is up would close the probe and leave its own copy on screen.
   if (-not $proc -or $proc.HasExited) { return }
-  & node (Join-Path $root 'scripts\mcp-leaftext.mjs') --ask '{\"ask\":\"quit\"}' | Out-Null
+  $env:LEAFTEXT_ASK_ACCOUNT_ONLY = '1'
+  try {
+    & node (Join-Path $root 'scripts\mcp-leaftext.mjs') --ask '{\"ask\":\"quit\"}' | Out-Null
+  }
+  finally {
+    $env:LEAFTEXT_ASK_ACCOUNT_ONLY = $null
+  }
   if (-not $proc.WaitForExit(10000)) {
     Write-Warning "the shot copy would not close when asked; it is still running as pid $($proc.Id) under the name $env:USERNAME, which nothing else looks for"
   }
@@ -618,10 +612,5 @@ finally {
   # Only the copy this script launched, and asked rather than stopped. An attached
   # run has no copy of its own, so it leaves the owner's app up.
   Stop-ShotCopy $proc
-  # After the quit, never before it: the account name is what addresses the pipe.
-  if ($shotEnvBefore) {
-    foreach ($name in $shotEnvBefore.Keys) {
-      [Environment]::SetEnvironmentVariable($name, $shotEnvBefore[$name])
-    }
-  }
+  Exit-LeafProfile $shotEnvBefore
 }
