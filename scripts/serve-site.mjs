@@ -72,6 +72,6 @@ const server = createServer(async (request, response) => {
   }
 });
 
-// The address is `serve-static.mjs`'s to hand out, because a port something else already answers on is not this server's to print. The docs page is spelled off the address it answered with, so the host is written in one place for both lines.
+// The address is `serve-static.mjs`'s to hand out, so a port something else already answers on stops this rather than being printed as ours. The docs page is spelled off the address it answered with, so the host is written in one place for both lines.
 const extra = (address) => [`${address}/docs/`, `Serving the site as GitHub Pages would, front page ${bakedPage ? 'baked' : 'unbaked'}. Stop it with Ctrl+C.`];
 if (!(await listenLocally(server, port, { extra })).address) process.exit(1);

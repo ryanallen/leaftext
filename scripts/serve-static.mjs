@@ -5,10 +5,10 @@
 import { connect } from 'node:net';
 import { extname, resolve, sep } from 'node:path';
 
-/// The two loopback families, both probed, because a program holding the wildcard address answers on one of them and lets a bind on the other through with no error at all.
+/// Both families, because a wildcard holder answers on one of them and is invisible from the other.
 const LOOPBACK = ['127.0.0.1', '::1'];
 
-/// Whether anything already answers on this port on one family. It connects rather than binds: watched here, a foreign program holding `0.0.0.0` and `[::]` let `listen(port, '127.0.0.1')` and `listen(port, '::1')` both succeed with no error, so `EADDRINUSE` never arrives and nothing may be written as though it will.
+/// Whether anything already answers on this port on one family. It connects rather than binds: a foreign program holding `0.0.0.0` and `[::]` lets `listen(port, '127.0.0.1')` and `listen(port, '::1')` both succeed with no error, so `EADDRINUSE` never arrives and nothing may be written as though it will.
 function answers(port, host) {
   return new Promise((settle) => {
     const socket = connect({ port, host });
@@ -22,7 +22,7 @@ function answers(port, host) {
   });
 }
 
-/// How both previews start. It refuses a port anything already answers on, binds loopback alone — so a folder of somebody's notes is not published to the network for as long as the server is up — and prints the address it actually bound, which is what makes the line a person opens, and points `just drive-web` at, this server's own rather than a name that may resolve to somebody else's. `extra` is handed that address and answers with whatever else the server prints. Answers `{ address, lines }` where it listened and `{ taken, message }` where it did not; `quiet` is for a test that wants the answer without the output.
+/// How both previews start: refuse a port anything already answers on, bind loopback alone so a folder of somebody's notes is not published to the network, and print the address actually bound rather than a name that may resolve to somebody else's. `extra` is handed that address and answers with the server's other lines. Answers `{ address, lines }` where it listened and `{ taken, message }` where it did not; `quiet` is for a test that wants the answer without the output.
 export async function listenLocally(server, port, { extra = () => [], quiet = false } = {}) {
   for (const host of LOOPBACK) {
     if (!(await answers(port, host))) continue;

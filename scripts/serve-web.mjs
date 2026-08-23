@@ -54,5 +54,5 @@ const server = createServer(async (request, response) => {
   }
 });
 
-// The address is `serve-static.mjs`'s to hand out, because a port something else already answers on is not this server's to print.
+// The address is `serve-static.mjs`'s to hand out, so a port something else already answers on stops this rather than being printed as ours.
 if (!(await listenLocally(server, port, { extra: () => ['Serving the exported folder as a static host would. Stop it with Ctrl+C.'] })).address) process.exit(1);
