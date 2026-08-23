@@ -13,7 +13,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fileWithin, typeOf } from './serve-static.mjs';
+import { fileWithin, listenLocally, typeOf } from './serve-static.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const site = join(root, 'web', 'dist', 'site');
@@ -34,7 +34,7 @@ if (!existsSync(join(site, 'index.html'))) {
   process.exit(1);
 }
 
-createServer(async (request, response) => {
+const server = createServer(async (request, response) => {
   // Refuse anything outside the exported folder, whatever the URL says.
   const file = fileWithin(site, request.url);
   if (!file) {
@@ -52,7 +52,7 @@ createServer(async (request, response) => {
     response.writeHead(404, { 'content-type': 'text/plain' });
     response.end('not here');
   }
-}).listen(port, '127.0.0.1', () => {
-  console.log(`http://localhost:${port}`);
-  console.log('Serving the exported folder as a static host would. Stop it with Ctrl+C.');
 });
+
+// The address is `serve-static.mjs`'s to hand out, because a port something else already answers on is not this server's to print.
+if (!(await listenLocally(server, port, { extra: () => ['Serving the exported folder as a static host would. Stop it with Ctrl+C.'] })).address) process.exit(1);

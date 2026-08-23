@@ -19,7 +19,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BUILT_MODULE, FRONT_DOCUMENT, FRONT_PAGE, bakeFrontPage, publishedAssets } from './site-assets.mjs';
-import { fileWithin, typeOf } from './serve-static.mjs';
+import { fileWithin, listenLocally, typeOf } from './serve-static.mjs';
 import { instantiateCore } from './web-module.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -44,7 +44,7 @@ const bakedPage = args.includes('--unbaked')
 // Keyed by the file each one lands at, so a request is answered by where its URL resolves rather than by what it says.
 const publishedHere = new Map([...publishedAssets(leaf, readFileSync(BUILT_MODULE))].map(([path, bytes]) => [join(root, path), bytes]));
 
-createServer(async (request, response) => {
+const server = createServer(async (request, response) => {
   // Refuse anything outside the repository, whatever the URL says.
   const file = fileWithin(root, request.url);
   if (!file) {
@@ -70,8 +70,8 @@ createServer(async (request, response) => {
     response.writeHead(404, { 'content-type': 'text/plain' });
     response.end('not here');
   }
-}).listen(port, '127.0.0.1', () => {
-  console.log(`http://localhost:${port}`);
-  console.log(`http://localhost:${port}/docs/`);
-  console.log(`Serving the site as GitHub Pages would, front page ${bakedPage ? 'baked' : 'unbaked'}. Stop it with Ctrl+C.`);
 });
+
+// The address is `serve-static.mjs`'s to hand out, because a port something else already answers on is not this server's to print. The docs page is spelled off the address it answered with, so the host is written in one place for both lines.
+const extra = (address) => [`${address}/docs/`, `Serving the site as GitHub Pages would, front page ${bakedPage ? 'baked' : 'unbaked'}. Stop it with Ctrl+C.`];
+if (!(await listenLocally(server, port, { extra })).address) process.exit(1);

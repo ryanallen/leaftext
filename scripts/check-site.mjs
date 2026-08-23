@@ -6,11 +6,12 @@
 // Each entry page's own folder is the base, read off the <script> tag it loads, so the page saying where the file is and the file being there cannot drift. Only literal paths can be checked; a path built at runtime is skipped.
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { createServer as createSocketServer } from 'node:net';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeLink } from '../site/link-tooltip.js';
 import { discoveryFiles } from './seo-gen.mjs';
-import { fileWithin, typeOf } from './serve-static.mjs';
+import { fileWithin, listenLocally, typeOf } from './serve-static.mjs';
 import { ASSET_DIR, FRONT_PAGE, MODULE_PATH, PUBLISHED, bakeFrontPage, frontPageIsEmpty, publishedAssets } from './site-assets.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -230,6 +231,35 @@ if (!frontPageIsEmpty(read(FRONT_PAGE))) {
   }
 }
 
+// The address a preview prints is what a person opens and what `just drive-web` is pointed at, so a port something else already answers on may not be handed out as this server's. A program holding the wildcard address lets every loopback bind through with no error at all, so a probe is the only thing that finds it — and it has to ask both families, because a holder on one is invisible from the other. Offline, and on ports the machine hands out, so nothing here waits on 8123 or 8124 being free.
+{
+  const free = createSocketServer();
+  const started = await listenLocally(free, 0, { quiet: true });
+  if (!started.address) {
+    problems.push(`a preview server refused a port nothing was answering on: ${started.message}`);
+  } else {
+    const bound = free.address();
+    if (bound.address !== '127.0.0.1') problems.push(`a preview server bound ${bound.address} rather than 127.0.0.1, so previewing a folder of somebody's notes publishes it to anything that can reach this machine`);
+    if (started.lines[0] !== `http://127.0.0.1:${bound.port}`) problems.push(`a preview server printed ${started.lines[0]} while listening on 127.0.0.1:${bound.port}, so the address it hands out is not the one it serves`);
+    free.close();
+  }
+  // Both wildcard families, because each is the one a probe asking only the other would report as free.
+  for (const [held, options] of [['0.0.0.0', { port: 0, host: '0.0.0.0' }], ['[::]', { port: 0, host: '::', ipv6Only: true }]]) {
+    const holder = createSocketServer();
+    const taken = await new Promise((settle) => holder.listen(options, () => settle(holder.address())).once('error', () => settle(null)));
+    if (!taken) continue; // A machine with no IPv6 cannot hold `[::]` to be found on it, and that is not a fault in the server.
+    const asked = createSocketServer();
+    const answer = await listenLocally(asked, taken.port, { quiet: true });
+    if (answer.address) {
+      problems.push(`a preview server bound port ${taken.port} beside a program already holding ${held} and printed ${answer.address}, which opens that program's site rather than this one`);
+      asked.close();
+    } else if (!answer.message.includes(String(taken.port)) || !answer.message.includes(answer.taken)) {
+      problems.push(`a preview server refused port ${taken.port} without naming both the port and the family that answered, so nothing in the line says which --port to move to: ${answer.message}`);
+    }
+    holder.close();
+  }
+}
+
 // Both preview servers name a file's type and refuse a path through one module, so there is one type table rather than two that drift and one refusal rather than one of them forgetting `..`. A URL is somebody else's string: what is checked is where it resolves to, never what it says.
 {
   const served = join(root, 'web', 'dist', 'site');
@@ -333,5 +363,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window — plus the local preview, which bakes that page without touching the tracked one, answers all ${PUBLISHED.length} published files out of the build it baked with, names a file's type and refuses a path climbing out of the folder it serves`
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window — plus the local preview, which bakes that page without touching the tracked one, answers all ${PUBLISHED.length} published files out of the build it baked with, names a file's type, refuses a path climbing out of the folder it serves, prints the loopback address it actually bound, and refuses a port a program holding either wildcard family already answers on`
 );
