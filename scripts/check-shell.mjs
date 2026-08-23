@@ -9279,6 +9279,58 @@ if (booted) {
     }
   });
 
+  // The sheet is rendered outside `#app`, so the draw pass never collects a diagram in an entry and one stays undrawn for as long as the sheet is open. The stylesheet holds it to a strip instead, and that rule keys on a `pre.mermaid` inside `.glossary-sheet-body` — a pair nothing here ever built, because until now nothing here opened the sheet at all.
+  check('a glossary entry carrying a drawing puts the block the strip rule keys on inside the sheet', () => {
+    const sheet = booted.document.getElementById('glossarySheet');
+    const body = booted.document.getElementById('glossarySheetBody');
+    const wasHidden = sheet.hidden;
+    const wasBody = body.innerHTML;
+    // One block per element, so a clone can be that block parsed again rather than a node shared with the page it came from.
+    const blocks = [
+      '<h2 id="a-term">A term</h2>',
+      '<p>What it means.</p>',
+      '<pre class="mermaid" data-language="mermaid">flowchart TD A --&gt; B</pre>',
+      '<p>And it reads on.</p>',
+      '<h2 id="the-next-term">The next term</h2>',
+      '<p>Not this one.</p>',
+    ];
+    const html = blocks.join('');
+    const parsed = booted.document.createElement('div');
+    parsed.innerHTML = html;
+    // The stand-in page has neither of these and the entry walker uses both: it clones the heading, then every block after it until the next heading of the same rank.
+    parsed.children.forEach((el, i) => {
+      el.cloneNode = () => {
+        const one = booted.document.createElement('div');
+        one.innerHTML = blocks[i];
+        return one.children[0];
+      };
+      el.nextElementSibling = parsed.children[i + 1] || null;
+    });
+    try {
+      booted.__glossaryProbeRoot = parsed;
+      booted.__glossaryProbeHtml = html;
+      vm.runInContext('glossaryParsedRoot = __glossaryProbeRoot; glossaryParsedHtml = __glossaryProbeHtml; glossaryWaiting = true;', booted);
+      booted.leafShowGlossary(html, 'a-term');
+
+      if (!body.classList.contains('glossary-sheet-body') || !body.classList.contains('document-body')) {
+        throw new Error('the sheet body no longer wears both classes the undrawn block is styled through');
+      }
+      const drawn = body.querySelectorAll('pre.mermaid');
+      if (drawn.length !== 1) throw new Error(`the entry put ${drawn.length} diagram blocks in the sheet`);
+      // The corner word is the whole of what the strip still says, so a block reaching the sheet without it is a strip with nothing in it.
+      if (drawn[0].dataset.language !== 'mermaid') throw new Error('the block in the sheet carries no corner word');
+      if (!body.textContent.includes('And it reads on.')) throw new Error('the entry stopped at the drawing rather than reading on past it');
+      if (body.textContent.includes('Not this one.')) throw new Error('the entry ran on into the next term');
+    } finally {
+      vm.runInContext('glossaryParsedRoot = null; glossaryParsedHtml = null; glossaryWaiting = false;', booted);
+      delete booted.__glossaryProbeRoot;
+      delete booted.__glossaryProbeHtml;
+      body.innerHTML = wasBody;
+      sheet.hidden = wasHidden;
+      sheet.classList.remove('open');
+    }
+  });
+
   // The table sheet hears Escape on the document in the capture phase and the term's own Escape waits in the bubble phase, so the key closed the table underneath and left the term standing over the bare document.
   check('Escape over the term closes the term and leaves the full-window table where it was', () => {
     const app = booted.document.getElementById('app');

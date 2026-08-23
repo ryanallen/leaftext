@@ -6901,8 +6901,8 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-minimap-preview a.glossary-term {
   color: inherit;
 }
-/* The clone is a .document-body, so an undrawn diagram in it matches the spinner rule too, and a page of boxes would spin dozens down a 68px rail. A pseudo-element survives any stripping of nodes, so only a rule the clone's own class reaches can cancel it. The block stays: its invisible source text is what holds the right height. */
-.document-minimap-preview pre.mermaid::after {
+/* The clone is a .document-body, so an undrawn diagram in it matches the spinner rule too, and a page of boxes would spin dozens down a 68px rail. A pseudo-element survives any stripping of nodes, so only a rule the clone's own class reaches can cancel it. The three conditions are the spinner rule's own, which is what ties the weight; the tie is broken by this rule sitting later. Written with the class alone it counted two class-level parts against that rule's five and never once applied. The block stays: its invisible source text is what holds the right height. */
+.document-minimap-preview pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
   content: none;
 }
 /* A drawn diagram lets the browser skip its own paint while it is off screen, and the clone is cloned with that on it — but the whole rail is one shrunken slice, so every cloned block is a few pixels tall and every drawing in the thumbnail went blank. Measured: 54 of them. Important, because the skip is written on the block itself. */
@@ -8060,6 +8060,15 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 .glossary-sheet-body > :first-child {
   margin-top: 0;
+}
+/* A term's entry is rendered outside #app, so the draw pass never collects its diagrams and one of them stays undrawn for good — the box the page holds open for a drawing that is coming would sit in the middle of the entry for ever with a ring turning in it. It falls to a strip instead, still printing the corner word that says what stood there, and the rest of the entry reads on past it. The three conditions are the spinner rule's own, which is what ties the weight; the tie is broken by these rules sitting later. Both published sites draw this same sheet off this same stylesheet. */
+.glossary-sheet-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"]) {
+  /* The corner label sits 8px down on a 13.2px line, so a block under about 22px clips its own word. */
+  min-height: 0;
+  height: 28px;
+}
+.glossary-sheet-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
+  content: none;
 }
 /* Waiting on the host to read and render the glossary. The fade-in is delayed past the sheet's own slide-up, so a lookup answered from the render cache lands first and no spinner is ever seen. */
 .glossary-sheet-waiting {
@@ -9768,7 +9777,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </section>
 <section class="part">
 <header><h3>Glossary sheet</h3><code class="built">.glossary-sheet</code><span class="built">glossary.js</span></header>
-<div class="stage"><div class="leaf-sheet glossary-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="glossary-sheet-title">A term</div><div class="glossary-sheet-body"><p>What the term means, read out of the vault's glossary.</p></div></div></div>
+<div class="stage"><div class="leaf-sheet glossary-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="glossary-sheet-title">A term</div><div class="glossary-sheet-body document-body"><p>What the term means, read out of the vault's glossary.</p><pre class="mermaid" data-language="mermaid">flowchart TD A --&gt; B</pre><p>And the sentence the entry reads on with.</p></div></div></div>
 </section>
 <section class="part">
 <header><h3>Context menu</h3><code class="built">.context-menu</code><span class="built">context-menu.js</span></header>

@@ -1001,9 +1001,24 @@ fn an_undrawn_diagram_does_not_spin_in_the_rail() {
     let css = reading_mode_css();
 
     // The rail's copy is a clone of `.document-body` keeping its classes, so every rule that paints an undrawn diagram matches inside it — the spinner included. A pseudo-element survives stripMinimapClone's removal of nodes, so only a rule reaches it.
-    assert_contains(
-        css,
-        ".document-minimap-preview pre.mermaid::after {\n  content: none;\n}",
+    let cancel = format!("{RAIL_UNDRAWN_DIAGRAM}::after");
+    let spinner = format!("{SPINNING_UNDRAWN_DIAGRAM}::after");
+    assert_contains(css, &cancel);
+    assert_contains(css, &spinner);
+    assert!(
+        rule_body(css, &format!("{cancel} {{")).contains("content: none;"),
+        "the ring is canceled by taking the pseudo-element away"
+    );
+
+    // Asserting the cancel's text is in the stylesheet is what let this rule stand while never once applying, so it is weighed against the rule it has to beat and then put after it.
+    let (rail, page) = (class_level_parts(&cancel), class_level_parts(&spinner));
+    assert!(
+        rail >= page,
+        "the rail's cancel counts {rail} class-level parts against the spinner rule's {page}, so the ring would go on turning"
+    );
+    assert!(
+        css.find(&cancel) > css.find(&spinner),
+        "a tie on weight is broken by source order, so the rail's cancel has to sit after the spinner rule"
     );
     // The block itself must stay in the copy: its source text is transparent in the page and is the only thing holding the block at the height the real one has.
     assert_contains(
@@ -1030,8 +1045,63 @@ fn class_level_parts(selector: &str) -> usize {
     leading.matches('.').count() + selector.matches('[').count()
 }
 
+const SHEET_UNDRAWN_DIAGRAM: &str = ".glossary-sheet-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])";
+const UNDRAWN_DIAGRAM_FLOOR: &str = ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"])";
+const RAIL_UNDRAWN_DIAGRAM: &str = ".document-minimap-preview pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])";
 const CARD_UNSHOWN_DIAGRAM: &str = ".link-hover-tip-preview-document pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])[data-card-diagram=\"unshown\"]";
 const SPINNING_UNDRAWN_DIAGRAM: &str = ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])";
+
+#[test]
+fn a_glossary_entrys_undrawn_diagram_is_a_strip_rather_than_a_ring_that_never_stops() {
+    let css = reading_mode_css();
+
+    // A term's entry is rendered outside #app, so the draw pass never collects its diagrams and one of them stays undrawn for as long as the sheet is open. Both published sites draw this same sheet off this same stylesheet, so these two rules are the whole fix everywhere.
+    let cancel = format!("{SHEET_UNDRAWN_DIAGRAM}::after");
+    let spinner = format!("{SPINNING_UNDRAWN_DIAGRAM}::after");
+    assert_contains(css, &cancel);
+    assert!(
+        rule_body(css, &format!("{cancel} {{")).contains("content: none;"),
+        "the ring is canceled by taking the pseudo-element away"
+    );
+    let (sheet, page) = (class_level_parts(&cancel), class_level_parts(&spinner));
+    assert!(
+        sheet >= page,
+        "the sheet's cancel counts {sheet} class-level parts against the spinner rule's {page}, so the ring would go on turning"
+    );
+    assert!(
+        css.find(&cancel) > css.find(&spinner),
+        "a tie on weight is broken by source order, so the sheet's cancel has to sit after the spinner rule"
+    );
+
+    // The height is the other half: left alone, the block keeps the height its own invisible source text laid out at, held open by the reading page's 88px floor.
+    let strip = rule_body(css, &format!("{SHEET_UNDRAWN_DIAGRAM} {{"));
+    assert!(
+        strip.contains("min-height: 0;"),
+        "the reading page's 88px floor has to go, or the strip cannot be shorter than it: {strip}"
+    );
+    let (held, floored) = (
+        class_level_parts(SHEET_UNDRAWN_DIAGRAM),
+        class_level_parts(UNDRAWN_DIAGRAM_FLOOR),
+    );
+    assert!(
+        held >= floored,
+        "the sheet's height rule counts {held} class-level parts against the floor's {floored}, so the block would stay 88px tall"
+    );
+    assert!(
+        css.find(SHEET_UNDRAWN_DIAGRAM) > css.find(UNDRAWN_DIAGRAM_FLOOR),
+        "a tie on weight is broken by source order, so the sheet's height rule has to sit after the floor"
+    );
+    let height = strip
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("height: ")?.strip_suffix("px;"))
+        .and_then(|value| value.parse::<u32>().ok())
+        .unwrap_or_else(|| panic!("the strip needs a height in pixels: {strip}"));
+    // The corner label sits 8px down on a 13.2px line, so a shorter strip clips the one word still saying a drawing stood there.
+    assert!(
+        (22..=48).contains(&height),
+        "a {height}px strip either clips its own corner word or is no longer a strip"
+    );
+}
 
 #[test]
 fn a_diagram_the_card_will_not_draw_is_a_strip_rather_than_a_ring_that_never_stops() {
