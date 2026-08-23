@@ -174,14 +174,15 @@ class LeafElement extends LeafNode {
     this.value = '';
     this.checked = false;
     this.open = false;
-    this.complete = true;
     this.scrollTop = 0;
     this.scrollLeft = 0;
     this.clientWidth = 0;
     this.clientHeight = 0;
     this.scrollHeight = 0;
-    // Nothing here lays anything out, so an element measures nothing until a check says what a browser would have given it.
+    // Nothing here lays anything out, so an element measures nothing until a check says what a browser would have given it. A picture is the same: it starts on its way, and a check that wants one that drew writes both fields while one that wants a picture the browser threw away writes `complete` alone, which is the only state those two fields describe.
     this.layoutWidth = 0;
+    this.complete = false;
+    this.naturalWidth = 0;
   }
 
   // ---- attributes ----
@@ -1208,8 +1209,11 @@ check('a picture a browser cannot decode falls back to the PNG beside it', () =>
   const content = document.createElement('article');
   content.innerHTML = '<p><img src="imgs/one.webp" alt="one"><img src="imgs/two.webp" alt="two"><img src="imgs/three.png" alt="three"></p>';
   const [one, two, three] = content.querySelectorAll('img');
-  // A stand-in element ends  with no width, which is exactly the state a picture the browser could not decode is left in; a picture that drew has a width.
+  // What the browser had already decided before the module ran, said here rather than left to a default: a picture it could not decode is finished with no width, and one that drew is finished with a width.
+  one.complete = true;
+  two.complete = true;
   two.naturalWidth = 800;
+  three.complete = true;
   installPictureFallback(content);
   want(one.getAttribute('src') === 'imgs/one.png', 'a picture that was already standing there failed and was left naming the WebP, which is the broken frame on the front page the publish bakes');
   want(two.getAttribute('src') === 'imgs/two.webp', 'a picture that drew perfectly was moved onto the PNG, so every reader now fetches the heavier set');
@@ -1252,9 +1256,8 @@ await check('a picture that arrives rebuilds the minimap once rather than on eve
   // What the reading column is laid out at; the thumbnail is scaled off it.
   source.layoutWidth = 700;
   document.body.appendChild(source);
+  // A picture still on its way, which is the only kind the script watches — one already standing needs no listener — and what a picture on this page is until a check says otherwise.
   const late = document.getElementById('late');
-  // A picture still on its way, which is the only kind the script watches — one already standing needs no listener — so this is set before the install that reads it.
-  late.complete = false;
   initMinimap(source);
   const rail = document.querySelector('.document-minimap');
   const held = rail.querySelector('.document-minimap-content');
@@ -1295,6 +1298,8 @@ const SITE_README = [
   'A [vault](docs/GLOSSARY.md#vault) is a folder you pointed the app at.',
   '<blockquote><p>One line<br>and the next</p></blockquote>',
   '<pre class="highlight" data-language="rust"><code class="language-rust">fn main() {}</code></pre>',
+  // A picture, so a boot meets the two paths that read one: the fallback that puts a WebP the browser refused back on the PNG beside it, and the thumbnail that waits for one still arriving.
+  '<p><img src="imgs/one.webp" alt="one"></p>',
   '## Reading a document',
   'The document is drawn first and edited in place.',
 ].join('\n\n');
@@ -1360,6 +1365,29 @@ const frontPage = await check('the front page boots', async () => {
   want(document.getElementById('siteSettings'), 'the settings menu is not on the page');
   want(document.querySelector('.document-minimap'), 'the minimap rail was never built');
   return page;
+});
+
+/** The one picture the front page's fixture carries, on the page a boot drew. */
+const pictureOn = (page) => page.document.getElementById('content').querySelector('img');
+
+check('a picture still on its way keeps its address and is waited for', () => {
+  // The ordinary reader: a browser that reads WebP is handed the WebP, and the thumbnail redraws itself once the picture lands and the page reflows around it. Neither half could be read off a page before, because every element on one claimed to have finished with nothing to show.
+  const picture = pictureOn(frontPage);
+  want(picture, 'the front page drew no picture, so neither path that reads one was reached at all');
+  want(picture.getAttribute('src') === 'imgs/one.webp', `a picture nothing had failed on is asking for ${JSON.stringify(picture.getAttribute('src'))}, so every reader whose browser reads WebP fetches the heavier set`);
+  want(!picture.dataset.pictureFallback, 'a picture nothing had failed on was marked as already put back, so its own failure later would be ignored');
+  const load = (picture.listeners.get('load') || []).length;
+  const failed = (picture.listeners.get('error') || []).length;
+  want(load === 1, `a picture still arriving carries ${load} load listeners, so the thumbnail is drawn against a document the picture has not taken its room in yet and never redrawn`);
+  want(failed === 1, 'a picture still arriving is not watched for failing, so the thumbnail keeps a gap where one never came');
+});
+
+check('a picture that fails after the page is drawn goes to the PNG beside it', () => {
+  // The rare reader, on a page rather than on an element built by hand: the listener half of the fallback, reached through the walk the drawn document actually carries.
+  const picture = pictureOn(frontPage);
+  picture.dispatchEvent(leafEvent('error', { target: picture }));
+  want(picture.getAttribute('src') === 'imgs/one.png', `a picture the browser refused is still asking for ${JSON.stringify(picture.getAttribute('src'))}, so the reader is left looking at a broken frame`);
+  want(picture.dataset.pictureFallback === 'png', 'the picture was put back without being marked, so a PNG that also fails sends it round again');
 });
 
 /** The rail after a boot, and the thumbnail element the script draws into. */
