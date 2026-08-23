@@ -387,15 +387,11 @@ class LeafElement extends LeafNode {
   releasePointerCapture() {}
 
   // ---- events ----
-  addEventListener(type, handler) {
-    if (typeof handler !== 'function') return;
-    if (!this.listeners.has(type)) this.listeners.set(type, []);
-    this.listeners.get(type).push(handler);
+  addEventListener(type, handler, options) {
+    addListener(this.listeners, type, handler, options);
   }
-  removeEventListener(type, handler) {
-    const held = this.listeners.get(type) || [];
-    const at = held.indexOf(handler);
-    if (at >= 0) held.splice(at, 1);
+  removeEventListener(type, handler, options) {
+    removeListener(this.listeners, type, handler, options);
   }
   dispatchEvent(event) {
     return dispatch(this, event);
@@ -642,6 +638,46 @@ function queryAll(rootElement, selector) {
 }
 
 // ---- events -----------------------------------------------------------------
+//
+// A listener is kept beside how it was registered, because that is the whole of what a browser does with the third argument and the only thing that tells a listener that works in a browser from one that does not: three registrations under `site/` are wrong in a real browser the moment their third argument goes, and a stand-in that dropped it passed on all three.
+//
+// `capture`, `once` and the types a browser does not bubble, and nothing else. No `eventPhase`, no `stopImmediatePropagation`, no per-type `bubbles` record: nothing under `site/` reads any of them, and a stand-in modeling more of the platform than the code under it asks for is more page to keep true. `passive` is taken and ignored — it only promises a browser the handler will not cancel the event, and nothing here cancels anything.
+
+/** The types a browser does not bubble. An event of one of these stops at the element it happened on, which is why the picture fallback and the link tooltip both capture. */
+const NEVER_BUBBLES = new Set(['error', 'load', 'scroll', 'focus', 'blur']);
+
+/** How a listener was registered, off `true` or an options object. */
+const capturesWith = (options) => options === true || !!(options && options.capture);
+
+function addListener(map, type, handler, options) {
+  if (typeof handler !== 'function') return;
+  if (!map.has(type)) map.set(type, []);
+  map.get(type).push({ handler, capture: capturesWith(options), once: !!(options && options.once) });
+}
+
+/** A browser matches on the handler and the capture flag together, so taking off a bubbling listener leaves a capturing one of the same handler standing. */
+function removeListener(map, type, handler, options) {
+  const held = map.get(type) || [];
+  const capture = capturesWith(options);
+  const at = held.findIndex((one) => one.handler === handler && one.capture === capture);
+  if (at >= 0) held.splice(at, 1);
+}
+
+/** The listeners on one node for one phase — `null` for the target itself, where a browser calls every one whatever it was registered as. A `once` comes off before it is called, so a handler that dispatches its own type again does not re-enter itself. */
+function callListeners(node, event, wantCapture) {
+  const held = node.listeners && node.listeners.get(event.type);
+  if (!held || held.length === 0) return;
+  event.currentTarget = node;
+  for (const one of held.slice()) {
+    if (wantCapture !== null && one.capture !== wantCapture) continue;
+    if (one.once) {
+      const at = held.indexOf(one);
+      if (at >= 0) held.splice(at, 1);
+    }
+    one.handler.call(node, event);
+    if (event.__stopped) return;
+  }
+}
 
 function dispatch(target, event) {
   const path = [];
@@ -650,12 +686,17 @@ function dispatch(target, event) {
   if (holder && !path.includes(holder)) path.push(holder);
   if (holder && holder.defaultView) path.push(holder.defaultView);
   event.target = event.target || target;
-  for (const node of path) {
-    const held = node.listeners && node.listeners.get(event.type);
-    if (!held) continue;
-    event.currentTarget = node;
-    for (const handler of held.slice()) handler.call(node, event);
-    if (event.__stopped) break;
+  // Everything above the target, outermost first on the way down and innermost first on the way back up.
+  const above = path.slice(1);
+  for (const node of above.slice().reverse()) {
+    callListeners(node, event, true);
+    if (event.__stopped) return !event.defaultPrevented;
+  }
+  callListeners(target, event, null);
+  if (event.__stopped || NEVER_BUBBLES.has(event.type)) return !event.defaultPrevented;
+  for (const node of above) {
+    callListeners(node, event, false);
+    if (event.__stopped) return !event.defaultPrevented;
   }
   return !event.defaultPrevented;
 }
@@ -904,17 +945,14 @@ function standInWindow(document, address) {
     scrollTo(_left, top) {
       window.scrollY = Number(top) || 0;
     },
-    addEventListener(type, handler) {
-      if (typeof handler !== 'function') return;
-      if (!listeners.has(type)) listeners.set(type, []);
-      listeners.get(type).push(handler);
+    addEventListener(type, handler, options) {
+      addListener(listeners, type, handler, options);
     },
-    removeEventListener(type, handler) {
-      const held = listeners.get(type) || [];
-      const at = held.indexOf(handler);
-      if (at >= 0) held.splice(at, 1);
+    removeEventListener(type, handler, options) {
+      removeListener(listeners, type, handler, options);
     },
-    dispatchEvent: () => true,
+    // The same walk the page uses, so a window listener can be read back by dispatching rather than by reaching into the map behind it.
+    dispatchEvent: (event) => dispatch(window, event),
     // Hover and a fine pointer, so the link tooltip installs rather than returning at its first line; the device is never dark, so the settings menu resolves `system` to light.
     matchMedia: (query) => ({ matches: /hover|pointer/.test(String(query)), media: String(query), addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} }),
     requestAnimationFrame: (callback) => setTimeout(() => callback(Date.now()), 0),
@@ -1005,6 +1043,69 @@ function storeStandIn() {
   };
 }
 
+// ---- the stand-in page's own event walk --------------------------------------
+//
+// The harness, not the site — and it is checked here because everything below rests on it: a stand-in that hands every event to every listener passes on a listener a browser would never call, which is exactly what the three registrations under `site/` need it not to do.
+
+check('the stand-in page calls a listener the way it was registered', () => {
+  const document = standInPage('<html><body><article id="root"><p><img id="picture"></p></article></body></html>', 'https://leaf.test/');
+  const window = standInWindow(document, standInAddress('https://leaf.test/'));
+  const root = document.getElementById('root');
+  const picture = document.getElementById('picture');
+  const heard = [];
+  const captures = () => heard.push('captures');
+  const bubbles = () => heard.push('bubbles');
+
+  // An image's `error` does not bubble, so of two listeners on the same ancestor a browser calls only the capturing one.
+  root.addEventListener('error', captures, true);
+  root.addEventListener('error', bubbles);
+  picture.dispatchEvent(leafEvent('error'));
+  want(heard.join(',') === 'captures', `an ancestor heard ${JSON.stringify(heard)} of an event a browser does not bubble, where it calls the capturing listener and nothing else`);
+
+  // A browser matches on the handler and the capture flag together, so this takes off neither.
+  heard.length = 0;
+  root.removeEventListener('error', captures);
+  picture.dispatchEvent(leafEvent('error'));
+  want(heard.join(',') === 'captures', 'a removal with no capture flag took a capturing listener off, so the page reports gone a listener a browser still calls');
+  heard.length = 0;
+  root.removeEventListener('error', captures, true);
+  picture.dispatchEvent(leafEvent('error'));
+  want(heard.length === 0, 'a removal naming the capture flag left the listener standing');
+
+  // The other half of the same pair: an event a browser does bubble reaches the listener that only bubbles.
+  heard.length = 0;
+  root.addEventListener('click', bubbles);
+  picture.dispatchEvent(leafEvent('click'));
+  want(heard.join(',') === 'bubbles', `a bubbling event reached ${JSON.stringify(heard)} above the element it happened on`);
+
+  // `stopPropagation` ends the walk on the way down as it does on the way up.
+  heard.length = 0;
+  const stops = (event) => {
+    heard.push('captures');
+    event.stopPropagation();
+  };
+  root.addEventListener('click', stops, true);
+  picture.dispatchEvent(leafEvent('click'));
+  want(heard.join(',') === 'captures', `a capturing listener that stopped the walk was followed by ${JSON.stringify(heard.slice(1))}`);
+
+  // A listener registered `once` is called once, and comes off before it is called — so a handler that dispatches its own type again does not re-enter itself.
+  let counted = 0;
+  const countOne = () => {
+    counted += 1;
+    if (counted < 5) picture.dispatchEvent(leafEvent('load'));
+  };
+  picture.addEventListener('load', countOne, { once: true });
+  picture.dispatchEvent(leafEvent('load'));
+  picture.dispatchEvent(leafEvent('load'));
+  want(counted === 1, `a listener registered once was called ${counted} times, so a check counting what a picture triggers is counting something a browser would not do`);
+
+  // `passive` promises a browser the handler will not cancel the event and nothing else, so the page takes it and calls the handler.
+  let scrolled = 0;
+  window.addEventListener('scroll', () => (scrolled += 1), { passive: true });
+  window.dispatchEvent(leafEvent('scroll'));
+  want(scrolled === 1, 'a window listener registered `{ passive: true }` was never called, so the flag was read as an options object with no listener behind it');
+});
+
 // ---- phase 1: the loader and the pager --------------------------------------
 
 const loader = pathToFileURL(join(root, 'site/leaftext-core.js')).href;
@@ -1028,6 +1129,8 @@ const { setSilenceLimit, fetchWatched } = await import(pathToFileURL(join(root, 
 const { bakeFrontPage } = await import(pathToFileURL(join(root, 'scripts/site-assets.mjs')).href);
 const { fillPager } = await import(pagerModule);
 const { installPictureFallback } = await import(pathToFileURL(join(root, 'site/pictures.js')).href);
+const { installLinkTooltip } = await import(pathToFileURL(join(root, 'site/link-tooltip.js')).href);
+const { initMinimap } = await import(pathToFileURL(join(root, 'site/minimap.js')).href);
 
 check('a page naming no renderer', () => {
   const bare = standInPage('<html><head><title>Nothing</title></head><body></body></html>', 'https://leaf.test/');
@@ -1124,6 +1227,64 @@ check('a picture a browser cannot decode falls back to the PNG beside it', () =>
   want((content.listeners.get('error') || []).length === 1, 'the listener went on twice, so one failure is answered twice');
 });
 
+check('the link tooltip is taken down by a scroll under it', () => {
+  const document = globalThis.document;
+  const holder = document.createElement('article');
+  holder.innerHTML = '<p id="tooltip-line"><a href="https://example.test/">a link</a></p>';
+  document.body.appendChild(holder);
+  installLinkTooltip(holder);
+  const tip = document.querySelector('.link-hover-tip');
+  const link = holder.querySelector('a');
+  want(tip, 'the tooltip was never put on the page, so there is nothing here to take down');
+  link.dispatchEvent(leafEvent('pointerover', { target: link }));
+  want(!tip.hidden, 'hovering a link never raised the tooltip, so what a scroll does to it cannot be read');
+  // On a child rather than on the element the listener sits on: a listener on its own target is called whatever flag it carries, so a scroll dispatched at `holder` would pass with the capture gone and prove nothing.
+  document.getElementById('tooltip-line').dispatchEvent(leafEvent('scroll'));
+  want(tip.hidden, 'the page scrolled and the tooltip stayed standing over a link that has moved out from under it');
+  holder.remove();
+  tip.remove();
+});
+
+await check('a picture that arrives rebuilds the minimap once rather than on every event it fires', async () => {
+  const document = globalThis.document;
+  const source = document.createElement('article');
+  source.innerHTML = '<h1>One</h1><p><img id="late" src="imgs/one.png"></p>';
+  // What the reading column is laid out at; the thumbnail is scaled off it.
+  source.layoutWidth = 700;
+  document.body.appendChild(source);
+  const late = document.getElementById('late');
+  // A picture still on its way, which is the only kind the script watches — one already standing needs no listener — so this is set before the install that reads it.
+  late.complete = false;
+  initMinimap(source);
+  const rail = document.querySelector('.document-minimap');
+  const held = rail.querySelector('.document-minimap-content');
+  // A rail measuring nothing is one the stylesheet took off the page, and the script draws no thumbnail into one of those. The width is what the stylesheet's own --minimap-width lays a visible one out at, and the thumbnail is scaled to it.
+  rail.layoutWidth = 62;
+  held.clientWidth = 62;
+
+  late.dispatchEvent(leafEvent('load'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const drawn = held.firstChild;
+  want(drawn, 'a picture arriving never rebuilt the thumbnail, so there is nothing here to count');
+  // The rebuild replaces the whole clone, so a second one is a different node standing where the first was.
+  late.dispatchEvent(leafEvent('load'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(held.firstChild === drawn, 'a second event from the same picture rebuilt the whole thumbnail again, so a listener registered once is being called every time the picture speaks');
+
+  // The rail's own window listener, read back by dispatching at the window rather than by reaching into the map behind it. The handler takes no event, so the window is the honest place to fire it from: this is the page having scrolled.
+  const viewport = rail.querySelector('.document-minimap-viewport');
+  const document_ = document.documentElement;
+  document_.scrollHeight = 4000;
+  viewport.style.top = '';
+  globalThis.window.scrollY = 2000;
+  globalThis.window.dispatchEvent(leafEvent('scroll'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(viewport.style.top && viewport.style.top !== '0px', `the page scrolled and the rectangle in the rail stayed at ${JSON.stringify(viewport.style.top)}, so the window's own listener was never reached`);
+  globalThis.window.scrollY = 0;
+  source.remove();
+  rail.remove();
+});
+
 // ---- phase 2: both entry readers --------------------------------------------
 //
 // The documents below are fixtures, not the site's own pages: what is under test is the code between the module and a reader, and a fixture is the only way to say what the finished page should hold. Every address one of them asks for is served here, so a reader that reached anywhere else fails rather than quietly falling back.
@@ -1216,7 +1377,7 @@ await check('the minimap draws into a rail the stylesheet left on the page and i
   const { rail, content } = railOf(laidOut);
   // What the stylesheet's own --minimap-width lays a visible rail out at.
   rail.layoutWidth = 62;
-  for (const handler of laidOut.window.listeners.get('resize') || []) handler({ type: 'resize' });
+  laidOut.window.dispatchEvent(leafEvent('resize'));
   await settled(() => content.childNodes.length > 0, 'a rail the stylesheet left on the page was never given a thumbnail, so the script gave up on a rail a reader can see');
   want(content.querySelector('.document-minimap-preview'), 'the rail was filled with something that is not the document thumbnail');
 });
