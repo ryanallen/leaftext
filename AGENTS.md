@@ -68,7 +68,7 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 
 ### The file map
 
-**[`docs/02-development/01-architecture.md`](docs/02-development/01-architecture.md) is the file map** — every module under `src/`, named, with what it is for. Open it when the work reaches a source file.
+**[`docs/02-development/01-architecture.md`](docs/02-development/01-architecture.md) is the file map** — every module under `src/`, named, with what it is for. Open it when the work reaches a source file, and write the new module into it in the same edit that adds the file — `just check-doc-modules` refuses one the page names neither in an entry of its own nor inside the entry for its directory, because a module missing from the map reads as a module that does not exist.
 
 ### Rules the file map does not carry
 

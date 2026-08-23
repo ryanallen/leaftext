@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// `AGENTS.md` calls the `## Source files` section of the architecture page the file map and sends a session to it the moment work reaches a source file. Nothing read it against the disk, and it went three modules short — a session that opened it for one of them learned nothing and went reading the tree, which is the whole cost the map exists to avoid.
+// `AGENTS.md` calls the `## Source files` section of the architecture page the file map and sends a session to it the moment work reaches a source file. A module missing from it costs that session the whole point of the map: it opens the page, learns nothing, and goes reading the tree instead — and reads the silence as the file not existing.
 //
 //   node scripts/check-doc-modules.mjs   fail on a module the file map does not name (`just verify`)
 //
@@ -7,7 +7,7 @@
 //
 // **The section is written two ways on purpose, so this cannot ask for one entry per file.** A single-file concern gets its own bold entry; a directory gets one entry whose prose names each sibling, and most modules in the tree are named only that way. Asking for an entry each would fail on scores of files that are working as written.
 //
-// So the mention is scoped rather than loose. A module counts as named when it appears in its own bold entry, or inside the bold entry for its directory, and a directory's entry covers that directory's own `mod.rs` — which is the section's own opening sentence, that a directory's `mod.rs` holds its shared vocabulary. The looser rule this replaced — a bare file name anywhere in the section — was measured passing `src/app/mod.rs`, which no line of the `src/app/` entry names: three other directories' entries carry the words `mod.rs` and covered for it.
+// So the mention is scoped rather than loose. A module counts as named when it appears in its own bold entry, or inside the bold entry for its directory, and a directory's entry covers that directory's own `mod.rs` — which is the section's own opening sentence, that a directory's `mod.rs` holds its shared vocabulary. Never loosen it to a bare file name anywhere in the section: that passes `src/app/mod.rs`, which no line of the `src/app/` entry names, because the `src/markdown/`, `src/store/` and `src/remote/` entries carry the words `mod.rs` and cover for it.
 //
 // Two refusals, because they catch two different things:
 //
