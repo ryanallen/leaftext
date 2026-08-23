@@ -239,8 +239,80 @@ function sizeLinkHoverPreview() {
   const height = last ? last.offsetTop + last.offsetHeight : source.scrollHeight;
   linkHoverTipPreview.style.height = Math.ceil(height * shrink) + 'px';
   if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
+  drawLinkPreviewDiagrams();
 }
 linkHoverTipPreviewDocument.addEventListener('load', () => requestAnimationFrame(sizeLinkHoverPreview), true);
+// The card's picture is a document like any other, so a Mermaid fence in it arrives as a block of its own source text — and nothing on this page will ever draw it, because the reading page's pass collects its candidates inside `#app` and the card sits outside. So the card draws its own. Nothing is written for the wait: the block is already the box, the corner word and the ring the stylesheet gives an undrawn diagram, and the drawing lands in that. Half the picture, in the picture's own pixels. A drawing taller than this is not shown at all: the picture is there to say how the page reads on, and one drawing filling it is the hole this card was opened for.
+const LINK_PREVIEW_DIAGRAM_ROOM = 88;
+// And a third of the picture's width, which is what a drawing has to still be once it has been scaled into that room. A page-tall flowchart comes to 10px wide at that scale and is a sliver rather than a picture; a pie chart comes to 111px and is a pie.
+const LINK_PREVIEW_DIAGRAM_NARROWEST = 251 / 3;
+// Sources whose drawing came out too tall for that room, and ones mermaid refused. Both are the strip, and both are remembered so a second rest goes straight there.
+const linkPreviewDiagramsNotShown = new Set();
+function drawLinkPreviewDiagrams() {
+  const blocks = [...linkHoverTipPreviewDocument.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])')];
+  if (!blocks.length) return;
+  // The card this was asked for. Another link under the pointer moves it on, and the answer that arrives after that is dropped rather than drawn into a card nobody is looking at.
+  const token = activeHoverToken;
+  for (const block of blocks) {
+    if (block.dataset.processed === 'true' || block.dataset.cardDiagram === 'drawing') continue;
+    // Kept on the block, the way the reading page keeps it: once a drawing is in there the block's own text is the drawing's, and a second pass reading it would ask for a picture of an SVG.
+    if (block.__mermaidSource == null) block.__mermaidSource = block.textContent;
+    const source = block.__mermaidSource;
+    if (linkPreviewDiagramsNotShown.has(source)) {
+      block.dataset.cardDiagram = 'unshown';
+      continue;
+    }
+    const drawn = mermaidRenderCache.get(mermaidCacheKey(source));
+    if (drawn) {
+      block.innerHTML = drawn;
+      ensureMermaidSheets(block);
+      block.dataset.processed = 'true';
+      keepLinkPreviewDiagramThatFits(block, source);
+      continue;
+    }
+    block.dataset.cardDiagram = 'drawing';
+    loadMermaid()
+      .then((mermaid) => {
+        registerMermaidIcons(mermaid);
+        mermaid.initialize(mermaidRuntimeConfig());
+        return mermaid.run({ nodes: [block] });
+      })
+      .then(() => {
+        delete block.dataset.cardDiagram;
+        if (token !== activeHoverToken || !block.isConnected) return;
+        shareMermaidSheet(block);
+        if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
+        mermaidRenderCache.set(mermaidCacheKey(source), block.innerHTML);
+        keepLinkPreviewDiagramThatFits(block, source);
+        sizeLinkHoverPreview();
+      })
+      .catch(() => {
+        // A drawing mermaid refused keeps whatever it drew in there on the reading page; in a picture this small there is no room to read an error, so it goes back to the strip with the corner word still saying what stood there.
+        delete block.dataset.cardDiagram;
+        linkPreviewDiagramsNotShown.add(source);
+        if (!block.isConnected) return;
+        putLinkPreviewDiagramBack(block, source);
+        if (token === activeHoverToken) sizeLinkHoverPreview();
+      });
+  }
+}
+// The one thing the card decides that the reading page does not: a drawing it has no room for goes back as the strip, and is remembered so the next rest on the same link goes straight there.
+function keepLinkPreviewDiagramThatFits(block, source) {
+  const shrink = linkPreviewShrink();
+  if (block.offsetHeight <= LINK_PREVIEW_DIAGRAM_ROOM / shrink) return;
+  // Taller than the room, so the stylesheet has scaled it down: what is left to ask is whether anything is still readable at that size.
+  const drawing = block.querySelector('svg');
+  // The drawing's rectangle is already what the reader sees: it sits inside the layer the card scales, so the shrink is in it and multiplying by it again would count it twice.
+  if (drawing && drawing.getBoundingClientRect().width >= LINK_PREVIEW_DIAGRAM_NARROWEST) return;
+  linkPreviewDiagramsNotShown.add(source);
+  putLinkPreviewDiagramBack(block, source);
+}
+// The block goes back to being undrawn, and says so — the stylesheet's box and ring are for a drawing that is coming, and nothing is coming for this one.
+function putLinkPreviewDiagramBack(block, source) {
+  delete block.dataset.processed;
+  block.textContent = source;
+  block.dataset.cardDiagram = 'unshown';
+}
 function showLinkHoverPreviewPlaceholder() {
   linkHoverTipPreview.hidden = false;
   linkHoverTip.classList.add('has-preview');

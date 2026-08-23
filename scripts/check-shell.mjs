@@ -2253,6 +2253,114 @@ if (booted) {
     }
   });
 
+  checkSettled('a drawing in a linked-note preview is made by the card, dropped for a card the pointer has left, and left a strip when it will not fit', async () => {
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const wasMermaid = booted.window.mermaid;
+    const drew = [];
+    // The card asks for the runtime the same way the reading page does, so a stand-in on `window.mermaid` is the whole of what `loadMermaid` needs.
+    const runtime = {
+      initialize: () => {},
+      registerIconPacks: () => {},
+      run: ({ nodes }) => {
+        drew.push(nodes[0].textContent);
+        nodes[0].innerHTML = '<svg></svg>';
+        nodes[0].dataset.processed = 'true';
+        return Promise.resolve();
+      },
+    };
+    // Two turns of the loop: the runtime is answered in one and the drawing lands in the next, so a single turn reads a card that is still waiting.
+    const settle = async () => { await new Promise((done) => setImmediate(done)); await new Promise((done) => setImmediate(done)); };
+    const block = () => previewDocument.querySelectorAll('pre.mermaid')[0];
+    const remembered = (source) => vm.runInContext(`[...mermaidRenderCache.keys()].some((key) => key.endsWith(${JSON.stringify(source)}))`, booted);
+    // Restated on every step: the checks that wait all share one page, so another of them restoring its own stub between two awaits here would leave this one asking a runtime that is no longer there.
+    const open = (html) => {
+      booted.window.mermaid = runtime;
+      previewDocument.innerHTML = html;
+      vm.runInContext('drawLinkPreviewDiagrams();', booted);
+    };
+    try {
+      vm.runInContext('activeHoverToken = 60; linkHoverTip.hidden = false;', booted);
+      preview.classList.add('is-loaded');
+      open('<p>Opening.</p><pre class="mermaid" data-language="mermaid">flowchart LR A--&gt;B</pre><p>And it reads on.</p>');
+      // Nothing is written for the wait: the block is the stylesheet's own undrawn shape, and the words on either side of it are already drawn.
+      if (block().dataset.processed) throw new Error('the block claimed a drawing before one was made');
+      if (!previewDocument.innerHTML.includes('And it reads on.')) throw new Error('the words after the drawing waited on it');
+      await settle();
+      if (drew.length !== 1) throw new Error(`the card asked for ${drew.length} drawings rather than one`);
+      if (block().dataset.processed !== 'true') throw new Error('the drawing never reached the block');
+      if (block().dataset.cardDiagram) throw new Error('the block was left marked as still drawing');
+
+      // A second rest on the same link: the drawing comes out of the page's own memo and nothing is made again.
+      open('<p>Opening.</p><pre class="mermaid" data-language="mermaid">flowchart LR A--&gt;B</pre>');
+      await settle();
+      if (drew.length !== 1) throw new Error('a second rest on the same link made the drawing again');
+      if (block().dataset.processed !== 'true') throw new Error('the remembered drawing never reached the second card');
+
+      // The pointer moved on while it drew, so the answer lands on a card nobody is looking at and is dropped rather than kept.
+      open('<pre class="mermaid" data-language="mermaid">flowchart LR gone</pre>');
+      vm.runInContext('activeHoverToken = 61;', booted);
+      await settle();
+      if (drew.length !== 2) throw new Error('the abandoned card never started its drawing, so nothing was dropped');
+      if (remembered('flowchart LR gone')) throw new Error('a drawing made for a card nobody is looking at was remembered anyway');
+      if (!remembered('flowchart LR A--&gt;B')) throw new Error('the two readings prove nothing if a drawing that was kept reads as missing too');
+
+      // A drawing over the room is scaled into it and kept where it is still wide enough to read, and put back as the strip where it is not.
+      vm.runInContext('activeHoverToken = 62;', booted);
+      const wasStyle = booted.getComputedStyle;
+      // Half the picture is 88 of the picture's own pixels, so at this shrink a drawing has 176 to land in; the narrowest a scaled drawing may be is a third of the picture, which is 84 where the reader sees it.
+      const stubShrink = () => {
+        booted.getComputedStyle = (element) => (element === preview ? { getPropertyValue: () => '0.5' } : wasStyle(element));
+      };
+      // The runtime's stand-in leaves a drawing of the width this asks for, so the fit is judged on a real reading rather than on the code's own arithmetic.
+      const drawnWidth = (width) => {
+        runtime.run = ({ nodes }) => {
+          drew.push(nodes[0].textContent);
+          nodes[0].innerHTML = '<svg></svg>';
+          nodes[0].dataset.processed = 'true';
+          nodes[0].querySelectorAll('svg')[0].getBoundingClientRect = () => ({ width, height: 88 });
+          return Promise.resolve();
+        };
+      };
+      try {
+        stubShrink();
+        drawnWidth(10);
+        open('<pre class="mermaid" data-language="mermaid">flowchart TD tall</pre>');
+        block().offsetHeight = 400;
+        await settle();
+        if (drew.length !== 3) throw new Error('the tall drawing was never made');
+        if (block().dataset.processed) throw new Error('a drawing too narrow to read at the size it fits was left in the card');
+        if (block().dataset.cardDiagram !== 'unshown') throw new Error('the block does not say the card will not draw it, so the strip rule lands on nothing');
+        if (!block().textContent.includes('tall')) throw new Error('the block that went back to the strip lost its own source text');
+        stubShrink();
+        open('<pre class="mermaid" data-language="mermaid">flowchart TD tall</pre>');
+        await settle();
+        if (drew.length !== 3) throw new Error('a drawing already known not to fit was made a second time');
+        if (block().dataset.cardDiagram !== 'unshown') throw new Error('the second rest lost the mark the strip rule keys on');
+
+        // A pie chart is over the room too, and it is kept: what separates the two is how wide each still is once it fits.
+        stubShrink();
+        drawnWidth(192);
+        open('<pre class="mermaid" data-language="mermaid">pie squarish</pre>');
+        block().offsetHeight = 400;
+        await settle();
+        if (drew.length !== 4) throw new Error('the square drawing was never made');
+        if (block().dataset.processed !== 'true') throw new Error('a drawing that fits the room and is still wide enough to read was turned away');
+        if (block().dataset.cardDiagram) throw new Error('a drawing that was kept was marked as one the card will not draw');
+      } finally {
+        booted.getComputedStyle = wasStyle;
+      }
+
+      const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+      if (!css.includes('.link-hover-tip-preview-document pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])[data-card-diagram="unshown"] {')) throw new Error('the card has no strip rule for a drawing it will not show');
+    } finally {
+      booted.window.mermaid = wasMermaid;
+      previewDocument.innerHTML = '';
+      preview.classList.remove('is-loaded');
+      vm.runInContext('activeHoverToken = 0; linkHoverTip.hidden = true;', booted);
+    }
+  });
+
   check('a page the host cannot draw drops the picture box instead of spinning', () => {
     const tip = vm.runInContext('linkHoverTip', booted);
     const preview = vm.runInContext('linkHoverTipPreview', booted);
@@ -8806,6 +8914,8 @@ if (booted) {
       // The drawing whose sheet is being hoisted into the page, and the one being handed back its sheet after a restore. Both are mermaid's own SVG and neither can be anything else.
       "const svg = diagram.querySelector('svg');",
       "const svg = node && typeof node.querySelector === 'function' ? node.querySelector('svg') : null;",
+      // The drawing the card just made, measured to see whether it is still wide enough to read at the size it fits. Mermaid's own, in a block mermaid drew.
+      "const drawing = block.querySelector('svg');",
     ]);
     const offenders = [];
     for (const name of names) {

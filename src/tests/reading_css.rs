@@ -1024,6 +1024,62 @@ fn an_undrawn_diagram_does_not_spin_in_the_rail() {
     );
 }
 
+/// The class-level column of a selector's weight: its classes, attribute selectors and pseudo-classes. `:not()` contributes what is written inside it and nothing for itself, so dots are counted over the leading element-and-class run and brackets over the whole selector.
+fn class_level_parts(selector: &str) -> usize {
+    let leading = selector.split(':').next().unwrap_or(selector);
+    leading.matches('.').count() + selector.matches('[').count()
+}
+
+const CARD_UNSHOWN_DIAGRAM: &str = ".link-hover-tip-preview-document pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])[data-card-diagram=\"unshown\"]";
+const SPINNING_UNDRAWN_DIAGRAM: &str = ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])";
+
+#[test]
+fn a_diagram_the_card_will_not_draw_is_a_strip_rather_than_a_ring_that_never_stops() {
+    let css = reading_mode_css();
+
+    let cancel = format!("{CARD_UNSHOWN_DIAGRAM}::after");
+    let spinner = format!("{SPINNING_UNDRAWN_DIAGRAM}::after");
+    assert_contains(css, &cancel);
+    assert_contains(css, &spinner);
+    assert!(
+        rule_body(css, &format!("{cancel} {{")).contains("content: none;"),
+        "the ring is canceled by taking the pseudo-element away"
+    );
+
+    // Asserting a cancel's text is in the stylesheet is what let the rail's own rule stand while never once applying, so this one is weighed against the rule it has to beat and then put after it.
+    let (card, page) = (class_level_parts(&cancel), class_level_parts(&spinner));
+    assert!(
+        card >= page,
+        "the card's cancel counts {card} class-level parts against the spinner rule's {page}, so the ring would go on turning"
+    );
+    assert!(
+        css.find(&cancel) > css.find(&spinner),
+        "a tie on weight is broken by source order, so the card's cancel has to sit after the spinner rule"
+    );
+
+    // Without both of these the block keeps the height its own invisible source text laid out at, or the reading page's floor holds it open at 88px.
+    let strip = rule_body(css, &format!("{CARD_UNSHOWN_DIAGRAM} {{"));
+    assert!(
+        strip.contains("min-height: 0;"),
+        "the reading page's 88px floor has to go, or the strip cannot be shorter than it: {strip}"
+    );
+    let height = strip
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("height: ")?.strip_suffix("px;"))
+        .and_then(|value| value.parse::<u32>().ok())
+        .unwrap_or_else(|| panic!("the strip needs a height in pixels: {strip}"));
+    // The corner label sits 8px down on a 13.2px line, so a shorter strip clips the one word still saying a drawing stood there.
+    assert!(
+        (22..=48).contains(&height),
+        "a {height}px strip either clips its own corner word or is no longer a strip"
+    );
+    assert_contains(
+        css,
+        ".document-body pre.mermaid::before {
+  content: attr(data-language);",
+    );
+}
+
 #[test]
 fn reading_mode_css_keeps_markdown_and_code_ready_for_theme_tokens() {
     let css = reading_mode_css();

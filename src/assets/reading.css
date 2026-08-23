@@ -5614,6 +5614,19 @@ body.is-home-row-dragging .home-list-scroll li {
   margin: 0;
   padding: 0;
 }
+/* A drawing bigger than the room the card has is scaled into it rather than turned away — a pie chart is 570 by 450 and an ordinary picture, and a rule on height alone refused it. The room is half the picture, in the picture's own pixels, so it is divided by the card's shrink; the width goes automatic so the drawing keeps its own shape inside it. */
+.link-hover-tip-preview-document pre.mermaid[data-processed="true"] > svg {
+  max-height: calc(88px / var(--link-preview-shrink));
+}
+/* A drawing the card will not show — one taller than half the picture, or one mermaid refused — leaves its block undrawn for good, so the box the page holds open for a diagram that is coming would sit there for ever with a ring turning in it. It falls to a strip instead, still printing the corner word that says what stood there, and the opening reads on past it. The three conditions are the spinner rule's own, which is what ties the weight; the tie is broken by this rule sitting later. */
+.link-hover-tip-preview-document pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])[data-card-diagram="unshown"] {
+  /* The corner label sits 8px down on a 13.2px line, so a block under about 22px clips its own word. */
+  min-height: 0;
+  height: 28px;
+}
+.link-hover-tip-preview-document pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])[data-card-diagram="unshown"]::after {
+  content: none;
+}
 .link-hover-tip-kind {
   font-size: 0.78rem;
   font-weight: var(--lt-weight-700);
