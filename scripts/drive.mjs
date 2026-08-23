@@ -15,7 +15,7 @@ const unquote = (text) => text.replace(/^"(.*)"$/, '$1');
 const [out, ...steps] = process.argv.slice(2).map(unquote);
 
 if (!out) {
-  console.error('usage: node scripts/drive.mjs <out.png> <step> …   (steps: click:X,Y  scroll:X,Y,NOTCHES  drag:X1,Y1,X2,Y2  key:{ESC}  …)');
+  console.error('usage: node scripts/drive.mjs <out.png> <step> …   (steps: click:X,Y  scroll:X,Y,NOTCHES  drag:X1,Y1,X2,Y2  drag:X1,Y1,X2,Y2,MOVES,GAP for a gesture at the speed you name  key:{ESC}  …)');
   process.exit(1);
 }
 

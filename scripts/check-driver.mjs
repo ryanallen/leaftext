@@ -34,7 +34,11 @@ const VERBS = [
   ['click:1,2', 'click at 1,2'],
   ['rclick:3,4', 'right-click at 3,4'],
   ['drag:1,2,3,4', 'drag from 1,2 to 3,4'],
-  ['hold:1,2,3,4', 'and hold the button down'],
+  // A hold is the verb for catching a gesture in flight, and which picture it gets is half of that: written the old way it settles first, which is a gesture that stopped moving nearly a second ago.
+  ['hold:1,2,3,4', 'and hold the button down, photographed after the settle'],
+  // The six-number form is what makes a gesture at the speed a hand makes it: a drag written without one walks twelve moves twenty-five milliseconds apart, which is about thirty a second.
+  ['drag:1,2,3,4,250,8', 'drag from 1,2 to 3,4 in 250 moves 8 ms apart'],
+  ['hold:1,2,3,4,250,8', 'drag from 1,2 to 3,4 in 250 moves 8 ms apart and hold the button down, photographed where the walk stops'],
   ['scroll:5,6,-8', 'scroll -8 notches at 5,6'],
   ['type:hello', 'type hello'],
   ['key:{ESC}', 'press {ESC}'],
@@ -182,6 +186,27 @@ else if (!unknown.text.includes('unknown -Do step')) {
 
 const short = dryRun(['scroll:1,2']);
 if (short.ok) problems.push('scroll with two numbers instead of three was accepted');
+
+// A drag and a hold take four numbers or six and nothing between or beyond, and the refusal says both counts — a driver that quietly dropped a seventh number would walk at a speed nobody asked for and report the gesture as made.
+for (const step of ['drag:1,2,3,4,250', 'drag:1,2,3,4,250,8,1', 'hold:1,2,3,4,250', 'hold:1,2,3,4,250,8,1']) {
+  const refused = dryRun([step]);
+  if (refused.ok) problems.push(`${step} was accepted, so a pointer verb takes a count nobody wrote it for`);
+  else if (!refused.text.includes('takes 4 or 6 numbers')) {
+    problems.push(`${step} was refused without naming both counts it takes:
+${refused.text}`);
+  }
+}
+// Not a faster hand: no gap is the walk at 125,000 moves a second, past anything a mouse reports, and no moves is the press and teleport the walk exists to avoid.
+for (const step of ['drag:1,2,3,4,250,0', 'hold:1,2,3,4,250,0', 'drag:1,2,3,4,0,8']) {
+  if (dryRun([step]).ok) problems.push(`${step} was accepted, so the walk would run faster than a gesture means anything`);
+}
+// A drag written the old way still walks the pacing every step list already in the tree was written against.
+const plain = dryRun(['drag:1,2,3,4']);
+if (!plain.ok) problems.push(`a four-number drag was refused:
+${plain.text}`);
+else if (plain.text.includes('moves') || plain.text.includes('ms apart')) {
+  problems.push(`a drag written the old way read back as paced: ${plain.text.trim()}`);
+}
 
 // -Attach is the owner's own session, so a flag that would rewrite their settings is refused with the reason.
 for (const flag of ['-ThemeFamily fern', '-Doc x.md', '-Unlocked', '-Width 800', '-Recents x.md', '-Favorites x.md']) {

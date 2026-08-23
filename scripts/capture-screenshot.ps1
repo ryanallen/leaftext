@@ -94,6 +94,9 @@ param(
   # off the last screenshot you took at the same size:
   #   move:X,Y   click:X,Y   rclick:X,Y   drag:X1,Y1,X2,Y2
   #   hold:X1,Y1,X2,Y2 — a drag left mid-gesture, button still down at the shot
+  #   drag:X1,Y1,X2,Y2,MOVES,GAP  hold:X1,Y1,X2,Y2,MOVES,GAP — the same walk at a
+  #     speed you name, so a fast gesture can be reproduced. Without them the walk
+  #     is 12 moves 25 ms apart, which is about thirty a second
   #   scroll:X,Y,NOTCHES (negative scrolls down)
   #   type:text  key:{ESC}   wait:MS
   [string[]]$Do = @(),
@@ -120,9 +123,19 @@ $ErrorActionPreference = 'Stop'
 
 # ---- what a -Do step means, before anything does it -------------------------
 
-# How many numbers each pointer verb takes. One table: `-DryRun` reads a step and
-# Step-Pointer runs the same reading, so a verb cannot exist in one and not the other.
-$STEP_ARITY = @{ move = 2; click = 2; rclick = 2; drag = 4; hold = 4; scroll = 3 }
+# The counts of numbers each pointer verb accepts. One table: `-DryRun` reads a step
+# and Step-Pointer runs the same reading, so a verb cannot exist in one and not the
+# other. A drag or a hold takes its four coordinates, or those plus how many moves to
+# walk in and how many milliseconds apart, which is how a gesture is made at the speed
+# a hand makes it rather than at the one the walk happens to run at.
+$STEP_ARITY = @{ move = @(2); click = @(2); rclick = @(2); drag = @(4, 6); hold = @(4, 6); scroll = @(3) }
+
+# What a drag or a hold walks when the step does not say.
+$WALK_MOVES = 12
+$WALK_GAP_MS = 25
+
+# How a verb's accepted counts read in a refusal: "4 or 6".
+function Say-Counts([string]$kind) { ($STEP_ARITY[$kind] | ForEach-Object { "$_" }) -join ' or ' }
 
 function Read-Step([string]$step) {
   $kind, $arg = $step -split ':', 2
@@ -136,20 +149,33 @@ function Read-Step([string]$step) {
     return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = @(); Said = $said }
   }
   if (-not $STEP_ARITY.ContainsKey($kind)) { throw "unknown -Do step: $step" }
-  if ([string]::IsNullOrEmpty($arg)) { throw "$kind needs $($STEP_ARITY[$kind]) numbers after the colon: $step" }
+  if ([string]::IsNullOrEmpty($arg)) { throw "$kind needs $(Say-Counts $kind) numbers after the colon: $step" }
   $n = @($arg -split ',' | ForEach-Object { [int]$_ })
-  if ($n.Count -ne $STEP_ARITY[$kind]) {
-    throw "$kind takes $($STEP_ARITY[$kind]) numbers and got $($n.Count): $step"
+  if ($STEP_ARITY[$kind] -notcontains $n.Count) {
+    throw "$kind takes $(Say-Counts $kind) numbers and got $($n.Count): $step"
   }
+  # A walk of no moves is a press and a teleport, and a gap of nothing is 125,000 moves
+  # a second — past anything a mouse reports — so neither is a faster hand and both are
+  # refused rather than walked.
+  $moves = $WALK_MOVES
+  $gap = $WALK_GAP_MS
+  $paced = $n.Count -eq 6
+  if ($paced) {
+    $moves = $n[4]
+    $gap = $n[5]
+    if ($moves -lt 1) { throw "$kind needs at least one move and got $($moves): $step" }
+    if ($gap -lt 1) { throw "$kind needs at least a millisecond between moves and got $($gap): $step" }
+  }
+  $walk = if ($paced) { " in $moves moves $gap ms apart" } else { '' }
   $said = switch ($kind) {
     'move' { "move to $($n[0]),$($n[1])" }
     'click' { "click at $($n[0]),$($n[1])" }
     'rclick' { "right-click at $($n[0]),$($n[1])" }
-    'drag' { "drag from $($n[0]),$($n[1]) to $($n[2]),$($n[3])" }
-    'hold' { "drag from $($n[0]),$($n[1]) to $($n[2]),$($n[3]) and hold the button down" }
+    'drag' { "drag from $($n[0]),$($n[1]) to $($n[2]),$($n[3])$walk" }
+    'hold' { "drag from $($n[0]),$($n[1]) to $($n[2]),$($n[3])$walk and hold the button down, $(if ($paced) { 'photographed where the walk stops' } else { 'photographed after the settle' })" }
     'scroll' { "scroll $($n[2]) notches at $($n[0]),$($n[1])" }
   }
-  return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = $n; Said = $said }
+  return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = $n; Said = $said; Moves = $moves; GapMs = $gap; Paced = $paced }
 }
 
 # Every flag that shapes the throwaway profile. An attached run is inspecting the
@@ -456,6 +482,17 @@ function Measure-AppBox([System.Drawing.Bitmap]$bmp) {
   return New-Object System.Drawing.Rectangle $left, $top, ($right - $left + 1), ($bottom - $top + 1)
 }
 
+# Wait by spinning on a stopwatch rather than sleeping. Measured on this machine:
+# `Start-Sleep -Milliseconds 1` takes 15.65 and `-Milliseconds 8` takes 17.35, so the
+# eight millisecond gap a hand's gesture needs cannot be slept for at all. A spin hit
+# 2,000 ms for a 2,000 ms ask. It costs one core for the length of the gesture, paid on
+# purpose: raising the system timer resolution instead would change the timing of the
+# app being measured, and a driver that alters what it reads is worse than a slow one.
+function Wait-Gap([int]$ms) {
+  $clock = [System.Diagnostics.Stopwatch]::StartNew()
+  while ($clock.Elapsed.TotalMilliseconds -lt $ms) { }
+}
+
 function Step-Pointer($step, [int]$left, [int]$top) {
   $n = $step.Numbers
   switch ($step.Kind) {
@@ -494,11 +531,12 @@ function Step-Pointer($step, [int]$left, [int]$top) {
       [void][LeafShot]::SetCursorPos($left + $n[0], $top + $n[1])
       Start-Sleep -Milliseconds 120
       [LeafShot]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
-      foreach ($t in 1..12) {
+      $moves = $step.Moves
+      foreach ($t in 1..$moves) {
         [void][LeafShot]::SetCursorPos(
-          $left + $n[0] + [int](($n[2] - $n[0]) * $t / 12),
-          $top + $n[1] + [int](($n[3] - $n[1]) * $t / 12))
-        Start-Sleep -Milliseconds 25
+          $left + $n[0] + [int](($n[2] - $n[0]) * $t / $moves),
+          $top + $n[1] + [int](($n[3] - $n[1]) * $t / $moves))
+        Wait-Gap $step.GapMs
       }
       # `hold` leaves the button down, so the shot catches the gesture in
       # flight. The finally block below releases it whatever happens; a stuck
@@ -569,7 +607,12 @@ try {
 
   foreach ($step in $plan) {
     Step-Pointer $step ($vis.Left + $app.X) ($vis.Top + $app.Y)
-    Start-Sleep -Milliseconds $StepMs
+    # A hold written with a gap is asking for the gesture while it is still moving, so
+    # the picture is taken where the walk stopped. Settling first photographs a gesture
+    # that stopped moving nearly a second ago, which is a different thing entirely — and
+    # a hold written the old way keeps that settle, so the shots taken with one are the
+    # pictures they always were.
+    if ($step.Kind -ne 'hold' -or -not $step.Paced) { Start-Sleep -Milliseconds $StepMs }
   }
 
   $bmp = Capture-Window $hwnd $rect $vis
