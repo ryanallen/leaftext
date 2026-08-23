@@ -1760,7 +1760,7 @@ if (booted) {
     if (source.slice(Number(paragraph.dataset.srcStart), Number(paragraph.dataset.srcEnd)) !== 'A paragraph.') throw new Error('the paragraph range does not slice back to the paragraph');
   });
 
-  // The other side of the same bargain: a comment is stripped before the page sees it, so the host must not report a span for it (`block_source_map_leaves_out_a_comment_between_two_paragraphs`). This proves both halves — the spans it now reports stamp every element, and the span it used to report would have left the whole note uneditable.
+  // The other side of the same bargain: a comment is stripped before the page sees it, so the host must not report a span for it (`block_source_map_leaves_out_a_comment_between_two_paragraphs`). This proves both halves — the spans it reports stamp every element, and a span for the comment would leave the whole note uneditable.
   check('a note with a comment line in it gets a range on every block', () => {
     const source = 'Before.\n\n<!-- a note -->\n\nAfter.\n';
     const paragraphs = [
@@ -1778,7 +1778,7 @@ if (booted) {
     // The blank-page pair opens on a document with no `[data-src-start]` anywhere, which is why an unstamped note claimed to be a new one.
     if (!body.children.every((el) => 'srcStart' in el.dataset)) throw new Error('a block was left unstamped, so the page would offer the new-document lines over a note with content');
 
-    // What the host used to send: a span for the comment, with no element to pair it with.
+    // What the host must not send: a span for the comment, with no element to pair it with.
     const withComment = drawn();
     booted.attachMarkdownBlockRanges(withComment, [paragraphs[0], { id: 1, kind: 'html_block', start: 9, end: 24, editable: false }, { ...paragraphs[1], id: 2 }], source);
     if (withComment.children.some((el) => 'srcStart' in el.dataset)) throw new Error('a span with no element still stamped, so the guard that makes this fix necessary is gone');
@@ -1821,7 +1821,7 @@ if (booted) {
       if (shown !== text) throw new Error(`the ${kind} wears somebody else's bytes: ${JSON.stringify(shown)}`);
       if (el.dataset.blockKind !== kind) throw new Error(`the ${kind} is stamped as a ${el.dataset.blockKind}`);
     });
-    // The last block of the file used to inherit the rule above it, and a rule is the one kind the page never opens.
+    // The last block of the file must not inherit the rule above it, since a rule is the one kind the page never opens.
     if (body.children[4].dataset.editable !== 'true') throw new Error('the last block of the file cannot be edited');
   });
 
@@ -1873,7 +1873,7 @@ if (booted) {
   // The drift as it arrived: the host reported its blocks in the order the file was written, and the page draws the footnote at the foot. Fourteen blocks, fourteen elements, every pair wrong from the footnote on — and nothing said so. This is that list, handed in unfixed, refused by the kind check alone.
   check('the footnote drift is refused by the kind check on its own', () => {
     const source = '# Title\n\nBefore the note.[^1]\n\n[^1]: The note itself.\n\nAfter the note.\n\n---\n\nThe last words.\n';
-    // In the order the file was written, which is what the host used to report.
+    // In the order the file was written.
     const written = [
       ['heading', '# Title'],
       ['paragraph', 'Before the note.[^1]'],
@@ -1959,7 +1959,7 @@ if (booted) {
       ],
     });
 
-  // A footnote reference is a superscript number on screen and `[^name]` in the file, so a paragraph carrying one used to drop out of typing-as-it-looks and open as raw source instead. The name is on the element; the number is assigned by first use and cannot be written back.
+  // A footnote reference is a superscript number on screen and `[^name]` in the file, so a paragraph carrying one has to stay in typing-as-it-looks rather than dropping out and opening as raw source. The name is on the element; the number is assigned by first use and cannot be written back.
   check('a sentence carrying a footnote is typed in as it looks and keeps its marker', () => {
     const marker = node('sup', { className: 'footnote-reference', id: 'fnref-why', children: [node('a', { attributes: { href: '#why' }, children: ['1'] })] });
     const paragraph = node('p', { dataset: { blockKind: 'paragraph' }, children: ['Before the note.', marker, ' After it.'] });
@@ -2009,7 +2009,7 @@ if (booted) {
     if (emptied !== '> [^x]: the note') throw new Error(`an empty-looking quote wrote the footnote out of the file: ${JSON.stringify(emptied)}`);
   });
 
-  // A list written with blank lines between its items draws each item's words in a paragraph of their own, and any paragraph in a list used to send the whole list to the raw-source editor — so spacing a list out took typing-as-it-looks away from it. The blank lines go back on the way out, or the list would close up under the reader.
+  // A list written with blank lines between its items draws each item's words in a paragraph of their own, and a paragraph in a list must not send the whole list to the raw-source editor, or spacing a list out takes typing-as-it-looks away from it. The blank lines go back on the way out, or the list would close up under the reader.
   check('a list with blank lines between its items is typed in as it looks', () => {
     const item = (words) => node('li', { children: [node('p', { children: [words] })] });
     const list = node('ul', { dataset: { blockKind: 'list' }, children: [item('First item.'), item('Second item.')] });
@@ -2681,7 +2681,7 @@ if (booted) {
     keeps('```\n```', null); // no line inside to edit
   });
 
-  // Clearing the text out of a paragraph or a heading used to write the leftovers into the file — a bare `##`, or the literal text `<br>` that Chromium leaves in an emptied contenteditable. So an empty serialization is a delete of the whole line, and the range it deletes has to swallow one blank line too: a mapped range stops short of the separator (`trim_block_end`), so splicing the range alone stacks the blank lines from both sides.
+  // Clearing the text out of a paragraph or a heading must not write the leftovers into the file — a bare `##`, or the literal text `<br>` that Chromium leaves in an emptied contenteditable. So an empty serialization is a delete of the whole line, and the range it deletes has to swallow one blank line too: a mapped range stops short of the separator (`trim_block_end`), so splicing the range alone stacks the blank lines from both sides.
   check('a block typed empty is taken away, and takes one blank line with it', () => {
     const { blockSerializationEmpty, blockDeleteRange, commitBlockEdit } = booted;
 
@@ -3151,7 +3151,7 @@ if (booted) {
     }
   });
 
-  // Typing reaches the document at every pause, so an edit arriving from anywhere else mid-typing no longer redraws the page over words nothing holds. Nothing redraws at a pause either, which leaves the page's own map of where every block's bytes are as the only thing keeping the next splice honest — and a map that lags writes the wrong bytes, so the shift is held here rather than left to be found.
+  // Typing reaches the document at every pause, so an edit arriving from anywhere else mid-typing does not redraw the page over words nothing holds. Nothing redraws at a pause either, which leaves the page's own map of where every block's bytes are as the only thing keeping the next splice honest — and a map that lags writes the wrong bytes, so the shift is held here rather than left to be found.
   check('a pause in the typing writes into the document, and moves the map with it', () => {
     const posted = [];
     const wasIpc = booted.ipc;
@@ -4722,7 +4722,7 @@ if (booted) {
     };
   }
 
-  // Both of the plus's options on an XML page used to splice source neither renderer draws, so the click closed the row and changed nothing while the document quietly went unsaved. The element option now opens the same blank line a note's plus opens, and what is typed lands inside the tag.
+  // Neither of the plus's options on an XML page may splice source neither renderer draws, or the click closes the row and changes nothing while the document quietly goes unsaved. The element option opens the same blank line a note's plus opens, and what is typed lands inside the tag.
   check('the element the plus offers on an XML page is a line to type on, and the words land inside the tag', () => {
     const { blockInsertOptions, blockSeparator } = booted;
     const read = (expression) => vm.runInContext(expression, booted);
@@ -4760,7 +4760,7 @@ if (booted) {
     }
   });
 
-  // Everywhere but TEI the offered element is the clone of the block beside the gap, since an element with words in it draws as prose or a labeled row. What is typed is the document's own text, and Enter carries on in another of the same element rather than the plain Markdown line the chain used to fall to.
+  // Everywhere but TEI the offered element is the clone of the block beside the gap, since an element with words in it draws as prose or a labeled row. What is typed is the document's own text, and Enter carries on in another of the same element rather than the plain Markdown line the chain otherwise falls to.
   check('a typed & arrives escaped inside the element, and Enter opens another one line apart', () => {
     const { blockInsertOptions } = booted;
     const config = '<config><name>Widget</name></config>';
@@ -5729,8 +5729,8 @@ if (booted) {
     });
   });
 
-  // The space above the first block used to be built, offered the plus, and then called gone in the next statement — the standing test wanted something above to measure from, when that space measures off the block below. So the plus was hidden the moment it was drawn, and the field block it starts up there could never be started.
-  check('the plus that was hidden the moment it was drawn: the top space stands, and starts a field block', () => {
+  // The space above the first block is built and offered the plus, so nothing after it may call that space gone — it measures off the block below, not off something above it. Called gone, the plus is hidden the moment it is drawn and the field block it starts up there can never be started.
+  check('the top space stands, and starts a field block', () => {
     const read = (expression) => vm.runInContext(expression, booted);
     const below = fakeElement('first');
     below.getBoundingClientRect = () => ({ top: 100, bottom: 140 });
@@ -5767,7 +5767,7 @@ if (booted) {
     }
   });
 
-  // The top space used to get no clickable line at all — refused for having no block to write after — and the line's own placing reached for a block above that is not there. It is measured from the span's own top now, and its click opens a line above the first block through the same opener the plus uses, writing nothing until something is typed in it.
+  // The top space gets a clickable line like any other, so it may not be refused for having no block to write after, and the line's own placing may not reach for a block above that is not there. It is measured from the span's own top, and its click opens a line above the first block through the same opener the plus uses, writing nothing until something is typed in it.
   check('clicking the space above the first block opens a line above it, and writes nothing until it is typed in', () => {
     const read = (expression) => vm.runInContext(expression, booted);
     noteGutter('# Title\n\nA paragraph.\n', ({ block, sent }) => {
@@ -5990,7 +5990,7 @@ if (booted) {
     }
   });
 
-  // The data half of the same fault: a JSON or YAML block with no proven range is drawn exactly like the ones beside it that open, so a press on one used to answer with nothing at all and read as the page being broken. A press on a block that opens still says nothing, because it is about to open.
+  // The data half of the same fault: a JSON or YAML block with no proven range is drawn exactly like the ones beside it that open, so a press on one must not answer with nothing at all and read as the page being broken. A press on a block that opens still says nothing, because it is about to open.
   check('a data block that cannot open says why when it is pressed', () => {
     const { wireDataClosedParts } = booted;
     const said = [];
@@ -6140,7 +6140,7 @@ if (booted) {
     is(tableDelimiterRow({ dataset: {} }, [column('right'), column(null)]), '| ---: | --- |');
   });
 
-  // Typing one character into a cell used to rebuild every row of the table, so a table lined up by hand lost its columns. What stops that is finding the one cell that moved and sending only that; anything else — a column gained, two cells changed at once — has to fall back to the whole-table rewrite, and reporting a fallback as a one-cell edit would write the wrong bytes.
+  // Typing one character into a cell must not rebuild every row of the table, or a table lined up by hand loses its columns. What stops that is finding the one cell that moved and sending only that; anything else — a column gained, two cells changed at once — has to fall back to the whole-table rewrite, and reporting a fallback as a one-cell edit would write the wrong bytes.
   check('a table sends the one cell that changed, and nothing when more did', () => {
     const { tableCellTexts, tableCellChange, tableCellPosition } = booted;
     const cell = (text, checked) => ({
@@ -7912,7 +7912,7 @@ if (booted) {
     }
   });
 
-  // The complaint this whole subject exists to answer: a diagram scrolled three screens past used to go back to an empty box, so a document of diagrams read twice was a document of blanks. It stays drawn now — everywhere the memos can remember it, which is at or under their cap. Past that they empty wholesale, a box put back would be redrawn from scratch, and a page holding every drawing gives up a whole second in one frame; there, and only there, the old behavior stands.
+  // The complaint this whole subject exists to answer: a diagram scrolled three screens past that comes back to an empty box makes a document of diagrams read twice a document of blanks. It stays drawn — everywhere the memos can remember it, which is at or under their cap. Past that they empty wholesale, a box put back would be redrawn from scratch, and a page holding every drawing gives up a whole second in one frame; there, and only there, the empty box stands.
   check('a diagram scrolled well past is still drawn when you come back', () => {
     const { mermaidMayRecycle } = booted;
     const appEl = booted.document.getElementById('app');
@@ -10756,7 +10756,7 @@ if (booted) {
         throw new Error(`with the buttons hidden the menu came out as ${withoutControls.join(',')}`);
       }
 
-      // Widening the window puts every one of them back where it was standing. The Mac's dots stayed in the menu until the app was quit, because the fold was told their container rather than reading it, and the one it was told no longer held them.
+      // Widening the window puts every one of them back where it was standing. The fold has to read their container rather than be told one: told one, the Mac's dots stay in the menu until the app is quit, because the container it was told is not the one holding them.
       inside.length = 0;
       tabBar.scrollWidth = 0;
       tabBar.clientWidth = 900;
@@ -10959,7 +10959,7 @@ if (booted) {
     const menuOn = () => surface.children.find((child) => String(child.className || '') === 'flow-menu');
     const run = [];
     try {
-      // No export opens a menu any more, so nothing here may quietly run a row on the reader's behalf: this is the flowchart canvas's own right-click menu, and a list that comes down to one row is still a list.
+      // No export opens a menu, so nothing here may quietly run a row on the reader's behalf: this is the flowchart canvas's own right-click menu, and a list that comes down to one row is still a list.
       booted.openFlowMenuWith(10, 10, [{ label: 'Detach', run: () => run.push('Detach') }], surface);
       const one = menuOn();
       if (!one) throw new Error('a menu of one row drew nothing, so a right-click acted without being pressed');
@@ -13612,7 +13612,7 @@ if (booted) {
       const drawn = writes;
       if (!drawn) throw new Error('the first read of a folder drew no rows');
 
-      // What `git status` writing inside `.git` used to arrive as, 6.4 times a second: the same folder, the same files.
+      // What `git status` writing inside `.git` arrives as, 6.4 times a second: the same folder, the same files.
       booted.leafSetLibraryFolder(folder(two.map((entry) => ({ ...entry }))));
       if (writes !== drawn) throw new Error('a read describing what is already drawn rewrote the rows anyway');
 
@@ -13881,7 +13881,7 @@ check('every constructed script tag asks for its errors unmasked', () => {
 
 // ---- 6a. a source view that will not open says so and gives the document back ----
 //
-// Both ways into the source view can give up, and neither used to draw anything: the editor's own load fails after the reader has already been emptied into its container, and the staged payload fails before that. The reader met a blank page the app was calling the source view, or a press that did nothing. Driven rather than read, because what is being held is a growl on the surface and a command on the wire.
+// Both ways into the source view can give up, and each has to draw something: the editor's own load fails after the reader has already been emptied into its container, and the staged payload fails before that. Drawing nothing leaves the reader a blank page the app is calling the source view, or a press that did nothing. Driven rather than read, because what is being held is a growl on the surface and a command on the wire.
 
 /** A booted page with one document open, its ipc recording, and the reader's own scroll position remembered the way the toggle remembers it. */
 function bootEnteringSource(extras = {}) {
@@ -14206,7 +14206,7 @@ const servedFiles = (documents) => async (url) => {
   return { ok: false, status: 404, url };
 };
 
-// A site opened straight off a folder on the disk fetches nothing at all, and a publish that went out short fetches most of it. Both used to kill the boot silently and leave the reader at the empty start screen, reading it as a site with no documents in it.
+// A site opened straight off a folder on the disk fetches nothing at all, and a publish that went out short fetches most of it. Neither may kill the boot silently and leave the reader at the empty start screen, reading it as a site with no documents in it.
 checkSettled('a file that did not arrive is named on the page instead of killing the boot quietly', async () => {
   const documents = [{ path: 'README.md' }, { path: 'notes/one.md' }];
 
@@ -14336,7 +14336,7 @@ checkSettled('a written href keeps its heading off the file name, comes back fro
   if (at() !== before) throw new Error(`a link off the site opened ${at()}`);
 });
 
-// A great many of a site's cross-references name a heading, and the heading used to be thrown away one line before the document opened — so the reader arrived at the top of a document long enough to have headings worth linking. Both shapes a click arrives in are here: the address the browser worked out, where the heading would otherwise go the way of the path, and the href as written, which is what a diagram's box sends.
+// A great many of a site's cross-references name a heading, and the heading must not be thrown away one line before the document opens — thrown away, the reader arrives at the top of a document long enough to have headings worth linking. Both shapes a click arrives in are here: the address the browser worked out, where the heading would otherwise go the way of the path, and the href as written, which is what a diagram's box sends.
 checkSettled('a link naming a heading in another document lands on that heading rather than the top of the page', async () => {
   const { leaf, send, seen, asked, address } = await bootWebHost();
   await leaf.openAddress('notes/one.md');
