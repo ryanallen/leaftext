@@ -20,6 +20,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { documentExtensions, documentRows as readDocumentRows } from './app-formats.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
@@ -86,18 +87,9 @@ const LISTS = [
       ['src/tests/conformance/yaml.rs', 'names the pair of fixture files one suite reads its cases from, which a new row in the table leaves exactly as it is'],
       ['src/tests/indexer_pager.rs', 'a walkthrough naming the three pages a test stands on in order, the way it would name three headings'],
     ],
-    read: (formatSource) => ({ actual: documentRows(formatSource) }),
+    read: (formatSource) => documentRows(formatSource),
   },
 ];
-
-/// The extensions `src/format.rs` names for one document format. The diagram table takes Markdown's spellings from there rather than restating them, so this check has to follow it to the same place.
-export function documentExtensions(formatSource, variant) {
-  const block = formatSource.match(/fn extensions\(self\)[\s\S]*?\n    \}/);
-  if (!block) return null;
-  const arm = block[0].match(new RegExp(`Self::${variant}\\s*=>\\s*&\\[([^\\]]*)\\]`));
-  if (!arm) return null;
-  return [...arm[1].matchAll(/"([^"]*)"/g)].map((m) => m[1]);
-}
 
 /// The host's diagram export rows, read out of `src/app/fileops.rs`. A row's endings are either written out or asked of `src/format.rs`.
 export function hostRows(fileopsSource, formatSource) {
@@ -131,19 +123,13 @@ export function pageRows(shellSource) {
   return rows.length ? rows : null;
 }
 
-/// The document formats, read out of `src/format.rs`: the order `ALL` lists them in, and the spellings each one answers to. The compiler already refuses a wrong length there, so what is recorded here is the prose files rather than the count.
+/// The document formats, off the one reader in `scripts/app-formats.mjs` — the order `ALL` lists them in, and the spellings each one answers to. That reader throws, naming what it could not find; this check says the same thing in its own sentence, so the reason travels into the message rather than out as a stack trace.
 export function documentRows(formatSource) {
-  const all = formatSource.match(/const ALL: \[Self; \d+\] = \[([^\]]*)\]/);
-  if (!all) return null;
-  const variants = [...all[1].matchAll(/Self::(\w+)/g)].map((m) => m[1]);
-  if (!variants.length) return null;
-  const rows = [];
-  for (const variant of variants) {
-    const spellings = documentExtensions(formatSource, variant);
-    if (!spellings) return null;
-    rows.push([variant, spellings]);
+  try {
+    return { actual: readDocumentRows(formatSource) };
+  } catch (error) {
+    return { actual: null, why: error.message };
   }
-  return rows;
 }
 
 /// The recorded paths that are no longer files. `exists` answers for one path, so the rule is proved on made-up lists before the tree is opened.
@@ -291,7 +277,7 @@ function readThese(list) {
 /// What is wrong with a set of lists and what was read for each. Pure, so every refusal can be proved on made-up input.
 export function problems(readings) {
   const found = [];
-  for (const { list, actual, page, missing, unaccounted } of readings) {
+  for (const { list, actual, why, page, missing, unaccounted } of readings) {
     for (const path of missing || []) {
       found.push(`${list.source} — the reading list for ${list.name} names ${path}, and there is no such file. A recorded path that has been renamed or deleted hands the next reader a name and nothing to open`);
     }
@@ -299,7 +285,7 @@ export function problems(readings) {
       found.push(`${path} — a comment there names two or more of ${list.name}, and scripts/check-format-prose.mjs neither lists it nor writes it off. Read it once: if it describes the list, it belongs in that list's \`prose\`; if the format words are there for another reason, it belongs in \`looked\` with the one-line reason`);
     }
     if (!actual) {
-      found.push(`${list.source} — ${list.what} could not be read at all, so nothing was held. The parser in scripts/check-format-prose.mjs has stopped matching the table it was written for`);
+      found.push(`${list.source} — ${list.what} could not be read at all, so nothing was held${why ? `: ${why}` : ''}. The parser that reads it has stopped matching the table it was written for`);
       continue;
     }
     const recorded = list.rows;
@@ -372,6 +358,8 @@ const CASES = [
     [{ list: FIXTURE, actual: [['PNG image', ['png']], ['Markdown', ['md', 'markdown']]] }], 5],
   ['a table that cannot be read at all',
     [{ list: FIXTURE, actual: null }], 1],
+  ['a table that cannot be read at all, with the reader\'s own reason carried through',
+    [{ list: FIXTURE, actual: null, why: 'could not find `DocumentFormat::ALL` in src/format.rs' }], 1],
 
   ['the page in a different order from the host',
     [{ list: FIXTURE, actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]], page: [['png', ['png']], ['md', ['md', 'markdown']]] }], 3],

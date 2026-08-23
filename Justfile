@@ -201,6 +201,14 @@ check-temporary-code:
 check-growl-words:
     node scripts/check-growl-words.mjs --check
 
+# Prove the one reader of src/format.rs on made-up tables: that it answers a well-formed one
+# with every variant and every spelling, and that a shape it does not recognize is a refusal
+# naming what it could not find rather than a shorter list nobody notices. Two scripts once
+# parsed that table with regexes of their own and disagreed; this holds the one that replaced
+# them against input it did not also read the answer from.
+check-app-formats:
+    node scripts/app-formats.mjs --check
+
 # Fail on a format list that moved without the prose describing it being read, and on the
 # page's copy of the diagram export list drifting from the host's. It reads no comments —
 # nothing can — so it holds a written-down copy of the rows and, when they change, names
@@ -471,7 +479,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
