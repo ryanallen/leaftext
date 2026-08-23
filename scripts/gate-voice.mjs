@@ -127,7 +127,7 @@ export function sweptPhase(held) {
   for (let i = 1; i < samples.length; i += 1) {
     const risen = [];
     for (const { phase, ticked } of countsIn(samples[i])) {
-      // A phase first seen part-way through the turn is that phase’s baseline and never a rise, or writing a phase into the ticket with a box already struck reads as a tick nobody made.
+      // A phase first seen part-way through the turn is that phase's baseline and never a rise, or writing one into the ticket reads as a tick nobody made.
       if (!last.has(phase)) { last.set(phase, ticked); continue; }
       const rise = ticked - last.get(phase);
       last.set(phase, ticked);
