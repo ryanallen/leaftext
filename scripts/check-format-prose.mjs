@@ -11,9 +11,13 @@
 //
 // **What it can be certain about is the pin.** The page keeps its own copy of the diagram export list to draw the menu a Mac gets, and nothing held the two together — `scripts/check-shell.mjs` compares the drawn menu to a third hand-kept string, which is a rendering claim rather than a list-equality one and stays where it is. Here the page's endings must be the host's endings, in the same order, because the Mac menu is drawn from one and the save window from the other. Labels are deliberately not compared: the save window says "PNG image" where the menu says "PNG".
 //
+// **What holds the reading list itself, and what a green run does not say.** Every path recorded here is held to a file that exists, so a file renamed or deleted out from under the list fails rather than being printed as a name with nothing behind it. Beyond that, every `.rs` and `.js` under `src/` whose comment line names two or more of a list's rows — `src/assets/vendor/` skipped as compiled output, and each list's own source skipped because the check already reads that one as the table — is either in that list's `prose` or in its `looked` with a one-line reason the format words are there for something else. A file that gains such a comment fails with the two answers offered.
+//
+// **That catches an addition and never an omission.** A comment whose prose names one row or none is invisible to it, and the standing example is `src/main.rs:605` — "the window carries every row the table holds" is real prose about the diagram export table and names no format word at all, so it lives in the hand-typed list and nothing but a person could have put it there. `src/tests/app_shell_chrome.rs` is the same shape: two paragraphs about that table naming Markdown and nothing else. So a green run means the recorded paths are all real and nothing has quietly gained a comment about the list; it does not mean the list is every file that describes it.
+//
 // The rules are proved on made-up lists before the real tree is opened, so a parser that quietly stops finding rows fails the build instead of passing everything.
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +44,9 @@ const LISTS = [
       'src/app/tests.rs',
       'src/tests/app_shell_chrome.rs',
     ],
+    looked: [
+      ['src/markdown/images.rs', 'a picture named inside a mermaid box — `shot.png` is one example spelling in a comment about resolving a path, not a row of the export table'],
+    ],
     read: (formatSource) => ({
       actual: hostRows(read('src/app/fileops.rs'), formatSource),
       page: pageRows(read('src/assets/shell/flow-canvas.js')),
@@ -57,12 +64,27 @@ const LISTS = [
       ['Eml', ['eml', 'mht', 'mhtml']],
     ],
     prose: [
+      'src/app/links.rs',
       'src/assets/shell/block-controls.js',
       'src/assets/shell/code-intel.js',
       'src/assets/shell/code-view.js',
+      'src/assets/shell/reading-blocks.js',
       'src/assets/shell/reading-edits.js',
+      'src/assets.rs',
+      'src/data.rs',
       'src/editing.rs',
       'src/lib.rs',
+      'src/minimap.rs',
+      'src/store/links.rs',
+      'src/tests/data_xml.rs',
+      'src/tests/markdown_render.rs',
+      'src/tests/settings_paths.rs',
+      'src/xml.rs',
+    ],
+    looked: [
+      ['src/tests/conformance/mod.rs', 'the CommonMark suite ships its own examples as JSON files — the word is the fixture\'s file type, not a format the app reads'],
+      ['src/tests/conformance/yaml.rs', 'names the pair of fixture files one suite reads its cases from, which a new row in the table leaves exactly as it is'],
+      ['src/tests/indexer_pager.rs', 'a walkthrough naming the three pages a test stands on in order, the way it would name three headings'],
     ],
     read: (formatSource) => ({ actual: documentRows(formatSource) }),
   },
@@ -124,6 +146,137 @@ export function documentRows(formatSource) {
   return rows;
 }
 
+/// The recorded paths that are no longer files. `exists` answers for one path, so the rule is proved on made-up lists before the tree is opened.
+export function missingProse(list, exists) {
+  return list.prose.filter((path) => !exists(path));
+}
+
+/// The sweep's hits that are in neither of a list's two arrays. A file that gains a comment naming two rows has to be read once and put somewhere, so the reading list grows with the tree rather than staying whatever the last person typed.
+export function unaccountedFor(list, hits) {
+  const known = new Set([...list.prose, ...(list.looked || []).map(([path]) => path)]);
+  return hits.filter((path) => !known.has(path));
+}
+
+/// Where a `/` in JavaScript opens a pattern rather than divides. A pattern is skipped whole because one holding a backtick — `/^[ \t]*(`{3,}|~{3,})[^\n]*\n/` in `reading-edits.js` — otherwise reads as a template string opening, and the scanner then treats the next three hundred lines of comments as string and finds none of them.
+const PATTERN_MAY_START = /(?:[(,=:[!&|?{};+\-*%~^<>]|\b(?:return|typeof|case|in|of|new|do|else|void|yield|await))\s*$/;
+
+/// The comment text on each line of a source file, string literals and JavaScript patterns taken out, returned as `[line, text]` for every line that carries any. A sweep that read the raw line would fire on a format name inside a string, which is not prose about anything.
+export function commentLines(source, extension) {
+  const js = extension === '.js';
+  const quotes = js ? '"\'`' : '"';
+  const lines = [];
+  let line = 1;
+  let text = '';
+  let state = 'code';
+  let quote = '';
+  let inClass = false;
+  let tail = '(';
+  const keep = () => {
+    if (text.trim()) lines.push([line, text]);
+    text = '';
+  };
+  for (let i = 0; i < source.length; i += 1) {
+    const here = source[i];
+    const next = source[i + 1];
+    if (here === '\n') {
+      keep();
+      line += 1;
+      if (state === 'line' || state === 'pattern') state = 'code';
+      if (state === 'code') tail = `${tail}\n`.slice(-24);
+      continue;
+    }
+    if (state === 'code') {
+      if (quotes.includes(here)) {
+        state = 'string';
+        quote = here;
+      } else if (here === '/' && next === '/') {
+        state = 'line';
+        i += 1;
+      } else if (here === '/' && next === '*') {
+        state = 'block';
+        i += 1;
+      } else if (js && here === '/' && PATTERN_MAY_START.test(tail)) {
+        state = 'pattern';
+        inClass = false;
+      } else {
+        tail = (tail + here).slice(-24);
+      }
+      continue;
+    }
+    if (state === 'string') {
+      if (here === '\\') i += 1;
+      else if (here === quote) {
+        state = 'code';
+        tail = `${tail}x`.slice(-24);
+      }
+      continue;
+    }
+    if (state === 'pattern') {
+      if (here === '\\') i += 1;
+      else if (here === '[') inClass = true;
+      else if (here === ']') inClass = false;
+      else if (here === '/' && !inClass) {
+        state = 'code';
+        tail = `${tail}x`.slice(-24);
+      }
+      continue;
+    }
+    if (state === 'block' && here === '*' && next === '/') {
+      state = 'code';
+      i += 1;
+      continue;
+    }
+    text += here;
+  }
+  keep();
+  return lines;
+}
+
+/// The words that name one row: its endings and the first word of its label, lowercased. Anything shorter than three letters is dropped — `md` lands in the middle of prose that has nothing to do with a format.
+export function rowWords(rows) {
+  return rows.map(([label, endings]) => [
+    ...new Set([label.split(/\s+/)[0].toLowerCase(), ...endings.map((ending) => ending.toLowerCase())]),
+  ].filter((word) => word.length > 2));
+}
+
+/// Whether one comment line names two or more different rows, each by whole word. Two spellings of one row are one row: `yaml` beside `yml` is a comment about YAML, not about two formats.
+export function namesTwoRows(text, words) {
+  let named = 0;
+  for (const row of words) {
+    if (row.some((word) => new RegExp(`\\b${word}\\b`, 'i').test(text))) named += 1;
+    if (named > 1) return true;
+  }
+  return false;
+}
+
+/// Every file whose comments name two or more of a list's rows on one line — the candidates to read, never the reading list itself. `files` is `[path, source]` pairs; the list's own `source` file is dropped, because the check already reads that one as the table and a row moving there is what makes it fail in the first place.
+export function sweep(files, rows, source) {
+  const words = rowWords(rows);
+  return files
+    .filter(([path]) => path !== source)
+    .filter(([path, text]) =>
+      commentLines(text, path.endsWith('.rs') ? '.rs' : '.js').some(([, comment]) => namesTwoRows(comment, words))
+    )
+    .map(([path]) => path);
+}
+
+/// Every `.rs` and `.js` under `src/`, minus `src/assets/vendor/` — compiled bundles nobody writes, which carry the format words for ever and are not prose. Read once and handed to each list's sweep.
+function sourceFiles() {
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(join(root, dir), { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (path !== 'src/assets/vendor') walk(path);
+      } else if (path.endsWith('.rs') || path.endsWith('.js')) {
+        files.push([path, read(path)]);
+      }
+    }
+  };
+  walk('src');
+  return files;
+}
+
 /// How a row reads in a message.
 const spell = ([label, endings]) => `${label} (${endings.join(', ')})`;
 
@@ -138,7 +291,13 @@ function readThese(list) {
 /// What is wrong with a set of lists and what was read for each. Pure, so every refusal can be proved on made-up input.
 export function problems(readings) {
   const found = [];
-  for (const { list, actual, page } of readings) {
+  for (const { list, actual, page, missing, unaccounted } of readings) {
+    for (const path of missing || []) {
+      found.push(`${list.source} — the reading list for ${list.name} names ${path}, and there is no such file. A recorded path that has been renamed or deleted hands the next reader a name and nothing to open`);
+    }
+    for (const path of unaccounted || []) {
+      found.push(`${path} — a comment there names two or more of ${list.name}, and scripts/check-format-prose.mjs neither lists it nor writes it off. Read it once: if it describes the list, it belongs in that list's \`prose\`; if the format words are there for another reason, it belongs in \`looked\` with the one-line reason`);
+    }
     if (!actual) {
       found.push(`${list.source} — ${list.what} could not be read at all, so nothing was held. The parser in scripts/check-format-prose.mjs has stopped matching the table it was written for`);
       continue;
@@ -180,6 +339,7 @@ const FIXTURE = {
     ['PNG image', ['png']],
   ],
   prose: ['b.rs'],
+  looked: [['f.rs', 'a made-up reason']],
 };
 
 /// A second made-up list, with no page copy and a reading list of its own, so a failure is proved to hand over the files that describe the list that moved rather than every file the check knows.
@@ -233,12 +393,62 @@ const CASES = [
       { list: FIXTURE, actual: [['Markdown', ['md', 'markdown']]] },
       { list: SECOND, actual: [['Json', ['json']]] },
     ], 11],
+
+  ['every recorded path is a file that is there',
+    [{ list: FIXTURE, missing: [], actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]] }], 0],
+  ['a recorded path that is gone, on a list that otherwise agrees',
+    [{ list: FIXTURE, missing: ['b.rs'], actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]] }], 1],
+  ['both recorded paths gone at once',
+    [{ list: SECOND, missing: ['d.rs', 'e.rs'], actual: [['Json', ['json']], ['Yaml', ['yaml', 'yml']]] }], 2],
+  ['a recorded path gone and the table moved under it',
+    [{ list: FIXTURE, missing: ['b.rs'], actual: [['Markdown', ['md', 'markdown']]] }], 6],
+
+  ['a sweep hit that the reading list already names',
+    [{ list: FIXTURE, unaccounted: unaccountedFor(FIXTURE, ['b.rs']), actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]] }], 0],
+  ['a sweep hit that is written off with a reason',
+    [{ list: FIXTURE, unaccounted: unaccountedFor(FIXTURE, ['f.rs']), actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]] }], 0],
+  ['a sweep hit in neither array',
+    [{ list: FIXTURE, unaccounted: unaccountedFor(FIXTURE, ['b.rs', 'f.rs', 'g.rs']), actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]] }], 1],
+  ['two sweep hits in neither array, on a list with nothing written off',
+    [{ list: SECOND, unaccounted: unaccountedFor(SECOND, ['d.rs', 'g.rs', 'h.rs']), actual: [['Json', ['json']], ['Yaml', ['yaml', 'yml']]] }], 2],
+];
+
+/// The rows the sweep is proved against — the document formats, whose row names are the words themselves.
+const SWEEP_ROWS = [
+  ['Markdown', ['md', 'markdown', 'mdown']],
+  ['Xml', ['xml']],
+  ['Json', ['json']],
+  ['Yaml', ['yaml', 'yml']],
+];
+
+const SWEEP_CASES = [
+  ['a comment naming two rows', 'a.rs', '// Markdown and JSON are both read here.', true],
+  ['a comment naming one row twice', 'b.rs', '/// Markdown, and the markdown spellings beside it.', false],
+  ['two rows split over two comment lines, one each', 'c.rs', '// Markdown here.\n// JSON there.', false],
+  ['two rows on one line of a block comment', 'd.rs', 'fn a() {}\n/* Opening line.\n   Markdown and XML together.\n*/', true],
+  ['a block comment naming one row per line', 'd2.rs', 'fn a() {}\n/* Markdown here.\n   XML there.\n*/', false],
+  ['two rows inside a string rather than a comment', 'e.rs', 'let hint = "markdown and json";', false],
+  ['two rows inside longer words', 'f.rs', '// A jsonl file and an xmlns attribute.', false],
+  ['a file with no comments at all', 'g.rs', 'fn markdown_and_json() {}', false],
+  ['two rows in a comment after a string on the same line', 'h.rs', 'let hint = "nothing"; // Markdown and YAML.', true],
+  ['a page fragment naming two rows', 'i.js', "const a = 'json'; // both YAML and Markdown arrive here", true],
+  ['a page fragment whose two rows are in a template string', 'j.js', 'const a = `markdown and json`;', false],
+  ['two spellings of one row are one row', 'k.rs', '// Both yaml and yml land on the same reader.', false],
+  ['a comment after a pattern holding a backtick', 'l.js', 'const fence = /^(`{3,})/.exec(s);\n// Markdown and XML both come through here.', true],
+  ['a comment after a division sign', 'm.js', 'const half = width / 2;\n// Markdown and XML both come through here.', true],
 ];
 
 const testFails = [];
 for (const [name, readings, want] of CASES) {
   const got = problems(readings).length;
   if (got !== want) testFails.push(`${name}: ${got} lines, wanted ${want}`);
+}
+for (const [name, path, source, want] of SWEEP_CASES) {
+  const got = sweep([[path, source]], SWEEP_ROWS, 'the-table.rs').length === 1;
+  if (got !== want) testFails.push(`the sweep on ${name}: ${got ? 'found it' : 'missed it'}`);
+}
+if (sweep([['the-table.rs', '// Markdown and JSON are both read here.']], SWEEP_ROWS, 'the-table.rs').length) {
+  testFails.push("the sweep on a list's own source file: found it, and that file is the table this check already reads");
 }
 if (testFails.length) {
   console.error('format prose: the rules are wrong, so nothing was read:');
@@ -247,7 +457,14 @@ if (testFails.length) {
 }
 
 const formatSource = read('src/format.rs');
-const readings = LISTS.map((list) => ({ list, ...list.read(formatSource) }));
+const onDisk = (path) => existsSync(join(root, path));
+const tree = sourceFiles();
+const readings = LISTS.map((list) => ({
+  list,
+  missing: missingProse(list, onDisk),
+  unaccounted: unaccountedFor(list, sweep(tree, list.rows, list.source)),
+  ...list.read(formatSource),
+}));
 
 const found = problems(readings);
 if (found.length) {
@@ -258,4 +475,5 @@ if (found.length) {
 }
 
 const rows = readings.reduce((n, { actual }) => n + (actual ? actual.length : 0), 0);
-console.log(`format prose: ok (${LISTS.length} lists, ${rows} rows recorded, and the page's copy is the host's)`);
+const listed = LISTS.reduce((n, list) => n + list.prose.length + (list.looked || []).length, 0);
+console.log(`format prose: ok (${LISTS.length} lists, ${rows} rows recorded, the page's copy is the host's, and ${listed} files across ${tree.length} swept either carry the prose or say why they do not — a comment naming one row or none is still nobody's to find)`);
