@@ -290,6 +290,14 @@ check-web-commands:
 check-doc-commands:
     node scripts/check-doc-commands.mjs
 
+# Fail on a module under src/ the file map does not name — not in a bold entry of its
+# own and not inside the entry for its directory. That list is what AGENTS.md sends a
+# session to the moment work reaches a source file, so a module missing from it reads
+# as a module that does not exist. The three test trees are skipped, and a directory
+# with no entry at all is reported once rather than per module under it.
+check-doc-modules:
+    node scripts/check-doc-modules.mjs
+
 # Rebuild the vendored Monaco bundle (the code view's editor). Manual, like the
 # other vendored assets — first: npm i --no-save monaco-editor@0.52.2 esbuild@0.24.0
 bundle-monaco:
@@ -463,7 +471,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
