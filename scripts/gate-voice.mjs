@@ -113,32 +113,41 @@ function buildingIn(samples) {
   return last.length ? last[last.length - 1].phase : 'the phase being built';
 }
 
-/// The phase a build swept, or null when its boxes went in one at a time. The rule is per box — a box goes from empty to ticked at the moment its code and its test are both in, and at no other moment — and a tick is itself an edit, sampled once it has landed, so the rule is a shape the run of samples either has or has not: **every rise is exactly one box, and no two rises touch.** Three ways to miss it and no arithmetic left over for a fudge at the end: a rise of more than one box is boxes ticked together, two rises with nothing between them is a box ticked with none of its own work behind it, and no rise at all is code that moved with nothing said about it. A box whose whole work is a note in the ticket needs no allowance — the note is its own flat sample, so its tick is a rise with work before it exactly like any other box's.
+/// The phase a build swept, or null when its boxes went in one at a time. The rule is per box — a box goes from empty to ticked at the moment its code and its test are both in, and at no other moment — and a tick is itself an edit, sampled once it has landed, so the rule is a shape the run of samples either has or has not: **every rise is exactly one box, and no two rises touch.** Both halves are facts about an edit rather than about a phase, so the samples are walked once, edit by edit, summing the rise in every phase since the edit before: more than one box in a single edit is boxes ticked together whichever phases they landed in, and a rise in the edit straight after another rise is a box with none of its own work behind it wherever the two landed. Read per phase instead, the boundary between two phases is where either half can be crossed with the turn standing. No rise anywhere is code that moved with nothing said about it. A box whose whole work is a note in the ticket needs no allowance — the note is its own flat sample, so its tick is a rise with work before it exactly like any other box's.
 export function sweptPhase(held) {
   const samples = Array.isArray(held?.samples) ? held.samples : [];
   if (!samples.length) return null;
-  const named = [];
-  for (const sample of samples) {
-    for (const { phase } of countsIn(sample)) if (!named.includes(phase)) named.push(phase);
-  }
   // A record whose samples name no phase says nothing about any box, and a gate that cannot read must refuse nothing.
-  if (!named.length) return null;
+  if (!samples.some((sample) => countsIn(sample).length)) return null;
+  const last = new Map();
+  for (const { phase, ticked } of countsIn(samples[0])) last.set(phase, ticked);
+  let previous = -2;
+  let before = null;
   let rose = false;
-  for (const phase of named) {
-    const series = [];
-    for (const sample of samples) {
-      const here = countsIn(sample).find((p) => p.phase === phase);
-      if (here) series.push(here.ticked);
+  for (let i = 1; i < samples.length; i += 1) {
+    const risen = [];
+    for (const { phase, ticked } of countsIn(samples[i])) {
+      // A phase first seen part-way through the turn is that phase’s baseline and never a rise, or writing a phase into the ticket with a box already struck reads as a tick nobody made.
+      if (!last.has(phase)) { last.set(phase, ticked); continue; }
+      const rise = ticked - last.get(phase);
+      last.set(phase, ticked);
+      if (rise > 0) risen.push({ phase, rise });
     }
-    let previous = -2;
-    for (let i = 1; i < series.length; i += 1) {
-      const rise = series[i] - series[i - 1];
-      if (rise <= 0) continue;
-      if (rise > 1) return { phase, fault: `${rise} of its boxes were ticked in one edit`, edits: samples.length };
-      if (previous === i - 1) return { phase, fault: 'two of its boxes were ticked one edit after another, with none of the second one\'s work in between', edits: samples.length };
-      previous = i;
-      rose = true;
+    const boxes = risen.reduce((sum, one) => sum + one.rise, 0);
+    if (!boxes) continue;
+    const phase = risen[risen.length - 1].phase;
+    // A refusal naming one of two phases sends a build to the wrong series, so an edit that crossed a boundary names both.
+    if (boxes > 1) {
+      const together = risen.map((one) => `${one.rise} in "${one.phase}"`).join(' and ');
+      return { phase, fault: risen.length > 1 ? `${boxes} boxes were ticked in one edit, ${together}` : `${boxes} of its boxes were ticked in one edit`, edits: samples.length };
     }
+    if (previous === i - 1) {
+      const fault = before === phase ? "two of its boxes were ticked one edit after another, with none of the second one's work in between" : `its box was ticked in the edit straight after a box in "${before}", with none of its own work in between`;
+      return { phase, fault, edits: samples.length };
+    }
+    previous = i;
+    before = phase;
+    rose = true;
   }
   if (!rose) return { phase: buildingIn(samples), fault: 'no box was ticked at all', edits: samples.length };
   return null;
@@ -376,6 +385,19 @@ function selfTest() {
   if (sweptPhase(both([4, 0], [4, 0], [5, 0], [5, 0], [5, 0]))) fails.push('swept: a turn was held on the phase it had already finished');
   if (sweptPhase(both([4, 0], [4, 0], [5, 0], [5, 0], [5, 1], [5, 1], [5, 2]))) fails.push('swept: a turn that finished one phase and worked the next one box at a time was held');
   if (sweptPhase(both([4, 0], [4, 0], [5, 0], [5, 0], [5, 2]))?.phase !== NEXT) fails.push('swept: a phase swept after another one finished was not caught, or was named as the wrong phase');
+  // The boundary: phase 1's last box, then phase 2's first box in the very next edit. Adjacency is a fact about the edit, so the second tick has none of its own work behind it wherever the two landed.
+  if (!sweptPhase(both([4, 0], [4, 0], [5, 0], [5, 1]))) fails.push('swept: two ticks one edit apart across a phase boundary were let through');
+  if (sweptPhase(both([4, 0], [4, 0], [5, 0], [5, 1]))?.phase !== NEXT) fails.push('swept: a tick across a phase boundary was not named on the phase its own box is in');
+  if (!sweptPhase(both([4, 0], [4, 0], [5, 0], [5, 1]))?.fault.includes(PHASE)) fails.push('swept: a tick across a phase boundary did not say which phase the earlier tick was in');
+  // The same two ticks with an edit of work between them, which is a build finishing one phase and opening the next honestly.
+  if (sweptPhase(both([4, 0], [4, 0], [5, 0], [5, 0], [5, 1]))) fails.push('swept: a phase finished and the next one opened with its own work in between was held');
+  // One box ticked in each of two phases in one edit. Each phase's own series rises by exactly one, so only the edit sees them together, and the refusal has to name both.
+  if (!sweptPhase(both([4, 0], [4, 0], [5, 1]))) fails.push('swept: one box ticked in each of two phases in one edit was let through');
+  const acrossTwo = sweptPhase(both([4, 0], [4, 0], [5, 1]))?.fault ?? '';
+  if (!acrossTwo.includes(PHASE) || !acrossTwo.includes(NEXT)) fails.push('swept: one box ticked in each of two phases in one edit did not name both');
+  // A phase written into the ticket part-way through the turn, already carrying a box struck as not applicable. Its first appearance is its baseline, or writing a phase down reads as a tick nobody made.
+  const late = { ticket: '/plans/a.md', samples: [[{ phase: PHASE, ticked: 4, open: 1 }], [{ phase: PHASE, ticked: 4, open: 1 }], [{ phase: PHASE, ticked: 5, open: 0 }], [{ phase: PHASE, ticked: 5, open: 0 }, { phase: NEXT, ticked: 1, open: 2 }]] };
+  if (sweptPhase(late)) fails.push('swept: a phase first seen part-way through the turn with a box already ticked was held');
   if (sweptPhase(null)) fails.push('swept: a turn with no build record was held');
   if (sweptPhase({ ticket: '/plans/a.md', samples: [] })) fails.push('swept: a build that edited nothing was held');
   // A sample naming no phase at all says nothing about any box, so it holds nothing — which is also how a record left by an older shape of sample reads out.
@@ -440,7 +462,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read on every phase the turn moved — keycodes)`);
+  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half — keycodes)`);
 }
 
 // Only act when run directly: anything importing this for a function would otherwise read a stream nobody is writing, and the importer hangs with no message.
