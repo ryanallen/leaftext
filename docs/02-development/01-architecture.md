@@ -154,7 +154,7 @@ The finished HTML is handed to `app_shell_html()` and injected into the WebView 
 
 Communication between the JavaScript running in the WebView and the Rust host uses `wry`'s IPC mechanism. JavaScript calls `window.ipc.postMessage(JSON.stringify(message))`. Rust deserializes the body into an `IpcCommand` using `serde_json` and forwards it unopened as `UserEvent::FromPage(...)` on the `tao` event loop, which handles it there. The command is described once: `UserEvent`'s own variants are only the signals the page cannot send — the watcher, a second launch, and answers coming back from worker threads.
 
-Key `IpcCommand` variants include:
+Every command the page can send, one row each — the whole list, held to `IpcCommand` by `just check-doc-commands`:
 
 | Command                | Triggered by                          |
 | ---------------------- | ------------------------------------- |
@@ -169,6 +169,7 @@ Key `IpcCommand` variants include:
 | `openGlossary`         | Glossary link click (opens the term in a bottom sheet) |
 | `openExternal`         | Open a web address in the system browser (unattached to any document): a node on the [graph](../01-features/03-library.md#graph), the theme sheet's GitHub link, the library's git-download prompt |
 | `countLines`           | Link hover: read the linked document and report its line count for the tooltip |
+| `previewLink`          | Link hover, once the tooltip is up: render the linked document's opening lines for the card. A token rides along so a hover that has already moved on cannot rewrite the card under the pointer |
 | `setThemeFamily`       | Theme family button in the theme picker |
 | `setThemeMode`         | Appearance control in the theme picker |
 | `setThemeRandomBag`    | The [Random theme](../01-features/06-themes.md#random) draw: persist the families already shown in the current no-repeat cycle |
@@ -195,6 +196,7 @@ Key `IpcCommand` variants include:
 | `createVaultRepo`      | **Create a private repo**: `git init`, commit, then `gh repo create --push` |
 | `linkVaultRemote`      | The pasted repository address: point `origin` at it and push |
 | `syncVault`            | **Sync**: commit, pull with a rebase, push |
+| `setGitIdentity`       | The name and address typed into the [GitHub panel](../01-features/03-library.md#github-sync) when git does not know who you are: written for this machine, since that is where git reads them. The vault id names the panel to redraw, not whose settings are written |
 | `refreshVault`         | **Refresh** in a vault whose files live on a service: ask the source what has moved, now, and wake a vault the timer had stopped asking |
 | `signInVault`          | **Sign in**: the consent page opens in the person's own browser and the answer comes back to a loopback listener. Nothing is typed into Leaftext |
 | `signOutVault`         | **Sign out**: forget the token. The copied files stay and go on reading |
@@ -247,7 +249,7 @@ Key `IpcCommand` variants include:
 | `windowDrag`           | The app bar is the title bar on both platforms: start moving the window (a press on empty app-bar space, or on the [flowchart sheet](../01-features/07-editing.md#the-flowchart-editor)'s header, which covers the bar while it is open) |
 | `windowResizeDrag`     | A drag in the shadow band and on the app's own drawn edge, carrying which of the eight compass points was grabbed, whether this is the press, a move or the release, and the pointer's place on the screen. The WebView covers every pixel of the window, so the page is the only thing that sees the press. Windows acts on the press alone and hands the window to the platform's own resize loop; macOS is refused that call, so the host holds the window's rectangle from the press and sets it on every move, clamped to the smallest window |
 | `windowMinimize` / `windowToggleMaximize` / `windowClose` | The custom minimize / maximize / close buttons, drawn on both platforms from one set of markup — squares at the bar's right on Windows, theme-colored dots at its left on macOS, where Apple's own are turned off so ours can fold into the overflow menu. A double-click on empty app-bar space also sends `windowToggleMaximize`, decided on the second press: dragging hands the window to the platform's move loop, which swallows the page's `dblclick` |
-
+| `saveSessionPlace`     | The reading or source view stopped moving: hand over where it was left, so a close that never reaches the page — the native one, or the platform closing the window itself — still has the position to put in the [saved session](../01-features/05-settings.md#unsaved-edits) |
 Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafSetWorkspace()` (tabs with no document, for a tab opening straight into the [source view](../01-features/07-editing.md#code-view)), `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryFolder()`, `window.leafSetVaults()`, `window.leafSetVaultStatus()`, `window.leafSetVaultGit()`, `window.leafSetGraph()`, `window.leafSetSearchResults()`, `window.leafShowGlossary()`, `window.leafShowCodeView()`, `window.leafSourceUpdated()`, `window.leafSaved()`, `window.leafCodeIntelAnswer()` (every [typing help](../01-features/07-editing.md#typing-help) answer, matched to its ask by an echoed token), `window.leafRefreshImages()`, and related entry points.
 
 ## Key data structures

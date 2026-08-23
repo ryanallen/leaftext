@@ -38,8 +38,10 @@ function block(text, opens, closes, what) {
   return rest.slice(0, end);
 }
 
-/** Every variant of `IpcCommand`, by the name it is sent under. A variant's own rename sits at four spaces; a field's sits at eight, and is not a command. */
-function enumCommands(rust) {
+/** Every variant of `IpcCommand`, by the name it is sent under. A variant's own rename sits at four spaces; a field's sits at eight, and is not a command.
+ *
+ * Exported because `scripts/check-doc-commands.mjs` holds the published table to the same enum, and a second copy of this matcher would be a second source for the one list. */
+export function enumCommands(rust) {
   const body = block(rust, 'enum IpcCommand {', /^\}/m, 'src/app/events.rs');
   return [...body.matchAll(/^ {4}#\[serde\(rename = "([A-Za-z][A-Za-z0-9]*)"\)\]/gm)].map((m) => m[1]);
 }
@@ -165,48 +167,55 @@ function selfTest() {
   return broken;
 }
 
-const broken = selfTest();
-if (broken.length) {
-  console.error('check-web-commands cannot check anything — its own matchers are wrong:');
-  for (const one of broken) console.error(`  ${one}`);
-  process.exit(1);
+// The export above is what `scripts/check-doc-commands.mjs` imports, so nothing below runs when it does.
+if (process.argv[1] && fileURLToPath(import.meta.url) === join(process.argv[1])) {
+  main();
 }
 
-// ---- the real pair ----------------------------------------------------------
+function main() {
+  const broken = selfTest();
+  if (broken.length) {
+    console.error('check-web-commands cannot check anything — its own matchers are wrong:');
+    for (const one of broken) console.error(`  ${one}`);
+    process.exit(1);
+  }
 
-const commands = enumCommands(readFileSync(join(root, 'src/app/events.rs'), 'utf8'));
-if (commands.length < FEWEST) {
-  console.error(`only ${commands.length} commands came off IpcCommand, and the app has never had fewer than ${FEWEST}.`);
-  console.error('The enum reader has stopped matching, so this check would pass an empty table.');
-  process.exit(1);
+  // ---- the real pair ----------------------------------------------------------
+
+  const commands = enumCommands(readFileSync(join(root, 'src/app/events.rs'), 'utf8'));
+  if (commands.length < FEWEST) {
+    console.error(`only ${commands.length} commands came off IpcCommand, and the app has never had fewer than ${FEWEST}.`);
+    console.error('The enum reader has stopped matching, so this check would pass an empty table.');
+    process.exit(1);
+  }
+
+  // Every browser host, because there is more than one: a published static site, and a document embedded in somebody else's product. They answer different halves of the app, and each owes a line about every command.
+  const HOSTS = ['web/preview/host.js', 'web/embed/host.js'];
+  const hosts = HOSTS.map((where) => ({ where, rows: hostRows(readFileSync(join(root, where), 'utf8'), where) }));
+  const fragments = readdirSync(join(root, 'src/assets/shell'))
+    .filter((name) => name.endsWith('.js'))
+    .map((name) => readFileSync(join(root, 'src/assets/shell', name), 'utf8'));
+  // The theme bootstrap is the other place a command comes from: it runs in its own scope above the fragments, and it is inlined into the page a static site is served with.
+  fragments.push(readFileSync(join(root, 'src/assets/theme-bootstrap.js'), 'utf8'));
+  const sent = sentCommands(fragments);
+
+  const found = problems(commands, hosts, sent);
+  if (found.length) {
+    console.error(`${found.length} command(s) a browser host cannot account for:`);
+    for (const one of found) console.error(`  ${one}`);
+    console.error(`Each table sits beside its own arms, in ${HOSTS.join(' and ')}. One front end, one table per host: a command with no browser line does not ship.`);
+    process.exit(1);
+  }
+
+  const counted = hosts
+    .map((host) => {
+      const answered = host.rows.filter((row) => row.kind === 'ANSWERED').length;
+      const later = host.rows.filter((row) => row.kind === 'LATER').length;
+      return `${host.where} answers ${answered}, refuses ${host.rows.length - answered - later} on purpose and owes ${later}`;
+    })
+    .join('; ');
+  console.log(
+    `web commands: ${commands.length} arms, every one with a line in all ${hosts.length} hosts — ${counted}; ` +
+      `${sent.length} sent by name, all of them arms`
+  );
 }
-
-// Every browser host, because there is more than one: a published static site, and a document embedded in somebody else's product. They answer different halves of the app, and each owes a line about every command.
-const HOSTS = ['web/preview/host.js', 'web/embed/host.js'];
-const hosts = HOSTS.map((where) => ({ where, rows: hostRows(readFileSync(join(root, where), 'utf8'), where) }));
-const fragments = readdirSync(join(root, 'src/assets/shell'))
-  .filter((name) => name.endsWith('.js'))
-  .map((name) => readFileSync(join(root, 'src/assets/shell', name), 'utf8'));
-// The theme bootstrap is the other place a command comes from: it runs in its own scope above the fragments, and it is inlined into the page a static site is served with.
-fragments.push(readFileSync(join(root, 'src/assets/theme-bootstrap.js'), 'utf8'));
-const sent = sentCommands(fragments);
-
-const found = problems(commands, hosts, sent);
-if (found.length) {
-  console.error(`${found.length} command(s) a browser host cannot account for:`);
-  for (const one of found) console.error(`  ${one}`);
-  console.error(`Each table sits beside its own arms, in ${HOSTS.join(' and ')}. One front end, one table per host: a command with no browser line does not ship.`);
-  process.exit(1);
-}
-
-const counted = hosts
-  .map((host) => {
-    const answered = host.rows.filter((row) => row.kind === 'ANSWERED').length;
-    const later = host.rows.filter((row) => row.kind === 'LATER').length;
-    return `${host.where} answers ${answered}, refuses ${host.rows.length - answered - later} on purpose and owes ${later}`;
-  })
-  .join('; ');
-console.log(
-  `web commands: ${commands.length} arms, every one with a line in all ${hosts.length} hosts — ${counted}; ` +
-    `${sent.length} sent by name, all of them arms`
-);
