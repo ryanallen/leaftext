@@ -2,7 +2,7 @@
    ==========================================================================
    Docs-only chrome layered on top of the shared site/styles.css: a fixed left navigation sidebar, a prev/next pager, and a mobile nav select. The reading column, minimap, and all Markdown styling are inherited from styles.css, so the docs look identical to the root README reader.
 
-   Shared verbatim across sites (leaftext, emptyguru, …) alongside docs.js — see that file's header. Nothing here is site-specific.
+   One file on both published sites alongside docs.js, held there by `scripts/check-other-site.mjs` — a row each in that check's table. Nothing here is site-specific, and a header saying so is not what keeps it that way: this file drifted by one rule while that sentence stood.
 
    Deep nesting: the sidebar supports groups inside groups. Each depth level gets progressively smaller, lighter group titles. Leaf-page links use an inline padding-left set by docs.js (8px + depth × 14px), so no fixed CSS hierarchy is needed for indentation. (A shallow tree simply never uses the deeper tiers.)
    ========================================================================== */

@@ -7,6 +7,8 @@
 // Routing is hash-based so this is a static site that works on GitHub Pages with no server. A route is a doc's path under docs/ without the .md (e.g. "features/themes"); the empty route is the index, which renders docs/README.md (or shows nothing if there is no README). The raw .md files stay viewable on GitHub, and in-page links between them are intercepted and turned into routes.
 //
 // The renderer is the app's own, fetched as a module (../site/leaftext-core.js); the minimap (minimap.js) is reused verbatim from the root site one level up.
+//
+// **One file on both published sites, alongside docs.css, and `scripts/check-other-site.mjs` is what holds it there** — a row each in that check's table, compared by what the code says rather than by its bytes. A comment claiming two files agree cannot fail, which is how this one and its stylesheet drifted apart while both headers said they had not.
 // ---------------------------------------------------------------------------
 
 import { createLeaftext } from '../site/leaftext-core.js';
@@ -16,19 +18,22 @@ import { initMinimap } from '../site/minimap.js';
 import { highlightCode, decorateCodeBlocks } from '../site/codeblocks.js';
 import { decorateAnchorLinks } from '../site/anchors.js';
 import { buildOutline } from '../site/outline.js';
+import { decorateBlockquoteLines } from '../site/blockquotes.js';
 import { loadDocsNav } from '../site/docs-nav.js';
 import { installGlossary, installAutoGlossary } from '../site/glossary.js';
 import { installLinkTooltip } from '../site/link-tooltip.js';
-import { installPictureFallback } from '../site/pictures.js';
 import { installSettings } from '../site/settings.js';
 import { applySpeedReaderIfEnabled } from '../site/speed-reader.js';
 
-// Site identity is DERIVED at runtime, never hardcoded, so this one file is shared verbatim across sites (leaftext, emptyguru, …) through the site/ junction — nothing here says "Leaftext", so nothing drifts:
+// Site identity is DERIVED at runtime, never hardcoded, which is what lets one file serve both sites — nothing here says "Leaftext":
 //   • Brand + subtitle come from the page <title> ("Brand — Subtitle").
 //   • The "← back" link is the site root, always one level above /docs.
 //   • The repo (only needed for the GitHub tree fallback on Pages) is read from
 //     the first github.com/<owner>/<repo> link in the site's root README — real
 //     content the site already carries, not a config knob.
+//   • Where the glossary lives is read off the documentation tree at boot: a
+//     glossary in the tree is a page of this folder, and a folder with none has
+//     one above it. See GLOSSARY_URLS.
 const SITE_TITLE = (document.title || 'Documentation').trim();
 const TITLE_PARTS = SITE_TITLE.split(/\s[—–-]\s/);
 const BRAND = (TITLE_PARTS[0] || SITE_TITLE).trim();
@@ -41,6 +46,8 @@ let REPO = null;
 let FOOTER_LINKS = [{ href: SITE_HREF, label: '← ' + location.hostname }];
 // The renderer, loaded once in boot(). Every call into it is behind a page that already said the module arrived.
 let leaf = null;
+// The fallback that puts a picture back on the PNG beside it when the browser cannot decode the WebP. Asked for at boot rather than imported, because the other site running this reader carries no `site/pictures.js` — and a static import of a file the origin does not have takes the whole reader down before it draws a word, where an ask that comes back with nothing costs that site a decoration it has no pictures for. Null until boot() has asked, and null for ever on a site with no copy.
+let installPictureFallback = null;
 
 // The document, drawn by the app's own renderer. One place, so the sheet, the auto-linker and the page itself cannot end up drawing three different documents.
 function renderDocument(text, path) {
@@ -94,8 +101,13 @@ function collectRoutePaths(nodes, map) {
 // The route of the page whose content is currently on screen, set only when a render SUCCEEDS. In-page relative links resolve against this, not the URL hash (currentRoute()): if a fetch 404s the hash changes but the old content stays visible, and resolving its relative links against the broken hash would keep prepending the failed path (the "URL keeps getting longer" bug). Resolving against the displayed route keeps a bad link from compounding.
 let displayedRoute = '';
 
-// The glossary bottom sheet. The glossary lives at docs/GLOSSARY.md, so it is fetched relative to this page; links pointing at it (e.g. ../GLOSSARY.md#karma) open the entry in a sheet instead of routing. Created once in boot().
+// The glossary bottom sheet, created in boot() once the tree has said where the glossary is. Links pointing at it (e.g. ../GLOSSARY.md#karma) open the entry in a sheet instead of routing.
 let glossary = null;
+// Where to fetch the glossary from, and the route that opens the whole of it — both read off the documentation tree rather than written down, because the two sites this reader serves keep their glossary in different places. A glossary inside this folder is a page of it, addressed like any other. A folder with none has one above it, which is outside the set this reader routes over, so the addresses to try are the three spellings a site above /docs might use.
+let GLOSSARY_URLS = ['GLOSSARY.md'];
+let GLOSSARY_ROUTE = 'GLOSSARY';
+// Whether a link is at the glossary itself rather than at one of its entries — the "Open the full glossary" link, which is the whole file rather than a term in it.
+const isGlossaryFile = (href) => /(^|\/)glossary\.(md|xml)$/i.test(String(href).split(/[?#]/)[0]);
 
 const sidebarEl = document.getElementById('sidebar');
 const mobileNavEl = document.getElementById('mobileNav');
@@ -486,8 +498,10 @@ async function render(route, anchor) {
     // The path, not just the text: the renderer's one format table is what decides whether this is Markdown, TEI, data or a message, and nothing here chooses.
     const drawn = renderDocument(source, file);
     contentEl.innerHTML = drawn.html;
+    // A quoted passage broken by <br> is verse, and the hanging indent that makes a long wrapped prose quote hang would step every line after the first to the right. Each hard-break line gets a span of its own so only a true wrap hangs.
+    decorateBlockquoteLines(contentEl);
     // Every route is drawn into this same article, so the listener goes on once and only the sweep runs again.
-    installPictureFallback(contentEl);
+    if (installPictureFallback) installPictureFallback(contentEl);
     // An in-page outline (table of contents) from this page's headings, tucked just under the title — distinct from the left nav sidebar, which lists pages, not the sections within a page. Built before the anchor pass so its link-only entries stay out of the block-numbering scheme.
     buildOutline(contentEl, { label: 'Outline' });
     statusEl.hidden = true;
@@ -517,12 +531,12 @@ async function render(route, anchor) {
 
     // Every word the glossary defines becomes a link to its entry, after paint so the page is readable first. A hand-written GLOSSARY.md#slug link is inside an
     // <a> already, which this skips, so the two never fight. Not on the glossary
-    // itself: ours is a page here, unlike a glossary at the site root, so every heading would link to the entry it already is.
-    if (!/^GLOSSARY$/i.test(route)) {
+    // itself, wherever it lives: every heading would link to the entry it already is.
+    if (route.toLowerCase() !== GLOSSARY_ROUTE.toLowerCase()) {
       installAutoGlossary({
         contentEl,
         render: renderDocument,
-        glossaryUrl: 'GLOSSARY.md',
+        glossaryUrl: GLOSSARY_URLS,
       });
     }
   } catch (err) {
@@ -547,8 +561,15 @@ let lastRoute = null;
     statusEl.hidden = false;
     statusEl.textContent =
       'The reader could not be loaded (' + err.message + '), so these pages cannot be drawn. ' +
-      'Every page here is a Markdown file you can read as it stands — the full list is at ../sitemap-md.txt.';
+      'Every page here is a plain file you can read as it stands — the full list is at ../sitemap-md.txt.';
     return;
+  }
+
+  // The picture fallback, asked for rather than imported: this site has one and the other site running this reader does not, and a page drawn without the decoration beats a page not drawn at all.
+  try {
+    ({ installPictureFallback } = await import('../site/pictures.js'));
+  } catch (err) {
+    installPictureFallback = null;
   }
 
   // Derive the repo from the README before building the nav, and add the GitHub footer link once it is known.
@@ -562,6 +583,9 @@ let lastRoute = null;
     const tree = await loadDocsNav(REPO, leaf.formats);
     NAV = tree.nav;
     HAS_INDEX = tree.hasIndex;
+    // The tree names this folder's own glossary, or nothing. Nothing means the site keeps one above /docs, which is outside the set this reader routes over — so the addresses to try are the three spellings such a site might use, and the route that opens the whole of it climbs out of the folder.
+    GLOSSARY_URLS = tree.glossary ? [tree.glossary] : ['../GLOSSARY.md', '../GLOSSARY.xml', '../glossary.xml'];
+    GLOSSARY_ROUTE = tree.glossary ? tree.glossary.replace(/\.md$/i, '') : '../GLOSSARY';
   } catch (err) {
     statusEl.hidden = false;
     statusEl.textContent = 'Could not load the documentation index (' + err.message + ').';
@@ -573,15 +597,20 @@ let lastRoute = null;
 
   // A non-glossary link followed from inside the sheet (or "Open the full glossary") routes through the docs router; an external link opens normally.
   glossary = installGlossary({
-    glossaryUrl: 'GLOSSARY.md',
+    glossaryUrl: GLOSSARY_URLS,
     render: renderDocument,
     onNavigate: (href) => {
       if (/^[a-z]+:\/\//i.test(href)) {
         window.open(href, '_blank', 'noopener');
         return;
       }
-      // Links inside the sheet are authored relative to the glossary file (docs/GLOSSARY.md), so resolve them from the glossary's own route.
-      const { route, anchor } = routeAndAnchorFromHref(href, 'GLOSSARY');
+      // "Open the full glossary" names the file itself. Route to it directly rather than resolving it: a glossary above /docs cannot survive the URL API, which collapses the `../` away, and the route that fetches it is the one the tree already gave us.
+      if (isGlossaryFile(href)) {
+        navigate(GLOSSARY_ROUTE, '');
+        return;
+      }
+      // Other links inside the sheet are authored relative to the glossary file, so resolve them from the glossary's own route.
+      const { route, anchor } = routeAndAnchorFromHref(href, GLOSSARY_ROUTE);
       navigate(route, anchor);
     },
   });

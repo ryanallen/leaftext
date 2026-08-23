@@ -9,10 +9,14 @@
 //
 // **What is read is the finished page, never the absence of a throw.** Both entry readers turn a mid-boot fault into a status line over whatever was already drawn, so a boot that died partway still resolves cleanly with content on the page. Every assertion below is on the end state.
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
+
+// The one table of what the app reads, shared with the other checks that ask it rather than copied into each.
+import { appExtensions } from './app-formats.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (name) => readFileSync(join(root, name), 'utf8');
@@ -764,16 +768,6 @@ function standInPage(markup, address) {
 //
 // A real `WebAssembly.Memory` with a bump allocator behind it, so the length-prefixed byte protocol in `site/leaftext-core.js` is exercised rather than mocked away. The four arms are the loader's own — `leaf_alloc`, `leaf_free`, `leaf_render`, `leaf_formats` — which is why `check-shell.mjs`'s stand-in module cannot stand in here: it exports the browser host's.
 
-/** Every extension the app reads, off `src/format.rs` — the one table, never a second list written out here. */
-function appExtensions() {
-  const source = read('src/format.rs');
-  const arms = /fn extensions\(self\)[\s\S]*?match self \{([\s\S]*?)\n\s{8}\}/.exec(source);
-  if (!arms) throw new Error('could not find the extension table in src/format.rs');
-  const found = [...arms[1].matchAll(/"([\w-]+)"/g)].map((one) => one[1]);
-  if (found.length < 5) throw new Error(`expected the whole extension table, got ${found.length}`);
-  return found;
-}
-
 /** The waiting strip the renderer draws at the foot of every document, taken off `src/pager.rs` so the stand-in draws what the app draws. */
 function waitingPager() {
   const source = read('src/pager.rs');
@@ -848,7 +842,7 @@ function standInModule() {
       renders += 1;
       return answer(JSON.stringify(drawnDocument(borrow(sourceAt, sourceLength), borrow(pathAt, pathLength))));
     },
-    leaf_formats: () => answer(appExtensions().join(' ')),
+    leaf_formats: () => answer(appExtensions(root).join(' ')),
   };
   return { exports, renders: () => renders };
 }
@@ -1058,7 +1052,7 @@ check('a relative renderer folder', () => {
 
 await check('the loader over the stand-in module', async () => {
   const leaf = await createLeaftext();
-  const extensions = appExtensions();
+  const extensions = appExtensions(root);
   want(leaf.formats.join(' ') === extensions.join(' '), `the loader answered ${leaf.formats.join(' ')}, not the app's own table`);
   for (const extension of extensions) want(leaf.opens(`a/document.${extension}`), `the loader says it cannot open a .${extension}, which its own format list names`);
   want(leaf.opens('README.MD'), 'an extension in capitals was refused, and a real folder holds those');
@@ -1144,7 +1138,7 @@ const SITE_README = [
   'The document is drawn first and edited in place.',
 ].join('\n\n');
 
-const DOCS_README = ['# Documentation', 'Every page of the guide, starting with [the introduction](01-introduction.md).', '## What is here', 'The list is built from the folder itself, so a page appears by existing.'].join('\n\n');
+const DOCS_README = ['# Documentation', 'Every page of the guide, starting with [the introduction](01-introduction.md).', '<blockquote><p>One line<br>and the next</p></blockquote>', '## What is here', 'The list is built from the folder itself, so a page appears by existing.'].join('\n\n');
 
 const GLOSSARY = ['# Glossary', '## Vault', 'A folder you told the app to watch.', '## Locus', "A block's address in a document."].join('\n\n');
 
@@ -1176,14 +1170,14 @@ async function settled(done, said) {
 let boots = 0;
 
 /** One reader, booted against its own page. Every import carries a fresh query, because Node keys its module cache on the resolved URL: without one a second boot returns the first instance, runs nothing, and reports a boot that never happened. */
-async function bootReader(file, page, address, files, { wrap = null, markup = null } = {}) {
+async function bootReader(file, page, address, files, { wrap = null, markup = null, from = root } = {}) {
   const document = standInPage(markup || read(page), address);
   const window = standInWindow(document, standInAddress(address));
   const fetch = wrap ? wrap(standInFetch(address, files), address) : standInFetch(address, files);
   const module_ = standInModule();
   installGlobals({ document, window, fetch, wasm: standInWebAssembly(module_) });
   boots += 1;
-  await import(pathToFileURL(join(root, file)).href + `?boot=${boots}`);
+  await import(pathToFileURL(join(from, file)).href + `?boot=${boots}`);
   return { document, window, fetch, module_ };
 }
 
@@ -1383,6 +1377,38 @@ check('a route link inside a document reaches the router', () => {
   want(inPage.defaultPrevented, 'an in-page jump was left to the browser, so the reader loses the route it is on');
 });
 
+check('a quoted passage broken into lines is drawn as those lines', () => {
+  const { document } = docsPage;
+  const paragraph = document.getElementById('content').querySelector('.blockquote-lines');
+  want(paragraph, 'a hard-broken quote on a documentation page kept one paragraph, so the hanging indent steps every line after the first to the right and verse comes out as a staircase');
+  want(paragraph.querySelectorAll('.blockquote-line').length === 2, 'a quote broken once did not come out as two lines');
+});
+
+await check('the glossary is fetched from wherever the tree says it is', async () => {
+  // This folder holds one, so it is a page of the folder and asked for beside the others.
+  await settled(() => docsPage.fetch.asked().includes('/docs/GLOSSARY.md'), 'the reader never asked for the glossary its own folder holds, so no word on any page links to its entry');
+  // A folder holding none: that site keeps its glossary one level up, and the reader climbs out for it rather than asking this folder for one it does not have.
+  const above = { ...SITE_FILES, '/docs/': listing('/docs/', ['README.md', '01-introduction.md', 'guide/']), '/GLOSSARY.md': GLOSSARY };
+  delete above['/docs/GLOSSARY.md'];
+  const page = await bootReader('docs/docs.js', 'docs/index.html', 'https://leaf.test/docs/', above);
+  const content = page.document.getElementById('content');
+  await settled(() => content.childNodes.length > 0, 'the reader drew nothing at all on a site whose glossary sits above the documentation folder');
+  await settled(() => page.fetch.asked().includes('/GLOSSARY.md'), "a folder with no glossary in it never sent the reader up to the site's own, so that site loses every glossary link it has");
+  want(!page.fetch.asked().includes('/docs/GLOSSARY.md'), 'the reader asked this folder for a glossary the tree had already said it does not hold');
+});
+
+await check('the docs reader draws when the origin carries no picture fallback', async () => {
+  const scratch = checkoutWithout('site/pictures.js');
+  try {
+    const { document } = await bootReader('docs/docs.js', 'docs/index.html', 'https://leaf.test/docs/', SITE_FILES, { from: scratch });
+    const content = document.getElementById('content');
+    await settled(() => content.childNodes.length > 0 && document.getElementById('status').hidden, 'a reader on an origin carrying no site/pictures.js drew nothing at all — one decoration that site has no pictures for took its whole documentation down');
+    want(content.textContent.includes('built from the folder itself'), "the reader survived the missing fallback but never drew the page's own words");
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+});
+
 check("the front page hands a docs link to the docs reader", () => {
   // The one piece of code here that is not a file: an inline module in the front page's foot, pulled out of the page and run the way the page runs it.
   const address = standInAddress('https://leaf.test/');
@@ -1413,6 +1439,19 @@ check("the front page hands a docs link to the docs reader", () => {
   want(!external.defaultPrevented, 'a link to another site was intercepted');
   want(address.href === before, `a link to another site moved this one to ${address.href}`);
 });
+
+/** A checkout with one file taken out of it, so a reader can be booted over an origin that does not carry that file. Only what a reader statically pulls in is copied — the vendored libraries are script tags rather than imports, and never reached here. */
+function checkoutWithout(missing) {
+  const scratch = join(tmpdir(), `leaf-site-boot-${process.pid}-${missing.replace(/[^a-z0-9]+/gi, '-')}`);
+  rmSync(scratch, { recursive: true, force: true });
+  for (const file of bootedFiles()) {
+    if (file === missing) continue;
+    const to = join(scratch, file);
+    mkdirSync(dirname(to), { recursive: true });
+    cpSync(join(root, file), to);
+  }
+  return scratch;
+}
 
 /** Every file the two entry readers pull in, which is every file booted: a helper that throws as it loads fails its entry's boot. */
 function bootedFiles() {

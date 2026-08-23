@@ -17,7 +17,7 @@
 //      that repo actually contains on its branch.
 //
 // Both strategies converge on the same shape:
-//   { hasIndex: boolean, nav: NavNode[] }
+//   { hasIndex: boolean, glossary: string | null, nav: NavNode[] }
 //   NavNode = { route, label, path } | { group, items: NavNode[] }
 // where `route` is the clean path under the docs folder with ".md" dropped and every other extension kept (how "#/<route>" addresses it) and `path` is the real file to fetch. They match unless a file/folder carries a numeric ordering prefix (see stripOrder), or the file is not Markdown.
 // ---------------------------------------------------------------------------
@@ -51,7 +51,7 @@ function label(name) {
 
 // A folder's landing page, in any format the renderer reads — never required, and a folder without one is a plain heading.
 const isReadme = (name) => /^readme\./i.test(name) && isDocument(name);
-// A glossary is a bottom-sheet target reached by `GLOSSARY.md#term` links, not a standalone page. Like README, it is never listed as an ordinary nav page (left in, it sorts alphabetically to the very top and leads the sidebar ahead of the Introduction). The bottom sheet fetches it by path directly, independent of nav.
+// A glossary is a bottom-sheet target reached by `GLOSSARY.md#term` links, not a standalone page. Like README, it is never listed as an ordinary nav page (left in, it sorts alphabetically to the very top and leads the sidebar ahead of the Introduction). It is reported beside the nav as `glossary` instead, because the reader that draws these pages runs on sites that keep their glossary here and on sites that keep it above this folder, and the tree is what tells the two apart.
 const isGlossary = (name) => /^glossary\./i.test(name) && isDocument(name);
 const isPageFile = (name) => !isReadme(name) && !isGlossary(name);
 const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
@@ -83,6 +83,8 @@ function buildNav(relPaths) {
   }
 
   const hasIndex = root.files.some(isReadme);
+  // The glossary this folder holds, as the real file to fetch, or null when the folder has none.
+  const glossary = root.files.find(isGlossary) || null;
 
   // `rawRel` accumulates the real (prefixed) folder path for fetching; `cleanRel` accumulates the prefix-stripped path used for routes and links.
   const toNodes = (node, rawRel, cleanRel) => {
@@ -116,7 +118,7 @@ function buildNav(relPaths) {
     return out;
   };
 
-  return { hasIndex, nav: toNodes(root, '', '') };
+  return { hasIndex, glossary, nav: toNodes(root, '', '') };
 }
 
 // ---- strategy 1: directory autoindex --------------------------------------
