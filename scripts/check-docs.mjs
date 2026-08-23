@@ -207,14 +207,14 @@ if (adviceFails.length) {
 const LIVE_PLANS = ['features', 'refactor', 'fixes'];
 const livePlan = (file) => LIVE_PLANS.some((p) => file.startsWith(`../docs/${p}/`));
 
-// The first line of the six-part shape every ticket is written to, copied in from the guide and left there. Five live plans opened with it, each carrying a real summary sentence one line below, so the name was the only part of the page that said nothing — and the index, the running order and every link from another plan showed the same five words five times.
+// The first line of the six-part shape every ticket is written to, and the one part of a plan that can be copied in from the guide and left saying nothing — the summary sentence below it is written either way. A plan wearing it cannot be told from any other plan wearing it, in the index, in the running order, or in a link from another plan.
 //
 // Written down rather than read out of the guide, so the refusal says exactly what it refuses and reads on its own. `templateSelfTest` below is what stops the two drifting apart, the way `adviceSelfTest` holds the /done line above.
 //
 // Matched with either apostrophe, since a ticket written in an editor that curls them is the same placeholder.
 const PLACEHOLDER_TITLE = /^#(?!#)[ \t]+What it does, in the owner[’']s words[ \t]*$/;
 
-// Only the first `# ` heading counts. A plan quoting the placeholder further down is citing it as evidence, which is what the plan that filed this rule does, and the teaching copy of the guide under `../docs/learn/` opens with it for real and is not a live plan.
+// Only the first `# ` heading counts. A plan carrying the placeholder further down is quoting it, and the teaching copy of the guide under `../docs/learn/` opens with it for real and is not a live plan.
 /** Whether a live plan still opens with the ticket template placeholder instead of a title of its own. */
 function placeholderTitle(file, text) {
   if (!livePlan(file)) return false;
@@ -222,7 +222,7 @@ function placeholderTitle(file, text) {
   return first !== undefined && PLACEHOLDER_TITLE.test(first);
 }
 
-// The one thing a written-down string cannot do is notice the guide moving out from under it, so the guide is read once before either tree is. It stops the whole run rather than naming plans: what is wrong is this file, and a message about five plans would send somebody to rewrite five titles that are fine.
+// The one thing a written-down string cannot do is notice the guide moving out from under it, so the guide is read once before either tree is. It stops the run rather than naming plans: what is wrong is this file, and a message naming plans sends somebody to rewrite titles that are fine.
 function templateSelfTest() {
   const ticket = readFileSync(join(root, '.agents', 'skills', 'ticket', 'SKILL.md'), 'utf8');
   return ticket.split('\n').some((line) => PLACEHOLDER_TITLE.test(line))
