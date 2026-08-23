@@ -5,7 +5,7 @@
 //   node scripts/check-shared-rules.mjs --check   self-test the comparison, then check the real files
 //   node scripts/check-shared-rules.mjs --fix     rewrite every marked sentence from its owner
 //
-// Only the bytes between the markers are compared. Each file keeps its own explanation around the sentence, because the whole reason the rule is repeated is that the build guide says when to stop, the retirement guide says why, the glossary defines the term and the article teaches the workflow — a check that compared whole paragraphs would fail on the next honest rewrite of any of them. One marked sentence per file, so `--fix` knows what it is rewriting and never touches a word of the context.
+// Only the bytes between the markers are compared. Each file keeps its own explanation around the sentence, because the whole reason a rule is repeated is that each file answers its own reader — the build guide says when to stop, the retirement guide says why, the gate says which of its two reds this is, the glossary defines the term and the article teaches the workflow — a check that compared whole paragraphs would fail on the next honest rewrite of any of them. One marked sentence per file, so `--fix` knows what it is rewriting and never touches a word of the context.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
