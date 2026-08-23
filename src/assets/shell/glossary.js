@@ -242,12 +242,13 @@ function sizeLinkHoverPreview() {
   drawLinkPreviewDiagrams();
 }
 linkHoverTipPreviewDocument.addEventListener('load', () => requestAnimationFrame(sizeLinkHoverPreview), true);
-// The card's picture is a document like any other, so a Mermaid fence in it arrives as a block of its own source text — and nothing on this page will ever draw it, because the reading page's pass collects its candidates inside `#app` and the card sits outside. So the card draws its own. Nothing is written for the wait: the block is already the box, the corner word and the ring the stylesheet gives an undrawn diagram, and the drawing lands in that. Half the picture, in the picture's own pixels. A drawing taller than this is not shown at all: the picture is there to say how the page reads on, and one drawing filling it is the hole this card was opened for.
+// Half the picture, in the picture's own pixels: a drawing over it is scaled into it by the stylesheet, because the picture is there to say how the page reads on.
 const LINK_PREVIEW_DIAGRAM_ROOM = 88;
-// And a third of the picture's width, which is what a drawing has to still be once it has been scaled into that room. A page-tall flowchart comes to 10px wide at that scale and is a sliver rather than a picture; a pie chart comes to 111px and is a pie.
+// A third of the picture's width, which a drawing has to still be once it fits that room: a page-tall flowchart comes to 10px there and is a sliver, a pie chart to 111px and is a pie.
 const LINK_PREVIEW_DIAGRAM_NARROWEST = 251 / 3;
-// Sources whose drawing came out too tall for that room, and ones mermaid refused. Both are the strip, and both are remembered so a second rest goes straight there.
+// Sources too narrow at the size they fit, and ones mermaid refused. Both are the strip, and both are remembered so a second rest goes straight there.
 const linkPreviewDiagramsNotShown = new Set();
+// The card's picture is a document like any other, so a Mermaid fence in it arrives as its own source text and nothing here will ever draw it: the reading page's pass collects inside `#app` and the card sits outside. Nothing is written for the wait — the block is already the box, the corner word and the ring the stylesheet gives an undrawn diagram.
 function drawLinkPreviewDiagrams() {
   const blocks = [...linkHoverTipPreviewDocument.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])')];
   if (!blocks.length) return;
@@ -296,7 +297,7 @@ function drawLinkPreviewDiagrams() {
       });
   }
 }
-// The one thing the card decides that the reading page does not: a drawing it has no room for goes back as the strip, and is remembered so the next rest on the same link goes straight there.
+// The one thing the card decides that the reading page does not: a drawing still too narrow to read at the size it fits goes back as the strip, and is remembered so the next rest goes straight there.
 function keepLinkPreviewDiagramThatFits(block, source) {
   const shrink = linkPreviewShrink();
   if (block.offsetHeight <= LINK_PREVIEW_DIAGRAM_ROOM / shrink) return;

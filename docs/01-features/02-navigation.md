@@ -264,6 +264,8 @@ The pager is always there; it is not a [setting](05-settings.md#pager).
 
 Hovering a link shows a small tooltip that names what kind of link it is and shows the exact href it was written with, so you can tell a [glossary](#glossary) term from an in-page jump from an outside site before you click. When the link opens another document, the tooltip shows that document's opening above the same detail rows, along with its length in lines. It opens with a dot-textured loading space and keeps one size while the opening arrives; website links keep the text-only tooltip, so a hover never contacts a site. A link whose page has been deleted, renamed, or cannot be read drops that space and settles on the kind and address rows, so it never leaves you pointing at a loading mark that will not finish.
 
+A [Mermaid diagram](01-rendering.md#mermaid-diagrams) in that opening is drawn in the tooltip too. While it is being drawn its own spot holds the same empty box with a spinner in it that the reading view gives a diagram it has not drawn yet, and the words above and below it are readable the whole time; the drawing then takes that spot. A diagram too tall to read at the size the tooltip can give it — a flowchart running down a whole page — settles into a thin strip with its name in the corner instead, so the rest of the opening still reads on past it. A diagram the tooltip has drawn once is not drawn again, and one the reading view has already drawn costs the tooltip nothing.
+
 | Hint | When you see it |
 | --- | --- |
 | Glossary entry | A `glossary:` term link, or a link to `GLOSSARY.md#term` |
