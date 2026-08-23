@@ -42,7 +42,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | `site/*.js`, `docs/docs.js` — what draws the published pages | `scripts/check-site-boot.mjs`, which boots both entry readers and everything they import against a stand-in page, fetch and renderer module. It reads the finished page, never the absence of a throw: both readers catch a mid-boot fault into a status line |
 | `src/assets/reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
 | a new class, component, token or icon | no test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list. Run them and add the row |
-| a new `scripts/*.mjs` | its own `--check` mode, and a line in `just verify` |
+| a new `scripts/*.mjs` | a self-test on made-up input at the top of its own run, and a line in `just verify`. A `check-*` gate never puts that proof behind a flag: the gate would pass it and a matcher that quietly stopped matching would pass everything |
 | a test that writes outside the repo | anywhere above, under a name carrying the run's own process id. Two runs at once share every fixed one, and `just check-scratch-names` refuses it |
 | `wix/`, `.github/workflows/` | **cannot be run here** — say so instead of pretending |
 
