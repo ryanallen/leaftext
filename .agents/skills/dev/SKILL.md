@@ -45,7 +45,7 @@ Anything found while building that no phase in this ticket would have to build a
 
 Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase is not finished until it is green.
 
-**Another session's work is not this build's, whatever state it is in.** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Where the gate is red only on such a ticket, this build's own work is judged by everything else being green, and the hand-back says whose the red is and stops there.
+**<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Where the gate is red only on such a ticket, this build's own work is judged by everything else being green, and the hand-back says whose the red is and stops there.
 
 ### 7. Hand back at the owner's box
 

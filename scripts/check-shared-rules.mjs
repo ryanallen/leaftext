@@ -28,6 +28,16 @@ const RULES = [
       '../docs/learn/ticket-workflow-medium/leaftext-workflow.md',
     ],
   },
+  {
+    marker: 'another-sessions-work',
+    what: 'what a pass does about a file or a ticket a second session is holding',
+    owner: '.agents/skills/dev/SKILL.md',
+    copies: [
+      '.agents/skills/check/SKILL.md',
+      '.agents/skills/git-release/SKILL.md',
+      '.agents/skills/done/SKILL.md',
+    ],
+  },
 ];
 
 const CLOSE = '<!-- /shared-rule -->';

@@ -11,6 +11,8 @@ Retire a ticket on the owner's word. **Closing is the owner's call.** Never refu
 
 **<!-- shared-rule: struck-owners-box -->A struck owner's box is not the owner's word.<!-- /shared-rule -->** It says the subject has nothing to press; it does not say the owner has seen what was built. So [`/dev`](../dev/SKILL.md) never runs this skill, a plan carrying one stays live until the owner asks, and `/check` leaves it alone.
 
+**<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** A ticket this pass was not pointed at is not stale, not repaired, not re-filed and not retired alongside the one it was — however its boxes read, and however finished it looks — because the session holding it is already its record and a second hand on it writes over the first.
+
 With no argument, take a live ticket at `Released`.
 
 1. Add the shipped note — `> **Shipped 18 August 2026, 9:11pm, v1.21.2.**` — and keep the dated `Designed` line.

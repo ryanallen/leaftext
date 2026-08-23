@@ -38,6 +38,8 @@ Three hold the browser half, which is the same front end under a different host:
 - `cargo fmt` fixes `format-check`. `just bundle-themes` fixes `check-themes`. `just sync-vendor` fixes `check-vendor`. The rest are real problems.
 - Repeat until it is green.
 
+**<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** So this step has two reds to tell apart: a red on work this pass wrote is fixed and re-run from the top, and a red only on a file this pass never opened is left byte for byte, named in the hand-back as another session's, and stopped at — the one case where this pass's own work is judged by everything else being green, rather than the 'everything passes except…' the line above refuses.
+
 ### 4. Never say what this machine cannot build
 
 The Mac build, the installer and the GitHub workflows do not run here, GitHub builds all three on a tagged release, and **it never goes in a hand-back** — not as a caveat, not as a footnote, not "it ships unproven", and least of all when the change you just made is in one of them. A caveat that is true every single time teaches the reader to skip the line. Say it only if asked directly. This is the rule every other skill points at.
