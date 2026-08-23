@@ -1571,11 +1571,6 @@ body.library-resizing {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* The vault's own name, and the right half of the open pill (see the switcher below): the pill's outside edge, then its inside joint. Unconditional, open or closed — this crumb has a hover pill of its own, and paying the room all the time is what stops the name moving as the list opens. */
-.library-crumb:first-child {
-  padding-left: var(--lt-space-4);
-  padding-right: var(--lt-space-8);
-}
 .library-crumb:hover {
   background: var(--lt-wash-hover);
   color: var(--lt-foreground);
@@ -1611,10 +1606,10 @@ body.library-resizing {
   display: inline-flex;
   align-items: center;
   gap: var(--lt-space-2);
-  /* A bigger target than the glyph inside it: the whole thing is one button, and 20px of it is easy to miss. */
-  height: 26px;
-  /* 8px on the pill's outside edge, 4px on the side facing the vault's name: that side is an inside joint, and both halves paying an edge's worth puts 16px between the icon and the word. */
-  padding: 0 var(--lt-space-4) 0 var(--lt-space-8);
+  /* A bigger target than the glyph inside it: the whole thing is one button, and 20px of it is easy to miss. The 15px icon with an edge either side, which is the room the crumbs beside it pay. */
+  height: 23px;
+  /* The same room either side, so the box says where the button ends rather than standing off it. The band around the trail is what holds this off the pane's edge; the side facing the vault's name is an inside joint, and the name pays the same. */
+  padding: 0 var(--lt-space-4);
   border: 0;
   border-radius: var(--lt-radius-sm);
   background: transparent;
@@ -1637,7 +1632,8 @@ body.library-resizing {
   border-bottom-right-radius: 0;
 }
 .library-vault-switch[aria-expanded="true"] + .library-crumb-trail .library-crumb:first-child {
-  height: 26px;
+  /* The switcher's own height, or the joined pill goes ragged along its top and bottom edge. */
+  height: 23px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   background: var(--lt-wash-hover);
@@ -1648,8 +1644,9 @@ body.library-resizing {
   display: flex;
   align-items: center;
 }
+/* The start screen's copy heads a row rather than sitting in a band, so it cancels the switcher's left padding and its caret sits flush with everything under it. The two move together. */
 .home-vault-switch {
-  margin-left: calc(-1 * var(--lt-space-8));
+  margin-left: calc(-1 * var(--lt-space-4));
   gap: var(--lt-space-4);
 }
 .library-crumb-caret {

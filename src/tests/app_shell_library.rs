@@ -1483,11 +1483,50 @@ fn the_open_switcher_lights_the_vault_name_beside_it() {
     // The two make one pill: the facing corners square and the button grows into the 2px gap, pulled back by the same amount so no folder after the name moves.
     assert!(css.contains("padding-right: calc(var(--lt-space-4) + var(--lt-space-2));"));
     assert!(css.contains("margin-right: calc(-1 * var(--lt-space-2));"));
-    // The pill's two outside edges are one token and the joint in its middle a smaller one, on both halves: an edge's worth of padding twice over puts 16px between the icon and the vault's name.
-    assert!(css.contains("padding: 0 var(--lt-space-4) 0 var(--lt-space-8);"));
-    assert!(css.contains(
-        ".library-crumb:first-child {\n  padding-left: var(--lt-space-4);\n  padding-right: var(--lt-space-8);\n}"
-    ));
+    // The vault's name is a crumb like every folder after it, so nothing anywhere gives the first crumb horizontal room of its own — at any value. A refusal rather than a spelling, or the special case comes back the next time somebody wants that pill a little wider.
+    let bare = strip_css_comments(css);
+    for rule in bare.split('}') {
+        let Some((selector, body)) = rule.rsplit_once('{') else {
+            continue;
+        };
+        let selector = selector.trim();
+        if !selector
+            .split(',')
+            .any(|one| one.trim().ends_with(".library-crumb:first-child"))
+        {
+            continue;
+        }
+        for declaration in body.split(';').map(str::trim) {
+            assert!(
+                !(declaration.starts_with("padding:")
+                    || declaration.starts_with("padding-left:")
+                    || declaration.starts_with("padding-right:")
+                    || declaration.starts_with("padding-inline")),
+                "the vault's name takes horizontal room of its own in {selector}: {declaration}"
+            );
+        }
+    }
+
+    // Open, the two halves are one pill, so they owe one top edge and one bottom edge between them: the height on the name's half is read against the switcher's own rather than spelled out twice.
+    let height_of = |selector: &str| {
+        rule_body(&bare, selector)
+            .split_once('{')
+            .expect("the rule opens")
+            .1
+            .split(';')
+            .map(str::trim)
+            .find_map(|one| one.strip_prefix("height:"))
+            .unwrap_or_else(|| panic!("{selector} should set a height"))
+            .trim()
+            .to_string()
+    };
+    assert_eq!(
+        height_of("\n.library-vault-switch {"),
+        height_of(
+            "\n.library-vault-switch[aria-expanded=\"true\"] + .library-crumb-trail .library-crumb:first-child {"
+        ),
+        "the open pill's two halves are different heights, so it is ragged along its top and bottom edge"
+    );
 
     // A sibling selector, so it is silently dead the moment anything is put between the button and the trail. Only whitespace may sit there.
     let switcher = html
