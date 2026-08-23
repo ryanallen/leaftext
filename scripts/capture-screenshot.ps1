@@ -607,11 +607,9 @@ try {
 
   foreach ($step in $plan) {
     Step-Pointer $step ($vis.Left + $app.X) ($vis.Top + $app.Y)
-    # A hold written with a gap is asking for the gesture while it is still moving, so
-    # the picture is taken where the walk stopped. Settling first photographs a gesture
-    # that stopped moving nearly a second ago, which is a different thing entirely — and
-    # a hold written the old way keeps that settle, so the shots taken with one are the
-    # pictures they always were.
+    # A hold written with a gap wants the gesture while it is still moving, so it skips
+    # the settle: settling first photographs one that stopped moving nearly a second
+    # ago. A hold written the old way keeps it, and so do the shots taken with one.
     if ($step.Kind -ne 'hold' -or -not $step.Paced) { Start-Sleep -Milliseconds $StepMs }
   }
 
