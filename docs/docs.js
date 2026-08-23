@@ -8,7 +8,7 @@
 //
 // The renderer is the app's own, fetched as a module (../site/leaftext-core.js); the minimap (minimap.js) is reused verbatim from the root site one level up.
 //
-// **One file on both published sites, alongside docs.css, and `scripts/check-other-site.mjs` is what holds it there** — a row each in that check's table, compared by what the code says rather than by its bytes. A comment claiming two files agree cannot fail, which is how this one and its stylesheet drifted apart while both headers said they had not.
+// **One file on both published sites, alongside docs.css, and `scripts/check-other-site.mjs` is what holds it there** — a row each in that check's table, compared by what the code says rather than by its bytes. A comment claiming two files agree cannot fail, so this header is not what keeps them one.
 // ---------------------------------------------------------------------------
 
 import { createLeaftext } from '../site/leaftext-core.js';
@@ -46,7 +46,7 @@ let REPO = null;
 let FOOTER_LINKS = [{ href: SITE_HREF, label: '← ' + location.hostname }];
 // The renderer, loaded once in boot(). Every call into it is behind a page that already said the module arrived.
 let leaf = null;
-// The fallback that puts a picture back on the PNG beside it when the browser cannot decode the WebP. Asked for at boot rather than imported, because the other site running this reader carries no `site/pictures.js` — and a static import of a file the origin does not have takes the whole reader down before it draws a word, where an ask that comes back with nothing costs that site a decoration it has no pictures for. Null until boot() has asked, and null for ever on a site with no copy.
+// The fallback that puts a picture back on the PNG beside it when the browser cannot decode the WebP. Asked for at boot rather than imported, because the other site running this reader carries no `site/pictures.js`: a static import of a file the origin lacks takes the whole reader down before it draws a word, where an ask that comes back with nothing costs only a decoration. Null until boot() has asked, and null for ever on a site with no copy.
 let installPictureFallback = null;
 
 // The document, drawn by the app's own renderer. One place, so the sheet, the auto-linker and the page itself cannot end up drawing three different documents.

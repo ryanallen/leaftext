@@ -6,7 +6,7 @@
 //
 // Every run first drives its own faults against trees written for it — a shared file changed on one side only, one missing from the other checkout, a row naming no file at all, and a file in a walked folder that no row names — because the comparison is skipped everywhere except this machine, and a check that is usually silent is one nobody would notice going blind.
 //
-// The table is a list of paths rather than a folder, so a file dropped in beside the ones it names is compared by nothing. The folders in FOLDERS are walked for exactly that: a file there that is not a document and has no row stops the build until somebody says what it is. That is how the documentation reader and its stylesheet forked while both their headers said they were shared verbatim.
+// The table is a list of paths rather than a folder, so a file dropped in beside the ones it names is compared by nothing. The folders in FOLDERS are walked for exactly that: a file there that is not a document and has no row stops the build until somebody says what it is.
 //
 // It compares what the code does rather than what the bytes are: this repository unwrapped its comments for `just check-wrapping` and the other copy kept the hard wraps, so a byte comparison reports eleven faults that are not faults. Comments, blank lines and line endings come out before anything is compared.
 //
@@ -25,7 +25,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** Where the other site's checkout sits on this machine, relative to this one. */
 const OTHER = join(root, '..', '..', 'dharma', 'emptyguru');
 
-// Every file both checkouts hold, and which of three things it is. `shared` must agree; `own` is that site's own writing and is never compared — `reader.js` draws its front page, with its own glossary names and its own failure sentence, so a carry would break it; `here` is this repository's alone and has no copy over there at all. Two folders are named, because the front end the two sites run is not all under `site/`: the documentation reader and its stylesheet sit one folder over and forked while their own headers said they were shared.
+// Every file both checkouts hold, and which of three things it is. `shared` must agree; `own` is that site's own writing and is never compared — `reader.js` draws its front page, with its own glossary names and its own failure sentence, so a carry would break it; `here` is this repository's alone and has no copy over there at all. Two folders, because the front end the two sites run is not all under `site/`: the documentation reader and its stylesheet sit one folder over, beside the pages they draw.
 const FILES = [
   ['site/styles.css', 'shared'],
   ['site/reader.js', 'own'],
