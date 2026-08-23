@@ -3,13 +3,13 @@
 //
 //   node scripts/app-formats.mjs --check   prove the reader on made-up tables (`just verify`)
 //
-// `src/format.rs` is the only table of readable formats and their extensions, so a check that wants them asks here rather than writing a second list beside it — a second list agrees on the day it is written and falls behind on the day the table gains a row. That held for the list and not for the reading of it: two scripts parsed the same function with regexes of their own and were watched disagreeing on three made-up tables out of five, one of them answering seven spellings of ten without a word.
+// `src/format.rs` is the only table of readable formats and their extensions, so a check that wants them asks here rather than writing a second list beside it. **One reader, not one per caller**: two regexes over that one function answered differently on three made-up tables out of five — one keeping a spelling written inside a comment, one answering seven spellings of ten without a word.
 //
-// **The floor is the variant list, never a number.** `DocumentFormat::ALL` names what has to be answered for, so a variant with no arm the reader can find is a throw naming that variant rather than a shorter answer nobody notices. A count would have to be kept in step with the table by hand, which is the second list this file exists to refuse.
+// **The floor is the variant list, never a number.** `DocumentFormat::ALL` names what has to be answered for, so a variant with no arm is a throw naming that variant rather than a shorter answer nobody notices. A count is a second list, kept in step by hand.
 //
 // **The reading is cut at the front, never at the back.** Where the arms end is a guess about indentation; where they begin is `fn extensions(self)`, which is written down. So each variant's arm is the first `Self::<variant> => &[…]` after that point, cut at its own closing bracket.
 //
-// **A spelling is anything between quotes inside that array.** Scoped to one arm the wide class costs nothing — there is no prose inside `&["md", "markdown"]` to catch — and it keeps a spelling that a word-characters-only class would silently drop. Swept over the whole block instead, the same class picks up a spelling quoted in a comment beside the arms and counts it as a format.
+// **A spelling is anything between quotes inside that array.** Scoped to one arm the wide class costs nothing — there is no prose inside `&["md", "markdown"]` to catch — and it keeps a spelling a word-characters-only class drops. Swept over the whole block instead, the same class picks up a spelling quoted in a comment beside the arms and counts it as a format.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -79,7 +79,7 @@ impl DocumentFormat {
 
 const spell = (rows) => rows.map(([variant, endings]) => `${variant}(${endings.join(' ')})`).join(' ');
 
-/// What the reader has to answer and what it has to refuse, on made-up tables rather than on the tree's. A reader proved only against the file it reads passes on the day that file moves, which is the fault this whole file was rewritten for. A row is `[name, source, want]` for an answer spelled out, and `[name, source, words, 'refuses']` for a refusal that has to carry those words.
+/// What the reader has to answer and what it has to refuse, on made-up tables rather than on the tree's — a reader proved only against the file it reads passes on the day that file moves. A row is `[name, source, want]` for an answer spelled out, and `[name, source, words, 'refuses']` for a refusal that has to carry those words.
 const CASES = [
   ['a well-formed table, with a spelling quoted in a comment beside the arms', WELL_FORMED, 'Markdown(md markdown) Xml(xml) Eml(eml mht)'],
   ['a spelling carrying a character outside a word', WELL_FORMED.replace('"eml", "mht"', '"eml", "mht", "mail.txt"'), 'Markdown(md markdown) Xml(xml) Eml(eml mht mail.txt)'],

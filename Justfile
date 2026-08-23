@@ -203,9 +203,8 @@ check-growl-words:
 
 # Prove the one reader of src/format.rs on made-up tables: that it answers a well-formed one
 # with every variant and every spelling, and that a shape it does not recognize is a refusal
-# naming what it could not find rather than a shorter list nobody notices. Two scripts once
-# parsed that table with regexes of their own and disagreed; this holds the one that replaced
-# them against input it did not also read the answer from.
+# naming what it could not find rather than a shorter list nobody notices. A reader held only
+# against the file it reads passes on the day that file moves, so the tables here are made up.
 check-app-formats:
     node scripts/app-formats.mjs --check
 
