@@ -207,6 +207,59 @@ if (adviceFails.length) {
 const LIVE_PLANS = ['features', 'refactor', 'fixes'];
 const livePlan = (file) => LIVE_PLANS.some((p) => file.startsWith(`../docs/${p}/`));
 
+// The first line of the six-part shape every ticket is written to, copied in from the guide and left there. Five live plans opened with it, each carrying a real summary sentence one line below, so the name was the only part of the page that said nothing — and the index, the running order and every link from another plan showed the same five words five times.
+//
+// Written down rather than read out of the guide, so the refusal says exactly what it refuses and reads on its own. `templateSelfTest` below is what stops the two drifting apart, the way `adviceSelfTest` holds the /done line above.
+//
+// Matched with either apostrophe, since a ticket written in an editor that curls them is the same placeholder.
+const PLACEHOLDER_TITLE = /^#(?!#)[ \t]+What it does, in the owner[’']s words[ \t]*$/;
+
+// Only the first `# ` heading counts. A plan quoting the placeholder further down is citing it as evidence, which is what the plan that filed this rule does, and the teaching copy of the guide under `../docs/learn/` opens with it for real and is not a live plan.
+/** Whether a live plan still opens with the ticket template placeholder instead of a title of its own. */
+function placeholderTitle(file, text) {
+  if (!livePlan(file)) return false;
+  const first = text.split('\n').find((line) => /^#(?!#)[ \t]/.test(line));
+  return first !== undefined && PLACEHOLDER_TITLE.test(first);
+}
+
+// The one thing a written-down string cannot do is notice the guide moving out from under it, so the guide is read once before either tree is. It stops the whole run rather than naming plans: what is wrong is this file, and a message about five plans would send somebody to rewrite five titles that are fine.
+function templateSelfTest() {
+  const ticket = readFileSync(join(root, '.agents', 'skills', 'ticket', 'SKILL.md'), 'utf8');
+  return ticket.split('\n').some((line) => PLACEHOLDER_TITLE.test(line))
+    ? []
+    : ['PLACEHOLDER_TITLE  ->  .agents/skills/ticket/SKILL.md no longer writes "# What it does, in the owner\'s words" as the first line of a ticket'];
+}
+
+// The rule is a string compare, so the whole risk is which line it reads and how far a plan is from the folders it holds.
+const TITLE_CASES = [
+  ['a live plan opening with the placeholder is refused', '../docs/refactor/a/p.md', "# What it does, in the owner's words\n\n> **Not built.** A plan.\n", true],
+  ['a live plan with a title of its own passes', '../docs/refactor/a/p.md', '# Points open the secret room\n\n> **Not built.** A plan.\n', false],
+  ['the curled apostrophe is the same placeholder', '../docs/refactor/a/p.md', '# What it does, in the owner\u2019s words\n', true],
+  ['the same words quoted further down a plan are left alone', '../docs/refactor/a/p.md', "# A real title\n\nthe template opens `# What it does, in the owner's words` and five plans kept it\n", false],
+  ['the same words as a later heading are left alone', '../docs/refactor/a/p.md', "# A real title\n\n## Why\n\n# What it does, in the owner's words\n", false],
+  ['a deeper heading above the title does not hide it', '../docs/refactor/a/p.md', "## Why\n\n# What it does, in the owner's words\n", true],
+  ['a plan with no heading at all is left alone', '../docs/refactor/a/p.md', '> **Not built.** A plan.\n', false],
+  ['a shipped plan is not held to the rule', '../docs/done/a/p.md', "# What it does, in the owner's words\n", false],
+  ['a refused plan is not held to the rule', '../docs/canceled/a/p.md', "# What it does, in the owner's words\n", false],
+  ['the teaching copy of the guide is not a live plan', '../docs/learn/ticket-workflow-medium/skills/ticket/SKILL.md', "# What it does, in the owner's words\n", false],
+];
+
+function titleSelfTest() {
+  const fails = [];
+  for (const [name, file, text, want] of TITLE_CASES) {
+    const got = placeholderTitle(file, text);
+    if (got !== want) fails.push(`${name}: got ${got}, want ${want}`);
+  }
+  return fails;
+}
+
+const titleFails = [...titleSelfTest(), ...templateSelfTest()];
+if (titleFails.length) {
+  console.error('title: the placeholder rule or the line it is written from is wrong, so no plan was read:');
+  for (const line of titleFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 // A ticket that adds, moves or restyles anything in the window carries a `## What it looks like` section, so whoever builds it can see it first — v0.1.479 put a second search box, a `?` button and a popup panel into the library pane with no line of the plan asking for any of them, and all three came straight back out.
 //
 // No script can read a ticket and answer "does this change the window", so this asks an exact question that catches the same tickets: do the phases name `design/components.md`. They cannot dodge it — `check-classes.mjs` refuses any class the stylesheet paints with no row in that file, so a ticket adding a control has to name it.
@@ -1098,6 +1151,7 @@ if (orphans.length) {
 
 // Nothing left open, the owner's own box ticked, and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line. The same pass asks the drawing question, the owner's-box question and the struck-box question, so each live ticket is read once.
 const finished = [];
+const untitled = [];
 const undrawn = [];
 const unapprovable = [];
 const misplaced = [];
@@ -1126,6 +1180,7 @@ for (const file of rows.map(([f]) => f)) {
   const retired = states.filter((state) => state === 'retired').length;
   const count = `${ticked} ${ticked === 1 ? 'box' : 'boxes'} ticked${retired ? `, ${retired} struck through` : ''}`;
   if (retirementReady(file, text)) finished.push(`${file} (${count})`);
+  if (placeholderTitle(file, text)) untitled.push(file);
   if (ownerBoxOwed(file, text)) unapprovable.push(file);
   if (drawingOwed(file, text)) undrawn.push(file);
 }
@@ -1144,6 +1199,16 @@ if (aheadOfClock.length) {
   console.error(`these stamps are later than this machine's local clock (${now.toLocaleString('en-US')}):`);
   for (const stamp of aheadOfClock) console.error(`  ${stamp}`);
   console.error('read the clock and write the time it says. A stamp records something finished, so it cannot be ahead of the check that reads it.');
+  process.exit(1);
+}
+
+if (untitled.length) {
+  console.error("these live plans still open with the ticket template's own placeholder instead of a title:");
+  for (const file of untitled) console.error(`  ${file}  ->  # What it does, in the owner's words`);
+  console.error('the title is the first thing a reader meets, from the index, the running order or a link in');
+  console.error('another plan — so a plan wearing the placeholder is one nobody can tell from the next. Write it');
+  console.error('out of the summary sentence one line under the not-built note: who it is for and what changes,');
+  console.error('short. See "The shape of the file" in .agents/skills/ticket/SKILL.md.');
   process.exit(1);
 }
 
@@ -1240,4 +1305,4 @@ if (outOfOrder.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date written since 19 August 2026 saying what time it was, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan opening with a title of its own rather than the template placeholder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date written since 19 August 2026 saying what time it was, ${links}`);
