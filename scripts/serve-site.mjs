@@ -9,17 +9,15 @@
 //
 // **The bake is in memory and nothing here reaches the tree.** `site-assets.mjs --write` puts the drawn README into the tracked `index.html`, and `check-site.mjs` then refuses that page until somebody puts it back — so a preview built on it would leave the gate red until it was undone by hand. The bake is already a pure function, so its answer goes straight to the browser.
 //
-// **The renderer a browser draws these pages through is the one that was just built.** The module, its stylesheet and its version are answered out of the build below, off `publishedAssets` in `site-assets.mjs`, which is the one table this and the publish both read. Served off the tree they come from `assets/leaftext/`, which only the publish writes — so a page is drawn through however old the last publish-shaped run left that folder, and the front page through two renderers at once: baked through the build below, decorated through the copy on disk.
+// **The renderer a browser draws these pages through is the one that was just built.** The module, its stylesheet and its version are answered out of the build below, off `previewAnswers` in `site-assets.mjs`, which is built from the one table this and the publish both read. Served off the tree they come from `assets/leaftext/`, which only the publish writes — so a page is drawn through however old the last publish-shaped run left that folder, and the front page through two renderers at once: baked through the build below, decorated through the copy on disk.
 //
 // **Baked and unbaked are two different first paints, and the reader branches on which it got.** Baked, the words are in the first response and the module arrives afterwards as a decoration; unbaked, the page waits on the module and fetches the document itself. Every visitor to leaftext.com gets the first, so that is what this serves; `--unbaked` is for reading the second.
 
-import { createServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
-import { readFile, stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BUILT_MODULE, FRONT_DOCUMENT, FRONT_PAGE, bakeFrontPage, publishedAssets } from './site-assets.mjs';
-import { fileWithin, listenLocally, typeOf } from './serve-static.mjs';
+import { BUILT_MODULE, previewAnswers } from './site-assets.mjs';
+import { listenLocally, staticServer } from './serve-static.mjs';
 import { instantiateCore } from './web-module.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -35,43 +33,12 @@ if (!existsSync(BUILT_MODULE)) {
 }
 
 // The module is loaded whichever first paint is being read, because the pages are drawn through it either way. `--unbaked` is a second first paint, not a second renderer.
-const front = join(root, FRONT_PAGE);
+const baked = !args.includes('--unbaked');
 const leaf = await instantiateCore(BUILT_MODULE);
-const bakedPage = args.includes('--unbaked')
-  ? null
-  : bakeFrontPage(readFileSync(front, 'utf8'), leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT));
 
-// Keyed by the file each one lands at, so a request is answered by where its URL resolves rather than by what it says.
-const publishedHere = new Map([...publishedAssets(leaf, readFileSync(BUILT_MODULE))].map(([path, bytes]) => [join(root, path), bytes]));
-
-const server = createServer(async (request, response) => {
-  // Refuse anything outside the repository, whatever the URL says.
-  const file = fileWithin(root, request.url);
-  if (!file) {
-    response.writeHead(403).end('no');
-    return;
-  }
-  if (bakedPage && file === front) {
-    response.writeHead(200, { 'content-type': typeOf(front), 'cache-control': 'no-store' });
-    response.end(bakedPage);
-    return;
-  }
-  const published = publishedHere.get(file);
-  if (published !== undefined) {
-    response.writeHead(200, { 'content-type': typeOf(file), 'cache-control': 'no-store' });
-    response.end(published);
-    return;
-  }
-  try {
-    if (!(await stat(file)).isFile()) throw new Error('not a file');
-    response.writeHead(200, { 'content-type': typeOf(file), 'cache-control': 'no-store' });
-    response.end(await readFile(file));
-  } catch {
-    response.writeHead(404, { 'content-type': 'text/plain' });
-    response.end('not here');
-  }
-});
+// The answer is `serve-static.mjs`'s, so this and `preview-web` are one handler rather than two that drift; what it hands over ahead of the disk is `site-assets.mjs`'s, so this and the publish cannot say different things about which renderer the site is read through.
+const server = staticServer(root, previewAnswers(leaf, readFileSync(BUILT_MODULE), { baked }));
 
 // The address is `serve-static.mjs`'s to hand out, so a port something else already answers on stops this rather than being printed as ours. The docs page is spelled off the address it answered with, so the host is written in one place for both lines.
-const extra = (address) => [`${address}/docs/`, `Serving the site as GitHub Pages would, front page ${bakedPage ? 'baked' : 'unbaked'}. Stop it with Ctrl+C.`];
+const extra = (address) => [`${address}/docs/`, `Serving the site as GitHub Pages would, front page ${baked ? 'baked' : 'unbaked'}. Stop it with Ctrl+C.`];
 if (!(await listenLocally(server, port, { extra })).address) process.exit(1);

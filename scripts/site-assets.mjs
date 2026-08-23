@@ -72,6 +72,20 @@ export function publishedAssets(leaf, moduleBytes) {
   ]);
 }
 
+/**
+ * Everything the local preview answers ahead of the disk, keyed by path within the repository: the three files the publish writes, and — baked — the front page with its document already in it.
+ *
+ * It is built here rather than in the server because this is where its two halves already live, so the gate can ask for it with a stand-in module and never wait on `just build-web`. Unbaked there is no front page in it and the three still are: that first paint is a second first paint, not a second renderer.
+ */
+export function previewAnswers(leaf, moduleBytes, { baked = true } = {}) {
+  const answers = new Map(publishedAssets(leaf, moduleBytes));
+  if (baked) {
+    const page = readFileSync(join(root, FRONT_PAGE), 'utf8');
+    answers.set(FRONT_PAGE, bakeFrontPage(page, leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT)));
+  }
+  return answers;
+}
+
 /** The app version, read where the release path reads it. */
 export function appVersion() {
   const found = /^version\s*=\s*"([^"]+)"/m.exec(readFileSync(join(root, 'Cargo.toml'), 'utf8'));

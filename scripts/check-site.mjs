@@ -5,14 +5,15 @@
 //
 // Each entry page's own folder is the base, read off the <script> tag it loads, so the page saying where the file is and the file being there cannot drift. Only literal paths can be checked; a path built at runtime is skipped.
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer as createSocketServer } from 'node:net';
+import { tmpdir } from 'node:os';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeLink } from '../site/link-tooltip.js';
 import { discoveryFiles } from './seo-gen.mjs';
-import { fileWithin, listenLocally, typeOf } from './serve-static.mjs';
-import { ASSET_DIR, FRONT_PAGE, MODULE_PATH, PUBLISHED, bakeFrontPage, frontPageIsEmpty, publishedAssets } from './site-assets.mjs';
+import { fileWithin, listenLocally, staticServer, typeOf } from './serve-static.mjs';
+import { ASSET_DIR, FRONT_PAGE, MODULE_PATH, PUBLISHED, bakeFrontPage, frontPageIsEmpty, previewAnswers } from './site-assets.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -223,11 +224,78 @@ if (!frontPageIsEmpty(read(FRONT_PAGE))) {
   if (!frontPageIsEmpty(read(FRONT_PAGE))) problems.push(`${FRONT_PAGE} stopped being an empty holder after a bake, so the preview would be putting a document into the tree`);
 }
 
-/// The local preview answers the published files out of the build it baked with, so the paths it answers for itself have to be the published table itself: one it misses goes back to being served off `assets/leaftext/`, and a stale copy there draws a page that looks right. Asked with a stand-in module and no module bytes, so this stays offline and needs no build.
+/// The answer both previews give a browser is one function in `serve-static.mjs`, and until this booted it nothing anywhere ran a request through either server: the branch that hands over the renderer just built could be taken back out with every check still green and a browser served whatever the last publish left in `assets/leaftext/`. So it is started here on a port the machine hands out, over a folder in the repository and a map this check wrote, and asked for each of the four branches a browser can land in.
 {
-  const answered = [...publishedAssets({ styles: () => 'a stylesheet' }).keys()];
-  if (answered.join(' ') !== PUBLISHED.join(' ')) {
-    problems.push(`the local preview answers ${answered.join(', ') || 'nothing'} for itself where the publish writes ${PUBLISHED.join(', ')} — a published file it does not answer is served off disk, which is whatever the last publish left there`);
+  const served = join(root, 'site');
+  const ahead = 'answered ahead of the disk';
+  const server = staticServer(served, new Map([['styles.css', ahead]]));
+  const started = await listenLocally(server, 0, { quiet: true });
+  if (!started.address) {
+    problems.push(`the preview server would not start on a port the machine handed out: ${started.message}`);
+  } else {
+    // The map's own file exists on disk and says something else, so an answer off disk here is the fault this whole boot is for rather than a missing file.
+    for (const [url, status, type, body] of [
+      ['/styles.css', 200, 'text/css; charset=utf-8', ahead],
+      ['/reader.js', 200, 'text/javascript; charset=utf-8', read('site/reader.js')],
+      ['/..%2fAGENTS.md', 403, null, null],
+      ['/nobody-wrote-this.md', 404, null, null],
+    ]) {
+      const answer = await fetch(`${started.address}${url}`);
+      const got = await answer.text();
+      if (answer.status !== status) {
+        problems.push(`a preview server answered ${url} with ${answer.status} rather than ${status}`);
+        continue;
+      }
+      if (type && answer.headers.get('content-type') !== type) problems.push(`a preview server handed ${url} over as ${answer.headers.get('content-type')} rather than ${type}`);
+      if (body !== null && got !== body) problems.push(`a preview server answered ${url} with ${got.length} bytes that are not the ${body.length} it was meant to hand over`);
+    }
+    server.closeAllConnections();
+    server.close();
+  }
+}
+
+/// The export preview is the same server with nothing answered ahead of the disk, and the type table is the half of it a browser is strictest about: a module handed over as anything but `application/wasm` is one a browser refuses to stream-compile. So the table is read here through a real response rather than only as a function, over a folder written for this and thrown away after.
+{
+  const served = mkdtempSync(join(tmpdir(), 'leaftext-preview-'));
+  const files = [
+    ['a.md', '# Served\n', 'text/markdown; charset=utf-8'],
+    ['a.wasm', '\0asm', 'application/wasm'],
+    ['a.unlisted', 'bytes', 'application/octet-stream'],
+  ];
+  for (const [name, body] of files) writeFileSync(join(served, name), body);
+  const server = staticServer(served);
+  const started = await listenLocally(server, 0, { quiet: true });
+  if (!started.address) {
+    problems.push(`the export preview would not start on a port the machine handed out: ${started.message}`);
+  } else {
+    for (const [name, body, type] of files) {
+      const answer = await fetch(`${started.address}/${name}`);
+      const got = await answer.text();
+      if (answer.status !== 200) problems.push(`the export preview answered ${name} with ${answer.status} rather than serving it off the folder it was pointed at`);
+      else if (answer.headers.get('content-type') !== type) problems.push(`the export preview handed ${name} over as ${answer.headers.get('content-type')} rather than ${type}`);
+      else if (got !== body) problems.push(`the export preview answered ${name} with something other than the bytes on disk`);
+    }
+    server.closeAllConnections();
+    server.close();
+  }
+  rmSync(served, { recursive: true, force: true });
+}
+
+/// What the site preview hands that server ahead of the disk has to be the published table itself plus the baked front page: a published file missing from it goes back to being served off `assets/leaftext/`, and a stale copy there draws a page that looks right. Asked with a stand-in module and no module bytes, so this stays offline and needs no build.
+{
+  const standIn = { styles: () => 'a stylesheet', render: () => ({ html: '<h1 id="drawn">Drawn</h1>' }) };
+  const wanted = [...PUBLISHED, FRONT_PAGE];
+  const baked = previewAnswers(standIn, 'the module');
+  const answered = [...baked.keys()];
+  if (answered.join(' ') !== wanted.join(' ')) {
+    problems.push(`the local preview answers ${answered.join(', ') || 'nothing'} for itself where it owes ${wanted.join(', ')} — a published file it does not answer is served off disk, which is whatever the last publish left there`);
+  } else if (frontPageIsEmpty(baked.get(FRONT_PAGE))) {
+    problems.push(`the local preview answers ${FRONT_PAGE} with its content element still empty, which is the blank page a reader waits in front of`);
+  }
+  // Unbaked is the reader's other first paint, not its other renderer, so the three published files are answered there too.
+  const plain = [...previewAnswers(standIn, 'the module', { baked: false }).keys()];
+  if (plain.join(' ') !== PUBLISHED.join(' ')) {
+    problems.push(`unbaked, the local preview answers ${plain.join(', ') || 'nothing'} for itself where it owes ${PUBLISHED.join(', ')} — so --unbaked reads the tree's page through the renderer on disk rather than the one just built`);
   }
 }
 
@@ -363,5 +431,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window — plus the local preview, which bakes that page without touching the tracked one, answers all ${PUBLISHED.length} published files out of the build it baked with, names a file's type, refuses a path climbing out of the folder it serves, prints the loopback address it actually bound, and refuses a port a program holding either wildcard family already answers on`
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, a pager button's card names its page, and ${named} paths into the renderer the publish builds, every one written by it and refused by .gitignore, and a front page the tree keeps empty and the publish fills, over a reading column measured in characters and centered in the whole window — plus both preview servers, booted here on ports the machine handed out: the one answer they share hands over what is asked ahead of the disk, then the disk with the type the table names, refuses a path climbing out of the folder it serves and 404s a file nobody wrote; the site preview bakes its front page without touching the tracked one and answers all ${PUBLISHED.length} published files out of the build it baked with, baked and unbaked alike; and either of them prints the loopback address it actually bound and refuses a port a program holding either wildcard family already answers on`
 );

@@ -1,9 +1,11 @@
-// The half both preview servers share: which address they hand out, which type a file is served as, and where a URL is allowed to land.
+// The half both preview servers share: which address they hand out, which type a file is served as, where a URL is allowed to land, and the answer either of them gives a browser.
 //
-// Two servers carrying two copies of a type table is a document that draws under one command and downloads under the other, and a path refusal written twice is the one of them that forgot `..`. Neither is part of what is published — `export-web.mjs` writes a folder that reads on any static host, and leaftext.com is served by GitHub Pages — so this is only what it takes to open either of them on this machine.
+// Two servers carrying two copies of a type table is a document that draws under one command and downloads under the other, a path refusal written twice is the one of them that forgot `..`, and a request handler written twice is the one of them the gate never boots. Neither is part of what is published — `export-web.mjs` writes a folder that reads on any static host, and leaftext.com is served by GitHub Pages — so this is only what it takes to open either of them on this machine.
 
 import { connect } from 'node:net';
-import { extname, resolve, sep } from 'node:path';
+import { createServer } from 'node:http';
+import { readFile, stat } from 'node:fs/promises';
+import { extname, join, resolve, sep } from 'node:path';
 
 /// Both families, because a wildcard holder answers on one of them and is invisible from the other.
 const LOOPBACK = ['127.0.0.1', '::1'];
@@ -76,4 +78,31 @@ export function fileWithin(root, url) {
   const file = resolve(root, '.' + (asked.endsWith('/') ? `${asked}index.html` : asked));
   // The separator is what makes this a folder test rather than a string test: a sibling folder whose name merely starts with this one's is outside it.
   return file === root || file.startsWith(root + sep) ? file : null;
+}
+
+/// The answer both previews give a browser, and the only one either of them has: refuse a path landing outside the folder, hand over what is answered ahead of the disk, then the disk, then a 404. `ahead` is keyed by path within `root` — the site preview hands over its baked front page and the three files the publish writes, the export preview hands over nothing — so nothing that fills it spells an absolute path.
+export function staticServer(root, ahead = new Map()) {
+  const answered = new Map([...ahead].map(([path, bytes]) => [join(root, path), bytes]));
+  return createServer(async (request, response) => {
+    // Refuse anything outside the folder being served, whatever the URL says.
+    const file = fileWithin(root, request.url);
+    if (!file) {
+      response.writeHead(403).end('no');
+      return;
+    }
+    const ours = answered.get(file);
+    if (ours !== undefined) {
+      response.writeHead(200, { 'content-type': typeOf(file), 'cache-control': 'no-store' });
+      response.end(ours);
+      return;
+    }
+    try {
+      if (!(await stat(file)).isFile()) throw new Error('not a file');
+      response.writeHead(200, { 'content-type': typeOf(file), 'cache-control': 'no-store' });
+      response.end(await readFile(file));
+    } catch {
+      response.writeHead(404, { 'content-type': 'text/plain' });
+      response.end('not here');
+    }
+  });
 }
