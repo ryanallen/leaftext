@@ -1,6 +1,6 @@
 // The half both preview servers share: which address they hand out, which type a file is served as, where a URL is allowed to land, and the answer either of them gives a browser.
 //
-// Two servers carrying two copies of a type table is a document that draws under one command and downloads under the other, a path refusal written twice is the one of them that forgot `..`, and a request handler written twice is the one of them the gate never boots. Neither is part of what is published — `export-web.mjs` writes a folder that reads on any static host, and leaftext.com is served by GitHub Pages — so this is only what it takes to open either of them on this machine.
+// Two servers carrying two copies of a type table is a document that draws under one command and downloads under the other, a path refusal written twice is the one of them that forgot `..`, and a request handler written twice is the copy nothing boots. Neither is part of what is published — `export-web.mjs` writes a folder that reads on any static host, and leaftext.com is served by GitHub Pages — so this is only what it takes to open either of them on this machine.
 
 import { connect } from 'node:net';
 import { createServer } from 'node:http';

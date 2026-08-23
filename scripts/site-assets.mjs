@@ -120,7 +120,7 @@ async function main() {
   if (!styles?.includes('data-leaf-theme')) fail("the built module handed over a stylesheet with none of the app's themes in it");
   if (!styles?.includes('--lt-background')) fail("the built module handed over a stylesheet with none of the app's tokens in it");
 
-  // The front page's own document, drawn here rather than in the reader's browser. Asked for before anything is written, the same as the module is: a page baked empty is the blank page this whole change exists to end.
+  // The front page's own document, drawn here rather than in the reader's browser. Asked for before anything is written, the same as the module is: a page baked empty is the blank page a reader waits in front of.
   let baked = null;
   try {
     baked = bakeFrontPage(readFileSync(join(root, FRONT_PAGE), 'utf8'), leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT));

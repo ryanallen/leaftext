@@ -224,7 +224,7 @@ if (!frontPageIsEmpty(read(FRONT_PAGE))) {
   if (!frontPageIsEmpty(read(FRONT_PAGE))) problems.push(`${FRONT_PAGE} stopped being an empty holder after a bake, so the preview would be putting a document into the tree`);
 }
 
-/// The answer both previews give a browser is one function in `serve-static.mjs`, and until this booted it nothing anywhere ran a request through either server: the branch that hands over the renderer just built could be taken back out with every check still green and a browser served whatever the last publish left in `assets/leaftext/`. So it is started here on a port the machine hands out, over a folder in the repository and a map this check wrote, and asked for each of the four branches a browser can land in.
+/// The answer both previews give a browser is one function in `serve-static.mjs`, and nothing else anywhere runs a request through either server: without this, the branch that hands over the renderer just built can be taken back out with every other check still green and a browser served whatever the last publish left in `assets/leaftext/`. So it is started here on a port the machine hands out, over a folder in the repository and a map this check wrote, and asked for each of the four branches a browser can land in.
 {
   const served = join(root, 'site');
   const ahead = 'answered ahead of the disk';
