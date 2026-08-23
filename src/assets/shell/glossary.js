@@ -248,6 +248,35 @@ const LINK_PREVIEW_DIAGRAM_ROOM = 88;
 const LINK_PREVIEW_DIAGRAM_NARROWEST = 251 / 3;
 // Sources too narrow at the size they fit, and ones mermaid refused. Both are the strip, and both are remembered so a second rest goes straight there.
 const linkPreviewDiagramsNotShown = new Set();
+// Where every drawing a card makes is made. Mermaid sizes each word's frame from what it reads while drawing, so a block inside the layer the card scales gives every word a frame at the card's shrink, and the word — still drawn at its full size — is clipped to a smear; the shared picture memo then hands that same picture to the reading page. The flowchart editor's stage already refuses the memo for this reason, and this is the other half of it: the drawing is made here at full size and moved into the card afterwards, so one picture is right in both places.
+let linkPreviewDiagramHolder = null;
+// Off screen rather than hidden: a hidden box has no layout, and mermaid measures nothing in one. A block of its own per drawing, because a card with two diagrams starts both at once.
+function takeLinkPreviewDiagramBlock(source) {
+  if (!linkPreviewDiagramHolder) {
+    linkPreviewDiagramHolder = document.createElement('div');
+    linkPreviewDiagramHolder.className = 'document-body';
+    linkPreviewDiagramHolder.style.position = 'absolute';
+    linkPreviewDiagramHolder.style.top = '0';
+    linkPreviewDiagramHolder.style.left = '-10000px';
+    appSurface.appendChild(linkPreviewDiagramHolder);
+  }
+  // The width the card measured its note at, so a word wraps where the reading page would wrap it and the memo's one entry serves both.
+  const width = linkHoverTipPreviewScale.offsetWidth;
+  if (width > 0) linkPreviewDiagramHolder.style.width = width + 'px';
+  const block = document.createElement('pre');
+  block.className = 'mermaid';
+  block.textContent = source;
+  linkPreviewDiagramHolder.appendChild(block);
+  return block;
+}
+// The holder goes with the last drawing in it, so nothing of the card is left standing in the page between rests.
+function dropLinkPreviewDiagramBlock(block) {
+  block.remove();
+  if (linkPreviewDiagramHolder && !linkPreviewDiagramHolder.children.length) {
+    linkPreviewDiagramHolder.remove();
+    linkPreviewDiagramHolder = null;
+  }
+}
 // The card's picture is a document like any other, so a Mermaid fence in it arrives as its own source text and nothing here will ever draw it: the reading page's pass collects inside `#app` and the card sits outside. Nothing is written for the wait — the block is already the box, the corner word and the ring the stylesheet gives an undrawn diagram.
 function drawLinkPreviewDiagrams() {
   const blocks = [...linkHoverTipPreviewDocument.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])')];
@@ -272,24 +301,35 @@ function drawLinkPreviewDiagrams() {
       continue;
     }
     block.dataset.cardDiagram = 'drawing';
+    const stage = takeLinkPreviewDiagramBlock(source);
     loadMermaid()
       .then((mermaid) => {
         registerMermaidIcons(mermaid);
         mermaid.initialize(mermaidRuntimeConfig());
-        return mermaid.run({ nodes: [block] });
+        return mermaid.run({ nodes: [stage] });
       })
       .then(() => {
         delete block.dataset.cardDiagram;
-        if (token !== activeHoverToken || !block.isConnected) return;
-        shareMermaidSheet(block);
+        if (token !== activeHoverToken || !block.isConnected) {
+          dropLinkPreviewDiagramBlock(stage);
+          return;
+        }
+        // Sheet first, memo second, card third: the memo holds the markup, so hoisting the sheet after it would remember a sheet naming rules the page has not got.
+        shareMermaidSheet(stage);
+        const made = stage.innerHTML;
         if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
-        mermaidRenderCache.set(mermaidCacheKey(source), block.innerHTML);
+        mermaidRenderCache.set(mermaidCacheKey(source), made);
+        dropLinkPreviewDiagramBlock(stage);
+        // The same assignment the memo's own restore makes, so a card holds what the page would hold.
+        block.innerHTML = made;
+        block.dataset.processed = 'true';
         keepLinkPreviewDiagramThatFits(block, source);
         sizeLinkHoverPreview();
       })
       .catch(() => {
         // A drawing mermaid refused keeps whatever it drew in there on the reading page; in a picture this small there is no room to read an error, so it goes back to the strip with the corner word still saying what stood there.
         delete block.dataset.cardDiagram;
+        dropLinkPreviewDiagramBlock(stage);
         linkPreviewDiagramsNotShown.add(source);
         if (!block.isConnected) return;
         putLinkPreviewDiagramBack(block, source);
