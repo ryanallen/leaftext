@@ -179,7 +179,7 @@ class LeafElement extends LeafNode {
     this.clientWidth = 0;
     this.clientHeight = 0;
     this.scrollHeight = 0;
-    // Nothing here lays anything out, so an element measures nothing until a check says what a browser would have given it. A picture is the same: it starts on its way, and a check that wants one that drew writes both fields while one that wants a picture the browser threw away writes `complete` alone, which is the only state those two fields describe.
+    // Nothing here lays anything out, so an element measures nothing until a check says what a browser would have given it — a picture included: it starts on its way, and the check that wants one that drew, or one the browser threw away, says so.
     this.layoutWidth = 0;
     this.complete = false;
     this.naturalWidth = 0;
@@ -1209,7 +1209,7 @@ check('a picture a browser cannot decode falls back to the PNG beside it', () =>
   const content = document.createElement('article');
   content.innerHTML = '<p><img src="imgs/one.webp" alt="one"><img src="imgs/two.webp" alt="two"><img src="imgs/three.png" alt="three"></p>';
   const [one, two, three] = content.querySelectorAll('img');
-  // What the browser had already decided before the module ran, said here rather than left to a default: a picture it could not decode is finished with no width, and one that drew is finished with a width.
+  // What the browser had already decided before the module ran: a picture it could not decode is finished with no width, and one that drew is finished with a width.
   one.complete = true;
   two.complete = true;
   two.naturalWidth = 800;
