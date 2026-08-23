@@ -248,7 +248,7 @@ const LINK_PREVIEW_DIAGRAM_ROOM = 88;
 const LINK_PREVIEW_DIAGRAM_NARROWEST = 251 / 3;
 // Sources too narrow at the size they fit, and ones mermaid refused. Both are the strip, and both are remembered so a second rest goes straight there.
 const linkPreviewDiagramsNotShown = new Set();
-// Where every drawing a card makes is made. Mermaid sizes each word's frame from what it reads while drawing, so a block inside the layer the card scales gives every word a frame at the card's shrink, and the word — still drawn at its full size — is clipped to a smear; the shared picture memo then hands that same picture to the reading page. The flowchart editor's stage already refuses the memo for this reason, and this is the other half of it: the drawing is made here at full size and moved into the card afterwards, so one picture is right in both places.
+// Where every drawing a card makes is made. Mermaid sizes each word's frame from what it reads while drawing, so a block inside the layer the card scales gives every word a frame at the card's shrink and the word, still drawn at full size, is clipped to a smear — and the shared picture memo hands that same picture to the reading page.
 let linkPreviewDiagramHolder = null;
 // Off screen rather than hidden: a hidden box has no layout, and mermaid measures nothing in one. A block of its own per drawing, because a card with two diagrams starts both at once.
 function takeLinkPreviewDiagramBlock(source) {
