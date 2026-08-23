@@ -6,7 +6,7 @@
 //
 // Every run first drives its own refusals against stylesheet text written for them — a pair naming different numbers, a rule reworded past its reader, and two rules answering one question — because a check that quietly finds nothing is the fault this one was written to stop.
 //
-// The script that draws the rail names no width at all: it asks the rail whether the stylesheet left it on the page. That is why this holds two files rather than three.
+// The script that draws the rail names no width at all — it asks the rail whether the stylesheet left it on the page — so these two are the whole list.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

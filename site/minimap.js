@@ -33,7 +33,7 @@ export function initMinimap(source) {
   let previewFrame = 0;
   let viewportFrame = 0;
 
-  // The stylesheet decides whether the rail is on the page — the width breakpoint and the reader's own toggle both — and a rail that is on the page always has a width, so ask it rather than keeping a copy of either rule.
+  // The stylesheet decides whether the rail is on the page — the breakpoint and the reader's own toggle both — and a rail that is on it always has a width, so ask the rail rather than copying either rule.
   const isHidden = () => minimap.getBoundingClientRect().width <= 0;
   const scrollEl = document.scrollingElement || document.documentElement;
 

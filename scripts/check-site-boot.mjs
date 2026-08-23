@@ -1211,7 +1211,7 @@ const frontPage = await check('the front page boots', async () => {
 const railOf = (page) => ({ rail: page.document.querySelector('.document-minimap'), content: page.document.querySelector('.document-minimap-content') });
 
 await check('the minimap draws into a rail the stylesheet left on the page and into nothing otherwise', async () => {
-  // Whether the rail is on the page is the stylesheet's answer — a width breakpoint and the reader's own Show minimap toggle, neither of them written down in the script — so the script asks the rail by measuring it. Every element here measures nothing until a check says otherwise, which is a rail the stylesheet took off the page.
+  // A default boot measures nothing, which is what a rail the stylesheet took off the page measures; giving one a width is the stylesheet leaving it there.
   const gone = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', SITE_FILES);
   await settled(() => gone.document.getElementById('content').childNodes.length > 0 && railOf(gone).content, 'the reader never finished, so there was no rail to read');
   await new Promise((resolve) => setTimeout(resolve, 20));
