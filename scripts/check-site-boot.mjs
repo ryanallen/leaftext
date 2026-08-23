@@ -639,7 +639,7 @@ function queryAll(rootElement, selector) {
 
 // ---- events -----------------------------------------------------------------
 //
-// A listener is kept beside how it was registered, because that is the whole of what a browser does with the third argument and the only thing that tells a listener that works in a browser from one that does not: three registrations under `site/` are wrong in a real browser the moment their third argument goes, and a stand-in that dropped it passed on all three.
+// A listener is kept beside how it was registered, because that is the whole of what a browser does with the third argument: three registrations under `site/` are wrong in a real browser the moment their third argument goes, and a page that drops it passes on all three.
 //
 // `capture`, `once` and the types a browser does not bubble, and nothing else. No `eventPhase`, no `stopImmediatePropagation`, no per-type `bubbles` record: nothing under `site/` reads any of them, and a stand-in modeling more of the platform than the code under it asks for is more page to keep true. `passive` is taken and ignored — it only promises a browser the handler will not cancel the event, and nothing here cancels anything.
 
@@ -1045,7 +1045,7 @@ function storeStandIn() {
 
 // ---- the stand-in page's own event walk --------------------------------------
 //
-// The harness, not the site — and it is checked here because everything below rests on it: a stand-in that hands every event to every listener passes on a listener a browser would never call, which is exactly what the three registrations under `site/` need it not to do.
+// The harness, not the site, and everything below rests on it: a page that hands every event to every listener passes a listener a browser would never call.
 
 check('the stand-in page calls a listener the way it was registered', () => {
   const document = standInPage('<html><body><article id="root"><p><img id="picture"></p></article></body></html>', 'https://leaf.test/');
@@ -1258,7 +1258,7 @@ await check('a picture that arrives rebuilds the minimap once rather than on eve
   initMinimap(source);
   const rail = document.querySelector('.document-minimap');
   const held = rail.querySelector('.document-minimap-content');
-  // A rail measuring nothing is one the stylesheet took off the page, and the script draws no thumbnail into one of those. The width is what the stylesheet's own --minimap-width lays a visible one out at, and the thumbnail is scaled to it.
+  // The width the stylesheet lays a visible rail out at, on the rail and on what the thumbnail is scaled to; a rail measuring nothing is one it took off the page and gets no thumbnail.
   rail.layoutWidth = 62;
   held.clientWidth = 62;
 
@@ -1271,7 +1271,7 @@ await check('a picture that arrives rebuilds the minimap once rather than on eve
   await new Promise((resolve) => setTimeout(resolve, 20));
   want(held.firstChild === drawn, 'a second event from the same picture rebuilt the whole thumbnail again, so a listener registered once is being called every time the picture speaks');
 
-  // The rail's own window listener, read back by dispatching at the window rather than by reaching into the map behind it. The handler takes no event, so the window is the honest place to fire it from: this is the page having scrolled.
+  // The rail's own window listener, read back by dispatching rather than by reaching into the map. The handler takes no event, so the window is the honest place to fire from: this is the page having scrolled.
   const viewport = rail.querySelector('.document-minimap-viewport');
   const document_ = document.documentElement;
   document_.scrollHeight = 4000;
