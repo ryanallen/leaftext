@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// A tripwire on the lists whose prose nobody reads back. It holds a written-down copy of each list's rows; change the list and this fails, naming every file whose comments describe it and asking for them to be read before the new rows are recorded.
+// A tripwire on the lists whose prose nobody reads back. It holds a written-down copy of each list's rows; change the list and this fails, naming the files whose comments describe it and asking for them to be read before the new rows are recorded.
 //
-//   node scripts/check-format-prose.mjs --check   fail on a list that moved, and on the page's copy drifting from the host's (`just verify`)
+//   node scripts/check-format-prose.mjs --check   fail on a list that moved, on a file it names being gone, on one nobody has accounted for, and on the page's copy drifting from the host's (`just verify`)
 //
 // **It reads no prose, and it cannot.** Both shapes that do were run over the tree and both scored nothing: counting the numbers a comment spells fires on 44 correct comments across the five files around the diagram export table, because a comment about part of a table honestly counts part of a table; naming the endings fires on two, both correct — one of them the comment the last build wrote as it added a row. There is no rule over the words that can tell a comment written for a smaller list from a comment written about a subset on purpose. So this does not try. It guarantees that somebody opens the files, which is the exact step that was skipped twice — once when the PDF row landed and two comments went stale, and again when the JPEG row landed, four were corrected and a fifth was missed in a file that build was editing at the time.
 //
