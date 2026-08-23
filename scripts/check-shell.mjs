@@ -12058,7 +12058,7 @@ if (booted) {
     const switcher = (css.split('\n.library-vault-switch {\n')[1] || '').split('}')[0];
     const edge = /\n {2}padding: 0 (var\(--lt-space-\d+\));\n/.exec(switcher);
     if (!edge) throw new Error('the vault switcher no longer pays one token either side');
-    // The start screen's copy heads a row rather than sitting in a band, so it cancels that padding to sit flush. Read against it rather than spelled out here, or the two drift and its caret hangs off the row it heads.
+    // Read against the switcher's own padding rather than spelled out here: the start screen's copy cancels it, and a value written twice drifts.
     const home = css.split('.home-vault-switch {')[1];
     if (!home || !home.startsWith(`\n  margin-left: calc(-1 * ${edge[1]});\n  gap: var(--lt-space-4);`)) {
       throw new Error(`the home switcher does not cancel the switcher's own ${edge[1]} of padding, or does not leave room between its icon and name`);

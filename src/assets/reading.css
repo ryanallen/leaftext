@@ -1606,9 +1606,9 @@ body.library-resizing {
   display: inline-flex;
   align-items: center;
   gap: var(--lt-space-2);
-  /* A bigger target than the glyph inside it: the whole thing is one button, and 20px of it is easy to miss. The 15px icon with an edge either side, which is the room the crumbs beside it pay. */
+  /* A bigger target than the glyph inside it: the whole thing is one button, and 20px of it is easy to miss. The icon plus the edge the crumbs beside it pay. */
   height: 23px;
-  /* The same room either side, so the box says where the button ends rather than standing off it. The band around the trail is what holds this off the pane's edge; the side facing the vault's name is an inside joint, and the name pays the same. */
+  /* One edge either side, so the box says where the button ends: the band around the trail is what holds it off the pane, and the name beside it pays the same at their joint. */
   padding: 0 var(--lt-space-4);
   border: 0;
   border-radius: var(--lt-radius-sm);
@@ -1644,7 +1644,7 @@ body.library-resizing {
   display: flex;
   align-items: center;
 }
-/* The start screen's copy heads a row rather than sitting in a band, so it cancels the switcher's left padding and its caret sits flush with everything under it. The two move together. */
+/* The start screen's copy heads a row rather than sitting in a band, so it cancels the switcher's left padding to sit flush with what is under it. */
 .home-vault-switch {
   margin-left: calc(-1 * var(--lt-space-4));
   gap: var(--lt-space-4);

@@ -2130,7 +2130,7 @@ fn every_icon_sits_the_same_distance_from_its_label() {
         assert_contains(rule, "gap: var(--lt-space-6);");
     }
 
-    // The one place it cannot land: the vault switcher and the name beside it are two controls sharing one pill, so the room between its icon and its word is the two halves' own edges meeting across the trail's seam rather than a gap of its own.
+    // The one place it cannot land: the switcher and the name beside it share one pill, so the room between its icon and its word is the two halves' own edges meeting rather than a gap of its own.
     let switcher = rule_body(css, "\n.library-vault-switch {");
     assert_contains(switcher, "gap: var(--lt-space-2);");
     assert_contains(switcher, "padding: 0 var(--lt-space-4);");
