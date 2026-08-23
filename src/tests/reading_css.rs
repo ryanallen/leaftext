@@ -1010,7 +1010,7 @@ fn an_undrawn_diagram_does_not_spin_in_the_rail() {
         "the ring is canceled by taking the pseudo-element away"
     );
 
-    // Asserting the cancel's text is in the stylesheet is what let this rule stand while never once applying, so it is weighed against the rule it has to beat and then put after it.
+    // A cancel whose text is merely present in the stylesheet can stand there without ever applying, so it is weighed against the rule it has to beat and then put after it.
     let (rail, page) = (class_level_parts(&cancel), class_level_parts(&spinner));
     assert!(
         rail >= page,
@@ -1116,7 +1116,7 @@ fn a_diagram_the_card_will_not_draw_is_a_strip_rather_than_a_ring_that_never_sto
         "the ring is canceled by taking the pseudo-element away"
     );
 
-    // Asserting a cancel's text is in the stylesheet is what let the rail's own rule stand while never once applying, so this one is weighed against the rule it has to beat and then put after it.
+    // A cancel whose text is merely present in the stylesheet can stand there without ever applying, so this one is weighed against the rule it has to beat and then put after it.
     let (card, page) = (class_level_parts(&cancel), class_level_parts(&spinner));
     assert!(
         card >= page,

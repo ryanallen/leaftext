@@ -9279,7 +9279,7 @@ if (booted) {
     }
   });
 
-  // The sheet is rendered outside `#app`, so the draw pass never collects a diagram in an entry and one stays undrawn for as long as the sheet is open. The stylesheet holds it to a strip instead, and that rule keys on a `pre.mermaid` inside `.glossary-sheet-body` — a pair nothing here ever built, because until now nothing here opened the sheet at all.
+  // The sheet is rendered outside `#app`, so the draw pass never collects a diagram in an entry and one stays undrawn for as long as the sheet is open. The stylesheet holds it to a strip instead, and that rule keys on a `pre.mermaid` inside `.glossary-sheet-body`, which is the pair this check builds by opening the sheet on a real entry.
   check('a glossary entry carrying a drawing puts the block the strip rule keys on inside the sheet', () => {
     const sheet = booted.document.getElementById('glossarySheet');
     const body = booted.document.getElementById('glossarySheetBody');

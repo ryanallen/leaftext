@@ -6901,7 +6901,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-minimap-preview a.glossary-term {
   color: inherit;
 }
-/* The clone is a .document-body, so an undrawn diagram in it matches the spinner rule too, and a page of boxes would spin dozens down a 68px rail. A pseudo-element survives any stripping of nodes, so only a rule the clone's own class reaches can cancel it. The three conditions are the spinner rule's own, which is what ties the weight; the tie is broken by this rule sitting later. Written with the class alone it counted two class-level parts against that rule's five and never once applied. The block stays: its invisible source text is what holds the right height. */
+/* The clone is a .document-body, so an undrawn diagram in it matches the spinner rule too, and a page of boxes would spin dozens down a 68px rail. A pseudo-element survives any stripping of nodes, so only a rule the clone's own class reaches can cancel it. The three conditions are the spinner rule's own, which is what ties the weight; the tie is broken by this rule sitting later. Written with the class alone it counts two class-level parts against that rule's five and never applies. The block stays: its invisible source text is what holds the right height. */
 .document-minimap-preview pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
   content: none;
 }
