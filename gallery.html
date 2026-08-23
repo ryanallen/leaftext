@@ -9170,7 +9170,7 @@ body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {
 body.leaf-web .document-minimap {
   display: none;
 }
-/* Above the width the script itself gives up at (`HIDE_BELOW` in site/minimap.js): pinned to the top right over the document, on the page's own color so the thumbnail reads against something. A phone has no room for it. */
+/* One pixel above the width site/styles.css hides the rail below, held there by just check-minimap-breakpoint: pinned to the top right over the document, on the page's own color so the thumbnail reads against something. A phone has no room for it. */
 @media screen and (min-width: 721px) {
   body.leaf-web .document-minimap {
     display: block;

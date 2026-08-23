@@ -185,6 +185,14 @@ check-site-boot:
 check-scratch-names:
     node scripts/check-scratch-names.mjs
 
+# Fail on a source line saying TEMPORARY or FIXME, shouted, in the four folders that
+# ship. Measuring code is meant to leave with its answer and nothing made it leave: the
+# event-counting probe said TEMPORARY in the first word of its own comment and shipped
+# in every copy for four versions. No escape on purpose — a block somebody means to
+# keep is one that should not say temporary.
+check-temporary-code:
+    node scripts/check-temporary-code.mjs
+
 # Fail on a host-side success growl that builds a value into its own sentence, and on the
 # page's success call written anywhere but the one file that owns it. A path composed into
 # the words reaches the reader as words, where the same path handed over on its own is a
@@ -223,6 +231,13 @@ check-classes:
 # comes from design/tokens.md or design/colors.md.
 check-literals:
     node scripts/check-literals.mjs
+
+# Fail when the two stylesheets that decide whether the published minimap rail is on
+# the page stop naming one width. The site hides it at a number and under, the exported
+# page draws it from one pixel above, and a reader meets a gap between them as a rail
+# standing on one page and gone from the other at the same window width.
+check-minimap-breakpoint:
+    node scripts/check-minimap-breakpoint.mjs --check
 
 # Fail on a rule in the app's stylesheet that would take a published page's frame:
 # an overflow, position or touch-action on a bare html, body or :root. The same
@@ -424,7 +439,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-hover-fills check-scratch-names check-growl-words check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

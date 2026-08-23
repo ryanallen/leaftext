@@ -7,9 +7,6 @@
 // Public entry point: initMinimap(source) where `source` is the .markdown-body element. Call it once after the README has been rendered into the page.
 // ---------------------------------------------------------------------------
 
-// Below this viewport width the rail is hidden (see styles.css) and we skip all work. Keep this in sync with the @media rule in styles.css.
-const HIDE_BELOW = 720;
-
 // Minimum on-screen height of the viewport rectangle, so it stays grabbable even on very long documents. Mirrors the desktop app's 22px floor.
 const MIN_VIEWPORT_HEIGHT = 22;
 
@@ -36,7 +33,8 @@ export function initMinimap(source) {
   let previewFrame = 0;
   let viewportFrame = 0;
 
-  const isHidden = () => window.innerWidth < HIDE_BELOW;
+  // The stylesheet decides whether the rail is on the page — the width breakpoint and the reader's own toggle both — and a rail that is on the page always has a width, so ask it rather than keeping a copy of either rule.
+  const isHidden = () => minimap.getBoundingClientRect().width <= 0;
   const scrollEl = document.scrollingElement || document.documentElement;
 
   // ---- measurements -------------------------------------------------------

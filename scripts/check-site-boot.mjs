@@ -176,6 +176,8 @@ class LeafElement extends LeafNode {
     this.clientWidth = 0;
     this.clientHeight = 0;
     this.scrollHeight = 0;
+    // Nothing here lays anything out, so an element measures nothing until a check says what a browser would have given it.
+    this.layoutWidth = 0;
   }
 
   // ---- attributes ----
@@ -366,7 +368,7 @@ class LeafElement extends LeafNode {
 
   // ---- what a browser answers and nothing here can measure ----
   getBoundingClientRect() {
-    return { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
+    return { top: 0, left: 0, right: this.layoutWidth, bottom: 0, width: this.layoutWidth, height: 0, x: 0, y: 0 };
   }
   getClientRects() {
     return [];
@@ -1203,6 +1205,26 @@ const frontPage = await check('the front page boots', async () => {
   want(document.getElementById('siteSettings'), 'the settings menu is not on the page');
   want(document.querySelector('.document-minimap'), 'the minimap rail was never built');
   return page;
+});
+
+/** The rail after a boot, and the thumbnail element the script draws into. */
+const railOf = (page) => ({ rail: page.document.querySelector('.document-minimap'), content: page.document.querySelector('.document-minimap-content') });
+
+await check('the minimap draws into a rail the stylesheet left on the page and into nothing otherwise', async () => {
+  // Whether the rail is on the page is the stylesheet's answer — a width breakpoint and the reader's own Show minimap toggle, neither of them written down in the script — so the script asks the rail by measuring it. Every element here measures nothing until a check says otherwise, which is a rail the stylesheet took off the page.
+  const gone = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', SITE_FILES);
+  await settled(() => gone.document.getElementById('content').childNodes.length > 0 && railOf(gone).content, 'the reader never finished, so there was no rail to read');
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(railOf(gone).content.childNodes.length === 0, 'a rail measuring nothing was given a thumbnail, which is the script drawing every scroll frame into something no reader can see');
+
+  const laidOut = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', SITE_FILES);
+  await settled(() => laidOut.document.getElementById('content').childNodes.length > 0 && railOf(laidOut).content, 'the second reader never finished');
+  const { rail, content } = railOf(laidOut);
+  // What the stylesheet's own --minimap-width lays a visible rail out at.
+  rail.layoutWidth = 62;
+  for (const handler of laidOut.window.listeners.get('resize') || []) handler({ type: 'resize' });
+  await settled(() => content.childNodes.length > 0, 'a rail the stylesheet left on the page was never given a thumbnail, so the script gave up on a rail a reader can see');
+  want(content.querySelector('.document-minimap-preview'), 'the rail was filled with something that is not the document thumbnail');
 });
 
 await check('a boot that failed is not read as a pass', async () => {

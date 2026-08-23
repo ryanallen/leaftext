@@ -726,7 +726,7 @@ body.front-page {
 }
 
 /* ---- Small screens: drop the minimap, reclaim its space ------------- */
-/* Keep this breakpoint in sync with HIDE_BELOW in site/minimap.js. */
+/* Held to the exported page's own rule by just check-minimap-breakpoint: that one shows the rail one pixel above this. */
 
 @media (max-width: 720px) {
   body {
