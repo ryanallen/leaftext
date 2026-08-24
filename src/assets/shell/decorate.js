@@ -1488,6 +1488,17 @@ function laneWidePictures(root = app) {
     block.classList.toggle('image-lane', alone);
   }
 }
+// A link whose address the sanitizer took off — an app's own scheme, a phone number, a whole path from a drive letter — reaches the page as words with nothing behind them and is painted like every live link beside it. Marked here rather than styled on the missing address: an anchor written `<a name="…">` is a place in the page and never had one, and the rail's thumbnail is a clone with the address stripped off every link in it. The clone is taken after this runs, so only the genuinely dead links carry the mark into it.
+function markLinksThatGoNowhere(root = app) {
+  const body = root.querySelector('.document-body');
+  if (!body) return;
+  for (const link of body.querySelectorAll('a')) {
+    // A place in the page keeps its name or its id through the sanitizer, so words of its own are what tell a link the author wrote from a landing somebody linked to.
+    if (link.getAttribute('href') || link.getAttribute('name') || link.getAttribute('id')) continue;
+    if (!(link.textContent || '').trim()) continue;
+    link.classList.add('link-goes-nowhere');
+  }
+}
 function decorateBlockquoteLines(root = app) {
   root.querySelectorAll('blockquote:not(.markdown-alert) p').forEach((paragraph) => {
     if (paragraph.querySelector('.blockquote-line')) return;

@@ -576,6 +576,7 @@ function renderState() {
     laneWidePictures();
     bindImageSheet();
     decorateBlockquoteLines();
+    markLinksThatGoNowhere();
     buildDocumentOutline();
     decorateCodeBlocks();
     bindBorrowedTitleRename();

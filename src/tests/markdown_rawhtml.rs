@@ -283,3 +283,52 @@ fn a_block_that_reaches_the_page_as_nothing_is_told_from_one_that_draws() {
         );
     }
 }
+#[test]
+fn a_link_naming_a_file_on_this_disk_keeps_its_address() {
+    // The three spellings of one file: a whole path from a drive letter either way round, and the `file:` address a reader may write instead. All three reach the page as the same address, so the click, the card and the confirmation before a program all read one shape.
+    let markdown = concat!(
+        "[drive](C:/Users/rwall/plan.md) ",
+        "[backslashes](C:\\Users\\rwall\\plan.md) ",
+        "[written whole](file:///C:/Users/rwall/plan.md) ",
+        "[beside it](../sibling/plan.md) ",
+        "[the web](https://example.com/)",
+    );
+
+    let rendered = render_markdown_document(markdown, "README.md");
+
+    assert_eq!(
+        rendered
+            .html
+            .matches(r#"href="file:///C:/Users/rwall/plan.md""#)
+            .count(),
+        3,
+        "the three spellings did not all arrive as one address: {}",
+        rendered.html
+    );
+    // A relative address never meets the scheme list, and a web address is not a path — neither is touched.
+    assert_contains(&rendered.html, r#"href="../sibling/plan.md""#);
+    assert_contains(&rendered.html, r#"href="https://example.com/""#);
+}
+
+#[test]
+fn an_apps_own_scheme_and_a_phone_number_still_lose_their_address() {
+    // The grant is one scheme wide, not a category: an address handing a stranger's document a line to another program is its own decision, and a phone number puts a dialer in front of a reader. Both lose the address and keep the words, which is what the page marks and says so about.
+    let markdown = concat!(
+        "[a vault note](obsidian://open?vault=x&file=y) ",
+        "[a citation](zotero://select/items/1) ",
+        "[call](tel:+15551234567) ",
+        "[a page of its own](data:text/html;base64,PHNjcmlwdD4=)",
+    );
+
+    let rendered = render_markdown_document(markdown, "README.md");
+
+    for refused in ["obsidian:", "zotero:", "tel:", "data:"] {
+        assert!(
+            !rendered.html.contains(refused),
+            "{refused} kept its address: {}",
+            rendered.html
+        );
+    }
+    // The anchor and its words stay standing, which is the whole reason the page has to mark one.
+    assert_contains(&rendered.html, ">call</a>");
+}

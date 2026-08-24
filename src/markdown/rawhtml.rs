@@ -286,6 +286,73 @@ pub(crate) fn resolve_img_tag_src(tag: &str, source_path: &Path, host: &dyn Leaf
     resolved
 }
 
+/// A whole path written from a drive letter — `C:/notes/plan.md`, or the same with backslashes — rewritten as the `file:` address the grant below is written for.
+///
+/// The sanitizer parses an address before it judges it, so a path starting from a drive letter arrives carrying that letter as its scheme and the scheme list can never reach it. Rewritten here rather than admitting twenty-six letters to that list, which would admit anything at all after the colon — and rewritten to the one shape everything downstream already reads: the page's own `file:` arm, the host's resolver, and the confirmation before a link the system would run.
+pub(crate) fn drive_letter_hrefs_as_file_urls(html: &str) -> String {
+    let mut rewritten = String::with_capacity(html.len());
+    let mut offset = 0usize;
+    let lower_html = html.to_ascii_lowercase();
+
+    while let Some(relative_start) = lower_html[offset..].find("<a") {
+        let tag_start = offset + relative_start;
+        let Some(tag_end) = find_html_tag_end(html, tag_start) else {
+            break;
+        };
+
+        rewritten.push_str(&html[offset..tag_start]);
+        rewritten.push_str(&rewrite_drive_letter_href(&html[tag_start..tag_end]));
+        offset = tag_end;
+    }
+
+    rewritten.push_str(&html[offset..]);
+    rewritten
+}
+
+fn rewrite_drive_letter_href(tag: &str) -> String {
+    let Some(attribute) = find_html_attribute(tag, "href") else {
+        return tag.to_string();
+    };
+    let Some(url) = file_url_from_drive_letter_path(attribute.value) else {
+        return tag.to_string();
+    };
+    let mut out = String::with_capacity(tag.len() + url.len());
+    out.push_str(&tag[..attribute.replacement_start]);
+    // Quoted on the way out where the address it replaces was not: the value it stands in for is a path, and a bare one would end on the first space.
+    if attribute.was_quoted {
+        out.push_str(&encode_double_quoted_attribute(&url));
+    } else {
+        out.push('"');
+        out.push_str(&encode_double_quoted_attribute(&url));
+        out.push('"');
+    }
+    out.push_str(&tag[attribute.replacement_end..]);
+    out
+}
+
+/// `C:\notes\plan.md` and `C:/notes/plan.md` alike as `file:///C:/notes/plan.md`. A drive-relative `C:plan.md` is not a whole path and is left where it is.
+///
+/// The separator arrives written three ways: a forward slash, a backslash, and the `%5C` the renderer writes a backslash out as. All three become the one the URL parser reads.
+pub(crate) fn file_url_from_drive_letter_path(value: &str) -> Option<String> {
+    let mut characters = value.char_indices();
+    let (_, drive) = characters.next()?;
+    if !drive.is_ascii_alphabetic() || characters.next()?.1 != ':' {
+        return None;
+    }
+    let (rest_at, _) = characters.next()?;
+    let rest = &value[rest_at..];
+    let separated =
+        rest.starts_with(['/', '\\']) || rest.len() >= 3 && rest[..3].eq_ignore_ascii_case("%5c");
+    if !separated {
+        return None;
+    }
+    let path = rest
+        .replace('\\', "/")
+        .replace("%5C", "/")
+        .replace("%5c", "/");
+    Some(format!("file:///{}:{path}", drive))
+}
+
 pub(crate) fn sanitize_rendered_html(html: &str) -> String {
     let mut sanitizer = Builder::new();
     configure_rendered_html_sanitizer(&mut sanitizer);
@@ -293,8 +360,16 @@ pub(crate) fn sanitize_rendered_html(html: &str) -> String {
 }
 
 /// The URL schemes rendered HTML may keep. One list, shared with the email renderer, which adds only `cid:` on top of it.
-pub(crate) const RENDERED_HTML_URL_SCHEMES: [&str; 5] =
-    ["http", "https", "mailto", "glossary", LOCAL_IMAGE_PROTOCOL];
+///
+/// `file` is here so a document may name a file on this disk and a click on it goes where a click on a relative link goes. The gate for raw HTML written inside Markdown has allowed it all along, so this is the two lists agreeing rather than a new door. An address naming somebody else's program — `obsidian:`, `zotero:` — and a phone number stay off it: handing a stranger's document a line to another program is its own decision, and a link that loses its address now says so in the window rather than doing nothing.
+pub(crate) const RENDERED_HTML_URL_SCHEMES: [&str; 6] = [
+    "http",
+    "https",
+    "mailto",
+    "glossary",
+    "file",
+    LOCAL_IMAGE_PROTOCOL,
+];
 
 pub(crate) fn configure_rendered_html_sanitizer(sanitizer: &mut Builder<'_>) {
     sanitizer

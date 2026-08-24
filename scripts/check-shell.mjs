@@ -2359,7 +2359,10 @@ if (booted) {
 
     // An ordinary document link keeps the answer it has, and a file that is not a page is still not one.
     if (linkHoverInfo('notes/other.md').kind !== 'Another page') throw new Error('a plain link stopped being a page');
-    if (linkHoverInfo('file:///docs/logo.png').kind !== 'App link') throw new Error('a file the app cannot read became a page');
+    // A `file:` address naming a file the app does not read is still a file on this disk, so it gets the words every other such file gets rather than being read as an app's own scheme.
+    const picture = linkHoverInfo('file:///docs/logo.png');
+    if (picture.kind !== 'Opens in another app') throw new Error(`a file the app cannot read is called ${picture.kind}`);
+    if (picture.detail !== '/docs/logo.png') throw new Error(`the card shows ${picture.detail} rather than where the file is`);
   });
 
   // One word for a link this app hands to the machine, whichever way the address was written, and the address under it is where the file actually is — so two links to one PDF are not described two different ways, and a dead one can be told from a live one without clicking it.
@@ -2397,6 +2400,131 @@ if (booted) {
       }
     } finally {
       vm.runInContext('currentState = __wasState', booted);
+    }
+  });
+
+  // The sanitizer keeps the anchor and drops the address, so a link written with a scheme of its own arrives as words painted in the link color with nothing behind them. What tells one from a live link is a class the decoration pass writes, because an anchor with no address is not by itself a stripped link: a place in the page is one too.
+  check('a link the sanitizer emptied is marked, and a live link and a place in the page are left alone', () => {
+    const appEl = booted.document.getElementById('app');
+    const body = fakeElement('');
+    body.className = 'document-body';
+    body.innerHTML =
+      '<p><a href="notes/other.md">a live link</a><a href="https://example.test/">the web</a>' +
+      '<a>an app of its own</a><a>a phone number</a>' +
+      '<a name="waypoint"></a><a id="landing"></a>' +
+      '<a class="leaf-md-button">a button with nothing behind it</a></p>';
+    appEl.appendChild(body);
+    try {
+      booted.markLinksThatGoNowhere();
+      const marked = body
+        .querySelectorAll('a')
+        .filter((link) => link.classList.contains('link-goes-nowhere'))
+        .map((link) => link.textContent);
+      if (marked.join(' | ') !== 'an app of its own | a phone number | a button with nothing behind it') {
+        throw new Error(`the pass marked ${JSON.stringify(marked)}`);
+      }
+    } finally {
+      body.remove();
+    }
+  });
+
+  // The rail's thumbnail is a clone of the document with the address stripped off every link in it, live ones included — so a rule keyed on the missing address would paint every link in the rail dead. The pass is scoped to the reader's own document instead, and the thumbnail sits outside it.
+  check('the rail’s copy of a live link carries no mark', () => {
+    const appEl = booted.document.getElementById('app');
+    const rail = booted.document.getElementById('readerMinimap');
+    const body = fakeElement('');
+    body.className = 'document-body';
+    body.innerHTML = '<p><a href="notes/other.md">a live link</a><a>an app of its own</a></p>';
+    const preview = fakeElement('');
+    preview.className = 'document-body document-minimap-preview';
+    // What the clone holds after `stripMinimapClone`: the same links with no address at all, the live one among them.
+    preview.innerHTML = '<p><a>a live link</a><a>an app of its own</a></p>';
+    appEl.appendChild(body);
+    rail.appendChild(preview);
+    try {
+      booted.markLinksThatGoNowhere();
+      const inRail = preview.querySelectorAll('a').filter((link) => link.classList.contains('link-goes-nowhere'));
+      if (inRail.length) throw new Error(`the pass reached ${inRail.length} of the thumbnail's links`);
+      const inDocument = body
+        .querySelectorAll('a')
+        .filter((link) => link.classList.contains('link-goes-nowhere'))
+        .map((link) => link.textContent);
+      if (inDocument.join(' | ') !== 'an app of its own') throw new Error(`the document itself was marked ${JSON.stringify(inDocument)}`);
+    } finally {
+      body.remove();
+      preview.remove();
+    }
+  });
+
+  // A silent refusal is the whole complaint, so the card has to speak for a link that goes nowhere. The address is gone by the time the page sees it, so the card says what was written rather than what it said.
+  check('the card says a marked link goes nowhere', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const kind = vm.runInContext('linkHoverTipKind', booted);
+    const detail = vm.runInContext('linkHoverTipDetail', booted);
+    const dead = fakeElement('');
+    dead.tagName = 'A';
+    dead.classList.add('link-goes-nowhere');
+    dead.getBoundingClientRect = () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 });
+    dead.closest = (selector) => (String(selector).includes('link-goes-nowhere') ? dead : null);
+    try {
+      booted.__hoverEvent = { target: dead, relatedTarget: { body: true }, clientX: 240, clientY: 210 };
+      vm.runInContext('activeHoverLink = null; startLinkHover(__hoverEvent);', booted);
+      booted.__frames.drain();
+      if (tip.hidden) throw new Error('the card never came up over a link that goes nowhere');
+      if (kind.textContent !== 'Goes nowhere') throw new Error(`the card calls it ${kind.textContent}`);
+      if (detail.textContent !== 'Written with an address this app does not follow') {
+        throw new Error(`the card's reason reads ${detail.textContent}`);
+      }
+    } finally {
+      vm.runInContext('endLinkHoverFade(); activeHoverLink = null; linkHoverPointer = null; linkHoverTip.hidden = true; linkHoverTip.classList.remove("shown"); hideLinkHoverPreview(); activeHoverToken += 1;', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
+  // A whole path from a drive letter is how a person on Windows writes a link to a file of their own, and it now keeps its address through the sanitizer. Three answers used to call it an app's own address, where the guard beside them and the host both call it a path — so the card would have named it wrongly the moment the address arrived.
+  check('a whole path from a drive letter is a file on this disk, not an app address', () => {
+    const { linkHoverInfo, linkHoverKind, isAnotherPageHref, linkHasAFileBehindIt } = booted;
+    // Both spellings, as the renderer hands them over: the sanitizer rewrites a drive-letter path to a `file:` address before it judges it.
+    for (const href of ['file:///C:/Users/rwall/plan.md', 'C:/Users/rwall/plan.md', 'C:\\Users\\rwall\\plan.md']) {
+      const page = linkHoverInfo(href);
+      if (page.kind !== 'Another page') throw new Error(`${href} is called ${page.kind}`);
+      if (!isAnotherPageHref(href)) throw new Error(`a middle click on ${href} has nowhere to open`);
+      if (!linkHasAFileBehindIt(href)) throw new Error(`Reveal file and Copy path dropped off ${href}`);
+    }
+    // The same path naming a file the app does not read takes the words every other such file gets, with where it sits under it.
+    const pdf = linkHoverInfo('file:///C:/Users/rwall/Release Notes.pdf');
+    if (pdf.kind !== 'Opens in another app') throw new Error(`a PDF named by a whole path is called ${pdf.kind}`);
+    if (pdf.detail !== 'C:/Users/rwall/Release Notes.pdf') throw new Error(`the card shows ${pdf.detail} rather than where the file is`);
+    // An address belonging to another program is still not a file, and still not one this app follows.
+    if (linkHoverKind('obsidian://open?vault=x') !== 'App link') throw new Error('an app of its own stopped being one');
+    if (linkHasAFileBehindIt('obsidian://open?vault=x')) throw new Error('Reveal file appeared on an address with no file behind it');
+  });
+
+  // The address a whole path now keeps can name a program as easily as a page, and the question in front of that click is the one thing making phase 2 safe to press.
+  check('a program named by a whole path still asks before the host is told anything', () => {
+    const { sendDocumentLink, isMacPlatform, closeConfirm } = booted;
+    const dialog = vm.runInContext('confirmDialog', booted);
+    const title = vm.runInContext('confirmDialogTitle', booted);
+    const sent = [];
+    const was = booted.ipc;
+    booted.ipc = { postMessage: (text) => sent.push(JSON.parse(text)) };
+    try {
+      const program = isMacPlatform ? 'file:///Users/rwall/Install.command' : 'file:///C:/Users/rwall/setup.exe';
+      const name = program.split('/').pop();
+      sendDocumentLink({ getAttribute: () => program }, false);
+      if (sent.length) throw new Error(`a whole path to a program told the host ${JSON.stringify(sent)} before anyone answered`);
+      if (dialog.hidden) throw new Error('a whole path to a program opened no question at all');
+      if (!String(title.textContent).includes(name)) throw new Error(`the question does not name the file: ${title.textContent}`);
+      closeConfirm();
+
+      // And a page named the same way goes straight out, so the question is on the program rather than on the spelling.
+      sent.length = 0;
+      sendDocumentLink({ getAttribute: () => 'file:///C:/Users/rwall/plan.md' }, false);
+      if (!dialog.hidden) throw new Error('a whole path to a page raised the program question');
+      if (sent.length !== 1 || sent[0].command !== 'openLink') throw new Error(`a whole path to a page sent ${JSON.stringify(sent)}`);
+    } finally {
+      booted.ipc = was;
+      closeConfirm();
     }
   });
 

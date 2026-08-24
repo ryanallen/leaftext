@@ -70,6 +70,8 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     let body = render_markdown_events_to_html(events);
     let body = table_alignment_as_attribute(&body);
     let body = resolve_rendered_html_image_urls(&body, source.source_path, source.host);
+    // Before the sanitizer, which parses an address before it judges it: a whole path from a drive letter arrives carrying that letter as its scheme, and no scheme list can reach it.
+    let body = drive_letter_hrefs_as_file_urls(&body);
     let body = format!("{frontmatter_html}{body}");
     // The size goes on last, after the sanitizer: the numbers are ours, and `img` keeps the attribute list it was given.
     stamp_image_intrinsic_sizes(

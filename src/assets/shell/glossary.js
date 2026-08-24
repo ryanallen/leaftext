@@ -538,7 +538,12 @@ function linkHoverInfo(rawHref) {
   if (/^file:/i.test(rawHref) && DOCUMENT_HREF_RE.test(rawHref)) {
     return { kind: 'Another page', detail: hoverDetail(rawHref) };
   }
-  if (/^[a-z][a-z0-9+.-]*:/i.test(rawHref)) {
+  // Any other `file:` address is still a file on this disk, so it takes the words every other such file gets rather than being read as an app's own scheme below.
+  if (/^file:/i.test(rawHref)) {
+    return { kind: 'Opens in another app', detail: resolvedHoverDetail(rawHref) };
+  }
+  // A scheme of its own: another app's address, a phone number. A single letter is a drive rather than a scheme, which is how a whole path is written on Windows and how the guard below and the host both read one.
+  if (/^[a-z][a-z0-9+.-]+:/i.test(rawHref)) {
     return { kind: 'App link', detail: hoverDetail(rawHref) };
   }
   // Any format the app reads, not just Markdown — the host follows all of them in place, so the hint has to promise the same.
@@ -551,6 +556,8 @@ function linkHoverInfo(rawHref) {
 // Where the file a link names actually sits: joined onto the folder the open document is in, the way the host joins it before handing it to the machine. A whole path stands on its own, and with nothing open there is nothing to join onto, so the address is shown as it was written.
 function resolvedHoverDetail(rawHref) {
   const written = String(rawHref || '');
+  // A `file:` address already says where the file sits, so it is read back as the path it names rather than joined onto the open document's folder.
+  if (/^file:/i.test(written)) return hoverDetail(localPathFromFileHref(written));
   const name = strippedHref(written);
   const from = activeDocumentPath();
   if (!from || !name || /^[/\\]/.test(name) || /^[a-z]:[/\\]/i.test(name)) return hoverDetail(written);
@@ -563,8 +570,20 @@ function resolvedHoverDetail(rawHref) {
   }
   return hoverDetail(at.join(separator) + written.slice(name.length));
 }
+// What the card is raised over: a link the app can follow, or one `decorate.js` marked as going nowhere. A reader hovering a dead link is owed the reason rather than the silence the missing address used to buy.
+const HOVERABLE_LINK = 'a[href], a.link-goes-nowhere';
+// The card's words for a link the sanitizer took the address off. The address itself is gone by the time the page sees it, so the card says what kind of thing was written rather than what it said.
+const LINK_GOES_NOWHERE = { kind: 'Goes nowhere', detail: 'Written with an address this app does not follow' };
+function linkGoesNowhere(link) {
+  return Boolean(link && link.classList && link.classList.contains('link-goes-nowhere'));
+}
+// The path inside a `file:` address, the way the host reads one back: a drive letter stands on its own, and everything else keeps the slash at the front of it.
+function localPathFromFileHref(href) {
+  const path = String(href).replace(/^file:\/\/\/?/i, '');
+  return /^[a-z](?::|%3a)[/\\]/i.test(path) ? path : '/' + path;
+}
 function startLinkHover(event) {
-  const link = event.target.closest('a[href]');
+  const link = event.target.closest(HOVERABLE_LINK);
   if (!link) return;
   recordLinkHoverPoint(event);
   if (link === activeHoverLink) {
@@ -573,7 +592,7 @@ function startLinkHover(event) {
     return;
   }
   const rawHref = (link.getAttribute('href') || '').trim();
-  const info = linkHoverInfo(rawHref);
+  const info = linkGoesNowhere(link) ? LINK_GOES_NOWHERE : linkHoverInfo(rawHref);
   if (!info) {
     hideLinkHoverTip();
     return;
@@ -611,7 +630,7 @@ function startLinkHover(event) {
 // A leave never hides on its own word: one frame later the link under the pointer decides — the active one stays, another takes the card over, none at all hides it.
 function endLinkHover(event) {
   if (!activeHoverLink) return;
-  const leaving = event.target.closest && event.target.closest('a[href]');
+  const leaving = event.target.closest && event.target.closest(HOVERABLE_LINK);
   if (leaving !== activeHoverLink) return;
   recordLinkHoverPoint(event);
   // No destination at all: the pointer left the window, or the link left the page.
@@ -626,7 +645,7 @@ function endLinkHover(event) {
     // A newer hover owns the card now; its own leave will settle it.
     if (activeHoverLink !== wasActive) return;
     const target = document.elementFromPoint && document.elementFromPoint(linkHoverClientX, linkHoverClientY);
-    const link = target && target.closest && target.closest('a[href]');
+    const link = target && target.closest && target.closest(HOVERABLE_LINK);
     if (link === activeHoverLink) return;
     if (link) {
       // A plain object, not a copied event: a pointer event's coordinates do not survive a copy.

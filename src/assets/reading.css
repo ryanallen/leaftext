@@ -2835,6 +2835,26 @@ body:has(#readerToolbar:not([hidden])) {
   border-color: var(--lt-primary);
   color: var(--lt-primary-foreground);
 }
+/* A link the sanitizer took the address off — an app's own scheme, a phone number — has nothing behind it, so it stops wearing the link color and the hover underline that promise there is. The words stay the document's own with a quiet dotted rule under them, saying the author meant a link here and this app does not follow that kind of address. `decorate.js` writes the class, because an anchor with no address is not by itself a stripped link. Placed after the button rules so it wins the tie against them. */
+.document-body a.link-goes-nowhere {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 0.18em;
+}
+/* A brace-wrapped button with nothing behind it stops being a pressable button: the fill, the outline and the box go, leaving the words the rule above draws. */
+.document-body a.leaf-md-button.link-goes-nowhere {
+  display: inline;
+  border: none;
+  border-radius: 0;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+}
 .document-body strong {
   font-weight: var(--lt-weight-600);
 }
