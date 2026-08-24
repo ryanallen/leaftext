@@ -3140,6 +3140,136 @@ fn a_page_that_cannot_be_previewed_is_still_answered() {
 }
 
 #[test]
+fn a_link_to_a_data_file_previews_what_its_own_renderer_draws() {
+    // One row per format, so a sixth has a row to copy. Each asserts the mark only that renderer makes and the absence of the source read as prose, which is what the Markdown renderer left in the card.
+    let dir = std::env::temp_dir().join(format!("leaf-format-preview-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let current = dir.join("current.md");
+    fs::write(&current, "# Current").expect("current document is written");
+
+    for (name, source, drawn, raw) in [
+        (
+            "package.json",
+            "{\n  \"name\": \"leaftext\",\n  \"version\": \"1.0.0\"\n}\n",
+            r#"<dt>Version</dt>"#,
+            "\"version\":",
+        ),
+        (
+            "build.yaml",
+            "name: build\non: push\n",
+            r#"<dt>On</dt>"#,
+            "on: push",
+        ),
+        (
+            "feed.xml",
+            "<feed><title>Leaftext news</title><entry><name>A release</name></entry></feed>",
+            r#"id="entry-a-release""#,
+            "<entry>",
+        ),
+        (
+            "saved.eml",
+            "From: a@example.com\r\nTo: b@example.com\r\nSubject: Hello there\r\n\r\nBody text.\r\n",
+            r#"<dt>From</dt>"#,
+            "From: a@example.com",
+        ),
+    ] {
+        let target = dir.join(name);
+        fs::write(&target, source).expect("target document is written");
+        let html = link_preview_html(name, &current)
+            .unwrap_or_else(|| panic!("{name} previews"));
+        assert!(
+            html.contains(drawn),
+            "{name} is drawn by its own renderer, not read as prose: {html}"
+        );
+        assert!(
+            !html.contains(raw),
+            "{name} keeps none of its source as text in the card: {html}"
+        );
+    }
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_data_file_opening_with_three_dashes_previews_its_own_opening() {
+    // The worst of what the Markdown path did: a settings file wearing another format's metadata box, its own first document taken for somebody else's frontmatter.
+    let dir = std::env::temp_dir().join(format!("leaf-dashes-preview-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let current = dir.join("current.md");
+    let target = dir.join("workflow.yaml");
+    fs::write(&current, "# Current").expect("current document is written");
+    fs::write(&target, "---\nname: build\non: push\n---\n").expect("target document is written");
+
+    let html = link_preview_html("workflow.yaml", &current).expect("the workflow previews");
+    assert!(
+        !html.contains(r#"class="frontmatter""#),
+        "the file's own opening is not drawn as another format's metadata: {html}"
+    );
+    assert!(
+        html.contains("<dt>On</dt>"),
+        "the opening is drawn as the fields it is: {html}"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_data_file_over_the_preview_ceiling_answers_empty() {
+    // A tree format is parsed whole or not at all, so the answer above the ceiling is no picture — never a complaint about a file that opens perfectly in a tab.
+    let dir = std::env::temp_dir().join(format!("leaf-ceiling-preview-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let current = dir.join("current.md");
+    fs::write(&current, "# Current").expect("current document is written");
+
+    let small = dir.join("small.json");
+    fs::write(&small, "{\n  \"name\": \"leaftext\"\n}\n").expect("small document is written");
+    assert!(
+        link_preview_html("small.json", &current).is_some(),
+        "a data file under the ceiling still draws"
+    );
+
+    let huge = dir.join("huge.json");
+    fs::write(
+        &huge,
+        format!("{{\n  \"pad\": \"{}\"\n}}\n", "a".repeat(1024 * 1024 + 1)),
+    )
+    .expect("oversize document is written");
+    assert_eq!(
+        link_preview_html("huge.json", &current),
+        None,
+        "a data file over the ceiling answers empty rather than a picture"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_link_preview_carries_no_pager_waiting_strip() {
+    // A waiting state is a promise. The card walks no folder, so a Previous/Next skeleton in it would pulse for the life of the card for a load nobody started.
+    let dir = std::env::temp_dir().join(format!("leaf-pager-preview-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let current = dir.join("current.md");
+    fs::write(&current, "# Current").expect("current document is written");
+    fs::write(dir.join("note.md"), "# Note\n\nWords.\n").expect("note is written");
+    fs::write(dir.join("data.json"), "{\n  \"name\": \"leaftext\"\n}\n")
+        .expect("data document is written");
+
+    for name in ["note.md", "data.json"] {
+        let html = link_preview_html(name, &current).unwrap_or_else(|| panic!("{name} previews"));
+        assert!(
+            !html.contains("docs-pager"),
+            "{name} draws no Previous/Next strip in the card: {html}"
+        );
+    }
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
 fn the_link_preview_cache_drops_the_file_held_longest_once_it_is_full() {
     // An entry is a render of a whole file now, so nothing is held for the life of the session. Reading it back off the store rather than through a hover, because two renders of one unchanged file are the same bytes and a hover cannot tell a fresh one from a kept one.
     let mut cache = LinkPreviewCache::default();

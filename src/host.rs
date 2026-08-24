@@ -151,6 +151,8 @@ pub struct DesktopHost<'a> {
     pub settings_path: Option<&'a Path>,
     pub vault: Option<&'a crate::VaultCorpus>,
     pub open_with_os: Option<&'a dyn Fn(&str)>,
+    /// Draw no Previous/Next waiting state. A waiting state is a promise, and the hover preview card never walks the folder, so a strip in a card would pulse for the life of the card for a load nobody started.
+    pub no_pager_placeholder: bool,
 }
 
 impl LeafHost for DesktopHost<'_> {
@@ -207,6 +209,9 @@ impl LeafHost for DesktopHost<'_> {
     }
 
     fn pager_placeholder(&self) -> Option<&'static str> {
+        if self.no_pager_placeholder {
+            return None;
+        }
         crate::pager_loading_html()
     }
 

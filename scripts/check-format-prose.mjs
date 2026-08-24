@@ -65,6 +65,7 @@ const LISTS = [
       ['Eml', ['eml', 'mht', 'mhtml']],
     ],
     prose: [
+      'src/app/link_preview.rs',
       'src/app/links.rs',
       'src/assets/shell/block-controls.js',
       'src/assets/shell/code-intel.js',
