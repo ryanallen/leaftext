@@ -80,6 +80,16 @@ const FLOW_TIP_BUD = 'Let go on empty space for a new box · on another box to c
 let flowSaveToken = 0;
 let flowSaveWaiting = null;
 
+// The number one Save travels under, out to the host with the command and back with the answer. Minted here rather than in state.js because the sheet that waits on the answer owns it, and this fragment loads ahead of the insert row and the DOM-only splices — a function declaration reaches the whole scope, so the counter itself is still touched by one file.
+function nextEditToken() {
+  return ++flowSaveToken;
+}
+
+// The token an insert row's write travels under, or none. Only an option somebody is holding something for asks to be answered — the flowchart sheet, which keeps the drawing on screen until the host's word. Everything else on that row writes and is done, and the host says its own refusal where no token came, so minting one for those would swallow that sentence into an answer no sheet is listening for.
+function insertEditToken(option) {
+  return option && option.answered ? nextEditToken() : undefined;
+}
+
 // The host's answer to one Save. Landed closes the sheet; refused leaves the drawing on screen with the reason beside it, which is the only copy of that drawing left.
 window.leafEditAnswered = (token, written, why) => {
   if (!flowSaveWaiting || flowSaveWaiting !== token) return;
@@ -2142,6 +2152,8 @@ if (flowSheetExport) {
 // ---- the two ways in -------------------------------------------------------
 
 // From the block gutter's plus: nothing exists yet, so Save writes a whole block through the insert row's own write path. `place` is what the plus was standing on, asked again at Save — every render rebuilds the gutter, and this sheet is held open across as many of them as somebody takes to draw.
+//
+// `answered` is what asks the insert row for a token: this is the door where the drawing is the only copy there is, so the sheet stays up until the host says the splice landed. The row's answer goes straight out — a number to wait on, false where it found nowhere to write and sent nothing at all.
 function openBlockFlowSheet(write, place) {
   collapseBlockInsertRow();
   openFlowSheet({
@@ -2149,8 +2161,7 @@ function openBlockFlowSheet(write, place) {
     text: FLOW_STARTER,
     save: (text) => {
       if (!blockInsertPlaceStanding(place)) return false;
-      write({ id: 'flow', text: '```mermaid\n' + text + '\n```' });
-      return true;
+      return write({ id: 'flow', text: '```mermaid\n' + text + '\n```', answered: true });
     },
   });
 }
@@ -2166,7 +2177,7 @@ function openMermaidBlockSheet(block) {
     save: (text) => {
       const now = flowBlockSpan(block);
       if (!now) return false;
-      const token = ++flowSaveToken;
+      const token = nextEditToken();
       sendEditCommand({ command: 'editBlock', start: now.start, end: now.end, text, token });
       return token;
     },

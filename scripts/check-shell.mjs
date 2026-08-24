@@ -5896,11 +5896,15 @@ if (booted) {
         if (sent.some((one) => one.command === 'editBlock')) {
           throw new Error(`opening the sheet wrote ${JSON.stringify(sent)}`);
         }
-        if (save('graph TD\n  a-->b') !== true) throw new Error('the sheet was told its Save had nowhere to land');
+        // A number, not true: the drawing is the only copy there is, so the sheet is told to wait on the host rather than to close on the dispatch.
+        const answer = save('graph TD\n  a-->b');
+        if (answer === false) throw new Error('the sheet was told its Save had nowhere to land');
+        if (typeof answer !== 'number') throw new Error(`the sheet was told to close on the dispatch: ${JSON.stringify(answer)}`);
         const edits = sent.filter((one) => one.command === 'editBlock');
         if (edits.length !== 1 || edits[0].text !== '\n\n```mermaid\ngraph TD\n  a-->b\n```') {
           throw new Error(`Save wrote ${JSON.stringify(edits)}`);
         }
+        if (edits[0].token !== answer) throw new Error(`it sent ${JSON.stringify(edits[0].token)} and answered ${JSON.stringify(answer)}`);
         if (edits[0].start !== end || edits[0].end !== end) {
           throw new Error(`it landed at ${edits[0].start}..${edits[0].end}`);
         }
@@ -6886,7 +6890,13 @@ if (booted) {
         throw new Error('a place with nothing in it was called standing');
       }
 
-      booted.openBlockFlowSheet((written) => wrote.push(written), { target: line });
+      // The stand-in answers what the insert row answers — the token it sent — because an array push answers its new length, and a sheet reading that would hold itself open on a number nothing will ever come back with.
+      const write = (written) => {
+        wrote.push(written);
+        return booted.nextEditToken();
+      };
+
+      booted.openBlockFlowSheet(write, { target: line });
       line.isConnected = false;
       booted.saveFlowSheet();
       if (wrote.length) throw new Error(`it wrote ${JSON.stringify(wrote)}`);
@@ -6895,15 +6905,89 @@ if (booted) {
       }
       if (!read('!!flowSession')) throw new Error('the refused Save closed the sheet over the drawing');
 
-      // And back on a line that is still there, the same Save writes the fenced block.
+      // And back on a line that is still there, the same Save writes the fenced block and asks to be answered.
       line.isConnected = true;
       booted.saveFlowSheet();
       if (wrote.length !== 1 || !wrote[0].text.startsWith('```mermaid\n')) {
         throw new Error(`the Save that should have landed wrote ${JSON.stringify(wrote)}`);
       }
+      if (!wrote[0].answered) throw new Error('the new-diagram Save asked the insert row for no answer');
     } finally {
       read('flowSession = null;');
       read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      booted.leafToast = was.toast;
+      booted.__frames.drain();
+    }
+  });
+
+  // The same wait, down the door a new diagram really takes: through the insert row, which sent the command and answered nothing, so the sheet closed over minutes of drawing whether or not the host kept a byte of it. A diagram already in the page survives that — it is still in the file — and a new one exists nowhere else at all.
+  check('a new diagram from the plus waits for the host and keeps the drawing when nothing was written', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = { source: read('currentDocumentSource'), send: booted.ipc.postMessage, toast: booted.leafToast };
+    const note = '# Title\n\n\n';
+    const sent = [];
+    const said = [];
+    // The empty line the plus stands on: nothing on it, nothing carrying a footnote's line, and its own range in the buffer.
+    const emptyLine = () => {
+      const line = fakeElement('flowInsertLineUnderTest');
+      line.tagName = 'P';
+      line.dataset = { srcStart: '9', srcEnd: '9' };
+      return line;
+    };
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.leafToast = (message) => said.push(message);
+      read(`currentDocumentSource = ${JSON.stringify(note)};`);
+
+      // Drawn on a line the row will take. The write goes out with a token on it, and the sheet stays up: nothing is in the file yet.
+      const line = emptyLine();
+      booted.openBlockFlowSheet((chosen) => booted.runBlockInsert(line, chosen), { target: line });
+      booted.saveFlowSheet();
+      const refused = sent.filter((one) => one.command === 'editBlock');
+      if (refused.length !== 1) throw new Error(`the new-diagram Save sent ${JSON.stringify(sent)}`);
+      if (typeof refused[0].token !== 'number') {
+        throw new Error(`it sent no token, so nothing can answer it: ${JSON.stringify(refused[0])}`);
+      }
+      if (!refused[0].text.startsWith('```mermaid\n')) throw new Error(`it wrote ${JSON.stringify(refused[0].text)}`);
+      if (!read('!!flowSession')) throw new Error('the sheet closed on the dispatch, before the host had written anything');
+      if (said.length) throw new Error(`a Save still waiting said ${JSON.stringify(said)}`);
+
+      // The host could not write it. The drawing stays on screen to be copied out of, with the reason beside it.
+      const why = 'watch.md was not changed: the file could not be read.';
+      booted.leafEditAnswered(refused[0].token, false, why);
+      if (!read('!!flowSession')) throw new Error('a refused Save closed the sheet over the only copy of the drawing');
+      if (said.length !== 1 || said[0] !== why) throw new Error(`it said ${JSON.stringify(said)}`);
+
+      // And the host wrote it: that one closes the sheet.
+      sent.length = 0;
+      said.length = 0;
+      booted.saveFlowSheet();
+      const landed = sent.filter((one) => one.command === 'editBlock');
+      if (landed.length !== 1) throw new Error(`the second Save sent ${JSON.stringify(sent)}`);
+      if (landed[0].token === refused[0].token) throw new Error('two Saves shared one token');
+      if (!read('!!flowSession')) throw new Error('the sheet closed before the answer arrived');
+      booted.leafEditAnswered(landed[0].token, true, null);
+      if (read('!!flowSession')) throw new Error('a Save the host wrote left the sheet open');
+      if (said.length) throw new Error(`a Save that landed said ${JSON.stringify(said)}`);
+
+      // The other way the drawing was lost: a line the row will not write onto. Nothing goes out, and the sheet has to say so rather than close over a drawing the host was never even asked about.
+      sent.length = 0;
+      said.length = 0;
+      const says = emptyLine();
+      says.textContent = 'A paragraph.';
+      booted.openBlockFlowSheet((chosen) => booted.runBlockInsert(says, chosen), { target: says });
+      booted.saveFlowSheet();
+      if (sent.filter((one) => one.command === 'editBlock').length) {
+        throw new Error(`the plus wrote over a line that says something: ${JSON.stringify(sent)}`);
+      }
+      if (said.length !== 1 || !said[0].includes('nowhere left to save it')) {
+        throw new Error(`it said ${JSON.stringify(said)}`);
+      }
+      if (!read('!!flowSession')) throw new Error('a Save that wrote nothing closed the sheet over the drawing');
+    } finally {
+      read('flowSession = null;');
+      read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      booted.ipc.postMessage = was.send;
       booted.leafToast = was.toast;
       booted.__frames.drain();
     }

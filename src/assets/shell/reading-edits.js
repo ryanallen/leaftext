@@ -1056,14 +1056,17 @@ function openInsertBlock(
   };
   // What the block gutter's plus does here. This block is not in the buffer, so an insert "after" it has nothing to be after: the one splice has to carry whatever was typed AND the new block, or pressing plus mid-sentence would drop the sentence.
   block.__insertBlockWith = (option) => {
-    if (block.__committed) return;
+    // False, not nothing: this line already went to the host, so nothing goes out now, and a flowchart sheet waiting on this write has to hear that rather than close over the drawing.
+    if (block.__committed) return false;
     block.__committed = true;
     const typed = typedBlockText(block);
     const lead = typed ? prefix + typed + close + separator : separator;
-    sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: lead + option.text + suffix });
+    const token = insertEditToken(option);
+    sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: lead + option.text + suffix, token });
     if (option.caret) {
       setPendingCaret({ srcStart: insertAt + utf8ByteLength(lead) });
     }
+    return token === undefined ? true : token;
   };
   // What the format bar does here. This line is not in the buffer, so its own commit carries the marker — a splice from outside lands beside the words, and the blur commit then writes them again.
   block.__commitAs = (marker) => {
@@ -1148,7 +1151,9 @@ function openMediumStart(body) {
     if (storyText) parts.push(storyMarker + storyText);
     const lead = parts.length ? parts.join('\n\n') + '\n\n' : '';
     const text = extra ? lead + extra.text : parts.join('\n\n');
-    sendEditCommand({ command: 'editBlock', start: 0, end: 0, text });
+    // Only the plus's own option carries a token, and only where whoever pressed it is holding something to wait with. The pair's other two ways out write for themselves and are done.
+    const token = insertEditToken(extra);
+    sendEditCommand({ command: 'editBlock', start: 0, end: 0, text, token });
     if (extra) {
       if (extra.caret) {
         setPendingCaret({ srcStart: utf8ByteLength(lead) });
@@ -1161,9 +1166,10 @@ function openMediumStart(body) {
         blockSpec: chainSpec,
       });
     }
-    return true;
+    return token === undefined ? true : token;
   };
-  title.__insertBlockWith = (option) => commit(false, option);
+  // False, not nothing, where the pair had already committed: nothing goes out now, and a flowchart sheet waiting on this write has to hear that rather than close over the drawing.
+  title.__insertBlockWith = (option) => (committed ? false : commit(false, option));
   // Clicking the space below the pair. Neither block is in the buffer yet, so it has to go through this same one splice — an insert of its own would be undone by the pair's own save a moment later, and the new line would flash and vanish on a document's first one.
   title.__lineBelow = (specId) => {
     if (!commit(true, null, specId)) story.focus({ preventScroll: true });

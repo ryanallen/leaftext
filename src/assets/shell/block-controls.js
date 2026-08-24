@@ -611,6 +611,8 @@ function gapInsertOffsetAfter(after) {
 }
 
 // Write a block into the space between two blocks, making the line for it: the source plus the break that separates it from its new neighbor. This is what spares an Enter first — the line and what goes on it arrive as one edit.
+//
+// It answers what went out, because the flowchart sheet writes through here and is holding the only copy of a drawing: false where nothing was sent at all, the token where the host now owes an answer, true where a command went out with nobody waiting on it. The options that ignore the answer — a divider, a heading, the image box — are unchanged by it.
 function runGapInsert(gap, option) {
   const { after, before } = gap;
   collapseBlockInsertRow();
@@ -620,51 +622,56 @@ function runGapInsert(gap, option) {
   if (option.blank) {
     if (after) openLineBelow(after, option.blank);
     else openLineAbove(before, option.blank);
-    return;
+    return false;
   }
   // A block that exists only in the DOM carries its own splice: what was typed into it is not in the buffer yet, so the one edit has to write both.
   if (after && after.__insertBlockWith) {
-    after.__insertBlockWith(option);
-    return;
+    return after.__insertBlockWith(option);
   }
   if (after) {
     const at = gapInsertOffsetAfter(after);
-    if (!Number.isFinite(at)) return;
-    sendEditCommand({ command: 'editBlock', start: at, end: at, text: separator + option.text });
+    if (!Number.isFinite(at)) return false;
+    const token = insertEditToken(option);
+    sendEditCommand({ command: 'editBlock', start: at, end: at, text: separator + option.text, token });
     if (option.caret) {
       setPendingCaret({ srcStart: at + utf8ByteLength(separator) });
     }
-    return;
+    return token === undefined ? true : token;
   }
   // Above the first block: the break goes after the new block instead.
   const at = Number(before.dataset.srcStart);
-  if (!Number.isFinite(at)) return;
-  sendEditCommand({ command: 'editBlock', start: at, end: at, text: option.text + separator });
+  if (!Number.isFinite(at)) return false;
+  const token = insertEditToken(option);
+  sendEditCommand({ command: 'editBlock', start: at, end: at, text: option.text + separator, token });
   if (option.caret) setPendingCaret({ srcStart: at });
+  return token === undefined ? true : token;
 }
 
 // Write an option's source onto `target`'s line, which is the empty line the plus was pressed on — so the block takes that line rather than landing on either side of it. The caret follows it in, with a placeholder left selected so the first keystroke replaces it.
+//
+// It answers what went out, on the same three terms as the gap insert above.
 function runBlockInsert(target, option) {
   const start = Number(target.dataset.srcStart);
   const end = Number(target.dataset.srcEnd);
   collapseBlockInsertRow();
   hideBlockGutter();
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
   // This line is empty and about to be a different kind of empty line. Nothing is written: the block swaps for one of the chosen kind, still waiting on its first word.
   if (option.blank) {
     if (target.__becomeBlock) target.__becomeBlock(option.blank);
     else openLineAbove(target, option.blank);
-    return;
+    return false;
   }
   // A block that exists only in the DOM (a blank line, a new document's title) owns its own splice: it has to carry whatever was typed into it along with the new block, since none of it is in the buffer yet.
   if (target.__insertBlockWith) {
-    target.__insertBlockWith(option);
-    return;
+    return target.__insertBlockWith(option);
   }
   // The plus is only offered on an empty line, and replacing the range is only safe there. Checked again here rather than trusted: a drifted button is a paragraph overwritten.
-  if (!blockAcceptsInsert(target)) return;
-  sendEditCommand({ command: 'editBlock', start, end, text: option.text });
+  if (!blockAcceptsInsert(target)) return false;
+  const token = insertEditToken(option);
+  sendEditCommand({ command: 'editBlock', start, end, text: option.text, token });
   if (option.caret) setPendingCaret({ srcStart: start });
+  return token === undefined ? true : token;
 }
 
 // The run of siblings a block can move within: the blocks sharing its parent, in document order. The ranges come back from the shared test (`blockRunRanges`), which refuses a run the host would refuse.
