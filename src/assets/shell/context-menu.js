@@ -45,9 +45,9 @@ const LINK_MENU_ITEMS = [
   { action: 'copyLink', label: 'Copy link' },
   { action: 'copyLinkText', label: 'Copy link text' },
   'separator',
-  // The host resolves the href into a real path for these two; the page cannot.
-  { action: 'revealLink', label: 'Reveal file', pageOnly: true },
-  { action: 'copyLinkPath', label: 'Copy path', pageOnly: true },
+  // The host resolves the href into a real path for these two; the page cannot. They want a file behind the link rather than somewhere in the app to go, so a saved page or a PDF beside the note carries them too.
+  { action: 'revealLink', label: 'Reveal file', fileBehind: true },
+  { action: 'copyLinkPath', label: 'Copy path', fileBehind: true },
 ];
 // The words highlighted in the rendered document, exactly as selected, or nothing — a selection reaching outside it, or over a body standing behind another view, is not what a reader means by copy. The copy key reads this too, so the two gestures cannot disagree about which words go on the clipboard.
 function selectionTextInReadingView() {
@@ -135,9 +135,11 @@ function runContextAction(action, path, link, selected) {
 function contextMenuEntries() {
   if (contextMenuTargetKind === 'link') {
     return tidySeparators(
-      LINK_MENU_ITEMS.filter(
-        (entry) => entry === 'separator' || !entry.pageOnly || isAnotherPageHref(contextMenuPath)
-      ).map(labelForLinkEntry)
+      LINK_MENU_ITEMS.filter((entry) => {
+        if (entry === 'separator') return true;
+        if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath);
+        return !entry.pageOnly || isAnotherPageHref(contextMenuPath);
+      }).map(labelForLinkEntry)
     );
   }
   const entries = contextMenuTargetKind === 'file'

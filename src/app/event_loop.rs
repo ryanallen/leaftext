@@ -931,9 +931,22 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                                 scroll_to_fragment(reader.page(), &fragment);
                             }
                         }
-                        LinkTarget::External(target) | LinkTarget::LocalOther(target) => {
-                            if let Err(error) = open_with_os(&target) {
-                                eprintln!("Failed to open {target} with the OS: {error}");
+                        LinkTarget::External(_)
+                        | LinkTarget::ForeignScheme(_)
+                        | LinkTarget::LocalFile(_) => {
+                            // A dead link is otherwise silent twice over: the path resolves to nothing and the opener reports success anyway.
+                            if let Some(missing) = missing_linked_file(&href, &current_path) {
+                                report_file_action_failure(
+                                    reader.page(),
+                                    &format!("there is no file at {}", missing.display()),
+                                );
+                                return;
+                            }
+                            // Resolved for a file sitting beside the note, as written for an address another handler reads. Both live in `os_open_target`, so what the opener is handed can be read by a test without an event loop around it.
+                            if let Some(target) = os_open_target(&href, &current_path) {
+                                if let Err(error) = open_with_os(&target) {
+                                    eprintln!("Failed to open {target} with the OS: {error}");
+                                }
                             }
                         }
                         LinkTarget::LocalDocument(target) => {
@@ -994,7 +1007,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     let Some(path) = reader
                         .workspace
                         .active_path()
-                        .and_then(|current| linked_document_path(&href, current))
+                        .and_then(|current| linked_file_path(&href, current))
                     else {
                         return;
                     };
@@ -1013,7 +1026,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     let Some(path) = reader
                         .workspace
                         .active_path()
-                        .and_then(|current| linked_document_path(&href, current))
+                        .and_then(|current| linked_file_path(&href, current))
                     else {
                         return;
                     };

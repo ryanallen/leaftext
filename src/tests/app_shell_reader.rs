@@ -1250,11 +1250,13 @@ fn app_shell_gives_a_document_link_its_own_right_click_menu() {
         "{ action: 'openLinkInNewPage', label: 'Open in new page', pageOnly: true },",
         "{ action: 'copyLink', label: 'Copy link' },",
         "{ action: 'copyLinkText', label: 'Copy link text' },",
-        "{ action: 'revealLink', label: 'Reveal file', pageOnly: true },",
-        "{ action: 'copyLinkPath', label: 'Copy path', pageOnly: true },",
+        "{ action: 'revealLink', label: 'Reveal file', fileBehind: true },",
+        "{ action: 'copyLinkPath', label: 'Copy path', fileBehind: true },",
         "showContextMenu(event.clientX, event.clientY, href, 'link', documentLink);",
         // An external link and an in-page jump have no page here to open, so the items that would need one are left out rather than shown dead.
         "!entry.pageOnly || isAnotherPageHref(contextMenuPath)",
+        // The two that act on the file want one behind the link rather than somewhere in the app to go, so a saved page or a PDF beside the note carries them.
+        "if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath);",
         "if (linkHoverKind(contextMenuPath) !== 'External site') return entry;",
         "return { action: entry.action, label: 'Open in browser' };",
         // The two copies are the page's own; only a real path has to go to the host.

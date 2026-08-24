@@ -466,7 +466,15 @@ export async function startLeaftext({ documents, name = '', read }) {
       }
       const target = resolveFrom(open || '', href);
       if (!target) {
-        console.info('no document at', href);
+        // The site has no document there, and this page is already a browser — so the browser follows it, resolved against the open document the way the desktop resolves one against the note's folder. Resolved with the browser's own reader rather than by re-walking the join above, because an address off this origin is dropped before that join ever builds a path.
+        let away = '';
+        try {
+          away = new URL(href, new URL(open || '', location.href)).href;
+        } catch {
+          away = '';
+        }
+        if (away) window.open(away, '_blank', 'noopener');
+        else console.info('no document at', href);
         return undefined;
       }
       stampPlace(command);

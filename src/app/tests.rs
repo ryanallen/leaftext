@@ -2265,15 +2265,159 @@ fn classifies_link_targets_for_native_opening() {
     }
     assert_eq!(
         classify_link_target("file:///C:/docs/logo.png"),
-        LinkTarget::LocalOther("file:///C:/docs/logo.png".to_string())
+        LinkTarget::LocalFile("file:///C:/docs/logo.png".to_string())
     );
     assert_eq!(
         classify_link_target("./assets/Release%20Notes.pdf"),
-        LinkTarget::LocalOther("./assets/Release%20Notes.pdf".to_string())
+        LinkTarget::LocalFile("./assets/Release%20Notes.pdf".to_string())
+    );
+    // An address another handler reads, which is told apart from a file beside the note by naming a scheme of its own.
+    for target in ["obsidian://open?vault=notes", "zotero://select/x"] {
+        assert_eq!(
+            classify_link_target(target),
+            LinkTarget::ForeignScheme(target.to_string()),
+            "{target} names a scheme of its own"
+        );
+    }
+    // A Windows drive letter is one character, so it is a path rather than a scheme.
+    assert_eq!(
+        classify_link_target(r"C:\notes\a.html"),
+        LinkTarget::LocalFile(r"C:\notes\a.html".to_string())
     );
     assert_eq!(classify_link_target("#section"), LinkTarget::AnchorOnly);
     assert_eq!(classify_link_target("./#section"), LinkTarget::AnchorOnly);
     assert_eq!(classify_link_target(".#section"), LinkTarget::AnchorOnly);
+}
+
+#[test]
+fn a_link_to_a_file_the_app_does_not_read_reaches_the_opener_resolved() {
+    // The system opener resolves a relative path against wherever the app was launched from, which is never where the document is — and it reports success either way, so an unresolved path opens nothing and says nothing. This is the path it is handed instead.
+    let current = fixture_source_path("guide/chapter/README.md");
+
+    assert_eq!(
+        os_open_target("./assets/Release Notes.pdf", &current),
+        // Normalized, because the resolver rebuilds the path out of its components and this machine writes them with its own separator.
+        Some(
+            normalize_path_lexically(fixture_source_path(
+                "guide/chapter/assets/Release Notes.pdf"
+            ))
+            .to_string_lossy()
+            .into_owned()
+        )
+    );
+    assert_eq!(
+        os_open_target("../../designs/v3-00-map.html", &current),
+        Some(
+            normalize_path_lexically(fixture_source_path("designs/v3-00-map.html"))
+                .to_string_lossy()
+                .into_owned()
+        )
+    );
+
+    // An address another handler reads goes out spelled the way the author wrote it: joining it onto the note's folder would make a path of something that is not one.
+    for href in ["obsidian://open?vault=notes", "zotero://select/x"] {
+        assert_eq!(os_open_target(href, &current), Some(href.to_string()));
+    }
+    assert_eq!(
+        os_open_target("https://example.com/a.pdf", &current),
+        Some("https://example.com/a.pdf".to_string())
+    );
+
+    // Both spellings of a whole path stand on their own rather than being joined onto the note's folder.
+    assert_eq!(
+        os_open_target(r"C:\notes\a.html", &current),
+        Some(r"C:\notes\a.html".to_string())
+    );
+    // A path written from the root of the disk stands on its own rather than being hung off the note’s folder. Windows reads a rooted path as rooted on the drive the app is running from, which is that platform’s own answer for the same path.
+    let rooted =
+        os_open_target("/Users/reader/a.html", &current).expect("a rooted path reaches the opener");
+    assert!(rooted.ends_with(
+        &normalize_path_lexically(PathBuf::from("/Users/reader/a.html"))
+            .to_string_lossy()
+            .into_owned()
+    ));
+    assert!(!rooted.contains("leaf-link-fixtures"));
+
+    // A link the app follows itself never reaches the opener.
+    assert_eq!(os_open_target("./other.md", &current), None);
+    assert_eq!(os_open_target("#section", &current), None);
+}
+
+#[test]
+fn a_link_naming_a_file_that_is_not_there_is_reported_rather_than_opened() {
+    // Silent twice over before this: the path was never resolved, and the Windows opener reports success whether it opened anything or not, so nothing was said either way.
+    let dir = scratch_dir("missing-link");
+    fs::create_dir_all(dir.join("chapter")).expect("the fixture folder is made");
+    let note = dir.join("chapter").join("README.md");
+    fs::write(&note, "# Note\n").expect("the note is written");
+    let beside = dir.join("chapter").join("beside.pdf");
+    fs::write(&beside, "%PDF-1.4\n").expect("the file beside it is written");
+
+    // The file is there, so nothing is reported and the opener is handed its real path.
+    assert_eq!(missing_linked_file("./beside.pdf", &note), None);
+    assert_eq!(
+        os_open_target("./beside.pdf", &note),
+        Some(beside.to_string_lossy().into_owned())
+    );
+
+    // The file is not, so the reader is told where the app looked.
+    assert_eq!(
+        missing_linked_file("../designs/v3-00-map.html", &note),
+        Some(normalize_path_lexically(dir.join("designs/v3-00-map.html")))
+    );
+
+    // An address another handler reads is never asked about: a handler that is not installed fails the way it always has.
+    for href in [
+        "obsidian://open?vault=notes",
+        "zotero://select/x",
+        "https://example.com/gone.pdf",
+    ] {
+        assert_eq!(missing_linked_file(href, &note), None);
+    }
+    // And so is a link this app follows itself, which opens a tab rather than reaching the machine.
+    assert_eq!(missing_linked_file("./nowhere.md", &note), None);
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn reveal_file_and_copy_path_reach_a_file_the_app_does_not_read() {
+    // Both act on the file rather than on where a click sends you, so a saved page or a PDF beside the note carries them — where the line count and the hover preview still only read a file this app renders.
+    let current = fixture_source_path("guide/chapter/README.md");
+
+    assert_eq!(
+        linked_file_path("./assets/Release Notes.pdf", &current),
+        Some(normalize_path_lexically(fixture_source_path(
+            "guide/chapter/assets/Release Notes.pdf"
+        )))
+    );
+    assert_eq!(
+        linked_file_path("../../designs/v3-00-map.html", &current),
+        Some(normalize_path_lexically(fixture_source_path(
+            "designs/v3-00-map.html"
+        )))
+    );
+    // A file this app does read keeps its answer.
+    assert_eq!(
+        linked_file_path("./other.md#top", &current),
+        Some(fixture_source_path("guide/chapter/other.md"))
+    );
+    // And nothing with no file behind it gains one.
+    assert_eq!(
+        linked_file_path("https://example.com/a.pdf", &current),
+        None
+    );
+    assert_eq!(
+        linked_file_path("obsidian://open?vault=notes", &current),
+        None
+    );
+    assert_eq!(linked_file_path("#section", &current), None);
+
+    // The narrower question is unmoved: a file this app cannot render is still not one the preview or the line count may read.
+    assert_eq!(
+        linked_document_path("./assets/Release Notes.pdf", &current),
+        None
+    );
 }
 
 #[test]

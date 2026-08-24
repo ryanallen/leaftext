@@ -856,6 +856,12 @@ function runShell(source, extras = {}) {
       sandbox.__printed += 1;
     },
     __printed: 0,
+    // Recorded rather than swallowed, for the same reason the print above is: a link the site has no document for is followed by the browser's own new tab, and a stub returning nothing would leave that arm proved only by not throwing.
+    open: (url, target) => {
+      sandbox.__opened.push({ url: String(url), target: String(target || '') });
+      return null;
+    },
+    __opened: [],
     // A page always has one, even with nothing in it — a check that draws a caret replaces this, and everything else reads "no selection" rather than finding no such call.
     getSelection: () => null,
     matchMedia: () => ({
@@ -2354,6 +2360,91 @@ if (booted) {
     // An ordinary document link keeps the answer it has, and a file that is not a page is still not one.
     if (linkHoverInfo('notes/other.md').kind !== 'Another page') throw new Error('a plain link stopped being a page');
     if (linkHoverInfo('file:///docs/logo.png').kind !== 'App link') throw new Error('a file the app cannot read became a page');
+  });
+
+  // The one word that promises nothing used to sit on the one link that did nothing, and a second word sat on the same link written another way. Both say what the click does now, and the address under them is where the file actually is.
+  check('a link to a file the app does not read says a click opens it, and says where it is', () => {
+    const { linkHoverInfo } = booted;
+    // The card resolves against the document on screen, so the page has to be reading one.
+    booted.__wasState = vm.runInContext('currentState', booted);
+    vm.runInContext('currentState = { tabs: [{ path: "/notes/guide/chapter/README.md" }], active: 0 }', booted);
+    try {
+      const pdf = linkHoverInfo('./assets/Release Notes.pdf');
+      if (pdf.kind !== 'Opens in another app') throw new Error(`a PDF beside the note is called ${pdf.kind}`);
+      if (pdf.detail !== '/notes/guide/chapter/assets/Release Notes.pdf') {
+        throw new Error(`the card shows ${pdf.detail} rather than where the file is`);
+      }
+
+      // A saved web page two folders up, which is the link the fault was reported on.
+      const page = linkHoverInfo('../../designs/v3-00-map.html');
+      if (page.kind !== 'Opens in another app') throw new Error(`a saved web page is called ${page.kind}`);
+      if (page.detail !== '/notes/designs/v3-00-map.html') throw new Error(`the card shows ${page.detail}`);
+
+      // The same file written from the top of the disk: one link, one word, and a whole path left alone.
+      const rooted = linkHoverInfo('/notes/guide/chapter/assets/Release Notes.pdf');
+      if (rooted.kind !== 'Opens in another app') throw new Error(`the same PDF written whole is called ${rooted.kind}`);
+      if (rooted.detail !== '/notes/guide/chapter/assets/Release Notes.pdf') {
+        throw new Error(`a whole path was joined onto the note's folder: ${rooted.detail}`);
+      }
+
+      // And the two items that act on the file rather than on where the click goes appear for all three.
+      const { linkHasAFileBehindIt } = booted;
+      for (const href of ['./assets/Release Notes.pdf', '../../designs/v3-00-map.html', './two.md']) {
+        if (!linkHasAFileBehindIt(href)) throw new Error(`Reveal file and Copy path dropped off ${href}`);
+      }
+      for (const href of ['https://example.com/a.pdf', '#a-heading', 'mailto:a@b.test']) {
+        if (linkHasAFileBehindIt(href)) throw new Error(`Reveal file and Copy path appeared on ${href}, which has no file behind it`);
+      }
+    } finally {
+      vm.runInContext('currentState = __wasState', booted);
+    }
+  });
+
+  // Resolving a link's path is what puts a program one click away: a note travels in a zip, a clone or a shared vault, and the link that starts one looks like every other link. The question is asked by the page rather than the host, so all three hosts gain it out of one edit and no command crosses.
+  check('a link naming a program asks before the host is told anything', () => {
+    const { sendDocumentLink, isMacPlatform, closeConfirm, acceptConfirm } = booted;
+    const dialog = vm.runInContext('confirmDialog', booted);
+    const title = vm.runInContext('confirmDialogTitle', booted);
+    const sent = [];
+    const was = booted.ipc;
+    booted.ipc = { postMessage: (text) => sent.push(JSON.parse(text)) };
+    const click = (href) => {
+      sent.length = 0;
+      sendDocumentLink({ getAttribute: () => href }, false);
+    };
+    try {
+      const program = isMacPlatform ? './tools/Install.command' : './tools/setup.exe';
+      const name = program.split('/').pop();
+
+      click(program);
+      if (sent.length) throw new Error(`a link to a program told the host ${JSON.stringify(sent)} before anyone answered`);
+      if (dialog.hidden) throw new Error('a link to a program opened no question at all');
+      if (!String(title.textContent).includes(name)) throw new Error(`the question does not name the file: ${title.textContent}`);
+
+      // No sends nothing at all, which is the whole point of asking.
+      closeConfirm();
+      if (sent.length) throw new Error(`answering no still told the host ${JSON.stringify(sent)}`);
+
+      // Yes sends the link exactly as the author wrote it, the way an unasked one goes.
+      click(program);
+      acceptConfirm();
+      if (!sent.some((one) => one.command === 'openLink' && one.href === program)) {
+        throw new Error(`answering yes sent ${JSON.stringify(sent)}`);
+      }
+
+      // A file on the web ending in the same name is the browser's to fetch, not this machine's to run.
+      click('https://example.com/downloads/setup.exe');
+      if (!dialog.hidden) throw new Error('a link off the web was asked about as if it were a file beside the note');
+      if (!sent.some((one) => one.command === 'openLink')) throw new Error('an external link was swallowed by the question');
+
+      // And an ordinary page link is never asked about.
+      click('./notes/two.md');
+      if (!dialog.hidden) throw new Error('an ordinary page link asked to run something');
+      if (!sent.some((one) => one.command === 'openLink')) throw new Error('an ordinary page link sent nothing');
+    } finally {
+      closeConfirm();
+      booted.ipc = was;
+    }
   });
 
   // The card follows the pointer at a fixed offset, which lands inside a target this size — so it covered the very page name it had just been given. The preview makes the card taller, but the page name still stays clear.
@@ -15263,8 +15354,8 @@ checkSettled('the published boot tells the module where its pictures are served 
   }
 });
 
-checkSettled('the browser host follows a link inside the site and refuses one outside it', async () => {
-  const { leaf, send, asked } = await bootWebHost();
+checkSettled('the browser host opens a link inside the site as a document and one outside it in a tab', async () => {
+  const { leaf, send, asked, context } = await bootWebHost();
   await leaf.openDocument('notes/one.md');
   const opened = () => asked.filter((one) => one.call === 'documentScript').map((one) => one.path);
 
@@ -15273,9 +15364,21 @@ checkSettled('the browser host follows a link inside the site and refuses one ou
   if (!opened().includes('notes/two.md')) throw new Error(`a link beside the document opened ${JSON.stringify(opened())}`);
 
   const before = opened().length;
+  const tabs = () => context.__opened || [];
   send({ command: 'openLink', href: 'https://example.com/notes/two.md' });
   await settle();
   if (opened().length !== before) throw new Error('a link off the site was followed as if it were a document here');
+  // The page is already a browser, so a link it has no document for is followed rather than swallowed into the console.
+  if (!tabs().some((one) => one.url === 'https://example.com/notes/two.md')) {
+    throw new Error(`a link off the site opened ${JSON.stringify(tabs())}`);
+  }
+
+  // A file beside the document that the site does not serve as a document — a saved page, a PDF, a picture — resolved against the document being read rather than against the front door.
+  send({ command: 'openLink', href: '../designs/v3-00-map.html' });
+  await settle();
+  if (!tabs().some((one) => one.url === 'https://leaf.test/designs/v3-00-map.html')) {
+    throw new Error(`a link to a file beside the document opened ${JSON.stringify(tabs())}`);
+  }
 
   // A folder link is that folder's own page, which is how the app reads one too. The resolver answers with the document and the heading the link named, so the document is read off the pair.
   const up = leaf.resolveFrom('notes/one.md', '../README.md');

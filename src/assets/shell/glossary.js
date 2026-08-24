@@ -545,10 +545,23 @@ function linkHoverInfo(rawHref) {
   if (DOCUMENT_HREF_RE.test(rawHref)) {
     return { kind: 'Another page', detail: hoverDetail(rawHref) };
   }
-  if (rawHref.startsWith('/')) {
-    return { kind: 'Local path', detail: hoverDetail(rawHref) };
+  // Everything left is a file this app does not read, whichever way it was written — `./report.pdf` and `/notes/report.pdf` are the same link doing the same thing, so a reader hovering both is not told two different things about them. The address under it is where that file actually sits, which is what tells a dead link from a live one.
+  return { kind: 'Opens in another app', detail: resolvedHoverDetail(rawHref) };
+}
+// Where the file a link names actually sits: joined onto the folder the open document is in, the way the host joins it before handing it to the machine. A whole path stands on its own, and with nothing open there is nothing to join onto, so the address is shown as it was written.
+function resolvedHoverDetail(rawHref) {
+  const written = String(rawHref || '');
+  const name = strippedHref(written);
+  const from = activeDocumentPath();
+  if (!from || !name || /^[/\\]/.test(name) || /^[a-z]:[/\\]/i.test(name)) return hoverDetail(written);
+  const separator = from.includes('\\') ? '\\' : '/';
+  const at = from.split(/[\\/]/).slice(0, -1);
+  for (const part of name.split(/[\\/]/)) {
+    if (part === '.' || part === '') continue;
+    if (part === '..') at.pop();
+    else at.push(part);
   }
-  return { kind: 'Link', detail: hoverDetail(rawHref) };
+  return hoverDetail(at.join(separator) + written.slice(name.length));
 }
 function startLinkHover(event) {
   const link = event.target.closest('a[href]');
@@ -675,6 +688,11 @@ function documentLinkFor(target) {
 function newPageModifierHeld(event) {
   return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
 }
+// Whether a link names a file on this machine, whichever way a click opens it. Reveal file and Copy path act on the file rather than on where the click sends you, so they are the two items this gates rather than `isAnotherPageHref`.
+function linkHasAFileBehindIt(rawHref) {
+  const kind = linkHoverKind(rawHref);
+  return kind === 'Another page' || kind === 'Opens in another app';
+}
 // Whether a link has a page in this app to open at all. The hover tip's own test, so what the tip promised and what the gesture does cannot disagree.
 function isAnotherPageHref(rawHref) {
   return linkHoverKind(rawHref) === 'Another page';
@@ -736,5 +754,28 @@ function sendDocumentLink(link, newPage) {
     return;
   }
   // As written, never the form the browser resolved: a site is one page, so a resolved href names a document at the top of it rather than one beside the document being read. Both hosts resolve a written href against the open document.
-  send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });
+  const away = () => send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });
+  // Resolving the path is what puts a program one click away, so a link naming one asks first — in the box the app already asks before it deletes a file.
+  if (linkRunsAProgram(rawHref)) {
+    openConfirm(`Run “${fileBaseName(strippedHref(rawHref))}”?`, 'This link starts a program rather than opening a document. Only run it if you trust where this file came from.', 'Run', away);
+    return;
+  }
+  away();
+}
+// What the system runs rather than opens, per platform, and the page's own list — `format.rs` answers the other question, which is what the app itself can read. A note travels in a zip, a clone or a shared vault, so a link that looks like every other link is one click from starting whatever sits beside it.
+const WINDOWS_RUNS_THESE = ['bat', 'cmd', 'com', 'cpl', 'exe', 'hta', 'jar', 'js', 'jse', 'lnk', 'msc', 'msi', 'msp', 'pif', 'ps1', 'reg', 'scr', 'vb', 'vbe', 'vbs', 'wsf', 'wsh'];
+const MAC_RUNS_THESE = ['app', 'command', 'jar', 'pkg', 'scpt', 'sh', 'tool', 'workflow'];
+// The href with its heading and its query off, which is where the file's own name ends.
+function strippedHref(rawHref) {
+  return String(rawHref || '').split(/[#?]/)[0];
+}
+// True for a local link whose file the system would run. An href naming a scheme of its own is that handler's, not a file beside the note — except `file:`, which names one.
+function linkRunsAProgram(rawHref) {
+  const href = String(rawHref || '').trim();
+  if (!href) return false;
+  if (/^[a-z][a-z0-9+.-]+:/i.test(href) && !/^file:/i.test(href)) return false;
+  const name = strippedHref(href);
+  const dot = name.lastIndexOf('.');
+  if (dot === -1) return false;
+  return (isMacPlatform ? MAC_RUNS_THESE : WINDOWS_RUNS_THESE).includes(name.slice(dot + 1).toLowerCase());
 }

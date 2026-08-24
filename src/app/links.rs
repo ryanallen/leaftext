@@ -8,8 +8,10 @@ pub(crate) enum LinkTarget {
     External(String),
     /// A local file the app renders: followed in place, in the current tab.
     LocalDocument(String),
-    /// A local file the app doesn't render: handed to the OS.
-    LocalOther(String),
+    /// A local file the app doesn't render: resolved against the open document, then handed to the OS.
+    LocalFile(String),
+    /// An href naming a scheme this app has no answer for: handed to the OS as written, because reading the address is that handler's job and not this one's.
+    ForeignScheme(String),
 }
 
 pub(crate) fn classify_link_target(href: &str) -> LinkTarget {
@@ -24,8 +26,38 @@ pub(crate) fn classify_link_target(href: &str) -> LinkTarget {
 
     if is_document_link(href) {
         LinkTarget::LocalDocument(href.to_string())
+    } else if href_names_a_scheme(href) {
+        LinkTarget::ForeignScheme(href.to_string())
     } else {
-        LinkTarget::LocalOther(href.to_string())
+        LinkTarget::LocalFile(href.to_string())
+    }
+}
+
+/// Whether an href names a scheme of its own rather than a path. Broader than `is_external_link`, which answers a fixed four; this is the question the page already asks before it calls a link an app command. `file:` is not one of them — it names a local file, which is resolved here like any other — and a single letter is a Windows drive rather than a scheme, so a path written from a drive letter reads as the path it is.
+pub(crate) fn href_names_a_scheme(href: &str) -> bool {
+    let Some((scheme, _)) = href.split_once(':') else {
+        return false;
+    };
+    if scheme.len() < 2 || scheme.eq_ignore_ascii_case("file") {
+        return false;
+    }
+    let mut letters = scheme.chars();
+    letters
+        .next()
+        .is_some_and(|first| first.is_ascii_alphabetic())
+        && letters.all(|letter| letter.is_ascii_alphanumeric() || matches!(letter, '+' | '-' | '.'))
+}
+
+/// What the system opener is handed for a link the app does not follow itself. A file beside the note is resolved against it first: the opener resolves a relative path against wherever the app was launched from, which is never where the document is, and reports success either way — so an unresolved path opens nothing and says nothing. An href carrying a scheme of its own goes out as written. `None` for a link that never leaves the app.
+pub(crate) fn os_open_target(href: &str, current_path: &Path) -> Option<String> {
+    match classify_link_target(href) {
+        LinkTarget::External(target) | LinkTarget::ForeignScheme(target) => Some(target),
+        LinkTarget::LocalFile(target) => Some(
+            path_from_local_link(&target, current_path)
+                .to_string_lossy()
+                .into_owned(),
+        ),
+        LinkTarget::AnchorOnly | LinkTarget::LocalDocument(_) => None,
     }
 }
 
@@ -62,6 +94,27 @@ pub(crate) fn linked_document_path(href: &str, current_path: &Path) -> Option<Pa
     match classify_link_target(href) {
         LinkTarget::LocalDocument(target) => Some(path_from_local_link(&target, current_path)),
         _ => None,
+    }
+}
+
+/// The resolved file a link names that is not on disk. The system opener reports success whether it opened anything or not, so a path with no file behind it goes out and says nothing at all — this is what the reader is told instead. Only a file beside the note is asked about: an address another handler reads names no file here, so a handler that is not installed fails the way it always has.
+pub(crate) fn missing_linked_file(href: &str, current_path: &Path) -> Option<PathBuf> {
+    match classify_link_target(href) {
+        LinkTarget::LocalFile(target) => {
+            let path = path_from_local_link(&target, current_path);
+            (!path.exists()).then_some(path)
+        }
+        _ => None,
+    }
+}
+
+/// The file a link points at whether or not this app reads it — what Reveal file and Copy path act on, since both are about the file rather than about where a click sends you. `linked_document_path` stays the narrower question, because the line count and the hover preview may only read a file this app renders.
+pub(crate) fn linked_file_path(href: &str, current_path: &Path) -> Option<PathBuf> {
+    match classify_link_target(href) {
+        LinkTarget::LocalDocument(target) | LinkTarget::LocalFile(target) => {
+            Some(path_from_local_link(&target, current_path))
+        }
+        LinkTarget::AnchorOnly | LinkTarget::External(_) | LinkTarget::ForeignScheme(_) => None,
     }
 }
 
