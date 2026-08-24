@@ -2271,7 +2271,7 @@ if (booted) {
         drew.push(nodes[0].textContent);
         // Where it was asked to draw, read while that block is still standing: it is let go the moment its drawing is moved into the card.
         drawnIn.push({ node: nodes[0], holder: nodes[0].parentElement, off: nodes[0].parentElement && nodes[0].parentElement.style.left, scaled: holding(nodes[0], scale) });
-        // Mermaid's own markup: full width under a `max-width`, a `viewBox` and no height at all, which is why capping the height letterboxes the ink and leaves the box exactly where it was. A stand-in that wrote a bare `<svg>` and had its rectangle hand-fed could not tell the box and the ink apart, which is how the empty band shipped. Marked with its own last word too, so a drawing that landed in another card's block is read rather than guessed at.
+        // Mermaid's own markup: full width under a `max-width`, a `viewBox` and no height at all, which is why capping the height letterboxes the ink and leaves the box exactly where it was. A stand-in writing a bare `<svg>` with its rectangle hand-fed cannot tell the box and the ink apart, so no case here can fail on the difference. Marked with its own last word too, so a drawing that landed in another card's block is read rather than guessed at.
         const view = natural ? ' viewBox="0 0 ' + natural.width + ' ' + natural.height + '"' : '';
         nodes[0].innerHTML = '<svg data-drawn="' + nodes[0].textContent.trim().split(' ').pop() + '" width="100%"' + view + '></svg>';
         nodes[0].dataset.processed = 'true';

@@ -347,7 +347,7 @@ function keepLinkPreviewDiagramThatFits(block, source) {
   linkPreviewDiagramsNotShown.add(source);
   putLinkPreviewDiagramBack(block, source);
 }
-// The ink, not the box around it: mermaid's drawing is `width="100%"` under a `max-width`, so capping its height letterboxes the picture inside a rectangle that never narrows — reading that rectangle called a five-pixel hairline a picture. The letterbox is the browser's own arithmetic read back rather than searched for: the smaller of the rectangle and its height times the drawing's own aspect. A drawing with no usable `viewBox` keeps the old reading, so nothing is turned away for markup nobody has measured. Either number is already what the reader sees — the drawing sits inside the layer the card scales, so the shrink is in it and multiplying by it again would count it twice.
+// The ink, not the box around it: mermaid's drawing is `width="100%"` under a `max-width`, so capping its height letterboxes the picture inside a rectangle that never narrows, and reading that rectangle calls a five-pixel hairline a picture. The letterbox is arithmetic rather than a search — the smaller of the rectangle and its height times the drawing's own aspect — and a drawing with no usable `viewBox` keeps the plain reading. Either number is already what the reader sees: the drawing sits inside the layer the card scales, so multiplying by the shrink again would count it twice.
 function linkPreviewDiagramInkWidth(drawing) {
   const box = drawing.getBoundingClientRect();
   const view = (drawing.getAttribute('viewBox') || '').split(/[\s,]+/).filter(Boolean).map(Number);
