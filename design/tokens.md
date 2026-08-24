@@ -224,9 +224,9 @@ Every `z-index` of 20 or more is a page layer and takes a token. Values of 11 or
 | lt-z-42 | 42 | A second backdrop, over the first sheet. |
 | lt-z-43 | 43 | The sheet on that. |
 | lt-z-44 | 44 | A card or bubble a rest raises: over every sheet, under every menu. |
+| lt-z-45 | 45 | A message: over every card, under every menu. |
 | lt-z-50 | 50 | A floating menu. |
 | lt-z-51 | 51 | A submenu or tooltip over it. |
-| lt-z-60 | 60 | A toast — the top of the app, always. |
 
 ## Strokes, rings and one recess
 

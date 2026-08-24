@@ -45,9 +45,24 @@ const layerOf = (selector) => {
   if (opened < 0) throw new Error(`no rule for ${selector}`);
   const named = /z-index:\s*var\((--lt-z-[\w-]+)\)/.exec(css.slice(opened, css.indexOf('}', opened)));
   if (!named) throw new Error(`${selector} takes no named layer`);
-  const value = new RegExp(`${named[1]}:\\s*(-?\\d+);`).exec(tokens);
-  if (!value) throw new Error(`${named[1]} is not a layer the token file names`);
+  return valueOfLayer(named[1], tokens);
+};
+const valueOfLayer = (token, tokens) => {
+  const value = new RegExp(`${token}:\\s*(-?\\d+);`).exec(tokens);
+  if (!value) throw new Error(`${token} is not a layer the token file names`);
   return Number(value[1]);
+};
+
+// Every layer the stylesheet paints on, found by walking it rather than by naming the rules: what the selector is, and what its token is worth. A check that says one thing is above everything below it has to be written this way, or a sheet added next month climbs over it and nothing says so.
+const layersPainted = () => {
+  layerOf('.app-toast');
+  const { css, tokens } = layerSources;
+  return [...css.matchAll(/z-index:\s*var\((--lt-z-[\w-]+)\)/g)].map((hit) => {
+    const before = css.slice(0, css.lastIndexOf('{', hit.index));
+    // The rule's own selector list is whatever stands between it and the thing before it — a closed rule, the brace of a media block, or a comment.
+    const begins = Math.max(before.lastIndexOf('}') + 1, before.lastIndexOf('{') + 1, before.lastIndexOf('*/') + 2);
+    return { selector: before.slice(begins).trim().replace(/\s+/g, ' '), layer: valueOfLayer(hit[1], tokens) };
+  });
 };
 
 // ---- the script, assembled the way the binary assembles it ------------------
@@ -10737,6 +10752,18 @@ check('a card a rest raises is painted under every menu and over every sheet', (
   // A rest on a link inside the term sheet raises a card, so the card cannot simply drop under the sheets.
   const sheet = layerOf('.glossary-sheet');
   if (!(card > sheet)) throw new Error(`the hover card is painted at ${card} against the term sheet's ${sheet}, so a card raised on a link inside that sheet is drawn behind it`);
+});
+
+check('a message is painted over everything that covers its corner and under every menu', () => {
+  const menu = layerOf('.context-menu');
+  const message = layerOf('.app-toast');
+  // The strip takes presses and can carry an Undo button, and a menu can open across the corner it sits in, so a message over a menu could take a press meant for a menu row.
+  if (!(message < menu)) throw new Error(`a message is painted at ${message} against the menu's ${menu}, so it stands over a menu opened under it`);
+  // Every sheet, full-window view and dim is walked rather than named: a failure is only worth raising if the reader can read it, and each of these covers the corner it lands in.
+  for (const rule of layersPainted()) {
+    if (rule.selector === '.app-toast' || rule.layer >= menu) continue;
+    if (rule.layer >= message) throw new Error(`${rule.selector} is painted at ${rule.layer} against a message's ${message}, so a message raised while it is open is drawn behind it`);
+  }
 });
 
 check('the first-run bubble is painted under every menu', () => {

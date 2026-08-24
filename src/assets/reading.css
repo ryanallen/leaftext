@@ -2462,7 +2462,7 @@ body:has(#readerToolbar:not([hidden])) {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: var(--lt-z-20);
+  z-index: var(--lt-z-45);
   max-width: min(520px, calc(100% - 36px));
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-lg);
