@@ -570,7 +570,7 @@ function resolvedHoverDetail(rawHref) {
   }
   return hoverDetail(at.join(separator) + written.slice(name.length));
 }
-// What the card is raised over: a link the app can follow, or one `decorate.js` marked as going nowhere. A reader hovering a dead link is owed the reason rather than the silence the missing address used to buy.
+// What the card is raised over: a link the app can follow, or one `decorate.js` marked as going nowhere. A reader hovering a dead link is owed the reason rather than silence.
 const HOVERABLE_LINK = 'a[href], a.link-goes-nowhere';
 // The card's words for a link the sanitizer took the address off. The address itself is gone by the time the page sees it, so the card says what kind of thing was written rather than what it said.
 const LINK_GOES_NOWHERE = { kind: 'Goes nowhere', detail: 'Written with an address this app does not follow' };

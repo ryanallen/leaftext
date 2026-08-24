@@ -1488,7 +1488,7 @@ function laneWidePictures(root = app) {
     block.classList.toggle('image-lane', alone);
   }
 }
-// A link whose address the sanitizer took off — an app's own scheme, a phone number, a whole path from a drive letter — reaches the page as words with nothing behind them and is painted like every live link beside it. Marked here rather than styled on the missing address: an anchor written `<a name="…">` is a place in the page and never had one, and the rail's thumbnail is a clone with the address stripped off every link in it. The clone is taken after this runs, so only the genuinely dead links carry the mark into it.
+// Mark a link the sanitizer took the address off, so the stylesheet can stop painting it like a live one. On a class rather than on the missing address: an anchor written `<a name="…">` is a place in the page and never had one, and the rail's thumbnail is a clone with the address stripped off every link in it. The clone is taken after this runs, so only the genuinely dead links carry the mark into it.
 function markLinksThatGoNowhere(root = app) {
   const body = root.querySelector('.document-body');
   if (!body) return;

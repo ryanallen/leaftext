@@ -2835,7 +2835,7 @@ body:has(#readerToolbar:not([hidden])) {
   border-color: var(--lt-primary);
   color: var(--lt-primary-foreground);
 }
-/* A link the sanitizer took the address off — an app's own scheme, a phone number — has nothing behind it, so it stops wearing the link color and the hover underline that promise there is. The words stay the document's own with a quiet dotted rule under them, saying the author meant a link here and this app does not follow that kind of address. `decorate.js` writes the class, because an anchor with no address is not by itself a stripped link. Placed after the button rules so it wins the tie against them. */
+/* A link with nothing behind it drops the link color and the hover underline, which promise there is: the words stay the document's own under a quiet dotted rule, saying the author meant a link here and this app does not follow that kind of address. `decorate.js` writes the class, because an anchor with no address is not by itself a stripped link. Placed after the button rules so it wins the tie against them. */
 .document-body a.link-goes-nowhere {
   color: inherit;
   text-decoration: underline dotted;
