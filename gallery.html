@@ -2957,11 +2957,12 @@ body.mac-frame.is-fullscreen::before {
 .app-trailing.has-overflow .overflow-toggle {
   display: inline-grid;
 }
-/* Where folded items go, one at a time, as the tab strip runs out of room. Hangs off the trailing group's left edge, which is where the chevron sits, so it drops under the control that opens it rather than out at the window corner. */
+/* Where folded items go, one at a time, as the tab strip runs out of room. Measured from the chevron's right edge — `100%` is the trailing group's own box and 32px is the chevron's width — so it grows inward, the way the update bell's panel hangs off the bell rather than off any group. Anchored to the group's left it grew the other way: once everything has folded that edge is the last 32px of the app, and the surface's paint containment cut the menu off flat. */
 .app-overflow-panel {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  left: auto;
+  right: calc(100% - 32px);
   display: none;
   flex-direction: column;
   gap: var(--lt-space-4);
@@ -2974,7 +2975,7 @@ body.mac-frame.is-fullscreen::before {
 .app-trailing.overflow-open .app-overflow-panel {
   display: flex;
 }
-/* Folded as a group, but stacked once inside: the panel is only as wide as the chevron's corner allows, and a three-across row overflows it, clipping maximize and close clean off. */
+/* Folded as a group, but stacked once inside: everything else in the menu is one button per line, and a three-across row would make the whole menu three times its own width for one item. */
 .app-overflow-panel .window-controls {
   flex-direction: column;
   gap: var(--lt-space-4);

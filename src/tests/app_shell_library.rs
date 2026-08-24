@@ -109,7 +109,7 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines .library-open");
     assert_contains(library_open, "flex-shrink: 0;");
-    // Stacked inside the panel: it is only as wide as the chevron's corner allows, and an inline three-across row overflows it, clipping maximize and close off the end.
+    // Stacked inside the panel: everything else in the menu is one button per line, and an inline three-across row would make the whole menu three times its own width for one item.
     let folded_controls = css
         .split(".app-overflow-panel .window-controls {")
         .nth(1)
@@ -134,16 +134,6 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         "the tab strip's shoulders must stay symmetric"
     );
 
-    // The panel drops under the chevron, which is the trailing group's left edge — anchoring it right puts it out at the window corner instead.
-    let panel = css
-        .split(".app-overflow-panel {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines .app-overflow-panel");
-    assert!(
-        panel.contains("left: 0;") && !panel.contains("right: 0;"),
-        "the panel must hang off the chevron, not the far corner: {panel}"
-    );
     // Nothing folds as one block — the window controls fold like every other item.
     assert!(
         !css.contains(".app-trailing.collapsed"),
@@ -156,6 +146,51 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         ),
         "the narrow override shifted the whole left group right"
     );
+}
+
+// The menu the header folds into was measured from the trailing group's left edge, and once every button has folded that edge is the last 32px of the app — so 45.3px of menu had 36.7px to grow into and the app surface's paint containment sliced the rest away, taking the right border and the right of every icon with it. It is measured from the chevron's right edge instead, which grows it inward on either platform whatever inset the group is carrying.
+#[test]
+fn the_folded_header_menu_is_drawn_inside_the_apps_own_edge() {
+    let css = reading_mode_css();
+    let panel = overflow_panel_rule(css);
+    assert!(
+        !panel.contains("left: 0;"),
+        "the menu must not be anchored to the group's left edge: {panel}"
+    );
+    assert!(
+        panel.contains("right: calc(100% - 32px);"),
+        "the menu must be measured from the chevron's right edge: {panel}"
+    );
+}
+
+// That 32px is the chevron's own width written a second time, so it is read back off the component rather than typed here as well: an icon button that changes size fails this instead of quietly dragging the menu off the button it drops from.
+#[test]
+fn the_folded_header_menu_hangs_off_the_chevrons_own_width() {
+    let css = reading_mode_css();
+    let icon_button = css
+        .split("\n.icon-button {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines .icon-button");
+    let width = icon_button
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("width:"))
+        .and_then(|value| value.trim().strip_suffix(';'))
+        .expect(".icon-button sets its own width")
+        .trim();
+    let panel = overflow_panel_rule(css);
+    assert!(
+        panel.contains(&format!("right: calc(100% - {width});")),
+        "the menu's right edge must sit one icon button ({width}) in from the group's: {panel}"
+    );
+}
+
+// The bare rule, not the one that shows it: `.app-trailing.overflow-open .app-overflow-panel` ends with the same selector, so the split is anchored to the start of a line.
+fn overflow_panel_rule(css: &str) -> &str {
+    css.split("\n.app-overflow-panel {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines .app-overflow-panel")
 }
 
 #[test]
