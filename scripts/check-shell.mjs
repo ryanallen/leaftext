@@ -2261,6 +2261,8 @@ if (booted) {
     const drew = [];
     const drawnIn = [];
     const holding = (node, holder) => { for (let up = node; up; up = up.parentElement) if (up === holder) return true; return false; };
+    // The drawing's own size, which mermaid writes into the markup as a `viewBox`. Set before each rest, because the whole of the fit rule is a question about a drawing's shape. `null` leaves the `viewBox` off, which is markup nobody has measured.
+    let natural = { width: 570, height: 450 };
     // The card asks for the runtime the same way the reading page does, so a stand-in on `window.mermaid` is the whole of what `loadMermaid` needs.
     const runtime = {
       initialize: () => {},
@@ -2269,8 +2271,9 @@ if (booted) {
         drew.push(nodes[0].textContent);
         // Where it was asked to draw, read while that block is still standing: it is let go the moment its drawing is moved into the card.
         drawnIn.push({ node: nodes[0], holder: nodes[0].parentElement, off: nodes[0].parentElement && nodes[0].parentElement.style.left, scaled: holding(nodes[0], scale) });
-        // Marked with its own last word, so a drawing that landed in another card's block is read rather than guessed at.
-        nodes[0].innerHTML = '<svg data-drawn="' + nodes[0].textContent.trim().split(' ').pop() + '"></svg>';
+        // Mermaid's own markup: full width under a `max-width`, a `viewBox` and no height at all, which is why capping the height letterboxes the ink and leaves the box exactly where it was. A stand-in that wrote a bare `<svg>` and had its rectangle hand-fed could not tell the box and the ink apart, which is how the empty band shipped. Marked with its own last word too, so a drawing that landed in another card's block is read rather than guessed at.
+        const view = natural ? ' viewBox="0 0 ' + natural.width + ' ' + natural.height + '"' : '';
+        nodes[0].innerHTML = '<svg data-drawn="' + nodes[0].textContent.trim().split(' ').pop() + '" width="100%"' + view + '></svg>';
         nodes[0].dataset.processed = 'true';
         return Promise.resolve();
       },
@@ -2327,8 +2330,8 @@ if (booted) {
       const stubShrink = () => {
         booted.getComputedStyle = (element) => (element === preview ? { getPropertyValue: () => '0.5' } : wasStyle(element));
       };
-      // The drawing is made outside the card and moved in, so the width the fit rule reads is put on the card's own block rather than on the node the runtime drew into. The fit is still judged on a real reading rather than on the code's own arithmetic.
-      const cardDrawnWidth = (width) => {
+      // The drawing is made outside the card and moved in, so the rectangle the fit rule reads is put on the card's own block rather than on the node the runtime drew into. It is the box mermaid's drawing keeps however hard its height is capped — its own natural width, at the room's height — and never the ink inside it, which is what the code has to work out for itself.
+      const cardDrawnBox = (width) => {
         const card = block();
         const was = card.querySelector.bind(card);
         card.querySelector = (selector) => {
@@ -2337,40 +2340,57 @@ if (booted) {
           return found;
         };
       };
+      const narrowest = vm.runInContext('LINK_PREVIEW_DIAGRAM_NARROWEST', booted);
       try {
+        // The plan tree's own tracks page, which is what every link in its README points at: a page-tall flowchart, letterboxed to five pixels of ink inside a box that never narrowed.
         stubShrink();
-        open('<pre class="mermaid" data-language="mermaid">flowchart TD tall</pre>');
-        cardDrawnWidth(10);
+        natural = { width: 262.9, height: 4105 };
+        open('<pre class="mermaid" data-language="mermaid">flowchart LR TRACKS.md</pre>');
+        cardDrawnBox(88.3);
         block().offsetHeight = 400;
         await settle();
+        if (!(88.3 >= narrowest)) throw new Error('the box this case hands over is under the line on its own, so reading the box again would pass it and the case proves nothing');
         if (drew.length !== 3) throw new Error('the tall drawing was never made');
         if (block().dataset.processed) throw new Error('a drawing too narrow to read at the size it fits was left in the card');
         if (block().dataset.cardDiagram !== 'unshown') throw new Error('the block does not say the card will not draw it, so the strip rule lands on nothing');
-        if (!block().textContent.includes('tall')) throw new Error('the block that went back to the strip lost its own source text');
+        if (!block().textContent.includes('TRACKS.md')) throw new Error('the block that went back to the strip lost its own source text');
         stubShrink();
-        open('<pre class="mermaid" data-language="mermaid">flowchart TD tall</pre>');
+        open('<pre class="mermaid" data-language="mermaid">flowchart LR TRACKS.md</pre>');
         await settle();
         if (drew.length !== 3) throw new Error('a drawing already known not to fit was made a second time');
         if (block().dataset.cardDiagram !== 'unshown') throw new Error('the second rest lost the mark the strip rule keys on');
 
-        // A pie chart is over the room too, and it is kept: what separates the two is how wide each still is once it fits.
+        // A pie chart is over the room too, and it is kept: what separates the two is how wide each still is once it fits. Its box is wider than the tall drawing's and so is its ink, so the change cannot pass by turning everything away.
         stubShrink();
+        natural = { width: 570, height: 450 };
         open('<pre class="mermaid" data-language="mermaid">pie squarish</pre>');
-        cardDrawnWidth(192);
+        cardDrawnBox(195.3);
         block().offsetHeight = 400;
         await settle();
         if (drew.length !== 4) throw new Error('the square drawing was never made');
         if (block().dataset.processed !== 'true') throw new Error('a drawing that fits the room and is still wide enough to read was turned away');
         if (block().dataset.cardDiagram) throw new Error('a drawing that was kept was marked as one the card will not draw');
+
+        // Markup nobody has measured: no `viewBox` to fold the box through, so the box is all there is to read and the drawing is kept on it.
+        stubShrink();
+        natural = null;
+        open('<pre class="mermaid" data-language="mermaid">flowchart LR unmeasured</pre>');
+        cardDrawnBox(195.3);
+        block().offsetHeight = 400;
+        await settle();
+        if (drew.length !== 5) throw new Error('the drawing with no viewBox was never made');
+        if (block().querySelector('svg').getAttribute('viewBox')) throw new Error('the case handed over a viewBox after all, so it never reached the reading it is here for');
+        if (block().dataset.processed !== 'true') throw new Error('a drawing with no viewBox was turned away, so markup nobody has measured loses its picture');
       } finally {
         booted.getComputedStyle = wasStyle;
+        natural = { width: 570, height: 450 };
       }
 
       // Two diagrams in one card are started at once, each on its own promise, so one block reused across them would have two renders in it.
       vm.runInContext('activeHoverToken = 63;', booted);
       open('<pre class="mermaid" data-language="mermaid">flowchart LR first</pre><pre class="mermaid" data-language="mermaid">flowchart LR second</pre>');
       await settle();
-      if (drew.length !== 6) throw new Error(`a card with two diagrams asked for ${drew.length - 4} drawings rather than two`);
+      if (drew.length !== 7) throw new Error(`a card with two diagrams asked for ${drew.length - 5} drawings rather than two`);
       const both = drawnIn.slice(-2);
       if (both[0].node === both[1].node) throw new Error('both were drawn in one block, so the second wrote over the first');
       const cards = previewDocument.querySelectorAll('pre.mermaid');

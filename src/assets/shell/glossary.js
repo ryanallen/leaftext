@@ -343,10 +343,16 @@ function keepLinkPreviewDiagramThatFits(block, source) {
   if (block.offsetHeight <= LINK_PREVIEW_DIAGRAM_ROOM / shrink) return;
   // Taller than the room, so the stylesheet has scaled it down: what is left to ask is whether anything is still readable at that size.
   const drawing = block.querySelector('svg');
-  // The drawing's rectangle is already what the reader sees: it sits inside the layer the card scales, so the shrink is in it and multiplying by it again would count it twice.
-  if (drawing && drawing.getBoundingClientRect().width >= LINK_PREVIEW_DIAGRAM_NARROWEST) return;
+  if (drawing && linkPreviewDiagramInkWidth(drawing) >= LINK_PREVIEW_DIAGRAM_NARROWEST) return;
   linkPreviewDiagramsNotShown.add(source);
   putLinkPreviewDiagramBack(block, source);
+}
+// The ink, not the box around it: mermaid's drawing is `width="100%"` under a `max-width`, so capping its height letterboxes the picture inside a rectangle that never narrows — reading that rectangle called a five-pixel hairline a picture. The letterbox is the browser's own arithmetic read back rather than searched for: the smaller of the rectangle and its height times the drawing's own aspect. A drawing with no usable `viewBox` keeps the old reading, so nothing is turned away for markup nobody has measured. Either number is already what the reader sees — the drawing sits inside the layer the card scales, so the shrink is in it and multiplying by it again would count it twice.
+function linkPreviewDiagramInkWidth(drawing) {
+  const box = drawing.getBoundingClientRect();
+  const view = (drawing.getAttribute('viewBox') || '').split(/[\s,]+/).filter(Boolean).map(Number);
+  if (view.length !== 4 || !(view[2] > 0) || !(view[3] > 0)) return box.width;
+  return Math.min(box.width, (box.height * view[2]) / view[3]);
 }
 // The block goes back to being undrawn, and says so — the stylesheet's box and ring are for a drawing that is coming, and nothing is coming for this one.
 function putLinkPreviewDiagramBack(block, source) {
