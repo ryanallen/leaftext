@@ -66,7 +66,7 @@ pub fn build_minimap_model(markdown: &str) -> DocumentMinimap {
     }
 }
 
-/// Build a minimap model from rendered block HTML, for TEI/XML documents that have no Markdown source to line-scan. Each top-level block becomes synthetic rows: headings as full bars, paragraphs/blockquotes sized to text length, lists by item count, code by line count. These row counts only shape the cosmetic thumbnail; the viewport box comes from the reader's real scroll range (see `measureDocumentMinimap` in the shell).
+/// Build a minimap model from rendered block HTML, for a document with no Markdown source to line-scan. Each top-level block becomes synthetic rows: headings as full bars, paragraphs/blockquotes sized to text length, lists by item count, code by line count. These row counts only shape the cosmetic thumbnail; the viewport box comes from the reader's real scroll range (see `measureDocumentMinimap` in the shell).
 pub fn build_minimap_model_from_html(html: &str) -> DocumentMinimap {
     let mut spans: Vec<MinimapSpan> = Vec::new();
     let mut next_line: usize = 0;
