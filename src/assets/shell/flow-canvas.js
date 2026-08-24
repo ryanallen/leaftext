@@ -1969,7 +1969,7 @@ async function diagramWebpBase64(svgText) {
   return url.slice(url.indexOf(',') + 1);
 }
 
-// This web view writes no more than this many pixels a side, and past it the canvas answers an empty URL rather than failing. Measured by bisecting a canvas on the running window rather than taken from the format: 65,500 answers a JPEG and 65,501 answers `data:,`, so the specification's own 65,535 is thirty-five pixels this engine never reaches and tidying the number back up to it is what puts a drawing through the guard. Without this the type check below catches it instead and says this window cannot write JPEG, which sends a reader after a broken app rather than a diagram too wide.
+// This web view writes no more than this many pixels a side, and past it the canvas answers an empty URL rather than failing. Bisected on a running window rather than taken from the format: 65,500 answers a JPEG and 65,501 answers `data:,`, so the specification's own 65,535 is thirty-five pixels this engine never reaches and tidying the number up to it puts a drawing straight through the guard. Without this the type check below catches it instead and says this window cannot write JPEG, which sends a reader after a broken app rather than a diagram too wide.
 const DIAGRAM_JPEG_LIMIT = 65500;
 
 // A diagram is text on flat fill, the one thing JPEG handles worst, so what a reader sees is ringing around glyphs rather than kilobytes: measured on the export's own canvas, the worst error on a lettered pixel is 32 of 255 at 0.82 against 17 at 0.92, for 18 KB. Named rather than left to the encoder's default, which is this same number today and could move under a web view update.
