@@ -1274,7 +1274,7 @@ fn the_page_ends_above_the_floating_bar() {
 fn the_bar_is_measured_against_the_page_and_the_map_together() {
     let css = reading_mode_css();
 
-    // Only the reading view opens the minimap's track, so a bar centered on the page column alone lands 31px left of where the source view draws the identical bar — and the button a reader goes back to most moves under their hand every time they switch view. Spanning both tracks in the base rule gives all three views one lane to center in; the source view's own map strip is the editor's, drawn inside the page column, so it is already inside the measurement. Anchored on the line start: the embedded reader turns the whole bar off in a grouped selector ending the same way, and that rule comes first.
+    // Only the reading view opens the minimap's track, so a bar centered on the page column alone lands 31px left of where the source view draws the identical bar, and the button a reader goes back to most moves every time they switch view. The source view's own map strip is the editor's, drawn inside the page column, so it is already inside the measurement. Anchored on the line start: the embedded reader turns the whole bar off in a grouped selector ending the same way, and that rule comes first.
     let bar = rule_body(css, "\n.reader-toolbar {");
     assert_contains(bar, "grid-column: 2 / 4;");
     // The bar keeps the size and the centering it has always had: only which lane it is measured against changes.
