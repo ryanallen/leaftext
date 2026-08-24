@@ -550,7 +550,7 @@ let blockImageWrite = null;
 // The line the plus was standing on when the box opened, held beside the write so a refused address can be put back on it. Dropped with the write, because the two are one thing.
 let blockImagePlace = null;
 let blockImageToken = 0;
-// The token a typed address is waiting on, or null. An address is the only copy of itself while it sits in that field, so the write asks the host to answer and the box is put back with it where the answer says nothing was written.
+// The token a typed address is waiting on, or null. Only that door waits: writeBlockImage below says why.
 let blockImageWaiting = null;
 // A picture answered after its box closed. The dialog has no parent window, so the app stays clickable under it and the box can be folded — by the plus, by Escape, or by a render rebuilding the gutter — while somebody is still choosing. Dropping the answer is right, because the line it was headed for may be gone; the word is what was missing.
 const BLOCK_IMAGE_GONE =

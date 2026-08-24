@@ -35,7 +35,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [A table keeps its spacing](#inline-editing-the-reading-view) | Type in one cell and only that cell is rewritten, so a table you lined up by hand stays lined up |
 | [Full-window tables](#inline-editing-the-reading-view) | Open a safe Markdown table on the whole window; it keeps the same look, takes the room the window has, folds long cells rather than running off the right edge, never squeezes a short column until its words break in half, and follows its own links the way the page does |
 | [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits, a word at a time while you are typing; a Redo button beside it (and `Ctrl+Y` or `Ctrl+Shift+Z`) brings back what you took back |
-| [When the app cannot write it](#when-the-app-cannot-write-it) | A file that has gone takes the tab dot, Save and Undo down and raises a message naming it; the flowchart editor keeps the drawing rather than closing over it |
+| [When the app cannot write it](#when-the-app-cannot-write-it) | A file that has gone takes the tab dot, Save and Undo down and raises a message naming it; the flowchart editor keeps the drawing and the image box keeps the address you typed, rather than closing over them |
 | [The padlock](#the-padlock) | Two padlocks, one for the reading view and one for the source, each remembered. Both start locked, except in a [new document](#new-document) — and checkboxes toggle either way |
 | [Replacing text](02-navigation.md#find-in-this-document) | The find bar's Replace and All write through the same padlock as typing does — in the reading view as one splice of the source, so one Undo puts it all back |
 | [Code view](#code-view) | Toggle the rendered page to the raw source and back |
@@ -185,7 +185,7 @@ Every one of them but the comment **opens** a line to type on, the way the first
 The image button does not write a placeholder path for you to correct. It asks:
 
 - **Choose file** opens your operating system's picker, filtered to what a page can draw.
-- Or paste an **address** for a picture on the web and press `Enter`.
+- Or paste an **address** for a picture on the web and press `Enter`. Where the app [cannot write the line](#when-the-app-cannot-write-it), the box comes back with the address still in it.
 
 A picked file is **never copied anywhere** — the picture stays where you keep it. What goes into the document is where it already is: written relative to the document when it sits under the same folder, so the pair survive being moved or shared together, and as a full path when it does not. A path holding a space or a bracket is written in Markdown's `<…>` form, so it cannot end early.
 
@@ -386,6 +386,7 @@ A file can go while its document is open — deleted, its folder moved, a drive 
 - **Pressing Save then says the same thing** rather than answering with silence.
 - **A checkbox says it too, and comes back off.** A box the app cannot write raises the message the same way, in a list or in a table cell — and the tick the browser drew the moment you clicked is taken back off, so the box is not left ticked beside a message saying nothing was changed. A tick the app *did* take and only failed to write to disk keeps its tick instead: that change is real and unsaved, so the box stays on, the dot and Save stay up, and the message says it was changed and not saved.
 - **[The flowchart editor](#the-flowchart-editor) keeps the drawing.** Its Save waits for the app to say the write landed, so a refused one leaves the sheet open with the diagram in it and the message beside it, instead of closing over minutes of work.
+- **[The image box](#images) keeps the address you typed.** An address is the only copy of itself while it sits in that field, so pressing `Enter` waits for the app to say the write landed; a refused one puts the box back on the same line with the address still in it and the message beside it. Where the line it was going onto has gone as well, the message carries the address itself, so it is still there to copy. A picture chosen through the file picker needs none of this — the picker opens again.
 
 ### External changes
 
