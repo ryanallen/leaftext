@@ -2101,7 +2101,8 @@ if (booted) {
       if (armed(reader.boxes).join(',') !== '0,1,2') throw new Error(`the drawn document's boxes were armed as ${JSON.stringify(armed(reader.boxes))}`);
       // And the index a press sends is the box's own place in that document, which is what the host writes into the front tab.
       press(reader.boxes[1]);
-      if (JSON.stringify(sent) !== JSON.stringify([{ command: 'toggleTask', index: 1 }])) throw new Error(`pressing the second box sent ${JSON.stringify(sent)}`);
+      if (sent.length !== 1 || sent[0].command !== 'toggleTask' || sent[0].index !== 1) throw new Error(`pressing the second box sent ${JSON.stringify(sent)}`);
+      if (typeof sent[0].token !== 'number') throw new Error(`a press sent no token, so nothing can tell the box its tick is standing on air: ${JSON.stringify(sent[0])}`);
 
       // A table opened full-window stands a second element of the same name inside the reader, appended after the document. Binding again must still take the first.
       appEl.appendChild(table.body);
@@ -6870,6 +6871,91 @@ if (booted) {
       booted.leafToast = was.toast;
       booted.__frames.drain();
     }
+  });
+
+  // The other senders on the same channel: both kinds of checkbox, which draw their own tick before the command leaves and so are the only thing that can undraw it. The host cannot name a box to redraw — a box inside a table carries no task number at all — so what it answers is whether the buffer is holding the change, and the listener that drew the tick reads that.
+  check('a tick the buffer is not holding comes back off the box that drew it', () => {
+    const appEl = booted.document.getElementById('app');
+    const wasSend = booted.ipc.postMessage;
+    const sent = [];
+    const body = fakeElement('');
+    body.className = 'document-body';
+    const boxes = [];
+    for (let at = 0; at < 2; at += 1) {
+      const box = fakeElement('');
+      box.tagName = 'INPUT';
+      body.appendChild(box);
+      boxes.push(box);
+    }
+    // The stand-in reads `input[type="checkbox"]` as one long attribute name and finds nothing, so the boxes answer for their own body — see the binding check above, which says the same.
+    const wasQuery = body.querySelectorAll;
+    body.querySelectorAll = (selector) => (String(selector) === 'input[type="checkbox"]' ? boxes : wasQuery.call(body, selector));
+    // A click, as the browser makes it: the tick is drawn first and the listener runs with it already on.
+    const press = (box) => {
+      box.checked = !box.checked;
+      (box.listeners.get('change') || []).forEach((handler) => handler({}));
+    };
+    const wasToast = booted.leafToast;
+    const said = [];
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.leafToast = (message) => said.push(message);
+      appEl.appendChild(body);
+      booted.bindTaskCheckboxes(['one', 'two']);
+
+      // A box in a plain list, told the buffer is holding nothing: the tick the browser drew comes back off, so the box stops contradicting the message beside it.
+      press(boxes[0]);
+      const nothing = sent[sent.length - 1];
+      if (typeof nothing.token !== 'number') throw new Error(`a tick sent no token: ${JSON.stringify(nothing)}`);
+      const refused = 'notes.md was not changed: the file could not be read.';
+      booted.leafEditAnswered(nothing.token, false, refused);
+      if (boxes[0].checked) throw new Error('a tick standing on nothing was left ticked beside the message saying nothing was changed');
+      // The sentence rides the answer, so the box is what says it. The host stays quiet wherever a token came, and a tick nobody told about is the silence this ticket started from.
+      if (said.length !== 1 || said[0] !== refused) throw new Error(`a refused tick said ${JSON.stringify(said)}`);
+
+      // The same box, told the buffer is holding it: the tick stands. This is the tick whose file was refused — the change is real and unsaved, and taking it off screen would leave a dirty document that looks untouched.
+      said.length = 0;
+      press(boxes[0]);
+      const holding = sent[sent.length - 1];
+      if (holding.token === nothing.token) throw new Error('two ticks traveled under one token');
+      const unsaved = 'notes.md was changed and not saved: the file could not be written.';
+      booted.leafEditAnswered(holding.token, true, unsaved);
+      if (!boxes[0].checked) throw new Error('a tick the buffer is holding was taken back off the screen');
+      if (said.length !== 1 || said[0] !== unsaved) throw new Error(`a held tick over an unwritten file said ${JSON.stringify(said)}`);
+
+      // And a tick that landed says nothing at all: there is nothing to tell anybody.
+      said.length = 0;
+      press(boxes[1]);
+      booted.leafEditAnswered(sent[sent.length - 1].token, true, '');
+      if (said.length) throw new Error(`a tick that landed said ${JSON.stringify(said)}`);
+      if (!boxes[1].checked) throw new Error('a tick that landed was taken off the screen');
+
+      // An answer already spent, and one to a token nobody is holding: both dropped.
+      booted.leafEditAnswered(holding.token, false, 'notes.md was not changed.');
+      booted.leafEditAnswered(nothing.token, false, 'notes.md was not changed.');
+      if (!boxes[0].checked) throw new Error('an answer nobody was waiting on unticked a box');
+
+      // A box inside a table sends the other command, carries no task number, and is undrawn the same way.
+      sent.length = 0;
+      const cellBox = fakeElement('');
+      cellBox.tagName = 'INPUT';
+      cellBox.checked = true;
+      const table = fakeElement('tickInsideATable');
+      table.dataset = { srcStart: '0', srcEnd: '10', blockKind: 'table' };
+      booted.sendCheckboxBlockEdit(table, 0, 10, '| x |' + String.fromCharCode(10), { row: 1, column: 0, columns: 1, text: '[x]' }, cellBox);
+      const spliced = sent[sent.length - 1];
+      if (!spliced || spliced.command !== 'editBlock' || spliced.autosave !== true) throw new Error(`a table's tick sent ${JSON.stringify(sent)}`);
+      if (typeof spliced.token !== 'number') throw new Error(`a table's tick sent no token: ${JSON.stringify(spliced)}`);
+      said.length = 0;
+      booted.leafEditAnswered(spliced.token, false, refused);
+      if (cellBox.checked) throw new Error("a table's tick standing on nothing was left ticked");
+      if (said.length !== 1 || said[0] !== refused) throw new Error(`a table's refused tick said ${JSON.stringify(said)}`);
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      booted.leafToast = wasToast;
+      body.remove();
+    }
+    if (appEl.querySelector('.document-body')) throw new Error('the check left a drawn document standing in the reader');
   });
 
   // The other way in: the plus offers a new diagram, and the gutter it was pressed on is rebuilt by every render — so a drawing that comes back after one has no line left to be written onto.

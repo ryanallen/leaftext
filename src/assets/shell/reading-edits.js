@@ -768,7 +768,7 @@ function rebindRestoredCheckboxes(el) {
     const index = Number(box.dataset.taskIndex);
     if (!Number.isFinite(index)) return;
     box.addEventListener('change', () => {
-      send({ command: 'toggleTask', index });
+      sendTaskToggle(box, index);
     });
   });
 }
@@ -798,8 +798,15 @@ function sendBlockSplice(el, start, end, text) {
 }
 
 // A table checkbox toggle: autosave tells the host to write to disk with no undo step, and the plain send avoids a dirty flash. `cell` is the box's own cell, so the rest of the table keeps its spacing. Neutralizes the blur baseline like sendBlockSplice, in case the table was also being edited.
-function sendCheckboxBlockEdit(el, start, end, text, cell) {
-  send({ command: 'editBlock', start, end, text, autosave: true, cell });
+//
+// `box` drew itself ticked before this leaves, so the send asks to be answered and puts that tick back where the buffer is holding nothing — see sendTaskToggle, which is the same bargain for a box in a plain list. A box inside a table has no task number to be named by, which is why the page is what undraws it.
+function sendCheckboxBlockEdit(el, start, end, text, cell, box) {
+  const drawn = box.checked;
+  const token = leafWaitForEdit((held, why) => {
+    if (!held) box.checked = !drawn;
+    if (why) leafToast(why, 'error');
+  });
+  send({ command: 'editBlock', start, end, text, autosave: true, cell, token });
   setEditBaseline(el);
 }
 

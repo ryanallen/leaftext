@@ -122,6 +122,13 @@ let pendingCaret = null;
 // A reader anchor the next leafReloadDocument should restore instead of its own top-visible capture. Set when committing a source-edited block (e.g. an image) whose own height swings across the re-render: it points at the stable block ABOVE the edit, so the reader holds its place rather than snapping to the top.
 let pendingEditAnchor = null;
 
+// ---- the host's answer to one edit (flow-canvas.js, dom.js, reading-blocks.js, reading-edits.js)
+
+// An edit whose sender is holding something until the host's word travels under a number of its own, and the answer comes back on that number. Both sit here rather than with any one sender because four fragments touch them now: the flowchart sheet keeps a drawing on screen until it is answered, and both kinds of checkbox drew themselves ticked before the command left and put that tick back where the answer says the buffer is holding nothing.
+let leafEditToken = 0;
+// Who is waiting, by token — one each, dropped as it is answered. An answer to a token nobody is holding is ignored, the way the image picker's is.
+const leafEditWaiting = new Map();
+
 // ---- the last delete, and whether it can be taken back ---------------------
 
 // The file the last delete could put back, or null. Set only by the host saying the delete happened, so nothing offers to undo one that never went through. Three fragments read it: the toast that carries the Undo button, the Ctrl+Z handler in code-view.js, and the toast's own end, which clears it — the offer lasts exactly as long as the message does.

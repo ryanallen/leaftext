@@ -411,6 +411,35 @@ const send = (message) => {
   window.ipc.postMessage(JSON.stringify(message));
 };
 
+// The number one edit travels under, out to the host with the command and back with the answer.
+function nextEditToken() {
+  return ++leafEditToken;
+}
+
+// Hold `answered` against a token already minted, for a sender that mints one somewhere other than where it starts waiting.
+function leafHoldEdit(token, answered) {
+  leafEditWaiting.set(token, answered);
+  return token;
+}
+
+// Mint a token and wait on it in one breath. `answered(held, why)` runs once: `held` says the buffer took the change — not that it reached the disk — and `why` is the sentence to say, where there is one.
+function leafWaitForEdit(answered) {
+  return leafHoldEdit(nextEditToken(), answered);
+}
+
+// Stop waiting. For a sender whose reason to wait has gone: a sheet closed, a box the page redrew.
+function leafDropEditWait(token) {
+  leafEditWaiting.delete(token);
+}
+
+// The host's answer to one edit, handed to whoever asked for it. Here rather than inside any one sender's file because more than one waits now, and a global one fragment assigns is a global the next fragment takes away — which is what would have happened to the flowchart sheet's answers the moment a checkbox wanted its own.
+window.leafEditAnswered = (token, held, why) => {
+  const answered = leafEditWaiting.get(token);
+  if (!answered) return;
+  leafEditWaiting.delete(token);
+  answered(!!held, why || '');
+};
+
 // The app bar and a full-window sheet are both title bars when the native one is gone, so they share the press that hands a drag to the host.
 let windowDragPressedAtX = null;
 let windowDragPressedAtY = null;

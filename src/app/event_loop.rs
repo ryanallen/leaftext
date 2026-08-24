@@ -1196,12 +1196,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         }
                     }
                 }
-                IpcCommand::ToggleTask { index } => {
+                IpcCommand::ToggleTask { index, token } => {
                     toggle_task_marker(
                         reader.webview.as_ref(),
                         &mut reader.workspace,
                         &mut file_watch,
                         index,
+                        token,
                     );
                 }
                 IpcCommand::EditBlock {
@@ -1226,39 +1227,29 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     };
                     match edit_block_outcome(&mut reader.workspace, &asked) {
                         BlockEditOutcome::Spliced { autosave, render } => {
-                            if autosave {
-                                autosave_active_buffer(&mut reader.workspace, &mut file_watch);
-                            }
+                            let unwritten = if autosave {
+                                autosave_active_buffer(&mut reader.workspace, &mut file_watch).err()
+                            } else {
+                                None
+                            };
                             if render {
                                 reader.render(ScrollIntent::Preserve { code: None });
                             }
-                            // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess.
+                            // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess. A failed auto-save leaves the buffer dirty, so this is what lights Save over the tick.
                             resync_editing_state(reader.page(), &reader.workspace);
-                            if let Some(token) = token {
-                                run_page_script(
-                                    reader.page(),
-                                    &edit_answered_script(token, true, None),
-                                    "Edit block: failed to say the edit landed",
-                                );
-                            }
+                            // The buffer holds it either way — the splice landed. Where the write behind it did not, that is said rather than swallowed into the log: a box inside a table sends this command, and its tick had been failing in silence.
+                            let said = unwritten.map(|why| {
+                                edit_unsaved_words(&front_document_name(&reader.workspace), &why)
+                            });
+                            say_edit_outcome(reader.page(), token, true, said.as_deref());
                         }
-                        BlockEditOutcome::Refused(why) => match token {
-                            // A sender waiting on this one raises the same growl itself, beside whatever it is holding open. Both would be one refusal said twice.
-                            Some(token) => {
-                                let said = edit_refused_words(
-                                    &front_document_name(&reader.workspace),
-                                    &why,
-                                );
-                                cleared_editing_state(reader.page());
-                                run_page_script(
-                                    reader.page(),
-                                    &edit_answered_script(token, false, Some(&said)),
-                                    "Edit block: failed to say the edit was refused",
-                                );
-                            }
-                            // Nothing was written, so the dirty mark and the Undo button the page raised on its own come back down, and the reader is told rather than the log.
-                            None => say_edit_refused(reader.page(), &reader.workspace, &why),
-                        },
+                        // Nothing was written, so the dirty mark and the Undo button the page raised on its own come back down, and whoever is waiting is told the buffer holds nothing.
+                        BlockEditOutcome::Refused(why) => {
+                            let said =
+                                edit_refused_words(&front_document_name(&reader.workspace), &why);
+                            cleared_editing_state(reader.page());
+                            say_edit_outcome(reader.page(), token, false, Some(&said));
+                        }
                     }
                 }
                 // Re-rendered rather than patched in place: a field other things read has to change everywhere it is shown, not only in the cell it was typed into.

@@ -171,27 +171,35 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
     if (apply(edit)?.changed) await write();
   };
 
+  /** Answer whoever is waiting on an edit. `took` says the buffer took the change, which is what a box that drew itself ticked needs to know: told nothing is held, it puts its own tick back. */
+  const answered = (token, took) => {
+    if (typeof token === 'number') run(`window.leafEditAnswered(${token}, ${took}, null);`);
+  };
+
   // What the page sends the host. A command with no arm here is one this host cannot answer.
   const commands = {
     saveDocument: () => write(),
     editBlock: (command) => {
       // `continuing` marks every splice of a typing run after its first, so one press of undo takes the whole run back however many times it paused. `live` means the reader is still typing in the block: the buffer moves and the document is left standing, because a redraw would take the words out from under the caret — the commit that ends the run is the one that redraws.
       const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell };
-      // Always landed: this buffer is in memory, so there is no read to fail and nothing a sender waiting on the answer could be told to wait for.
-      const answered = () => {
-        if (typeof command.token === 'number') run(`window.leafEditAnswered(${command.token}, true, null);`);
-      };
-      if (command.autosave) return applyAndWrite(edit).then(answered);
+      // Always held: this buffer is in memory, so there is no read to fail and nothing a sender waiting on the answer could be told to wait for. A product that then refuses the save leaves the change held and the document dirty, which is what `write` puts on screen.
+      const say = () => answered(command.token, true);
+      if (command.autosave) return applyAndWrite(edit).then(say);
       if (command.live) {
         tell({ kind: 'document', state: module.buffer.edit(held, edit) });
-        answered();
+        say();
         return undefined;
       }
       const done = apply(edit);
-      answered();
+      say();
       return done;
     },
-    toggleTask: (command) => applyAndWrite({ edit: 'task', index: command.index }),
+    // A tick the buffer would not take — no task at that number, a document with no tasks in it — leaves the page a box it drew ticked over nothing, so the answer says nothing is held and the box comes back up. A product that refuses the save is the other case: the buffer holds the tick and the document is dirty, so the box is right to stay ticked and the reason is on screen.
+    toggleTask: async (command) => {
+      const took = !!apply({ edit: 'task', index: command.index })?.changed;
+      if (took) await write();
+      answered(command.token, took);
+    },
     setField: (command) =>
       command.value === undefined || command.value === null
         ? apply({ edit: 'field', key: command.key, remove: true })

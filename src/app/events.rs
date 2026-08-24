@@ -440,7 +440,12 @@ pub(crate) enum IpcCommand {
     CodeLint { token: u64 },
     /// Toggle a reading-view task checkbox, addressed by its document-order position among list checkboxes.
     #[serde(rename = "toggleTask")]
-    ToggleTask { index: usize },
+    ToggleTask {
+        index: usize,
+        /// Set by the box that sent it, which drew itself ticked before this left. The host answers this number with whether the buffer holds the tick, and a box told nothing is holding it takes its own tick back off — see [`IpcCommand::EditBlock`]'s `token`, which a box inside a table travels under instead.
+        #[serde(default)]
+        token: Option<u64>,
+    },
     /// Splice an inline reading-view edit into the buffer over a source range.
     #[serde(rename = "editBlock")]
     EditBlock {

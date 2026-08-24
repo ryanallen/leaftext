@@ -116,11 +116,23 @@ function bindTaskCheckboxes(tasks) {
   boxes.forEach((box, index) => {
     box.removeAttribute('disabled');
     box.dataset.taskIndex = String(index);
-    // A checkbox toggle auto-saves and records no undo, so it uses a plain send (not sendEditCommand, which would optimistically flag the doc dirty).
     box.addEventListener('change', () => {
-      send({ command: 'toggleTask', index });
+      sendTaskToggle(box, index);
     });
   });
+}
+
+// Tick one box in a plain list. A checkbox toggle auto-saves and records no undo, so it uses a plain send (not sendEditCommand, which would optimistically flag the doc dirty).
+//
+// The browser drew the tick before this leaves, which is on purpose — waiting on the host would make every tick feel slow — so the send asks to be answered. Told the buffer is holding nothing, the box puts its own tick back: the host cannot name a box to redraw, and the listener that drew it is the one thing in the app that can undraw it. Told the buffer is holding it, the tick stands, even where the file behind it was refused — the change is real and the chrome the host sends beside this says so. An answer that never arrives leaves the box exactly as the reader drew it, which is what happened before there was an answer at all.
+function sendTaskToggle(box, index) {
+  const drawn = box.checked;
+  const token = leafWaitForEdit((held, why) => {
+    if (!held) box.checked = !drawn;
+    // The sentence rides the answer rather than being growled by the host, so a tick is only ever told about once — see say_edit_outcome, which stays quiet wherever a token came.
+    if (why) leafToast(why, 'error');
+  });
+  send({ command: 'toggleTask', index, token });
 }
 
 // Make table-cell checkboxes interactive. They have no marker offset to flip (synthesized from cell text), so a click sends the box's own cell for the host to write, with the whole table re-serialized behind it as the fallback. WYSIWYG tables only — checked directly, since these bind even when reader editing is off (no contenteditable).
@@ -141,7 +153,7 @@ function bindTableCheckboxesIn(table) {
     box.removeAttribute('disabled');
     box.addEventListener('change', () => {
       // Read after the flip: the change event fires with the new state already on.
-      sendCheckboxBlockEdit(table, start, end, tableDomToMarkdown(table), tableCellPosition(table, cell));
+      sendCheckboxBlockEdit(table, start, end, tableDomToMarkdown(table), tableCellPosition(table, cell), box);
     });
   });
 }

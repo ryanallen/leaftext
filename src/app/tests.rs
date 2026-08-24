@@ -6629,10 +6629,13 @@ fn every_command_sharing_the_seed_answers_why_rather_than_nothing_when_the_file_
 
     let mut ticking = missing();
     let mut watch = FileWatch::default();
-    assert_eq!(
-        flip_task_and_save(None, &mut ticking, &mut watch, 0).map(|_| ()),
-        Err(gone_reason),
-        "and the checkbox, which had already drawn itself ticked"
+    let refusal = flip_task_and_save(None, &mut ticking, &mut watch, 0)
+        .err()
+        .expect("and the checkbox, which had already drawn itself ticked");
+    assert_eq!(refusal.why, gone_reason);
+    assert!(
+        !refusal.held,
+        "a failed seed holds nothing, so the box comes back up too"
     );
 
     // A file that is there answers the buffer rather than a sentence, so the refusal is the read and not the shape of the call.
@@ -6689,6 +6692,184 @@ fn a_save_of_a_document_the_app_holds_no_buffer_for_says_so_rather_than_answerin
         ),
     ));
     assert_eq!(save_refusal_script(&holding), None);
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// The four ways a tick can go, and the one word the page acts on. Every box draws itself ticked before the command leaves, so a tick standing on nothing has to come back as nothing — and a tick the buffer took over a file that then refused the write has to come back as held, or the page would take a real change off the screen and leave the reader an unsaved document that looks untouched.
+#[test]
+fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
+    let dir = scratch_dir("a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box");
+    let note = dir.join("tasks.md");
+    let source = "| a | b |
+| --- | --- |
+| [ ] one | two |
+
+- [ ] three
+";
+    fs::write(&note, source).expect("the note is written");
+
+    // A tab holding its buffer already, so nothing below re-reads a disk that is about to go.
+    let seeded = || {
+        let mut workspace = Workspace::default();
+        workspace.open_path(note.clone());
+        workspace.tabs[0].edit = Some(EditableDocument::new(
+            note.clone(),
+            SourceText::utf8(source.to_string()),
+        ));
+        workspace
+    };
+    let mut ticking = seeded();
+    let mut splicing = seeded();
+    let mut counted = seeded();
+    let mut watch = FileWatch::default();
+
+    // A plain list's box over a file that cannot be read: nothing is seeded, so nothing is held.
+    let gone = dir.join("elsewhere").join("tasks.md");
+    let mut unread = Workspace::default();
+    unread.open_path(gone);
+    let refusal = flip_task_and_save(None, &mut unread, &mut watch, 0)
+        .err()
+        .expect("a file that cannot be read is written to by nobody");
+    assert_eq!(refusal.why, "the file could not be read");
+    assert!(
+        !refusal.held,
+        "there is no buffer at all, so the box is standing on air"
+    );
+
+    // A table's box over the same unreadable file, which is the other command and the same answer.
+    let mut unread = Workspace::default();
+    unread.open_path(dir.join("elsewhere").join("tasks.md"));
+    let table = |text: &'static str| BlockEdit {
+        start: 0,
+        end: 0,
+        text,
+        autosave: true,
+        live: false,
+        continuing: false,
+        cell: None,
+    };
+    match edit_block_outcome(
+        &mut unread,
+        &table(
+            "| a |
+",
+        ),
+    ) {
+        BlockEditOutcome::Refused(why) => assert_eq!(why, "the file could not be read"),
+        BlockEditOutcome::Spliced { .. } => panic!("there is nothing to splice into"),
+    }
+
+    // A plain list's box at a task number the document has not got: the buffer is there and it did not move.
+    let refusal = flip_task_and_save(None, &mut counted, &mut watch, 7)
+        .err()
+        .expect("there is no eighth task");
+    assert!(
+        !refusal.held,
+        "a task that is not there moves nothing, so the box comes back up"
+    );
+    assert!(
+        !counted
+            .active_edit()
+            .expect("the buffer is there")
+            .is_dirty(),
+        "and the document is exactly as clean as it was"
+    );
+
+    // Now the folder goes while the app is still up — the owner's own gesture, and the only way a write fails here.
+    fs::remove_dir_all(&dir).expect("the folder is deleted under the app");
+
+    // A plain list's box the buffer took and the file refused.
+    let refusal = flip_task_and_save(None, &mut ticking, &mut watch, 0)
+        .err()
+        .expect("the file cannot be written");
+    assert!(
+        refusal.held,
+        "the tick is in the buffer, so the box on screen is right"
+    );
+    assert!(
+        ticking
+            .active_edit()
+            .expect("the buffer is there")
+            .is_dirty(),
+        "and the document is dirty, which is what Save is lit over"
+    );
+
+    // A table's box, the same way: the splice lands and only the write is refused.
+    match edit_block_outcome(
+        &mut splicing,
+        &table(
+            "| a |
+",
+        ),
+    ) {
+        BlockEditOutcome::Spliced { autosave, .. } => assert!(autosave, "a tick writes itself"),
+        BlockEditOutcome::Refused(why) => panic!("the buffer is seeded: {why}"),
+    }
+    assert!(
+        autosave_active_buffer(&mut splicing, &mut watch).is_err(),
+        "the write is refused, and it is answered rather than only logged"
+    );
+    assert!(
+        splicing
+            .active_edit()
+            .expect("the buffer is there")
+            .is_dirty(),
+        "the table's tick is held too, so its box is also right to stay ticked"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// The chrome after a tick the file refused. Cleared, it says the app is holding nothing — beside a box that is plainly ticked and a buffer that really is holding it, which is the reader told to go and make the change again over a document that already has it.
+#[test]
+fn a_tick_the_file_refused_keeps_its_dirty_mark_rather_than_clearing_the_chrome() {
+    let dir =
+        scratch_dir("a_tick_the_file_refused_keeps_its_dirty_mark_rather_than_clearing_the_chrome");
+    let note = dir.join("tasks.md");
+    let source = "- [ ] one
+";
+    fs::write(&note, source).expect("the note is written");
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(note.clone());
+    workspace.tabs[0].edit = Some(EditableDocument::new(
+        note.clone(),
+        SourceText::utf8(source.to_string()),
+    ));
+    let mut watch = FileWatch::default();
+    fs::remove_dir_all(&dir).expect("the folder is deleted under the app");
+
+    let answer = task_toggle_answer(None, &mut workspace, &mut watch, 0);
+    assert!(matches!(answer.chrome, TaskChrome::Resync));
+    assert!(answer.held, "the page is told to leave its tick alone");
+    let said = answer.said.expect("the reader is told the file is behind");
+    assert!(
+        said.starts_with("tasks.md was changed and not saved:"),
+        "the sentence names the document and says the change is real: {said}"
+    );
+
+    let held = workspace.active_edit().expect("the buffer is there");
+    assert!(
+        editing_state_script(held).contains("\"dirty\":true"),
+        "which is what the resync sends: the dot stays up and Save stays lit"
+    );
+    assert!(
+        cleared_editing_state_script().contains("\"dirty\":false"),
+        "where clearing it would have put both out over a change the app is holding"
+    );
+
+    // And a tick with nothing behind it clears the chrome, which is the other half of the same decision.
+    let mut unread = Workspace::default();
+    unread.open_path(dir.join("elsewhere").join("tasks.md"));
+    let answer = task_toggle_answer(None, &mut unread, &mut watch, 0);
+    assert!(matches!(answer.chrome, TaskChrome::Clear));
+    assert!(!answer.held, "so the page puts its own tick back off");
+    assert_eq!(
+        answer.said.as_deref(),
+        Some("tasks.md was not changed: the file could not be read."),
+        "and the sentence says nothing happened, because nothing did"
+    );
 
     let _ = fs::remove_dir_all(&dir);
 }

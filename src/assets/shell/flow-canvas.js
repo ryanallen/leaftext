@@ -76,35 +76,34 @@ const FLOW_TIP_BUD = 'Let go on empty space for a new box · on another box to c
 
 // ---- opening and closing ---------------------------------------------------
 
-// A Save the host might refuse: nothing is written when the command is dispatched, so the sheet holds the drawing until the answer comes back. Each Save gets a number of its own, and an answer to a sheet somebody has since closed or reopened is dropped.
-let flowSaveToken = 0;
+// A Save the host might refuse: nothing is written when the command is dispatched, so the sheet holds the drawing until the answer comes back. The token this sheet is waiting on, or null — kept so a sheet closed or reopened under a Save still in the air stops waiting rather than being answered later.
 let flowSaveWaiting = null;
-
-// The number one Save travels under, out to the host with the command and back with the answer. Minted here rather than in state.js because the sheet that waits on the answer owns it, and this fragment loads ahead of the insert row and the DOM-only splices — a function declaration reaches the whole scope, so the counter itself is still touched by one file.
-function nextEditToken() {
-  return ++flowSaveToken;
-}
 
 // The token an insert row's write travels under, or none. Only an option somebody is holding something for asks to be answered — the flowchart sheet, which keeps the drawing on screen until the host's word. Everything else on that row writes and is done, and the host says its own refusal where no token came, so minting one for those would swallow that sentence into an answer no sheet is listening for.
 function insertEditToken(option) {
   return option && option.answered ? nextEditToken() : undefined;
 }
 
-// The host's answer to one Save. Landed closes the sheet; refused leaves the drawing on screen with the reason beside it, which is the only copy of that drawing left.
-window.leafEditAnswered = (token, written, why) => {
-  if (!flowSaveWaiting || flowSaveWaiting !== token) return;
+// Stop waiting on whatever Save was in the air. The register in dom.js is what holds the callback, so dropping it here is what keeps a sheet that has since closed from being closed again by an answer to the sheet before it.
+function dropFlowSaveWait() {
+  if (flowSaveWaiting !== null) leafDropEditWait(flowSaveWaiting);
   flowSaveWaiting = null;
-  if (written) {
+}
+
+// The host's answer to one Save. Held closes the sheet; nothing held leaves the drawing on screen with the reason beside it, which is the only copy of that drawing left.
+function onFlowSaveAnswered(held, why) {
+  flowSaveWaiting = null;
+  if (held) {
     closeFlowSheet();
     return;
   }
   leafToast(why || FLOW_SAVE_GONE, 'error');
-};
+}
 
 // `save` is handed the mermaid text and decides where it goes: the insert row writes a new block, a diagram already in the page splices its own range. It answers false where it has nowhere left to land, a number where the host now owes an answer, and true where it wrote the block itself.
 function openFlowSheet({ title, text, save }) {
   if (!flowSheet || !flowBackdrop) return;
-  flowSaveWaiting = null;
+  dropFlowSaveWait();
   flowLastFocus = document.activeElement;
   flowSession = { save, text: typeof text === 'string' ? text : '', graph: null };
   flowSelection = null;
@@ -132,7 +131,7 @@ function openFlowSheet({ title, text, save }) {
 
 function closeFlowSheet() {
   if (!flowSession) return;
-  flowSaveWaiting = null;
+  dropFlowSaveWait();
   closeFlowMenu();
   closeFlowLabelBox(false);
   flowSession = null;
@@ -177,9 +176,9 @@ function saveFlowSheet() {
     leafToast(FLOW_SAVE_GONE, 'error');
     return;
   }
-  // A number means the write went to the host and nothing is written yet. The sheet stays up with the drawing in it until leafEditAnswered says which way it went.
+  // A number means the write went to the host and nothing is written yet. The sheet stays up with the drawing in it until the answer to that number says which way it went.
   if (typeof answer === 'number') {
-    flowSaveWaiting = answer;
+    flowSaveWaiting = leafHoldEdit(answer, onFlowSaveAnswered);
     return;
   }
   closeFlowSheet();

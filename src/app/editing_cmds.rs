@@ -419,9 +419,14 @@ pub(crate) fn apply_block_move(
 }
 
 /// Write the active buffer to disk for an auto-saving edit (a checkbox toggle): no Save-button round-trip. The version bump plus watcher-hash update keep our own write from bouncing back through the file watcher as an external change.
-pub(crate) fn autosave_active_buffer(workspace: &mut Workspace, file_watch: &mut FileWatch) {
+///
+/// Answers the write rather than only logging it. The splice has already landed, so a failure here is a real change with no file behind it — and swallowing it into the log is what left a box inside a table ticked with nothing said anywhere a reader looks.
+pub(crate) fn autosave_active_buffer(
+    workspace: &mut Workspace,
+    file_watch: &mut FileWatch,
+) -> Result<(), String> {
     let Some(edit) = workspace.active_edit_mut() else {
-        return;
+        return Ok(());
     };
     let text = edit.text().to_string();
     match DesktopHost::default().save(
@@ -434,21 +439,128 @@ pub(crate) fn autosave_active_buffer(workspace: &mut Workspace, file_watch: &mut
         Ok(()) => {
             edit.mark_saved();
             file_watch.active_hash = Some(content_hash(&text));
+            Ok(())
         }
-        Err(error) => eprintln!("Auto-save failed for {}: {error}", edit.path.display()),
+        Err(error) => {
+            eprintln!("Auto-save failed for {}: {error}", edit.path.display());
+            Err(error.to_string())
+        }
     }
 }
 
-/// Toggle a task-list checkbox from the reading view. Everything it does is `flip_task_and_save`'s, and a refusal is said where the reader is looking: the page draws the box ticked before the command leaves, so a silent refusal leaves a box ticked on screen over a file nothing was written to.
+/// Toggle a task-list checkbox from the reading view. Everything it does is `flip_task_and_save`'s; what the page is then told is decided here, because the box drew itself ticked before the command left and only the host knows whether that tick is standing on anything.
+///
+/// So the two refusals are not one. Where nothing is held the chrome goes back to nothing and the answer says so, which is the page's cue to put its own tick back. Where the buffer took the tick and only the file refused it, the box on screen is right: the chrome is refreshed instead, which leaves the dirty mark up and Save lit over a change that is genuinely there.
+///
+/// `token` is the box that sent it. The sentence rides the answer where there is one, so it is said once beside the box it is about rather than twice.
 pub(crate) fn toggle_task_marker(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     index: usize,
+    token: Option<u64>,
 ) {
-    if let Err(why) = flip_task_and_save(webview, workspace, file_watch, index) {
-        eprintln!("Toggle task: {why}");
-        say_edit_refused(webview, workspace, &why);
+    let answer = task_toggle_answer(webview, workspace, file_watch, index);
+    match answer.chrome {
+        TaskChrome::Sent => {}
+        TaskChrome::Resync => resync_editing_state(webview, workspace),
+        TaskChrome::Clear => cleared_editing_state(webview),
+    }
+    say_edit_outcome(webview, token, answer.held, answer.said.as_deref());
+}
+
+/// What the page is owed after one tick: the chrome to send, whether the buffer holds the tick, and the sentence to say.
+///
+/// Answered as a value rather than done, for the reason [`edit_block_outcome`] is: the loop never returns, so a test has no `Reader` to hand it, and the decision here is the whole of what this ticket changed.
+pub(crate) struct TaskToggleAnswer {
+    pub chrome: TaskChrome,
+    /// True where the buffer kept the tick, which is the word the page acts on: told false, the box that drew itself ticked puts its own tick back off.
+    pub held: bool,
+    pub said: Option<String>,
+}
+
+/// What the reading view's editing chrome — the dirty dot, Save, Undo and Redo — should say once a tick has been through.
+pub(crate) enum TaskChrome {
+    /// Already sent, with the toggled source beside it, by the write that succeeded.
+    Sent,
+    /// Refreshed off the buffer: the tick is held and the file is not written, so the dot stays up and Save stays lit over a change that is really there.
+    Resync,
+    /// Back to nothing, because nothing is held.
+    Clear,
+}
+
+/// Flip one task marker, and say what the page is then owed.
+pub(crate) fn task_toggle_answer(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    file_watch: &mut FileWatch,
+    index: usize,
+) -> TaskToggleAnswer {
+    let refusal = match flip_task_and_save(webview, workspace, file_watch, index) {
+        Ok(_) => {
+            return TaskToggleAnswer {
+                chrome: TaskChrome::Sent,
+                held: true,
+                said: None,
+            }
+        }
+        Err(refusal) => refusal,
+    };
+    eprintln!("Toggle task: {}", refusal.why);
+    let document = front_document_name(workspace);
+    if refusal.held {
+        return TaskToggleAnswer {
+            chrome: TaskChrome::Resync,
+            held: true,
+            said: Some(edit_unsaved_words(&document, &refusal.why)),
+        };
+    }
+    TaskToggleAnswer {
+        chrome: TaskChrome::Clear,
+        held: false,
+        said: Some(edit_refused_words(&document, &refusal.why)),
+    }
+}
+
+/// Why one edit wrote nothing, and whether the buffer kept the change anyway.
+///
+/// The two are not the same refusal and the page cannot tell them apart for itself. A file that could not be read holds nothing, so a box the page drew ticked is standing on air; a splice that landed over a file that then refused the write holds everything but the file, so the same box is right and it is the disk that is behind.
+pub(crate) struct EditRefused {
+    pub why: String,
+    pub held: bool,
+}
+
+/// Every refusal that comes back as words alone happened before the buffer moved, so none of them holds anything.
+impl From<String> for EditRefused {
+    fn from(why: String) -> Self {
+        EditRefused { why, held: false }
+    }
+}
+
+/// What one edit owes the page: the answer to whoever is waiting on it, or the growl where nobody is.
+///
+/// `held` says the buffer kept the change. A sender waiting on a token says the sentence in its own corner beside whatever it is holding open, so the host stays quiet there — both would be one refusal said twice.
+pub(crate) fn say_edit_outcome(
+    webview: Option<&WebView>,
+    token: Option<u64>,
+    held: bool,
+    said: Option<&str>,
+) {
+    match token {
+        Some(token) => run_page_script(
+            webview,
+            &edit_answered_script(token, held, said),
+            "Editing: failed to answer the edit",
+        ),
+        None => {
+            if let Some(said) = said {
+                run_page_script(
+                    webview,
+                    &error_toast_script(said),
+                    "Editing: failed to say how the edit went",
+                );
+            }
+        }
     }
 }
 
@@ -460,13 +572,14 @@ pub(crate) fn flip_task_and_save(
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     index: usize,
-) -> Result<serde_json::Value, String> {
+) -> Result<serde_json::Value, EditRefused> {
     let (_, edit) = seeded_active_edit(workspace)?;
     if edit.format != DocumentFormat::Markdown {
         return Err(format!(
             "{} is not Markdown, so it has no tasks to check",
             edit.path.display()
-        ));
+        )
+        .into());
     }
     let markers = task_marker_offsets(edit.text());
     let Some(&offset) = markers.get(index) else {
@@ -476,7 +589,8 @@ pub(crate) fn flip_task_and_save(
                 "there is no task {index} — {} has {count}",
                 edit.path.display()
             ),
-        });
+        }
+        .into());
     };
     // Read after the flip, off the same buffer the write goes to, so the answer is what the file now says rather than what the caller meant.
     edit.toggle_task_without_undo(index);
@@ -497,12 +611,12 @@ pub(crate) fn flip_task_and_save(
             edit.mark_saved();
             file_watch.active_hash = Some(content_hash(&text));
         }
-        // The marker moved in the buffer, so the answer below says what the reader is now looking at; the file behind it did not, and that is what this line is for.
+        // The marker moved in the buffer, so the tick on screen is right and the document is now dirty. Only the file is behind, which is what `held` carries out to the page: it takes no box back, and the chrome it gets says Save.
         Err(error) => {
-            return Err(format!(
-                "the box was ticked and the file could not be written: {} — {error}",
-                edit.path.display()
-            ))
+            return Err(EditRefused {
+                why: error.to_string(),
+                held: true,
+            })
         }
     }
     let saved = edit.path.display().to_string();
@@ -670,7 +784,8 @@ pub(crate) fn pipe_toggle_task(
     if holding != expect {
         return Err(stale_fingerprint(&holding));
     }
-    flip_task_and_save(webview, workspace, file_watch, index)
+    // The asker on the pipe is told what happened, not what is held: it has no box on screen to put back.
+    flip_task_and_save(webview, workspace, file_watch, index).map_err(|refusal| refusal.why)
 }
 
 /// The pipe's save: write the document at the front to its file, through the same host save the page's own Save runs.
