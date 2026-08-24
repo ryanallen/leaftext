@@ -2957,7 +2957,7 @@ body.mac-frame.is-fullscreen::before {
 .app-trailing.has-overflow .overflow-toggle {
   display: inline-grid;
 }
-/* Where folded items go, one at a time, as the tab strip runs out of room. Measured from the chevron's right edge — `100%` is the trailing group's own box and 32px is the chevron's width — so it grows inward, the way the update bell's panel hangs off the bell rather than off any group. Anchored to the group's left it grew the other way: once everything has folded that edge is the last 32px of the app, and the surface's paint containment cut the menu off flat. */
+/* Where folded items go, one at a time, as the tab strip runs out of room. Measured from the chevron's right edge — `100%` is the trailing group's box, 32px the chevron's width — so it grows inward, the way the update bell's panel hangs off the bell rather than off a group. Measured from the group's left it grows the other way: fully folded, that edge is the app's last 32px, and the surface's paint containment cuts the menu off flat. */
 .app-overflow-panel {
   position: absolute;
   top: calc(100% + 4px);

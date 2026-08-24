@@ -148,7 +148,7 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     );
 }
 
-// The menu the header folds into was measured from the trailing group's left edge, and once every button has folded that edge is the last 32px of the app — so 45.3px of menu had 36.7px to grow into and the app surface's paint containment sliced the rest away, taking the right border and the right of every icon with it. It is measured from the chevron's right edge instead, which grows it inward on either platform whatever inset the group is carrying.
+// Measured from the trailing group's left edge the menu grows off the app: fully folded that edge is the app's last 32px, so 45.3px of menu gets 36.7px of room and the surface's paint containment slices the right border and the right of every icon away. The chevron's right edge grows it inward instead, on either platform whatever inset the group carries.
 #[test]
 fn the_folded_header_menu_is_drawn_inside_the_apps_own_edge() {
     let css = reading_mode_css();
@@ -240,7 +240,7 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
     // The toggle icon is the bundled asset, normalized to currentColor like the other toolbar icons (no stray literal stroke color survives).
     assert_icon(&html, "open-library");
 
-    // The snap-only closed grid rule is gone: the first track reads the rail var, which applyPaneLayout writes as 0px when closed, so open and closed are one rule and the toggle's transition can interpolate between them.
+    // One rule for open and closed: the first track reads the rail var, which applyPaneLayout writes as 0px when closed, so the toggle's transition can interpolate between them.
     assert!(!css.contains(".library-shell.library-closed {\n  grid-template-columns:"));
     assert!(css.contains(".library-divider {"));
     assert!(css.contains("cursor: col-resize;"));
@@ -464,7 +464,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
 fn a_search_row_lands_on_the_match_not_the_heading_above_it() {
     let html = app_shell_page();
 
-    // The row carries the line the match is on, and the jump uses it: a hit near the foot of a long section used to open at the top of that section.
+    // The row carries the line the match is on, and the jump uses it: without it a hit near the foot of a long section opens at the top of that section.
     for expected in [
         r#"data-line="${escapeAttr(String(line))}""#,
         "pendingSearchJump = anchor || line ? { path, anchor, line } : null;",
@@ -844,7 +844,7 @@ fn creating_a_repo_in_the_browser_leaves_the_paste_field_standing() {
 fn a_vault_that_cannot_sign_in_is_told_how_to() {
     let html = app_shell_page();
 
-    // The note used to stop at the diagnosis. It names the fix now, and the fix is two named things rather than "authenticate".
+    // The note names the fix rather than stopping at the diagnosis, and the fix is two named things rather than "authenticate".
     assert!(html.contains(
         "'git has no way to sign in to GitHub. Install GitHub CLI and run gh auth login, or a credential manager.'"
     ));
@@ -1476,7 +1476,7 @@ fn a_mouse_press_never_leaves_a_focus_ring_behind() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // One helper, and it is the only way focus is handed about: a menu closing gives it back to whatever opened it, and a menu opening puts it on the first row — both for the keyboard only. Clicking the switcher and picking a vault used to leave a ring on the button.
+    // One helper, and it is the only way focus is handed about: a menu closing gives it back to whatever opened it, and a menu opening puts it on the first row — both for the keyboard only. Handed about any other way, clicking the switcher and picking a vault leaves a ring on the button.
     assert!(html.contains("function leafFocusForKeyboard(target) {"));
     assert!(html.contains("if (!leafKeyboardDriving || !target || !target.isConnected || !target.focus) return false;"));
     assert!(html.contains(
@@ -1638,7 +1638,7 @@ fn cloning_a_repository_takes_an_address_and_then_a_folder() {
 
 #[test]
 fn deleting_a_file_asks_before_it_goes() {
-    // Delete used to send the moment it was picked, so one click on the wrong row emptied it out of the folder with nothing asked. It asks now, and the question is in the page before anything can need it.
+    // Delete asks before it sends, and the question is in the page before anything can need it: sending on the pick means one click on the wrong row empties it out of the folder with nothing asked.
     let html = app_shell_page();
 
     // The frame is in the boot HTML, and it starts hidden.
@@ -1689,7 +1689,7 @@ fn canceling_a_delete_sends_nothing_and_the_item_sends_one_command() {
 
 #[test]
 fn a_delete_can_be_taken_back_while_its_message_is_up() {
-    // A delete that worked used to say nothing at all, so there was no moment in which to change your mind. The offer and the message are the same thing now.
+    // The offer and the message are the same thing: a delete that says nothing at all leaves no moment in which to change your mind.
     let html = app_shell_page();
 
     // The host arms it, not the asking — so a build with nothing behind the delete never draws an offer it could not keep.
