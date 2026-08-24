@@ -6812,7 +6812,7 @@ if (booted) {
     }
   });
 
-  // Save used to answer true the moment the command was dispatched, so the sheet closed the way it does after a good save on a write the host had not made yet — and a reader whose file had gone watched minutes of drawing disappear. The sheet now waits for the host's word.
+  // The sheet waits for the host's word before it closes. Answering true on the dispatch closes it over a write the host has not made, and a reader whose file has gone loses the drawing.
   check('the diagram sheet waits for the host before it closes, and keeps the drawing when the edit is refused', () => {
     const note = '# Title\n\n\`\`\`mermaid\nflowchart TD\n    A["a"]\n\`\`\`\n';
     const at = note.indexOf('\`\`\`mermaid');

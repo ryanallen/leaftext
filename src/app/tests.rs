@@ -6453,7 +6453,7 @@ fn an_edit_whose_file_has_gone_answers_why_and_leaves_the_tab_holding_nothing() 
     let _ = fs::remove_dir_all(&dir);
 }
 
-/// The decision the loop spends, held by calling it. The loop never returns, so this used to be unreachable; reading `event_loop.rs` as text is refused outright, because ten tests that did it all passed with their subject deleted.
+/// The decision the loop spends, held by calling it. The loop never returns, so a test cannot reach inside it, and reading `event_loop.rs` as text is refused outright: ten tests that did it all passed with their subject deleted.
 #[test]
 fn the_edit_block_decision_says_refused_when_the_file_has_gone_and_spliced_when_it_is_there() {
     let dir = scratch_dir(

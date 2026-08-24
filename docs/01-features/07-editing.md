@@ -35,6 +35,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [A table keeps its spacing](#inline-editing-the-reading-view) | Type in one cell and only that cell is rewritten, so a table you lined up by hand stays lined up |
 | [Full-window tables](#inline-editing-the-reading-view) | Open a safe Markdown table on the whole window; it keeps the same look, takes the room the window has, folds long cells rather than running off the right edge, never squeezes a short column until its words break in half, and follows its own links the way the page does |
 | [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits, a word at a time while you are typing; a Redo button beside it (and `Ctrl+Y` or `Ctrl+Shift+Z`) brings back what you took back |
+| [When the app cannot write it](#when-the-app-cannot-write-it) | A file that has gone takes the tab dot, Save and Undo down and raises a message naming it; the flowchart editor keeps the drawing rather than closing over it |
 | [The padlock](#the-padlock) | Two padlocks, one for the reading view and one for the source, each remembered. Both start locked, except in a [new document](#new-document) — and checkboxes toggle either way |
 | [Replacing text](02-navigation.md#find-in-this-document) | The find bar's Replace and All write through the same padlock as typing does — in the reading view as one splice of the source, so one Undo puts it all back |
 | [Code view](#code-view) | Toggle the rendered page to the raw source and back |
@@ -375,6 +376,16 @@ Saving is always explicit.
 - Closing the window does not save, and does not throw the edits away either: they travel in the [saved session](05-settings.md#example) and are back, with the dot, at the next launch. Only the close carries them — a window left open writes nothing of what you have typed.
 - A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
 - A file is written in the [encoding it was read in](01-rendering.md#file-encodings). A UTF-16 document stays UTF-16; a file with no byte order mark does not gain one.
+
+### When the app cannot write it
+
+A file can go while its document is open — deleted, its folder moved, a drive unplugged, a permission changed. The first thing you type after that cannot be written, and the app says so rather than letting it look as though it worked.
+
+- **A message in the corner names the file and says nothing was changed**, with the reason beside it. Your words stay on screen: they are the only copy left, and taking them away would lose them.
+- **The dot on the tab, Save and Undo all go down**, because the app is holding nothing for that document — a lit Save button over a file nothing reached is a promise there is nothing behind.
+- **Pressing Save then says the same thing** rather than answering with silence.
+- **A checkbox says it too.** A box the app cannot write raises the message the same way, in a list or in a table cell.
+- **[The flowchart editor](#the-flowchart-editor) keeps the drawing.** Its Save waits for the app to say the write landed, so a refused one leaves the sheet open with the diagram in it and the message beside it, instead of closing over minutes of work.
 
 ### External changes
 

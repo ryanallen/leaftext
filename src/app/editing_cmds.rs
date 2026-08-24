@@ -63,7 +63,7 @@ pub(crate) fn reading_document_from_buffer(edit: &EditableDocument, path: &Path)
 
 /// The active tab's edit buffer, seeded from disk the first time; re-entry reuses it so unsaved edits survive. Also returns the tab's index.
 ///
-/// A refusal comes back as words rather than only a line in the log, the way [`pipe_active_edit`] already answers: the reader who typed is waiting on this one, and the sentence is what the growl says. The operating system's own words stay in the log, which is where a diagnosis is made and not where anybody is reading.
+/// A refusal comes back as words rather than only a line in the log, the way `pipe_active_edit` already answers: the reader who typed is waiting on this one, and the sentence is what the growl says. The operating system's own words stay in the log, which is where a diagnosis is made and not where anybody is reading.
 fn seeded_active_edit<'a>(
     workspace: &'a mut Workspace,
 ) -> Result<(usize, &'a mut EditableDocument), String> {
@@ -731,7 +731,7 @@ pub(crate) fn editing_state_script(edit: &EditableDocument) -> String {
 
 /// Tell the page nothing is held for the document at the front: no dirty mark, nothing to undo, nothing to redo.
 ///
-/// [`resync_editing_state`] cannot say this. It answers off `workspace.active_edit()`, and a refused seed returns before the tab's buffer is ever made, so the call reads nothing and the raised buttons stand. Where the tab does hold a buffer it is worse than nothing: a tab that followed a link away from the document it was editing still holds that other file's buffer, and the script names no path, so the page would stamp that document's state onto the one on screen.
+/// `resync_editing_state` cannot say this. It answers off `workspace.active_edit()`, and a refused seed returns before the tab's buffer is ever made, so the call reads nothing and the raised buttons stand. Where the tab does hold a buffer it is worse than nothing: a tab that followed a link away from the document it was editing still holds that other file's buffer, and the script names no path, so the page would stamp that document's state onto the one on screen.
 pub(crate) fn cleared_editing_state(webview: Option<&WebView>) {
     run_page_script(
         webview,
