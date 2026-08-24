@@ -6920,7 +6920,7 @@ if (booted) {
     }
   });
 
-  // The same wait, down the door a new diagram really takes: through the insert row, which sent the command and answered nothing, so the sheet closed over minutes of drawing whether or not the host kept a byte of it. A diagram already in the page survives that — it is still in the file — and a new one exists nowhere else at all.
+  // The same wait, down the door a new diagram takes: through the insert row. A diagram already in the page survives a sheet that closes on the dispatch — it is still in the file — and a new one exists nowhere else at all, so this door is the one that must hold the drawing until the host answers.
   check('a new diagram from the plus waits for the host and keeps the drawing when nothing was written', () => {
     const read = (expression) => vm.runInContext(expression, booted);
     const was = { source: read('currentDocumentSource'), send: booted.ipc.postMessage, toast: booted.leafToast };
