@@ -2,7 +2,11 @@
 
 use super::*;
 
-const LINK_PREVIEW_HEAD_BYTES: usize = 64 * 1024;
+// Every document in reach, so the page can lift the section an address names out of what arrived: 2.3 times the largest file here, and a file past it previews its opening rather than nothing. The 79ms it costs falls inside the rest the card already waits out, so nobody meets it.
+const LINK_PREVIEW_HEAD_BYTES: usize = 256 * 1024;
+
+// An entry is now a render of up to 313 KB, so the oldest goes rather than every file rested on being held for the life of the session.
+const LINK_PREVIEW_CACHE_ENTRIES: usize = 16;
 
 /// Render the opening of the readable local document `href` names from `current_path`.
 pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<String> {
@@ -11,6 +15,7 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
     let cached = LINK_PREVIEW_CACHE.with(|cache| {
         cache
             .borrow()
+            .renders
             .get(&path)
             .filter(|entry| entry.modified == modified)
             .map(|entry| entry.html.clone())
@@ -19,7 +24,7 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
         let source = read_source_head(&path, LINK_PREVIEW_HEAD_BYTES).ok()?;
         let html = render_markdown_document(&source.text, &path).html;
         LINK_PREVIEW_CACHE.with(|cache| {
-            cache.borrow_mut().insert(
+            cache.borrow_mut().keep(
                 path,
                 LinkPreviewRender {
                     modified,
@@ -36,7 +41,27 @@ struct LinkPreviewRender {
     html: String,
 }
 
+#[derive(Default)]
+struct LinkPreviewCache {
+    renders: HashMap<PathBuf, LinkPreviewRender>,
+    // The paths in the order they were first rendered, so the one held longest is the one dropped.
+    order: Vec<PathBuf>,
+}
+
+impl LinkPreviewCache {
+    fn keep(&mut self, path: PathBuf, render: LinkPreviewRender) {
+        // A re-render of a file already held keeps its place: what is being replaced is a stale copy of the same document, not a new one.
+        if self.renders.insert(path.clone(), render).is_none() {
+            self.order.push(path);
+        }
+        while self.order.len() > LINK_PREVIEW_CACHE_ENTRIES {
+            let oldest = self.order.remove(0);
+            self.renders.remove(&oldest);
+        }
+    }
+}
+
 thread_local! {
-    static LINK_PREVIEW_CACHE: std::cell::RefCell<HashMap<PathBuf, LinkPreviewRender>> =
-        std::cell::RefCell::new(HashMap::new());
+    static LINK_PREVIEW_CACHE: std::cell::RefCell<LinkPreviewCache> =
+        std::cell::RefCell::new(LinkPreviewCache::default());
 }

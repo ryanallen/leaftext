@@ -2317,11 +2317,15 @@ fn a_local_link_preview_is_bounded_cached_and_refreshed_after_an_edit() {
     let current = dir.join("current.md");
     let target = dir.join("target.md");
     fs::write(&current, "# Current").expect("current document is written");
+    // What the bound has to prove now is where it falls, not that it exists: every section a reader can rest on has to arrive for the page to lift it, so a heading past the old bound is in the answer and one past the new one is not.
     fs::write(
         &target,
         format!(
-            "# Preview\n\nOpening text.\n\n{}hidden tail",
-            "word ".repeat(16_000)
+            "# Preview\n\nOpening text.\n\n{}
+
+## Deep section\n\nStill inside the bound.\n\n{}hidden tail",
+            "word ".repeat(20_000),
+            "word ".repeat(40_000)
         ),
     )
     .expect("target document is written");
@@ -2332,8 +2336,12 @@ fn a_local_link_preview_is_bounded_cached_and_refreshed_after_an_edit() {
         "the opening renders: {first}"
     );
     assert!(
+        first.contains("Still inside the bound."),
+        "a section past the old bound is in what the page lifts from"
+    );
+    assert!(
         !first.contains("hidden tail"),
-        "the render stops at the bounded head"
+        "the render still stops at a bound rather than reading whatever it is pointed at"
     );
     assert_eq!(
         link_preview_html("target.md", &current),
@@ -3126,6 +3134,40 @@ fn a_page_that_cannot_be_previewed_is_still_answered() {
         link_preview_script(9, &html),
         r#"window.leafLinkPreview(9, "");"#,
         "the page is told the preview is empty rather than left waiting"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_link_naming_a_heading_deep_in_a_file_is_answered_with_that_section_and_its_table() {
+    // The link the owner rested on: a section four fifths of the way down a long page, whose whole content is a table of steps. The lift is the page's, so what the host owes is the section and its rows in the answer at all — the front-end check drives the lift itself.
+    let dir = std::env::temp_dir().join(format!("leaf-deep-preview-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let current = dir.join("current.md");
+    let target = dir.join("tracks.md");
+    fs::write(&current, "# Current").expect("current document is written");
+    fs::write(
+        &target,
+        format!(
+            "# Tracks\n\nThe opening.\n\n{}
+
+## Layer order\n\nWhy it is here.\n\n| Step | What |\n| --- | --- |\n| 1 | The first step |\n| 2 | The second step |\n",
+            "word ".repeat(20_000)
+        ),
+    )
+    .expect("target document is written");
+
+    let html = link_preview_html("tracks.md#layer-order", &current)
+        .expect("a link carrying a fragment previews the file it names");
+    assert!(
+        html.contains(r#"id="layer-order""#),
+        "the section the address names is in the answer the page lifts from"
+    );
+    assert!(
+        html.contains("The second step"),
+        "the table under that heading is in the answer, rows and all"
     );
 
     fs::remove_dir_all(&dir).expect("fixture directory is removed");

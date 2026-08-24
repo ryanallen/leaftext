@@ -2288,6 +2288,102 @@ if (booted) {
     }
   });
 
+  // One block per element and its own markup beside it, so a stand-in can hand back what it was written from: the page has neither `outerHTML` nor `nextElementSibling`, and the lift reads both.
+  const previewSectionBlocks = [
+    '<h1 id="tracks">Tracks</h1>',
+    '<p>The opening.</p>',
+    '<h2 id="layer-order">Layer order</h2>',
+    '<p>Why it is here.</p>',
+    '<h3 id="a-detail">A detail</h3>',
+    '<table><tbody><tr><td>The second step</td></tr></tbody></table>',
+    '<h2 id="the-next">The next</h2>',
+    '<p>Not this one.</p>',
+  ];
+  const PREVIEW_SECTION_OPENING = '<base href="file:///notes/"><article class="document-body">';
+  const previewSectionHtml = PREVIEW_SECTION_OPENING + previewSectionBlocks.join('') + '</article>';
+  // The parse the page holds between rests, handed over ready-made because the lift is what is being read, not the browser's parser.
+  const seedPreviewParse = () => {
+    const parsed = booted.document.createElement('div');
+    parsed.innerHTML = previewSectionHtml;
+    const note = parsed.querySelector('article');
+    note.children.forEach((el, i) => {
+      el.outerHTML = previewSectionBlocks[i];
+      el.nextElementSibling = note.children[i + 1] || null;
+    });
+    booted.__previewProbeRoot = parsed;
+    booted.__previewProbeHtml = previewSectionHtml;
+    vm.runInContext('linkPreviewParsedRoot = __previewProbeRoot; linkPreviewParsedHtml = __previewProbeHtml;', booted);
+  };
+  const forgetPreviewParse = () => {
+    vm.runInContext('linkPreviewParsedRoot = null; linkPreviewParsedHtml = null; linkPreviewCache.clear(); pendingPreviewTokens.clear();', booted);
+    delete booted.__previewProbeRoot;
+    delete booted.__previewProbeHtml;
+  };
+  // The card's answer is the whole file the address names, and the address names one section of it. The blocks that section is are lifted out before anything is drawn or remembered, so what the card draws is the heading the address named and everything under it — the deeper heading inside it included, and nothing of the next section of its own rank.
+  check('a preview lifts the section its address names and stops at the next heading of that rank', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const wasHidden = tip.hidden;
+    try {
+      seedPreviewParse();
+      tip.hidden = false;
+      vm.runInContext('activeHoverToken = 41; linkHoverPointer = null; pendingPreviewTokens.set(41, "notes/tracks.md#layer-order");', booted);
+      booted.window.leafLinkPreview(41, previewSectionHtml);
+      const drawn = previewDocument.innerHTML;
+      const want = PREVIEW_SECTION_OPENING + previewSectionBlocks.slice(2, 6).join('') + '</article>';
+      if (drawn !== want) throw new Error(`the card drew something other than the section its address named: ${drawn}`);
+      if (drawn.includes('The opening.')) throw new Error('the card still opens at the file rather than at the section named');
+      if (!drawn.includes('The second step')) throw new Error('the table under the heading did not come with it');
+      if (!drawn.includes('A detail')) throw new Error('the lift stopped at a heading of lower rank inside the section');
+      if (drawn.includes('Not this one.')) throw new Error('the lift ran on into the next section');
+    } finally {
+      vm.runInContext('activeHoverToken = 0; hideLinkHoverPreview();', booted);
+      tip.hidden = wasHidden;
+      forgetPreviewParse();
+    }
+  });
+
+  // A heading renamed since the link was written names nothing in what arrived. The file is still what the press opens, so the card goes on saying what the file is rather than emptying itself.
+  check('a preview whose address names nothing in the answer draws the whole answer', () => {
+    try {
+      seedPreviewParse();
+      vm.runInContext('activeHoverToken = 42; linkHoverTip.hidden = true; pendingPreviewTokens.set(42, "notes/tracks.md#renamed-since");', booted);
+      booted.window.leafLinkPreview(42, previewSectionHtml);
+      const kept = vm.runInContext('linkPreviewCache.get("notes/tracks.md#renamed-since")', booted);
+      if (kept !== previewSectionHtml) throw new Error('an address naming nothing left the card with less than the file');
+
+      vm.runInContext('pendingPreviewTokens.set(43, "notes/tracks.md");', booted);
+      booted.window.leafLinkPreview(43, previewSectionHtml);
+      const whole = vm.runInContext('linkPreviewCache.get("notes/tracks.md")', booted);
+      if (whole !== previewSectionHtml) throw new Error('an address naming no section at all was cut down to one');
+    } finally {
+      vm.runInContext('activeHoverToken = 0;', booted);
+      forgetPreviewParse();
+    }
+  });
+
+  // The running order links at a hundred and forty-two sections of one page. What is kept per address is that address's own section, so those links hold a hundred and forty-two sections rather than that many copies of the page.
+  check('a preview remembers the section its address named, not the file it was cut from', () => {
+    try {
+      seedPreviewParse();
+      vm.runInContext('linkHoverTip.hidden = true; pendingPreviewTokens.set(44, "notes/tracks.md#layer-order"); pendingPreviewTokens.set(45, "notes/tracks.md#the-next");', booted);
+      booted.window.leafLinkPreview(44, previewSectionHtml);
+      booted.window.leafLinkPreview(45, previewSectionHtml);
+      const held = vm.runInContext('[...linkPreviewCache.entries()]', booted);
+      if (held.length !== 2) throw new Error(`two links into one file left ${held.length} entries`);
+      for (const [key, value] of held) {
+        if (value.includes('The opening.')) throw new Error(`${key} kept the whole file rather than its own section`);
+        if (value.length >= previewSectionHtml.length) throw new Error(`${key} kept as much as the answer it was cut from`);
+      }
+      const first = held.find(([key]) => key.endsWith('#layer-order'))[1];
+      const second = held.find(([key]) => key.endsWith('#the-next'))[1];
+      if (!first.includes('Layer order') || first.includes('Not this one.')) throw new Error('the first link remembered the wrong section');
+      if (!second.includes('Not this one.') || second.includes('Why it is here.')) throw new Error('the second link remembered the wrong section');
+    } finally {
+      forgetPreviewParse();
+    }
+  });
+
   checkSettled('a drawing in a linked-note preview is made outside the layer the card scales, dropped for a card the pointer has left, and left a strip when it will not fit', async () => {
     const preview = vm.runInContext('linkHoverTipPreview', booted);
     const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);

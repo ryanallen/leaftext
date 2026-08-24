@@ -28,24 +28,24 @@ function glossaryAnchorFromHref(rawHref) {
   try { anchor = decodeURIComponent(anchor); } catch (e) {}
   return anchor;
 }
-function glossaryHeadingLevel(el) {
+function documentHeadingLevel(el) {
   const match = /^H([1-6])$/.exec(el.tagName);
   return match ? Number(match[1]) : 0;
 }
-function extractGlossaryEntry(root, anchor) {
+// One section of a rendered document: the element the anchor names and every block after it, stopping at the next heading of its own rank or higher. Any element, not only a heading, so an anchor stamped on something else still answers. Read by the glossary sheet for a term and by the link card for the section an address points at.
+function documentSectionBlocks(root, anchor) {
   const start = Array.from(root.querySelectorAll('[id]')).find((el) => el.id === anchor);
   if (!start) return null;
-  const level = glossaryHeadingLevel(start) || 6;
-  const frag = document.createDocumentFragment();
-  frag.appendChild(start.cloneNode(true));
+  const level = documentHeadingLevel(start) || 6;
+  const blocks = [start];
   let node = start.nextElementSibling;
   while (node) {
-    const lvl = glossaryHeadingLevel(node);
+    const lvl = documentHeadingLevel(node);
     if (lvl && lvl <= level) break;
-    frag.appendChild(node.cloneNode(true));
+    blocks.push(node);
     node = node.nextElementSibling;
   }
-  return frag;
+  return blocks;
 }
 function onGlossaryKey(event) {
   if (event.key === 'Escape') dismissGlossary();
@@ -479,14 +479,42 @@ function requestLinkPreview(key, token) {
     send({ command: 'previewLink', href: key, token });
   }, durationTokenMilliseconds('--lt-duration-300'));
 }
+// The last answer the host sent, parsed once — one file's render is parsed once however many of its sections are rested on, and it is only read from, so holding it between rests is safe.
+let linkPreviewParsedHtml = null;
+let linkPreviewParsedRoot = null;
+// The section of the host's answer that the address names, as words the card can draw. The answer is a base and one `article`, and the card measures the note by that article, so the opening the host wrote is kept and only what stands inside it is swapped. An address naming no section, or naming one that is not in what arrived, is the whole answer — which is the card that shipped before this.
+function linkPreviewSectionHtml(html, href) {
+  const hashAt = String(href || '').indexOf('#');
+  if (hashAt < 0) return html;
+  let anchor = String(href).slice(hashAt + 1);
+  try { anchor = decodeURIComponent(anchor); } catch (e) {}
+  if (!anchor) return html;
+  const opens = html.indexOf('<article');
+  const opened = opens < 0 ? -1 : html.indexOf('>', opens);
+  if (opened < 0) return html;
+  if (html !== linkPreviewParsedHtml) {
+    linkPreviewParsedRoot = document.createElement('div');
+    linkPreviewParsedRoot.innerHTML = html;
+    linkPreviewParsedHtml = html;
+  }
+  const note = linkPreviewParsedRoot.querySelector('article') || linkPreviewParsedRoot;
+  const blocks = documentSectionBlocks(note, anchor);
+  if (!blocks) return html;
+  return html.slice(0, opened + 1) + blocks.map((block) => block.outerHTML).join('') + '</article>';
+}
 window.leafLinkPreview = (token, html) => {
   const key = pendingPreviewTokens.get(token);
+  let note = html;
   if (key !== undefined) {
     pendingPreviewTokens.delete(token);
-    if (typeof html === 'string') linkPreviewCache.set(key, html);
+    // The section rather than the whole file, so a hundred and forty-two links into one page hold a hundred and forty-two sections rather than that many copies of it.
+    if (typeof html === 'string') {
+      note = html === '' ? html : linkPreviewSectionHtml(html, key);
+      linkPreviewCache.set(key, note);
+    }
   }
   if (token !== activeHoverToken || linkHoverTip.hidden || typeof html !== 'string') return;
-  applyLinkHoverPreview(html);
+  applyLinkHoverPreview(note);
 };
 // The href alone, so the card, the middle click and the menu cannot answer differently about one link.
 function linkHoverInfo(rawHref) {
@@ -611,7 +639,7 @@ if (canHoverLinks) {
   window.addEventListener('blur', hideLinkHoverTip);
   app.addEventListener('scroll', hideLinkHoverTip, true);
 }
-// The parsed glossary document, cached between calls keyed by the exact html the host sent — parsing the (often huge) glossary into a DOM to lift one entry is the dominant cost of opening the sheet. A different glossary reparses once; extractGlossaryEntry only reads/clones, so sharing is safe.
+// The parsed glossary document, cached between calls keyed by the exact html the host sent — parsing the (often huge) glossary into a DOM to lift one entry is the dominant cost of opening the sheet. A different glossary reparses once; documentSectionBlocks only reads, so sharing is safe.
 let glossaryParsedHtml = null;
 let glossaryParsedRoot = null;
 // Called by the host with the fully rendered glossary document; pull out the requested entry and slide the sheet up.
@@ -623,14 +651,15 @@ window.leafShowGlossary = (html, anchor) => {
     glossaryParsedRoot.innerHTML = html;
     glossaryParsedHtml = html;
   }
-  const entry = extractGlossaryEntry(glossaryParsedRoot, anchor);
+  const entry = documentSectionBlocks(glossaryParsedRoot, anchor);
   if (!entry) {
     glossarySheetMessage(`No glossary entry for “${anchor}”.`);
     showGlossary();
     return;
   }
   glossarySheetBody.innerHTML = '';
-  glossarySheetBody.appendChild(entry);
+  // Copies, because the parsed document is kept for the next lookup and the sheet would otherwise empty it.
+  for (const block of entry) glossarySheetBody.appendChild(block.cloneNode(true));
   glossarySheetBody.scrollTop = 0;
   showGlossary();
 };
