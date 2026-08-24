@@ -289,6 +289,7 @@ function closeBlockGapLine() {
 function collapseBlockInsertRow() {
   blockGutterExpanded = false;
   blockImageWrite = null;
+  blockImagePlace = null;
   if (blockGutterRow) {
     blockGutterRow.hidden = true;
     blockGutterRow.textContent = '';
@@ -518,14 +519,20 @@ function expandBlockInsertRow() {
     button.title = option.label;
     button.setAttribute('aria-label', option.label);
     button.innerHTML = option.icon;
+    const place = gap ? { gap } : { target };
     const write = (chosen) => (gap ? runGapInsert(gap, chosen) : runBlockInsert(target, chosen));
     button.addEventListener('click', () => {
-      if (option.ask === 'image') openBlockImageBox(write);
-      else if (option.ask === 'flow') openBlockFlowSheet(write, gap ? { gap } : { target });
+      if (option.ask === 'image') openBlockImageBox(write, place);
+      else if (option.ask === 'flow') openBlockFlowSheet(write, place);
       else write(option);
     });
     blockGutterRow.appendChild(button);
   }
+  markBlockInsertRowOpen(target);
+}
+
+// The row is up. Said once because it is entered two ways: the options fanning out under the plus, and a refused picture box being put back on the line it was aimed at long after that plus was let go.
+function markBlockInsertRowOpen(target) {
   blockGutterRow.hidden = false;
   blockGutterExpanded = true;
   blockGutter.classList.add('is-expanded');
@@ -540,16 +547,36 @@ function expandBlockInsertRow() {
 //
 // The picture is never copied anywhere. What goes in the document is where it already is: relative to the document when it sits under it, so the pair survive being moved together, and absolute when it doesn't.
 let blockImageWrite = null;
+// The line the plus was standing on when the box opened, held beside the write so a refused address can be put back on it. Dropped with the write, because the two are one thing.
+let blockImagePlace = null;
 let blockImageToken = 0;
+// The token a typed address is waiting on, or null. An address is the only copy of itself while it sits in that field, so the write asks the host to answer and the box is put back with it where the answer says nothing was written.
+let blockImageWaiting = null;
 // A picture answered after its box closed. The dialog has no parent window, so the app stays clickable under it and the box can be folded — by the plus, by Escape, or by a render rebuilding the gutter — while somebody is still choosing. Dropping the answer is right, because the line it was headed for may be gone; the word is what was missing.
 const BLOCK_IMAGE_GONE =
   'That picture went nowhere — its box closed while the dialog was up. Press the plus to pick it again.';
+// A typed address the host wrote nothing for, with the line it was going onto still on the page. The box comes back with the address already in it, so the words only have to say the picture is not there.
+const BLOCK_IMAGE_NOT_WRITTEN = 'That picture was not written. The address is back in the box.';
 
-function openBlockImageBox(write) {
+// The same refusal with nowhere left to put the box, because the page redrew while the host was being asked. The sentence carries the address itself: it is the only copy there is and there is no field left to hand it back to.
+function blockImageAddressLost(address) {
+  return 'That picture was not written, and the line it was going onto has gone. The address you typed was ' + address;
+}
+
+// Stop waiting on whatever typed address is in the air, so a box opened since is never put back by the answer to the one before it.
+function dropBlockImageWait() {
+  if (blockImageWaiting !== null) leafDropEditWait(blockImageWaiting);
+  blockImageWaiting = null;
+}
+
+// `place` is the line the plus was on, kept so a refusal has somewhere to put the box back. `typed` is what a refused write is handing back: the address goes into the field, and its alt text travels beside it because the box draws no field for that.
+function openBlockImageBox(write, place, typed) {
   if (!blockGutterRow) return;
   blockImageWrite = write;
+  blockImagePlace = place || null;
   blockImageToken += 1;
   const token = blockImageToken;
+  const heldAlt = (typed && typed.alt) || '';
   blockGutterRow.textContent = '';
 
   const choose = document.createElement('button');
@@ -563,11 +590,12 @@ function openBlockImageBox(write) {
   url.className = 'block-insert-url';
   url.spellcheck = false;
   url.placeholder = 'or paste an image address';
+  url.value = (typed && typed.address) || '';
   url.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
       const address = url.value.trim();
-      if (address) writeBlockImage(address, '');
+      if (address) writeBlockImage(address, heldAlt, true);
       return;
     }
     if (event.key === 'Escape') {
@@ -582,14 +610,49 @@ function openBlockImageBox(write) {
   url.focus();
 }
 
-function writeBlockImage(destination, alt) {
+// `typed` marks an address somebody wrote into the field. That one asks the host to answer and comes back into the box on a refusal, because it is the only copy of itself; a picture chosen through the dialog writes and is done, since the dialog opens again and the host keeps saying its own refusal for it.
+function writeBlockImage(destination, alt, typed) {
   const write = blockImageWrite;
+  const place = blockImagePlace;
   blockImageWrite = null;
   if (!write) {
     leafToast(BLOCK_IMAGE_GONE, 'error');
     return;
   }
-  write({ id: 'image', text: '![' + alt.replace(/[[\]]/g, '') + '](' + destination + ')' });
+  const text = '![' + alt.replace(/[[\]]/g, '') + '](' + destination + ')';
+  if (!typed) {
+    write({ id: 'image', text });
+    return;
+  }
+  dropBlockImageWait();
+  const answer = write({ id: 'image', text, answered: true });
+  // Nothing went out at all: the line the plus was on no longer takes an insert. The address comes straight back rather than waiting on an answer nobody owes it.
+  if (answer === false) {
+    raiseBlockImageBox(place, destination, alt, BLOCK_IMAGE_NOT_WRITTEN);
+    return;
+  }
+  if (typeof answer !== 'number') return;
+  blockImageWaiting = leafHoldEdit(answer, (held, why) => {
+    blockImageWaiting = null;
+    // A write that landed rendered before it answered, so the box is already folded and the picture is already on the page.
+    if (held) return;
+    raiseBlockImageBox(place, destination, alt, why || BLOCK_IMAGE_NOT_WRITTEN);
+  });
+}
+
+// Put the box back on the line it was aimed at, with what was typed still in it and the reason beside it. Whether that line is still standing is asked here rather than at the write: Enter is synchronous, so the only window a render can land in is the one the wait opens.
+function raiseBlockImageBox(place, address, alt, why) {
+  if (!blockGutterRow || !blockInsertPlaceStanding(place)) {
+    leafToast(blockImageAddressLost(address), 'error');
+    return;
+  }
+  blockGutterExpanded = false;
+  if (place.gap) aimBlockGutterAtSpace(place.gap);
+  else aimBlockGutter(place.target, true);
+  const write = (chosen) => (place.gap ? runGapInsert(place.gap, chosen) : runBlockInsert(place.target, chosen));
+  markBlockInsertRowOpen(place.gap ? null : place.target);
+  openBlockImageBox(write, place, { address, alt });
+  leafToast(why, 'error');
 }
 
 // The picker's answer. An old token is dropped without a word: it only goes stale when a newer box was opened, so the reader has already moved on and a growl about the answer they abandoned would land after they left. A closed box is the one that speaks, above.
@@ -844,6 +907,7 @@ function bindBlockControls() {
   blockCaretBlock = null;
   blockGutterExpanded = false;
   blockImageWrite = null;
+  blockImagePlace = null;
   blockDrag = null;
   const layout = app.querySelector('.reader-layout');
   const body = app.querySelector('.document-body');

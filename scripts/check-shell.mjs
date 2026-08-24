@@ -5727,6 +5727,90 @@ if (booted) {
     }
   });
 
+  // The box's other door, and the one that can lose something: an address is typed by hand, so it is the only copy of itself while it sits in that field. The write asks the host to answer and the box holds what was typed until it does — a refusal puts the box back with the address still in it, rather than leaving a reason on screen with nothing left to press.
+  check('a typed address waits for the host and comes back into the box when nothing was written', () => {
+    const note = '# Title\n\nA paragraph.\n';
+    const end = note.indexOf('A paragraph.') + 'A paragraph.'.length;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const wasToast = booted.leafToast;
+    const said = [];
+    const REFUSED = 'watch.md was not changed: the file could not be read.';
+    // The address field, if a box is standing at all. Read off the row itself rather than kept, because the box that comes back is a second one drawn by the same code.
+    const field = () =>
+      read('blockGutterRow').children.find((child) => String(child.className || '').includes('block-insert-url'));
+    const tokenOf = (sent) => {
+      const edits = sent.filter((one) => one.command === 'editBlock');
+      if (edits.length !== 1 || typeof edits[0].token !== 'number') {
+        throw new Error(`a typed address sent ${JSON.stringify(edits)}`);
+      }
+      return edits[0].token;
+    };
+    try {
+      booted.leafToast = (message) => said.push(message);
+
+      // Refused with the line it was going onto still on the page: the box comes back holding the address, and the host's own sentence is beside it.
+      said.length = 0;
+      noteGutter(note, ({ block, sent }) => {
+        const row = openedInsertRow(block(9, end));
+        try {
+          row.press('image');
+          row.address('https://example.com/leaf.png');
+          const token = tokenOf(sent);
+          // Nothing is written yet and the box has folded, which is the whole of the fault: what is typed only survives because it is held.
+          if (field()) throw new Error('the box was still standing while the host was being asked');
+          booted.leafEditAnswered(token, false, REFUSED);
+          const back = field();
+          if (!back) throw new Error('a refused address drew no box to come back into');
+          if (back.value !== 'https://example.com/leaf.png') {
+            throw new Error(`the box came back holding ${JSON.stringify(back.value)}`);
+          }
+          if (said.length !== 1 || !said[0].includes('could not be read')) {
+            throw new Error(`a refused address said ${JSON.stringify(said)}`);
+          }
+        } finally {
+          row.done();
+        }
+      });
+
+      // Refused with the line gone, because a render landed while the host was being asked: there is nowhere to put a box, so the sentence carries the address itself.
+      said.length = 0;
+      noteGutter(note, ({ block, sent }) => {
+        const after = block(9, end);
+        const row = openedInsertRow(after);
+        try {
+          row.press('image');
+          row.address('https://example.com/gone.png');
+          const token = tokenOf(sent);
+          after.isConnected = false;
+          booted.leafEditAnswered(token, false, REFUSED);
+          if (field()) throw new Error('a box was raised on a line that has gone');
+          if (said.length !== 1 || !said[0].includes('https://example.com/gone.png')) {
+            throw new Error(`an address with nowhere to go said ${JSON.stringify(said)}`);
+          }
+        } finally {
+          row.done();
+        }
+      });
+
+      // Landed: the host rendered before it answered, so the box is already folded, the picture is already on the page, and there is nothing to say.
+      said.length = 0;
+      noteGutter(note, ({ block, sent }) => {
+        const row = openedInsertRow(block(9, end));
+        try {
+          row.press('image');
+          row.address('https://example.com/leaf.png');
+          booted.leafEditAnswered(tokenOf(sent), true, '');
+          if (field()) throw new Error('a picture that landed put its box back');
+          if (said.length) throw new Error(`a picture that landed said ${JSON.stringify(said)}`);
+        } finally {
+          row.done();
+        }
+      });
+    } finally {
+      booted.leafToast = wasToast;
+    }
+  });
+
   /** The reading layout a rendered document leaves on the app surface, stood up for real. `bindBlockControls` hangs the gutter off `.reader-layout` and refuses without a `.document-body`, and `openBlockGapLine` lays its clickable line into the same layout — so a check pressing either needs both really standing rather than answered by a query. Handed back so a check can read what was appended into it. */
   function standUpReadingLayout() {
     const app = vm.runInContext('app', booted);
