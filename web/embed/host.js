@@ -177,12 +177,19 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
     editBlock: (command) => {
       // `continuing` marks every splice of a typing run after its first, so one press of undo takes the whole run back however many times it paused. `live` means the reader is still typing in the block: the buffer moves and the document is left standing, because a redraw would take the words out from under the caret — the commit that ends the run is the one that redraws.
       const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell };
-      if (command.autosave) return applyAndWrite(edit);
+      // Always landed: this buffer is in memory, so there is no read to fail and nothing a sender waiting on the answer could be told to wait for.
+      const answered = () => {
+        if (typeof command.token === 'number') run(`window.leafEditAnswered(${command.token}, true, null);`);
+      };
+      if (command.autosave) return applyAndWrite(edit).then(answered);
       if (command.live) {
         tell({ kind: 'document', state: module.buffer.edit(held, edit) });
+        answered();
         return undefined;
       }
-      return apply(edit);
+      const done = apply(edit);
+      answered();
+      return done;
     },
     toggleTask: (command) => applyAndWrite({ edit: 'task', index: command.index }),
     setField: (command) =>

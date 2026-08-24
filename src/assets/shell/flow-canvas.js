@@ -76,9 +76,25 @@ const FLOW_TIP_BUD = 'Let go on empty space for a new box · on another box to c
 
 // ---- opening and closing ---------------------------------------------------
 
-// `save` is handed the mermaid text and decides where it goes: the insert row writes a new block, a diagram already in the page splices its own range.
+// A Save the host might refuse: nothing is written when the command is dispatched, so the sheet holds the drawing until the answer comes back. Each Save gets a number of its own, and an answer to a sheet somebody has since closed or reopened is dropped.
+let flowSaveToken = 0;
+let flowSaveWaiting = null;
+
+// The host's answer to one Save. Landed closes the sheet; refused leaves the drawing on screen with the reason beside it, which is the only copy of that drawing left.
+window.leafEditAnswered = (token, written, why) => {
+  if (!flowSaveWaiting || flowSaveWaiting !== token) return;
+  flowSaveWaiting = null;
+  if (written) {
+    closeFlowSheet();
+    return;
+  }
+  leafToast(why || FLOW_SAVE_GONE, 'error');
+};
+
+// `save` is handed the mermaid text and decides where it goes: the insert row writes a new block, a diagram already in the page splices its own range. It answers false where it has nowhere left to land, a number where the host now owes an answer, and true where it wrote the block itself.
 function openFlowSheet({ title, text, save }) {
   if (!flowSheet || !flowBackdrop) return;
+  flowSaveWaiting = null;
   flowLastFocus = document.activeElement;
   flowSession = { save, text: typeof text === 'string' ? text : '', graph: null };
   flowSelection = null;
@@ -106,6 +122,7 @@ function openFlowSheet({ title, text, save }) {
 
 function closeFlowSheet() {
   if (!flowSession) return;
+  flowSaveWaiting = null;
   closeFlowMenu();
   closeFlowLabelBox(false);
   flowSession = null;
@@ -145,8 +162,14 @@ function saveFlowSheet() {
   const save = flowSession.save;
   const text = flowSession.text;
   // The write reads where it goes now rather than where it went when the sheet opened, and it happens before the sheet closes: one that has nowhere left to land says so and leaves the drawing on screen.
-  if (typeof save === 'function' && save(text) === false) {
+  const answer = typeof save === 'function' ? save(text) : undefined;
+  if (answer === false) {
     leafToast(FLOW_SAVE_GONE, 'error');
+    return;
+  }
+  // A number means the write went to the host and nothing is written yet. The sheet stays up with the drawing in it until leafEditAnswered says which way it went.
+  if (typeof answer === 'number') {
+    flowSaveWaiting = answer;
     return;
   }
   closeFlowSheet();
@@ -2143,8 +2166,9 @@ function openMermaidBlockSheet(block) {
     save: (text) => {
       const now = flowBlockSpan(block);
       if (!now) return false;
-      sendEditCommand({ command: 'editBlock', start: now.start, end: now.end, text });
-      return true;
+      const token = ++flowSaveToken;
+      sendEditCommand({ command: 'editBlock', start: now.start, end: now.end, text, token });
+      return token;
     },
   });
 }

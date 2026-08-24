@@ -181,7 +181,11 @@ impl Reader {
                         ),
                         "Failed to update tabs for the code view",
                     );
-                    enter_code_view(self.webview.as_ref(), &mut self.workspace, scroll_fraction);
+                    if let Err(why) =
+                        enter_code_view(self.webview.as_ref(), &mut self.workspace, scroll_fraction)
+                    {
+                        say_edit_refused(self.page(), &self.workspace, &why);
+                    }
                     return;
                 }
 

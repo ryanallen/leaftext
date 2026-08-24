@@ -459,6 +459,9 @@ pub(crate) enum IpcCommand {
         /// Set when one cell of a table was what changed. The cell is written on its own so the rest of the table keeps the spacing somebody gave it; `text` and the range stay the whole-table rewrite, which is what a cell the source map cannot prove falls back to.
         #[serde(default)]
         cell: Option<TableCellEdit>,
+        /// Set by a sender that keeps something open until it knows: the flowchart sheet holds the drawing until the host says the splice landed, rather than closing on the dispatch. The host answers this number either way, the way the image picker's `token` is answered.
+        #[serde(default)]
+        token: Option<u64>,
     },
     /// Write one frontmatter field on the active buffer, or remove it when `value` is absent. The host works out the splice: where the field's bytes are, and whether a quote goes back on, is the parser's to know, and a second reader of the block in the page would be a second answer.
     #[serde(rename = "setField")]

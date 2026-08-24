@@ -6812,6 +6812,62 @@ if (booted) {
     }
   });
 
+  // Save used to answer true the moment the command was dispatched, so the sheet closed the way it does after a good save on a write the host had not made yet — and a reader whose file had gone watched minutes of drawing disappear. The sheet now waits for the host's word.
+  check('the diagram sheet waits for the host before it closes, and keeps the drawing when the edit is refused', () => {
+    const note = '# Title\n\n\`\`\`mermaid\nflowchart TD\n    A["a"]\n\`\`\`\n';
+    const at = note.indexOf('\`\`\`mermaid');
+    const end = note.indexOf('\n\`\`\`\n', at) + '\n\`\`\`'.length;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const was = { source: read('currentDocumentSource'), send: booted.ipc.postMessage, toast: booted.leafToast };
+    const sent = [];
+    const said = [];
+    const block = fakeElement('flowBlockWaitingOnTheHost');
+    block.dataset = { srcStart: String(at), srcEnd: String(end) };
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.leafToast = (message) => said.push(message);
+      read(`currentDocumentSource = ${JSON.stringify(note)};`);
+
+      // A Save the host refuses: the sheet stays up with the drawing in it, and the reason is said where the reader is looking.
+      booted.openMermaidBlockSheet(block);
+      booted.saveFlowSheet();
+      const refused = sent.filter((one) => one.command === 'editBlock');
+      if (refused.length !== 1) throw new Error(`Save sent ${JSON.stringify(sent)}`);
+      if (typeof refused[0].token !== 'number') {
+        throw new Error(`Save sent no token, so nothing can answer it: ${JSON.stringify(refused[0])}`);
+      }
+      if (!read('!!flowSession')) throw new Error('the sheet closed on the dispatch, before the host had written anything');
+      if (said.length) throw new Error(`a Save still waiting said ${JSON.stringify(said)}`);
+
+      const why = 'watch.md was not changed: the file could not be read.';
+      booted.leafEditAnswered(refused[0].token, false, why);
+      if (!read('!!flowSession')) throw new Error('a refused Save closed the sheet over the only copy of the drawing');
+      if (said.length !== 1 || said[0] !== why) throw new Error(`it said ${JSON.stringify(said)}`);
+
+      // An answer to a Save nobody is holding any more is dropped rather than closing whatever is open now.
+      booted.leafEditAnswered(refused[0].token, true, null);
+      if (!read('!!flowSession')) throw new Error('an answer already spent closed the sheet');
+
+      // And a Save the host wrote: that one closes it.
+      sent.length = 0;
+      said.length = 0;
+      booted.saveFlowSheet();
+      const landed = sent.filter((one) => one.command === 'editBlock');
+      if (landed.length !== 1) throw new Error(`the second Save sent ${JSON.stringify(sent)}`);
+      if (landed[0].token === refused[0].token) throw new Error('two Saves shared one token');
+      if (!read('!!flowSession')) throw new Error('the sheet closed before the answer arrived');
+      booted.leafEditAnswered(landed[0].token, true, null);
+      if (read('!!flowSession')) throw new Error('a Save the host wrote left the sheet open');
+      if (said.length) throw new Error(`a Save that landed said ${JSON.stringify(said)}`);
+    } finally {
+      read('flowSession = null;');
+      read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      booted.ipc.postMessage = was.send;
+      booted.leafToast = was.toast;
+      booted.__frames.drain();
+    }
+  });
+
   // The other way in: the plus offers a new diagram, and the gutter it was pressed on is rebuilt by every render — so a drawing that comes back after one has no line left to be written onto.
   check('a new diagram writes nothing once the line the plus stood on has gone', () => {
     const read = (expression) => vm.runInContext(expression, booted);

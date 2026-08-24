@@ -61,12 +61,15 @@ pub(crate) fn reading_document_from_buffer(edit: &EditableDocument, path: &Path)
     opened_document_from_source_with_host(edit.text(), path, &DesktopHost::default())
 }
 
-/// The active tab's edit buffer, seeded from disk the first time; re-entry reuses it so unsaved edits survive. `what` names the caller in the error line. Also returns the tab's index.
+/// The active tab's edit buffer, seeded from disk the first time; re-entry reuses it so unsaved edits survive. Also returns the tab's index.
+///
+/// A refusal comes back as words rather than only a line in the log, the way [`pipe_active_edit`] already answers: the reader who typed is waiting on this one, and the sentence is what the growl says. The operating system's own words stay in the log, which is where a diagnosis is made and not where anybody is reading.
 fn seeded_active_edit<'a>(
     workspace: &'a mut Workspace,
-    what: &str,
-) -> Option<(usize, &'a mut EditableDocument)> {
-    let (index, path) = active_tab_path(workspace)?;
+) -> Result<(usize, &'a mut EditableDocument), String> {
+    let Some((index, path)) = active_tab_path(workspace) else {
+        return Err("no document is open".to_string());
+    };
     let needs_seed = workspace
         .tabs
         .get(index)
@@ -75,26 +78,38 @@ fn seeded_active_edit<'a>(
         match read_source(&path) {
             Ok(contents) => contents,
             Err(error) => {
-                eprintln!("{what}: failed to read {}: {error}", path.display());
-                return None;
+                eprintln!("Editing: failed to read {}: {error}", path.display());
+                return Err("the file could not be read".to_string());
             }
         }
     } else {
         SourceText::utf8(String::new())
     };
-    let tab = workspace.tabs.get_mut(index)?;
-    Some((index, tab.edit_buffer(&path, contents)))
+    let Some(tab) = workspace.tabs.get_mut(index) else {
+        return Err("no document is open".to_string());
+    };
+    Ok((index, tab.edit_buffer(&path, contents)))
+}
+
+/// The name of the document at the front, for a sentence about it. The file's own name rather than the tab's label, because the reader is being told which file on disk was not written.
+pub(crate) fn front_document_name(workspace: &Workspace) -> String {
+    active_tab_path(workspace)
+        .and_then(|(_, path)| {
+            path.file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        })
+        .unwrap_or_else(|| "the document".to_string())
 }
 
 /// Swap the active document to the code view. Seeds the edit buffer from disk the first time, then hands the webview the highlighted source, buffer text, language, and dirty state.
+///
+/// Answers the sentence saying why the source could not be shown, so the caller says it where the reader is looking rather than opening nothing at all.
 pub(crate) fn enter_code_view(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
     scroll_fraction: Option<f64>,
-) {
-    let Some((index, edit)) = seeded_active_edit(workspace, "Code view") else {
-        return;
-    };
+) -> Result<(), String> {
+    let (index, edit) = seeded_active_edit(workspace)?;
     // Building the editor on a big source takes a while; the code-view script clears the spinner once it is on screen.
     begin_reader_loading(webview);
     let text = edit.text().to_string();
@@ -117,6 +132,7 @@ pub(crate) fn enter_code_view(
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.code_view = true;
     }
+    Ok(())
 }
 
 /// Apply a code-view edit expressed as the range it replaced.
@@ -235,9 +251,15 @@ pub(crate) fn save_active_document(
     vault_state: &VaultState,
     refresh_book: &mut RefreshBook,
 ) -> Result<(), String> {
-    let Some(edit) = workspace.active_edit_mut() else {
+    if let Some(said) = save_refusal_script(workspace) {
+        // The control a reader presses after a refused edit, which answered before it composed a single line for the page. Silence here is the same fault twice over.
+        cleared_editing_state(webview);
+        run_page_script(webview, &said, "Save: failed to say nothing was held");
         return Err("no document is open".to_string());
-    };
+    }
+    let edit = workspace
+        .active_edit_mut()
+        .expect("the buffer was there a line ago");
     let path = edit.path.clone();
     let text = edit.text().to_string();
     let path_str = path.display().to_string();
@@ -271,7 +293,7 @@ pub(crate) fn save_active_document(
     written
 }
 
-/// Seed the edit buffer from disk on the first edit, then splice a reading-view inline edit over `[start, end)`. Returns whether a buffer was available (the caller re-renders from the now-authoritative buffer when so).
+/// Seed the edit buffer from disk on the first edit, then splice a reading-view inline edit over `[start, end)`. The caller re-renders from the now-authoritative buffer, or takes the sentence saying why nothing was written and says it where the reader is looking.
 ///
 /// `cell` says the edit was one cell of the table `[start, end)` covers. That cell is written on its own where the source map can prove where it sits, so a table lined up by hand keeps its spacing and its delimiter row; where it cannot — no map, a cell GFM invented to fill a short row, a row the page drew at another width — the whole-table rewrite is what lands, so no edit is ever refused.
 pub(crate) fn apply_block_edit(
@@ -281,10 +303,8 @@ pub(crate) fn apply_block_edit(
     text: &str,
     record_undo: bool,
     cell: Option<&TableCellEdit>,
-) -> bool {
-    let Some((_, edit)) = seeded_active_edit(workspace, "Edit block") else {
-        return false;
-    };
+) -> Result<(), String> {
+    let (_, edit) = seeded_active_edit(workspace)?;
     if let Some(cell) = cell {
         if edit.replace_table_cell(
             start,
@@ -294,7 +314,7 @@ pub(crate) fn apply_block_edit(
             &cell.text,
             record_undo,
         ) {
-            return true;
+            return Ok(());
         }
     }
     if record_undo {
@@ -302,7 +322,52 @@ pub(crate) fn apply_block_edit(
     } else {
         edit.replace_range_without_undo(start, end, text);
     }
-    true
+    Ok(())
+}
+
+/// One reading-view edit as the page sent it, so the decision below takes two arguments rather than eight.
+pub(crate) struct BlockEdit<'a> {
+    pub start: usize,
+    pub end: usize,
+    pub text: &'a str,
+    /// A checkbox toggle: spliced without an undo step and written straight to disk.
+    pub autosave: bool,
+    /// The reader is still typing in the page, so nothing is drawn over them.
+    pub live: bool,
+    /// One more keystroke in a run already standing on the undo stack.
+    pub continuing: bool,
+    pub cell: Option<&'a TableCellEdit>,
+}
+
+/// What the loop owes the page after one edit. Answered as a value rather than done, because the loop never returns and a test has no `Reader` to hand it.
+pub(crate) enum BlockEditOutcome {
+    /// The buffer moved. `autosave` writes it to disk; `render` redraws the page.
+    Spliced { autosave: bool, render: bool },
+    /// Nothing was written, carrying the sentence the reader is shown beside the document's name.
+    Refused(String),
+}
+
+/// Splice one reading-view edit, and say what the loop should then spend on its `Reader`.
+///
+/// A live splice leaves the page standing: the reader is still typing in it, and a render would take the words out from under the caret. A refusal is the state the page cannot see for itself, because it raised the dirty mark and the Undo button before the command ever left it.
+pub(crate) fn edit_block_outcome(
+    workspace: &mut Workspace,
+    edit: &BlockEdit<'_>,
+) -> BlockEditOutcome {
+    match apply_block_edit(
+        workspace,
+        edit.start,
+        edit.end,
+        edit.text,
+        !edit.autosave && !edit.continuing,
+        edit.cell,
+    ) {
+        Ok(()) => BlockEditOutcome::Spliced {
+            autosave: edit.autosave,
+            render: !edit.live,
+        },
+        Err(why) => BlockEditOutcome::Refused(why),
+    }
 }
 
 /// What one field-edit command asks for.
@@ -319,11 +384,13 @@ pub(crate) enum FieldEdit<'a> {
 ///
 /// It goes on the undo stack and marks the document dirty, rather than writing itself to disk the way a checkbox toggle does — saving is what ends an undo stack, so the two cannot both be true. Taking a removed field back with the history is what the cross needs instead of an undo button beside it.
 ///
-/// Returns whether the buffer moved — a key that is not there to remove, a name the block already holds, or a value already written, moves nothing and re-renders nothing.
-pub(crate) fn apply_field_edit(workspace: &mut Workspace, key: &str, value: FieldEdit<'_>) -> bool {
-    let Some((_, edit)) = seeded_active_edit(workspace, "Set field") else {
-        return false;
-    };
+/// Answers whether the buffer moved — a key that is not there to remove, a name the block already holds, or a value already written, moves nothing and re-renders nothing — or the sentence saying why nothing could be written at all.
+pub(crate) fn apply_field_edit(
+    workspace: &mut Workspace,
+    key: &str,
+    value: FieldEdit<'_>,
+) -> Result<bool, String> {
+    let (_, edit) = seeded_active_edit(workspace)?;
     let splice = match value {
         FieldEdit::Set(value) => leaftext::store::set_field(edit.text(), key, value),
         FieldEdit::SetList(items) => {
@@ -334,23 +401,21 @@ pub(crate) fn apply_field_edit(workspace: &mut Workspace, key: &str, value: Fiel
         FieldEdit::Remove => leaftext::store::remove_field(edit.text(), key),
     };
     let Some(splice) = splice else {
-        return false;
+        return Ok(false);
     };
     edit.replace_range(splice.range.start, splice.range.end, &splice.text);
-    true
+    Ok(true)
 }
 
-/// Seed the edit buffer, then drag-reorder a run of sibling blocks in it. One undo step, like any other reading-view edit. Returns whether the buffer moved (the caller re-renders when so); a range list the buffer can't trust moves nothing.
+/// Seed the edit buffer, then drag-reorder a run of sibling blocks in it. One undo step, like any other reading-view edit. Answers whether the buffer moved (the caller re-renders when so) — a range list the buffer can't trust moves nothing — or the sentence saying why nothing could be written at all.
 pub(crate) fn apply_block_move(
     workspace: &mut Workspace,
     ranges: &[(usize, usize)],
     from: usize,
     to: usize,
-) -> bool {
-    let Some((_, edit)) = seeded_active_edit(workspace, "Move block") else {
-        return false;
-    };
-    edit.move_blocks(ranges, from, to)
+) -> Result<bool, String> {
+    let (_, edit) = seeded_active_edit(workspace)?;
+    Ok(edit.move_blocks(ranges, from, to))
 }
 
 /// Write the active buffer to disk for an auto-saving edit (a checkbox toggle): no Save-button round-trip. The version bump plus watcher-hash update keep our own write from bouncing back through the file watcher as an external change.
@@ -374,7 +439,7 @@ pub(crate) fn autosave_active_buffer(workspace: &mut Workspace, file_watch: &mut
     }
 }
 
-/// Toggle a task-list checkbox from the reading view. Everything it does is `flip_task_and_save`'s; the reading view has nowhere to put a refusal, so one is printed rather than answered.
+/// Toggle a task-list checkbox from the reading view. Everything it does is `flip_task_and_save`'s, and a refusal is said where the reader is looking: the page draws the box ticked before the command leaves, so a silent refusal leaves a box ticked on screen over a file nothing was written to.
 pub(crate) fn toggle_task_marker(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
@@ -383,21 +448,20 @@ pub(crate) fn toggle_task_marker(
 ) {
     if let Err(why) = flip_task_and_save(webview, workspace, file_watch, index) {
         eprintln!("Toggle task: {why}");
+        say_edit_refused(webview, workspace, &why);
     }
 }
 
 /// Flip one task marker and write the file, or say why nothing was written.
 ///
 /// The whole of what a checkbox does, shared by the reading view and the ask pipe so neither can write a file it did not change: the marker is looked up before anything is spliced, and an index naming no task is refused rather than saved over. Seeds the tab's edit buffer from disk on the first edit, writes straight to disk, then reports the refreshed task offsets and dirty state so the reading view stays in sync without a full re-render — the checkbox's own checked state is already flipped in the DOM by the frontend. A checkbox toggle auto-saves and records no undo step, so it works even with reading-view editing turned off.
-fn flip_task_and_save(
+pub(crate) fn flip_task_and_save(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     index: usize,
 ) -> Result<serde_json::Value, String> {
-    let Some((_, edit)) = seeded_active_edit(workspace, "Toggle task") else {
-        return Err("no document is open".to_string());
-    };
+    let (_, edit) = seeded_active_edit(workspace)?;
     if edit.format != DocumentFormat::Markdown {
         return Err(format!(
             "{} is not Markdown, so it has no tasks to check",
@@ -649,13 +713,59 @@ pub(crate) fn resync_editing_state(webview: Option<&WebView>, workspace: &Worksp
     };
     run_page_script(
         webview,
-        &blocks_resynced_script(
-            &edit.task_offsets(),
-            edit.is_dirty(),
-            edit.can_undo(),
-            edit.can_redo(),
-            None,
-        ),
+        &editing_state_script(edit),
         "Editing: failed to resync reading view",
+    );
+}
+
+/// The chrome as one buffer says it is.
+pub(crate) fn editing_state_script(edit: &EditableDocument) -> String {
+    blocks_resynced_script(
+        &edit.task_offsets(),
+        edit.is_dirty(),
+        edit.can_undo(),
+        edit.can_redo(),
+        None,
+    )
+}
+
+/// Tell the page nothing is held for the document at the front: no dirty mark, nothing to undo, nothing to redo.
+///
+/// [`resync_editing_state`] cannot say this. It answers off `workspace.active_edit()`, and a refused seed returns before the tab's buffer is ever made, so the call reads nothing and the raised buttons stand. Where the tab does hold a buffer it is worse than nothing: a tab that followed a link away from the document it was editing still holds that other file's buffer, and the script names no path, so the page would stamp that document's state onto the one on screen.
+pub(crate) fn cleared_editing_state(webview: Option<&WebView>) {
+    run_page_script(
+        webview,
+        &cleared_editing_state_script(),
+        "Editing: failed to clear the reading view's state",
+    );
+}
+
+/// The chrome with nothing behind it. Task offsets go out empty because the page reads the source, the dirty flag and the two history flags and drops them.
+pub(crate) fn cleared_editing_state_script() -> String {
+    blocks_resynced_script(&[], false, false, false, None)
+}
+
+/// What the page is told when Save is pressed on a document the app holds no buffer for, or nothing when it holds one. Answered as a value so a test can read the sentence without a window to send it into.
+///
+/// A reader reaches this by pressing Save after an edit was refused, which is the one way the button is lit over a document nothing was written to.
+pub(crate) fn save_refusal_script(workspace: &Workspace) -> Option<String> {
+    if workspace.active_edit().is_some() {
+        return None;
+    }
+    Some(edit_refused_script(
+        &front_document_name(workspace),
+        "the app is holding no changes for it",
+    ))
+}
+
+/// What every command sharing the seed does when it is refused: the chrome goes back to what the app is actually holding, which is nothing, and the reader is told in the corner the app always uses.
+///
+/// One branch rather than five, because a refusal said in one command's arm and not in the next four's is the silence this exists to end.
+pub(crate) fn say_edit_refused(webview: Option<&WebView>, workspace: &Workspace, why: &str) {
+    cleared_editing_state(webview);
+    run_page_script(
+        webview,
+        &edit_refused_script(&front_document_name(workspace), why),
+        "Editing: failed to say the edit was refused",
     );
 }

@@ -368,6 +368,16 @@ pub fn error_toast_script(message: &str) -> String {
     format!("window.leafShowError({message});")
 }
 
+/// The sentence a reader is shown when an edit did not land. Composed apart from the growl because a sender waiting on the answer says it in its own corner, and the two must be the same words rather than a sentence and a fragment of one.
+pub fn edit_refused_words(document: &str, why: &str) -> String {
+    format!("{document} was not changed: {why}.")
+}
+
+/// Say an edit did not land, and which document it was aimed at. A failure growl composes its value into the sentence: the document it names is the one that was **not** written, so there is nothing there to press.
+pub fn edit_refused_script(document: &str, why: &str) -> String {
+    error_toast_script(&edit_refused_words(document, why))
+}
+
 /// The same, for something that worked and names no file: silence reads as nothing having happened. A growl naming a file uses `file_written_notice_script` instead, so its path reaches the page as a press.
 pub fn notice_toast_script(message: &str) -> String {
     let message = serde_json::to_string(message).expect("toast message serializes");
@@ -469,6 +479,12 @@ pub fn image_picked_script(token: u64, destination: &str, alt: &str) -> String {
     let destination = serde_json::to_string(destination).expect("destination serializes");
     let alt = serde_json::to_string(alt).expect("alt serializes");
     format!("window.leafImagePicked({token}, {destination}, {alt});")
+}
+
+/// Answer an edit for whoever is waiting on it. `token` is the sender that asked — an answer to something nobody is holding is ignored, the way the image picker's is — and `why` is the sentence saying nothing was written.
+pub fn edit_answered_script(token: u64, written: bool, why: Option<&str>) -> String {
+    let why = serde_json::to_string(&why).expect("reason serializes");
+    format!("window.leafEditAnswered({token}, {written}, {why});")
 }
 
 /// Hand the page the path a diagram is to be written to. `token` is the export that opened the window — the page reads the format off the path's own ending and encodes only that one, which is why nothing is drawn before this answer arrives.

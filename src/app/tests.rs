@@ -6420,3 +6420,275 @@ fn a_note_that_already_has_a_file_is_saved_without_being_asked_where() {
     });
     assert!(matches!(answer, SaveReady::Ready));
 }
+
+/// The whole of the fault this file's editing tests were missing: a document whose file has gone answers nothing at all, and the reader is left able to press Save on a document nothing reached. The refusal has to come back as words, and the tab must be left holding no buffer — a half-seeded one would be a document invented out of a failed read.
+#[test]
+fn an_edit_whose_file_has_gone_answers_why_and_leaves_the_tab_holding_nothing() {
+    let dir =
+        scratch_dir("an_edit_whose_file_has_gone_answers_why_and_leaves_the_tab_holding_nothing");
+    let gone = dir.join("watch.md");
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(gone.clone());
+
+    let answer = apply_block_edit(&mut workspace, 0, 0, "alpha", true, None);
+
+    assert_eq!(
+        answer,
+        Err("the file could not be read".to_string()),
+        "the reason travels back as the sentence the reader is shown"
+    );
+    assert!(
+        workspace.tabs[0].edit.is_none(),
+        "a failed read seeds nothing, so the tab holds no buffer at all"
+    );
+
+    // And a workspace with no tab at all — the home screen — is answered by the same door.
+    let mut empty = Workspace::default();
+    assert_eq!(
+        apply_block_edit(&mut empty, 0, 0, "alpha", true, None),
+        Err("no document is open".to_string())
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// The decision the loop spends, held by calling it. The loop never returns, so this used to be unreachable; reading `event_loop.rs` as text is refused outright, because ten tests that did it all passed with their subject deleted.
+#[test]
+fn the_edit_block_decision_says_refused_when_the_file_has_gone_and_spliced_when_it_is_there() {
+    let dir = scratch_dir(
+        "the_edit_block_decision_says_refused_when_the_file_has_gone_and_spliced_when_it_is_there",
+    );
+    let there = dir.join("here.md");
+    fs::write(&there, "# Here\n").expect("the document is written");
+    let gone = dir.join("watch.md");
+
+    let asked = |text: &'static str| BlockEdit {
+        start: 0,
+        end: 0,
+        text,
+        autosave: false,
+        live: false,
+        continuing: false,
+        cell: None,
+    };
+
+    let mut missing = Workspace::default();
+    missing.open_path(gone);
+    match edit_block_outcome(&mut missing, &asked("alpha")) {
+        BlockEditOutcome::Refused(why) => assert_eq!(why, "the file could not be read"),
+        BlockEditOutcome::Spliced { .. } => panic!("a file that is not there cannot be written to"),
+    }
+    assert_eq!(
+        front_document_name(&missing),
+        "watch.md",
+        "the growl names the file, not the tab's label"
+    );
+
+    let mut open = Workspace::default();
+    open.open_path(there.clone());
+    match edit_block_outcome(&mut open, &asked("alpha ")) {
+        BlockEditOutcome::Spliced { autosave, render } => {
+            assert!(!autosave, "an ordinary keystroke waits for Save");
+            assert!(render, "a splice that is not live redraws the page");
+        }
+        BlockEditOutcome::Refused(why) => panic!("the file is there: {why}"),
+    }
+    assert_eq!(
+        open.active_edit().expect("the buffer was seeded").text(),
+        "alpha # Here\n",
+        "the splice landed in the buffer"
+    );
+
+    // A live splice leaves the page standing, and a checkbox toggle writes itself to disk.
+    let mut typing = Workspace::default();
+    typing.open_path(there);
+    let live = BlockEdit {
+        start: 0,
+        end: 0,
+        text: "x",
+        autosave: true,
+        live: true,
+        continuing: false,
+        cell: None,
+    };
+    match edit_block_outcome(&mut typing, &live) {
+        BlockEditOutcome::Spliced { autosave, render } => {
+            assert!(autosave);
+            assert!(
+                !render,
+                "a render would take the words out from under the caret"
+            );
+        }
+        BlockEditOutcome::Refused(why) => panic!("the file is there: {why}"),
+    }
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// What the refused branch sends instead of a resync: the tab dot down, Save down, Undo and Redo down. The page reads these four and nothing else, so a wrong one is a button lit over a document nothing was written to.
+#[test]
+fn the_cleared_editing_state_says_nothing_is_held_for_the_document_at_the_front() {
+    let script = cleared_editing_state_script();
+
+    assert!(
+        script.contains("window.leafBlocksResynced("),
+        "the page's own handler reads it"
+    );
+    assert!(
+        script.contains("\"dirty\":false"),
+        "the tab dot and Save go down"
+    );
+    assert!(
+        script.contains("\"canUndo\":false"),
+        "there is nothing to undo"
+    );
+    assert!(
+        script.contains("\"canRedo\":false"),
+        "there is nothing to redo"
+    );
+    assert!(
+        script.contains("\"source\":null"),
+        "nothing is re-rendered: there is nothing to render from"
+    );
+}
+
+/// Why the refused branch cannot call the resync. A tab's buffer belongs to one file while the tab navigates across many, and the script carries no path — so the resync would stamp the buffer's dirty and undo state onto whatever document is at the front.
+#[test]
+fn a_tab_that_navigated_away_from_the_document_it_edited_is_answered_for_the_one_on_screen() {
+    let dir = scratch_dir(
+        "a_tab_that_navigated_away_from_the_document_it_edited_is_answered_for_the_one_on_screen",
+    );
+    let edited = dir.join("edited.md");
+    let followed = dir.join("followed.md");
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(edited.clone());
+    workspace.tabs[0].edit = Some(EditableDocument::new(
+        edited.clone(),
+        SourceText::utf8("# Edited\n".to_string()),
+    ));
+    workspace
+        .active_edit_mut()
+        .expect("the buffer is there")
+        .replace_range(0, 0, "typed ");
+    // The link is followed. The tab keeps the buffer it was editing; the document on screen is the other one.
+    workspace.tabs[0].history.record(followed.clone());
+
+    let held = workspace.active_edit().expect("the tab kept its buffer");
+    assert_eq!(
+        held.path, edited,
+        "the buffer still belongs to the document it was opened over"
+    );
+    assert_eq!(
+        workspace.tabs[0].history.current(),
+        Some(&followed),
+        "and the tab is showing the other one"
+    );
+    assert!(
+        editing_state_script(held).contains("\"dirty\":true"),
+        "a resync here would light Save over a document nothing was typed into"
+    );
+    assert!(
+        cleared_editing_state_script().contains("\"dirty\":false"),
+        "the refused branch answers for the document on screen instead"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// The other four doors into the same failed seed. Each was watched returning without a word, so a reader who opened the source, typed a field, dragged a block or ticked a box on a document whose file had gone got nothing at all — and the checkbox had already drawn itself ticked.
+#[test]
+fn every_command_sharing_the_seed_answers_why_rather_than_nothing_when_the_file_has_gone() {
+    let dir = scratch_dir(
+        "every_command_sharing_the_seed_answers_why_rather_than_nothing_when_the_file_has_gone",
+    );
+    let gone = dir.join("watch.md");
+    let missing = || {
+        let mut workspace = Workspace::default();
+        workspace.open_path(gone.clone());
+        workspace
+    };
+    let gone_reason = "the file could not be read".to_string();
+
+    assert_eq!(
+        enter_code_view(None, &mut missing(), None),
+        Err(gone_reason.clone()),
+        "Code view says why the source cannot be shown"
+    );
+    assert_eq!(
+        apply_field_edit(&mut missing(), "title", FieldEdit::Set("Watch")),
+        Err(gone_reason.clone()),
+        "Set field says why the field was not written"
+    );
+    assert_eq!(
+        apply_block_move(&mut missing(), &[(0, 4)], 0, 1),
+        Err(gone_reason.clone()),
+        "Move block says why nothing moved"
+    );
+
+    let mut ticking = missing();
+    let mut watch = FileWatch::default();
+    assert_eq!(
+        flip_task_and_save(None, &mut ticking, &mut watch, 0).map(|_| ()),
+        Err(gone_reason),
+        "and the checkbox, which had already drawn itself ticked"
+    );
+
+    // A file that is there answers the buffer rather than a sentence, so the refusal is the read and not the shape of the call.
+    let there = dir.join("here.md");
+    fs::write(&there, "# Here\n\nalpha\n").expect("the document is written");
+    let mut open = Workspace::default();
+    open.open_path(there);
+    assert_eq!(
+        apply_field_edit(&mut open, "title", FieldEdit::Set("Here")),
+        Ok(true),
+        "the field lands in the buffer"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// Pressing Save after a refused edit was silent in its own right: the routine answered before it composed a single line for the page, so the one control a reader reaches for after the silence was silent too.
+#[test]
+fn a_save_of_a_document_the_app_holds_no_buffer_for_says_so_rather_than_answering_nobody() {
+    let dir = scratch_dir(
+        "a_save_of_a_document_the_app_holds_no_buffer_for_says_so_rather_than_answering_nobody",
+    );
+    let gone = dir.join("watch.md");
+    let mut workspace = Workspace::default();
+    workspace.open_path(gone);
+
+    let mut watch = FileWatch::default();
+    let vaults = VaultState::load(None);
+    let mut book = RefreshBook::default();
+    let answer = save_active_document(None, &mut workspace, &mut watch, &vaults, &mut book);
+
+    assert_eq!(
+        answer,
+        Err("no document is open".to_string()),
+        "the asker on the pipe keeps the answer it already had"
+    );
+    // And the reader gets the sentence the routine never composed.
+    assert_eq!(
+        save_refusal_script(&workspace).as_deref(),
+        Some("window.leafShowError(\"watch.md was not changed: the app is holding no changes for it.\");"),
+        "the growl names the document and says nothing was written"
+    );
+
+    // A document the app is holding is saved without a word about it.
+    let there = dir.join("here.md");
+    let mut holding = Workspace::default();
+    holding.open_path(there.clone());
+    holding.tabs[0].edit = Some(EditableDocument::new(
+        there,
+        SourceText::utf8(
+            "# Here
+"
+            .to_string(),
+        ),
+    ));
+    assert_eq!(save_refusal_script(&holding), None);
+
+    let _ = fs::remove_dir_all(&dir);
+}

@@ -1123,7 +1123,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::EnterCodeView => {
                     // A fresh toggle carries its own position: the page stashed the reading view's scroll fraction before asking to enter.
-                    enter_code_view(reader.webview.as_ref(), &mut reader.workspace, None);
+                    if let Err(why) =
+                        enter_code_view(reader.webview.as_ref(), &mut reader.workspace, None)
+                    {
+                        say_edit_refused(reader.page(), &reader.workspace, &why);
+                    }
                 }
                 IpcCommand::ExitCodeView => {
                     if let Some(index) = reader.workspace.active {
@@ -1208,25 +1212,53 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     live,
                     continuing,
                     cell,
+                    token,
                 } => {
-                    // Splice into the source buffer, then re-render from it, keeping the reader's place. Source stays authoritative for MD and XML. A checkbox toggle (autosave) splices without an undo step and writes to disk right away.
-                    if apply_block_edit(
-                        &mut reader.workspace,
+                    // Splice into the source buffer, then re-render from it, keeping the reader's place. Source stays authoritative for MD and XML. A checkbox toggle (autosave) splices without an undo step and writes to disk right away. The decision is a function so a test can reach it; the loop keeps the doing.
+                    let asked = BlockEdit {
                         start,
                         end,
-                        &text,
-                        !autosave && !continuing,
-                        cell.as_ref(),
-                    ) {
-                        if autosave {
-                            autosave_active_buffer(&mut reader.workspace, &mut file_watch);
+                        text: &text,
+                        autosave,
+                        live,
+                        continuing,
+                        cell: cell.as_ref(),
+                    };
+                    match edit_block_outcome(&mut reader.workspace, &asked) {
+                        BlockEditOutcome::Spliced { autosave, render } => {
+                            if autosave {
+                                autosave_active_buffer(&mut reader.workspace, &mut file_watch);
+                            }
+                            if render {
+                                reader.render(ScrollIntent::Preserve { code: None });
+                            }
+                            // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess.
+                            resync_editing_state(reader.page(), &reader.workspace);
+                            if let Some(token) = token {
+                                run_page_script(
+                                    reader.page(),
+                                    &edit_answered_script(token, true, None),
+                                    "Edit block: failed to say the edit landed",
+                                );
+                            }
                         }
-                        // A live splice leaves the page standing: the reader is still typing in it, and a render would take the words out from under the caret.
-                        if !live {
-                            reader.render(ScrollIntent::Preserve { code: None });
-                        }
-                        // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess.
-                        resync_editing_state(reader.page(), &reader.workspace);
+                        BlockEditOutcome::Refused(why) => match token {
+                            // A sender waiting on this one raises the same growl itself, beside whatever it is holding open. Both would be one refusal said twice.
+                            Some(token) => {
+                                let said = edit_refused_words(
+                                    &front_document_name(&reader.workspace),
+                                    &why,
+                                );
+                                cleared_editing_state(reader.page());
+                                run_page_script(
+                                    reader.page(),
+                                    &edit_answered_script(token, false, Some(&said)),
+                                    "Edit block: failed to say the edit was refused",
+                                );
+                            }
+                            // Nothing was written, so the dirty mark and the Undo button the page raised on its own come back down, and the reader is told rather than the log.
+                            None => say_edit_refused(reader.page(), &reader.workspace, &why),
+                        },
                     }
                 }
                 // Re-rendered rather than patched in place: a field other things read has to change everywhere it is shown, not only in the cell it was typed into.
@@ -1235,27 +1267,44 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         Some(value) => FieldEdit::Set(value),
                         None => FieldEdit::Remove,
                     };
-                    if apply_field_edit(&mut reader.workspace, &key, edit) {
-                        reader.render(ScrollIntent::Preserve { code: None });
-                        resync_editing_state(reader.page(), &reader.workspace);
+                    match apply_field_edit(&mut reader.workspace, &key, edit) {
+                        Ok(true) => {
+                            reader.render(ScrollIntent::Preserve { code: None });
+                            resync_editing_state(reader.page(), &reader.workspace);
+                        }
+                        Ok(false) => {}
+                        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
                     }
                 }
                 IpcCommand::SetListField { key, items } => {
-                    if apply_field_edit(&mut reader.workspace, &key, FieldEdit::SetList(&items)) {
-                        reader.render(ScrollIntent::Preserve { code: None });
-                        resync_editing_state(reader.page(), &reader.workspace);
+                    match apply_field_edit(&mut reader.workspace, &key, FieldEdit::SetList(&items))
+                    {
+                        Ok(true) => {
+                            reader.render(ScrollIntent::Preserve { code: None });
+                            resync_editing_state(reader.page(), &reader.workspace);
+                        }
+                        Ok(false) => {}
+                        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
                     }
                 }
                 IpcCommand::RenameField { key, to } => {
-                    if apply_field_edit(&mut reader.workspace, &key, FieldEdit::Rename(&to)) {
-                        reader.render(ScrollIntent::Preserve { code: None });
-                        resync_editing_state(reader.page(), &reader.workspace);
+                    match apply_field_edit(&mut reader.workspace, &key, FieldEdit::Rename(&to)) {
+                        Ok(true) => {
+                            reader.render(ScrollIntent::Preserve { code: None });
+                            resync_editing_state(reader.page(), &reader.workspace);
+                        }
+                        Ok(false) => {}
+                        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
                     }
                 }
                 IpcCommand::MoveBlock { ranges, from, to } => {
-                    if apply_block_move(&mut reader.workspace, &ranges, from, to) {
-                        reader.render(ScrollIntent::Preserve { code: None });
-                        resync_editing_state(reader.page(), &reader.workspace);
+                    match apply_block_move(&mut reader.workspace, &ranges, from, to) {
+                        Ok(true) => {
+                            reader.render(ScrollIntent::Preserve { code: None });
+                            resync_editing_state(reader.page(), &reader.workspace);
+                        }
+                        Ok(false) => {}
+                        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
                     }
                 }
                 IpcCommand::PickImage { token } => {
