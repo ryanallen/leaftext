@@ -53,7 +53,7 @@ const valueOfLayer = (token, tokens) => {
   return Number(value[1]);
 };
 
-// Every layer the stylesheet paints on, found by walking it rather than by naming the rules: what the selector is, and what its token is worth. A check that says one thing is above everything below it has to be written this way, or a sheet added next month climbs over it and nothing says so.
+// Every layer the stylesheet paints on, found by walking it rather than by naming the rules: what the selector is, and what its token is worth. A check that says one thing is above everything below it has to be written this way, or a sheet added later climbs over it and nothing says so.
 const layersPainted = () => {
   layerOf('.app-toast');
   const { css, tokens } = layerSources;
