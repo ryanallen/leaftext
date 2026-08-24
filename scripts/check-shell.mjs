@@ -9078,7 +9078,7 @@ if (booted) {
     }
   });
 
-  // Past 65,535 pixels a side a canvas answers an empty URL rather than throwing, which is the trap the WebP guard was written for. With no guard of its own the type check catches it and says this window cannot write JPEG, which is the wrong thing to tell a reader.
+  // Past 65,500 pixels a side — this window's ceiling, bisected on a running copy, not the format's own 65,535 — a canvas answers an empty URL rather than throwing, which is the trap the WebP guard was written for. With no guard of its own the type check catches it and says this window cannot write JPEG, which is the wrong thing to tell a reader.
   checkPicture('a drawing too big for JPEG is refused before anything is encoded, and points at the row that can still write it', async () => {
     const lent = withCanvas({ wide: 40000 });
     const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
@@ -9095,6 +9095,35 @@ if (booted) {
     } finally {
       lent.done();
     }
+  });
+
+  // The guard's own edge, which the check above cannot see: its 40,000 is past both the format's 65,535 and this window's 65,500, so it passes whichever number the constant carries. The lent canvas takes its size from the stand-in image doubled by the export's own scale, so 32,751 is 65,502 on the canvas — inside the thirty-five-pixel band where the format would take the drawing and this engine will not — and 32,750 is 65,500, the widest it writes.
+  checkPicture('a drawing inside the band the format allows and this window will not encode is refused as too big, and one at the ceiling is written', async () => {
+    const refuse = async (wide, expect) => {
+      const lent = withCanvas({ wide });
+      const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
+      try {
+        const block = drawnDiagram(`flowchart LR
+  B${wide} --> C${wide}`);
+        booted.addMermaidControls(block);
+        booted.openMermaidExportMenu(exportChipOn(block));
+        answerSaveWindow(lent.sent, 'jpg');
+        await settle(() => written().length || lent.said.length);
+        if (expect === 'refused') {
+          if (written().length) throw new Error(`a drawing ${wide} across asked for a file anyway`);
+          if (lent.asked.length) throw new Error(`a drawing ${wide} across was encoded before the size was refused`);
+          if (lent.said.length !== 1 || !/too big/i.test(lent.said[0])) throw new Error(`a drawing ${wide} across said ${lent.said.join(' / ') || 'nothing'}`);
+          if (!/PNG/.test(lent.said[0])) throw new Error(`the refusal left the reader nowhere to go: ${lent.said[0]}`);
+          return;
+        }
+        if (lent.said.length) throw new Error(`a drawing ${wide} across was refused: ${lent.said.join(' / ')}`);
+        if (written().length !== 1 || written()[0].format !== 'jpg') throw new Error(`a drawing ${wide} across sent ${written().length} files`);
+      } finally {
+        lent.done();
+      }
+    };
+    await refuse(32751, 'refused');
+    await refuse(32750, 'written');
   });
 
   // This window has no canvas, which is the branch the refusal is written for, so what is held is that it refuses out loud and writes nothing — a row failing quietly leaves a reader waiting on a Save dialog that never opens. The drawing step stands in: everything after it is what is under test.
