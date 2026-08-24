@@ -432,7 +432,7 @@ function leafDropEditWait(token) {
   leafEditWaiting.delete(token);
 }
 
-// The host's answer to one edit, handed to whoever asked for it. Here rather than inside any one sender's file because more than one waits now, and a global one fragment assigns is a global the next fragment takes away — which is what would have happened to the flowchart sheet's answers the moment a checkbox wanted its own.
+// The host's answer to one edit, handed to whoever asked for it. Here rather than inside any one sender's file because more than one waits now, and a global one fragment assigns is a global the next fragment takes away.
 window.leafEditAnswered = (token, held, why) => {
   const answered = leafEditWaiting.get(token);
   if (!answered) return;

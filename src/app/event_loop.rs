@@ -1237,7 +1237,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             }
                             // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess. A failed auto-save leaves the buffer dirty, so this is what lights Save over the tick.
                             resync_editing_state(reader.page(), &reader.workspace);
-                            // The buffer holds it either way — the splice landed. Where the write behind it did not, that is said rather than swallowed into the log: a box inside a table sends this command, and its tick had been failing in silence.
+                            // The buffer holds it either way — the splice landed. Where the write behind it did not, that is said rather than swallowed into the log: a box inside a table sends this command, so the log is nowhere its reader looks.
                             let said = unwritten.map(|why| {
                                 edit_unsaved_words(&front_document_name(&reader.workspace), &why)
                             });

@@ -6910,7 +6910,7 @@ if (booted) {
       const refused = 'notes.md was not changed: the file could not be read.';
       booted.leafEditAnswered(nothing.token, false, refused);
       if (boxes[0].checked) throw new Error('a tick standing on nothing was left ticked beside the message saying nothing was changed');
-      // The sentence rides the answer, so the box is what says it. The host stays quiet wherever a token came, and a tick nobody told about is the silence this ticket started from.
+      // The sentence rides the answer, so the box is what says it. The host stays quiet wherever a token came, so a box that does not say it leaves the reader told nothing at all.
       if (said.length !== 1 || said[0] !== refused) throw new Error(`a refused tick said ${JSON.stringify(said)}`);
 
       // The same box, told the buffer is holding it: the tick stands. This is the tick whose file was refused — the change is real and unsaved, and taking it off screen would leave a dirty document that looks untouched.

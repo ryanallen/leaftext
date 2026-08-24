@@ -384,7 +384,7 @@ A file can go while its document is open — deleted, its folder moved, a drive 
 - **A message in the corner names the file and says nothing was changed**, with the reason beside it. Your words stay on screen: they are the only copy left, and taking them away would lose them.
 - **The dot on the tab, Save and Undo all go down**, because the app is holding nothing for that document — a lit Save button over a file nothing reached is a promise there is nothing behind.
 - **Pressing Save then says the same thing** rather than answering with silence.
-- **A checkbox says it too.** A box the app cannot write raises the message the same way, in a list or in a table cell.
+- **A checkbox says it too, and comes back off.** A box the app cannot write raises the message the same way, in a list or in a table cell — and the tick the browser drew the moment you clicked is taken back off, so the box is not left ticked beside a message saying nothing was changed. A tick the app *did* take and only failed to write to disk keeps its tick instead: that change is real and unsaved, so the box stays on, the dot and Save stay up, and the message says it was changed and not saved.
 - **[The flowchart editor](#the-flowchart-editor) keeps the drawing.** Its Save waits for the app to say the write landed, so a refused one leaves the sheet open with the diagram in it and the message beside it, instead of closing over minutes of work.
 
 ### External changes

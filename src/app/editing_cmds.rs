@@ -420,7 +420,7 @@ pub(crate) fn apply_block_move(
 
 /// Write the active buffer to disk for an auto-saving edit (a checkbox toggle): no Save-button round-trip. The version bump plus watcher-hash update keep our own write from bouncing back through the file watcher as an external change.
 ///
-/// Answers the write rather than only logging it. The splice has already landed, so a failure here is a real change with no file behind it — and swallowing it into the log is what left a box inside a table ticked with nothing said anywhere a reader looks.
+/// Answers the write rather than only logging it. The splice has already landed, so a failure here is a real change with no file behind it, and one swallowed into the log leaves a box inside a table ticked with nothing said anywhere a reader looks.
 pub(crate) fn autosave_active_buffer(
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
@@ -471,7 +471,7 @@ pub(crate) fn toggle_task_marker(
 
 /// What the page is owed after one tick: the chrome to send, whether the buffer holds the tick, and the sentence to say.
 ///
-/// Answered as a value rather than done, for the reason [`edit_block_outcome`] is: the loop never returns, so a test has no `Reader` to hand it, and the decision here is the whole of what this ticket changed.
+/// Answered as a value rather than done, for the reason [`edit_block_outcome`] is: the loop never returns, so a test has no `Reader` to hand it.
 pub(crate) struct TaskToggleAnswer {
     pub chrome: TaskChrome,
     /// True where the buffer kept the tick, which is the word the page acts on: told false, the box that drew itself ticked puts its own tick back off.

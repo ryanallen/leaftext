@@ -124,7 +124,7 @@ function bindTaskCheckboxes(tasks) {
 
 // Tick one box in a plain list. A checkbox toggle auto-saves and records no undo, so it uses a plain send (not sendEditCommand, which would optimistically flag the doc dirty).
 //
-// The browser drew the tick before this leaves, which is on purpose — waiting on the host would make every tick feel slow — so the send asks to be answered. Told the buffer is holding nothing, the box puts its own tick back: the host cannot name a box to redraw, and the listener that drew it is the one thing in the app that can undraw it. Told the buffer is holding it, the tick stands, even where the file behind it was refused — the change is real and the chrome the host sends beside this says so. An answer that never arrives leaves the box exactly as the reader drew it, which is what happened before there was an answer at all.
+// The browser drew the tick before this leaves, which is on purpose — waiting on the host would make every tick feel slow — so the send asks to be answered. Told the buffer is holding nothing, the box puts its own tick back: the host cannot name a box to redraw, and the listener that drew it is the one thing that can undraw it. Told the buffer is holding it, the tick stands, even over a file the write refused — the change is real, and the chrome the host sends beside this says so. An answer that never arrives leaves the box as the reader drew it.
 function sendTaskToggle(box, index) {
   const drawn = box.checked;
   const token = leafWaitForEdit((held, why) => {
