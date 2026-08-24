@@ -2,7 +2,7 @@
 
 use super::*;
 
-// Every document in reach, so the page can lift the section an address names out of what arrived: 2.3 times the largest file here, and a file past it previews its opening rather than nothing. The 79ms it costs falls inside the rest the card already waits out, so nobody meets it.
+// Every Markdown document in reach, so the page can lift the section an address names out of what arrived: 2.3 times the largest file here, and a file past it previews its opening rather than nothing. The 79ms it costs falls inside the rest the card already waits out, so nobody meets it.
 const LINK_PREVIEW_HEAD_BYTES: usize = 256 * 1024;
 
 // A tree format is parsed whole or not at all — a cut JSON, XML or YAML file answers a parse error, so an opening is not a smaller document the way Markdown's is. A megabyte holds the worst rest to about a fifth of a second of rendering, and a file past it gets no picture rather than a complaint about a file that opens perfectly in a tab.
@@ -45,7 +45,7 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
     })
 }
 
-/// How much of a file its own renderer needs. Exhaustive on `DocumentFormat` on purpose: a sixth format answers for itself here rather than inheriting Markdown's opening, which is the whole of what this fixed.
+/// How much of a file its own renderer needs. Exhaustive on `DocumentFormat` on purpose: a sixth format answers for itself here rather than silently inheriting Markdown's opening.
 fn read_for_preview(path: &Path, size: u64) -> Option<SourceText> {
     match DocumentFormat::from_path(path) {
         // Prose reads back as prose wherever it is cut, so the opening is a smaller document.
