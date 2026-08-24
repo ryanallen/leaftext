@@ -2328,7 +2328,7 @@ fn a_link_to_a_file_the_app_does_not_read_reaches_the_opener_resolved() {
         os_open_target(r"C:\notes\a.html", &current),
         Some(r"C:\notes\a.html".to_string())
     );
-    // A path written from the root of the disk stands on its own rather than being hung off the note’s folder. Windows reads a rooted path as rooted on the drive the app is running from, which is that platform’s own answer for the same path.
+    // A path written from the root of the disk stands on its own rather than being hung off the note's folder. Windows reads a rooted path as rooted on the drive the app is running from, which is that platform's own answer for the same path.
     let rooted =
         os_open_target("/Users/reader/a.html", &current).expect("a rooted path reaches the opener");
     assert!(rooted.ends_with(
@@ -2345,7 +2345,7 @@ fn a_link_to_a_file_the_app_does_not_read_reaches_the_opener_resolved() {
 
 #[test]
 fn a_link_naming_a_file_that_is_not_there_is_reported_rather_than_opened() {
-    // Silent twice over before this: the path was never resolved, and the Windows opener reports success whether it opened anything or not, so nothing was said either way.
+    // The Windows opener reports success whether it opened anything or not, so nothing downstream of it can tell the reader the file was never there.
     let dir = scratch_dir("missing-link");
     fs::create_dir_all(dir.join("chapter")).expect("the fixture folder is made");
     let note = dir.join("chapter").join("README.md");

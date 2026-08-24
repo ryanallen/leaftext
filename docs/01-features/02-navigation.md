@@ -277,11 +277,13 @@ A [Mermaid diagram](01-rendering.md#mermaid-diagrams) in that opening is drawn i
 | External site | An `http://` or `https://` link |
 | Email link | A `mailto:` link |
 | App link | Any other URL scheme |
-| Local path | A root-relative `/path` link |
+| Opens in another app | A link to a local file Leaftext does not read — a PDF, a picture, a saved web page, a spreadsheet. The address under it is where that file actually sits, worked out from the folder the document is in, so you can tell a live link from one pointing at nothing |
 
 This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll, when the window loses focus, when you [right-click the link it is describing](#opening-a-link-in-a-new-page), or the moment a new page renders — clicking the link it describes included. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the document name printed on it.
 
-The hint also tells you where a click will land. A link to a document Leaftext reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet) is handed to your operating system to open in whatever owns that type.
+The hint also tells you where a click will land. A link to a document Leaftext reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet, a saved web page) is handed to your operating system to open in whatever owns that type, and the link is worked out against the folder the document sits in first, so a link written `../designs/map.html` opens the file at that place rather than nothing. Where no file is there, the app says so in the corner and names where it looked, rather than leaving you unsure whether the link was broken or the click was missed.
+
+A link naming something your machine would **run** rather than open — a program, an installer, a script — asks before it does anything, naming the file, in the same box the app asks before it deletes one. Answer no and nothing is sent. Notes travel in folders, archives and shared vaults, and a link that starts a program looks like every other link until you rest on it.
 
 ### The pointer
 
@@ -304,7 +306,7 @@ Right-click a link for the same thing by name, plus copying it. The pointer has 
 | Reveal file | Shows the file it points at in Explorer or Finder |
 | Copy path | Copies the full path of the file it points at |
 
-The last four items are the same actions the [library pane's menu](03-library.md#file-actions) offers on a file, and **Reveal file** and **Copy path** [say so the same way](03-library.md#file-actions) when the machine refuses them. **Open in new page**, **Reveal file** and **Copy path** need a document in this app to act on, so they are left out on an outside link and on an in-page jump rather than shown dead — and on a link to a local file Leaftext does not read, such as a PDF, where the only certain answer is the operating system's. While you are [editing a block](07-editing.md#editing-in-the-page), a right-click keeps the text menu it has there.
+The last four items are the same actions the [library pane's menu](03-library.md#file-actions) offers on a file, and **Reveal file** and **Copy path** [say so the same way](03-library.md#file-actions) when the machine refuses them. **Open in new page** needs a page in this app to open, so it is left out on an outside link, on an in-page jump, and on a link to a local file Leaftext does not read, rather than shown dead. **Reveal file** and **Copy path** ask a different question — is there a file behind this link — so they are there for a PDF or a saved web page beside your note as much as for a note, and left out only where there is no file at all. While you are [editing a block](07-editing.md#editing-in-the-page), a right-click keeps the text menu it has there.
 
 ## Glossary
 

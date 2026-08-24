@@ -2362,7 +2362,7 @@ if (booted) {
     if (linkHoverInfo('file:///docs/logo.png').kind !== 'App link') throw new Error('a file the app cannot read became a page');
   });
 
-  // The one word that promises nothing used to sit on the one link that did nothing, and a second word sat on the same link written another way. Both say what the click does now, and the address under them is where the file actually is.
+  // One word for a link this app hands to the machine, whichever way the address was written, and the address under it is where the file actually is — so two links to one PDF are not described two different ways, and a dead one can be told from a live one without clicking it.
   check('a link to a file the app does not read says a click opens it, and says where it is', () => {
     const { linkHoverInfo } = booted;
     // The card resolves against the document on screen, so the page has to be reading one.
