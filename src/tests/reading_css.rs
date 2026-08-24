@@ -2269,9 +2269,9 @@ fn the_first_run_bubble_never_takes_the_pointer() {
     // The owner asked for this by name, on the built thing: the box is a message with nothing in it to press, so a pointer crossing it on the way somewhere else must not lose the words mid-sentence, and it must not stand between the pointer and whatever it is laid over. The bubble registers no listeners of its own either — see `the vault hint shows once, and being met is permanent` in the front-end check — and this is the half of the rule that lives in the stylesheet.
     let rule = rule_body(css, "\n.hint-bubble {");
     assert_contains(rule, "pointer-events: none;");
-    // Over everything, and out of the layout: wedged into a row it would be pinched against the pane's edge, and nothing on screen may move to make room for it.
+    // Over the page and out of the layout: wedged into a row it would be pinched against the pane's edge, and nothing on screen may move to make room for it. Under every menu, which is the same rule as the line above read on a layer — it points at the pane's folder switch, and a right-click on a folder row below opens a menu into the same space.
     assert_contains(rule, "position: fixed;");
-    assert_contains(rule, "z-index: var(--lt-z-60);");
+    assert_contains(rule, "z-index: var(--lt-z-44);");
 
     // The chevron carries the box's own edge and fill rather than a second set, so the two cannot drift apart.
     let tail = rule_body(css, "\n.hint-bubble-tail {");

@@ -2530,7 +2530,7 @@ body:has(#readerToolbar:not([hidden])) {
   pointer-events: none;
   left: 0;
   top: 0;
-  z-index: var(--lt-z-60);
+  z-index: var(--lt-z-44);
   max-width: 260px;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-lg);
@@ -5538,9 +5538,10 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-link-hover);
   text-decoration: underline;
 }
+/* Under every menu: a rest raises this, a right-click asks for the menu, and the second beats the first. */
 .link-hover-tip {
   position: fixed;
-  z-index: var(--lt-z-60);
+  z-index: var(--lt-z-44);
   max-width: min(34rem, calc(100% - 24px));
   padding: var(--lt-space-8) var(--lt-space-10);
   border: var(--lt-stroke-1) solid var(--lt-border-strong);

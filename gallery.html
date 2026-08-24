@@ -2092,6 +2092,7 @@
   --lt-z-41: 41;
   --lt-z-42: 42;
   --lt-z-43: 43;
+  --lt-z-44: 44;
   --lt-z-50: 50;
   --lt-z-51: 51;
   --lt-z-60: 60;
@@ -4934,7 +4935,7 @@ body:has(#readerToolbar:not([hidden])) {
   pointer-events: none;
   left: 0;
   top: 0;
-  z-index: var(--lt-z-60);
+  z-index: var(--lt-z-44);
   max-width: 260px;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-lg);
@@ -7942,9 +7943,10 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-link-hover);
   text-decoration: underline;
 }
+/* Under every menu: a rest raises this, a right-click asks for the menu, and the second beats the first. */
 .link-hover-tip {
   position: fixed;
-  z-index: var(--lt-z-60);
+  z-index: var(--lt-z-44);
   max-width: min(34rem, calc(100% - 24px));
   padding: var(--lt-space-8) var(--lt-space-10);
   border: var(--lt-stroke-1) solid var(--lt-border-strong);
@@ -9319,7 +9321,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 162 values that do not change with the theme, all 63 icons, and all 69 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 69 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -9339,7 +9341,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>162</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>163</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>63</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>69</b></button>
 </div>
@@ -9442,7 +9444,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">162 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">163 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -9600,6 +9602,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 <div class="value"><code>lt-z-41</code><code>41</code></div>
 <div class="value"><code>lt-z-42</code><code>42</code></div>
 <div class="value"><code>lt-z-43</code><code>43</code></div>
+<div class="value"><code>lt-z-44</code><code>44</code></div>
 <div class="value"><code>lt-z-50</code><code>50</code></div>
 <div class="value"><code>lt-z-51</code><code>51</code></div>
 <div class="value"><code>lt-z-60</code><code>60</code></div>
