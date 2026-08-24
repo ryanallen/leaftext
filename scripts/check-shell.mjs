@@ -2452,7 +2452,7 @@ if (booted) {
     }
   });
 
-  // One block per element. The markup each is read back as is the page's own now; only the step to the next sibling is still handed over, and that goes when [the-stand-in-page-cannot-clone-a-node-or-step-to-the-next-one] lands.
+  // One block per element. The markup each is read back as is the page's own now; only the step to the next sibling is still handed over, and that goes when the page learns to step to one.
   const previewSectionBlocks = [
     '<h1 id="tracks">Tracks</h1>',
     '<p>The opening.</p>',
@@ -12015,7 +12015,7 @@ if (booted) {
     const holder = fakeElement('');
     holder.innerHTML = DRAWN_DOCUMENT_MARKUP;
     const body = holder.children[0];
-    // The one piece still handed in: the page has no `cloneNode`, and [the-stand-in-page-cannot-clone-a-node-or-step-to-the-next-one] is the ticket that gives it one. A second element built from the same markup is what a copy is, so the live one and the copy the export works on are two things the way they are on the page.
+    // The one piece still handed in: the page has no `cloneNode` yet. A second element built from the same markup is what a copy is, so the live one and the copy the export works on are two things the way they are on the page.
     body.cloneNode = () => drawnDocument();
     return body;
   };
@@ -14096,7 +14096,7 @@ if (booted) {
   });
 
   check('a drag lifts a copy, holds the space it left, and steps the rows around it aside', () => {
-    /** An item in a list, with the classes it is wearing and any transform written on it. The row inside it is a real element, so what the carried copy is handed is the row's own markup rather than a string written here.  */
+    /** An item in a list, with the classes it is wearing and any transform written on it. The row inside it is a real element, so what the carried copy is handed is the row's own markup rather than a string written here. */
     function listItem(path) {
       const classes = new Set();
       const item = {
