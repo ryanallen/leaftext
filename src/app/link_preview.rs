@@ -5,10 +5,10 @@ use super::*;
 // Every document in reach, so the page can lift the section an address names out of what arrived: 2.3 times the largest file here, and a file past it previews its opening rather than nothing. The 79ms it costs falls inside the rest the card already waits out, so nobody meets it.
 const LINK_PREVIEW_HEAD_BYTES: usize = 256 * 1024;
 
-// An entry is now a render of up to 313 KB, so the oldest goes rather than every file rested on being held for the life of the session.
-const LINK_PREVIEW_CACHE_ENTRIES: usize = 16;
+// An entry is a render of up to 313 KB, so the oldest goes rather than every file rested on being held for the life of the session.
+pub(super) const LINK_PREVIEW_CACHE_ENTRIES: usize = 16;
 
-/// Render the opening of the readable local document `href` names from `current_path`.
+/// Render the readable local document `href` names from `current_path`, up to the bound, for the page to lift the section the address names out of.
 pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<String> {
     let path = linked_document_path(href, current_path)?;
     let modified = fs::metadata(&path).and_then(|meta| meta.modified()).ok()?;
@@ -36,20 +36,20 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
     })
 }
 
-struct LinkPreviewRender {
-    modified: std::time::SystemTime,
-    html: String,
+pub(super) struct LinkPreviewRender {
+    pub(super) modified: std::time::SystemTime,
+    pub(super) html: String,
 }
 
 #[derive(Default)]
-struct LinkPreviewCache {
-    renders: HashMap<PathBuf, LinkPreviewRender>,
+pub(super) struct LinkPreviewCache {
+    pub(super) renders: HashMap<PathBuf, LinkPreviewRender>,
     // The paths in the order they were first rendered, so the one held longest is the one dropped.
-    order: Vec<PathBuf>,
+    pub(super) order: Vec<PathBuf>,
 }
 
 impl LinkPreviewCache {
-    fn keep(&mut self, path: PathBuf, render: LinkPreviewRender) {
+    pub(super) fn keep(&mut self, path: PathBuf, render: LinkPreviewRender) {
         // A re-render of a file already held keeps its place: what is being replaced is a stale copy of the same document, not a new one.
         if self.renders.insert(path.clone(), render).is_none() {
             self.order.push(path);

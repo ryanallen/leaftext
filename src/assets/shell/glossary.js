@@ -507,7 +507,7 @@ window.leafLinkPreview = (token, html) => {
   let note = html;
   if (key !== undefined) {
     pendingPreviewTokens.delete(token);
-    // The section rather than the whole file, so a hundred and forty-two links into one page hold a hundred and forty-two sections rather than that many copies of it.
+    // The section rather than the whole file, so many links into one page cost that many sections rather than that many copies of the page.
     if (typeof html === 'string') {
       note = html === '' ? html : linkPreviewSectionHtml(html, key);
       linkPreviewCache.set(key, note);

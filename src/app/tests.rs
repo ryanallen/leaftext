@@ -3140,6 +3140,45 @@ fn a_page_that_cannot_be_previewed_is_still_answered() {
 }
 
 #[test]
+fn the_link_preview_cache_drops_the_file_held_longest_once_it_is_full() {
+    // An entry is a render of a whole file now, so nothing is held for the life of the session. Reading it back off the store rather than through a hover, because two renders of one unchanged file are the same bytes and a hover cannot tell a fresh one from a kept one.
+    let mut cache = LinkPreviewCache::default();
+    let render = |name: &str| LinkPreviewRender {
+        modified: std::time::SystemTime::UNIX_EPOCH,
+        html: format!("<p>{name}</p>"),
+    };
+    for index in 0..LINK_PREVIEW_CACHE_ENTRIES {
+        cache.keep(PathBuf::from(format!("note-{index}.md")), render("first"));
+    }
+    // Resting on the first file again holds its place: what is replaced is a stale copy of the same document, not another file.
+    cache.keep(PathBuf::from("note-0.md"), render("again"));
+    assert_eq!(
+        cache.renders.len(),
+        LINK_PREVIEW_CACHE_ENTRIES,
+        "a file already held was counted as a new one"
+    );
+
+    cache.keep(PathBuf::from("newest.md"), render("newest"));
+    assert_eq!(
+        cache.renders.len(),
+        LINK_PREVIEW_CACHE_ENTRIES,
+        "the cache grew past what it is allowed to hold"
+    );
+    assert!(
+        !cache.renders.contains_key(&PathBuf::from("note-0.md")),
+        "the file held longest is still here, so nothing was dropped"
+    );
+    assert!(
+        cache.renders.contains_key(&PathBuf::from("newest.md")),
+        "the file just rested on was not kept"
+    );
+    assert!(
+        cache.renders.contains_key(&PathBuf::from("note-1.md")),
+        "a file dropped that was not the one held longest"
+    );
+}
+
+#[test]
 fn a_link_naming_a_heading_deep_in_a_file_is_answered_with_that_section_and_its_table() {
     // The link the owner rested on: a section four fifths of the way down a long page, whose whole content is a table of steps. The lift is the page's, so what the host owes is the section and its rows in the answer at all — the front-end check drives the lift itself.
     let dir = std::env::temp_dir().join(format!("leaf-deep-preview-{}", std::process::id()));
