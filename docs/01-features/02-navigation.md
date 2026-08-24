@@ -277,7 +277,7 @@ A [Mermaid diagram](01-rendering.md#mermaid-diagrams) in that opening is drawn i
 | App link | Any other URL scheme |
 | Local path | A root-relative `/path` link |
 
-This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll, when the window loses focus, or the moment a new page renders — clicking the link it describes included. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the document name printed on it.
+This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll, when the window loses focus, when you [right-click the link it is describing](#opening-a-link-in-a-new-page), or the moment a new page renders — clicking the link it describes included. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the document name printed on it.
 
 The hint also tells you where a click will land. A link to a document Leaftext reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet) is handed to your operating system to open in whatever owns that type.
 
@@ -291,7 +291,7 @@ A plain click follows a link in the [tab](#tabs) you are reading, so coming back
 
 This works on a link to any document Leaftext reads — the `Another page` hint above — and on the [Previous / Next](#pager) buttons under a document. An outside site has no page here to open, so the gesture follows it the way a plain click does, into your browser; an in-page jump has nowhere to go and simply jumps. A document that is already open in another tab does not get a second one, and you are not moved to it — you asked to stay where you are.
 
-Right-click a link for the same thing by name, plus copying it:
+Right-click a link for the same thing by name, plus copying it. The pointer has to be resting on the link for the menu to be about the link, so the [hint](#link-hints) that rest raised is already up — it goes as the menu opens, and stays down while the menu is up:
 
 | Item | What it does |
 | --- | --- |

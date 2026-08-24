@@ -50,7 +50,7 @@ While the list is open, the button and the vault's name beside it light as one s
 
 A caret and a mark is not much to go on, so the first time you open Leaftext with the pane showing, a small bubble floats over the window with a chevron aimed at that button, saying **"Pick which folder the list below shows."**
 
-It goes the moment you point at the button, and it never comes back — pressing the button does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it. There is no close button and no timer.
+It goes the moment you point at the button, and it never comes back — pressing the button does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it, and a [menu](#file-actions) opened into the space it is standing in is drawn over it rather than under. There is no close button and no timer.
 
 One bubble per launch at most, with a quiet launch in between, and nothing at all once you have met them. With the pane shut there is no bubble, and that launch is not spent — you get it the next time the pane is open.
 

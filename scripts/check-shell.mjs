@@ -31,7 +31,7 @@ const checkSettled = (name, run) => {
   );
 };
 
-// What layer a rule is painted on, read as the named token rather than the number in the rule: a layer written by hand is what `check-literals` refuses, so a rule that stopped naming one fails here rather than being read. Shared, because more than one check compares two layers and a second copy of this is a second answer.
+// What layer a rule is painted on, read as the named token rather than the number in the rule: a layer written by hand is what `check-literals` refuses, so a rule that stopped naming one fails here rather than being read. Shared by every check that compares two layers, because a second copy is a second answer.
 let layerSources = null;
 const layerOf = (selector) => {
   if (!layerSources) {

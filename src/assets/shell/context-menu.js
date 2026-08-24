@@ -225,7 +225,7 @@ function showContextMenu(x, y, path, kind, link) {
   if (!contextMenuEntries().some((entry) => entry !== 'separator')) {
     return;
   }
-  // The rest that put the pointer on the link already raised the card, and no pointer moves on a right-click, so nothing else takes it down. After both returns above: a menu that decided not to open leaves the card standing.
+  // A right-click moves no pointer, so a card the rest before it raised is still up and nothing else takes it down. Below both returns on purpose: a menu that decides not to open leaves the card standing.
   dismissLinkHoverTip();
   buildContextMenu();
   clampContextMenu(x, y);
