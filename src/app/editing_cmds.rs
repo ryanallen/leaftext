@@ -61,14 +61,20 @@ pub(crate) fn reading_document_from_buffer(edit: &EditableDocument, path: &Path)
     opened_document_from_source_with_host(edit.text(), path, &DesktopHost::default())
 }
 
-/// The active tab's edit buffer, seeded from disk the first time; re-entry reuses it so unsaved edits survive. Also returns the tab's index.
+/// Why an edit buffer could not be seeded, as the facts rather than a sentence. The window and the ask pipe word their own from these, because a reader looking at a growl and a caller reading the answer as text want different things said.
+enum SeedRefusal {
+    NothingOpen,
+    Unreadable { path: PathBuf, error: io::Error },
+}
+
+/// The one walk to the active tab's edit buffer, seeded from disk the first time; re-entry reuses it so unsaved edits survive. Also returns the tab's index.
 ///
-/// A refusal comes back as words rather than only a line in the log, the way `pipe_active_edit` already answers: the reader who typed is waiting on this one, and the sentence is what the growl says. The operating system's own words stay in the log, which is where a diagnosis is made and not where anybody is reading.
+/// Both doors into editing come through here — the five reading-view commands and the ask pipe's four asks — so the next change to how a buffer is opened is made once. It says nothing and logs nothing: the refusal carries the facts, and the caller says them in the words its own reader wants.
 fn seeded_active_edit<'a>(
     workspace: &'a mut Workspace,
-) -> Result<(usize, &'a mut EditableDocument), String> {
+) -> Result<(usize, &'a mut EditableDocument), SeedRefusal> {
     let Some((index, path)) = active_tab_path(workspace) else {
-        return Err("no document is open".to_string());
+        return Err(SeedRefusal::NothingOpen);
     };
     let needs_seed = workspace
         .tabs
@@ -77,18 +83,36 @@ fn seeded_active_edit<'a>(
     let contents = if needs_seed {
         match read_source(&path) {
             Ok(contents) => contents,
-            Err(error) => {
-                eprintln!("Editing: failed to read {}: {error}", path.display());
-                return Err("the file could not be read".to_string());
-            }
+            Err(error) => return Err(SeedRefusal::Unreadable { path, error }),
         }
     } else {
         SourceText::utf8(String::new())
     };
     let Some(tab) = workspace.tabs.get_mut(index) else {
-        return Err("no document is open".to_string());
+        return Err(SeedRefusal::NothingOpen);
     };
     Ok((index, tab.edit_buffer(&path, contents)))
+}
+
+/// The refusal in the words the growl says. The operating system's own go to the log instead: the reader is looking at a window, where a diagnosis has nowhere to sit and nothing to offer.
+fn reading_view_refusal(refusal: SeedRefusal) -> String {
+    match refusal {
+        SeedRefusal::NothingOpen => "no document is open".to_string(),
+        SeedRefusal::Unreadable { path, error } => {
+            eprintln!("Editing: failed to read {}: {error}", path.display());
+            "the file could not be read".to_string()
+        }
+    }
+}
+
+/// The refusal in the words somebody reading the answer as text wants: the file they cannot see for themselves, and what the operating system said about it. Nothing goes to the log, because the whole diagnosis is already in their hands.
+fn pipe_refusal(refusal: SeedRefusal) -> String {
+    match refusal {
+        SeedRefusal::NothingOpen => "no document is open".to_string(),
+        SeedRefusal::Unreadable { path, error } => {
+            format!("{} could not be read: {error}", path.display())
+        }
+    }
 }
 
 /// The name of the document at the front, for a sentence about it. The file's own name rather than the tab's label, because the reader is being told which file on disk was not written.
@@ -109,7 +133,7 @@ pub(crate) fn enter_code_view(
     workspace: &mut Workspace,
     scroll_fraction: Option<f64>,
 ) -> Result<(), String> {
-    let (index, edit) = seeded_active_edit(workspace)?;
+    let (index, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
     // Building the editor on a big source takes a while; the code-view script clears the spinner once it is on screen.
     begin_reader_loading(webview);
     let text = edit.text().to_string();
@@ -304,7 +328,7 @@ pub(crate) fn apply_block_edit(
     record_undo: bool,
     cell: Option<&TableCellEdit>,
 ) -> Result<(), String> {
-    let (_, edit) = seeded_active_edit(workspace)?;
+    let (_, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
     if let Some(cell) = cell {
         if edit.replace_table_cell(
             start,
@@ -390,7 +414,7 @@ pub(crate) fn apply_field_edit(
     key: &str,
     value: FieldEdit<'_>,
 ) -> Result<bool, String> {
-    let (_, edit) = seeded_active_edit(workspace)?;
+    let (_, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
     let splice = match value {
         FieldEdit::Set(value) => leaftext::store::set_field(edit.text(), key, value),
         FieldEdit::SetList(items) => {
@@ -414,7 +438,7 @@ pub(crate) fn apply_block_move(
     from: usize,
     to: usize,
 ) -> Result<bool, String> {
-    let (_, edit) = seeded_active_edit(workspace)?;
+    let (_, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
     Ok(edit.move_blocks(ranges, from, to))
 }
 
@@ -573,7 +597,7 @@ pub(crate) fn flip_task_and_save(
     file_watch: &mut FileWatch,
     index: usize,
 ) -> Result<serde_json::Value, EditRefused> {
-    let (_, edit) = seeded_active_edit(workspace)?;
+    let (_, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
     if edit.format != DocumentFormat::Markdown {
         return Err(format!(
             "{} is not Markdown, so it has no tasks to check",
@@ -658,26 +682,13 @@ fn spelling_answer(spelling: SourceSpelling) -> serde_json::Value {
     serde_json::json!({ "encoding": encoding, "mark": spelling.mark })
 }
 
-/// The active tab's edit buffer for the ask pipe, seeded from disk the first time. Unlike [`seeded_active_edit`] a failure comes back as words rather than a line in the log: somebody is waiting on this one.
+/// The active tab's edit buffer for the ask pipe, and the path beside it. The walk is [`seeded_active_edit`]'s; this is the one place the pipe's sentence is written and the one place the pipe's path is read, which its four asks would otherwise each repeat.
 fn pipe_active_edit(workspace: &mut Workspace) -> Result<(PathBuf, &mut EditableDocument), String> {
-    let Some((index, path)) = active_tab_path(workspace) else {
+    // Read before the walk, not after: the buffer it answers borrows the workspace for as long as the caller holds it.
+    let Some((_, path)) = active_tab_path(workspace) else {
         return Err("no document is open".to_string());
     };
-    let needs_seed = workspace
-        .tabs
-        .get(index)
-        .is_some_and(|tab| tab.needs_edit_seed(&path));
-    let contents = if needs_seed {
-        read_source(&path)
-            .map_err(|error| format!("{} could not be read: {error}", path.display()))?
-    } else {
-        SourceText::utf8(String::new())
-    };
-    let tab = workspace
-        .tabs
-        .get_mut(index)
-        .ok_or_else(|| "no document is open".to_string())?;
-    let edit = tab.edit_buffer(&path, contents);
+    let (_, edit) = seeded_active_edit(workspace).map_err(pipe_refusal)?;
     Ok((path, edit))
 }
 

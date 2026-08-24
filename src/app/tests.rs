@@ -6863,6 +6863,92 @@ fn every_command_sharing_the_seed_answers_why_rather_than_nothing_when_the_file_
     let _ = fs::remove_dir_all(&dir);
 }
 
+/// The two sentences the ask pipe refuses with, which nothing in the tree read. They are deliberately not the window's: somebody reading text has no growl to look at, so the path and the operating system's own words go in the answer and nothing goes in the log, where the window's copy does the exact opposite. One walk is about to seed both sides, and it must move neither.
+#[test]
+fn the_pipes_refusals_name_the_file_and_the_operating_systems_words_and_write_no_log_line() {
+    // The log half runs in a second copy of this binary: the journal's redirect is process-wide, so started here it would swallow every other test's output.
+    const CHILD: &str = "LEAFTEXT_PIPE_REFUSAL_CHILD";
+    let opened_over = |path: &Path| {
+        let mut workspace = Workspace::default();
+        workspace.open_path(path.to_path_buf());
+        workspace
+    };
+    // Any fingerprint at all: the read fails long before one is compared.
+    let unread = "0000000000000000";
+
+    if let Some(handed_over) = std::env::var_os(CHILD) {
+        let dir = PathBuf::from(&handed_over);
+        journal::start_in(&dir);
+        let gone = dir.join("gone.md");
+        let _ = pipe_save_document(
+            None,
+            &mut opened_over(&gone),
+            &mut FileWatch::default(),
+            &VaultState::load(None),
+            &mut RefreshBook::default(),
+            &gone,
+            unread,
+        );
+        // The window's door into the same missing file, so the one line in the journal proves the journal was catching anything at all.
+        let _ = enter_code_view(None, &mut opened_over(&gone), None);
+        return;
+    }
+
+    // Nothing open at all is the one arm both sides already word the same way.
+    assert_eq!(
+        pipe_document_answer(&mut Workspace::default()),
+        Err("no document is open".to_string()),
+        "the pipe says nothing is open rather than answering for an empty document"
+    );
+
+    let dir = scratch_dir("the_pipes_refusals_name_the_file_and_the_operating_systems_words");
+    let gone = dir.join("gone.md");
+    let refusal = pipe_save_document(
+        None,
+        &mut opened_over(&gone),
+        &mut FileWatch::default(),
+        &VaultState::load(None),
+        &mut RefreshBook::default(),
+        &gone,
+        unread,
+    )
+    .expect_err("there is no file at that path");
+    assert!(
+        refusal.starts_with(&format!("{} could not be read: ", gone.display())),
+        "the answer names the file the asker cannot see for themselves: {refusal}"
+    );
+    assert!(
+        refusal.contains("os error 2"),
+        "and carries the operating system's own words, which the window's growl deliberately leaves out: {refusal}"
+    );
+
+    let logging = journal_dir("pipe-refusal");
+    let _ = fs::remove_dir_all(&logging);
+    let child = Command::new(std::env::current_exe().expect("this test binary"))
+        // --nocapture matters: with the harness capturing output, `eprintln!` is diverted before it ever reaches the handle the journal swapped.
+        .args([
+            "the_pipes_refusals_name_the_file_and_the_operating_systems_words_and_write_no_log_line",
+            "--nocapture",
+        ])
+        .env(CHILD, &logging)
+        .output()
+        .expect("a second copy of the test binary");
+    assert!(
+        child.status.success(),
+        "the child run failed: {}",
+        String::from_utf8_lossy(&child.stdout)
+    );
+    let written = fs::read_to_string(journal::log_path(&logging)).expect("a journal file");
+    assert_eq!(
+        written.matches("Editing: failed to read").count(),
+        1,
+        "one line for two refused reads of the same missing file: the window's, because the pipe's diagnosis rides in the answer instead: {written:?}"
+    );
+
+    let _ = fs::remove_dir_all(&logging);
+    let _ = fs::remove_dir_all(&dir);
+}
+
 /// Pressing Save after a refused edit was silent in its own right: the routine answered before it composed a single line for the page, so the one control a reader reaches for after the silence was silent too.
 #[test]
 fn a_save_of_a_document_the_app_holds_no_buffer_for_says_so_rather_than_answering_nobody() {
