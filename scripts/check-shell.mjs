@@ -244,10 +244,47 @@ function composedText(node) {
   return (node.contents || []).map((piece) => (typeof piece === 'string' ? piece : String(piece.textContent ?? ''))).join('');
 }
 
+// The name a `data-` attribute is spelled with on the dataset, and back again. The two stores never meet, so every crossing goes through this pair.
+const datasetName = (attribute) => String(attribute).slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+const datasetAttribute = (key) => 'data-' + String(key).replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase());
+
+/** What an element is wearing, in the order it was given it: every name the store recorded, then anything written straight onto the element afterwards. A class added by name and a `data-` written through the dataset never reach the store, so composing off the store alone would drop both. */
+function attributeNames(node) {
+  const names = [...(node.__stores?.attributes?.keys() ?? [])];
+  const seen = new Set(names);
+  const add = (name) => {
+    if (seen.has(name)) return;
+    seen.add(name);
+    names.push(name);
+  };
+  if (node.id) add('id');
+  if (node.className) add('class');
+  if (node.hidden) add('hidden');
+  for (const key of Object.keys(node.dataset || {})) add(datasetAttribute(key));
+  return names;
+}
+
+/** What an element's markup says: its tag, what it is wearing, everything written inside it asked the same question in turn, then its closing tag. A void tag closes itself, so nothing written after it is written inside it. Nothing is escaped on the way out because nothing is unescaped on the way in — the walker keeps a run of words exactly as the markup spelled it, so a round trip has to hand the same spelling back. */
+function composedMarkup(node) {
+  if (typeof node === 'string') return node;
+  if (!node || !node.tagName) return String(node?.textContent ?? '');
+  const name = String(node.tagName).toLowerCase();
+  const wearing = attributeNames(node)
+    .map((key) => [key, node.getAttribute ? node.getAttribute(key) : null])
+    .filter(([, value]) => value !== null)
+    // A bare name is how the page's own markup spells a flag, and how the walker reads one back.
+    .map(([key, value]) => (value === '' ? ` ${key}` : ` ${key}="${value}"`))
+    .join('');
+  if (VOID_TAGS.has(name)) return `<${name}${wearing}>`;
+  return `<${name}${wearing}>${(node.contents || []).map(composedMarkup).join('')}</${name}>`;
+}
+
 /** A stand-in element: enough surface to be wired up, and inert when used. */
 function fakeElement(id = '') {
   // The one place a class lives, reached by both names below. A browser has one, and two stores that never meet leave every guard asking whether an element wears a class the markup or a name write gave it answering no for ever.
   const classes = new Set();
+  // Every element's, not only the ones the markup walker built: an element the page makes and then marks hidden from assistive technology used to drop that name silently, so the exported page's own check would read a document body wearing nothing. Names arrive here in the order they were given, which is the order the markup writes them back out in.
+  const attributes = new Map();
   // Declared out here so the snapshot below can copy it whole. Reading the names out of the fragment sources instead would miss a property whose name the source never spells.
   const styleProperties = new Map();
   const element = Object.assign(new FakeElement(), {
@@ -335,10 +372,37 @@ function fakeElement(id = '') {
       };
       drop(this);
     },
-    setAttribute() {},
-    removeAttribute() {},
-    getAttribute: () => null,
-    hasAttribute: () => false,
+    // Four names over one store, and each of the four that has a home of its own is written to that home rather than kept twice: an id, a class set both names write, the hidden flag the page spells bare, and the dataset. The store still records the name, because the order it arrived in is the order the markup says it back.
+    setAttribute(key, value) {
+      const name = String(key);
+      attributes.set(name, String(value));
+      if (name === 'id') this.id = String(value);
+      else if (name === 'class') this.className = String(value);
+      else if (name === 'hidden') this.hidden = true;
+      else if (name.startsWith('data-')) this.dataset[datasetName(name)] = String(value);
+    },
+    removeAttribute(key) {
+      const name = String(key);
+      attributes.delete(name);
+      if (name === 'id') this.id = '';
+      else if (name === 'class') this.className = '';
+      else if (name === 'hidden') this.hidden = false;
+      else if (name.startsWith('data-')) delete this.dataset[datasetName(name)];
+    },
+    getAttribute(key) {
+      const name = String(key);
+      if (name === 'id') return this.id || null;
+      if (name === 'class') return classes.size ? [...classes].join(' ') : attributes.has(name) ? '' : null;
+      if (name === 'hidden') return this.hidden ? '' : null;
+      if (name.startsWith('data-')) {
+        const held = datasetName(name);
+        return held in this.dataset ? String(this.dataset[held]) : null;
+      }
+      return attributes.has(name) ? attributes.get(name) : null;
+    },
+    hasAttribute(key) {
+      return this.getAttribute(key) !== null;
+    },
     setPointerCapture() {},
     releasePointerCapture() {},
     // The rename box preselects the stem and leaves the extension standing, so the range is kept rather than dropped: a stand-in that swallowed it would let a box that selected the whole name pass.
@@ -401,14 +465,14 @@ function fakeElement(id = '') {
   const held = { textContent: '', innerHTML: '' };
   // The harness's own way in to what this element closes over, so the page can be handed back the way it was found after a check drove it. Not enumerable: nothing the page runs may see it.
   Object.defineProperty(element, '__stores', {
-    value: { classes, style: styleProperties, text: held },
+    value: { classes, style: styleProperties, text: held, attributes },
     enumerable: false,
     configurable: true,
   });
   for (const name of ['textContent', 'innerHTML']) {
     Object.defineProperty(element, name, {
-      // The text an element says is what was written inside it, in that order, each child asked the same question in turn. The held string is the answer only while nothing was written inside, which is where an element a check builds by assigning `children` outright lands.
-      get: () => (name === 'textContent' && element.contents.length ? composedText(element) : held[name]),
+      // What an element says, by either name, is what it is holding — each piece asked the same question in turn — and never the string somebody last assigned. The string that was written is a picture of the moment before the page took a child out or put a class on, which is the one moment a check never asks about. It answers only while the element holds nothing, which is where an element built by assigning `children` outright lands.
+      get: () => (element.contents.length ? (name === 'textContent' ? composedText(element) : element.contents.map(composedMarkup).join('')) : held[name]),
       set: (value) => {
         held[name] = String(value ?? '');
         // By this name and never childNodes: no move here writes that one, so it is not a child list — it is what eight checks rebind to hand-made text for a line being typed on. Each child leaves through the same detach a removal uses, so a whole redraw's worth of dropped children are not left naming the container that dropped them.
@@ -428,6 +492,34 @@ function fakeElement(id = '') {
       enumerable: true,
     });
   }
+  // The element itself and everything it holds. Writing one puts what the markup declares where this element was standing and takes this element out of its holder, which is the whole of what the vault glyph swap does — a getter with no setter would leave that path silently dead.
+  Object.defineProperty(element, 'outerHTML', {
+    get: () => composedMarkup(element),
+    set: (value) => {
+      const holder = element.parentElement;
+      const made = elementsFromMarkup(String(value ?? ''));
+      if (!holder) return;
+      const spot = holder.contents.indexOf(element);
+      const at = holder.children.indexOf(element);
+      detachChild(element);
+      element.isConnected = false;
+      // Two lists, each counted on its own: a run of words joins the written order alone, so one counter across both would walk the element list past its own end.
+      let written = 0;
+      let child = 0;
+      for (const piece of made) {
+        if (spot >= 0) holder.contents.splice(spot + written, 0, piece);
+        else holder.contents.push(piece);
+        written += 1;
+        if (typeof piece === 'string') continue;
+        if (at >= 0) holder.children.splice(at + child, 0, piece);
+        else holder.children.push(piece);
+        child += 1;
+        piece.parentElement = holder;
+      }
+    },
+    configurable: true,
+    enumerable: true,
+  });
   // A raw-source block is read back through innerText and written through textContent, so a stand-in keeping the two apart would say the block is empty while showing a file's own bytes.
   Object.defineProperty(element, 'innerText', {
     get: () => element.textContent,
@@ -469,17 +561,8 @@ function elementsFromMarkup(markup) {
     }
     const node = fakeElement('');
     node.tagName = name.toUpperCase();
-    const held = new Map();
-    for (const [, key, value] of attrs.matchAll(/([a-zA-Z_:][-\w:.]*)\s*=\s*"([^"]*)"/g)) {
-      held.set(key, value);
-      if (key === 'id') node.id = value;
-      else if (key === 'class') node.className = value;
-      else if (key.startsWith('data-')) node.dataset[key.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = value;
-    }
-    node.getAttribute = (key) => (held.has(key) ? held.get(key) : null);
-    node.hasAttribute = (key) => held.has(key);
-    node.setAttribute = (key, value) => held.set(key, String(value));
-    node.removeAttribute = (key) => held.delete(key);
+    // Into the element's own store, the one every element has: a private map here left an element the page built afterwards dropping every name written onto it, and left the two kinds of element answering differently.
+    for (const [, key, value] of attrs.matchAll(/([a-zA-Z_:][-\w:.]*)\s*=\s*"([^"]*)"/g)) node.setAttribute(key, value);
     if (/(^|\s)hidden(\s|=|$)/.test(attrs)) node.hidden = true;
     open[open.length - 1].node.appendChild(node);
     if (!VOID_TAGS.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
@@ -1726,6 +1809,87 @@ check('one selector is read as its own parts rather than as its first word', () 
   if (holder.querySelectorAll('pre > code').length) throw new Error('the query down answered a code block holder for what is inside it');
 });
 
+// ---- 2p. an element says its own markup -------------------------------------
+//
+// Five fragments reach for an element's markup: the page exported as one file, the ghost carrying a dragged row, the card's section lift, the two memos that keep what was drawn, and the vault glyph, which writes one. An element that answered with the string somebody last assigned could say none of them — the drawing memo is read after a shared sheet has been lifted out of the picture and a class put on it, which is the one moment the written string cannot describe.
+
+check('a block built by appending children says the markup those children are', () => {
+  const body = fakeElement('markup-body');
+  const line = fakeElement('');
+  line.tagName = 'P';
+  line.className = 'lead';
+  line.append('A line');
+  body.appendChild(line);
+  if (body.innerHTML !== '<p class="lead">A line</p>') throw new Error(`a block built by appending says ${JSON.stringify(body.innerHTML)}`);
+  if (line.outerHTML !== '<p class="lead">A line</p>') throw new Error(`the block itself says ${JSON.stringify(line.outerHTML)}`);
+  // Its own tag around its own contents, all the way down.
+  if (body.outerHTML !== '<div id="markup-body"><p class="lead">A line</p></div>') throw new Error(`the holder says ${JSON.stringify(body.outerHTML)}`);
+  // An element holding nothing still says its tag, rather than nothing at all.
+  const bare = fakeElement('');
+  bare.tagName = 'SPAN';
+  if (bare.outerHTML !== '<span></span>') throw new Error(`an element holding nothing says ${JSON.stringify(bare.outerHTML)}`);
+});
+
+check('a block that loses a child says what it is holding rather than the string it was given', () => {
+  const picture = fakeElement('markup-picture');
+  picture.innerHTML = '<svg id="good"><style>.a{}</style><g class="node"></g></svg>';
+  const drawing = picture.children[0];
+  // The order the drawing memo's own comment is about: the shared sheet is lifted out of the picture, and the sheet's class goes on afterwards.
+  drawing.querySelector('style').remove();
+  drawing.classList.add('lt-mmd-0');
+  if (drawing.outerHTML !== '<svg id="good" class="lt-mmd-0"><g class="node"></g></svg>') throw new Error(`the picture says ${JSON.stringify(drawing.outerHTML)}`);
+  // The words come back spelled the way they went in, because nothing is unescaped on the way in.
+  const words = fakeElement('markup-words');
+  words.innerHTML = '<p>a &amp; b</p>';
+  if (words.innerHTML !== '<p>a &amp; b</p>') throw new Error(`a run of words came back as ${JSON.stringify(words.innerHTML)}`);
+});
+
+check('a picture and a line break close themselves rather than swallowing what follows', () => {
+  const line = fakeElement('markup-void');
+  line.innerHTML = '<p><img src="a.png" alt="A picture"><br>after</p>';
+  if (line.innerHTML !== '<p><img src="a.png" alt="A picture"><br>after</p>') throw new Error(`a void tag came back as ${JSON.stringify(line.innerHTML)}`);
+  const block = line.children[0];
+  if (block.children.length !== 2) throw new Error(`the void tags took ${block.children.length} places rather than two`);
+  if (block.children[0].children.length) throw new Error('the picture swallowed what was written after it');
+});
+
+check('an attribute set by hand comes back out in the markup, and a data- name follows its dataset', () => {
+  // An element the page built rather than one the markup walker made: this one used to drop every name written onto it.
+  const ghost = fakeElement('');
+  ghost.tagName = 'LI';
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.setAttribute('draggable', 'true');
+  if (ghost.getAttribute('aria-hidden') !== 'true') throw new Error('an element the page built dropped the name written onto it');
+  if (!ghost.hasAttribute('draggable')) throw new Error('an element the page built says it is not wearing what it was given');
+  if (ghost.outerHTML !== '<li aria-hidden="true" draggable="true"></li>') throw new Error(`the element says ${JSON.stringify(ghost.outerHTML)}`);
+  ghost.removeAttribute('draggable');
+  if (ghost.outerHTML !== '<li aria-hidden="true"></li>') throw new Error(`a name taken off is still in the markup: ${ghost.outerHTML}`);
+  // The two stores never meet, so a name written or deleted through the dataset has to be the one the markup says.
+  const block = fakeElement('markup-dataset');
+  block.innerHTML = '<div data-diagram-wait="true"></div>';
+  const drawn = block.children[0];
+  delete drawn.dataset.diagramWait;
+  drawn.dataset.processed = 'true';
+  if (drawn.outerHTML !== '<div data-processed="true"></div>') throw new Error(`the dataset and the markup disagree: ${drawn.outerHTML}`);
+  // A flag the page spells bare is written bare.
+  const hidden = fakeElement('');
+  hidden.tagName = 'SECTION';
+  hidden.hidden = true;
+  if (hidden.outerHTML !== '<section hidden></section>') throw new Error(`a hidden element says ${JSON.stringify(hidden.outerHTML)}`);
+});
+
+check('writing an element markup swaps it for what the markup declares', () => {
+  const row = fakeElement('markup-row');
+  row.innerHTML = '<span class="lt-icon lt-icon-package"></span><span class="name">Notes</span>';
+  const glyph = row.querySelector('.lt-icon');
+  glyph.outerHTML = '<span class="lt-icon lt-icon-cloud"></span>';
+  if (row.querySelector('.lt-icon-package')) throw new Error('the holder still finds the element that was written over');
+  if (!row.querySelector('.lt-icon-cloud')) throw new Error('what the markup declared is not in the holder');
+  if (row.children.length !== 2) throw new Error(`the holder came back with ${row.children.length} children rather than two`);
+  if (row.innerHTML !== '<span class="lt-icon lt-icon-cloud"></span><span class="name">Notes</span>') throw new Error(`the swap landed out of place: ${row.innerHTML}`);
+  if (glyph.parentElement !== null) throw new Error('the element that was written over still names a holder');
+});
+
 // ---- 3. the arithmetic that can damage a file -------------------------------
 
 // The code view does not send the buffer, it sends what changed — and the host splices that straight into the text it will write to disk. These are the functions that work it out.
@@ -2288,7 +2452,7 @@ if (booted) {
     }
   });
 
-  // One block per element and its own markup beside it, so a stand-in can hand back what it was written from: the page has neither `outerHTML` nor `nextElementSibling`, and the lift reads both.
+  // One block per element. The markup each is read back as is the page's own now; only the step to the next sibling is still handed over, and that goes when [the-stand-in-page-cannot-clone-a-node-or-step-to-the-next-one] lands.
   const previewSectionBlocks = [
     '<h1 id="tracks">Tracks</h1>',
     '<p>The opening.</p>',
@@ -2307,7 +2471,6 @@ if (booted) {
     parsed.innerHTML = previewSectionHtml;
     const note = parsed.querySelector('article');
     note.children.forEach((el, i) => {
-      el.outerHTML = previewSectionBlocks[i];
       el.nextElementSibling = note.children[i + 1] || null;
     });
     booted.__previewProbeRoot = parsed;
@@ -8422,6 +8585,69 @@ if (booted) {
     if (twice !== 1) throw new Error(`putting the sheet back wrote it ${twice} times`);
   });
 
+  // Sheet first, memo second, and the memo is the picture read back off the block — so what it holds is the drawing with its own sheet gone and the shared sheet's class on it. Hoisting the other way round remembers a sheet the page had already taken away, and a drawing restored out of the memo would then paint the theme it was drawn in for ever.
+  check('the drawing memo keeps the picture with its own sheet lifted out and the shared class on', () => {
+    const { shareMermaidSheet, forgetMermaidSheets } = booted;
+    forgetMermaidSheets();
+    const block = fakeElement('memo-diagram');
+    block.innerHTML = `<svg id="mermaid-9" class="flowchart"><style>${flowchartSheet('mermaid-9')}</style><g class="node"></g></svg>`;
+    shareMermaidSheet(block);
+    // What the memo is handed, read off the block the way the pass reads it.
+    const remembered = block.innerHTML;
+    const cls = String(block.querySelector('svg').getAttribute('class') || '')
+      .split(/\s+/)
+      .find((name) => name.startsWith('lt-mmd-'));
+    if (!cls) throw new Error('the drawing wears no class naming its shared sheet');
+    if (remembered !== `<svg id="mermaid-9" class="flowchart ${cls}"><g class="node"></g></svg>`) {
+      throw new Error(`the memo would remember ${JSON.stringify(remembered)}`);
+    }
+    if (remembered.includes('<style')) throw new Error('the memo carries a sheet the page had already taken away');
+  });
+
+  // The same bargain for math: katex draws into the block by building children, and what is kept is the block read back afterwards. A second copy of the same formula is then drawn out of the memo without katex being asked at all, which is the whole point of keeping it — a page of forty identical formulas otherwise draws forty times.
+  checkSettled('the math memo keeps what was drawn into the block, and a second copy is drawn out of it', async () => {
+    const page = runShell(source);
+    const appEl = page.document.getElementById('app');
+    // Two formulas drawn, and a third copy of the first arriving after them — so what comes out of the memo is read against what was drawn.
+    const holder = fakeElement('math-holder');
+    holder.innerHTML = '<span class="math math-display">a^2</span><span class="math math-inline">b</span>';
+    const [first, other] = holder.children;
+    const drawn = [];
+    // katex builds children rather than assigning a string, which is the case the memo could not read while an element answered with the string it was last given.
+    page.window.katex = {
+      render(text, node) {
+        drawn.push(text);
+        node.innerHTML = '';
+        const span = page.document.createElement('span');
+        span.tagName = 'SPAN';
+        span.className = 'katex';
+        span.append(text.toUpperCase());
+        node.appendChild(span);
+      },
+    };
+    const wasQuery = appEl.querySelectorAll;
+    appEl.querySelectorAll = (selector) => (String(selector).startsWith('.math') ? holder.children.filter((node) => !node.dataset.mathRendered) : wasQuery.call(appEl, selector));
+    try {
+      page.renderMathElements();
+      await new Promise((done) => setImmediate(done));
+      await new Promise((done) => setImmediate(done));
+      if (drawn.length !== 2) throw new Error(`katex was asked ${drawn.length} times for two distinct formulas`);
+      if (first.innerHTML !== '<span class="katex">A^2</span>') throw new Error(`the first block holds ${JSON.stringify(first.innerHTML)}`);
+      if (other.innerHTML !== '<span class="katex">B</span>') throw new Error(`the other formula holds ${JSON.stringify(other.innerHTML)}`);
+      // A copy arriving later is drawn out of the memo alone, with katex never asked again.
+      const later = fakeElement('');
+      later.tagName = 'SPAN';
+      later.className = 'math math-display';
+      later.append('a^2');
+      holder.appendChild(later);
+      page.renderMathElements();
+      if (drawn.length !== 2) throw new Error('a formula already remembered was drawn again rather than read out of the memo');
+      if (later.innerHTML !== first.innerHTML) throw new Error(`the copy drawn out of the memo holds ${JSON.stringify(later.innerHTML)}`);
+    } finally {
+      appEl.querySelectorAll = wasQuery;
+    }
+  });
+
   // A drawing off screen stops painting, and the browser is handed the exact height it drew to so the block holds its place while it is away. That exact height is the whole reason this can be done at all: it was tried once across the document, when nothing knew how tall a block was, and it flashed blanks and jumped the rail's position box.
   check('a drawn diagram carries its own measured height as its intrinsic size', () => {
     const { finishMermaidDiagram, markMermaidWait } = booted;
@@ -11773,37 +11999,25 @@ if (booted) {
     }
   });
 
-  // A rendered document with each of the app's own controls inside it, a diagram already drawn, and the correction the rail parks on the live body. The parts are the copy: what is removed leaves the markup, which is what makes this a reading of the written page rather than of the selector. `cloneNode` builds a fresh one, so the live element and the copy the export works on are two things, the way they are on the page.
+  // A rendered document with each of the app's own controls inside it, a diagram already drawn, a block carrying what the renderer stamped on it, and the correction the rail parks on the live body. Real elements, so what the export hands over is the page's own markup rather than a string written here: a copy that read back the string it was given could not say whether a control was taken out at all.
+  const DRAWN_DOCUMENT_MARKUP =
+    '<div class="document-body" style="--reader-scroll-origin: 16px">' +
+    '<h1>Release notes</h1>' +
+    '<pre class="mermaid" data-processed="true"><svg class="flowchart lt-mmd-0"></svg></pre>' +
+    // A style of the document's own, one element down: mermaid writes the drawn box's height there, so a copy that shed its whole attribute must still shed only its own.
+    '<div class="mermaid-view" style="height: 420px"></div>' +
+    '<button class="code-copy"></button>' +
+    '<button class="image-sheet-open"></button>' +
+    '<div class="mermaid-tools"></div>' +
+    '<div class="mermaid-zoom"></div>' +
+    '</div>';
   const drawnDocument = () => {
-    const parts = [
-      { html: '<h1>Release notes</h1>' },
-      { html: '<pre class="mermaid" data-processed="true"><svg class="flowchart lt-mmd-0"></svg></pre>' },
-      // A style of the document's own, one element down: mermaid writes the drawn box's height there, so a copy that shed its whole attribute must still shed only its own.
-      { html: '<div class="mermaid-view" style="height: 420px"></div>' },
-      { classes: ['code-copy'], html: '<button class="code-copy"></button>' },
-      { classes: ['image-sheet-open'], html: '<button class="image-sheet-open"></button>' },
-      { classes: ['mermaid-tools'], html: '<div class="mermaid-tools"></div>' },
-      { classes: ['mermaid-zoom'], html: '<div class="mermaid-zoom"></div>' },
-    ];
-    let style = '--reader-scroll-origin: 16px';
-    return {
-      get outerHTML() {
-        return `<div class="document-body"${style ? ` style="${style}"` : ''}>${parts.map((part) => part.html).join('')}</div>`;
-      },
-      get styleAttribute() {
-        return style;
-      },
-      removeAttribute: (name) => {
-        if (String(name) === 'style') style = null;
-      },
-      cloneNode: () => drawnDocument(),
-      querySelectorAll: (selector) => {
-        const wants = String(selector).split(',').map((one) => one.trim().replace(/^\./, ''));
-        return parts
-          .filter((part) => (part.classes || []).some((name) => wants.includes(name)))
-          .map((part) => ({ dataset: {}, remove: () => parts.splice(parts.indexOf(part), 1) }));
-      },
-    };
+    const holder = fakeElement('');
+    holder.innerHTML = DRAWN_DOCUMENT_MARKUP;
+    const body = holder.children[0];
+    // The one piece still handed in: the page has no `cloneNode`, and [the-stand-in-page-cannot-clone-a-node-or-step-to-the-next-one] is the ticket that gives it one. A second element built from the same markup is what a copy is, so the live one and the copy the export works on are two things the way they are on the page.
+    body.cloneNode = () => drawnDocument();
+    return body;
   };
 
   // Stand the drawn document in front of the reader element, and hand back whatever the export made of it. A caller that wants to read the live element afterwards passes its own.
@@ -11827,6 +12041,10 @@ if (booted) {
       throw new Error(`the drawn diagram did not travel with the document: ${markup}`);
     }
     if (!markup.includes('<h1>Release notes</h1>')) throw new Error(`the document itself did not travel: ${markup}`);
+    // What the renderer stamped on a block travels with it: an exported page that lost it is one whose diagrams are drawn a second time by whatever opens the file.
+    if (!markup.includes('<pre class="mermaid" data-processed="true">')) {
+      throw new Error(`a block lost what the renderer stamped on it: ${markup}`);
+    }
     // Four kinds of control, every one of which does nothing on somebody else's machine. The copy button is one per fenced block, which is the one an earlier reading missed.
     for (const control of ['code-copy', 'image-sheet-open', 'mermaid-tools', 'mermaid-zoom']) {
       if (markup.includes(control)) throw new Error(`the export carried the app's own ${control}: ${markup}`);
@@ -11858,7 +12076,7 @@ if (booted) {
       throw new Error(`the exported document body kept a style attribute: ${markup}`);
     }
     // Only the copy sheds it: the reader still needs the value, and everything inside the copy keeps its own.
-    if (!live.styleAttribute) throw new Error('the export took the correction off the live document');
+    if (!live.getAttribute('style')) throw new Error('the export took the correction off the live document');
     if (!markup.includes('style="height: 420px"')) {
       throw new Error(`the export stripped a style from inside the document: ${markup}`);
     }
@@ -12878,6 +13096,34 @@ if (booted) {
     booted.leafSetVaults({ vaults: [], active: 0 });
   });
 
+  // A cloud client found while the list is open swaps each row's mark where it stands rather than rebuilding the list under the pointer. Both callers once looked for an `svg`, found a masked span, and swapped nothing — which is why a vault on GitHub kept its box.
+  check('a vault in a cloud folder swaps its box for a cloud where the row stands', () => {
+    const button = fakeElement('libraryVaultSwitch');
+    button.classList.add('library-vault-switch');
+    booted.bindVaultSwitch(button, false);
+    const press = button.listeners.get('pointerdown')[0];
+    booted.leafSetVaults({ vaults: VAULTS, active: 1 });
+    press({ button: 0, stopPropagation() {}, preventDefault() {} });
+    const menu = vm.runInContext('crumbMenu', booted);
+    const rowFor = (id) => menu.querySelectorAll('.crumb-menu-item[data-vault-id]').find((one) => Number(one.dataset.vaultId) === id);
+    try {
+      if (!rowFor(1) || !rowFor(2)) throw new Error('the list of vaults drew no row for one of them');
+      if (!rowFor(2).innerHTML.includes('lt-icon-package')) throw new Error(`a vault on this machine does not wear the box: ${rowFor(2).innerHTML}`);
+      booted.window.leafSetCloudFolders([{ path: 'C:\\Vaults\\Work' }]);
+      const swapped = rowFor(2).innerHTML;
+      if (swapped.includes('lt-icon-package')) throw new Error(`the vault in a cloud folder kept its box: ${swapped}`);
+      if (!swapped.includes('lt-icon-cloud')) throw new Error(`the vault in a cloud folder wears nothing: ${swapped}`);
+      // One glyph, not two: the swap replaces the mark rather than writing a second one beside it.
+      if (rowFor(2).querySelectorAll('.lt-icon').length !== 1) throw new Error('the row came back wearing two marks');
+      // The vault that is not in one is left alone, and the open one keeps the open box.
+      if (!rowFor(1).innerHTML.includes('lt-icon-package-open')) throw new Error(`the vault outside every cloud folder lost its own mark: ${rowFor(1).innerHTML}`);
+    } finally {
+      booted.window.leafSetCloudFolders([]);
+      vm.runInContext('hideCrumbMenu()', booted);
+      booted.leafSetVaults({ vaults: [], active: 0 });
+    }
+  });
+
   check('the home vault switcher keeps the regular marks and leaves room before its name', () => {
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
     const switcher = (css.split('\n.library-vault-switch {\n')[1] || '').split('}')[0];
@@ -13850,15 +14096,9 @@ if (booted) {
   });
 
   check('a drag lifts a copy, holds the space it left, and steps the rows around it aside', () => {
-    /** An item in a list, with the classes it is wearing and any transform written on it. */
+    /** An item in a list, with the classes it is wearing and any transform written on it. The row inside it is a real element, so what the carried copy is handed is the row's own markup rather than a string written here.  */
     function listItem(path) {
       const classes = new Set();
-      const row = {
-        outerHTML: `<span class="home-row" data-home-favorite="${path}"></span>`,
-        classes: new Set(),
-        getAttribute: (name) => (name === 'data-home-favorite' ? path : null),
-        getBoundingClientRect: () => ({ top: 0, left: 0, width: 200, height: 20, bottom: 20 }),
-      };
       const item = {
         style: {},
         classList: {
@@ -13871,11 +14111,11 @@ if (booted) {
         querySelector: () => row,
         getBoundingClientRect: () => ({ top: 0, left: 0, width: 200, height: 20, bottom: 20 }),
       };
-      row.classList = {
-        add: (one) => row.classes.add(one),
-        remove: (one) => row.classes.delete(one),
-        contains: (one) => row.classes.has(one),
-      };
+      const row = fakeElement('');
+      row.tagName = 'SPAN';
+      row.className = 'home-row';
+      row.dataset.homeFavorite = path;
+      row.getBoundingClientRect = () => ({ top: 0, left: 0, width: 200, height: 20, bottom: 20 });
       row.parentElement = item;
       return { item, row };
     }
@@ -13908,10 +14148,14 @@ if (booted) {
     if (carried.length !== 1 || !String(carried[0].className).includes('home-row-ghost')) {
       throw new Error('nothing was lifted off the list under the pointer');
     }
-    if (!String(carried[0].innerHTML).includes('data-home-favorite="first.md"')) {
-      throw new Error('the carried copy is not the row that was grabbed');
-    }
-    if (!dragged.row.classes.has('is-dragging')) throw new Error('the row is drawn twice, in place and carried');
+    // What the ghost was really handed, read back off it: the row's own markup, not a string written up here. A copy carrying something else is a row that vanishes under the pointer.
+    const copy = carried[0].querySelector('.home-row');
+    if (!copy) throw new Error(`the carried copy holds no row at all: ${JSON.stringify(carried[0].innerHTML)}`);
+    if (copy.getAttribute('data-home-favorite') !== 'first.md') throw new Error('the carried copy does not name the file it was lifted off');
+    // The copy is taken before the row is marked, so what is carried is the row as it looked unheld.
+    if (copy.classList.contains('is-dragging')) throw new Error('the carried copy wears the mark that says the row is being dragged');
+    if (carried[0].getAttribute('aria-hidden') !== 'true') throw new Error('the carried copy is read out to a screen reader as a second row');
+    if (!dragged.row.classList.contains('is-dragging')) throw new Error('the row is drawn twice, in place and carried');
     if (!dragged.item.classes.has('is-dropzone')) throw new Error('the space it left is not marked as where it lands');
     if (!bodyClasses.has('is-home-row-dragging')) throw new Error('the pointer is not a grabbed hand while dragging');
 
