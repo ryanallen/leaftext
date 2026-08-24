@@ -1270,6 +1270,20 @@ fn the_page_ends_above_the_floating_bar() {
     assert_contains(css, "margin-top: var(--app-bar-height);");
 }
 
+#[test]
+fn the_bar_is_measured_against_the_page_and_the_map_together() {
+    let css = reading_mode_css();
+
+    // Only the reading view opens the minimap's track, so a bar centered on the page column alone lands 31px left of where the source view draws the identical bar — and the button a reader goes back to most moves under their hand every time they switch view. Spanning both tracks in the base rule gives all three views one lane to center in; the source view's own map strip is the editor's, drawn inside the page column, so it is already inside the measurement. Anchored on the line start: the embedded reader turns the whole bar off in a grouped selector ending the same way, and that rule comes first.
+    let bar = rule_body(css, "\n.reader-toolbar {");
+    assert_contains(bar, "grid-column: 2 / 4;");
+    // The bar keeps the size and the centering it has always had: only which lane it is measured against changes.
+    assert_contains(bar, "justify-self: center;");
+    assert_contains(bar, "display: flex;");
+    // Column 4 is the gutter holding the page off the window frame, and the bar stops short of it the way the page does.
+    assert!(!bar.contains("grid-column: 2 / 5;"));
+}
+
 // Monaco sizes the line-number gutter to fit the widest number and right-aligns the numbers in it, so at five digits — its minimum width — the number's left edge lands exactly on the page frame's border and the two touch. The stand-off has to be a transform: the gutter's width is something Monaco measures and re-lays-out from, so anything that changes the box feeds back into its own layout.
 #[test]
 fn the_code_views_line_numbers_stand_off_the_page_frame() {
@@ -1344,9 +1358,11 @@ fn the_map_takes_the_column_the_minimap_is_not_using() {
     assert!(html.contains(
         "document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';"
     ));
-    assert!(css.contains(":root[data-graph-view=\"true\"] .reader-toolbar,"));
-    // The floating bar has to be measured against the same width or it centers on the page's middle and sits visibly left of the map's.
-    assert!(css.contains(":root[data-graph-view=\"true\"] .reader-loading {"));
+    // The wash over a slow load has to cover the same width, or it stops a column short and leaves a lit strip down the right of the canvas. The floating bar needs no override here: it spans both columns in every view — see the_bar_is_measured_against_the_page_and_the_map_together.
+    assert_contains(
+        rule_body(css, "\n:root[data-graph-view=\"true\"] .reader-loading {"),
+        "grid-column: 2 / 4;",
+    );
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-edge-fade {"));
 
     // And the chrome that draws the top of the card has to reach the map's right edge, not the page's. Both the bar's divider and the top-right arc are positioned off the minimap column, so the column closes in this view rather than each of them learning about the map: the stroke used to stop a rail's width short and the arc turned down in mid-air over the top of the canvas.
