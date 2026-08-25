@@ -378,7 +378,7 @@ function bindSelectionToolbar() {
   selectionToolbar = document.createElement('div');
   selectionToolbar.className = 'selection-toolbar';
   selectionToolbar.hidden = true;
-  // The point is an element rather than a pseudo because both pseudos are spoken for: the bar's shadow and its face have to be two stacked layers behind the buttons. See .selection-toolbar in reading.css.
+  // The point is an element rather than a pseudo because both pseudos are spoken for: the bar's shadow and its face have to be two stacked layers behind the buttons. See .selection-toolbar in reading/selection-toolbar.css.
   selectionToolbar.innerHTML =
     '<div class="selection-format-row"></div>' +
     '<div class="selection-link-row"><input type="text" class="selection-link-input" spellcheck="false" placeholder="Paste or type a link"></div>' +

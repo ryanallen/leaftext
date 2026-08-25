@@ -11,7 +11,7 @@ A comment explains why the code is the way it is, not how it got that way. Git a
 
 The bar, from AGENTS.md Rule 1: **one short line, only where the code can't say it.**
 
-And **one line means one line** — never wrap a comment across two. `just check-wrapping` joins them and fails on one left behind, in a `//` run and in a `/* */` block alike, so the front-end fragments and `reading.css` are held to it too. A comment body with an indent of its own is left alone, because there the shape is the content: a command, a table, a list — and in a block, "its own indent" means deeper than the block's other lines, which are all aligned under the opener. So a comment that is too long is *shortened*, never wrapped — the length is the thing to fix.
+And **one line means one line** — never wrap a comment across two. `just check-wrapping` joins them and fails on one left behind, in a `//` run and in a `/* */` block alike, so the front-end fragments and the stylesheet are held to it too. A comment body with an indent of its own is left alone, because there the shape is the content: a command, a table, a list — and in a block, "its own indent" means deeper than the block's other lines, which are all aligned under the opener. So a comment that is too long is *shortened*, never wrapped — the length is the thing to fix.
 
 This is a quality pass, not a git operation — never commit, tag, or push, and never change what the code does.
 

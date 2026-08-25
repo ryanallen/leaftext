@@ -152,7 +152,7 @@ Interface line heights. A document's come from the type scale above.
 
 Padding, margins and gaps, in pixels. `0` stays `0`, and a negative pull-back is the same token flipped: `calc(var(--lt-space-8) * -1)`. Spacing *inside* a document stays in `em`, because it has to follow the text size.
 
-**Thirteen steps, and every one even bar the hairline** — 2px apart to 16, 4px apart to 24, then 32 and 48. There were 23, every whole pixel from 1 to 14 and then a scatter, and a scale with a step for every pixel cannot be picked from: a value gets chosen by eye and frozen as a token, which is how one control's edge came to be 7px and one gap on the home screen 54px. A pull-back that is half of a box is not spacing at all — it belongs to the box, as `--lt-spinner-size` in `reading.css`.
+**Thirteen steps, and every one even bar the hairline** — 2px apart to 16, 4px apart to 24, then 32 and 48. There were 23, every whole pixel from 1 to 14 and then a scatter, and a scale with a step for every pixel cannot be picked from: a value gets chosen by eye and frozen as a token, which is how one control's edge came to be 7px and one gap on the home screen 54px. A pull-back that is half of a box is not spacing at all — it belongs to the box, as `--lt-spinner-size` in `src/assets/reading/buttons.css`.
 
 | Token | Value | What it is for |
 | --- | --- | --- |

@@ -385,7 +385,7 @@ fn handles_large_and_multiple_highlighted_code_blocks() {
     assert_contains(&rendered.html, r#"data-language="nonsense""#);
 }
 
-/// The stylesheet's `.syn-` rules, as the sorted class set each needs on a single element. Parsed out of `reading.css` so the table in `code.rs` is checked against the thing it mirrors rather than against a copy of itself.
+/// The stylesheet's `.syn-` rules, as the sorted class set each needs on a single element. Parsed out of the served stylesheet so the table in `code.rs` is checked against the thing it mirrors rather than against a copy of itself.
 fn syntax_rules_in_stylesheet() -> Vec<Vec<String>> {
     let css = reading_mode_css();
     let mut stripped = String::with_capacity(css.len());
@@ -458,7 +458,7 @@ fn the_syntax_rules_match_the_stylesheet() {
     // The highlighter drops every class no listed rule needs, so a rule present in the stylesheet but missing here never gets an element to match.
     assert_eq!(
         actual, expected,
-        "the syntax rule table and reading.css have drifted"
+        "the syntax rule table and the stylesheet have drifted"
     );
 }
 

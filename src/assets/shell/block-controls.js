@@ -8,7 +8,7 @@
 // What each format is offered is decided by what its ranges cover. Markdown and XML ranges are whole blocks and whole elements, so both reorder and insert are exact. JSON and YAML ranges cover a *value* inside a labeled structure, so moving one would leave its key behind and splicing between two would land outside the syntax that gives it meaning — those get no gutter, only the click-to-edit they already had.
 // ---------------------------------------------------------------------------
 
-// How wide the handle-plus pair is, matched to `.block-gutter` in reading.css. The pair is shifted this far into the margin, so the plus lands just left of the text the way Medium's does.
+// How wide the handle-plus pair is, matched to `.block-gutter` in reading/block-gutter.css. The pair is shifted this far into the margin, so the plus lands just left of the text the way Medium's does.
 const BLOCK_TOOLS_WIDTH = 62;
 
 // What the plus offers, per format.

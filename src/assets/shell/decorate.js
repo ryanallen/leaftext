@@ -25,7 +25,7 @@ function loadMermaid() {
 }
 // A diagram takes the page's colors, over mermaid's own light/dark theme.
 //
-// mermaid variable → the page token it takes its color from. A variable missing from here keeps mermaid's value; check-shell.mjs holds every name in this table to the ones reading.css defines.
+// mermaid variable → the page token it takes its color from. A variable missing from here keeps mermaid's value; check-shell.mjs holds every name in this table to the ones the stylesheet defines.
 const MERMAID_COLOR_MAP = {
   // The page the diagram is drawn on, and the ink on it.
   background: '--lt-markdown-background',

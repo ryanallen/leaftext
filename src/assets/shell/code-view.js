@@ -752,7 +752,7 @@ function defineLeafMonacoTheme(monaco) {
     'editorLineNumber.activeForeground': '#' + fg,
     'editor.selectionBackground': hash('--lt-editor-code-selection-background'),
     'editorCursor.foreground': '#' + fg,
-    // Nothing behind the map's glyphs: the rail is chrome and the shell's grain has to show between the lines (reading.css takes the fill off the editor's boxes for the same reason). Unset, this defaults to editor.background and the minimap pre-fills its canvas with it. Only the alpha matters — the glyphs are still antialiased against editor.background, so the map's text reads exactly as before.
+    // Nothing behind the map's glyphs: the rail is chrome and the shell's grain has to show between the lines (reading/code-view.css takes the fill off the editor's boxes for the same reason). Unset, this defaults to editor.background and the minimap pre-fills its canvas with it. Only the alpha matters — the glyphs are still antialiased against editor.background, so the map's text reads exactly as before.
     'minimap.background': '#00000000',
     // No scrolled-content shadow: Monaco lays it across the whole editor top, minimap included, and over the rail it reads as a smudge on the chrome.
     'scrollbar.shadow': '#00000000',

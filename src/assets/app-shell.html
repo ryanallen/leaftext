@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="{{APP_CSS_URL}}">
 </head>
 <body>
-<!-- One box that means "the app", holding everything the page has. It is what a fixed position is measured from and what a fixed position is clipped to, so a sheet, a scrim or a menu belongs to the app rather than to the window — which are the same rectangle today and are not once the window's outer edge is a shadow the app draws. Nothing is added beside it: see .app-surface in reading.css and appSurface in shell/state.js. -->
+<!-- One box that means "the app", holding everything the page has. It is what a fixed position is measured from and what a fixed position is clipped to, so a sheet, a scrim or a menu belongs to the app rather than to the window — which are the same rectangle today and are not once the window's outer edge is a shadow the app draws. Nothing is added beside it: see .app-surface in reading/base.css and appSurface in shell/state.js. -->
 <div id="appSurface" class="app-surface">
 <header id="appBar" class="app-bar">
   <div class="app-bar-lead">
@@ -325,7 +325,7 @@
     <button type="button" id="confirmDialogAccept" class="confirm-dialog-button is-danger">Delete</button>
   </div>
 </div>
-<!-- Where a diagram goes to be printed on its own. The export draws the diagram again into this box and raises `leaf-paper-diagram`, which takes everything else off the sheet — so the page the host renders is the drawing and nothing around it. Empty and out of the layout the rest of the time. See .diagram-print in reading.css. -->
+<!-- Where a diagram goes to be printed on its own. The export draws the diagram again into this box and raises `leaf-paper-diagram`, which takes everything else off the sheet — so the page the host renders is the drawing and nothing around it. Empty and out of the layout the rest of the time. See .diagram-print in reading/print.css. -->
 <div id="diagramPrint" class="diagram-print" aria-hidden="true"></div>
 <!-- The front-end, over the asset protocol rather than inline: the page is handed
      to WebView2 as one string with a ceiling on it and this was 88% of it. A plain

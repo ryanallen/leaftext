@@ -26,7 +26,7 @@ A color is **themed**: 11 families, light and dark, so `colors.md` holds names o
 
 ## A new part of the interface
 
-**Styling a new thing is not finished until it is listed.** `just check-classes` reads every class in `reading.css` and fails on one that `design/components.md` does not account for, naming the line. There are three honest answers:
+**Styling a new thing is not finished until it is listed.** `just check-classes` reads every class in `src/assets/reading/` and fails on one that `design/components.md` does not account for, naming the line. There are three honest answers:
 
 1. **It is a component.** A row in the first table: the class family, what builds it, and a snippet of its real markup. That snippet is what the gallery draws it with, so the component appears at leaftext.com/gallery.html by existing — nobody has to remember to add it. If the component owns other prefixes (`app-bar` also owns `app-trailing`), list them in **Also owns**.
 2. **The renderer writes it into a document** — a footnote, an alert, a syntax color. A prefix in the second table. Those have no state to show and nothing to draw.

@@ -190,7 +190,7 @@ pub(crate) fn language_definition(language: &str) -> Option<LanguageDefinition> 
     Some(definition)
 }
 
-/// Every `.syn-` rule in `assets/reading.css`, as the class set one element must carry to match it. The class names are this table's union, and a token keeps exactly the classes of the rules it satisfies — `the_syntax_rules_match_the_stylesheet` fails when the two drift, because a missing rule goes uncolored rather than loud.
+/// Every `.syn-` rule in `assets/reading/document-code.css`, as the class set one element must carry to match it. The class names are this table's union, and a token keeps exactly the classes of the rules it satisfies — `the_syntax_rules_match_the_stylesheet` fails when the two drift, because a missing rule goes uncolored rather than loud.
 #[cfg(feature = "highlight")]
 pub(crate) const SYNTAX_STYLE_RULES: &[&[&str]] = &[
     &["attribute"],

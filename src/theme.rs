@@ -554,7 +554,7 @@ pub fn reading_mode_css() -> &'static str {
     // Assets, not Rust literals, so they stay editable as CSS. Every `var(--lt-*)` resolves against what came before it: the per-theme colors, then the app-wide scales, then the rules that spend both.
     const TOKENS_CSS: &str = include_str!("assets/tokens.css");
     const ICONS_CSS: &str = include_str!("assets/icons.css");
-    // The stylesheet as ordered parts, one per component group, concatenated with nothing so the join is the old file character for character. Order is the cascade — at equal specificity the later rule wins — so a part moves only as a contiguous run of lines, never a rule lifted out of one. `scripts/reading-css.mjs` reads this array so every check reports the part a reader opens rather than a line in a file that no longer exists.
+    // The stylesheet as ordered parts, one per component group, joined with nothing between them. Order is the cascade — at equal specificity the later rule wins — so a part is a contiguous run of lines and never a rule lifted out of one, and a separator here would put a character in the sheet that no part holds. `scripts/reading-css.mjs` reads this array, so a part added to the app is a part every check sees.
     const READING_CSS_PARTS: &[&str] = &[
         // The reset, the theme root, the window frame and the reduced-motion opt-out. First because everything below resolves against it.
         include_str!("assets/reading/base.css"),

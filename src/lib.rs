@@ -1049,7 +1049,7 @@ pub fn app_shell_html_for_host(host: &dyn LeafHost) -> String {
 
 /// The document as a page of its own: what a reader hands to somebody who does not have Leaftext.
 ///
-/// `markup` is the document as the page has already drawn it, cleaned of the app's own controls and wrapped in the ancestors every rule in `reading.css` is keyed on — the page builds that chain, because the page is what knows which of its own elements are controls. Nothing here is fetched: a drawn diagram is already an SVG in that markup, an icon is a mask inside the stylesheet, and ordinary text takes the reader's own system font. One thing runs, off the folder beside the page — the minimap rail, which is the only way a reader handed this file can see the shape of the whole document.
+/// `markup` is the document as the page has already drawn it, cleaned of the app's own controls and wrapped in the ancestors every rule in the stylesheet is keyed on — the page builds that chain, because the page is what knows which of its own elements are controls. Nothing here is fetched: a drawn diagram is already an SVG in that markup, an icon is a mask inside the stylesheet, and ordinary text takes the reader's own system font. One thing runs, off the folder beside the page — the minimap rail, which is the only way a reader handed this file can see the shape of the whole document.
 ///
 /// `sheet` is the drawings' own stylesheet. Mermaid writes one per drawing and the page hoists them into a single element in its head, so the rules are neither in the stylesheet nor inside the SVG — a copy of the document alone comes out a page of black boxes with clipped labels. It travels inline rather than as a second file because it is markup the page already holds as one string.
 ///

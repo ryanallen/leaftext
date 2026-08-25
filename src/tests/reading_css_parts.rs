@@ -78,9 +78,9 @@ fn a_file_name_stays_a_flex_row_across_the_seam_it_is_cut_at() {
 
 #[test]
 fn the_served_stylesheet_is_every_part_in_the_arrays_order_and_nothing_between_them() {
-    // The sheet the browser is handed is the parts joined with **nothing** — no separator, nothing before the first and nothing after the last. A `join("\n")` would be the easy mistake and it is not a small one: a character the old file did not have breaks the byte-equality every future move is proved against.
+    // The sheet the browser is handed is the parts joined with **nothing** — no separator, nothing before the first and nothing after the last. A `join("\n")` is the easy mistake, and it puts a character in the sheet that no part holds, so the next move can no longer be proved byte for byte.
     //
-    // It cannot catch a part listed in the wrong order, and nothing can: the array is the order, so moving an entry moves the truth with it. What names a cascade fact rather than restating the array is the test above.
+    // It cannot catch a part listed in the wrong order, and nothing can: the array is the order, so moving an entry moves the truth with it. The cascade is named as a fact about the app by the test above instead.
     let served = reading_mode_css();
     let mut joined = String::new();
     for path in part_paths() {

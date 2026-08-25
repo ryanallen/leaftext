@@ -289,7 +289,7 @@ function composedMarkup(node) {
 export function fakeElement(id = '') {
   // The one place a class lives, reached by both names below. A browser has one, and two stores that never meet leave every guard asking whether an element wears a class the markup or a name write gave it answering no for ever.
   const classes = new Set();
-  // Every element's, not only the ones the markup walker built: an element the page makes and then marks hidden from assistive technology used to drop that name silently, so the exported page's own check would read a document body wearing nothing. Names arrive here in the order they were given, which is the order the markup writes them back out in.
+  // Every element's, not only the ones the markup walker built: an element the page makes and then marks hidden from assistive technology drops that name silently otherwise, and the exported page's own check would read a document body wearing nothing. Names arrive here in the order they were given, which is the order the markup writes them back out in.
   const attributes = new Map();
   // Declared out here so the snapshot below can copy it whole. Reading the names out of the fragment sources instead would miss a property whose name the source never spells.
   const styleProperties = new Map();

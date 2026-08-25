@@ -27,7 +27,7 @@ The front-end is 28 files under `src/assets/shell/`, joined in `APP_SHELL_SCRIPT
 
 A fragment that builds something new, with classes of its own, is not finished when it works. `just check-classes` fails on a class `design/components.md` does not account for. Add the row — the class family, this fragment as what builds it, and a snippet of its markup — and the thing appears in the gallery at leaftext.com/gallery.html without anyone remembering to put it there. See `/design-tokens`.
 
-Same for the values it paints with: no color, size, spacing or duration typed into `reading.css`. `just check-literals` names the line.
+Same for the values it paints with: no color, size, spacing or duration typed into `src/assets/reading/`. `just check-literals` names the line.
 
 ## Never put a placeholder in a fragment
 
