@@ -139,6 +139,8 @@ Needs `rustup`, `just`, `node`, GitHub's own `gh` (the one tool that can start a
 
 **A gate gets two cores, not the machine.** Cargo takes every one by default, so a gate used to leave nobody a machine to work on; `.cargo/config.toml` gives them a two-job share instead. A machine nobody is using can have the lot for one run — `CARGO_BUILD_JOBS=16 just verify` — and the committed default stays where it is. `just check-build-jobs` fails if it goes missing, stops being a whole number, is zero, or is quietly raised.
 
+**A hand-written text file is no more than 1,734 lines.** A file above that ceiling is split before it grows again. Generated and vendored files are exempt by a rule naming the class, never by a file name; `just check-file-sizes` reads Git's tracked text and refuses either kind of drift.
+
 **A compiler warning is an error.** `warnings = "deny"` sits in the root `Cargo.toml`'s workspace lints and all three packages opt in, so every way the tree is compiled refuses one — a recipe switch would have reached only that recipe. Where a warning is genuinely wanted, it is an `#[allow(...)]` on the item with a comment saying why, never a loosened ceiling.
 
 **Keep this machine on current stable.** Every workflow builds on whatever stable is that day, so a machine a release behind runs a weaker gate than the one that publishes: v1.11.3 passed every check here and failed all four builds on a lint the newer compiler had added. `rustup update stable` before a release, and fix what it then names.
