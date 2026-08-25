@@ -7,6 +7,7 @@ let graphScene = null; // live Pixi/d3 scene while the view is open
 let graphActivePath = null;
 let graphLibsPromise = null;
 let graphSeedKey = null; // scope+seeds of the last request, to skip redundant refetches
+let keptGraphCamera = null; // the framing and node places the map was left at, with the signature they were taken under. See teardownGraph.
 let graphFocusPending = false; // fly to the active node once the next scene finishes building
 const GRAPH_NEIGHBOR_LABEL_CAP = 12;
 // Focus scope on the start screen seeds from the recent files; cap how many so a long history does not balloon the neighborhood.
@@ -369,7 +370,16 @@ window.leafSetGraph = (payload) => {
 function teardownGraph() {
   graphRequested = false;
   clearReaderLoading('graph');
+  // Leaving the map is not the map changing, so the corner the reader built up outlives the drawing. Taken here because this is the one path that means the view is being left, and spent by the next build, which has no scene to read it off.
+  keptGraphCamera = graphScene ? { ...carryGraphLayout(graphScene), signature: graphScene.signature } : null;
   teardownGraphScene();
+}
+// The camera the map was left at, answered only for a payload drawing the same picture — graphSignature is this file's one answer to that, so there is no second list of what makes a map a different map. Cleared either way, so it is never spent twice.
+function keptGraphCameraFor(data) {
+  const kept = keptGraphCamera;
+  keptGraphCamera = null;
+  if (!kept || kept.signature !== graphSignature(data)) return null;
+  return kept;
 }
 // Moving the pane moves the graph's root, so what it drew is about somewhere else now. Only matters while the graph is the view on screen.
 function refreshGraphForScope() {
@@ -411,9 +421,9 @@ function carryGraphLayout(scene) {
 }
 
 async function buildGraphScene() {
-  const carried = graphScene ? carryGraphLayout(graphScene) : null;
-  teardownGraphScene();
   const data = graphData;
+  const carried = graphScene ? carryGraphLayout(graphScene) : keptGraphCameraFor(data);
+  teardownGraphScene();
   if (!data || !data.nodes || !data.nodes.length) {
     clearReaderLoading('graph');
     setGraphLegend(false);

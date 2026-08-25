@@ -89,6 +89,54 @@ export function run() {
     }
   });
 
+  // Leaving the map destroys the drawing, and the camera used to go with it — so a reader who had zoomed into one corner of a vault came back to a fresh auto-fit of the whole thicket. What outlives the scene is taken on the one path that means the view is being left.
+  check('the camera the map was left at is answered once, and only for the same picture', () => {
+    const { keptGraphCameraFor, graphSignature } = booted;
+    const same = { nodes: [{ path: 'a.md', degree: 1 }, { path: 'b.md', degree: 1 }], edges: [{ source: 'a.md', target: 'b.md' }] };
+    const other = { nodes: [{ path: 'a.md', degree: 1 }, { path: 'c.md', degree: 2 }], edges: [] };
+    const arm = () => vm.runInContext(
+      `keptGraphCamera = { positions: new Map(), autoFit: false, settled: true, scale: 4, x: 1547.87, y: 1099, signature: ${JSON.stringify(graphSignature(same))} };`,
+      booted,
+    );
+    arm();
+    const answered = keptGraphCameraFor(same);
+    if (!answered || answered.scale !== 4) throw new Error('a payload drawing the same picture was not handed its camera back');
+    if (keptGraphCameraFor(same) !== null) throw new Error('the same camera was handed out twice, so a later map inherits a corner nobody chose for it');
+    arm();
+    if (keptGraphCameraFor(other) !== null) throw new Error('a different picture was handed the camera of the map before it');
+    if (vm.runInContext('keptGraphCamera', booted) !== null) throw new Error('a refused camera was left standing for the map after it');
+  });
+
+  // The places go with the camera, and that is not a nicety: without seeded positions the simulation starts cold and d3 throws the whole vault out from the center, so a camera pinned to a corner frames empty space.
+  check('leaving the map keeps the framing, the node places and the picture they were taken over', () => {
+    const original = { teardownGraphScene: booted.teardownGraphScene, clearReaderLoading: booted.clearReaderLoading };
+    booted.teardownGraphScene = () => {};
+    booted.clearReaderLoading = () => {};
+    try {
+      vm.runInContext(
+        'keptGraphCamera = null;' +
+          'graphScene = { nodes: [{ path: "a.md", x: 11, y: 22 }, { path: "b.md", x: 33, y: 44 }],' +
+          ' world: { scale: { x: 4 }, position: { x: 1547.87, y: 1099 } },' +
+          ' autoFit: false, settled: true, signature: "one-picture" };',
+        booted,
+      );
+      booted.teardownGraph();
+      const kept = vm.runInContext('keptGraphCamera', booted);
+      if (!kept) throw new Error('leaving the map kept nothing, so the next open re-frames everything');
+      if (kept.scale !== 4 || kept.x !== 1547.87 || kept.y !== 1099) throw new Error(`the framing came back as ${kept.scale} at ${kept.x},${kept.y}`);
+      if (kept.autoFit !== false || kept.settled !== true) throw new Error('the flag saying whose framing it is was dropped, so a corner the reader chose reads as one the app chose');
+      if (kept.signature !== 'one-picture') throw new Error('the picture it was taken over was dropped, so nothing can tell whether it still applies');
+      const seat = kept.positions.get('b.md');
+      if (!seat || seat.x !== 33 || seat.y !== 44) throw new Error('the node places were dropped, so the layout starts cold under the kept camera');
+      // Nothing on screen to keep, and nothing stale left behind for the map after it either.
+      vm.runInContext('graphScene = null;', booted);
+      booted.teardownGraph();
+      if (vm.runInContext('keptGraphCamera', booted) !== null) throw new Error('leaving with no scene up left a camera behind');
+    } finally {
+      Object.assign(booted, original);
+    }
+  });
+
   // The rail's thumbnail is a clone of one slice of the document, and this comparison decides whether the slice on the page still holds what the rail shows. A no asks for another rebuild, on the next animation frame, and a rebuild deep-clones the slice — so a no that can never become a yes is about a gigabyte a minute until the page dies. Numbers here are a real document's: 13,142px tall, scaled to a tenth.
   check('the thumbnail counts as covering the view at the top and the foot', () => {
     const { minimapWindowCoversView } = booted;

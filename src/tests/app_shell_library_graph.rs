@@ -75,7 +75,12 @@ fn a_redraw_of_the_same_map_is_not_a_redraw() {
 
     // A real change still rebuilds, but inherits the layout: every node keeps its place, the simulation starts warm rather than laying the vault out again, and a framing the reader chose survives.
     assert!(html.contains("function carryGraphLayout(scene)"));
-    assert!(html.contains("const carried = graphScene ? carryGraphLayout(graphScene) : null;"));
+    assert!(html.contains(
+        "const carried = graphScene ? carryGraphLayout(graphScene) : keptGraphCameraFor(data);"
+    ));
+    // No scene to carry from means the map is being entered, not redrawn, and the camera the last one was left at is the answer -- for one build, and only where the payload draws the same picture.
+    assert!(html.contains("function keptGraphCameraFor(data)"));
+    assert!(html.contains("keptGraphCamera = null;"));
     assert!(html.contains("if (seat) { node.x = seat.x; node.y = seat.y; }"));
     assert!(html.contains("if (carried && carried.positions.size) sim.alpha(GRAPH_WARM_ALPHA);"));
 
