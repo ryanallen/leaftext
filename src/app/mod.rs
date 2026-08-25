@@ -20,6 +20,7 @@ mod vault_remote;
 mod vault_search;
 mod vaults;
 mod watch;
+mod window_events;
 mod workspace;
 
 pub(crate) use code_intel::*;
@@ -39,6 +40,7 @@ pub(crate) use vault_remote::*;
 pub(crate) use vault_search::*;
 pub(crate) use vaults::*;
 pub(crate) use watch::*;
+pub(crate) use window_events::*;
 pub(crate) use workspace::*;
 
 #[cfg(test)]
