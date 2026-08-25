@@ -503,6 +503,58 @@ fn the_bar_is_measured_against_the_page_and_the_map_together() {
 }
 
 #[test]
+fn the_graph_size_box_uses_the_wells_inset_on_every_side() {
+    let css = reading_mode_css();
+    let px = |source: &str, property: &str| {
+        source
+            .lines()
+            .find_map(|line| {
+                line.trim()
+                    .strip_prefix(property)?
+                    .strip_suffix("px;")?
+                    .parse::<u32>()
+                    .ok()
+            })
+            .unwrap_or_else(|| panic!("{property} should carry a pixel value"))
+    };
+    let well = rule_body(css, ".reader-view-tools {");
+    let label = rule_body(css, ".reader-subselect {");
+    let select = rule_body(css, ".reader-subselect select {");
+    let side_inset = px(css, "--lt-space-2: ");
+    let vertical_inset = (px(well, "height: ") - px(select, "height: ")) / 2;
+
+    assert_contains(well, "padding: 0 var(--lt-space-2);");
+    assert!(!label.contains("padding:"));
+    assert_eq!(vertical_inset, side_inset);
+}
+
+#[test]
+fn both_dropdowns_use_the_apps_chevron_and_insets() {
+    let css = reading_mode_css();
+    let html = app_shell_page();
+    let select = rule_body(css, ".leaf-select select {");
+    let arrow = rule_body(css, ".leaf-select > .lt-icon-chevron-down {");
+
+    assert_contains(select, "appearance: none;");
+    assert_contains(
+        select,
+        "padding-inline: var(--lt-space-8) var(--lt-space-24);",
+    );
+    assert_contains(arrow, "right: var(--lt-space-6);");
+    assert_contains(arrow, "pointer-events: none;");
+    assert_contains(
+        &html,
+        r#"<label class="reader-subselect leaf-select" id="graphScopeTool" hidden>"#,
+    );
+    assert_contains(&html, r#"<label class="flow-sheet-direction leaf-select">"#);
+    assert_eq!(
+        html.matches(r#"<span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>"#)
+            .count(),
+        2
+    );
+}
+
+#[test]
 fn the_map_takes_the_column_the_minimap_is_not_using() {
     let html = app_shell_page();
     let css = reading_mode_css();

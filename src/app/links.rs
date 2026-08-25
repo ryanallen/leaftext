@@ -97,6 +97,14 @@ pub(crate) fn linked_document_path(href: &str, current_path: &Path) -> Option<Pa
     }
 }
 
+/// The readable file the hover card is about, for both of its asks. A `glossary:` link names a term rather than a path, so its file is the nearest glossary above the open document; everything else resolves the way `linked_document_path` does. One answer, because a picture of one file above a line count of another is two answers to one question.
+pub(crate) fn hover_card_document_path(href: &str, current_path: &Path) -> Option<PathBuf> {
+    match glossary_scheme_slug(href) {
+        Some(_) => nearest_glossary_above(current_path),
+        None => linked_document_path(href, current_path),
+    }
+}
+
 /// The resolved file a link names that is not on disk. The system opener reports success whether it opened anything or not, so a path with no file behind it goes out and says nothing at all — this is what the reader is told instead. Only a file beside the note is asked about: an address another handler reads names no file here, so a handler that is not installed fails the way it always has.
 pub(crate) fn missing_linked_file(href: &str, current_path: &Path) -> Option<PathBuf> {
     match classify_link_target(href) {

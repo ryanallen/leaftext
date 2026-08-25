@@ -26,10 +26,16 @@ const FOOTPRINT_HEADING = /^##(?!#)[ \t]+What it writes[ \t]*$/;
 
 const FOOTPRINT_ROOTS = ['app/', 'docs/'];
 
-// Every build writes these, so counting them would make every cell in the column empty and the column pointless. A ticket still writes them down — the section is what this build writes, and leaving them out to help the comparison is the section lying about the work.
+// The shared plan files a build can still reach, with the reason each one is here. A ticket writes them down like any other — the section is what this build writes, and leaving them out to help the comparison is the section lying about the work.
 //
-// **`app/AGENTS.md` is deliberately not on this list.** It is the biggest single false collider among citations, and a workflow ticket genuinely does change the guide: excluding it would call two such tickets safe together, which is the one mistake that costs somebody's work.
-export const EXCLUDED = ['docs/PLAN.md', 'docs/README.md', 'docs/TRACKS.md', 'docs/GLOSSARY.md'];
+// `docs/PLAN.md`: no build authors a cell in it. Its stage is written in its own ticket and the column is computed, so the two writes a build can make here — `just bundle-devs-with` and `just bundle-plan-status` — are both derived, and two builds running either produce the same bytes from the same tickets rather than landing on each other's edit. The authored rewrites are `/pm`'s and `/done`'s, and neither runs beside a build.
+//
+// `docs/README.md` and `docs/GLOSSARY.md`: a build reaches these only by filing what it found beside its work, which appends a row to a table rather than rewriting the file.
+//
+// **`docs/TRACKS.md` is deliberately no longer on this list.** Read out of the skills, it has one writer — `/pm`, giving a subject its first track — and no build touches it, so a file that was excluded as one every build writes is a real collider and two tickets planning to write it are told so.
+//
+// **`app/AGENTS.md` is deliberately not on it either.** It is the biggest single false collider among citations, and a workflow ticket genuinely does change the guide: excluding it would call two such tickets safe together, which is the one mistake that costs somebody's work.
+export const EXCLUDED = ['docs/PLAN.md', 'docs/README.md', 'docs/GLOSSARY.md'];
 
 /// The lines of a ticket's footprint section, or null where it carries none — which is a different answer from a section carrying no files.
 function footprintSection(text) {
@@ -318,7 +324,7 @@ const PAIR_CLAIMS = new Map([
   // Shares a real file with b, and nothing with c, e or f.
   ['fixes/reading/a.md', ['app/src/format.rs']],
   ['fixes/reading/b.md', ['app/src/format.rs', 'app/AGENTS.md']],
-  // Shares only the guide with b, which is on purpose not excluded, and only the plan tree with e.
+  // Shares only the guide with b, which is on purpose not excluded, and nothing at all with e.
   ['fixes/reading/c.md', ['app/AGENTS.md']],
   // Waits on a, and shares no file with it.
   ['fixes/reading/d.md', ['app/src/lib.rs']],
@@ -335,8 +341,37 @@ const PAIR_CASES = [
   ['a pair where one waits on the other is never disjoint, whatever their files say', 'fixes/reading/a.md', 'fixes/reading/d.md', false],
   ['a pair both of which will create the same file that is not there yet is not disjoint', 'fixes/reading/e.md', 'fixes/reading/f.md', false],
   ['a pair where one names the folder the other\'s file sits in is not disjoint', 'fixes/reading/f.md', 'fixes/reading/e.md', false],
-  ['a pair sharing only the plan tree is disjoint, since every build writes those four', 'fixes/reading/c.md', 'fixes/reading/e.md', true],
+  ['a pair sharing nothing but a made-up module is disjoint', 'fixes/reading/c.md', 'fixes/reading/e.md', true],
 ];
+
+// What the exclusion list actually promises, read on its own rather than through the six-row order above, so adding a case here perturbs no other one. A pair differing only in an excluded file is called safe on purpose; a pair differing only in a shared plan file that is **not** excluded has to be called colliding, which is the whole of what taking a file off that list buys.
+const EXCLUSION_CASES = [
+  ['the running order', 'docs/PLAN.md', true],
+  ['the ticket index', 'docs/README.md', true],
+  ['the planning glossary', 'docs/GLOSSARY.md', true],
+  ['the subject order', 'docs/TRACKS.md', false],
+  ['the guide', 'app/AGENTS.md', false],
+];
+
+/// Two made-up tickets writing a source file each and `path` between them, and whether the pairing then calls them safe together.
+function safeSharing(path) {
+  const section = (own) => `## What it writes\n\n| file | phase |\n|---|---|\n| \`${own}\` | 1 |\n| \`${path}\` | 1 |\n`;
+  const left = claimedBy('fixes/reading/left.md', section('app/src/one.rs'));
+  const right = claimedBy('fixes/reading/right.md', section('app/src/two.rs'));
+  return overlap(left, right).length === 0;
+}
+
+function exclusionSelfTest() {
+  const faults = [];
+  for (const [name, path, safe] of EXCLUSION_CASES) {
+    const got = safeSharing(path);
+    if (got === safe) continue;
+    faults.push(safe
+      ? `a pair sharing nothing but ${name} is called colliding, and ${path} is on the exclusion list`
+      : `a pair sharing nothing but ${name} is called safe together, and ${path} is not on the exclusion list — one of them would land on the other's edit`);
+  }
+  return faults;
+}
 
 function pairSelfTest() {
   const rows = planRows(PAIR_ORDER);
@@ -402,7 +437,7 @@ function cellSelfTest() {
 }
 
 export function selfTest() {
-  return [...footprintSelfTest(), ...footprintPathSelfTest(), ...pairSelfTest(), ...cellSelfTest()];
+  return [...footprintSelfTest(), ...footprintPathSelfTest(), ...pairSelfTest(), ...exclusionSelfTest(), ...cellSelfTest()];
 }
 
 // Only when run as a command. Both plan checks import this module, and neither wants its report.
@@ -430,7 +465,7 @@ if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1].spl
   }
   const asked = process.argv.slice(2).filter((arg) => arg !== '--check');
   if (!asked.length) {
-    console.log('footprints: the reader answers a section, a folder row and a ticket that writes nothing, refuses a path spelled from neither root and passes one the build will create, and the pairing holds a shared file, a shared guide, a wait, two builds creating one file, a folder holding the other\'s file, and a pair sharing only the plan tree');
+    console.log('footprints: the reader answers a section, a folder row and a ticket that writes nothing, refuses a path spelled from neither root and passes one the build will create, and the pairing holds a shared file, a shared guide, a wait, two builds creating one file, a folder holding the other\'s file and a pair sharing nothing, and every shared plan file is read for whether a pair whose one common file is that one is called safe');
     process.exit(0);
   }
   const plans = planTree(here);

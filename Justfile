@@ -124,11 +124,17 @@ bundle-devs-with:
 check-footprints:
     node scripts/plan-footprints.mjs --check
 
-# Fail on a running-order row claiming a stage its ticket never reached: Designed, Dev and
-# Released all rest on the ticket carrying a dated Designed line, and a row that claims one
-# without it tells the owner a build is happening off a plan nobody read against the code.
+# Fail on a running-order Status cell that is not what its ticket's own dated lines say. The
+# cell used to be typed in by hand, which made the running order the one shared file every
+# build wrote — and the column beside it tells two agents in this checkout that they share no
+# file. Now it is derived, so a build writes its stage in its own ticket and nothing shared.
 check-plan-stage:
     node scripts/check-plan-stage.mjs --check
+
+# Write every live row's Status cell from its ticket. /pm and /done run it; a build never does,
+# because the running order is the one file two builds must not both write.
+bundle-plan-status:
+    node scripts/check-plan-stage.mjs --write
 
 # Fail on a copy of a skill in the shared workflow article that no longer says what the
 # skill says. The article is handed on with an exact copy of every skill it cites, so the

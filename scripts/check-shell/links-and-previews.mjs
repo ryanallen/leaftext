@@ -524,6 +524,13 @@ export function run() {
       if (preview.classList.contains('is-entry')) throw new Error('a page preview was drawn as a glossary entry');
       if (preview.style.height !== '73px') throw new Error(`a page preview no longer lands at its thumbnail height: ${preview.style.height}`);
 
+      // A link to the whole glossary is a file, so it is measured the way another page is rather than held at reading size under the entry cap.
+      draw("linkHoverInfo('glossary:').kind === 'Glossary entry'", note(692, 400));
+      if (preview.style.getPropertyValue('--link-preview-shrink') === '1') throw new Error('a link to the whole glossary stopped measuring its shrink');
+      if (preview.style.height !== '145px') throw new Error(`a link to the whole glossary no longer lands at its thumbnail height: ${preview.style.height}`);
+      if (preview.classList.contains('is-entry')) throw new Error('a link to the whole glossary was drawn as one of its entries');
+      if (preview.classList.contains('is-capped') || !more.hidden) throw new Error('a link to the whole glossary was cut under the entry cap');
+
       draw(true, note(692, 300));
       if (preview.style.getPropertyValue('--link-preview-shrink') !== '1') throw new Error('a glossary entry was scaled down rather than drawn at the card\'s own width');
       if (scale.style.width !== '') throw new Error('a glossary entry kept a measured layer width, so it is laid out at a page\'s measure');
@@ -623,6 +630,49 @@ export function run() {
       for (const ask of both) {
         if (ask.href !== 'file:///notes/other.md') throw new Error(`${ask.command} no longer carries the address the page resolved`);
       }
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      booted.setTimeout = wasTimeout;
+      tip.getBoundingClientRect = wasRect;
+      vm.runInContext('hideLinkHoverTip(); activeHoverLink = null; linkPreviewCache.clear(); lineCountCache.clear(); pendingPreviewTokens.clear(); pendingLineTokens.clear();', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
+  // Written with nothing after the colon, a glossary link is the whole file rather than one term — so it draws the file's opening the way a link to any other page does, and the line count it asks for is that file's, which is the number a reader wants.
+  check('a rest on a bare glossary link asks for the preview, as written, and asks for a line count', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const link = (written) => {
+      const item = {
+        href: written,
+        getAttribute: (name) => (name === 'href' ? written : null),
+        getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }),
+      };
+      item.closest = () => item;
+      return item;
+    };
+    const wasSend = booted.ipc.postMessage;
+    const wasTimeout = booted.setTimeout;
+    const wasRect = tip.getBoundingClientRect;
+    try {
+      tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 240, bottom: 120, width: 240, height: 120 });
+      vm.runInContext('linkPreviewCache.clear(); lineCountCache.clear();', booted);
+      const sent = [];
+      const waiting = [];
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.setTimeout = (fn) => waiting.push(fn);
+      booted.__hoverEvent = { target: link('glossary:'), relatedTarget: { body: true }, clientX: 240, clientY: 210 };
+      vm.runInContext('activeHoverLink = null; startLinkHover(__hoverEvent);', booted);
+      waiting.forEach((fn) => fn());
+
+      if (vm.runInContext('linkHoverTipKind.textContent', booted) !== 'Full glossary') throw new Error('the card stopped calling a bare glossary link the whole glossary');
+      if (vm.runInContext('linkHoverEntry', booted)) throw new Error('a bare glossary link was taken for one of its entries, so its opening is drawn at reading size rather than shrunk to a picture of the file');
+      const asked = sent.filter((one) => one.command === 'previewLink');
+      if (asked.length !== 1) throw new Error(`a rest on a bare glossary link sent ${asked.length} preview asks`);
+      if (asked[0].href !== 'glossary:') throw new Error(`the preview ask carried ${asked[0].href} instead of the address as written`);
+      const counted = sent.filter((one) => one.command === 'countLines');
+      if (counted.length !== 1) throw new Error('a rest on a bare glossary link asked for no line count, so the card is a row short of what the same file linked by name draws');
+      if (counted[0].href !== 'glossary:') throw new Error(`the count ask carried ${counted[0].href} instead of the address as written`);
     } finally {
       booted.ipc.postMessage = wasSend;
       booted.setTimeout = wasTimeout;

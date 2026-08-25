@@ -240,6 +240,58 @@ fn only_a_link_with_a_file_behind_it_resolves_to_a_path() {
 }
 
 #[test]
+fn the_file_a_hover_card_is_about_walks_a_glossary_scheme_and_resolves_the_rest() {
+    // The card's picture and its line count are two asks about one link, so they ask one function which file it is. The app's own scheme names a term rather than a path, so that file is the walk up to the nearest glossary — which is why a bare `glossary:` link once drew the glossary's opening above no count at all.
+    let root = std::env::temp_dir().join(format!("leaf-hover-card-path-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    let deep = root.join("features").join("reading");
+    fs::create_dir_all(&deep).expect("fixture tree is created");
+    let current = deep.join("ticket.md");
+    fs::write(&current, "# Ticket").expect("the open document is written");
+    let glossary = root.join("GLOSSARY.md");
+    fs::write(&glossary, "# Glossary\n\n## Tier\n\nA band.\n").expect("the glossary is written");
+
+    // Nothing after the colon is the whole glossary, and a term is the same file — the card cuts one down to its entry, and the file under both is the one the walk finds.
+    for href in ["glossary:", "glossary:tier", "glossary:#tier"] {
+        assert_eq!(
+            hover_card_document_path(href, &current),
+            Some(glossary.clone()),
+            "{href} is about the glossary above the open document"
+        );
+    }
+
+    // Everything else resolves the way it always did, with no walk in the way.
+    assert_eq!(
+        hover_card_document_path("./other.md#top", &current),
+        Some(deep.join("other.md"))
+    );
+    for href in [
+        "https://example.com/page.md",
+        "mailto:someone@example.com",
+        "#section",
+        "./assets/Release%20Notes.pdf",
+    ] {
+        assert_eq!(
+            hover_card_document_path(href, &current),
+            None,
+            "{href} names no file this card can be about"
+        );
+    }
+
+    // With no glossary above it there is no file, so the card asks for neither a picture nor a count rather than being told a wrong number.
+    let alone_dir =
+        std::env::temp_dir().join(format!("leaf-hover-card-alone-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&alone_dir);
+    fs::create_dir_all(&alone_dir).expect("the glossaryless folder is created");
+    let alone = alone_dir.join("alone.md");
+    fs::write(&alone, "# Alone").expect("the glossaryless document is written");
+    assert_eq!(hover_card_document_path("glossary:", &alone), None);
+
+    fs::remove_dir_all(&root).expect("fixture tree is removed");
+    fs::remove_dir_all(&alone_dir).expect("the glossaryless folder is removed");
+}
+
+#[test]
 fn resolves_local_markdown_links_against_current_document() {
     let current = fixture_source_path("guide/chapter/README.md");
 

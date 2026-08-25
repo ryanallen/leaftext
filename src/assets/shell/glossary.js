@@ -637,7 +637,8 @@ function startLinkHover(event) {
   setLinkHoverLines(null);
   const entry = info.kind === 'Glossary entry';
   linkHoverEntry = entry;
-  if (entry || info.kind === 'Another page') {
+  // A link to the whole glossary is a file rather than one entry, so it draws with the page thumbnail's shrink and is counted like any other page.
+  if (entry || info.kind === 'Another page' || info.kind === 'Full glossary') {
     // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string. A glossary link goes as it was written instead: the scheme carries the term, and a relative address read back off the page resolves against the page rather than against the document the host joins it onto.
     const key = entry ? rawHref : (typeof link.href === 'string' && link.href) || rawHref;
     if (linkPreviewCache.has(key)) {
@@ -647,7 +648,7 @@ function startLinkHover(event) {
       showLinkHoverPreviewPlaceholder();
       requestLinkPreview(key, token);
     }
-    // Only in-app page links carry a line count. A glossary link's would be the whole file's, above three blocks of one entry.
+    // A term is the one link with no count: the number would be the whole glossary's above three blocks of one entry. A link to the whole glossary is that file, so its count is the file's and right.
     if (!entry) {
       if (lineCountCache.has(key)) {
         setLinkHoverLines(lineCountCache.get(key));

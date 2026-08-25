@@ -13,11 +13,7 @@ pub(super) const LINK_PREVIEW_CACHE_ENTRIES: usize = 16;
 
 /// Render the readable local document `href` names from `current_path`, through the renderer its own format picks, for the page to lift the section the address names out of.
 pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<String> {
-    // A `glossary:` link names a term rather than a file, so its file is the nearest glossary above the open document — the same walk the press already makes.
-    let path = match glossary_scheme_slug(href) {
-        Some(_) => nearest_glossary_above(current_path)?,
-        None => linked_document_path(href, current_path)?,
-    };
+    let path = hover_card_document_path(href, current_path)?;
     let meta = fs::metadata(&path).ok()?;
     let modified = meta.modified().ok()?;
     let cached = LINK_PREVIEW_CACHE.with(|cache| {

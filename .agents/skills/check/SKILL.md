@@ -38,6 +38,8 @@ Three hold the browser half, which is the same front end under a different host:
 - `cargo fmt` fixes `format-check`. `just bundle-themes` fixes `check-themes`. `just sync-vendor` fixes `check-vendor`. The rest are real problems.
 - Repeat until it is green.
 
+**<!-- shared-rule: sessions-in-one-checkout -->Two sessions build in this one checkout, on tickets the running order's `Devs with` column says share no file, and neither of them writes the running order.<!-- /shared-rule -->** So a red this gate finds is not necessarily this pass's.
+
 **<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** So this step has two reds to tell apart: a red on work this pass wrote is fixed and re-run from the top, and a red only on a file this pass never opened is left byte for byte, named in the hand-back as another session's, and stopped at — the one case where this pass's own work is judged by everything else being green, rather than the 'everything passes except…' the line above refuses.
 
 ### 4. Never say what this machine cannot build

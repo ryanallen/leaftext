@@ -7,7 +7,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,10 +31,17 @@ export function repoRoot(dir) {
 /// What a public release points the plan-reading checks at instead of the live tree. Set on the gate's own child processes and nothing else, so an ordinary run always answers the owner's folder.
 export const PLAN_ROOT_ENV = 'LEAFTEXT_PLAN_ROOT';
 
-/// Where the plan tree is. It is what the six checks that read `../docs` ask, so the path is written down once.
+/// Where the plan tree is. It is what the eight checks that read `../docs` ask — the document, running-order, spelling, wrapping, box-drawing, shared-rule, snapshot-copy and footprint checks — so the path is written down once, and `planTreeMissing` beside it is what they refuse a checkout without one by.
 export function planTree(dir = here) {
   const held = (process.env[PLAN_ROOT_ENV] || '').trim();
   return held || join(resolve(dir), '..', 'docs');
+}
+
+/// Why a checkout cannot be gated, where the plan tree is not beside it — or '' where it is. Asked for the running order and the index rather than for the folder, because a folder that is there and holds neither is exactly what an app checkout on its own looks like: the running-order check died there on an uncaught ENOENT reading `done/PLAN.md`, and the document check walked this repo's own 61 files and called every plan rule satisfied having read no plan at all.
+export function planTreeMissing(plans = planTree()) {
+  const owed = ['PLAN.md', 'README.md'].filter((name) => !existsSync(join(plans, name)));
+  if (!owed.length) return '';
+  return `no plan tree at ${plans}: it holds no ${owed.join(' and no ')}. The plans and the code are one pair of folders and every check that reads a plan needs both, so an app checkout on its own cannot be gated — clone the plan tree beside it, or point ${PLAN_ROOT_ENV} at one.`;
 }
 
 /// Every path a checkout has work in. Read raw: trimming eats the first line's status column and cuts a letter off the path.

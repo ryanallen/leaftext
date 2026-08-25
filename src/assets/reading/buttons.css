@@ -124,3 +124,7 @@ summary:focus-visible {
   outline: var(--lt-stroke-3) solid var(--lt-focus-ring);
   outline-offset: var(--lt-space-2);
 }
+/* The ring is the keyboard's. The engine judges a dropdown as keyboard-driven on a mouse press, so the app answers it instead: dom.js marks the root while the mouse is driving. A second rule that only ever subtracts, never a guard on the rule above — guarding it would raise it over the twelve rules that put their own ring out and light ten of them up. A page that never runs the app's script never carries the mark, so both websites keep every ring. */
+:root[data-pointer-driving="true"] :is(button, select, input, a, summary):focus-visible {
+  outline: none;
+}

@@ -5,7 +5,7 @@
 //
 // The process id is the whole safety of it. A session that crashes with a probe up leaves the file behind, and without that guard every later ask would point silently at a pipe nobody is listening on — the same false answer this exists to remove. A pointer naming a process that is gone is no pointer.
 //
-// `.tmp` is ignored (.gitignore) and is per-checkout, which matches one session working the checkout in front of it.
+// `.tmp` is ignored (.gitignore) and is per-checkout, so the two sessions this checkout runs share this one pointer and whichever launches a probe second takes it.
 
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

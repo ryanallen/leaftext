@@ -17,9 +17,9 @@ Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` be
 
 **A ticket with no dated `Designed` line is not built here.** Run [`/design`](../design/SKILL.md) over it first and let that pass write the line; only then does this skill open a phase. There is no shortcut for a one-line change, for work the owner just asked for out loud, or for a ticket this pass wrote itself moments earlier — a plan written and built in the same breath has been read against nothing, and the code lands the way the plan guessed rather than the way the tree is. `scripts/gate-design.mjs` refuses the turn, naming the ticket.
 
-### 2. Set the live plan stage to `Dev`
+### 2. Date the ticket as building, before anything else is touched
 
-**Write `Dev` on its running-order row before anything else is touched** — the ticket is read, the row says `Dev`, and no phase is opened until it does. Never "when implementation starts": reading the code and weighing an option are implementation starting and neither writes anything down, so the row keeps saying `Designed` through the longest part of a build and the owner has to ask whether one is happening at all, which is the question the whole tree is written to answer without being asked. Keep the stage synchronized with the ticket from there: `Ready`, `Designed`, `Dev`, or `Released`. Where another pass rewrites the running order underneath yours, write it again.
+**Write `> **Building since 18 August 2026, 9:11pm.**` under the ticket's dated `Designed` line before anything else is touched** — the ticket is read, the line is written, and no phase is opened until it is. Never "when implementation starts": reading the code and weighing an option are implementation starting and neither writes anything down, so the running order keeps saying `Designed` through the longest part of a build and the owner has to ask whether one is happening at all, which is the question the whole tree is written to answer without being asked. The clock is read rather than remembered (`Get-Date`). **The line goes in the ticket and never in the running order**: that file is one ranked list two builds must not both write, and the `Status` cell is computed off this line — `just bundle-plan-status` writes it and `just check-plan-stage` refuses a cell that disagrees, so there is nothing here to keep synchronized. A ticked box says `Dev` too, so the line is what covers the stretch before the first box goes in.
 
 ### 3. Work the phases in order
 
@@ -48,6 +48,8 @@ Anything found while building that no phase in this ticket would have to build a
 ### 6. `/check` after each phase and at the end
 
 Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase is not finished until it is green.
+
+**<!-- shared-rule: sessions-in-one-checkout -->Two sessions build in this one checkout, on tickets the running order's `Devs with` column says share no file, and neither of them writes the running order.<!-- /shared-rule -->** So the pair that column named is built here at once, and this pass keeps to its own ticket and the code — the other build is happening in the same folders, on the same screen, and is not this one's to touch.
 
 **<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Where the gate is red only on such a ticket, this build's own work is judged by everything else being green, and the hand-back says whose the red is and stops there.
 

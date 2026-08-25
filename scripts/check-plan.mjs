@@ -16,7 +16,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planTree } from './plan-tree.mjs';
+import { planTree, planTreeMissing } from './plan-tree.mjs';
 import { links, planRows } from './plan-rows.mjs';
 import { CELL_BOUND, CELL_SHAPE, cellFor, claimsInTree, overlap, partnersFor, waitsOnEachOther } from './plan-footprints.mjs';
 
@@ -1108,9 +1108,10 @@ if (testFails.length) {
   process.exit(1);
 }
 
-if (!existsSync(plans)) {
-  console.log('plan: no ../docs beside this repo, so there is no running order to read');
-  process.exit(0);
+const missing = planTreeMissing(plans);
+if (missing) {
+  console.error(`plan: ${missing}`);
+  process.exit(1);
 }
 
 function markdown(dir, base) {

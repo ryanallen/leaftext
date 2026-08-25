@@ -43,6 +43,7 @@ import { run as runBrowserHost } from './check-shell/browser-host.mjs';
 import { run as runEmbedHost } from './check-shell/embed-host.mjs';
 import { run as runTheAppsOwnBox } from './check-shell/the-apps-own-box.mjs';
 import { run as runTheShadowBand } from './check-shell/the-shadow-band.mjs';
+import { run as runTheFocusRing } from './check-shell/the-focus-ring.mjs';
 
 // Every subject, in the order it was written in. The boot comes first: it fills the record the rest read.
 
@@ -86,6 +87,7 @@ runBrowserHost();
 runEmbedHost();
 runTheAppsOwnBox();
 runTheShadowBand();
+runTheFocusRing();
 
 // ---- report -----------------------------------------------------------------
 

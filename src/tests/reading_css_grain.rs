@@ -546,3 +546,67 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
     assert_contains(flush, "border: 0;");
     assert_contains(flush, "border-radius: 0;");
 }
+
+#[test]
+fn the_focus_ring_is_the_keyboards_and_the_mouse_takes_it_off_every_control() {
+    // The engine judges who earns a ring, and it judges a clicked dropdown wrong, so the app answers it: the page marks the root while the mouse is driving and one rule reads that mark. It has to subtract rather than enable — guarding the ring rule instead would raise it above the twelve rules that put their own ring out, lighting up the find bar and every right-click menu row, and a page that never runs the app's script would lose every ring it has, which is both websites.
+    let css = reading_mode_css();
+
+    // Whatever kinds the ring rule names, the mouse rule names the same ones. Read off each other rather than written out twice, so a sixth kind added to one is refused until it is in both.
+    let kinds = |list: &str| -> Vec<String> {
+        let mut names: Vec<String> = list
+            .split(',')
+            .filter_map(|one| one.trim().strip_suffix(":focus-visible"))
+            .map(|one| one.trim().to_string())
+            .collect();
+        names.sort();
+        names
+    };
+
+    let ring_at = css
+        .find("button:focus-visible,")
+        .expect("the stylesheet should draw one ring for every control");
+    let ring_selector =
+        &css[ring_at..ring_at + css[ring_at..].find('{').expect("the ring rule opens")];
+    let ring = rule_body(&css, "button:focus-visible,");
+    assert_contains(
+        ring,
+        "outline: var(--lt-stroke-3) solid var(--lt-focus-ring);",
+    );
+    assert_contains(ring, "outline-offset: var(--lt-space-2);");
+    assert!(
+        !ring_selector.contains("data-pointer-driving"),
+        "the ring rule is guarded rather than left alone, which lifts it over every rule that puts its own ring out"
+    );
+
+    let mouse_at = css
+        .find(":root[data-pointer-driving=\"true\"] :is(")
+        .expect("no rule puts the ring out while the mouse is driving");
+    let mouse_selector =
+        &css[mouse_at..mouse_at + css[mouse_at..].find('{').expect("the mouse rule opens")];
+    assert!(
+        mouse_at > ring_at,
+        "the mouse rule stands above the ring it exists to put out"
+    );
+    assert_contains(
+        rule_body(&css, ":root[data-pointer-driving=\"true\"] :is("),
+        "outline: none;",
+    );
+
+    let inside = mouse_selector
+        .split_once(":is(")
+        .and_then(|(_, rest)| rest.split_once(')'))
+        .map(|(list, _)| list)
+        .expect("the mouse rule names its kinds in one :is()");
+    let named: Vec<String> = inside
+        .split(',')
+        .map(|one| one.trim().to_string())
+        .collect();
+    let mut named_sorted = named.clone();
+    named_sorted.sort();
+    assert_eq!(
+        kinds(ring_selector),
+        named_sorted,
+        "the mouse rule and the ring rule name different controls, so one of them is drawn on something the other never touches"
+    );
+}

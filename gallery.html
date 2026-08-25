@@ -3458,6 +3458,10 @@ summary:focus-visible {
   outline: var(--lt-stroke-3) solid var(--lt-focus-ring);
   outline-offset: var(--lt-space-2);
 }
+/* The ring is the keyboard's. The engine judges a dropdown as keyboard-driven on a mouse press, so the app answers it instead: dom.js marks the root while the mouse is driving. A second rule that only ever subtracts, never a guard on the rule above — guarding it would raise it over the twelve rules that put their own ring out and light ten of them up. A page that never runs the app's script never carries the mark, so both websites keep every ring. */
+:root[data-pointer-driving="true"] :is(button, select, input, a, summary):focus-visible {
+  outline: none;
+}
 /* The minimap is chrome, not page: it gets its own column outside the card so the page's right border stops short of it and the shell's texture runs behind the rail. */
 body:has(.document-minimap) {
   --reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));
@@ -4540,7 +4544,6 @@ body:has(#readerToolbar:not([hidden])) {
   display: inline-flex;
   align-items: center;
   gap: var(--lt-space-6);
-  padding: 0 var(--lt-space-4);
   color: var(--lt-muted-foreground);
 }
 .reader-subselect[hidden] {
@@ -4553,6 +4556,7 @@ body:has(#readerToolbar:not([hidden])) {
   white-space: nowrap;
 }
 .reader-subselect select {
+  height: 26px;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
@@ -4561,7 +4565,22 @@ body:has(#readerToolbar:not([hidden])) {
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);
   line-height: var(--lt-leading-1-2);
-  padding: var(--lt-space-4) var(--lt-space-24) var(--lt-space-4) var(--lt-space-8);
+  padding-block: var(--lt-space-4);
+}
+.leaf-select {
+  position: relative;
+}
+.leaf-select select {
+  appearance: none;
+  padding-inline: var(--lt-space-8) var(--lt-space-24);
+}
+.leaf-select > .lt-icon-chevron-down {
+  position: absolute;
+  top: 50%;
+  right: var(--lt-space-6);
+  color: var(--lt-foreground);
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 /* Smaller than a view button, and never blue: the blue chip is how this bar says which view you are in, and a setting inside a view must not wear it. On gets a page-colored fill raised out of the recess's grain, so the state reads at a glance; off sits flat and muted. */
 .reader-subtool {
@@ -8385,7 +8404,7 @@ body.is-home-row-dragging .home-list-scroll li {
   font-size: var(--lt-text-12);
 }
 .flow-sheet-direction select {
-  padding: var(--lt-space-4) var(--lt-space-8);
+  padding-block: var(--lt-space-4);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
@@ -9373,7 +9392,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 69 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 70 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -9395,7 +9414,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>163</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>63</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>69</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>70</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -9765,7 +9784,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">69 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">70 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -9955,6 +9974,10 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 <div class="stage"><a class="jump" href="#icons"><span class="lt-icon lt-icon-leaf"></span>All 57 icons, on the Icons tab</a></div>
 </section>
 <section class="part">
+<header><h3>Dropdown</h3><code class="built">.leaf-select</code><span class="built">app-shell.html</span></header>
+<div class="stage"><label class="leaf-select">Graph size <select><option>Focus</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label></div>
+</section>
+<section class="part">
 <header><h3>Scroll area</h3><code class="built">.leaf-scroll</code><span class="built">app-shell.html</span></header>
 <div class="stage"><div class="leaf-scroll" style="height:64px;overflow:auto"><p>This box scrolls, and the bar it draws is the app’s own.</p><div style="height:120px"></div></div><div class="leaf-scroll" style="overflow:auto;margin-top:12px"><p style="width:1200px">Sideways is the same bar turned on its side — the library pane, the reader with no minimap, and a table too wide for the text all wear it.</p></div></div>
 </section>
@@ -9984,7 +10007,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </section>
 <section class="part">
 <header><h3>Reader tool bar</h3><code class="built">.reader-tool</code><span class="built">app-shell.html</span></header>
-<div class="stage"><div class="reader-toolbar"><span class="reader-view-tools"><label class="reader-subselect"><span class="reader-subselect-label">Graph size</span><select><option>Focus</option></select></label></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div>
+<div class="stage"><div class="reader-toolbar"><span class="reader-view-tools"><label class="reader-subselect leaf-select"><span class="reader-subselect-label">Graph size</span><select><option>Focus</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, one set of markup for both platforms — squares at the bar's right end on Windows, the app's own three dots at its left end on a Mac, where Apple's are turned off</span></header>

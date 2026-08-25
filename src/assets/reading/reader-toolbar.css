@@ -168,7 +168,6 @@ body:has(#readerToolbar:not([hidden])) {
   display: inline-flex;
   align-items: center;
   gap: var(--lt-space-6);
-  padding: 0 var(--lt-space-4);
   color: var(--lt-muted-foreground);
 }
 .reader-subselect[hidden] {
@@ -181,6 +180,7 @@ body:has(#readerToolbar:not([hidden])) {
   white-space: nowrap;
 }
 .reader-subselect select {
+  height: 26px;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
@@ -189,7 +189,22 @@ body:has(#readerToolbar:not([hidden])) {
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);
   line-height: var(--lt-leading-1-2);
-  padding: var(--lt-space-4) var(--lt-space-24) var(--lt-space-4) var(--lt-space-8);
+  padding-block: var(--lt-space-4);
+}
+.leaf-select {
+  position: relative;
+}
+.leaf-select select {
+  appearance: none;
+  padding-inline: var(--lt-space-8) var(--lt-space-24);
+}
+.leaf-select > .lt-icon-chevron-down {
+  position: absolute;
+  top: 50%;
+  right: var(--lt-space-6);
+  color: var(--lt-foreground);
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 /* Smaller than a view button, and never blue: the blue chip is how this bar says which view you are in, and a setting inside a view must not wear it. On gets a page-colored fill raised out of the recess's grain, so the state reads at a glance; off sits flat and muted. */
 .reader-subtool {

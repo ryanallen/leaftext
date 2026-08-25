@@ -21,7 +21,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /// Deleted and rewritten on every message. Temp on purpose: a record kept in the repo would be read back into a context window turn after turn.
 ///
-/// One file per session, because two agents can share this machine: one file for all of them is cleared by whichever starts a message, which holds the other at the end of its turn for codes it did give. With no session id to be found this is a single file again, where the worst that happens is being asked twice for one code.
+/// One file per session, because two agents build in this one checkout at once: one file for both is cleared by whichever starts a message, which holds the other at the end of its turn for codes it did give. With no session id to be found this is a single file again, where the worst that happens is being asked twice for one code.
 export function recordPath(session) {
   const tag = sessionTag(session ?? sessionOf(''));
   return join(tmpdir(), tag ? `leaftext-keycode-${tag}.json` : 'leaftext-keycode.json');

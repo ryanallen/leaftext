@@ -146,7 +146,7 @@
          is how big a graph to draw. Sunk and grained rather than same-level
          buttons, which would read as more views. -->
     <span id="readerViewTools" class="reader-view-tools" role="group" aria-label="Editing tools" hidden>
-      <label class="reader-subselect" id="graphScopeTool" hidden>
+      <label class="reader-subselect leaf-select" id="graphScopeTool" hidden>
         <span class="reader-subselect-label">Graph size</span>
         <select id="graphScope" aria-label="Graph size" title="How many documents the graph view draws. Smaller is faster.">
           <option value="small">Focus</option>
@@ -154,6 +154,7 @@
           <option value="large">Large</option>
           <option value="xl">Everything</option>
         </select>
+        <span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span>
       </label>
       <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" aria-label="Unlock to edit" title="Unlock to edit"><span class="reader-swap-glyph reader-glyph-off"><span class="lt-icon lt-icon-lock-closed"></span></span><span class="reader-swap-glyph reader-glyph-on"><span class="lt-icon lt-icon-lock-open"></span></span></button>
       <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off"><span class="lt-icon lt-icon-speed-reader-off"></span></span><span class="reader-swap-glyph reader-glyph-on"><span class="lt-icon lt-icon-speed-reader-on"></span></span></button>
@@ -267,7 +268,7 @@
         <button type="button" id="flowUndo" aria-label="Undo" title="Undo"><span class="lt-icon lt-icon-undo"></span></button>
         <button type="button" id="flowRedo" aria-label="Redo" title="Redo"><span class="lt-icon lt-icon-redo"></span></button>
       </div>
-      <label class="flow-sheet-direction">Flow <select id="flowDirection"></select></label>
+      <label class="flow-sheet-direction leaf-select">Flow <select id="flowDirection"></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>
       <!-- The same three the reading view puts on a drawn diagram, so looking at
            one is the same gesture wherever you are. Each tooltip names the other
            way of doing it: the wheel and the drag announce themselves nowhere. -->

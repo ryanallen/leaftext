@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// Keep workflow skill copies byte-identical so the article remains evidence.
+// What the two giveaway folders hold, and whether either still says what this repo says. Both are the same subject, so they are one file rather than two.
 //
-//   node scripts/check-learn-snapshots.mjs           fail on a copy that differs (`just verify`)
-//   node scripts/check-learn-snapshots.mjs --check   self-test the comparison, then check the copies
-//   node scripts/check-learn-snapshots.mjs --fix     rewrite every copy from its source
+//   node scripts/check-learn-snapshots.mjs           fail on a drifted copy, or a system file nothing answers for (`just verify`)
+//   node scripts/check-learn-snapshots.mjs --check   self-test both readings, then run them
+//   node scripts/check-learn-snapshots.mjs --fix     rewrite every byte copy from its source
 //
-// `--fix` copies bytes so the copy stays exact.
+// The article's skill copies are byte-identical, because the article is evidence about this repository and a copy that reads better than its skill is the copy lying. `--fix` copies bytes so the copy stays exact.
+//
+// The other giveaway is not that. It is a system written to be dropped into any repository, so its ten skills are rewritten throughout — a human rather than an owner, no path, no script name, no keycode — and two of them answer to a different name here. Held to the bytes, every one of them would fail for being correct. So it is answered for instead: a row per file saying which of three answers it is, the reason beside every row that is not compared, and the folder walked against the list rather than the list trusted. Nothing named that folder at all, which is how it came to tell a stranger to give a second agent its own checkout months after this tree stopped saying so.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -84,6 +86,88 @@ export function fixPlan(entries) {
   return { writes, unfixable };
 }
 
+/** The giveaway system: a folder answered for file by file rather than compared. */
+const SYSTEM = join(planTree(root), 'learn', 'ticket-workflow-linkedin');
+const SYSTEM_LABEL = '../docs/learn/ticket-workflow-linkedin';
+
+// Every file in that folder and which of three answers it is. `taken` is a byte copy of a skill here and is compared exactly. `rewritten` names the skill here it was written again from, and what is held is that the skill still exists: rename or retire one and the giveaway is teaching a job this repo no longer has. `own` is the giveaway's own writing, which this repo has no source for. **The reason column is what the table is for** — a file left out of the comparison with nothing beside it saying why is a decision nobody was asked to make.
+const SYSTEM_FILES = [
+  ['AUDIT.md', 'own', 'the reading that produced the giveaway, about the giveaway'],
+  ['ryans-product-team-template.zip', 'own', 'the packaged download, built from system/ by hand'],
+  ['system/DESIGN.md', 'own', 'the system explained to a stranger, in place of the design skill and the checks behind it'],
+  ['system/GLOSSARY.md', 'own', 'the planning words, with no part of this app in them'],
+  ['system/GUIDE.md', 'own', 'the guide a stranger starts from, holding none of the rules this repo paid for'],
+  ['system/HOOKS.md', 'own', 'the hooks described rather than shipped, since none of these scripts travel'],
+  ['system/README.md', 'own', 'how the system is used, and the file that told a stranger the wrong thing about a second session'],
+  ['system/skills/check/SKILL.md', 'rewritten', 'check'],
+  ['system/skills/design/SKILL.md', 'rewritten', 'design'],
+  ['system/skills/design-system/SKILL.md', 'rewritten', 'design-tokens'],
+  ['system/skills/dev/SKILL.md', 'rewritten', 'dev'],
+  ['system/skills/done/SKILL.md', 'rewritten', 'done'],
+  ['system/skills/pm/SKILL.md', 'rewritten', 'pm'],
+  ['system/skills/release/SKILL.md', 'rewritten', 'git-release'],
+  ['system/skills/sync-docs/SKILL.md', 'rewritten', 'sync-docs'],
+  ['system/skills/sync-tests/SKILL.md', 'rewritten', 'sync-tests'],
+  ['system/skills/ticket/SKILL.md', 'rewritten', 'ticket'],
+  ['system/templates/backlog-readme.md', 'own', 'the ticket index a stranger starts empty'],
+  ['system/templates/design/colors.md', 'own', 'a design file to start from, not this app'],
+  ['system/templates/design/components.md', 'own', 'a design file to start from, not this app'],
+  ['system/templates/design/icons.md', 'own', 'a design file to start from, not this app'],
+  ['system/templates/design/theme.md', 'own', 'a design file to start from, not this app'],
+  ['system/templates/design/tokens.md', 'own', 'a design file to start from, not this app'],
+  ['system/templates/plan.md', 'own', 'the running order a stranger starts empty'],
+  ['system/templates/ticket.md', 'own', 'the ticket shape, naming none of this repo own sections'],
+  ['system/templates/tracks.md', 'own', 'the track list a stranger starts empty'],
+];
+
+/** Every file under a folder, as forward-slashed paths from it, sorted. A folder that is not there reads as empty, which the walk reports as every row naming nothing. */
+export function filesUnder(dir, prefix = '') {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const found = [];
+  for (const entry of entries) {
+    const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) found.push(...filesUnder(join(dir, entry.name), path));
+    else found.push(path);
+  }
+  return found.sort();
+}
+
+/** What is wrong with the giveaway system, each named. `read` answers bytes for a path in the system and for a skill here, so the self-test can hand it a tree of its own. */
+export function systemProblems(rows, onDisk, read) {
+  const problems = [];
+  const named = new Set(rows.map(([path]) => path));
+  for (const [path, answer, reason] of rows) {
+    if (!onDisk.includes(path)) {
+      problems.push(`${SYSTEM_LABEL}/${path} is named in the table and is not in the folder — a row naming no file is a row nothing reads.`);
+      continue;
+    }
+    if (!reason) {
+      problems.push(`${SYSTEM_LABEL}/${path} is \`${answer}\` with nothing beside it saying why — a file left out of the comparison is a decision somebody has to be able to read.`);
+      continue;
+    }
+    if (answer === 'own') continue;
+    const skill = read.skill(reason);
+    if (skill === null) {
+      problems.push(`${SYSTEM_LABEL}/${path} is written from the \`${reason}\` skill and ${SOURCE_LABEL}/${reason}/SKILL.md is not there — a renamed or retired skill leaves the giveaway teaching a job this repo no longer has.`);
+      continue;
+    }
+    if (answer !== 'taken') continue;
+    const copy = read.system(path);
+    if (copy === null || !copy.equals(skill)) {
+      problems.push(`${SYSTEM_LABEL}/${path} is a byte copy of the \`${reason}\` skill and no longer matches it — copy it again, or say in the table that it is a rewrite and why.`);
+    }
+  }
+  for (const path of onDisk) {
+    if (!named.has(path)) problems.push(`${SYSTEM_LABEL}/${path} is in the folder and in no row — say which of the three it is, and why, or nothing looks at it.`);
+  }
+  return problems;
+}
+
 /** Read bytes or return null. */
 function bytesAt(path) {
   try {
@@ -103,6 +187,12 @@ function fromDisk() {
       copy: bytesAt(join(COPIES, entry.name, 'SKILL.md')),
     }));
 }
+
+/** The two trees the system reading asks about, off the disk. */
+const onDisk = {
+  system: (path) => bytesAt(join(SYSTEM, path)),
+  skill: (name) => bytesAt(join(SOURCES, name, 'SKILL.md')),
+};
 
 const entries = fromDisk();
 
@@ -133,7 +223,31 @@ if (process.argv.includes('--check')) {
     for (const fault of faults) console.error(`  ${fault}`);
     process.exit(1);
   }
+  // The second reading, against a made-up system tree, so a fault is driven rather than waited for.
+  const stand = {
+    system: (path) => (path === 'a/SKILL.md' ? Buffer.from('one', 'utf8') : Buffer.from('x', 'utf8')),
+    skill: (name) => (name === 'gone' ? null : Buffer.from('one', 'utf8')),
+  };
+  const held = [['a/SKILL.md', 'taken', 'dev'], ['b.md', 'own', 'the giveaway own writing']];
+  const clean = systemProblems(held, ['a/SKILL.md', 'b.md'], stand);
+  if (clean.length) faults.push(`the system reading refused a folder every row answers for: ${clean[0]}`);
+  const rowless = systemProblems(held, ['a/SKILL.md', 'b.md', 'c.md'], stand);
+  if (rowless.length !== 1 || !rowless[0].includes('c.md')) faults.push('the system reading let through a file no row names, which is the whole reason the folder is walked');
+  const fileless = systemProblems([...held, ['d.md', 'own', 'nothing']], ['a/SKILL.md', 'b.md'], stand);
+  if (fileless.length !== 1 || !fileless[0].includes('d.md')) faults.push('the system reading let through a row naming no file');
+  const reasonless = systemProblems([['a/SKILL.md', 'taken', ''], ...held.slice(1)], ['a/SKILL.md', 'b.md'], stand);
+  if (reasonless.length !== 1) faults.push('the system reading let through a row exempt from the comparison with no reason beside it');
+  const retired = systemProblems([['a/SKILL.md', 'rewritten', 'gone'], ...held.slice(1)], ['a/SKILL.md', 'b.md'], stand);
+  if (retired.length !== 1 || !retired[0].includes('gone')) faults.push('the system reading let through a rewrite of a skill this repo no longer has');
+  const moved = systemProblems([['e/SKILL.md', 'taken', 'dev'], ...held.slice(1)], ['b.md', 'e/SKILL.md'], stand);
+  if (moved.length !== 1 || !moved[0].includes('no longer matches')) faults.push('the system reading let a byte copy drift from its skill');
+  if (faults.length) {
+    console.error('the comparison is wrong, so nothing was read:');
+    for (const fault of faults) console.error(`  ${fault}`);
+    process.exit(1);
+  }
   console.log('comparison: refuses a drifted copy and a copy of nothing, passes a copy that is its source');
+  console.log('system: refuses a file no row names, a row naming no file, an exempt row with no reason, a rewrite of a retired skill, and a byte copy that drifted');
 }
 
 if (process.argv.includes('--fix')) {
@@ -159,4 +273,12 @@ if (drifted.length) {
   console.error('The copies are the reader\'s evidence, so a drifted pair is replaced from source rather than edited: `node scripts/check-learn-snapshots.mjs --fix`.');
   process.exit(1);
 }
-console.log(`learn snapshots: ${entries.length} copies, and every one is the skill it was taken from`);
+
+const unanswered = systemProblems(SYSTEM_FILES, filesUnder(SYSTEM), onDisk);
+if (unanswered.length) {
+  console.error('the giveaway system holds something nothing in this repo answers for:');
+  for (const problem of unanswered) console.error(`  ${problem}`);
+  console.error('Every file there is a byte copy of a skill here, a rewrite of one with the reason beside it, or the giveaway\'s own writing — say which in SYSTEM_FILES.');
+  process.exit(1);
+}
+console.log(`learn snapshots: ${entries.length} copies, every one the skill it was taken from, and ${SYSTEM_FILES.length} giveaway-system files each answered for`);

@@ -143,7 +143,9 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
 
     // One recess, whose contents follow the view you are in. The padlock stands in both editable views because it is one switch for both; the speed reader belongs to the reading view and the wand to the source view. The map's one setting is how big a graph to draw, so the recess stands there too — with the dropdown in it and none of the three buttons.
     assert!(html.contains(r#"id="readerViewTools" class="reader-view-tools""#));
-    assert!(html.contains(r#"<label class="reader-subselect" id="graphScopeTool" hidden>"#));
+    assert!(
+        html.contains(r#"<label class="reader-subselect leaf-select" id="graphScopeTool" hidden>"#)
+    );
     assert!(html.contains(r#"id="readerLockButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="speedReaderButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="codeIntelButton" class="reader-subtool""#));
@@ -157,7 +159,15 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(html.contains(r#"title="How many documents the graph view draws. Smaller is faster.""#));
     // Wired where the rest of the graph lives, not in the speed reader.
     assert!(html.contains("send({ command: 'setGraphScope', scope: graphScope });"));
-    assert!(css.contains(".reader-subselect select {"));
+    let graph_size = rule_body(css, ".reader-subselect select {");
+    assert_contains(graph_size, "height: 26px;");
+    assert_contains(graph_size, "padding-block: var(--lt-space-4);");
+    let shared_select = rule_body(css, ".leaf-select select {");
+    assert_contains(shared_select, "appearance: none;");
+    assert_contains(
+        shared_select,
+        "padding-inline: var(--lt-space-8) var(--lt-space-24);",
+    );
     // And the reading half of it stands only where the page proved a range to open, so a message whose words are packed into the file meets no padlock rather than one that answers a press with nothing.
     assert!(html.contains(
         "readerLockButton.hidden = !editable || (current === 'reading' && !currentDocumentBindsAnything);"

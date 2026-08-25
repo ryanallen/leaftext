@@ -605,7 +605,7 @@ fn a_mouse_press_never_leaves_a_focus_ring_behind() {
     assert!(html.contains("function leafFocusForKeyboard(target) {"));
     assert!(html.contains("if (!leafKeyboardDriving || !target || !target.isConnected || !target.focus) return false;"));
     assert!(html.contains(
-        "window.addEventListener('pointerdown', () => { leafKeyboardDriving = false; }, true);"
+        "window.addEventListener('pointerdown', () => { leafKeyboardDriving = false; document.documentElement.dataset.pointerDriving = 'true'; }, true);"
     ));
 
     // Nothing that closes or opens a floating thing may call focus directly, or the rule is one site from being wrong again.
@@ -623,8 +623,12 @@ fn a_mouse_press_never_leaves_a_focus_ring_behind() {
         );
     }
 
-    // And the ring itself is drawn for the keyboard: `:focus`, on anything but a text field, paints one for a mouse press too.
+    // And the ring itself is the keyboard's too. The engine is what decides who earns a `:focus-visible`, and it counts a clicked dropdown as keyboard-driven, so the same two listeners write the answer on the root and one rule beside the ring rule reads it back.
     assert!(css.contains("button:focus-visible,"));
+    assert!(
+        css.contains(":root[data-pointer-driving=\"true\"] :is("),
+        "nothing puts the ring out while the mouse is driving, so a click on the map view's size box lights it up again"
+    );
 }
 
 #[test]

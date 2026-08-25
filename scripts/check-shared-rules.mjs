@@ -29,6 +29,18 @@ const RULES = [
     ],
   },
   {
+    marker: 'sessions-in-one-checkout',
+    what: 'how many sessions build in this checkout at once, and what tells a safe pair from a colliding one',
+    owner: 'AGENTS.md',
+    copies: [
+      'docs/02-development/07-workflow.md',
+      '.agents/skills/dev/SKILL.md',
+      '.agents/skills/check/SKILL.md',
+      '.agents/skills/done/SKILL.md',
+      '.agents/skills/git-release/SKILL.md',
+    ],
+  },
+  {
     marker: 'another-sessions-work',
     what: 'what a pass does about a file or a ticket a second session is holding',
     owner: '.agents/skills/dev/SKILL.md',

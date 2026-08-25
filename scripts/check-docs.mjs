@@ -17,7 +17,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planTree } from './plan-tree.mjs';
+import { planTree, planTreeMissing } from './plan-tree.mjs';
 import { footprintMisspelled, hasFootprint } from './plan-footprints.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -1188,6 +1188,13 @@ for (const file of rows.map(([f]) => f)) {
   if (drawingOwed(file, text)) undrawn.push(file);
   if (!hasFootprint(text)) footprintless.push(file);
   for (const path of footprintMisspelled(text)) misspelled.push(`${file}  ->  ${path}`);
+}
+
+const noPlans = planTreeMissing(plans);
+if (noPlans) {
+  console.error(`docs: ${noPlans}`);
+  console.error('every rule below about a plan would otherwise be reported satisfied having read none, which is a green gate over unread work.');
+  process.exit(1);
 }
 
 if (dayOnly.length) {

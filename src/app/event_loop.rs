@@ -1042,11 +1042,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::CountLines { href, token } => {
-                    // Count the linked document's lines for the hover tooltip. Only in-app document links resolve to a file; else -1 ("unknown").
+                    // Count the linked document's lines for the hover tooltip. Only a file the card can be about resolves — a bare `glossary:` link is that glossary; else -1 ("unknown").
                     let lines = reader
                         .workspace
                         .active_path()
-                        .and_then(|current| linked_document_path(&href, current))
+                        .and_then(|current| hover_card_document_path(&href, current))
                         .and_then(|path| read_source(&path).ok())
                         .map(|source| source.text.lines().count() as i64)
                         .unwrap_or(-1);

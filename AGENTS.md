@@ -24,7 +24,7 @@ Plain English, few words. Lead with the answer, then stop. No jargon, no abbrevi
 
 **No background tasks and no subagents.** Every command runs in the foreground, in this session, and every step is done by you.
 
-**One session at a time, working the checkout in front of it.** Every ticket, README row, box and status is written where the owner reads it, which is what lets them watch a build happen rather than ask whether one is. A second session against this checkout writes over the first one's work: the running order is one ranked list, and two rewrites of one list are not something any merge can settle.
+**<!-- shared-rule: sessions-in-one-checkout -->Two sessions build in this one checkout, on tickets the running order's `Devs with` column says share no file, and neither of them writes the running order.<!-- /shared-rule -->** That column is computed from every plan's written footprint, so it is this tree's own answer to what to pick up as well, and each per-session record — the release license, the step list, the keycodes, the sampled boxes, a scratch name — is keyed on the session for exactly this. Both work the checkout in front of them, so every ticket, README row, box and status is written where the owner reads it, which is what lets them watch a build happen rather than ask whether one is. What no merge can settle is the one ranked list: two rewrites of it are not a merge, so `/pm` and `/done` are its only writers and neither runs beside a build. A build writes its own ticket and the code, and a status cell is read off the ticket rather than written here.
 
 **Never use the host's task list.** The ticket already holds every piece of work as a box, so a second list is the same work written twice and drifts the moment anything changes.
 

@@ -213,7 +213,7 @@
   font-size: var(--lt-text-12);
 }
 .flow-sheet-direction select {
-  padding: var(--lt-space-4) var(--lt-space-8);
+  padding-block: var(--lt-space-4);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
