@@ -2,7 +2,8 @@
 // Which live tickets can be built alongside which. The running order says what to pick up now and cannot say what to pick up now *as well*, so somebody starting a second agent answers that by reading two plans and hoping — and hoping wrong is not a merge conflict, it is one agent's edit silently replacing another's.
 //
 //   node scripts/plan-footprints.mjs <ticket>   that row's partners, highest-ranked first, with the total
-//   node scripts/plan-footprints.mjs --check    the module's own self-test, on made-up footprints
+//   node scripts/plan-footprints.mjs --check    the reader, the pairing and the cell, on made-up footprints
+//   node scripts/plan-footprints.mjs --write    the `Devs with` column, into every row of the running order
 //
 // A ticket's footprint is the files its build will write, written under `## What it writes`. It is not the ticket's citations — those are files a plan *read*, and 55 live tickets quote a rule out of `app/AGENTS.md` without touching it — so it is written rather than derived, and `/ticket`, `/design` and `/dev` each keep it.
 //
@@ -18,8 +19,8 @@ import { links, planRows } from './plan-rows.mjs';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/// Where a live ticket lives. The same three folders `check-docs.mjs` and `check-plan.mjs` call live work.
-export const LIVE_PLANS = ['features', 'refactor', 'fixes'];
+// Where a live ticket lives. Not exported: both plan checks carry the same three folders for their own walks, and a third name for one list is a third place it can go wrong.
+const LIVE_PLANS = ['features', 'refactor', 'fixes'];
 
 const FOOTPRINT_HEADING = /^##(?!#)[ \t]+What it writes[ \t]*$/;
 

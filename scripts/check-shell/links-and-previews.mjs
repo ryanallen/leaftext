@@ -116,6 +116,37 @@ export function run() {
     }
   });
 
+  // The tip and the menu describe one link, so the item a right-click draws is named off the same answer the tip gives. A link that leaves the app says so on the item before it is picked; one that stays keeps the bare word.
+  check('the menu says where a link sends you, in the words the tip over that link uses', () => {
+    const { labelForLinkEntry, linkHoverKind } = booted;
+    const was = vm.runInContext('contextMenuPath', booted);
+    const openItem = (href) => {
+      booted.__href = href;
+      vm.runInContext('contextMenuPath = __href', booted);
+      return labelForLinkEntry({ action: 'openLink', label: 'Open' }).label;
+    };
+    try {
+      for (const href of ['./assets/Release Notes.pdf', '../../designs/v3-00-map.html']) {
+        if (linkHoverKind(href) !== 'Opens in another app') throw new Error(`${href} is called ${linkHoverKind(href)}`);
+        if (openItem(href) !== 'Open in another app') throw new Error(`the menu offers ${openItem(href)} over ${href}, which the tip says opens in another app`);
+      }
+      // A page in the app, a place in this page and an address belonging to another program all stay where they are, so the word does not spread past the links that leave.
+      for (const href of ['./two.md', '#a-heading', 'obsidian://open?vault=x']) {
+        if (openItem(href) !== 'Open') throw new Error(`the menu offers ${openItem(href)} over ${href}`);
+      }
+      // The one word the item already carried is untouched.
+      if (openItem('https://example.com/a.pdf') !== 'Open in browser') throw new Error('a web site lost its own word');
+      // Every other item on that menu is handed back exactly as it was written.
+      const copy = { action: 'copyLink', label: 'Copy link' };
+      if (labelForLinkEntry(copy) !== copy) throw new Error('the rename reached an item that is not Open');
+      if (labelForLinkEntry('separator') !== 'separator') throw new Error('the rename reached a divider');
+    } finally {
+      booted.__href = was;
+      vm.runInContext('contextMenuPath = __href', booted);
+      delete booted.__href;
+    }
+  });
+
   // The sanitizer keeps the anchor and drops the address, so a link written with a scheme of its own arrives as words painted in the link color with nothing behind them. What tells one from a live link is a class the decoration pass writes, because an anchor with no address is not by itself a stripped link: a place in the page is one too.
   check('a link the sanitizer emptied is marked, and a live link and a place in the page are left alone', () => {
     const appEl = booted.document.getElementById('app');

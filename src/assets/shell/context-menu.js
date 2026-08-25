@@ -165,11 +165,14 @@ function labelForFavoriteEntry(entry) {
   if (!isFavoritePath(contextMenuPath)) return entry;
   return { action: entry.action, label: 'Unfavorite' };
 }
+// The word Open takes when the click leaves the app, keyed on the hover tip's own answer about the link — so a reader who hovered and then right-clicked reads one sentence twice rather than two things about one link.
+const LINK_OPEN_LABELS = { 'External site': 'Open in browser', 'Opens in another app': 'Open in another app', 'Email link': 'Open in your mail app' };
 // Open says where it is sending you when that is out of the app, so the one item that leaves says so before you pick it.
 function labelForLinkEntry(entry) {
   if (entry === 'separator' || entry.action !== 'openLink') return entry;
-  if (linkHoverKind(contextMenuPath) !== 'External site') return entry;
-  return { action: entry.action, label: 'Open in browser' };
+  const label = LINK_OPEN_LABELS[linkHoverKind(contextMenuPath)];
+  if (!label) return entry;
+  return { action: entry.action, label };
 }
 // A separator divides two groups, so one with nothing above it divides nothing — which is the rule dropping an item can break. Removing an item can leave a line at the top, at the bottom, or two in a row; none of those is a divider.
 function tidySeparators(entries) {

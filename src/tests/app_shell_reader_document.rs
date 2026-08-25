@@ -628,8 +628,10 @@ fn app_shell_gives_a_document_link_its_own_right_click_menu() {
         "!entry.pageOnly || isAnotherPageHref(contextMenuPath)",
         // The two that act on the file want one behind the link rather than somewhere in the app to go, so a saved page or a PDF beside the note carries them.
         "if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath);",
-        "if (linkHoverKind(contextMenuPath) !== 'External site') return entry;",
-        "return { action: entry.action, label: 'Open in browser' };",
+        // The one item that leaves the app says where it is sending you, in the words the hover tip over that same link already uses.
+        "const LINK_OPEN_LABELS = { 'External site': 'Open in browser', 'Opens in another app': 'Open in another app' };",
+        "const label = LINK_OPEN_LABELS[linkHoverKind(contextMenuPath)];",
+        "return { action: entry.action, label };",
         // The two copies are the page's own; only a real path has to go to the host.
         "function copyPlainText(text) {",
         "case 'copyLink': copyPlainText(path); break;",
