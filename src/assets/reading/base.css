@@ -223,3 +223,10 @@ body.mac-frame.is-fullscreen::before {
   background-position: var(--lt-grid-phase-x) var(--lt-grid-phase-y);
   transform: translate3d(var(--lt-grid-offset-x), var(--lt-grid-offset-y), 0);
 }
+/* Behind the surface's own content, so a tab, a crumb or a button drawn on the chrome covers the grid rather than wearing it. Only the surfaces that already stand in a layer of their own can take it: a negative layer escapes to the nearest one, and the shell and the pane have none — giving them one drops the reader's corner arc behind the app bar, which is the one thing that arc exists to sit on top of. */
+.app-bar::before,
+.reader-corner::before,
+.library-crumbs::before,
+.library-header::before {
+  z-index: -1;
+}

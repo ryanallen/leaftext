@@ -163,8 +163,8 @@
   --lt-grain-dark: rgba(0, 0, 0, 0.35);
   --lt-grain-dark-heavy: rgba(0, 0, 0, 0.72);
   --lt-grain-lift: rgba(255, 255, 255, 0.07);
-  --lt-grid-light: rgba(0, 0, 0, 0.12);
-  --lt-grid-dark: rgba(255, 255, 255, 0.075);
+  --lt-grid-light: rgba(0, 0, 0, 0.06);
+  --lt-grid-dark: rgba(255, 255, 255, 0.04);
   --lt-grain-hover: rgba(0, 0, 0, 0.55);
   /* Fixed colors */
   --lt-mask-opaque: #000;

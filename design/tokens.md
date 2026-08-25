@@ -254,8 +254,8 @@ The dot lattice's ink. Only the ink is a token: each rule writes the circles int
 | lt-grain-dark | `rgba(0, 0, 0, 0.35)` | A dark theme's chrome: it needs more alpha to show against an already-dark surface. |
 | lt-grain-dark-heavy | `rgba(0, 0, 0, 0.72)` | A dark theme's inactive tab. |
 | lt-grain-lift | `rgba(255, 255, 255, 0.07)` | The one grain that goes the other way: the darkest table row, where black has nowhere left to go. |
-| lt-grid-light | `rgba(0, 0, 0, 0.12)` | The wide notebook grid on a light theme's chrome, over the speckle rather than instead of it. Read against the fine grain at four alphas: below this the dots do not survive a glance, above it they read as printed ruling rather than paper. |
-| lt-grid-dark | `rgba(255, 255, 255, 0.075)` | The same grid on a dark theme, going the other way for the reason [the darkest table row](#grain) does — black has five to eight channels of room on the darkest family and white has twenty-one, so darkening it draws nothing at all. |
+| lt-grid-light | `rgba(0, 0, 0, 0.06)` | The wide notebook grid on a light theme's chrome, over the speckle rather than instead of it. Faint on purpose: it is the ruling of the paper the app is printed on, so it is read at a glance across the whole chrome and never looked at. Twice this was read in the window and pulls the eye off the page. |
+| lt-grid-dark | `rgba(255, 255, 255, 0.04)` | The same grid on a dark theme, going the other way for the reason [the darkest table row](#grain) does — black has five to eight channels of room on the darkest family and white has twenty-one, so darkening it draws nothing at all. |
 | lt-grain-hover | `rgba(0, 0, 0, 0.55)` | The pager button under the pointer. Black like the rest, so the box sinks on a light family and a dark one alike; heavier than the chrome's because dots cover about a quarter of what they fill, which lands the filled box about as far off its surface as [the wash](#the-hover-wash) moves a row. |
 
 ## Fixed colors
