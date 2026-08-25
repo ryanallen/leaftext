@@ -51,7 +51,7 @@ Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase
 
 **<!-- shared-rule: sessions-in-one-checkout -->Two sessions build in this one checkout, on tickets the running order's `Devs with` column says share no file, and neither of them writes the running order.<!-- /shared-rule -->** So the pair that column named is built here at once, and this pass keeps to its own ticket and the code — the other build is happening in the same folders, on the same screen, and is not this one's to touch.
 
-**<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Where the gate is red only on such a ticket, this build's own work is judged by everything else being green, and the hand-back says whose the red is and stops there.
+**<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Where the gate is red only on such a ticket, wait, retry and finish after it clears; never name it in the hand-back.
 
 ### 7. Hand back at the owner's box
 
