@@ -126,9 +126,15 @@ const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     // The error handlers lead, so a fragment that throws as it loads is reported instead of vanishing. Nothing above them could catch it.
     include_str!("assets/shell/journal.js"),
-    // Then the flowchart sheet: the grammar, then the sheet that asks it. Mermaid draws the canvas, so there is no layout of ours in between — and it led the page's script tags before the two became one file, so it leads the rest here.
+    // Then the flowchart sheet, in seven: the grammar, the sheet that asks it, and the five below cut off that sheet's tail. Mermaid draws the canvas, so there is no layout of ours in between — and the grammar led the page's script tags before the two became one file, so it leads the rest here.
     include_str!("assets/shell/flow-model.js"),
     include_str!("assets/shell/flow-canvas.js"),
+    // Cut off that file's tail, in the order they already ran in: they reach back into the canvas, the graph and the redraw, and flow-export.js reads FLOW_SVG_NS out of flow-pointer.js.
+    include_str!("assets/shell/flow-pointer.js"),
+    include_str!("assets/shell/flow-menu.js"),
+    include_str!("assets/shell/flow-rename.js"),
+    include_str!("assets/shell/flow-picker.js"),
+    include_str!("assets/shell/flow-export.js"),
     // Then the state more than one fragment touches, in scope before any of them run. See the file for why it cannot live with its own subject.
     include_str!("assets/shell/state.js"),
     include_str!("assets/shell/dom.js"),
@@ -162,6 +168,8 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/glossary.js"),
     // Generated from design/icons.md, and data only: the icon set the next fragment hands to mermaid so `A@{ icon: "leaf:back" }` draws the app's own drawing rather than mermaid's off-theme blue square.
     include_str!("assets/mermaid-icons.js"),
+    // Every color a diagram is drawn in, before the file that draws one: decorate.js calls its runtime config and nothing in it reaches back.
+    include_str!("assets/shell/mermaid-theme.js"),
     include_str!("assets/shell/decorate.js"),
     include_str!("assets/shell/table-sheet.js"),
     // Beside it: the same surface pointed at a picture, and after decorate.js because the paragraph it hangs an opener on is the one decorate.js marks.

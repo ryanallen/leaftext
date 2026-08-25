@@ -5,6 +5,16 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import { check, fakeElement, names, readingCss, record, root, settle, settled, source } from './shared.mjs';
 
+// The flowchart sheet, every fragment of it. The two negative guards below read the lot rather than whichever file kept the name, or a later cut quietly takes lines out of their reach.
+const SHEET_FRAGMENTS = [
+  'src/assets/shell/flow-canvas.js',
+  'src/assets/shell/flow-pointer.js',
+  'src/assets/shell/flow-menu.js',
+  'src/assets/shell/flow-rename.js',
+  'src/assets/shell/flow-picker.js',
+  'src/assets/shell/flow-export.js',
+];
+
 export function run() {
   const booted = record.booted;
   if (!booted) return;
@@ -1122,7 +1132,7 @@ export function run() {
 
   // Double-clicking a shape renames it, and that only works because nothing in the canvas's pointerdown calls preventDefault: on a pointerdown it suppresses the compatibility mouse events, and dblclick is one of them. The failure is silent — every drag still works, the double-click just does nothing — so it is held here rather than left to be found by hand.
   check('the canvas keeps the double-click that renames a box', () => {
-    const fragment = readFileSync(join(root, 'src/assets/shell/flow-canvas.js'), 'utf8');
+    const fragment = readFileSync(join(root, 'src/assets/shell/flow-pointer.js'), 'utf8');
     const opened = fragment.indexOf("flowCanvas.addEventListener('pointerdown'");
     const closed = fragment.indexOf("flowCanvas.addEventListener('pointermove'");
     if (opened < 0 || closed < opened) throw new Error('could not find the canvas pointerdown handler');
@@ -1164,7 +1174,8 @@ export function run() {
   // The sheet has one picture in it and mermaid draws it. Two would mean one of them is a lie, and it would be ours — so nothing in the flowchart code may draw a shape, and there is no second pane to draw it into.
   check('mermaid is the only thing that draws a flowchart', () => {
     const model = readFileSync(join(root, 'src/assets/shell/flow-model.js'), 'utf8');
-    const canvas = readFileSync(join(root, 'src/assets/shell/flow-canvas.js'), 'utf8');
+    // The whole sheet, not whichever fragment kept the name: a negative guard that shrinks when a file is split goes on reporting green over the lines it no longer reads.
+    const canvas = SHEET_FRAGMENTS.map((path) => readFileSync(join(root, path), 'utf8')).join('\n');
     const page = readFileSync(join(root, 'src/assets/app-shell.html'), 'utf8');
     // No outlines of our own, and no layout of ours placing them.
     for (const gone of ['outline:', 'grow:', 'layoutFlow', 'flowNodeSize', 'flowEdgeGeometry']) {
@@ -1190,7 +1201,7 @@ export function run() {
     if (nodeFields !== 'classes,group,href,hrefTip,icon,id,img,shape,style,text') throw new Error(`a node carries ${nodeFields}`);
     const edgeFields = Object.keys(graph.edges[0]).sort().join(',');
     if (edgeFields !== 'animate,ends,from,id,label,line,name,stretch,style,to') throw new Error(`an edge carries ${edgeFields}`);
-    for (const path of ['src/assets/shell/flow-model.js', 'src/assets/shell/flow-canvas.js']) {
+    for (const path of ['src/assets/shell/flow-model.js', ...SHEET_FRAGMENTS]) {
       const source = readFileSync(join(root, path), 'utf8');
       for (const borrowed of ['fromNode', 'toNode', 'toEnd', 'jsoncanvas']) {
         // The model's header explains why the names went; that mention is fine.
@@ -1204,12 +1215,12 @@ export function run() {
   // Diagrams are drawn in the theme's own colors, read off :root at render time. A token that does not exist reads as an empty string, mermaid falls back to its own palette, and the diagram quietly stops matching the page — so every name in the maps is held to one that really is defined. A color comes from the contract in theme.rs, which every theme fills; everything else from the stylesheet's own block.
   check('the mermaid theme map only names tokens that exist', () => {
     // Read from the fragment rather than the booted page: a `const` in the shell script is not a property of the context, and the map should not have to become one to be checked.
-    const fragment = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
+    const fragment = readFileSync(join(root, 'src/assets/shell/mermaid-theme.js'), 'utf8');
     const maps = fragment.slice(
       fragment.indexOf('const MERMAID_COLOR_MAP'),
       fragment.indexOf('function themeTokenValue'),
     );
-    if (!maps) throw new Error('could not find the mermaid theme maps in decorate.js');
+    if (!maps) throw new Error('could not find the mermaid theme maps in mermaid-theme.js');
     const used = [...new Set([...maps.matchAll(/'(--[a-z0-9-]+)'/g)].map((m) => m[1]))];
     if (used.length < 15) throw new Error(`expected the whole map, got ${used.length} tokens`);
     const theme = readFileSync(join(root, 'src/theme.rs'), 'utf8');

@@ -41,7 +41,7 @@ const LISTS = [
     prose: [
       'src/app/events.rs',
       'src/main.rs',
-      'src/assets/shell/flow-canvas.js',
+      'src/assets/shell/flow-export.js',
       'src/app/tests/export.rs',
       'src/tests/app_shell_chrome_icons.rs',
     ],
@@ -50,7 +50,7 @@ const LISTS = [
     ],
     read: (formatSource) => ({
       actual: hostRows(read('src/app/fileops.rs'), formatSource),
-      page: pageRows(read('src/assets/shell/flow-canvas.js')),
+      page: pageRows(read('src/assets/shell/flow-export.js')),
     }),
   },
   {
@@ -113,7 +113,7 @@ export function hostRows(fileopsSource, formatSource) {
   return rows.length ? rows : null;
 }
 
-/// The page's copy of that list, read out of `src/assets/shell/flow-canvas.js`.
+/// The page's copy of that list, read out of `src/assets/shell/flow-export.js`.
 export function pageRows(shellSource) {
   const table = shellSource.match(/const DIAGRAM_EXPORTS = \[([\s\S]*?)\n\];/);
   if (!table) return null;
@@ -303,7 +303,7 @@ export function problems(readings) {
     }
     if (page === undefined) continue;
     if (!page) {
-      found.push(`src/assets/shell/flow-canvas.js — \`DIAGRAM_EXPORTS\` could not be read at all, so the page's copy was held to nothing`);
+      found.push(`src/assets/shell/flow-export.js — \`DIAGRAM_EXPORTS\` could not be read at all, so the page's copy was held to nothing`);
       continue;
     }
     const hostEndings = actual.map(([, endings]) => endings.join(','));
@@ -311,7 +311,7 @@ export function problems(readings) {
     if (hostEndings.join(' | ') !== pageEndings.join(' | ')) {
       found.push(`the page's copy of ${list.name} is not the host's: the Mac menu is drawn from one and the save window from the other, so a row in one and not the other is a format a reader can pick and not save, or save and never see offered.`);
       found.push(`  ${list.source}: ${hostEndings.join(' | ')}`);
-      found.push(`  src/assets/shell/flow-canvas.js: ${pageEndings.join(' | ')}`);
+      found.push(`  src/assets/shell/flow-export.js: ${pageEndings.join(' | ')}`);
     }
   }
   return found;

@@ -180,7 +180,7 @@ Each family declares its own faces — Fern loads **Noto** (Sans / Serif / Sans 
 
 ## Diagram colors
 
-Mermaid's own light and dark theme is the base, and the colors that carry structure are overridden from the tokens on `:root`, read at render time in `src/assets/shell/decorate.js`. So a theme file contains **no diagram tokens at all** and still themes flowcharts, sequences, state and class diagrams, ER diagrams, Gantt charts, quadrants and requirement diagrams. That is deliberate: a per-family diagram palette would be roughly forty values × 22 sources of hand-copied color, and every copy is a place for the copies to drift.
+Mermaid's own light and dark theme is the base, and the colors that carry structure are overridden from the tokens on `:root`, read at render time in `src/assets/shell/mermaid-theme.js`. So a theme file contains **no diagram tokens at all** and still themes flowcharts, sequences, state and class diagrams, ER diagrams, Gantt charts, quadrants and requirement diagrams. That is deliberate: a per-family diagram palette would be roughly forty values × 22 sources of hand-copied color, and every copy is a place for the copies to drift.
 
 A handful of tables do the work:
 
