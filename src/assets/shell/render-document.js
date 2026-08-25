@@ -535,6 +535,59 @@ if (homeSheet) {
 function homeScreenIsShowing() {
   return !!currentState && !currentState.document && !codeViewActive;
 }
+// Put the reading view where the toggle left it, in priority order: the exact pixel a view nobody moved gets straight back, then the block holding the source line the code view was on, then the reset. Its own function so the same tiers run whether the render lands them itself or the reveal does — see runHeldReadingLanding.
+function runReadingLanding(path) {
+  // Returning from the code view: land on the block holding the source line the code view was scrolled to. This wins over the reset-to-top the host's Reset intent would otherwise run.
+  const exactRestore = takeExactViewRestore(path);
+  if (exactRestore) {
+    // The code view never moved, so take the pixel back rather than re-derive it from a block — that rounds backwards and walks up over repeated toggles.
+    pendingViewAtTop = false;
+    pendingReadingSrcOffset = null;
+    pendingViewScrollFraction = null;
+    resetReaderScrollOnNextRender = false;
+    window.requestAnimationFrame(() => {
+      setReaderScrollTop(exactRestore.readerScrollTop);
+      recordReaderLanded();
+      refreshReaderScrollAnchor();
+      updateMinimapViewport();
+    });
+  } else if (pendingViewAtTop) {
+    // Toggled from the very top of the code view: land flush at the reader's content start, not aligned on the first block below its top padding.
+    pendingViewAtTop = false;
+    pendingReadingSrcOffset = null;
+    resetReaderScrollOnNextRender = false;
+    resetReaderScrollToContentStart();
+  } else if (pendingReadingSrcOffset != null) {
+    const srcOffset = pendingReadingSrcOffset;
+    pendingReadingSrcOffset = null;
+    resetReaderScrollOnNextRender = false;
+    // Keep the fraction only as this landing's fallback; a later unrelated render must not inherit it and scroll a fresh document part-way down.
+    const fallbackFraction = pendingViewScrollFraction;
+    pendingViewScrollFraction = null;
+    window.requestAnimationFrame(() => {
+      if (!scrollReadingToSrcOffset(srcOffset)) {
+        pendingViewScrollFraction = fallbackFraction;
+        resetReaderScrollToContentStart();
+        return;
+      }
+      recordReaderLanded();
+      refreshReaderScrollAnchor();
+      updateMinimapViewport();
+    });
+  } else if (resetReaderScrollOnNextRender) {
+    resetReaderScrollOnNextRender = false;
+    resetReaderScrollToContentStart();
+  } else {
+    updateMinimapViewport();
+  }
+}
+// Spend a landing the render held while the reader had no box, now that it has one again. Cleared as it runs, so a second reveal lands nothing over a reader who has scrolled since. It has to run ahead of the reflow pass the reveal wakes: that pass pins whatever the anchor holds, and the anchor is only right once the landing has re-recorded it.
+function runHeldReadingLanding() {
+  if (heldReadingLandingPath == null) return;
+  const path = heldReadingLandingPath;
+  heldReadingLandingPath = null;
+  runReadingLanding(path);
+}
 function renderState() {
   const state = currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
   disconnectMinimapPreviewObservers();
@@ -601,53 +654,15 @@ function renderState() {
     scheduleMinimapPreviewUpdate();
     // A source view that gave up before it rendered left its landings standing, so drop them before this document spends them — see dropViewLandingsFromAnotherDocument.
     dropViewLandingsFromAnotherDocument(renderedPath);
-    // Returning from the code view: land on the block holding the source line the code view was scrolled to. This wins over the reset-to-top the host's Reset intent would otherwise run.
-    const exactRestore = takeExactViewRestore(state.document.path || activeDocumentPath());
-    if (exactRestore) {
-      // The code view never moved, so take the pixel back rather than re-derive it from a block — that rounds backwards and walks up over repeated toggles.
-      pendingViewAtTop = false;
-      pendingReadingSrcOffset = null;
-      pendingViewScrollFraction = null;
-      resetReaderScrollOnNextRender = false;
-      window.requestAnimationFrame(() => {
-        setReaderScrollTop(exactRestore.readerScrollTop);
-        recordReaderLanded();
-        refreshReaderScrollAnchor();
-        updateMinimapViewport();
-      });
-    } else if (pendingViewAtTop) {
-      // Toggled from the very top of the code view: land flush at the reader's content start, not aligned on the first block below its top padding.
-      pendingViewAtTop = false;
-      pendingReadingSrcOffset = null;
-      resetReaderScrollOnNextRender = false;
-      resetReaderScrollToContentStart();
-    } else if (pendingReadingSrcOffset != null) {
-      const srcOffset = pendingReadingSrcOffset;
-      pendingReadingSrcOffset = null;
-      resetReaderScrollOnNextRender = false;
-      // Keep the fraction only as this landing's fallback; a later unrelated render must not inherit it and scroll a fresh document part-way down.
-      const fallbackFraction = pendingViewScrollFraction;
-      pendingViewScrollFraction = null;
-      window.requestAnimationFrame(() => {
-        if (!scrollReadingToSrcOffset(srcOffset)) {
-          pendingViewScrollFraction = fallbackFraction;
-          resetReaderScrollToContentStart();
-          return;
-        }
-        recordReaderLanded();
-        refreshReaderScrollAnchor();
-        updateMinimapViewport();
-      });
-    } else if (resetReaderScrollOnNextRender) {
-      resetReaderScrollOnNextRender = false;
-      resetReaderScrollToContentStart();
-    } else {
-      updateMinimapViewport();
-    }
+    // Under the map the reader has no box, so every landing writes a pixel, reads zero back and counts itself spent — which is how a reader half way down a page comes back at the top of it. Hold it for the reveal instead; applyGraphView runs it the moment the page is on screen again.
+    if (readerOffScreen()) heldReadingLandingPath = renderedPath;
+    else runReadingLanding(renderedPath);
     updateEditingChrome();
     return;
   }
   resetReaderScrollOnNextRender = false;
+  // No document left, so a landing held for the one that has gone has nothing to land on.
+  heldReadingLandingPath = null;
   // Back to the home screen, so the next document is an arrival even if it is the one just closed.
   lastRenderedDocumentPath = null;
   document.title = 'Leaftext';

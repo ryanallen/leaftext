@@ -61,6 +61,8 @@ function applyGraphView() {
   // No minimap, so no reason to keep holding its column. The stylesheet reads this to give the map, and what floats over it, the full width.
   document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';
   renderReaderToolbar(!!activeDocumentPath());
+  // The page is back, so a landing the render held while it had none can be spent — and this is the one place the page is ever revealed, so every way out of the map spends it. Synchronous, ahead of the reflow pass the reveal wakes. See runHeldReadingLanding.
+  if (!graphViewOpen) runHeldReadingLanding();
 }
 // Export stands only where there is a rendered page to print. Not on the home screen, which has no document; not in the source view, where Monaco realizes the lines it is drawing and nothing else, so a print gives whatever happened to be on screen; and not on the map, which the print rules take down with the rest of the app's controls. Hidden and then refit, the way the update bell does it — an action that comes and goes mid-session changes what fits beside the tabs.
 function renderExportPdfAction(hasDocument) {

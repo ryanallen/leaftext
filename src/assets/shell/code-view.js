@@ -205,6 +205,7 @@ function dropViewLandingsFromAnotherDocument(path) {
   pendingViewAtTop = false;
   pendingCodeViewSrcOffset = null;
   pendingReadingSrcOffset = null;
+  heldReadingLandingPath = null;
 }
 
 // The fraction the next source editor should land at, decided while the editor it replaces is still there to ask. The host sends one for a tab coming back or a launch; an in-place rebuild (the file changing on disk, a save, a field edit, a block move) deliberately sends none, so the editor being replaced is asked instead — and only for its own document, or a switch to a source tab nobody has ever scrolled would land at the place in the file it came from.
@@ -366,6 +367,8 @@ function toggleCodeView() {
     const handoff = viewHandoffFor(path);
     // Stamp the landings below with the document they are taken from — see dropViewLandingsFromAnotherDocument.
     pendingViewLandingPath = path;
+    // This gesture arms its own landings, so anything the last render held is stale. Map to source is the trip that needs it: the reveal on the way into the editor would otherwise spend the reading view's held place, and take the source view's own landings with it.
+    heldReadingLandingPath = null;
     // Carry the current position across the toggle; the destination view's render consumes it and lands at the same relative spot.
     pendingViewScrollFraction = viewScrollFraction();
     // At the very top, land flush at the top of the other view — don't align the first block below the edge, which reads as a stray scroll-down.

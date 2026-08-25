@@ -6,6 +6,7 @@ import {
   check,
   record,
   registrationsOn,
+  renderReadingDocument,
   source,
 } from './shared.mjs';
 
@@ -194,6 +195,131 @@ export function run() {
     } finally {
       reveal();
       vm.runInContext('graphViewOpen = false; codeViewActive = false; monacoEditor = null; monacoEditorPath = null; viewHandoff = null;', context);
+    }
+  });
+  // ---- the reading view's place on the way back out of the map ----------------
+  //
+  // The Map button pressed in the source view leaves that view first, so the reading render arrives while the map is already over it. Every landing that render could run writes a pixel and reads it straight back, and a page with no box reads zero — so the place the toggle computed is spent on nothing and the reader comes back at the top. The checks below hold the render's own geometry flat across the frames the landing runs in, which is the only way a landing spent too early is told apart from one that landed.
+
+  /** The whole trip: reading view, into the source at a known line, Map, and the host's reading render arriving underneath it. Hands back the page and the reveal, stopped at the moment before Reading is pressed. */
+  function intoTheMapFromTheSource(path, blocks) {
+    const booted = bootReading({ path, blocks });
+    const { context } = booted;
+    context.__frames.drain();
+    context.ipc = { postMessage: () => {} };
+    // In the source view, scrolled down, and scrolled by hand since the toggle put it there — so the reading view's own pixel is stale and the source line is what the landing has to use.
+    const editor = {
+      __scrollTop: 5000,
+      getScrollTop() { return this.__scrollTop; },
+      setScrollTop(next) { this.__scrollTop = next; },
+      getScrollHeight: () => 10000,
+      getLayoutInfo: () => ({ height: 1000 }),
+      revealLineNearTop() {},
+      getVisibleRanges: () => [{ startLineNumber: 3 }],
+      getValue: () => 'one\ntwo\nthree\nfour\n',
+    };
+    context.__fakeMonaco = editor;
+    vm.runInContext('monacoEditor = __fakeMonaco; monacoEditorPath = null; codeViewActive = true;', context);
+    vm.runInContext(
+      'viewHandoff = { path: ' + JSON.stringify(path) + ', readerScrollTop: 900, codeScrollTop: 5000, readerLanded: 900, codeLanded: 3000, graphFromCodeView: false, graphReaderScrollTop: null, graphReaderFraction: null, graphReaderSrcOffset: null, restoreExact: false };',
+      context,
+    );
+
+    // Map: the toggle leaves the source view and writes down the block holding its top line, then the map goes up over the reading view that has not arrived yet.
+    context.toggleCodeView();
+    context.takeGraphExitPlace();
+    vm.runInContext('graphViewOpen = true; monacoEditor = null;', context);
+    const app = context.document.getElementById('app');
+    app.hidden = true;
+
+    // The host's reading render, under the map. Its geometry is flattened straight after, before any frame runs, because that is what a landing scheduled by this render would actually measure.
+    app.scrollTop = 0;
+    renderReadingDocument(context, { path, blocks });
+    const body = app.querySelector('.document-body');
+    const reveal = hideTheReader(app, body);
+    context.__frames.drain();
+    return { context, app, body, reveal };
+  }
+
+  /** Reading pressed: the boxes come back, and the map's one reveal is what spends whatever the render held. */
+  function pressReading(context, reveal) {
+    reveal();
+    vm.runInContext('graphViewOpen = false;', context);
+    context.applyGraphView();
+    context.__frames.drain();
+  }
+
+  const FOUR = [{ srcStart: 0, top: 0 }, { srcStart: 4, top: 900 }, { srcStart: 8, top: 1800 }, { srcStart: 12, top: 2700 }];
+
+  check('a reading render that runs while the reader is off screen keeps its landing rather than spending it on nothing', () => {
+    const path = 'C:\\Notes\\long.md';
+    const { context, app, reveal } = intoTheMapFromTheSource(path, FOUR);
+    try {
+      const read = (name) => vm.runInContext(name, context);
+      if (read('heldReadingLandingPath') !== path) {
+        throw new Error('the render under the map noted no held landing, so the reveal has nothing to spend');
+      }
+      if (read('pendingReadingSrcOffset') !== 8) {
+        throw new Error('the block the source view was on was spent by the render under the map: pendingReadingSrcOffset is ' + read('pendingReadingSrcOffset'));
+      }
+      if (read('pendingViewScrollFraction') == null) throw new Error('the landing lost its fallback fraction under the map');
+      if (read('viewHandoff.readerLanded') !== 900) {
+        throw new Error('the render counted itself landed at ' + read('viewHandoff.readerLanded') + ', which is a page with no box reading its own write back as zero');
+      }
+      if (app.scrollTop !== 0) throw new Error('a page with no box was scrolled to ' + app.scrollTop);
+    } finally {
+      reveal();
+      vm.runInContext('graphViewOpen = false; codeViewActive = false; monacoEditor = null; monacoEditorPath = null; viewHandoff = null; heldReadingLandingPath = null;', context);
+    }
+  });
+
+  check('leaving the map for the reading view lands on the block the source view was showing', () => {
+    const path = 'C:\\Notes\\long.md';
+    const { context, app, reveal } = intoTheMapFromTheSource(path, FOUR);
+    try {
+      pressReading(context, reveal);
+      if (app.scrollTop !== 1800) {
+        throw new Error('leaving the map put the reader at ' + app.scrollTop + ' rather than 1800, the block holding the line the source view was on');
+      }
+      // And the pass the reveal wakes finds the anchor the landing re-recorded, so it pins the block rather than the top of the document.
+      const anchor = JSON.parse(vm.runInContext('JSON.stringify(readerScrollAnchor)', context));
+      if (!anchor || anchor.block !== 2) {
+        throw new Error('the landing left the reader\'s place written down as ' + JSON.stringify(anchor) + ', so the reveal\'s reflow pass would pin the top of the document over it');
+      }
+      context.scheduleReaderLayoutUpdate();
+      context.__frames.drain();
+      if (app.scrollTop !== 1800) throw new Error('the reflow pass the reveal wakes threw the landing away, leaving the reader at ' + app.scrollTop);
+    } finally {
+      vm.runInContext('graphViewOpen = false; codeViewActive = false; monacoEditor = null; monacoEditorPath = null; viewHandoff = null; heldReadingLandingPath = null;', context);
+    }
+  });
+
+  check('a held landing is spent once, and a document opened under the map replaces it rather than landing the last one place', () => {
+    const path = 'C:\\Notes\\long.md';
+    const other = 'C:\\Notes\\other.md';
+    const { context, app, reveal } = intoTheMapFromTheSource(path, FOUR);
+    try {
+      // Clicking a node keeps the map up on purpose, so the next document renders off screen too — and its landing is its own, not the one taken in the file before it.
+      reveal();
+      app.hidden = true;
+      app.scrollTop = 0;
+      renderReadingDocument(context, { path: other, blocks: FOUR });
+      const second = hideTheReader(app, app.querySelector('.document-body'));
+      context.__frames.drain();
+      if (vm.runInContext('heldReadingLandingPath', context) !== other) {
+        throw new Error('the second document did not take the held landing over, so the reveal would spend the first one place on it');
+      }
+      pressReading(context, second);
+      if (app.scrollTop !== 0) {
+        throw new Error('a document opened under the map came back at ' + app.scrollTop + ', which is where the reader was in the file before it');
+      }
+      // Spent: a second reveal finds nothing held and leaves a reader who has since scrolled where they are.
+      app.scrollTop = 500;
+      context.applyGraphView();
+      context.__frames.drain();
+      if (app.scrollTop !== 500) throw new Error('the held landing ran a second time and moved the reader to ' + app.scrollTop);
+    } finally {
+      vm.runInContext('graphViewOpen = false; codeViewActive = false; monacoEditor = null; monacoEditorPath = null; viewHandoff = null; heldReadingLandingPath = null;', context);
     }
   });
 }

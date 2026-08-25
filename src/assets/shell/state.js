@@ -105,6 +105,8 @@ let pendingReadingSrcOffset = null;
 let pendingViewAtTop = false;
 // The document the four landings above were taken from. One gesture arms all four before the host is asked for anything, and four things can then abandon the entry without rendering — so the landings stand and the next document opened spends them. See dropViewLandingsFromAnotherDocument.
 let pendingViewLandingPath = null;
+// The document whose reading render ran while the reader was off screen. Under the map every box measures zero, so the landings above write nothing and clear themselves — the reader comes back at the top of a page they were half way down. Held here instead, and spent by the reveal. See runHeldReadingLanding.
+let heldReadingLandingPath = null;
 // Where each view was when the toggle left it, and where the toggle put it. Every position the toggle re-derives rounds back to a block or line start, so a round trip loses a little and repeated toggling walks up the document; a view that hasn't moved since it landed gets its exact pixel back instead. One document at a time, dropped when the file or its text changes.
 let viewHandoff = null;
 
