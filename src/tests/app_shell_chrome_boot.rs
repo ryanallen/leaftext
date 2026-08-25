@@ -120,7 +120,7 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
             assert_contains(&html, expected);
         }
 
-    // Three lines the page holds over and over: the press is what has to swallow the browser's own answer to a mouse button, and Ctrl+Tab is what has to switch tabs and carry the place in the source view with it.
+    // The page holds all three of these lines in several places, so which block each is in is the claim: the press swallows the browser's own answer to a mouse button, and Ctrl+Tab switches tabs carrying the place in the source view with it.
     assert_in(
         &html,
         "window.addEventListener('mousedown', (event) => {",
@@ -429,7 +429,7 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
 
     // One approved headline, subtitle and sentence per family, so a line dropped out of the registry fails here rather than on somebody's home screen.
     for expected in [
-        // The registry's own spelling: the words alone are in the page three times, two of them a blank block's placeholder.
+        // The registry's own spelling: the words alone are also a blank block's placeholder.
         "hero: 'Turn over a new leaf.',",
         "Knowledge kept, leaf by leaf.",
         "A palm-leaf book was threaded through a single hole and bound between wooden covers. Open yours.",

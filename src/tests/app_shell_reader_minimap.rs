@@ -206,7 +206,7 @@ fn app_shell_clicks_minimap_to_scroll_document() {
         "app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));",
         "track.addEventListener('pointerdown', (event) => {",
         "if (Number.isFinite(minimapPointerOffsetY)) {",
-        // A bare click falls through to the snapshot, and the arm on its own is in the page forty-three times.
+        // A bare click falls through to the snapshot, and the arm on its own is all over the page.
         "} else {\n      scrollToMinimapSnapshotPoint(event);",
     ] {
         assert_contains(&html, expected);
@@ -244,7 +244,7 @@ fn app_shell_drags_minimap_to_scroll_document() {
             assert_contains(&html, expected);
         }
 
-    // Both of these are in the page twice, so the move is what has to keep dragging and the release is what has to forget the offset.
+    // Both of these are in the page more than once, so the move is what has to keep dragging and the release is what has to forget the offset.
     assert_in(
         &html,
         "track.addEventListener('pointermove', (event) => {",
@@ -286,7 +286,7 @@ fn app_shell_preserves_focus_and_updates_minimap_viewport_indicator() {
         assert_contains(&html, expected);
     }
 
-    // Three lines the page holds six, a hundred and ten, and twenty-one times over: the focus is taken before the jump, the press keeps the page from doing its own thing with it, and the jump ends by placing the box.
+    // The page holds all three of these lines in several places, so the block each is in is the claim: the focus is taken before the jump, the press keeps the page from doing its own thing with it, and the jump ends by placing the box.
     for (inside, expected) in [
         (
             "const restoreFocus = () => {",
@@ -349,7 +349,7 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
         assert_contains(&html, expected);
     }
 
-    // Three measurements the page takes in several places each, so the two that measure the rail are named.
+    // Each of these three measurements is taken in several places, so the two that measure the rail are named.
     assert_in(
         &html,
         "function minimapAvailableHeight(minimap) {",
@@ -386,7 +386,7 @@ fn app_shell_rebinds_minimap_after_document_updates() {
         assert_contains(&html, expected);
     }
 
-    // The page places the box in twenty-one places, so the rebind is the one that has to.
+    // The page places the box all over, so the rebind is the one that has to.
     assert_in(
         &html,
         "function bindDocumentMinimap() {",
@@ -399,7 +399,7 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
     // The scroll listener is deliberately inert during a minimap drag, so the minimap must record the anchor itself. Without that, the anchor keeps the pre-drag position and the next late reflow — most visibly the async bottom pager landing seconds after the document — restores it and throws the reader back up the page.
     let html = app_shell_page();
 
-    // The clamp-then-repin pair is in the page twice, so the one helper every re-record goes through is what has to hold it.
+    // The clamp-then-repin pair is in the page more than once, so the one helper every re-record goes through is what has to hold it.
     assert_in(
         &html,
         "function recordReaderScrollPosition() {",

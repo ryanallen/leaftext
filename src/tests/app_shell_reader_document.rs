@@ -175,7 +175,7 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         assert_contains(&html, expected);
     }
 
-    // Three lines the page holds twice, five and five times over: a render is what asks for the sweep, the sweep is what names the undrawn fences, and the batch draw is what starts mermaid.
+    // The page holds all three of these lines in several places, so which block each is in is the claim: a render asks for the sweep, the sweep names the undrawn fences, and the batch draw starts mermaid.
     assert_in(
         &html,
         "function renderState() {",
@@ -523,7 +523,7 @@ fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
         "mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));",
     );
     assert_contains(&html, "    htmlLabels,\n    flowchart: { htmlLabels },");
-    // The page's own draw leaves the answer alone, and that bare call is in the page five times.
+    // The page's own draw leaves the answer alone, and the bare call is made in several places.
     assert_in(
         &html,
         "function drawMermaidBatches(diagrams, generation, warming) {",
@@ -579,7 +579,7 @@ fn app_shell_routes_fragment_links_through_reader_anchor_scrolling() {
         "const fragmentHref = sameDocumentFragmentHref(rawHref);",
     );
     assert_contains(&html, "if (fragmentHref) {");
-    // The page swallows a default in a hundred and ten places, so the link binding is the one that has to here.
+    // The page swallows a default all over, so the link binding is the one that has to here.
     assert_in(
         &html,
         "function bindDocumentLinks() {",
@@ -640,7 +640,7 @@ fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
         assert_contains(&html, expected);
     }
 
-    // The middle button raises `auxclick` and never `click`; the web view's own scroll puck opens on the mousedown before it, so both are answered. All three of these lines are in the page twice, so the link binding is what has to carry them.
+    // The middle button raises `auxclick` and never `click`; the web view's own scroll puck opens on the mousedown before it, so both are answered. All three of these lines are in the page more than once, so the link binding is what has to carry them.
     for expected in [
         "app.addEventListener('auxclick', (event) => {",
         "const link = event.button === 1 ? documentLinkFor(event.target) : null;",
@@ -837,7 +837,7 @@ fn select_all_in_the_reading_view_selects_only_the_page() {
     assert!(html.contains("event.key.toLowerCase() === 'a'"));
     assert!(html.contains("if (!caretBlock && isEditableMouseTarget(event.target))"));
     assert!(html.contains("range.selectNodeContents(body)"));
-    // The page makes both calls nine and seven times over, so the shortcut's own branch is what has to.
+    // The page makes both calls all over, so the shortcut's own branch is what has to.
     for expected in ["selection.removeAllRanges()", "selection.addRange(range)"] {
         assert_in(
             &html,

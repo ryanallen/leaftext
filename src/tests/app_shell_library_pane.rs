@@ -293,7 +293,7 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
     assert!(html.contains("libraryOpen.addEventListener('click', toggleLibrary);"));
     assert!(html
         .contains("applyPaneLayout();\nsend({ command: 'getFolder', path: libraryProjectPath });"));
-    // Four fragments watch a resize, so the pane's own is named by the frame it throttles itself to.
+    // Several fragments watch a resize, so the pane's own is named by the frame it throttles itself to.
     assert!(html.contains(
         "window.addEventListener('resize', () => {
   if (paneResizeFrame) return;"
@@ -427,7 +427,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     assert!(!html.contains("window.leafSetScanProgress ="));
     assert!(html.contains("window.leafSetSearchResults ="));
     assert!(html.contains("const LEAF_SETTINGS = (window.__leafSettings"));
-    // Three places ask for a folder; the boot's is the one paired with the first paint.
+    // Several places ask for a folder; the boot's is the one paired with the first paint.
     assert!(html
         .contains("applyPaneLayout();\nsend({ command: 'getFolder', path: libraryProjectPath });"));
 
@@ -576,7 +576,7 @@ fn library_row_context_menu_offers_file_actions() {
 
     // The right-click menu is built from a list of file actions, ordered with the destructive delete flagged and set apart.
     assert!(html.contains("const CONTEXT_MENU_ITEMS = ["));
-    // The whole row, inside that one list: a bare `'open'` is in the page twenty-seven times and holds nothing, and three of these rows are in a second menu as well.
+    // The whole row, inside that one list: a bare `'open'` is all over the page and holds nothing, and some of these rows are in a second menu as well.
     for row in [
         "{ action: 'open', label: 'Open' },",
         "{ action: 'cut', label: 'Cut' },",

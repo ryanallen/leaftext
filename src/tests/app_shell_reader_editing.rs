@@ -131,7 +131,7 @@ fn app_shell_resets_new_documents_to_rendered_content_top() {
         assert_contains(&html, expected);
     }
 
-    // Each of these three is in the page many times over, so where it is is the claim: the landing resets when a new document asked for it, and the reset re-origins and re-pins.
+    // Each of these three is in the page more than once, so where it is is the claim: the landing resets when a new document asked for it, and the reset re-origins and re-pins.
     for (inside, expected) in [
         (
             "} else if (resetReaderScrollOnNextRender) {",
@@ -180,7 +180,7 @@ fn app_shell_clamps_reader_scroll_to_rendered_content_range() {
             assert_contains(&html, expected);
         }
 
-    // The page holds this line in three places, so the settle is what has to hold it.
+    // The page holds this line in more than one place, so the settle is what has to hold it.
     assert_in(
         &html,
         "function settleReaderScroll() {",
@@ -215,7 +215,7 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());",
             "    if (readerOffScreen()) {",
             "readerScrollAnchor = captureReaderScrollAnchor() || readerScrollAnchor;",
-            // A resize is what queues the pass, and the pair is that path — the two lines apart are in the page six times over.
+            // A resize is what queues the pass, and the pair is that path — either line on its own is in the page several times.
             "invalidateMinimapMetrics();\n  scheduleReaderLayoutUpdate();",
             // The reflow observer re-pins the anchor as images decode and grow, and drops the stale anchor-block cache so the re-pin resolves against the current DOM rather than detached, zero-rect entries.
             "function observeReaderReflow() {",
@@ -225,7 +225,7 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             assert_contains(&html, expected);
         }
 
-    // Three lines the page holds many times over, so the block each is in is the claim: the capture reads the cached list, the queued pass re-origins, and the reflow observer is what drops the cache.
+    // The page holds all three of these lines in several places, so the block each is in is the claim: the capture reads the cached list, the queued pass re-origins, and the reflow observer drops the cache.
     for (inside, expected) in [
         (
             "function captureReaderScrollAnchor() {",
@@ -251,7 +251,7 @@ fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
 
     // Entering the code view mounts a Monaco container and clears the reader's own rail — Monaco draws its own minimap.
     assert!(html.contains(r#"app.innerHTML = '<div class="code-view-monaco"></div>';"#));
-    // The page clears the rail in two places, so the code view's own render is what has to.
+    // The page clears the rail in more than one place, so the code view's own render is what has to.
     assert_in(
         &html,
         "function renderCodeView(state) {",
@@ -449,7 +449,7 @@ fn a_note_with_no_fields_starts_one_from_the_plus_that_is_already_in_the_gutter(
 
     // Above everything, on an unlocked Markdown note that has no block — and nowhere else, or an insert between two paragraphs would make metadata nobody meant.
     assert_contains(&html, "function frontmatterCanStart(gap) {");
-    // Both clauses are in the page twice, so the test names the one function that has to carry them.
+    // Both clauses are in the page more than once, so the test names the one function that has to carry them.
     assert_in(
         &html,
         "function frontmatterCanStart(gap) {",

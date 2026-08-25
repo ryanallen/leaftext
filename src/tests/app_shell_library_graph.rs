@@ -335,7 +335,7 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(html.contains("pixiUnsafeEval: PIXI_UNSAFE_EVAL_SCRIPT_URL,"));
     assert!(html.contains("} = window.__lt.assets;"));
     assert!(html.contains(r#""pixi":"#) && html.contains("pixi.min.js"));
-    // The grant itself rather than the bare word, which is in the page eight times, and the one line that lays the map out.
+    // The grant itself rather than the bare word, which is all over the page, and the one line that lays the map out.
     assert!(html.contains("script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:"));
     assert!(html.contains("const sim = window.d3.forceSimulation(nodes)"));
     assert!(!html.contains("script-src 'self' 'unsafe-inline' 'unsafe-eval'"));
@@ -438,7 +438,7 @@ fn leaving_the_map_for_a_document_shows_the_spinner() {
     // A node click is the other side of it: the map stays, so the document's spinner is withheld and the map raises its own while the new slice builds.
     assert!(html.contains("  beginReaderLoading('graph');\n  send({ command: 'getGraph'"));
 
-    // And the map stepping aside must not pull down the spinner the document raised, or the wait comes back as a blink mid-handover. Eight places put it down; the one that matters here is the map being taken apart.
+    // And the map stepping aside must not pull down the spinner the document raised, or the wait comes back as a blink mid-handover. Several places put it down; the one that matters here is the map being taken apart.
     assert_in(
         &html,
         "function teardownGraph() {",

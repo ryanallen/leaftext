@@ -214,7 +214,7 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
 
     // Work happens in the panel, so the panel stays up to report it.
     assert!(html.contains("if (!entry.keepOpen) hideCrumbMenu();"));
-    // Fifteen rows carry that mark, so the claim is that the git panel's own rows do.
+    // Rows all over the panel carry that mark, so the claim is that the git panel's own rows do.
     assert_in(&html, "function vaultGitItems(vault) {", "keepOpen: true,");
     assert!(css.contains(".crumb-menu-note {"));
     assert!(css.contains(".crumb-menu-item:disabled {"));
@@ -386,7 +386,7 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains("function vaultMenuItems()"));
     assert!(html.contains("selected: !activeVaultId,"));
     assert!(html.contains("selected: vault.id === activeVaultId,"));
-    // Three places ask for a new vault; the menu's own row is the one this test is about.
+    // Several places ask for a new vault; the menu's own row is the one this test is about.
     assert_in(
         &html,
         "function vaultMenuItems() {",
@@ -414,7 +414,7 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // A row button, not a right-click: rename, re-point and remove all live behind it. Four places open that panel; the claim is that the row's own list is one of them.
+    // A row button, not a right-click: rename, re-point and remove all live behind it. Several places open that panel; the claim is that the row's own list is one of them.
     assert_in(
         &html,
         "function vaultMenuItems() {",
@@ -474,7 +474,7 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     );
     // The name field commits on Enter or on leaving it, and Escape abandons it.
     assert!(html.contains("field.addEventListener('blur', commit);"));
-    // Four fields in the page abandon on Escape; this one is the menu's own.
+    // Several fields in the page abandon on Escape; this one is the menu's own.
     assert_in(
         &html,
         "function showCrumbMenu(button, items) {",
@@ -605,7 +605,7 @@ fn cloning_a_repository_takes_an_address_and_then_a_folder() {
     // Folded away until asked for, like changing a repository — the common way in is still picking a folder.
     assert!(html.contains("label: 'Clone a repository…',"));
     assert!(html.contains("cloneRevealed = true;"));
-    // And unfolded again when the menu closes, or the panel would be waiting there the next time it opens. Four places write that; the claim is the menu closing is one of them.
+    // And unfolded again when the menu closes, or the panel would be waiting there the next time it opens. Several places write that; the claim is the menu closing is one of them.
     assert_in(
         &html,
         "function hideCrumbMenu() {",

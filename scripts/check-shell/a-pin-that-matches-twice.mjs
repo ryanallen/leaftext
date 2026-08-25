@@ -1,6 +1,6 @@
 // A front-end test that names a line of the page holds nothing when the page holds that line twice: the pin passes from wherever the line landed, so emptying the function the test names leaves it green. This refuses such a pin.
 //
-// The refusal is here rather than in `assert_contains`, which 1,120 calls read through — most of them over a rendered document, a stylesheet or XML, where a line appearing many times is the right claim. A needle handed to `assert_in` is deliberately scoped and is left alone.
+// The refusal is here rather than in `assert_contains`, which most of the suite reads through — most of those calls over a rendered document, a stylesheet or XML, where a line appearing many times is the right claim. A needle handed to `assert_in` is deliberately scoped and is left alone.
 //
 // The rules are proved on made-up test source before the real files are opened, so a reader that quietly stops matching fails the build instead of passing everything.
 
