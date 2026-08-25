@@ -383,6 +383,7 @@ Key details:
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.
 - Replacing an [image](01-rendering.md#images) the document shows refreshes the picture in place, without a rerender, so the reader does not move.
 - A [new document](07-editing.md#new-document) is showing no file at all, so nothing on disk reloads it — a file of its own name sitting in the folder Leaftext was started in is a different document, and opens as one.
+- A change that lands while a **different tab** is in front is picked up when you come back to that tab, whether or not you had ticked a box or edited there — arriving at a document reads the file it names.
 - Saving from the [code view](07-editing.md#save) does not trigger a reload — the watcher recognizes the app's own write — and a document with [unsaved edits](07-editing.md#external-changes) is never clobbered by an outside change.
 
 ## Next
