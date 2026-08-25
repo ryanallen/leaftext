@@ -554,7 +554,53 @@ pub fn reading_mode_css() -> &'static str {
     // Assets, not Rust literals, so they stay editable as CSS. Every `var(--lt-*)` resolves against what came before it: the per-theme colors, then the app-wide scales, then the rules that spend both.
     const TOKENS_CSS: &str = include_str!("assets/tokens.css");
     const ICONS_CSS: &str = include_str!("assets/icons.css");
-    const READING_CSS: &str = include_str!("assets/reading.css");
+    // The stylesheet as ordered parts, one per component group, concatenated with nothing so the join is the old file character for character. Order is the cascade — at equal specificity the later rule wins — so a part moves only as a contiguous run of lines, never a rule lifted out of one. `scripts/reading-css.mjs` reads this array so every check reports the part a reader opens rather than a line in a file that no longer exists.
+    const READING_CSS_PARTS: &[&str] = &[
+        // The reset, the theme root, the window frame and the reduced-motion opt-out. First because everything below resolves against it.
+        include_str!("assets/reading/base.css"),
+        // The bar across the top: the brand, the tabs and their hearts, the overflow fold and the window controls.
+        include_str!("assets/reading/app-bar.css"),
+        // What floats over the app: the context menu, the rename box, the updater panel — and the one grouped rule that gives every one of them its shadow.
+        include_str!("assets/reading/panels.css"),
+        // The spinner and every button the bars press, including the app-wide `button:hover` the design system holds each control against.
+        include_str!("assets/reading/buttons.css"),
+        // The pane down the left: its frame, its scroll, the search and its hits, the breadcrumbs and their menu, the files and folders. One part rather than two, because `.library-hit-title` is written twice inside it — a block that clips near the top and a flex row that does not near the foot, 443 lines apart and decided by nothing but their order.
+        include_str!("assets/reading/library.css"),
+        // The map, in the reader's own cell and wearing the page's frame because it stands in for the page.
+        include_str!("assets/reading/reader-graph.css"),
+        // The floating bar over the foot of the page: the views, then the edits.
+        include_str!("assets/reading/reader-toolbar.css"),
+        // The page itself — its cell, its edges, its scroller and what it says while it loads — and the toast and first-run bubble that sit over it.
+        include_str!("assets/reading/reader-page.css"),
+        // A rendered document's own typography: headings, links, lists, the outline, the data and TEI blocks, and what the speed reader does to all of it.
+        include_str!("assets/reading/document.css"),
+        // The handle you drag a block by and the plus that writes a new one, in the page's left margin.
+        include_str!("assets/reading/block-gutter.css"),
+        // The bar that appears over selected text.
+        include_str!("assets/reading/selection-toolbar.css"),
+        // Quotes, alerts, code and an undrawn diagram — everything in a document that comes in a block of its own, and the syntax colors inside it.
+        include_str!("assets/reading/document-code.css"),
+        // The source view: the Monaco editor and the heading trail pinned over it.
+        include_str!("assets/reading/code-view.css"),
+        // Math, footnotes, tables, pictures and a note's own field block, and the openers that put a table or a picture on the whole window.
+        include_str!("assets/reading/document-tables.css"),
+        // The rail down the right, in the shell's own column so nothing in it can bleed onto the page.
+        include_str!("assets/reading/minimap.css"),
+        // The start screen: the empty state, the recent and favorite lists, and the rows they hold.
+        include_str!("assets/reading/home.css"),
+        // Everything that rises from the bottom of the window — the scrim, the sheet itself, the glossary, home and theme sheets — plus the scroll areas and the link preview.
+        include_str!("assets/reading/sheets.css"),
+        // The flowchart editor: its panes, its canvas, the handles laid over the drawing and the menus they open.
+        include_str!("assets/reading/flow-sheet.css"),
+        // A drawn diagram's own corner controls.
+        include_str!("assets/reading/diagram-tools.css"),
+        // A diagram, a table or a picture opened over the whole window.
+        include_str!("assets/reading/full-window.css"),
+        // Find in this document: the bar over both views, and the wash every match takes.
+        include_str!("assets/reading/find.css"),
+        // Last, and last on purpose: the page as it is handed to paper unwinds the window frame every rule above it sets up.
+        include_str!("assets/reading/print.css"),
+    ];
 
     READING_MODE_CSS.get_or_init(|| {
         let mut css = compiled_theme_css();
@@ -563,7 +609,9 @@ pub fn reading_mode_css() -> &'static str {
         css.push('\n');
         css.push_str(ICONS_CSS);
         css.push('\n');
-        css.push_str(READING_CSS);
+        for part in READING_CSS_PARTS {
+            css.push_str(part);
+        }
         css
     })
 }

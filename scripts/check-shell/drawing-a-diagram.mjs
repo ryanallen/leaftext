@@ -2,18 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  check,
-  checkSettled,
-  fakeElement,
-  names,
-  record,
-  root,
-  runShell,
-  settle,
-  settled,
-  source,
-} from './shared.mjs';
+import { check, checkSettled, fakeElement, names, readingCss, record, root, runShell, settle, settled, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -413,7 +402,7 @@ export function run() {
       throw new Error(`the skipped block stands in at ${standIn} and a box put back at ${waiting.style.height}`);
     }
 
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const clone = css.slice(css.indexOf('.document-minimap-preview pre.mermaid {'));
     if (!clone.startsWith('.document-minimap-preview pre.mermaid {')) throw new Error('nothing cancels the skip inside the rail’s clone');
     if (!clone.slice(0, 120).includes('content-visibility: visible !important;')) {

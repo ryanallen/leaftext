@@ -3,16 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import {
-  check,
-  checkSettled,
-  diagramStand,
-  names,
-  record,
-  root,
-  runShell,
-  source,
-} from './shared.mjs';
+import { check, checkSettled, diagramStand, names, readingCss, record, root, runShell, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -88,7 +79,7 @@ export function run() {
   // The sheet a diagram is printed on. The shipped paper class does the opposite of what this needs on its own — it computes the full-window diagram to `display: none` and grows the surface to the whole document — so a print under it alone would be the note with the drawing missing. The cascade is what decides this and the stand-in page has none, so the rule is read off the stylesheet the way the other CSS checks here are.
   check('a printed diagram is the only thing left on the sheet', () => {
     if (!booted.document.getElementById('diagramPrint')) throw new Error('the page has no container to print a diagram in');
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     // Anchored at the start of a line, so a rule under a wider selector cannot answer for one keyed on the container itself.
     const rule = (selector, paint) => css.includes('\n' + selector + ' {' + '\n' + '  ' + paint + ';');
     if (!rule('.diagram-print', 'display: none')) throw new Error('the print container is not out of the layout until an export fills it');

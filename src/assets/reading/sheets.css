@@ -1,0 +1,734 @@
+/* ---- Glossary bottom sheet ---------------------------------------------
+   A glossary link opens the term here, sliding up over the reading view; the document keeps its place underneath. The body reuses .document-body so the entry is styled like ordinary Markdown. See window.leafShowGlossary. */
+/* ---- the bottom sheet, once ------------------------------------------------
+   Three things slide up from the bottom edge: the glossary, the theme picker, and the flowchart editor's own. They differ in what they are anchored to and what they are filled with, and in nothing else — so that is all their own classes say, and everything below is shared. `makeSheetDraggable` is the matching half in dom.js: --sheet-drag is how far the pointer has carried the sheet, and the transition is off for the length of the drag so it tracks the pointer exactly. */
+/* The scrim behind a sheet: one definition, three sheets. It dims the page and takes the click that closes what is over it. */
+.lt-backdrop[hidden] {
+  display: none;
+}
+.lt-backdrop {
+  position: fixed;
+  inset: 0;
+  /* Dimmed and dotted: the tint does the dimming, the 2px lattice every grained surface wears does the rest, on the same window-anchored grid. */
+  --lt-grain-dot: var(--lt-grain-dot-strong);
+  background-color: var(--lt-tint-backdrop);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  opacity: 0;
+  /* The exit, because this rule is both where the scrim rests and where it goes back to. The way in is on `.open`, and is the longer of the two. */
+  transition: opacity var(--lt-duration-160) var(--lt-ease-accelerate);
+  z-index: var(--lt-z-40);
+}
+.lt-backdrop.open {
+  opacity: 1;
+  transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+/* The flowchart editor is a full-window view rather than a sheet over the page, so the scrim it opens with — the press that closes the editor — takes the layer above those views: at the sheets' own 40 it would paint under them. The shape picker inside throws none. */
+#flowBackdrop {
+  z-index: var(--lt-z-42);
+}
+/* A term rises over the full-window table, which is itself a sheet, so its scrim takes the layer above: at the sheets' own 40 it paints under the table and the press outside the term lands on the table instead. */
+#glossaryBackdrop {
+  z-index: var(--lt-z-42);
+}
+/* The one question the app asks, on the scrim the sheets already throw. Centered rather than slid up from the bottom: a sheet is somewhere you go, and this is something standing in your way until you answer it. */
+.confirm-dialog {
+  position: fixed;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  z-index: var(--lt-z-41);
+  width: min(360px, calc(100% - 48px));
+  box-sizing: border-box;
+  padding: var(--lt-space-20);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  font-family: var(--app-font);
+}
+.confirm-dialog[hidden] {
+  display: none;
+}
+.confirm-dialog-title {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-700);
+}
+.confirm-dialog-detail {
+  margin: var(--lt-space-8) 0 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-45);
+}
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--lt-space-8);
+  margin-top: var(--lt-space-20);
+}
+.confirm-dialog-button {
+  padding: var(--lt-space-8) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+  font-size: var(--lt-text-13);
+}
+.confirm-dialog-button:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
+}
+/* The destructive one, in the color the menu item it came from already wears. */
+.confirm-dialog-button.is-danger {
+  border-color: transparent;
+  background: var(--lt-danger);
+  color: var(--lt-danger-foreground);
+  font-weight: var(--lt-weight-700);
+}
+/* The app's own hover wash, laid over the red rather than replacing it: the wash is transparent and mixed from the family's ink, so it deepens a light theme and lifts a dark one without a second red to keep in step. */
+.confirm-dialog-button.is-danger:hover {
+  background-image: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover));
+}
+.leaf-sheet {
+  left: 0;
+  right: 0;
+  /* How far past its seat the sheet rides when it lands, and how far it pulls up before it leaves. */
+  --sheet-raise: 10px;
+  /* The skirt: the sheet is that much taller than it looks and rests with the extra below the window's edge, so neither raised moment shows the window under it — the same gap the drag clamps at flush to prevent. */
+  bottom: calc(var(--sheet-raise) * -1);
+  padding-bottom: var(--sheet-raise);
+  display: flex;
+  flex-direction: column;
+  max-height: 78vh;
+  border-top-left-radius: var(--lt-radius-2xl);
+  border-top-right-radius: var(--lt-radius-2xl);
+  transform: translateY(100%);
+  /* Dropping away, so it accelerates and is over sooner than the rise. */
+  transition: transform var(--lt-duration-200) var(--lt-ease-accelerate);
+}
+/* The same cassette grain the app bar and the reading surfaces wear, so a sheet reads as one of this app's surfaces rather than a plain card dropped on it. The color under it is each sheet's own; only the lattice is shared, and it is anchored to the window so every grained surface keeps one phase. */
+.leaf-sheet {
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+.leaf-sheet[hidden] {
+  display: none;
+}
+.leaf-sheet.open {
+  transform: translateY(var(--sheet-drag, 0px));
+  /* `lt-ease-sheet` and not `lt-ease-decelerate`: it is the same shape, tuned by hand against a real drag, and the drag is what it has to feel continuous with. */
+  transition: transform var(--lt-duration-260) var(--lt-ease-sheet);
+}
+/* Landing with a rubber band: up from below the window, past the seat by the raise, then back down onto it. One animation and not two transitions — an element that has just come off `display: none` has no before-change style for a transition to move from, so a rise written as one does not draw and the sheet appears already raised. An animation starts from its own first keyframe, so there is nothing to wait a frame for. Not `lt-ease-overshoot` for the spring, either: that one runs about a tenth of its whole travel past the mark, and this travel is the sheet's own height. */
+@keyframes sheet-land {
+  0% {
+    transform: translateY(100%);
+    /* The rise keeps the curve tuned by hand against a real drag, which is the gesture it has to feel continuous with. */
+    animation-timing-function: var(--lt-ease-sheet);
+  }
+  /* The raised mark, at the rise's share of the whole landing: 260ms of 400. */
+  65% {
+    transform: translateY(calc(var(--sheet-raise) * -1));
+    animation-timing-function: var(--lt-ease-emphasized);
+  }
+  100% {
+    transform: translateY(var(--sheet-drag, 0px));
+  }
+}
+.leaf-sheet.open.is-landing {
+  animation: sheet-land var(--lt-duration-400) both;
+}
+/* Leaving with intent: a short pull up to that same mark, then away faster than it arrived. One animation and not two transitions handing off — a transition ends long after its visible motion does and the next class waits on that end, which held the sheet perfectly still for a measured 35ms at the top of the pull. Here the apex is a percentage somebody wrote down. The seat is wherever a drag parked the sheet, so a dismissal from half-way down still winds up from where the hand left it. */
+@keyframes sheet-leave {
+  0% {
+    transform: translateY(var(--sheet-drag, 0px));
+    /* Something already on screen moving 10px, which is what emphasized is for. Never the arriving curve: it is front-loaded enough to spend half of a 10px throw in the first frame, which reads as a twitch rather than a wind-up. */
+    animation-timing-function: var(--lt-ease-emphasized);
+  }
+  /* The pull-up's share of the whole gesture: 120ms of 280. */
+  43% {
+    transform: translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));
+    animation-timing-function: var(--lt-ease-accelerate);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+/* A drag dismissal skips the pull, because the hand already made it: the departure alone, from wherever it was let go. */
+@keyframes sheet-boost {
+  from {
+    transform: translateY(var(--sheet-drag, 0px));
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+/* `both`, so the sheet holds the first keyframe before the animation starts and the last one after it ends — without it the sheet flicks back to where the cascade says it is for the frame between the end and the hide. No curve in the shorthand: each interval names its own on the keyframe it starts at. */
+.leaf-sheet.is-leaving {
+  animation: sheet-leave var(--lt-duration-280) both;
+}
+.leaf-sheet.is-boosting {
+  animation: sheet-boost var(--lt-duration-160) var(--lt-ease-accelerate) both;
+}
+/* The scrim waits out the wind-up so the two leave together — a sheet still on screen over an undimmed window is the one thing the scrim is there to prevent. A drag dismissal has no wind-up and takes no delay. */
+.lt-backdrop.is-held {
+  transition-delay: var(--lt-duration-120);
+}
+/* Last of the moving states, so a held pointer beats every one it ties with on specificity. The three-class ones it cannot outrank are dropped by the drag itself before this applies. */
+.leaf-sheet.is-dragging {
+  transition: none;
+}
+.leaf-sheet-grip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The bar is 4px of ink, but what you grab is the whole strip across the top of the sheet -- a 4px target is a promise nobody can hit. The negative bottom margin returns the strip to the space the bar alone once took. */
+  height: 24px;
+  margin: 0 0 calc(var(--lt-space-8) * -1);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.leaf-sheet-grip::before {
+  content: '';
+  width: 40px;
+  height: 4px;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-border-strong);
+}
+.leaf-sheet.is-dragging .leaf-sheet-grip {
+  cursor: grabbing;
+}
+/* The X. One look for all four; where it sits is the only thing that differs, because the theme and start-screen sheets have a header row to put it in and the others don't. */
+.leaf-sheet-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-lg);
+  background: none;
+  color: var(--lt-muted-foreground);
+}
+.leaf-sheet-close:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.leaf-sheet-close .lt-icon {
+  width: 18px;
+  height: 18px;
+}
+.glossary-sheet > .leaf-sheet-close,
+.flow-picker > .leaf-sheet-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 1;
+}
+/* The app's one scrollbar, worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and the five boxes a document brings. Those five are named as a selector rather than given a class because they come out of Markdown with nowhere to carry one; where the markup is ours the box takes .leaf-scroll. Every wearer is in all nine rules and not only the six that paint: the three on the box carry the thumb's color and inset, so a box in half of them reserves a gutter and never draws in it. `.table-lane > table` is redundant under the document selector and stays, named as a wearer by the test that walks this block. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
+.leaf-scroll::-webkit-scrollbar,
+.library-scroll::-webkit-scrollbar,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar,
+.table-lane > table::-webkit-scrollbar,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar {
+  /* 4px of inset each side plus the 6px the thumb actually shows. */
+  width: 14px;
+  height: 14px;
+}
+.leaf-scroll::-webkit-scrollbar-track,
+.library-scroll::-webkit-scrollbar-track,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-track,
+.table-lane > table::-webkit-scrollbar-track,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-track {
+  /* Transparent, not the surface color: an opaque track masks the grain and leaves an ungrained strip down the edge it sits on. */
+  background: transparent;
+}
+/* Registered so it can be animated at all: an unregistered custom property has no type to interpolate, and a transition written on the bar itself never runs in this engine — the fade shipped that way and only ever blinked. Inherited, because a scrollbar pseudo has no declarations of its own and reads this off its box. Registering is safe here and is not next door: the one that killed the app fed a grid track off :root, so every frame relaid the window out (see .library-shell). This drives paint on a bar inside a gutter that is reserved either way. */
+@property --lt-scroll-thumb {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+/* How far the thumb is held off each edge of its gutter, registered for the same reason and inherited down to the thumb the same way. Shrinking it thickens the grabber inside the gutter that is reserved either way, so nothing on the page reflows. Zero initially because the box rule below always supplies the resting value; the initial one is only what an element outside that rule would read. */
+@property --lt-scroll-thumb-inset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+/* The bar answers the scroll, not the pointer over the box: gone at rest, there while that box is moving, and gone again a moment after it stops. Never the whole box's hover — pointing at a list on the way somewhere else is not asking to be told how long it is. `is-scrolling` is stamped on whatever scrolled, and `is-pointing` on whatever has the pointer in its own gutter, both by the watchers in `dom.js`. The fade rides the box because it cannot ride the bar; the resting rule carries the exit and the raised ones the enter, which is what a direction per curve costs. */
+.leaf-scroll,
+.library-scroll,
+.reader-shell:not(.has-minimap),
+.table-lane > table,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
+  --lt-scroll-thumb: transparent;
+  --lt-scroll-thumb-inset: var(--lt-stroke-4);
+  transition: --lt-scroll-thumb var(--lt-duration-160) var(--lt-ease-accelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+/* Scrolling changes the color and nothing else: a bar that swells every time the page moves is a bar drawing attention to itself while somebody is reading. The inset still names its exit here, so a pointer leaving mid-scroll thins the thumb while the bar stays up. */
+.leaf-scroll.is-scrolling,
+.library-scroll.is-scrolling,
+.reader-shell:not(.has-minimap).is-scrolling,
+.table-lane > table.is-scrolling,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-scrolling {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+/* Aiming at the bar is aiming at a control, so it comes back and thickens to be held: 6px of painted thumb becomes 10px inside the same gutter. Last of the three on purpose — a box that is both scrolling and pointed at takes this one, and the color it sets is the same, so the two reasons never fight. */
+.leaf-scroll.is-pointing,
+.library-scroll.is-pointing,
+.reader-shell:not(.has-minimap).is-pointing,
+.table-lane > table.is-pointing,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table).is-pointing {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  --lt-scroll-thumb-inset: var(--lt-stroke-2);
+  transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+/* What fades is that property, not an opacity: a scrollbar pseudo has no box of its own to fade. It also means the bar's width is reserved whether or not the thumb is painted, so nothing on the page moves when one appears. */
+.leaf-scroll::-webkit-scrollbar-thumb,
+.library-scroll::-webkit-scrollbar-thumb,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
+.table-lane > table::-webkit-scrollbar-thumb,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb {
+  /* A transparent border with the fill clipped inside it is the only way to inset a webkit thumb. */
+  border: var(--lt-scroll-thumb-inset) solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--lt-radius-md);
+  background-color: var(--lt-scroll-thumb);
+}
+/* Floor the grabber so a long page can't shrink it to a sliver. Per axis: a bare `min-height` on a sideways bar sets its thickness instead of its length, which swells the 14px bar into a 56px band. */
+.leaf-scroll::-webkit-scrollbar-thumb:vertical,
+.library-scroll::-webkit-scrollbar-thumb:vertical,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:vertical,
+.table-lane > table::-webkit-scrollbar-thumb:vertical,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:vertical {
+  min-height: 56px;
+}
+.leaf-scroll::-webkit-scrollbar-thumb:horizontal,
+.library-scroll::-webkit-scrollbar-thumb:horizontal,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:horizontal,
+.table-lane > table::-webkit-scrollbar-thumb:horizontal,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-thumb:horizontal {
+  min-width: 56px;
+}
+/* Where two bars meet, so the square between them is not the platform's gray. */
+.leaf-scroll::-webkit-scrollbar-corner,
+.library-scroll::-webkit-scrollbar-corner,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-corner,
+.table-lane > table::-webkit-scrollbar-corner,
+.document-body :is(pre, pre > code, .math-display, .frontmatter, table)::-webkit-scrollbar-corner {
+  background: transparent;
+}
+/* The one sheet that can stand on another sheet, so it rides one rung above its own scrim at 42 rather than beside the sheets at 41. */
+.glossary-sheet {
+  position: fixed;
+  z-index: var(--lt-z-43);
+  background: var(--lt-background);
+  color: var(--lt-foreground);
+}
+/* A folded start-screen list, given the window — same slide-up pattern again. */
+.home-sheet {
+  position: fixed;
+  z-index: var(--lt-z-41);
+  /* The skirt is carried in the bottom padding: a plain `padding` here would drop the component's own and leave the last row hanging below the window's edge. */
+  padding: 0 var(--lt-space-20) calc(var(--lt-space-24) + var(--sheet-raise));
+  background: var(--lt-background);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+}
+.home-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+}
+.home-sheet-title {
+  color: var(--lt-primary);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
+  letter-spacing: var(--lt-tracking-120);
+  text-transform: uppercase;
+}
+/* The box fills whatever the sheet's own 78vh ceiling leaves it, so the list scrolls inside the sheet rather than the sheet growing past the window. */
+.home-sheet-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.home-sheet .home-list-box {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.home-sheet .home-list-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+.home-sheet .home-list-fade {
+  --home-list-surface: var(--lt-background);
+}
+/* Theme selector bottom sheet — same slide-up pattern as the glossary sheet. */
+.theme-sheet {
+  position: fixed;
+  z-index: var(--lt-z-41);
+  gap: var(--lt-space-14);
+  /* The skirt is carried in the bottom padding, as on the start-screen sheet. */
+  padding: 0 var(--lt-space-20) calc(var(--lt-space-24) + var(--sheet-raise));
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+}
+.theme-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.theme-sheet-title {
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-800);
+  color: var(--lt-foreground);
+}
+.theme-sheet-modes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--lt-space-6);
+}
+.theme-mode-btn {
+  padding: var(--lt-space-8) var(--lt-space-6);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
+}
+.theme-mode-btn:hover {
+  background: var(--lt-wash-hover);
+  border-color: var(--lt-border-strong);
+}
+.theme-mode-btn.is-active {
+  background: var(--lt-primary);
+  border-color: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+}
+.theme-sheet-divider {
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: var(--lt-border);
+}
+.theme-sheet-grid {
+  list-style: none;
+  margin: 0;
+  padding: var(--lt-space-2);
+  /* Equal-column grid so every card is the same width. auto-fit (not auto-fill) collapses empty tracks, so the cards grow to fill the row instead of sitting at their min width with big gaps. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--lt-space-8);
+  overflow-y: auto;
+}
+.theme-item {
+  position: relative;
+  /* Column-reverse: name span comes first in the DOM (a test pins that), the swatch block second — reversed so the block sits on top and the name below. */
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  /* Fill the grid column; without this the button shrinks to its name's width. */
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 54px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-xl);
+  /* The card wears the theme's own paper and ink (Random falls back to a neutral tile), so it reads as a sample of the theme. A faint stroke in the SHEET's ink keeps a paper-white card from vanishing on a light sheet. */
+  background: var(--card-bg-light, color-mix(in srgb, var(--lt-foreground) 5%, var(--lt-surface-elevated)));
+  color: var(--card-fg-light, var(--lt-foreground));
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13-5);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
+  text-align: left;
+  overflow: hidden;
+}
+/* The stroke rides a pseudo-element above the swatches; drawn on the card itself the opaque swatch block would paint over it everywhere but the name band. */
+.theme-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--lt-shadow-hairline);
+  pointer-events: none;
+  transition: box-shadow var(--lt-duration-120) var(--lt-ease);
+}
+:root[data-leaf-appearance='dark'] .theme-item {
+  background: var(--card-bg-dark, color-mix(in srgb, var(--lt-foreground) 5%, var(--lt-surface-elevated)));
+  color: var(--card-fg-dark, var(--lt-foreground));
+}
+/* The palette preview: a full-bleed block of edge-to-edge bars across the top, the card's rounded corners clipping it (card sets overflow: hidden). */
+.theme-swatches {
+  display: flex;
+  height: 78px;
+}
+.theme-swatch {
+  flex: 1;
+  /* Each swatch carries both colors; show the one for the resolved appearance. */
+  background: var(--sw-light);
+}
+:root[data-leaf-appearance='dark'] .theme-swatch {
+  background: var(--sw-dark);
+}
+.theme-item-name {
+  padding: var(--lt-space-12) var(--lt-space-14) var(--lt-space-12);
+  /* The app font until the picker has loaded this theme's own font; then swap. */
+  font-family: var(--app-font);
+  /* Named, because the name's line box is the only part of a card a font can resize — left to a face's own `normal` it moved the whole sheet 2px as the previews landed. */
+  line-height: var(--lt-leading-1-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theme-item.font-ready .theme-item-name {
+  font-family: var(--card-font, var(--app-font));
+}
+/* Spinner shown over the swatch block while that theme's font loads. A neutral disc in the sheet's own tokens keeps it legible over any swatch colors. */
+.theme-item-spinner {
+  position: absolute;
+  top: 39px;
+  left: 50%;
+  /* Half its own size, like the diagram spinner: the pull-back belongs to the box, not to a spacing step. */
+  --lt-spinner-size: 26px;
+  width: var(--lt-spinner-size);
+  height: var(--lt-spinner-size);
+  margin: calc(var(--lt-spinner-size) / -2) 0 0 calc(var(--lt-spinner-size) / -2);
+  border-color: color-mix(in srgb, var(--lt-foreground) 22%, transparent);
+  border-top-color: var(--lt-foreground);
+  background: color-mix(in srgb, var(--lt-surface-elevated) 78%, transparent);
+  display: none;
+  pointer-events: none;
+}
+.theme-item.is-loading .theme-item-spinner {
+  display: block;
+}
+.theme-item:hover::after {
+  box-shadow: var(--lt-shadow-hairline-strong);
+}
+.theme-item.is-active::after {
+  box-shadow: var(--lt-shadow-edge-accent);
+}
+/* Selected badge: the check-circle, tinted with the theme accent, pinned to the name band. Hidden until the card is active. */
+.theme-item-check {
+  position: absolute;
+  bottom: 11px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  display: none;
+  color: var(--lt-accent);
+  pointer-events: none;
+}
+.theme-item.is-active .theme-item-check {
+  display: block;
+}
+.theme-sheet-footer {
+  display: flex;
+  justify-content: center;
+}
+.theme-sheet-browse {
+  color: var(--lt-link);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  text-decoration: none;
+}
+.theme-sheet-browse:hover {
+  color: var(--lt-link-hover);
+  text-decoration: underline;
+}
+/* Under every menu: a rest raises this, a right-click asks for the menu, and the second beats the first. */
+.link-hover-tip {
+  position: fixed;
+  z-index: var(--lt-z-44);
+  max-width: min(34rem, calc(100% - 24px));
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-xl);
+  background: color-mix(in srgb, var(--lt-background) 92%, black);
+  color: var(--lt-foreground);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--lt-duration-300) var(--lt-ease-accelerate);
+}
+.link-hover-tip.shown {
+  opacity: 1;
+  transition-duration: var(--lt-duration-100);
+  transition-timing-function: var(--lt-ease-decelerate);
+}
+/* One width for every card with a picture, so a short address cannot make a narrow card whose scaled note wraps its heading into a tall column. It is the width of the note: the picture box lands at 250px, which is what 75 characters draw at. */
+.link-hover-tip.has-preview {
+  width: 17rem;
+}
+.link-hover-tip-preview {
+  /* The one shrink: a starting value here, written over by the measurement, read back for the layer's width, its scale and the box's height. */
+  --link-preview-shrink: 0.36;
+  position: relative;
+  contain: inline-size;
+  width: 100%;
+  height: 11rem;
+  max-height: 11rem;
+  margin-bottom: var(--lt-space-8);
+  padding-bottom: var(--lt-space-8);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  overflow: hidden;
+  transition: height var(--lt-duration-100) var(--lt-ease-emphasized);
+}
+.link-hover-tip-preview-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  opacity: 1;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-decelerate);
+}
+.link-hover-tip-preview-spinner {
+  width: var(--lt-space-24);
+  height: var(--lt-space-24);
+  border-width: var(--lt-stroke-2);
+}
+/* A card on its way out is not loading anything; its spinner stops with it. */
+.link-hover-tip:not(.shown) .link-hover-tip-preview-spinner {
+  visibility: hidden;
+}
+.link-hover-tip-preview-scale {
+  width: calc(100% / var(--link-preview-shrink));
+  opacity: 0;
+  transform: scale(var(--link-preview-shrink));
+  transform-origin: top left;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-decelerate);
+}
+.link-hover-tip-preview.is-loaded .link-hover-tip-preview-placeholder {
+  opacity: 0;
+}
+.link-hover-tip-preview.is-loaded .link-hover-tip-preview-scale {
+  opacity: 1;
+}
+.link-hover-tip-preview-document {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+/* A drawing bigger than the room the card has is scaled into it rather than turned away — a pie chart is 570 by 450 and an ordinary picture, and a rule on height alone refused it. The room is half the picture in the picture's own pixels, so it is divided by the card's shrink; the height cap alone keeps the drawing's shape, and giving it a width beside that collapses every drawing in the card. */
+.link-hover-tip-preview-document pre.mermaid[data-processed="true"] > svg {
+  max-height: calc(88px / var(--link-preview-shrink));
+}
+/* A drawing the card will not show — one still too narrow to read at the size it fits, or one mermaid refused — leaves its block undrawn for good, so the box the page holds open for a diagram that is coming would sit there for ever with a ring turning in it. It falls to a strip instead, still printing the corner word that says what stood there, and the opening reads on past it. The three conditions are the spinner rule's own, which is what ties the weight; the tie is broken by this rule sitting later. */
+.link-hover-tip-preview-document pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])[data-card-diagram="unshown"] {
+  /* The corner label sits 8px down on a 13.2px line, so a block under about 22px clips its own word. */
+  min-height: 0;
+  height: 28px;
+}
+.link-hover-tip-preview-document pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])[data-card-diagram="unshown"]::after {
+  content: none;
+}
+.link-hover-tip-kind {
+  font-size: 0.78rem;
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
+}
+.link-hover-tip-detail {
+  margin-top: var(--lt-space-4);
+  color: var(--lt-muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: var(--lt-leading-1-3);
+  overflow-wrap: anywhere;
+}
+.link-hover-tip-lines {
+  margin-top: var(--lt-space-4);
+  color: var(--lt-foreground);
+  font-weight: var(--lt-weight-600);
+  font-size: 0.74rem;
+  line-height: var(--lt-leading-1-2);
+}
+.glossary-sheet-body {
+  /* Override .document-body's reading-measure width + scroll-origin margin so the entry fills the sheet and its scrollbar sits at the right edge. */
+  width: auto;
+  margin: 0;
+  overflow-y: auto;
+  padding: var(--lt-space-6) var(--lt-space-16) var(--lt-space-4) var(--lt-space-24);
+}
+.glossary-sheet-body > :first-child {
+  margin-top: 0;
+}
+/* A term's entry is rendered outside #app, so the draw pass never collects its diagrams and one of them stays undrawn for good — the box the page holds open for a drawing that is coming would sit in the middle of the entry for ever with a ring turning in it. It falls to a strip instead, still printing the corner word that says what stood there, and the rest of the entry reads on past it. The three conditions are the spinner rule's own, which is what ties the weight; the tie is broken by these rules sitting later. Both published sites draw this same sheet off this same stylesheet. */
+.glossary-sheet-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"]) {
+  /* The corner label sits 8px down on a 13.2px line, so a block under about 22px clips its own word. */
+  min-height: 0;
+  height: 28px;
+}
+.glossary-sheet-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
+  content: none;
+}
+/* Waiting on the host to read and render the glossary. The fade-in is delayed past the sheet's own slide-up, so a lookup answered from the render cache lands first and no spinner is ever seen. */
+.glossary-sheet-waiting {
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+  opacity: 0;
+  animation: leaf-glossary-wait-in var(--lt-duration-200) var(--lt-ease) var(--lt-duration-300) forwards;
+}
+.glossary-sheet-spinner {
+  width: 28px;
+  height: 28px;
+  border-width: var(--lt-stroke-3);
+  border-color: color-mix(in srgb, var(--lt-foreground) 18%, transparent);
+  border-top-color: var(--lt-accent);
+}
+@keyframes leaf-glossary-wait-in {
+  to {
+    opacity: 1;
+  }
+}
+/* A lookup that came back with nothing to show: no such term, no glossary file, or one that wouldn't read. */
+.glossary-sheet-message {
+  margin: var(--lt-space-24) 0;
+  color: var(--lt-muted-foreground);
+}
+.glossary-sheet-footer {
+  flex: none;
+  padding: var(--lt-space-12) var(--lt-space-24) var(--lt-space-20);
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
+.glossary-sheet-fulllink {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--lt-link);
+  cursor: pointer;
+}
+.glossary-sheet-fulllink:hover {
+  /* Reset the global button:hover green fill so this reads as a plain link. */
+  background: none;
+  border-color: transparent;
+  color: var(--lt-link-hover);
+  text-decoration: underline;
+}

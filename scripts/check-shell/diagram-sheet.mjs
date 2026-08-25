@@ -3,16 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import {
-  check,
-  fakeElement,
-  names,
-  record,
-  root,
-  settle,
-  settled,
-  source,
-} from './shared.mjs';
+import { check, fakeElement, names, readingCss, record, root, settle, settled, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -1021,7 +1012,7 @@ export function run() {
   check('every + handle means the next step, that way', () => {
     const { flowBudIntent } = booted;
     // Where each handle sits is the stylesheet's business now — a handle is placed on its own side of the box mermaid drew. What each one *means* is this file's, and that is what the direction decides.
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     for (const side of ['up', 'down', 'left', 'right']) {
       if (!css.includes('.flow-bud.is-' + side)) throw new Error(`no rule places the ${side} handle`);
     }
@@ -1143,7 +1134,7 @@ export function run() {
       throw new Error('the canvas has no dblclick handler to keep');
     }
     // The stylesheet is what holds text selection off instead, or dragging a box sweeps a selection across the diagram.
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const rule = css.slice(css.indexOf('.flow-canvas {'), css.indexOf('.flow-canvas.is-disabled'));
     if (!/user-select:\s*none/.test(rule)) throw new Error('.flow-canvas does not turn text selection off');
   });
@@ -1226,7 +1217,7 @@ export function run() {
       theme.indexOf('LEAF_SEMANTIC_TOKEN_CONTRACT'),
       theme.indexOf('fn leak_str'),
     );
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const tokens = readFileSync(join(root, 'src/assets/tokens.css'), 'utf8');
     const defined = new Set([
       ...[...contract.matchAll(/'?"(--lt-[a-z0-9-]+)"/g)].map((m) => m[1]),

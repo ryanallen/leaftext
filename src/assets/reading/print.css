@@ -1,0 +1,153 @@
+/* Printing, which is also the Save as PDF every desktop print panel offers — the app's one route to a PDF of the page it is drawing. A browser prints the page as it is laid out, and this page is laid out to fill a window exactly once: the app surface is fixed and paint-contained, the reader carries its own scroller, and the window's overflow is hidden. Unprepared, that prints a single sheet holding the app's frame and whatever of the document happened to be on screen. These rules unwind those three, drop everything on the page that is a control rather than the document, and force the colors so the panel's own Background graphics box cannot take the theme away.
+
+   Keyed on `.app-surface` and `body:has(.app-surface)`, never on a bare `html`, `body` or `:root`: this whole file is what leaftext.com and empty.guru are handed too, and `scripts/check-page-frame.mjs` refuses a rule here that would take somebody else's page frame. Both sites draw their documents through these same classes, so a reader printing from one of them gets this printable page as well, which is wanted rather than a leak. */
+/* The page as it is handed to paper. On a class rather than in `@media print`, because the page has to be able to measure the sheet it is about to ask for: the height a document comes to under these rules is nothing the app can work out from the screen by subtracting things, and every attempt to came out as blank paper under the last line. The class goes on for the measurement and for the render, and comes off after both — `leafHoldAppearance` owns it, and `beforeprint` puts it on for a browser's own print. */
+/* No page-box rule here on purpose. A page margin written in CSS outranks the one the app sets when it renders the page itself, and the app sizes that page to the whole document so it comes out as one continuous page rather than a document chopped across sheets — a margin written here would be added to a height already decided and push the last inch onto a second sheet. */
+/* The window's overflow, and the shadow band the app throws over the strip of window it is held off by. Paper has no window to be held off. The body also wears the theme's own page color: the sheet is sized off a measurement and rounds up to the hundredth of an inch, so a few pixels of it always outlive the layout — painted here they are the page, unpainted they are a white strip under the last line. */
+body.leaf-paper:has(.app-surface) {
+  overflow: visible;
+  background: var(--lt-markdown-background);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+body.leaf-paper:has(.app-surface)::before {
+  display: none;
+}
+/* The app becomes a box on the page instead of a rectangle pinned to the window: static so it takes the height of what it holds, uncontained so nothing inside is clipped to one screen, and unframed because the card edge and the rounded corner are the window's drawing rather than the document's. `print-color-adjust` is what keeps the theme — a print panel leaves Background graphics unticked by default, which drops every painted background and prints a dark theme as dark ink on white paper. */
+body.leaf-paper .app-surface {
+  position: static;
+  contain: none;
+  inset: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+/* The grid holding a rail, a minimap column and the gutters the page is inset by. With everything but the page hidden there is nothing left for it to place, and its own texture is the chrome's rather than the document's. */
+body.leaf-paper .library-shell {
+  display: block;
+  height: auto;
+  background: none;
+}
+/* The reader's own scroller is the second thing pinning the document to one screen: it is what holds five thousand pixels of document inside twelve hundred of window, so unwinding it is what makes the print more than one sheet. The top padding is room for a fixed app bar nothing draws here, and the left margin is the window frame the card was held off. Two classes deep so the closed-library margin, which is written that way, is the rule being answered. */
+body.leaf-paper .library-shell .reader-shell {
+  overflow: visible;
+  height: auto;
+  padding-top: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+/* The room the page keeps at its foot for the floating toolbar, which nothing draws here. Left in, it is blank paper under the last line, and the height the page sends already has it taken off — so the sheet would be shorter than what is laid out on it. */
+body.leaf-paper .document-body {
+  padding-bottom: var(--reader-content-pad);
+}
+/* The lanes a wide picture or table break out of the text measure into are what shrank the paper. On screen the lane sizes itself with `100cqi` and centers itself by sliding half a measure right and transforming back; the print render measures overflow on the untransformed box, so the slid lane hung past the sheet, the renderer shrank the whole page to fit that phantom width, and the shrunken page stopped a fifth short of the sheet's foot, unpainted white — the container query is also self-referential there, growing with the very overflow it causes. So on paper a lane is a plain block: as wide as the room the page wrote down when it measured the sheet, centered by margin arithmetic the render was measured computing exactly, with nothing slid and nothing transformed. The fallback is the text measure, for a page printed before any script has run. */
+body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {
+  position: static;
+  transform: none;
+  width: var(--leaf-paper-lane, 100%);
+  max-width: none;
+  margin-left: calc((100% - var(--leaf-paper-lane, 100%)) / 2);
+}
+/* The exported page wears `leaf-paper` for ever — the one script it runs is the rail below, which never touches that class, so nothing there can raise it for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. */
+@media screen {
+  body.leaf-paper.leaf-web .document-body > :is(.table-lane, p.image-lane) {
+    position: relative;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+    margin-left: 0;
+  }
+}
+/* Where the exported page's rail stands. The rail itself is the block up at `.document-minimap` — same component, same width — and these are the rules that place it, which on this page nothing else can: the script appends the rail straight to the body, outside `.app-surface`, so every other placement rule in this file is keyed too deep to reach it. `leaf-web` is written only by `exported_page_document`, which is what keeps leaftext.com and empty.guru out of them; each of those places its own rail in its own stylesheet.
+
+   Hidden is the default, and the default is also the print rule: the rail is fixed, and a fixed element repeats on every sheet. */
+body.leaf-web .document-minimap {
+  display: none;
+}
+/* One pixel above the width site/styles.css hides the rail below, held there by just check-minimap-breakpoint: pinned to the top right over the document, on the page's own color so the thumbnail reads against something. A phone has no room for it. */
+@media screen and (min-width: 721px) {
+  body.leaf-web .document-minimap {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: var(--lt-z-30);
+    background: var(--lt-markdown-background);
+  }
+  /* The app lays its clone inside a frame element carrying the scale; this script has no such frame and writes the scale onto the clone itself, so the origin it is scaled from has to be said here or the thumbnail shrinks toward the middle of the rail. */
+  body.leaf-web .document-minimap-preview {
+    transform-origin: 0 0;
+  }
+  /* The rail is this page's scroll affordance, so the native bar goes while one stands — and a page whose script never arrived keeps its bar, which is the whole point of asking whether a rail is there. Two branches for the reason the reader's pair above are two: in Chromium `scrollbar-width` anywhere on the element kills every ::-webkit-scrollbar rule for it. */
+  body.leaf-web:has(.document-minimap) {
+    scrollbar-width: none;
+  }
+  body.leaf-web:has(.document-minimap)::-webkit-scrollbar {
+    width: 0;
+  }
+}
+/* The lane is now a fixed-width box, so what sits in it says its own size again: a small picture keeps its own width and centers, a wide one fills the lane, and a table narrower than the lane centers rather than hugging the left edge. */
+body.leaf-paper .document-body > p.image-lane {
+  text-align: center;
+}
+body.leaf-paper .document-body > p.image-lane > img {
+  width: auto;
+  max-width: 100%;
+}
+body.leaf-paper .table-lane > table {
+  margin-inline: auto;
+}
+/* The home list breaks out the same way and prints only through a browser's own print of the home screen: it needs the overflow gone, not the breakout kept. */
+body.leaf-paper .home-list-grid {
+  position: static;
+  transform: none;
+  max-width: 100%;
+}
+/* Everything on the page that is a control rather than the document, named one at a time. Not written as "whatever the reader does not hold": the reader holds controls too — a block's gutter, the toolbar a selection raises, a diagram's own corner and its opened stage — so a rule keeping the reader's children would print those onto the paper. The Previous and Next strip is here for the same reason: it is a way to somewhere else, which paper has none of. The first-run bubble is the one control that floats over the window rather than sitting in it, which is how it stayed off the first reading of this list. */
+body.leaf-paper :is(.docs-pager,
+.hint-bubble,
+.app-bar,
+.app-overflow-panel,
+.reader-corner,
+.library-pane,
+.library-divider,
+.filter-menu,
+.reader-graph,
+.reader-toolbar,
+.find-bar,
+.reader-edge-fade,
+.reader-minimap,
+.reader-loading,
+.lt-backdrop,
+.leaf-sheet,
+.flow-sheet,
+.confirm-dialog,
+.context-menu,
+.crumb-menu,
+.rename-box,
+.link-hover-tip,
+.app-toast,
+.block-gutter,
+.block-gap-line,
+.block-drag-ghost,
+.selection-toolbar,
+.mermaid-tools,
+.diagram-overlay) {
+  display: none;
+}
+/* A diagram on a sheet of its own, which is the same render with one thing left standing. The container holds a copy of the drawing made for the export — never the one on screen, which carries whatever it has been zoomed and dragged to, and in the editor its selection ring and handles as well — and it is out of the layout until an export fills it, so a reader never sees it. */
+.diagram-print {
+  display: none;
+}
+/* Worn beside `leaf-paper`, never instead of it: those rules are what make the surface static, uncontained and as tall as what it holds, and they are what the size was measured under. This leaves the container the only thing in the surface, so the sheet measures to the drawing. */
+body.leaf-paper-diagram .diagram-print {
+  display: block;
+}
+body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
+  display: none;
+}

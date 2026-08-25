@@ -41,6 +41,7 @@ mod reading_css_document;
 mod reading_css_grain;
 mod reading_css_layout;
 mod reading_css_motion;
+mod reading_css_parts;
 mod reading_css_reader;
 mod reading_css_tokens;
 mod remote;

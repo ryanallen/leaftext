@@ -1,0 +1,159 @@
+/* ---- Find in this document -------------------------------------------------
+   One bar over both views (find-bar.js), in the reader's own grid cell so it holds its place while the document scrolls under it. Top right, where every find bar is, and off the card's edges by the same 8px the card is held off the frame. */
+.find-bar[hidden] {
+  display: none;
+}
+.find-bar {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+  z-index: 7;
+  /* Anchor for the face drawn behind it. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  /* Never wider than the page it floats over — the reading column can be 360px, and what a too-wide bar clips is the field you type into. */
+  box-sizing: border-box;
+  max-width: calc(100% - var(--lt-space-16));
+  /* Clear of the app bar the reader's own padding sits under. */
+  margin-top: calc(var(--app-bar-height) + var(--lt-space-4));
+  margin-right: var(--lt-space-8);
+  padding: var(--lt-space-10);
+  /* Transparent, not gone: the border holds the box's size while ::after paints the visible face — the same arrangement the reader's toolbar uses. */
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-lg);
+  background: transparent;
+  box-shadow: var(--lt-shadow-raised);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  color: var(--lt-foreground);
+}
+/* The face — fill and hairline. inset -1px re-covers the border box the element's transparent border holds in layout. */
+.find-bar::after {
+  content: '';
+  position: absolute;
+  z-index: var(--lt-z-below);
+  inset: -1px;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  pointer-events: none;
+}
+/* Wraps rather than clips: the field shrinks first, and when it has given all it can the toggles and the steps drop under it. */
+.find-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-4);
+}
+.find-row[hidden] {
+  display: none;
+}
+/* The field and its counter share one sunken well, so the count reads as part of what you typed rather than as another control. */
+.find-field {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  /* 260px at rest, and the first thing to give when the window narrows — down to a width a short query still reads in. */
+  flex: 1 1 auto;
+  width: 260px;
+  min-width: 120px;
+  padding: 0 var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-sunken);
+}
+.find-field:focus-within {
+  border-color: var(--lt-focus-ring);
+}
+/* 30px, so the field's own hairline brings it to the 32px the buttons beside it are: the field takes its height from what is typed into it. */
+.find-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+.find-input:focus {
+  outline: none;
+}
+/* "3 of 41", or why there is nothing: quieter than the query it describes. */
+.find-count {
+  flex: 0 0 auto;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.find-flags {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+/* The three how-to-match toggles are their own glyphs — Aa, ab|, .* — because that is what every editor draws for them, and a picture of "regular expression" does not exist. Only the face here. The box is .icon-button's, which all of them carry: a height in this rule would beat it, both being one class deep and this one 4,650 lines later. */
+.find-flag,
+.find-step,
+.find-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--lt-text-12);
+}
+/* Text, not masks: .icon-button sets a width as well as a min-width, and 32px clips `ab|`. */
+.find-flag {
+  width: auto;
+  padding: 0 var(--lt-space-4);
+}
+/* Replace and All are words, and they carry the outline that says they act. */
+.find-action {
+  width: auto;
+  padding: 0 var(--lt-space-10);
+  border-color: var(--lt-border);
+}
+.find-flag:hover,
+.find-step:hover,
+.find-action:hover:not(:disabled) {
+  background: var(--lt-wash-hover);
+}
+.find-flag[aria-pressed='true'],
+.find-step[aria-pressed='true'] {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-surface-sunken);
+}
+.find-action:disabled {
+  color: var(--lt-muted-foreground);
+  cursor: default;
+}
+/* Next and previous are the same chevron, one of them turned over: two drawings of one arrow would be two files to keep in step. */
+.find-step-back {
+  transform: rotate(180deg);
+}
+/* At a phone's width the bar spans the page instead of floating in the corner, held off both edges by the same 8px. The reader's own breakpoint, so there is one number and not two. */
+@media (max-width: 600px) {
+  .find-bar {
+    justify-self: stretch;
+    max-width: none;
+    margin-left: var(--lt-space-8);
+  }
+}
+/* Every match, washed in the accent — the color a matched search hit already takes in the library pane. The one you are on is the primary, so stepping through is a moving mark rather than a wall of identical washes. Both are drawn with the CSS Custom Highlight API in the reading view (no DOM mutation, no reflow) and as Monaco decorations in the source view, which is why each name appears twice. */
+::highlight(leaf-find-match),
+.leaf-find-match {
+  background-color: color-mix(in srgb, var(--lt-accent) 45%, transparent);
+}
+::highlight(leaf-find-current),
+.leaf-find-current {
+  background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
+}

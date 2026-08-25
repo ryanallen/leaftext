@@ -1,0 +1,126 @@
+/* Every spinner in the app: a ring with one lit edge, turning. The shape and the turn are here; a site keeps only its own size and colors, because those are what differ — a 12px ring in a settings row, a 34px one on an empty reader. */
+.lt-spinner {
+  box-sizing: border-box;
+  border-radius: var(--lt-radius-full);
+  border-style: solid;
+  border-width: var(--lt-stroke-2);
+  animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
+}
+@keyframes lt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Slowed under Reduce Motion, never stopped: the app is still working, and a still spinner reads as a hang. On the shared class rather than on each spinner's own — five elements carry .lt-spinner, two of them with no rule of their own, and the blanket rule above stops anything it does not reach here. */
+@media (prefers-reduced-motion: reduce) {
+  .lt-spinner {
+    animation-duration: var(--lt-duration-1600) !important;
+  }
+}
+button {
+  border: var(--lt-stroke-1) solid var(--lt-primary);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
+  padding: var(--lt-space-8) var(--lt-space-14);
+}
+/* The one true toolbar icon button: every square icon control in the app bar (history, code view, settings, open) shares this box, radius, and icon size so their hover chips are identical. The floating library-open button matches it too. */
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: var(--lt-radius-lg);
+  padding: 0;
+}
+/* A `display` of our own beats the browser's own `[hidden] { display: none }`, so an icon button told to hide has to be told again here. Said on the component rather than on each button that comes and goes, because the next one added would ship drawn and nothing but a reader would see it. */
+.icon-button[hidden] {
+  display: none;
+}
+.icon-button .lt-icon {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+/* Themes, Open, New and Export are the same button four times over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. A button added to this run without its name here rests filled, which reads as the one action already pressed. */
+.theme-button,
+.open-button,
+.new-button,
+.export-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.theme-button:hover,
+.open-button:hover,
+.new-button:hover,
+.export-button:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
+}
+/* Unsaved-edits dot on a tab, sharing the close button's corner. In the row it is 13px of content that vanishes on the tab's own hover, so a modified tab shrinks and its label jumps the moment you point at it. */
+.tab-dirty-dot {
+  display: none;
+  position: absolute;
+  /* Centered in the close button's 18px box (top/right 2px). */
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  /* The button underneath stays the click target. */
+  pointer-events: none;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-accent);
+}
+.tab-modified .tab-dirty-dot {
+  display: block;
+}
+/* One corner, one occupant: the dot says "unsaved", and reaching for the tab hands the corner back to the button — which every tab, modified or not, hides until then. */
+.tab-modified:hover .tab-dirty-dot,
+.tab-modified:focus-within .tab-dirty-dot {
+  display: none;
+}
+button:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+}
+button:disabled {
+  border-color: var(--lt-navigation-button-disabled-background);
+  background: var(--lt-navigation-button-disabled-background);
+  color: var(--lt-navigation-button-disabled-foreground);
+  cursor: default;
+}
+button:disabled:hover {
+  border-color: var(--lt-navigation-button-disabled-background);
+  background: var(--lt-navigation-button-disabled-background);
+}
+.history-button {
+  border-color: transparent;
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+}
+.history-button:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--lt-wash-hover);
+}
+.history-button:disabled,
+.history-button:disabled:hover {
+  border-color: transparent;
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  opacity: var(--lt-opacity-46);
+}
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: var(--lt-stroke-3) solid var(--lt-focus-ring);
+  outline-offset: var(--lt-space-2);
+}

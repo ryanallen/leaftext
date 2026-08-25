@@ -1,0 +1,498 @@
+/* Every piece of app chrome — this bar, the library pane, its two bands, the search field — takes `--lt-surface` itself. No per-surface tint or mix: any variant shows up as a tone seam where two of them meet. */
+.app-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: grid;
+  /* Zones: a left lead sized to the library rail (so tabs begin at the library's right edge and get pushed when it resizes), the tab strip, and the trailing group (actions + window controls, which fold into an overflow dropdown when the bar is too narrow to show them inline). */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0;
+  align-items: center;
+  height: var(--app-bar-height);
+  padding: 0;
+  /* The chrome shade under a fine dithered dot grid, for a rough old-cassette texture. Flat and opaque, never translucent: a translucent bar takes its tone from whatever sits behind it, so it can never match the pane it meets. */
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  /* Tile the grain from the window, not this element's box, so every grained surface shares one lattice. Box-anchored grids fall out of phase wherever two meet — a 1px border is enough — and the seam reads as a faint hairline. */
+  background-attachment: fixed;
+  /* Hairline top divider in the window's outer border color, separating the reader from the native title bar above it. The bottom divider is drawn by ::after (not border-bottom) so the active tab can paint over it and appear connected to the page below. */
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+  font-family: var(--app-font);
+}
+.frameless .app-bar {
+  /* On frameless Windows the app bar IS the title bar, so the OS already draws the window's top edge. Our own border-top would stack on that native frame and read as a double-thick (~2px) stroke at the top only, while the other three sides show a single 1px frame. Drop it so all four edges match. */
+  border-top: 0;
+}
+.app-bar::after {
+  /* The reader divider. Sits behind the tabs (z-index 0); the active tab, which is page-colored and z-index 1, covers this line so it reads as joined to the document, while inactive tabs meet it with their own bottom border. */
+  content: "";
+  position: absolute;
+  /* Only as wide as the card below it, then a radius shorter again at each end: .reader-corner-tl / -tr arc from there down into the card's side borders. A pixel of overlap with each arc's tangent, so a rounding difference between the boxes can't open a gap. On the right that also clears the rail's column (0 wide when there is no rail), which is chrome the line must not cross. */
+  /* The left end starts past the library rail — one unbroken surface the line must not cut — and spends the same number the grid track does, so their transitions interpolate the same span and the line stays on the pane's corner arc every frame; a gutter floor here is what detached them. */
+  left: calc(var(--library-rail-width, 0px) + var(--lt-radius-md) - 1px);
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--lt-radius-md) - 1px);
+  bottom: 0;
+  height: 1px;
+  background: var(--lt-border);
+  z-index: 0;
+}
+.app-bar:not(.has-rail)::after {
+  /* No rail: the line starts at the reader's gutter. This lands in the same layout pass as the pane's own closed corner rule, so the line and the arc jump to their resting closed places together. */
+  left: calc(var(--reader-gutter) + var(--lt-radius-md) - 1px);
+}
+.app-bar-lead {
+  /* The header's left zone, sized to the library rail so the tab strip begins at the library's right edge and is pushed when the pane is resized. No right border: the top bar reads as one continuous surface, with only the library pane below carrying the rail's vertical stroke. */
+  display: flex;
+  align-items: center;
+  /* The bar runs on one gap from the leaf through the trailing actions, so the row reads as one sequence rather than as clusters. The window buttons close up below: they are one control set, not another stop along the row. */
+  gap: var(--lt-space-16);
+  align-self: stretch;
+  box-sizing: border-box;
+  width: var(--library-rail-width, 240px);
+  /* Never let the rail clip the brand + history controls: floor the zone at their natural width. The front end writes that width here as a plain number as soon as it has measured it, because the keyword below is the one thing in this rule that is not a value — a Mac reads it as no floor at all and squeezes the library button out under the tab strip. */
+  min-width: fit-content;
+  /* Left inset matches the library header's 12px so the logo lines up with the GRAPH/search controls directly below it. No right inset: the strip's own gap is the whole space before the first tab. */
+  padding: 0 0 0 var(--lt-space-12);
+}
+/* No rail: size the zone from the buttons it holds, so it shrinks behind any that fold away and never squeezes the ones that stay. It lands after the close motion's transitions have come off, so the flip is never animated. */
+.app-bar:not(.has-rail) .app-bar-lead {
+  width: auto;
+}
+.brand-button > .lt-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  flex-shrink: 0;
+  /* The logomark is an inline SVG filled with currentColor, so it takes the theme's primary color and recolors whenever the theme changes. */
+  color: var(--lt-primary);
+  transition: color var(--lt-duration-120) var(--lt-ease);
+}
+.brand-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: var(--lt-space-4);
+  /* The leaf is a 22px mark in a 32px box, so the row's 16px gap lands beside a painted edge 4px short of it and the first space reads wider than every other one. Handing that inset back moves the controls after it and leaves this button's own 32px hit area where it is. */
+  margin-right: calc(-1 * var(--lt-space-4));
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-lg);
+  background: transparent;
+}
+/* It navigates home, so it has to answer the pointer — as the logomark, not as another toolbar chip. Full contrast against the bar: white on the dark themes, darkest ink on the light ones, where a literal white would vanish. */
+.brand-button:hover {
+  background: transparent;
+  border-color: transparent;
+}
+.brand-button:hover > .lt-icon {
+  color: var(--lt-foreground);
+}
+.tab-bar {
+  display: flex;
+  /* Tighter than the bar's 16px on purpose: a strip of open documents is one list, not a run of unrelated controls. A flare reaching an inactive neighbor makes the two read as fused, so the active tab buys the difference back with a 12px margin of its own — 4px here plus 12px there is the 16px its curve needs. Move the two together. */
+  gap: var(--lt-space-4);
+  min-width: 0;
+  /* Full header height, but the tabs hang from the bar's bottom edge (where the active one covers the reader divider) under a shoulder of chrome — which is what gives their top corners room to round. */
+  align-self: stretch;
+  align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* The side insets stay at the bar's own 16px while the gap above closes, so the space beside the first and last tab matches every other space in the row — which is why a selected tab at an end drops its own margin rather than adding to this. They also cap --tab-flare: this box scrolls, so a flare wider than the inset is clipped flat and the first tab's corner draws as a straight run. No bottom inset — the tabs have to reach the divider. */
+  padding: var(--lt-space-4) var(--lt-space-16) 0;
+}
+.tab-bar::-webkit-scrollbar {
+  height: 0;
+}
+/* A published site carries the folder trail in this box rather than a strip of tabs. A tab hangs off the bar's bottom edge so its top corners have room to round; a trail is a line of text, so it sits in the middle of the band instead, and it takes the whole box because it shrinks itself to whatever room it is given. */
+.tab-bar > .library-crumb-trail {
+  align-self: center;
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  flex: 0 0 auto;
+  max-width: 132px;
+  /* Even, so the gap after the name mirrors the gap before it. Neither corner button is in flow, so neither buys room of its own; what the name trails off into is the label's own padding and this. */
+  padding: 0 var(--lt-space-4);
+  /* A cell hanging off the reader divider (z-index 1) so the active tab can cover it, top corners rounded to the page's radius. The transparent strokes reserve the space the active tab's frame paints in, keeping every tab the same size. */
+  position: relative;
+  z-index: 1;
+  border-top: var(--lt-stroke-1) solid transparent;
+  border-left: var(--lt-stroke-1) solid transparent;
+  border-right: var(--lt-stroke-1) solid transparent;
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
+  /* An inactive tab reads as a darker cell by tiling the header's cassette grain at its heavier weight — denser ink, no outline needed. */
+  --lt-grain-dot: var(--library-header-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  cursor: grab;
+  user-select: none;
+  /* Emphasized: a tab neither arrives nor leaves, the strip rearranges around it. */
+  transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized), margin var(--lt-duration-120) var(--lt-ease-emphasized);
+}
+.tab-active {
+  max-width: none;
+  /* The room the flares below turn in: 12px on top of the strip's 4px gap is the 16px they need, bought only beside another tab and only by the one tab drawing them. It is in the transition above, or every tab to the right jumps when the selection moves. */
+  margin: 0 var(--lt-space-12);
+}
+/* At an end of the strip there is no neighbor to buy room from, and none is needed: the strip's own 16px inset is wider than the 14px flare, so the margin here would only push the tab past the 16px every other space in the row keeps. A one-tab strip is both ends and drops both. */
+.tab-active:first-child {
+  margin-left: 0;
+}
+.tab-active:last-child {
+  margin-right: 0;
+}
+.tab-dragging {
+  position: relative;
+  z-index: 2;
+  opacity: var(--lt-opacity-85);
+  cursor: grabbing;
+  transition: none;
+}
+.tab-bar.tabs-settling .tab {
+  transition: none;
+}
+.tab-active {
+  /* Drop the bottom stroke so the page-colored fill flows over the reader divider and the tab looks joined to the document below. The other three strokes are the selection cue — only the active tab frames itself. The fill is a variable because the flares below have to match it. */
+  --tab-fill: var(--lt-background);
+  /* These carry the fill out over the divider rather than just turning a stroke. Capped by the room beside the active tab, which they grow into — the strip's 4px gap plus this tab's own 12px margin next to another tab, and the strip's own 16px inset at an end — and the strip scrolls, so a flare wider than that 16px inset is clipped flat: inside it the largest radius that still leaves daylight is 14px. */
+  --tab-flare: var(--lt-radius-2xl);
+  background: var(--tab-fill);
+  border-top-color: var(--lt-border);
+  border-left-color: var(--lt-border);
+  border-right-color: var(--lt-border);
+  border-bottom-color: transparent;
+}
+:root[data-code-view="true"] .tab-active {
+  /* In code view the page below is the code surface, not the reading background; match it so the active tab still reads as joined to the document. */
+  --tab-fill: var(--lt-editor-code-background, var(--lt-markdown-background));
+}
+/* Inverse corners where the active tab meets the reader divider: the fill flares out at each bottom corner and the frame arcs with it, so the tab joins the page on a curve rather than a hard T. Drawn as a gradient because a concave arc needs its stroke on the outer side of the curve, which border-radius — always painting inward — can't give. Centered on the element's outer top corner, which lands the arc tangent to the side stroke above and to the divider below. */
+.tab-active::before,
+.tab-active::after {
+  content: "";
+  position: absolute;
+  /* The tab's transparent bottom border leaves its padding box a pixel short of the divider these have to reach. */
+  bottom: -1px;
+  width: var(--tab-flare);
+  height: var(--tab-flare);
+  pointer-events: none;
+  /* Shared stop list; only the center differs. The 0.6px ramps are the antialiasing: a gradient is rasterized per pixel, so a hard stop stairs a curve this size. */
+  --tab-flare-arc:
+    transparent 0 calc(var(--tab-flare) - 1.3px),
+    var(--lt-border) calc(var(--tab-flare) - 0.7px) calc(var(--tab-flare) - 0.3px),
+    var(--tab-fill) calc(var(--tab-flare) + 0.3px);
+}
+.tab-active::before {
+  left: calc(-1 * var(--tab-flare));
+  background: radial-gradient(circle at 0 0, var(--tab-flare-arc));
+}
+.tab-active::after {
+  right: calc(-1 * var(--tab-flare));
+  background: radial-gradient(circle at 100% 0, var(--tab-flare-arc));
+}
+.tab-label {
+  flex: 1;
+  min-width: 0;
+  max-width: 124px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: var(--lt-stroke-1) solid transparent;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
+  padding: var(--lt-space-6) var(--lt-space-14);
+  text-align: left;
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
+}
+.tab-active .tab-label {
+  /* Full-strength foreground so the active tab's name stays legible in every theme (a hardcoded white vanished on the light page-colored tab). */
+  color: var(--lt-foreground);
+  max-width: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.tab-label:hover {
+  background: transparent;
+  border-color: transparent;
+}
+.tab:hover .tab-label {
+  /* Text-only hover so the inactive grain and the active frame both stay put. */
+  color: var(--lt-foreground);
+}
+.tab-close {
+  /* Tucked into the tab's top-right corner, out of the label's flow, close enough that its hover chip clears both strokes by about 2px and no more. It covers the last letters of the name on purpose; the wash is what keeps it readable over them. */
+  position: absolute;
+  /* Above the masked label, so the corner control remains clickable. */
+  z-index: 1;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-muted-foreground);
+  /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here instead. */
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
+}
+.tab-close .lt-icon {
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+/* Never there at rest, so a strip of tabs is a row of names and the cross costs the tab no room. Focus counts as reaching, so the keyboard still gets to it. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival — the heart opposite goes the same way. */
+.tab:not(:hover):not(:focus-within) .tab-close {
+  opacity: 0;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
+}
+.tab-close:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: transparent;
+  /* The contrast color that pairs with the action background — white icons on a light accent (Fern green, Amaranth lavender) are unreadable. */
+  color: var(--lt-primary-foreground);
+}
+/* The heart, in the corner opposite the close button and out of the label's flow the same way, so the tab keeps its width and its padding. It covers the first letters of the name on purpose; the wash is what keeps it readable over them. */
+.tab-favorite {
+  position: absolute;
+  /* Above the label, for the reason written on the close button. */
+  z-index: 1;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-muted-foreground);
+  /* Never there at rest, marked or not, so a strip of tabs carries nothing extra to read. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival that matched it. The colors ride along for the reason written on the close button. */
+  opacity: 0;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
+}
+.tab-favorite .lt-icon {
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+/* The shorthand replaces the one above, and this is the only state the heart can be pointed at in, so the colors are named here too or the hover is instant on the one control that shows. */
+.tab:hover .tab-favorite,
+.tab:focus-within .tab-favorite {
+  opacity: 1;
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
+}
+/* A hollow heart is an offer; a filled one is a fact, so it is drawn in full ink. */
+.tab-favorite.is-on {
+  color: var(--lt-foreground);
+}
+.tab-favorite:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: transparent;
+  color: var(--lt-primary-foreground);
+}
+/* Back and forward are one paired control, so they sit at the tight gap the window buttons use rather than the bar's 16px between groups. */
+.history-actions {
+  display: flex;
+  gap: var(--lt-space-4);
+  align-items: center;
+}
+/* Once the fold has taken both arrows into the chevron menu, the strip is a zero-wide box the bar's left zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Not `:empty`: the markup writes the strip over eight lines, so three whitespace text nodes stay behind when the buttons leave. Written in the actions group's shape below rather than a narrower `:has(*)` of its own, so both emptied groups are asked one question — the arrows are `disabled` and never `hidden`, so a drawn child is every child the strip has. */
+.history-actions:not(:has(> *:not([hidden]))) {
+  display: none;
+}
+/* The trailing group: the action buttons plus the window controls. Anchors the collapsed overflow dropdown; padded off the window edge (frameless windows let the flush window controls own that edge instead — see below). */
+.app-trailing {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  position: relative;
+  /* No left inset, matching the lead zone's right one, so each end of the strip is the strip's own gap and a tab comes no closer to the actions than the first one comes to the history buttons. */
+  padding-left: 0;
+  padding-right: var(--lt-space-24);
+}
+.app-trailing-items {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--lt-space-16);
+}
+/* A run of buttons is 4px and a gap between groups is 16px, and this is a run: the theme switch, the folder, the plus and the page export are one set of things to press rather than four unrelated stops along the row. It was the only run on the bar still spaced like a gap — the history pair, the tabs and the window buttons were already here — which is what made three actions read as three separate stops and would have cost the bar a further 48px for a fourth. `.app-trailing-items` above keeps its 16px: that is the gap out to the window buttons, and it is a gap between groups. */
+.app-actions-items {
+  display: flex;
+  gap: var(--lt-space-4);
+  align-items: center;
+}
+/* Once the fold has taken the theme, open and new buttons into the chevron menu, the group is a zero-wide box the trailing zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Asked of drawn children only: the update bell stays in the group hidden, and its own summary and panel are descendants nothing marks hidden, so a bare `:has(*)` never fires here. */
+.app-actions-items:not(:has(> *:not([hidden]))) {
+  display: none;
+}
+/* Overflow chevron: hidden inline (the `.app-trailing` prefix outranks the later `.icon-button { display: inline-grid }`), shown only once something has actually folded. Rests muted, greens on hover like the other toolbar icons. */
+.app-trailing .overflow-toggle {
+  display: none;
+  border-color: transparent;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.overflow-toggle:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
+}
+.app-trailing.has-overflow .overflow-toggle {
+  display: inline-grid;
+}
+/* Where folded items go, one at a time, as the tab strip runs out of room. Measured from the chevron's right edge — `100%` is the trailing group's box, 32px the chevron's width — so it grows inward, the way the update bell's panel hangs off the bell rather than off a group. Measured from the group's left it grows the other way: fully folded, that edge is the app's last 32px, and the surface's paint containment cuts the menu off flat. */
+.app-overflow-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: auto;
+  right: calc(100% - 32px);
+  display: none;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  padding: var(--lt-space-6);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  z-index: var(--lt-z-30);
+}
+.app-trailing.overflow-open .app-overflow-panel {
+  display: flex;
+}
+/* Folded as a group, but stacked once inside: everything else in the menu is one button per line, and a three-across row would make the whole menu three times its own width for one item. */
+.app-overflow-panel .window-controls {
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  margin-left: 0;
+}
+/* Custom window controls for frameless windows (Windows). Hidden until the frontend reveals them; they act as the native minimize/maximize/close buttons, since there's no OS title bar. Tight against each other rather than on the bar's gap, so the three read as one set. */
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+  margin-left: 0;
+}
+/* The same chip as every other toolbar icon button: three square full-height fills in a row read as a different control set from the icons beside them. */
+.window-control {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-color: transparent;
+  border-radius: var(--lt-radius-lg);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.window-control .lt-icon {
+  width: 12px;
+  height: 12px;
+}
+/* Maximize shows a single square; when the window is maximized the restore-down glyph (two offset squares) takes its place. Exactly one is ever displayed, so the grid button keeps a single centered child. */
+.window-control .wc-restore {
+  display: none;
+}
+body.is-maximized #winMaximize .wc-maximize {
+  display: none;
+}
+body.is-maximized #winMaximize .wc-restore {
+  display: inline-block;
+}
+/* The shared toolbar hover chip, so these match the open/code-view/settings icons beside them. Close keeps the red every desktop uses for it. */
+.window-control:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
+}
+.window-control-close:hover {
+  background: var(--lt-window-close);
+  border-color: var(--lt-window-close);
+  color: var(--lt-window-close-foreground);
+}
+/* A Mac's three, at the bar's left end. Ours rather than Apple's because a native view is pinned to the window and cannot fold into the chevron menu, which meant the bar reserving room for them whether it had any or not. Centered by the zone's own rule instead of inset into the top corner. Twice the Windows gap because the dot is a quarter of the button: the same 4px is an eighth of a 32px button and a third of a 12px dot, and three dots that close read as one blob. */
+.mac-frame .window-controls {
+  gap: var(--lt-space-8);
+  margin-left: 0;
+}
+/* The theme's stop, careful and good, rather than three fixed hex values — Apple's dots ignoring the theme was the one real complaint against them. Minimize takes the middle one here; the two either side name their own below. */
+.mac-frame .window-control {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--lt-warning);
+  /* No mark at rest, the way a Mac's has none. The icon is still there, painted in nothing, so hover only has to change a color. */
+  color: transparent;
+}
+/* Full screen: a Mac shows no window buttons there, so ours go too and the bar takes the room back. */
+body.mac-frame.is-fullscreen .window-controls {
+  display: none;
+}
+/* Apple's order, from markup that runs minimize, maximize, close: only the close has to move. */
+.mac-frame .window-control-close {
+  order: -1;
+  background: var(--lt-danger);
+}
+/* Folded into the menu the same three stack, so they take the row's gap rather than the shared column's 4px, which is the Windows squares'. Said outright because the row's rule and the shared column's weigh the same, so which of them lands here is only their order. */
+.mac-frame .app-overflow-panel .window-controls {
+  gap: var(--lt-space-8);
+}
+/* Stacked in the menu the three read top to bottom, so the row's order is upside down there: zoom at the top, close at the foot and farthest from the pointer that opened it. */
+.mac-frame .app-overflow-panel #winMaximize {
+  order: -1;
+}
+.mac-frame .app-overflow-panel .window-control-close {
+  order: 1;
+}
+.mac-frame #winMaximize {
+  background: var(--lt-success);
+}
+.mac-frame .window-control .lt-icon {
+  width: 8px;
+  height: 8px;
+}
+/* Hover shows the mark, punched out of the dot in the bar's own color. Each dot keeps its color, so all three are said again here rather than letting the toolbar chip below take them. */
+.mac-frame .window-control:hover {
+  background: var(--lt-warning);
+  border-color: transparent;
+  color: var(--lt-surface);
+}
+.mac-frame .window-control-close:hover {
+  background: var(--lt-danger);
+  border-color: transparent;
+  color: var(--lt-surface);
+}
+.mac-frame #winMaximize:hover {
+  background: var(--lt-success);
+}
+/* Frameless: the close chip is in the window's corner, so its inset matches the 4px the chip leaves above it — the default trailing inset reads lopsided. Not on a Mac, where the dots are at the other end and this end is an ordinary toolbar. */
+.frameless:not(.mac-frame) .app-trailing {
+  padding-right: var(--lt-space-4);
+}
+/* Only frameless windows carry the in-app window controls; hide them otherwise so no empty gap shows where they'd sit. */
+.window-controls[hidden] {
+  display: none;
+}

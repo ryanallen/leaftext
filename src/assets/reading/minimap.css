@@ -1,0 +1,89 @@
+/* Lives in the shell's own column, outside the page — so no sticky, no bleed, and nothing to out-stack: it never overlaps the bar or the card. */
+.document-minimap {
+  width: var(--minimap-width);
+}
+/* The height here is the frames before the first measurement; JS writes the real one onto this element. Never a custom property on the rail above: it would inherit down into the clone, and re-resolving style across a couple of thousand cloned elements is 91ms where writing here is a fraction of one. */
+.document-minimap-track {
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+  opacity: var(--lt-opacity-92);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+/* While the thumbnail is being built — it clones the rendered page, so it can't exist until that page is laid out. updateDocumentMinimapPreview drops the class once a clone is in. */
+.document-minimap-spinner {
+  position: absolute;
+  top: calc(var(--app-bar-height) + 12px);
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin-left: calc(var(--lt-space-8) * -1);
+  border-color: color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
+  border-top-color: var(--lt-accent);
+  pointer-events: none;
+}
+.document-minimap:not(.is-loading) .document-minimap-spinner {
+  display: none;
+}
+/* Nothing to point at yet — the box would otherwise sit over blank rail. */
+.document-minimap.is-loading .document-minimap-viewport {
+  opacity: 0;
+}
+/* Holds the scaled document clone; slides within the clipped track (JS writes the translate onto this element) when the document is taller than the rail. A transform, not `top`: this moves every frame, and as a layout property `top` made the browser re-lay-out the page to do it — 128ms worst frame against 44ms. The value is written here rather than inherited from the rail, which costs 78ms a write because a custom property re-resolves style across the whole clone. */
+.document-minimap-content {
+  position: absolute;
+  top: 0;
+  transform: translateY(0px);
+  right: var(--minimap-padding-inline);
+  left: var(--minimap-padding-inline);
+  overflow: visible;
+  pointer-events: none;
+  will-change: transform;
+}
+/* The box the clone is laid out in: .reader-layout's own content-box width (JS writes it) and a container query of its own, so a document sizing itself against that container measures the same room here as on the page. Without it a wide table read `100cqi` as the whole window and was drawn wider than the page draws it, so the thumbnail wrapped less and ended a fifth short of its track. It carries the scale as well, which is why the clone below needs a containing block: container-type is layout containment, so this box would otherwise be one. */
+.document-minimap-frame {
+  container-type: inline-size;
+  transform-origin: 0 0;
+}
+/* The clone: a shrunken rendering of the document. JS sets its width; the frame above carries the scale, so `position: relative` is what keeps a document's absolutely positioned parts measuring off the clone rather than off that wider box. Zero the .document-body scroll-origin margin (JS positions it) but keep its padding so the internal layout matches the page. */
+.document-minimap-preview {
+  box-sizing: border-box;
+  position: relative;
+  margin: 0 !important;
+  pointer-events: none;
+}
+/* The clone is inert; clicks belong to the rail, which handles jump/drag. */
+.document-minimap-preview,
+.document-minimap-preview * {
+  pointer-events: none !important;
+}
+/* The clone strips hrefs, so the href-based glossary blend cannot match and terms would show accent-blue. updateDocumentMinimapPreview tags them .glossary-term before stripping; re-blend them to body text here. */
+.document-minimap-preview a.glossary-term {
+  color: inherit;
+}
+/* The clone is a .document-body, so an undrawn diagram in it matches the spinner rule too, and a page of boxes would spin dozens down a 68px rail. A pseudo-element survives any stripping of nodes, so only a rule the clone's own class reaches can cancel it. The three conditions are the spinner rule's own, which is what ties the weight; the tie is broken by this rule sitting later. Written with the class alone it counts two class-level parts against that rule's five and never applies. The block stays: its invisible source text is what holds the right height. */
+.document-minimap-preview pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
+  content: none;
+}
+/* A drawn diagram lets the browser skip its own paint while it is off screen, and the clone is cloned with that on it — but the whole rail is one shrunken slice, so every cloned block is a few pixels tall and every drawing in the thumbnail went blank. Measured: 54 of them. Important, because the skip is written on the block itself. */
+.document-minimap-preview pre.mermaid {
+  content-visibility: visible !important;
+}
+/* Place and size are written onto this element by JS; these two are the frames before the first write. Not a custom property on the rail above, which inherits into the clone and costs 78ms a write to re-resolve. */
+.document-minimap-viewport {
+  position: absolute;
+  inset-inline: 0;
+  top: 0%;
+  z-index: 1;
+  height: 100%;
+  min-height: 22px;
+  border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);
+  /* All four corners at the page card's rounding. */
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-minimap-viewport-background);
+  pointer-events: none;
+}

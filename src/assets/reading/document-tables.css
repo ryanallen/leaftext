@@ -1,0 +1,445 @@
+.document-body .math {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+.document-body .math-inline {
+  background: var(--lt-markdown-math-inline-background);
+  border-radius: var(--lt-radius-sm);
+  padding: 0.08em 0.24em;
+}
+.document-body .math-display {
+  display: block;
+  overflow-x: auto;
+  text-align: center;
+}
+.document-body .footnote-reference,
+.document-body .footnote-definition-label {
+  font-family: var(--app-font);
+}
+.document-body .footnote-definition {
+  border-top: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  margin-top: var(--lt-space-32);
+  padding-top: 0.8em;
+}
+.document-body .footnote-backref {
+  align-items: center;
+  display: inline-flex;
+  font-family: var(--app-font);
+  font-size: 0.82em;
+  height: 1em;
+  line-height: var(--lt-leading-1);
+  margin-left: 0.3em;
+  text-decoration: none;
+  vertical-align: -0.12em;
+}
+.document-body .footnote-backref svg {
+  display: block;
+  height: 1em;
+  width: 1em;
+}
+.document-body table {
+  border-collapse: collapse;
+  display: block;
+  font-family: var(--app-font);
+  line-height: var(--lt-leading-1-45);
+  overflow: auto;
+  width: max-content;
+  max-width: 100%;
+}
+/* A wide table reads through the reader's whole lane, less the strip the block controls need, and the wrapper is what widens rather than the table: the bands that dissolve a sliced column into the page have to be painted over the table, and a mask can only take ink away. `100cqi` is the room inside .reader-layout's padding, so this rides that container query and nothing else; `max(100%, ...)` hands a narrow window back to the measure it has today. Centering is a percentage transform because CSS cannot read the table's used width. decorate.js wraps only a body table that is not a data table, so a frontmatter table, a data file's wrapping table and a table inside <div align="center"> keep their width. */
+.document-body > .table-lane {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  /* The table's own width, capped. A block box at `auto` fills the measure and a `max-width` alone can only cap it, never let it grow past its parent. */
+  width: max-content;
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+  /* The bands sit here and the scroll is the table's, one box down, so the timeline has to be published up to this element for them to name it. */
+  timeline-scope: --lt-table-scroll;
+}
+.table-lane > table {
+  scroll-timeline: --lt-table-scroll inline;
+}
+/* The table's reading control is a second corner action beside the content, so it appears only when the table is being aimed at and leaves the page quiet otherwise. A widened picture wears the same control in the same corner — one shape, two blocks, so the pair of them is written once. */
+.table-sheet-open,
+.image-sheet-open {
+  position: absolute;
+  top: var(--lt-space-6);
+  right: var(--lt-space-6);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  /* The arrow: a control is not a link. Written rather than left off, because both ride inside a block that says `cursor: text` when unlocked. */
+  cursor: default;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--lt-duration-120) var(--lt-ease);
+}
+.table-sheet-open .lt-icon,
+.image-sheet-open .lt-icon {
+  width: 16px;
+  height: 16px;
+}
+.table-lane:hover .table-sheet-open,
+.table-sheet-open:focus-visible,
+.image-lane:hover .image-sheet-open,
+.image-sheet-open:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. */
+.table-sheet-open:hover,
+.image-sheet-open:hover {
+  border-color: var(--lt-border-strong);
+  background: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+}
+/* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The lattice anchors to the wrapper rather than to the window: a transformed element is the containing block for its own fixed background. */
+.table-lane::before,
+.table-lane::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--reader-edge-fade-depth);
+  pointer-events: none;
+  /* Off until the scroll says otherwise, which is also what a table with nothing to scroll is left at: no timeline, no animation, no veil over a narrow table. */
+  opacity: 0;
+  --lt-grain-dot: var(--lt-markdown-background);
+  background-size: 2px 2px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  background-attachment: fixed, scroll;
+}
+.table-lane::before {
+  left: 0;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px),
+    linear-gradient(
+      to right,
+      var(--lt-markdown-background) 0 var(--reader-edge-fade-hold),
+      transparent
+    );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
+.table-lane::after {
+  right: 0;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px),
+    linear-gradient(
+      to left,
+      var(--lt-markdown-background) 0 var(--reader-edge-fade-hold),
+      transparent
+    );
+  -webkit-mask-image: linear-gradient(
+    to left,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to left,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
+/* The bands ride the table's own sideways scroll, not a clock — so they join the page only where a scroll can drive them. A browser without scroll-driven animations (the export and both sites are handed this file) drops only the timeline line, and what is left is a zero-second clock animation whose fill mode holds the last keyframe: the left band stuck on over a table nobody scrolled. Behind the guard, such a browser keeps the resting `opacity: 0` and shows no band at all. Left on under Reduce Motion for the same reason it is scroll-driven: it only moves when the reader moves it. */
+@supports (animation-timeline: scroll()) {
+  .table-lane::before,
+  .table-lane::after {
+    animation-fill-mode: both;
+    animation-timing-function: var(--lt-ease-linear);
+    animation-timeline: --lt-table-scroll;
+  }
+  .table-lane::before {
+    animation-name: lt-table-edge-behind;
+  }
+  .table-lane::after {
+    animation-name: lt-table-edge-ahead;
+  }
+}
+/* Exempt by name: a zero duration lands a scroll-driven animation on its last keyframe and holds it there, which for the ahead band is `opacity: 0` — the cut edge unmarked on the very tables that need it. `auto` hands progress back to the scroll. */
+@media (prefers-reduced-motion: reduce) {
+  .table-lane::before,
+  .table-lane::after {
+    animation-duration: auto !important;
+  }
+}
+/* On within the first tenth of the travel and gone again in the last, so a band says "there is more this way" rather than veiling a column already reached. */
+@keyframes lt-table-edge-behind {
+  from {
+    opacity: 0;
+  }
+  10%,
+  to {
+    opacity: 1;
+  }
+}
+@keyframes lt-table-edge-ahead {
+  from,
+  90% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.document-body th,
+.document-body td {
+  border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+  padding: 0.375em 0.8125em;
+}
+.document-body th {
+  background: var(--lt-markdown-table-header-background);
+  color: var(--lt-markdown-heading);
+  font-weight: var(--lt-weight-600);
+}
+.document-body tr:nth-child(2n) td {
+  background: var(--lt-tint-row);
+}
+/* The chrome's grain over the reading view's tinted surfaces, so a code block or table header reads as a dithered cell rather than a flat wash. Must stay after the rules that set those fills: each uses the `background:` shorthand, which at equal specificity would blank the image. The frontmatter table drops it on its own — it clears the fill at higher specificity, taking the grain with it; a rendered diagram outranks this rule too and so restates it. Cells only — the code view is a whole page, so graining it dithers the editor. */
+.document-body .document-outline,
+.document-body .tei-front,
+.document-body pre,
+.document-body th,
+.document-body tr:nth-child(2n) td {
+  --lt-grain-dot: var(--reader-surface-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+/* Grain the untinted rows too, so a dark table reads as one texture banded light and dark rather than speckled rows alternating with flat ones. Same fixed lattice as every other grain, so the dots run straight down across the stripe. Light themes zero the token rather than drop the rule, keeping one selector to reason about against the frontmatter opt-out below. */
+.document-body tr:nth-child(2n + 1) td {
+  --lt-grain-dot: var(--reader-row-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+.document-body kbd {
+  border: var(--lt-stroke-1) solid var(--lt-markdown-keyboard-border);
+  border-bottom-width: var(--lt-stroke-2);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-markdown-keyboard-background);
+  font-family: var(--code-font);
+  font-size: 0.8em;
+  padding: 0.08em 0.32em;
+}
+/* Every other folded block, the outline included. The arrow: a control is not a link. Written rather than left off, because an unlocked block says `cursor: text` and this would inherit it. */
+.document-body summary {
+  cursor: default;
+  font-family: var(--app-font);
+  font-weight: var(--lt-weight-700);
+}
+/* The leading frontmatter block renders as a compact metadata table: small Noto Sans (the UI font), tight rows, no table chrome — distinct from body. */
+.document-body .frontmatter {
+  margin: 0 0 var(--type-spacing);
+  overflow-x: auto;
+}
+.document-body .frontmatter table {
+  border-collapse: collapse;
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-5);
+}
+/* The `tr` is here to out-specify the striping and grain rules above, which are one element deeper than a bare `.frontmatter td` and would otherwise put a speckled stripe through the one table meant to carry no chrome at all. */
+.document-body .frontmatter tr th,
+.document-body .frontmatter tr td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--lt-space-1) var(--lt-space-12) var(--lt-space-1) 0;
+  border: 0;
+  background: none;
+}
+.document-body .frontmatter th {
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+  color: var(--lt-muted-foreground);
+}
+/* A document that asked for a full-width page by name in its `cssclasses`. The only style a note can ask for so far, and it uses the reader's whole lane the way a widened table does. The class is ours, looked up from the note's word in `markdown/mod.rs` — a document's own string never reaches the page. */
+.document-body.document-body-wide {
+  width: 100%;
+}
+/* A list-valued field, one item per line. The cell is the list's whole box, so the marker, the indent and the outer margin all go: what says "list" here is the items sitting one under another, not a row of bullets down a compact table. No class on the `ul` — the sanitizer does not pass one on a list — so this reaches it as a descendant of the table. */
+.document-body .frontmatter td ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* A field block whose values can be typed into. The caret is the whole cue, exactly as it is for a paragraph lower down the page: nothing paints behind a value the pointer is over, because a page being edited is still a page and not a form. The cross appearing at the end of the row is what says the row itself answers the pointer. A locked document never gets the class. */
+.document-body .frontmatter.is-editable td[data-leaf-field] {
+  cursor: text;
+}
+/* The box sits in the row it replaced, at the row's own size, so opening one moves no other line of the table. */
+.document-body .frontmatter td.is-editing {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.frontmatter-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 120px;
+  padding: 0 var(--lt-space-4);
+  border-radius: var(--lt-radius-sm);
+  border: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  background: var(--lt-surface);
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: var(--lt-leading-1-5);
+}
+.frontmatter-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
+}
+/* Two boxes on the add row are one editor, so they sit side by side rather than stacking into two things to fill in. */
+.document-body .frontmatter tr.frontmatter-add td {
+  display: flex;
+  gap: var(--lt-space-6);
+}
+/* The cross at the right end of a row, drawn on every row and shown under the pointer: the table has no chrome of its own, and a column of crosses down a note's metadata is the note about the app rather than the note. */
+.document-body .frontmatter td.frontmatter-actions {
+  width: 1%;
+  padding-right: 0;
+}
+.frontmatter-remove {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: none;
+  color: var(--lt-muted-foreground);
+  opacity: 0;
+}
+.document-body .frontmatter tr:hover .frontmatter-remove,
+.frontmatter-remove:focus-visible {
+  opacity: 1;
+}
+.frontmatter-remove:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.frontmatter-remove .lt-icon {
+  width: 13px;
+  height: 13px;
+}
+/* The add row is the quietest thing in the block until it is reached for: it is an offer under the fields, not a sixth field. */
+.frontmatter-add-button {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+  /* Room each side, so what the pointer paints is a chip around the words rather than a band the words are pressed against. The left edge stays on the key column and the label sits inside it; nothing is pulled back out to the margin. */
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: none;
+  color: var(--lt-muted-foreground);
+  font: inherit;
+}
+/* The fill has to be named here, not merely cleared above: `button:hover` is a pseudo-class and an element, so it outranks one class on its own and paints this the app's primary purple with the quiet label left unreadable on it. */
+.frontmatter-add-button:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.frontmatter-add-button .lt-icon {
+  width: 12px;
+  height: 12px;
+}
+/* A list, as one chip an item. The cell already drew the items one under another; a chip is the same list with somewhere to press. */
+.frontmatter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-4);
+}
+.frontmatter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  padding: 0 var(--lt-space-2) 0 var(--lt-space-6);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-wash-hover);
+}
+.frontmatter-chip-remove,
+.frontmatter-chip-add {
+  display: flex;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: none;
+  color: var(--lt-muted-foreground);
+}
+/* The one that is not inside a chip stands on the page beside them, so it carries its own room the way the add button does. */
+.frontmatter-chip-add {
+  align-items: center;
+  padding: var(--lt-space-2) var(--lt-space-4);
+}
+/* Named for the same reason as the add button above. Over a chip's own pill the wash deepens what is already there rather than replacing it, which is how it reads as a target at this size. */
+.frontmatter-chip-remove:hover,
+.frontmatter-chip-add:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.frontmatter-chip-remove .lt-icon,
+.frontmatter-chip-add .lt-icon {
+  width: 11px;
+  height: 11px;
+}
+/* The picker's own indicator is the platform's; the box round it is ours. */
+.frontmatter-date {
+  min-width: 0;
+  width: auto;
+}
+/* A picture alone in its paragraph reads through the reader's whole lane, less the strip the block controls need. It is the table's break-out on the paragraph itself, because a picture has no sliced column for edge bands to be painted in; `max-content` is the picture's own width, so a small one is left where it was, and the centering is a percentage transform because CSS cannot read a used width. */
+.document-body > p.image-lane {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+}
+/* A percentage cap resolves against the box being measured, so `max-width: 100%` below holds the paragraph at the very measure it is escaping; a percentage width does not, so the paragraph sizes to the picture and the picture fills it. */
+.document-body > p.image-lane > img {
+  width: 100%;
+}
+.document-body img {
+  display: block;
+  height: auto;
+  margin: 0 auto var(--type-spacing);
+  max-width: 100%;
+}
+/* A picture that would not load. decorate.js leaves the <img> in place — a re-fetch has to be able to put the real one back — and wears the mark as an icon class over a transparent pixel. The ink is the rule's, not the icon's, so it is quieter than body text and follows the theme without being repainted. */
+.document-body img[data-image-missing="true"] {
+  background-color: var(--lt-muted-foreground);
+  opacity: var(--lt-opacity-75);
+}
+.document-body hr {
+  border: 0;
+  height: 1px;
+  margin: var(--type-spacing) 0;
+  background: var(--lt-markdown-thematic-break);
+}
+.document-body figcaption,
+.document-body .caption,
+.document-body .metadata {
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  margin-block-start: 0;
+}

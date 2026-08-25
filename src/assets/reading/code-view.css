@@ -1,0 +1,143 @@
+/* ---- Code view (raw source editing) -------------------------------------
+   Monaco, hosted in the reader's shell: it owns the text, the wrapping, the caret and its own minimap. What follows is the frame around it — the page card faked over an editor that fills the whole reader area — and the few places its own chrome is restyled to match the app. */
+/* Monaco code view. Monaco owns its own scrolling and its own minimap; the shell stops scrolling and the editor fills the reader area out to the left window edge, matching the reading view's framing. No surgery on Monaco's internals. */
+.reader-shell.code-view-monaco-shell {
+  overflow: hidden;
+  /* No card borders of its own here: the minimap runs flush to the shell's right edge, so the page frame must wrap only the text and stop at the minimap's left stroke — which a static border can't do. The left edge and the (trimmed) bottom edge are redrawn by ::after below; the top edge is the app bar's divider (also trimmed below); the right side is the minimap rail. */
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  /* No fill of its own: ::before paints the page and stops at the frame's right border, because past that border is the minimap rail — chrome, not page, and the shell's grain has to run behind it as it does behind the reading view's. */
+  background: transparent;
+}
+/* The page's fill, out to the same edge ::after strokes and no further. It lives here rather than on the editor because Monaco's own background boxes cover the rail too (see .code-view-monaco below); a pseudo-element paints under its element's children, so this lands behind the editor without a z-index. */
+.reader-shell.code-view-monaco-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0 calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff)) 0 0;
+  background: var(--lt-syntax-background);
+  /* The two corners the card rounds itself, so the fill can't poke outside ::after's curve. The top two are the arc elements' business — each paints chrome over its corner and masks the page's disc back out, hiding the square corner under it. */
+  border-bottom-left-radius: var(--lt-radius-md);
+  border-bottom-right-radius: var(--lt-radius-md);
+  pointer-events: none;
+}
+/* The page frame for the text area: left, right and bottom edges, with both bottom corners rounded. The right edge sits at the minimap's left stroke (--cv-minimap-width from the shell's right, plus --cv-minimap-standoff), so this one border both frames the page and is the divider walling off the minimap rail — no separate minimap stroke. The top edge is the app bar's divider; the two top corners are the arc elements (reader-corner-tl and -tr), which sit at z-index 11 above Monaco — a shell pseudo can't, since ::before paints behind the editor (which is exactly why the page fill lives there). So this box starts a radius below the divider and leaves its own top corners square. Kept inside the padding box so the shell's overflow:hidden doesn't clip it; pointer-events:none so Monaco still takes the clicks. */
+.reader-shell.code-view-monaco-shell::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(var(--app-bar-height) + var(--lt-radius-md));
+  bottom: 0;
+  right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+  border-left: var(--lt-stroke-1) solid var(--lt-border);
+  border-right: var(--lt-stroke-1) solid var(--lt-border);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  border-bottom-left-radius: var(--lt-radius-md);
+  border-bottom-right-radius: var(--lt-radius-md);
+  /* Above the reader-edge-fade wash (z-index 4). The fade dissolves the top and bottom ~36px of the card to the page color; in the reading view it is inset inside the card's borders, but this frame's right border and bottom corners sit deeper in the shell, so the wash would fade the border out near the top and flatten the bottom corners. Below the loading wash (6), which should still cover the frame. The top corners (reader-corner-tl/-tr) already clear it at 11. */
+  z-index: 5;
+  pointer-events: none;
+}
+/* Trim the app bar's reader divider (the card's top edge) to the faked right edge at the minimap stroke, measured from the window's right edge: the reader gutter to the shell, then the minimap and its stand-off, then a radius short so the ::before top-right arc turns the corner. Same shape as the reading-view formula, with the minimap column replaced by the code-view minimap width. */
+:root[data-code-view="true"] .app-bar::after {
+  right: calc(
+    var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) +
+      var(--lt-radius-md) - 1px
+  );
+}
+/* The top-right corner of the faked page: the same convex arc reader-corner-tr draws at the card's real right corner in the reading view, moved in to the minimap stroke. Only the offset changes — outside the corner is the shell's grain here as well, now that the page fill stops at the frame (the shell's ::before), so the chrome fill and the mask cutting the page's disc back out of it are both right as they stand. Its z-index 11 keeps it above Monaco, which is why the corner lives here and not on a shell pseudo (::before paints behind the editor). The right offset matches ::after's faked edge; the arc's own geometry (top: 100% - 1px, the radius+1 box, the top/right borders) is inherited from .reader-corner(-tr). */
+:root[data-code-view="true"] .reader-corner-tr {
+  right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+}
+.code-view-monaco {
+  position: absolute;
+  inset: var(--app-bar-height) 0 0 0;
+}
+/* Neither box that carries editor.background may paint: both cover the minimap rail as well as the text, and neither can be stopped at the divider — the root box is the whole editor, and the lines layer is a 16,777,216px square bounded only by the overflow guard around it. The shell's ::before paints the page instead. That is all it takes, because the minimap's canvas writes only the pixels a glyph lands in and fills no background of its own — what looked like the map's background was always one of these two behind it. Off, the rail shows the shell's grain between the map's lines: text on the chrome, as the reading view's rail has always drawn it. */
+.code-view-monaco .monaco-editor,
+.code-view-monaco .monaco-editor .monaco-editor-background {
+  background-color: transparent;
+}
+/* Monaco right-aligns the line numbers in a box it sizes to fit the widest one, and that box starts at the frame's left border — so once a file needs five digits (its minimum width is five characters) the numbers sit against the stroke with nothing between: on a 76,000-line document every "76001" touched the edge. The gutter has no left padding to give, and its one width knob buys a whole character at a time, which is about twice this gap. So the column is nudged off the border here. A transform, not a layout change: Monaco measures this gutter and re-lays-out when its width changes, and the nudge must not be one of the numbers it measures. So nothing else moves — the room comes out of the gap Monaco keeps between the numbers and the text, which is wide enough (its own 10px, plus the space the folding controls sit in) to spare this and still read as a gap. */
+.code-view-monaco .monaco-editor .margin-view-overlays .line-numbers {
+  transform: translateX(var(--cv-line-number-pad));
+}
+/* The square Monaco draws before a color in the source. It is a mark, not a control — the picker's hover participant is not in the vendored bundle, so a click on it does nothing — and the editor's own style sets cursor:pointer, which is the app promising something that will not happen. Its black-in-light, near-white-in-dark hairline is the editor's too, and stays: it is what keeps a white or black swatch visible. */
+.code-view-monaco .monaco-editor .colorpicker-color-decoration {
+  cursor: text;
+}
+/* The minimap's floating viewport box (the draggable "where am I" window), styled to echo the reader rail's viewport box: our minimap-viewport colors, a border, and rounded corners. Nothing else about the minimap is touched. */
+.code-view-monaco .monaco-editor .minimap-slider {
+  background: var(--lt-minimap-viewport-background) !important;
+  border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);
+  border-radius: var(--lt-radius-sm);
+  box-sizing: border-box;
+  /* Hold the box a pixel clear of the rail's outer edge, or its right stroke is a coin toss. Monaco sizes the box to the full width of the rail, and the rail ends exactly where the editor's overflow:hidden cuts — so the stroke lands on the last device pixel inside the clip, and whether that pixel survives depends on which way the clip rounds at this window width and display scale. Measured with a deliberately fat border: the left edge got all nine of its device pixels and the right edge got eight. A real stroke is one device pixel, so on the losing side it disappeared completely — the whole right side of the box, at some window widths and not others. A pixel of clearance takes the rounding out of it. !important because the width is Monaco's, written inline; nothing reads this box's width back (dragging works off the pointer), so narrowing the drawing changes nothing else. */
+  width: calc(100% - 1px) !important;
+}
+/* ---- Code view: the pinned heading trail ----------------------------------
+   The headings you are reading under, held at the top of the source. Built by code-sticky.js as plain rows over the editor, positioned from Monaco's own layout so they land on the same columns the real lines do.
+
+   A sibling of the editor, at z-index 5, so the rows paint ABOVE .reader-edge-fade (4) rather than under its wash — the fade would dissolve the one thing here meant to stay readable. The frame's own borders (the shell's ::after, also 5 but later in tree order) still paint over the rows' edges, which is why this box can run right up to the frame. */
+.code-sticky {
+  position: absolute;
+  top: var(--app-bar-height);
+  left: 0;
+  /* Stops where the page does: at the frame's right border, the minimap's divider. The same measure the frame and the app bar's divider use. */
+  right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+  z-index: 5;
+  /* Height is the row count, written by the script — the stack slides up out of the box as a section ends, and the box shortens with it. */
+  height: 0;
+}
+.code-sticky[hidden] {
+  display: none;
+}
+/* The rows themselves, on the page's own fill, clipped so a departing stack slides away instead of spilling under the app bar. The shadow is the rows' own: the page's edge fade is behind them now and casts nothing. */
+.code-sticky-rows {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--lt-syntax-background);
+}
+/* And the dissolve for what slides under them — the chrome's dot screen in the page's color, at falling alpha, exactly the recipe .reader-edge-fade uses. A wash would read as a band; an even screen going transparent has no rows in it. `fixed` so the lattice is the window's, in phase with every other surface. */
+.code-sticky::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 18px;
+  --lt-grain-dot: var(--lt-syntax-background);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  -webkit-mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent);
+  mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent);
+  pointer-events: none;
+}
+.code-sticky-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  white-space: pre;
+}
+.code-sticky-row:hover {
+  background: var(--lt-navigation-button-hover-background);
+}
+/* Both columns are Monaco's, read back and restated: the gutter is right-aligned in the width Monaco sized it to, nudged off the frame's border by the same --cv-line-number-pad the real numbers get. */
+.code-sticky-number {
+  position: absolute;
+  top: 0;
+  text-align: right;
+  color: var(--lt-syntax-comment);
+  transform: translateX(var(--cv-line-number-pad));
+}
+.code-sticky-text {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

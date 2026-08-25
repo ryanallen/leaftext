@@ -1,0 +1,200 @@
+/* ---- A diagram on the whole window ----------------------------------------
+   Built per open by diagram-view.js, inside #app so the delegated pan, wheel and click answer it with no listeners of its own. It takes the free pair of layers under the flowchart editor's: this is for looking at, and picking up a pen over it closes it. */
+.diagram-overlay {
+  position: fixed;
+  inset: 16px;
+  z-index: var(--lt-z-41);
+  display: flex;
+  background: var(--lt-surface-elevated);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-xl);
+  overflow: hidden;
+  opacity: 0;
+  /* Only ever arrives: closing removes the element, so there is no exit to curve. */
+  transition: opacity var(--lt-duration-220) var(--lt-ease-decelerate);
+}
+.diagram-overlay.open {
+  opacity: 1;
+}
+/* A table copied from the page at the window's size. The copy is a reader until phase 2 gives it tools, so its scroll box is the only interaction it owns. */
+.table-sheet-overlay {
+  position: fixed;
+  inset: var(--lt-space-16);
+  z-index: var(--lt-z-41);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--lt-surface-elevated);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-xl);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--lt-duration-220) var(--lt-ease-decelerate);
+}
+.table-sheet-overlay.open {
+  opacity: 1;
+}
+.table-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: var(--lt-space-8) var(--lt-space-10) var(--lt-space-8) var(--lt-space-16);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+}
+.table-sheet-title {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-family: var(--heading-font);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
+}
+/* The grid also wears `.document-body`, for the link color and the dotted glossary underline written behind it. These three take back what that class brings that a sheet is not: a document's reading measure, the negative margin hanging it off the scroll origin, and the page's text size, which the cells' `em` padding and `ch` floor below are measured against. */
+.table-sheet-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: auto;
+  margin: 0;
+  font-size: inherit;
+  padding: var(--lt-space-16);
+  overflow: auto;
+}
+.table-sheet-grid > table {
+  border-collapse: collapse;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  /* The document hands a table its own scroll box and a gap under it, both wrong here: the grid is the scroll box the sideways wheel reads, and the sheet ends at its own padding. */
+  margin: 0;
+  overflow: visible;
+  font-family: var(--app-font);
+  line-height: var(--lt-leading-1-45);
+}
+.table-sheet-grid th,
+.table-sheet-grid td {
+  border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+  padding: 0.375em 0.8125em;
+}
+/* Only `anywhere` enters a column's smallest width, so `break-word` leaves the sheet scrolling sideways. Body cells only: on a heading it drops a column under one word and "Ref" draws as "R / ef". */
+.table-sheet-grid td {
+  overflow-wrap: anywhere;
+  /* Which drops a body cell's smallest width to one character, so without a floor a short column stops at its own heading and cuts "Mon" in two. Border-box, so 7ch leaves 4.3 characters of content and stays under the floor any five-letter heading already sets. */
+  min-width: 7ch;
+}
+.table-sheet-grid th {
+  background: var(--lt-markdown-table-header-background);
+  color: var(--lt-markdown-heading);
+  font-weight: var(--lt-weight-600);
+}
+.table-sheet-grid tr:nth-child(2n) td {
+  background: var(--lt-tint-row);
+}
+.table-sheet-grid th,
+.table-sheet-grid tr:nth-child(2n) td {
+  --lt-grain-dot: var(--reader-surface-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+.table-sheet-grid tr:nth-child(2n + 1) td {
+  --lt-grain-dot: var(--reader-row-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+/* ---- A picture on the whole window ----------------------------------------
+   The one full-window view with no panel: no header, no title, no words. The scrim behind is the ground and this box is only what centers the picture on it, which is why it has no surface, no border and no corner of its own — and why a press anywhere but the picture reads as a press on the ground and closes it. */
+.image-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--lt-z-41);
+  /* Flex rather than a centering grid: a grid row sized to its content leaves the picture's own height indefinite, so the cap below resolves against nothing and a tall picture is drawn past the bottom of the window. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--lt-space-24);
+  opacity: 0;
+  /* Only ever arrives: closing removes the element, so there is no exit to curve. */
+  transition: opacity var(--lt-duration-220) var(--lt-ease-decelerate);
+}
+.image-sheet-overlay.open {
+  opacity: 1;
+}
+/* Fitted whole: never cropped, and never drawn past its own size, because a cap can only cap. */
+.image-sheet-picture {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+/* The corner the close mark waits in. It is a region rather than the whole overlay so the mark is not drawn over a picture somebody is looking at, and it takes the pointer so it can be hovered — a press landing on it closes, the same as a press on the ground. */
+.image-sheet-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: start end;
+  padding: var(--lt-space-16);
+}
+.image-sheet-close {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--lt-duration-120) var(--lt-ease);
+}
+.image-sheet-corner:hover .image-sheet-close,
+.image-sheet-close:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* A `pre.mermaid` like the block in the page, and deliberately outside any .document-body: what it is for is the room the reading column does not have. */
+.diagram-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--lt-space-16);
+  overflow: hidden;
+  color: var(--lt-markdown-foreground);
+  cursor: grab;
+}
+/* Fit is the whole drawing in this box, so the height is capped until somebody zooms — past that the size is the SVG's own and a cap here would undo it. */
+.diagram-stage:not(.is-moved) > svg {
+  max-height: 100%;
+}
+/* The window is the box now, so nothing here is something to go hunting for. */
+.diagram-stage .mermaid-view-controls,
+.diagram-stage .mermaid-tools {
+  opacity: 1;
+}
+.diagram-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+/* The view controls keep the top right they have in the page, moved left of the X, which is the one corner the overlay owns. Centered against it: the X is 32px tall and these are 28. The edit pair stays bottom right, as on the block. */
+.diagram-stage .mermaid-view-controls {
+  top: 8px;
+  right: 44px;
+}
+/* Wide enough that a sheet across the whole width would be a line of text you have to sweep your head along: every sheet becomes a centered column instead. On the component, so all four do it and a fifth gets it for nothing. The centering is the `translate` property and not the other half of a `transform`, because the browser composes the two in that order for free: one rule centers, and every state and keyframe below draws its travel in `transform` without knowing this rule exists. As half of a transform it has to be repeated on every moving state, where one that forgets it snaps to the left edge mid-flight, and a keyframe cannot be repeated per window width at all. */
+@media (min-width: 760px) {
+  .leaf-sheet {
+    left: 50%;
+    right: auto;
+    width: min(680px, 92%);
+    translate: -50%;
+  }
+  /* Except the flowchart picker, which is two columns of drawings rather than a column of text. It takes nearly the whole editor, because that is what it takes to read forty-seven shapes without scrolling for every one. */
+  .flow-picker {
+    width: 85%;
+  }
+}

@@ -2,9 +2,9 @@
 // design/ is the source of a token. This compiles it into what the binary uses:
 //
 //   design/colors.md  -> the LEAF_SEMANTIC_TOKEN_CONTRACT block in src/theme.rs
-//   design/tokens.md  -> src/assets/tokens.css, served ahead of reading.css
+//   design/tokens.md  -> src/assets/tokens.css, served ahead of the app stylesheet
 //
-// It also holds the three files to the code: a theme row whose key is not in colors.md, and a component row naming a class family reading.css does not style, both fail here. theme.rs emits a property for any row it finds, so a key nobody lists is dead CSS in every theme rather than an error.
+// It also holds the three files to the code: a theme row whose key is not in colors.md, and a component row naming a class family the app stylesheet does not style, both fail here. theme.rs emits a property for any row it finds, so a key nobody lists is dead CSS in every theme rather than an error.
 //
 //   node scripts/bundle-tokens.mjs           write the generated files
 //   node scripts/bundle-tokens.mjs --check   fail on drift (`just verify`)
@@ -14,6 +14,8 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { whole as wholeReadingCss } from './reading-css.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
@@ -158,7 +160,8 @@ for (const file of readdirSync(join(root, 'themes'))) {
   }
 }
 
-const readingCss = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+// The whole sheet, every part of it: a component row is answered wherever its family is styled.
+const readingCss = wholeReadingCss();
 // Only the component table: the two tables after it account for what a rendered document brings and what a state is called, neither being a class family of its own.
 const componentsMd = readFileSync(join(root, 'design/components.md'), 'utf8');
 const components = tableRows(componentsMd.slice(0, componentsMd.indexOf('## What a document brings')));

@@ -1,0 +1,241 @@
+.context-menu {
+  position: fixed;
+  z-index: var(--lt-z-50);
+  min-width: 168px;
+  padding: var(--lt-space-4);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  font-family: var(--app-font);
+}
+.context-menu[hidden] {
+  display: none;
+}
+.context-menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
+  text-align: left;
+}
+.context-menu-item:hover,
+.context-menu-item:focus-visible {
+  background: var(--lt-wash-hover);
+  outline: none;
+}
+/* A dangerous row is plain until it is pointed at. Its drawing says what it does, and red on every open menu spends the one color that means stop. */
+.context-menu-item.is-danger:hover,
+.context-menu-item.is-danger:focus-visible {
+  background: var(--lt-danger);
+  color: var(--lt-danger-foreground);
+}
+/* A mask is painted by its row's color, so without this the glyph keeps the muted tone and sits gray on the red while the label beside it does not. */
+.context-menu-item.is-danger:hover .lt-icon,
+.context-menu-item.is-danger:focus-visible .lt-icon {
+  color: inherit;
+}
+.context-menu-separator {
+  height: 1px;
+  margin: var(--lt-space-4) var(--lt-space-6);
+  background: var(--lt-border);
+}
+.rename-box {
+  position: fixed;
+  z-index: var(--lt-z-51);
+  width: 232px;
+  padding: var(--lt-space-4);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+}
+.rename-box[hidden] {
+  display: none;
+}
+.rename-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--lt-space-6) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-accent);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
+}
+.rename-input:focus {
+  outline: none;
+}
+/* The update bell and the one button under it. Absent from the bar unless the updater has something to install, so nothing here is ever the resting state. */
+.update-menu {
+  position: relative;
+  font-family: var(--app-font);
+}
+.update-menu[hidden] {
+  display: none;
+}
+.update-menu summary {
+  /* Box size, radius, and icon come from .icon-button (which this also carries) so every toolbar icon button matches; only the summary-specific bits and the rest colors live here. `position: relative` anchors the update-alert dot. */
+  border: var(--lt-stroke-1) solid transparent;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
+  list-style: none;
+  position: relative;
+}
+.update-menu summary::-webkit-details-marker {
+  display: none;
+}
+.update-menu summary:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: transparent;
+  color: var(--lt-primary-foreground);
+}
+/* The mark on the bell, the whole of what the updater says with the panel shut. The ring keeps it legible on the bar's textured/hover fill. Green means a restart would install a new version; while bytes are moving it becomes a spinning ring instead. Nothing else raises it. */
+.update-alert-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-success);
+  box-shadow: var(--lt-shadow-ring);
+}
+.update-alert-dot.is-downloading {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+  border: var(--lt-stroke-2) solid color-mix(in srgb, var(--lt-success) 30%, transparent);
+  border-top-color: var(--lt-success);
+  box-shadow: none;
+  animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
+}
+/* Its own answer: the dot is not an .lt-spinner, and a download in flight is the one thing it says. */
+@media (prefers-reduced-motion: reduce) {
+  .update-alert-dot.is-downloading {
+    animation-duration: var(--lt-duration-1600) !important;
+  }
+}
+.update-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: var(--lt-z-30);
+  display: grid;
+  gap: var(--lt-space-14);
+  width: min(290px, calc(100vw - 28px));
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  padding: var(--lt-space-14);
+}
+/* Green "restart to update" call-to-action, the only thing in the panel. Takes the primary-action fill; spans it. `position: relative` anchors the download progress fill. */
+.update-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-8);
+  width: 100%;
+  overflow: hidden;
+  font-weight: var(--lt-weight-700);
+}
+.update-button[hidden] {
+  display: none;
+}
+/* Progress behind the label, left to right. Zero width at rest, so the staged button — no percent — shows nothing. */
+.update-button-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: color-mix(in srgb, var(--lt-primary-foreground) 26%, transparent);
+  transition: width var(--lt-duration-120) var(--lt-ease-linear);
+  pointer-events: none;
+}
+.update-button-label {
+  position: relative;
+}
+.update-button-spinner {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  border-color: color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+}
+.update-button-spinner[hidden] {
+  display: none;
+}
+/* Every floating surface's shadow, said once: the same 2px dot lattice the two toolbars throw, in shadow ink, thinning out under an ellipse — a halftone, never a smooth blur. The second mask layer punches the host's own box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ellipse` — the punch inside out. */
+.app-overflow-panel::before,
+.context-menu::before,
+.rename-box::before,
+.update-panel::before,
+.app-toast::before,
+.flow-menu::before,
+.link-hover-tip::before,
+.block-drag-ghost::before,
+.home-row-ghost::before,
+.find-bar::before,
+.confirm-dialog::before,
+.leaf-sheet::before {
+  content: '';
+  position: absolute;
+  z-index: var(--lt-z-below);
+  inset: -13px -20px -10px;
+  pointer-events: none;
+  --lt-grain-dot: var(--lt-grain-dot-strong);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  -webkit-mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) 30%,
+      transparent 98%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  -webkit-mask-size: 100% 100%, calc(100% - 40px) calc(100% - 23px);
+  -webkit-mask-position: 0 0, 20px 13px;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-composite: source-out;
+  mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) 30%,
+      transparent 98%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  mask-size: 100% 100%, calc(100% - 40px) calc(100% - 23px);
+  mask-position: 0 0, 20px 13px;
+  mask-repeat: no-repeat;
+  mask-composite: subtract;
+}
+/* The fade above runs across the whole box, so a surface as small as the link card lands its entire visible ring in the last, nearly transparent stretch and shows nothing; these stops put the fade in the ring itself. */
+.link-hover-tip::before {
+  -webkit-mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) calc(100% - 34px),
+      transparent 100%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) calc(100% - 34px),
+      transparent 100%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+}

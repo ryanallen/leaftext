@@ -27,7 +27,7 @@ const META = ['/clear', '/help', '/config', '/cost', '/compact', '/init', '/skil
 
 // One line each, for whatever the message touches. Three at most, so the output stays about ten lines.
 const TRIGGERS = [
-  [/reading\.css|theme\.rs|themes\//i,
+  [/assets\/reading\/|theme\.rs|themes\//i,
     'A value belongs in `design/`: colors.md names a color, tokens.md holds every other value, icons.md the icons, components.md every class — then `just bundle-tokens`, `bundle-icons` or `bundle-gallery`. What a theme sets a color to is `themes/`, then `just bundle-themes`. Never edit a generated file, never a per-theme diagram palette.'],
   [/shell\/|fragment|app_shell|APP_SHELL/i,
     '`src/assets/shell/` is one shared scope in `APP_SHELL_SCRIPT_PARTS` order. `state.js` holds only what two fragments touch. `just check-shell`.'],
@@ -177,7 +177,7 @@ function selfTest() {
     fails.push('layout: a guide whose cross-cutting rules lost their heading passed');
   }
 
-  if (!reminders('editing src/assets/reading.css').length) fails.push('reminders: reading.css matched nothing');
+  if (!reminders('editing src/assets/reading/library.css').length) fails.push('reminders: a stylesheet part matched nothing');
   if (reminders('hello').length) fails.push('reminders: fired on a message that touches nothing');
   if (!context('hello', rule).includes('refused')) fails.push('context: missing the git refusal');
   if (!context('$git-release', rule).includes('authorized')) fails.push('context: missing the license note');

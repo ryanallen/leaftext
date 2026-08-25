@@ -3,17 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import {
-  check,
-  checkSettled,
-  fakeElement,
-  names,
-  record,
-  root,
-  settle,
-  settled,
-  source,
-} from './shared.mjs';
+import { check, checkSettled, fakeElement, names, readingCss, record, root, settle, settled, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -368,7 +358,7 @@ export function run() {
       if (!preview.classList.contains('is-loaded') || previewDocument.innerHTML !== '<p>Opening.</p>') throw new Error('the host answer did not fade into the placeholder');
       if (preview.style.height !== '73px') throw new Error(`the preview did not shrink to its opening: ${preview.style.height}`);
       if (tip.innerHTML.indexOf('link-hover-tip-preview') > tip.innerHTML.indexOf('link-hover-tip-kind')) throw new Error('the preview is not above the existing rows');
-      const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+      const css = readingCss();
       if (!css.includes('.link-hover-tip-preview-placeholder') || !css.includes('var(--lt-grain-dot)')) throw new Error('the preview placeholder has no dot grain');
       if (!css.includes('border-bottom: var(--lt-stroke-1) solid var(--lt-border)')) throw new Error('the preview has no divider above its words');
       if (!css.includes('width: calc(100% / var(--link-preview-shrink))') || !css.includes('.link-hover-tip-preview-document {\n  width: 100%')) throw new Error('the rendered opening does not fill the preview card');
@@ -635,7 +625,7 @@ export function run() {
       if (mark(cards[1]) !== 'second') throw new Error(`the second block holds ${mark(cards[1])} rather than its own drawing`);
       if (!vm.runInContext('linkPreviewDiagramHolder === null', booted)) throw new Error('the holder was left standing once both drawings were done');
 
-      const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+      const css = readingCss();
       if (!css.includes('.link-hover-tip-preview-document pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])[data-card-diagram="unshown"] {')) throw new Error('the card has no strip rule for a drawing it will not show');
     } finally {
       booted.window.mermaid = wasMermaid;
@@ -690,7 +680,7 @@ export function run() {
   check('the preview shrink is written once and read off the box that carries it', () => {
     const preview = vm.runInContext('linkHoverTipPreview', booted);
     const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const fragment = readFileSync(join(root, 'src/assets/shell/glossary.js'), 'utf8');
     const written = (text) => (text.match(/0\.36(?!\d)/g) || []).length;
     if (!css.includes('--link-preview-shrink: 0.36;')) throw new Error('the shrink is not a property of the picture box');
@@ -984,7 +974,7 @@ export function run() {
       vm.runInContext('hideLinkHoverPreview();', booted);
       if (tip.classList.contains('has-preview')) throw new Error('a card without a preview kept the fixed width');
       // An exiting card stops its spinner with it.
-      const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+      const css = readingCss();
       if (!css.includes('.link-hover-tip:not(.shown) .link-hover-tip-preview-spinner')) throw new Error('an exiting card still spins its spinner');
       if (!css.includes('.link-hover-tip.has-preview {\n  width: 17rem;\n}')) throw new Error('a preview card has no fixed width of its own');
       // The card is the width of its picture, so the address under it has to break mid-path rather than push the card wider.

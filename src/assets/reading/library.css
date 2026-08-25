@@ -1,0 +1,833 @@
+/* The minimap is chrome, not page: it gets its own column outside the card so the page's right border stops short of it and the shell's texture runs behind the rail. */
+body:has(.document-minimap) {
+  --reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));
+  /* The rail is the scroll affordance while it's up, so the native bar is hidden and its gutter closes with it. */
+  --reader-scrollbar: 0px;
+}
+/* A document inside somebody else's product. Everything around the document belongs to the product — its bar, its buttons, its save — so the app is only the reader, and the bar height every other rule offsets against goes to zero. */
+body.is-embedded {
+  --app-bar-height: 0px;
+}
+body.is-embedded .app-bar,
+body.is-embedded .library-pane,
+body.is-embedded .library-divider,
+body.is-embedded .reader-toolbar {
+  display: none;
+}
+/* Not a grid here, so the rail track cannot hold a column open beside the page: the pane's width is written onto the root element by the front end, and an inline property there wins over any rule here. With the pane and the handle gone the reader is the only child left, so a block gives it the whole frame. */
+body.is-embedded .library-shell {
+  display: block;
+}
+.library-shell {
+  display: grid;
+  /* A trailing column and a bottom row hold the reader off the window frame; the rail spans both so only the page is inset. */
+  /* The first track spends the rail width the app bar's lead follows — 0px closed — so one var write moves pane and page together and the motion classes below transition this one property. Never an @property registration for the rail: animating a registered inherited length off :root crashed the whole app in this web view (library-sidebar-motion, phase 0). */
+  grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
+  grid-template-rows: minmax(0, 1fr) var(--reader-gutter);
+  /* The app surface's height, not the window's: the surface is the app, and past the inset the window has edge the app does not paint. */
+  height: 100%;
+  /* Positioning context for the open-library button, pinned to the left edge so it stays reachable when the pane collapses to 0. */
+  position: relative;
+  /* The chrome shade and grain again, on the same window-anchored lattice as the bar and the rail. What shows here is the gutter the reader is held off the window frame by (see --reader-gutter), so the texture runs unbroken from the bar, down the rail, and around the page. */
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-attachment: fixed;
+}
+/* Too narrow for a pane beside the page, so the library becomes a sheet over it: full width, parked off the left edge until the app bar's button pulls it in. Out of flow, so the grid still treats the library as closed and the page keeps the whole window. Under the app bar's z-index, which is what keeps the button that opened it reachable to close it again. */
+.library-shell.library-narrow .library-pane {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  z-index: 5;
+  transform: translateX(-100%);
+  /* The base rule is where the sheet rests and where it leaves to, so it carries the exit — quicker than the way in, because you have stopped caring about it. */
+  transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+.library-shell.library-narrow.library-overlay .library-pane {
+  transform: translateX(0);
+  transition: transform var(--lt-duration-220) var(--lt-ease-decelerate);
+}
+/* Nothing to drag when the sheet is the full width. */
+.library-shell.library-narrow .library-divider {
+  display: none;
+}
+/* The sheet stands in for the page, so the page's furniture goes with it: the corner arcs would paint on top of it, the divider is the top edge of a card nobody can see, and the tabs belong to a document the sheet is covering. The tabs go by visibility, not display — the overflow fold measures the strip to decide what to fold, and a collapsed one would unfold the whole bar into a window too narrow to hold it. */
+body:has(.library-overlay) .reader-corner,
+body:has(.library-overlay) .app-bar::after {
+  display: none;
+}
+body:has(.library-overlay) .tab-bar {
+  visibility: hidden;
+}
+/* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The track, the bar's lead and the divider line all read --library-rail-width, so one var write moves the three in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */
+body.is-library-opening .library-shell {
+  transition: grid-template-columns var(--lt-duration-220) var(--lt-ease-overshoot);
+}
+body.is-library-closing .library-shell {
+  transition: grid-template-columns var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+body.is-library-settling .library-shell {
+  transition: grid-template-columns var(--lt-duration-120) var(--lt-ease-decelerate);
+}
+body.is-library-opening .app-bar-lead {
+  transition: width var(--lt-duration-220) var(--lt-ease-overshoot);
+}
+body.is-library-closing .app-bar-lead {
+  transition: width var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+body.is-library-settling .app-bar-lead {
+  transition: width var(--lt-duration-120) var(--lt-ease-decelerate);
+}
+body.is-library-opening .app-bar::after {
+  transition: left var(--lt-duration-220) var(--lt-ease-overshoot);
+}
+body.is-library-closing .app-bar::after {
+  transition: left var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+body.is-library-settling .app-bar::after {
+  transition: left var(--lt-duration-120) var(--lt-ease-decelerate);
+}
+/* The rail's own column: the lead-in holds it off the page's right border, and the gutter beyond gives it the same outer inset the page card has. The bar's height keeps its top level with the card's. */
+.reader-minimap {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  padding-left: var(--reader-minimap-gap);
+  padding-top: var(--app-bar-height);
+  overflow: hidden;
+}
+.library-pane {
+  /* Positioning context for the overlays it stacks (.library-scroll, .library-crumbs, .library-header). The pane itself doesn't scroll or clip; the inner .library-scroll owns the scroll. */
+  --library-app-bar: var(--app-bar-height);
+  --library-header-height: 40px;
+  /* The breadcrumb band between the app bar and the search row. Fixed height whatever the path is, so entering a folder never shifts the list. */
+  --library-crumbs-height: 28px;
+  --library-chrome-height: calc(var(--library-app-bar) + var(--library-crumbs-height) + var(--library-header-height));
+  /* Down the whole window, through the reader's bottom gutter row: the rail runs to the frame, only the page is held off it. */
+  grid-column: 1;
+  grid-row: 1 / -1;
+  position: relative;
+  /* A grid item's min-width is its content, which would hold the shrinking track open; the pane itself still never clips — the corner arc on its right edge is real geometry. */
+  min-width: 0;
+  /* The app surface's height, for the reason the shell's is. */
+  height: 100%;
+  /* The app bar's shade and grain, so the pane continues the bar rather than sitting under it. The tree rows on top are transparent, so the whole pane carries the texture. */
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-attachment: fixed;
+  color: var(--lt-markdown-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  /* No right-edge hairline: the reader's own left border, flush against this column, is the stroke that marks the boundary. */
+}
+/* The card's two top corners, where the app bar's divider turns down into the card's side borders. The card can't round these itself: its top is square and tucked under the bar, so the visible corner falls at the bar's bottom edge. Each element covers the junction with the chrome surface and grain, masks the page's quarter disc back out of it (which also hides the few px of straight border the arc stands in for), and strokes the arc over the join with ::after. The bottom corners need none of this — the card rounds those itself. .reader-corner-tl is a child of .library-pane and hangs off `left: 100%`, the grid line the card's left border starts on, rather than off --library-rail-width: a fractional pane width rounds to different device pixels in different containing blocks, which left the arc a pixel off the border it is meant to continue. */
+.reader-corner {
+  /* Where the mask cuts the page back out: a half pixel inside the arc's inner edge, so the stroke (which the mask also covers, being a child) survives whole instead of having its inner edge nibbled off. */
+  --reader-corner-cut: calc(var(--lt-radius-md) - 0.5px);
+  position: absolute;
+  /* Over the app bar (z-index 10), whose grain the top corners sit on. */
+  z-index: 11;
+  width: calc(var(--lt-radius-md) + 1px);
+  height: calc(var(--lt-radius-md) + 1px);
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  /* The same window-anchored lattice as every other grained surface, so a corner stays in phase with the bar and pane around it. */
+  background-attachment: fixed;
+  pointer-events: none;
+}
+.reader-corner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0 solid var(--lt-border);
+}
+.reader-corner-tl {
+  top: calc(var(--library-app-bar) - 1px);
+  left: 100%;
+  -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--reader-corner-cut), var(--lt-mask-opaque) var(--reader-corner-cut));
+  mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--reader-corner-cut), var(--lt-mask-opaque) var(--reader-corner-cut));
+}
+.reader-corner-tl::after {
+  border-top-width: var(--lt-stroke-1);
+  border-left-width: var(--lt-stroke-1);
+  border-top-left-radius: calc(var(--lt-radius-md) + 1px);
+}
+/* In the app bar, so it tracks the bar's bottom edge whether or not the frameless window drops the bar's top border. Follows the card in when the rail takes a column beside it (0 wide when there is no rail).
+
+   The mask belongs on this rule, not on a conditional one: without it the box paints as a plain chrome square over the page's corner. */
+.reader-corner-tr {
+  top: calc(100% - 1px);
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column));
+  -webkit-mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), var(--lt-mask-opaque) var(--reader-corner-cut));
+  mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), var(--lt-mask-opaque) var(--reader-corner-cut));
+}
+.reader-corner-tr::after {
+  border-top-width: var(--lt-stroke-1);
+  border-right-width: var(--lt-stroke-1);
+  border-top-right-radius: calc(var(--lt-radius-md) + 1px);
+}
+.library-shell.library-closed .reader-corner-tl {
+  /* No rail to sit against: follow the card out to its left gutter. */
+  left: calc(100% + var(--reader-gutter));
+}
+.library-divider {
+  /* An invisible grab strip straddling the pane's right edge, wide enough to catch the pointer. Overhangs into the reader a few px. */
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 8px;
+  z-index: 3;
+  cursor: col-resize;
+  touch-action: none;
+}
+.library-shell.library-closed .library-divider {
+  display: none;
+}
+.library-shell.library-closed .library-header,
+.library-shell.library-closed .library-crumbs {
+  /* Hide the header bands when snapped shut, or the unclipped pane would bleed them past the 0px column and show them behind the reader. */
+  display: none;
+}
+/* Fading with the travel: everything in the pane leaves 100% opaque and thins out over the close — riding visible to the seat reads as a ghost over the page, and vanishing on the first frame reads as a glitch. The pane itself keeps its surface, and the corner arc riding its edge never fades. */
+body.is-library-closing .library-header,
+body.is-library-closing .library-crumbs,
+body.is-library-closing .library-scroll,
+body.is-library-settling .library-header,
+body.is-library-settling .library-crumbs,
+body.is-library-settling .library-scroll {
+  opacity: 0;
+  transition: opacity var(--lt-duration-260) var(--lt-ease);
+}
+/* And back in at the same pace on open. An animation, not a transition: these were display:none while closed, and a freshly displayed element renders at its final value instead of transitioning. */
+body.is-library-opening .library-header,
+body.is-library-opening .library-crumbs,
+body.is-library-opening .library-scroll {
+  animation: leaf-document-arrive var(--lt-duration-260) var(--lt-ease);
+}
+/* Except as a sheet, which is "closed" only to the grid — it is off-screen when shut, so there is nothing to bleed, and with these hidden it opened onto a blank band where the path and the search box belong. */
+.library-shell.library-narrow .library-header,
+.library-shell.library-narrow .library-crumbs {
+  display: flex;
+}
+/* The library toggle sits in the app bar's lead, left of Back. Rests muted like the other secondary toolbar icons, greens on hover. */
+.library-open {
+  /* The only control that opens the pane, so it holds its box however tight the zone gets, like the brand beside it. It never folds either. */
+  flex-shrink: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.library-open:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
+}
+.library-open .lt-icon {
+  width: 16px;
+  height: 16px;
+}
+/* While dragging the divider, lock the cursor and kill text selection window-wide. */
+body.library-resizing {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.library-scroll {
+  /* Scroll container filling the pane. Top padding clears the app bar, the breadcrumb band, and the search row, so the list starts below all three but scrolls up under their blur.
+
+     NOTE: no `scrollbar-width`/`scrollbar-color` — in Chromium either standard property silently disables all `::-webkit-scrollbar` pseudo-elements. */
+  position: absolute;
+  inset: 0;
+  /* Down only. Every row truncates itself, so a sideways bar on a narrow pane is noise — and it popped in and out while the pane animates. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding-top: var(--library-chrome-height);
+}
+/* The pane wears the app's bar (see .leaf-scroll); only where it starts is its own — clear of the app bar AND the two bands under it. */
+.library-scroll::-webkit-scrollbar-track {
+  margin-top: var(--library-chrome-height);
+}
+.library-tree {
+  padding: 0 var(--lt-space-6) var(--lt-space-12);
+}
+.library-results {
+  padding: 0 var(--lt-space-6) var(--lt-space-12);
+}
+/* Said once to a reader who has never made a vault, at the top of the list and inside it — so no band moves and nothing is covered. A box rather than a bubble: this has to stand until a folder has been picked, and a bubble is gone the moment a pointer reaches what it points at. */
+.library-intro {
+  margin: var(--lt-space-6) 0 var(--lt-space-12);
+  padding: var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+}
+.library-intro-title {
+  display: block;
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-4);
+  color: var(--lt-foreground);
+}
+.library-intro-text {
+  margin: var(--lt-space-6) 0 var(--lt-space-10);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-45);
+  color: var(--lt-muted-foreground);
+}
+.library-intro-action {
+  width: 100%;
+  padding: var(--lt-space-6) var(--lt-space-10);
+  border-radius: var(--lt-radius-md);
+  font-size: var(--lt-text-12);
+}
+/* The one line above the rows, and the one place search says it is working: it counts what is drawn, and it carries the ring while an answer is still coming. Drawn whether or not there are hits, so a search run over an older query's rows marks them instead of leaving them looking like the answer. */
+.library-results-count {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+  margin: var(--lt-space-2) var(--lt-space-6) var(--lt-space-6);
+  font-size: var(--lt-text-11);
+  color: var(--lt-muted-foreground);
+}
+/* Sized to the line it sits in and painted in the same gray, so it reads as part of the sentence rather than as a control. */
+.library-results-spinner {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-width: var(--lt-stroke-1);
+  border-color: color-mix(in srgb, var(--lt-muted-foreground) 30%, transparent);
+  border-top-color: var(--lt-muted-foreground);
+}
+/* What the box made of a filter, above the results. Only ever shown for a query with syntax in it — a plain word would just be read back to the person who typed it. */
+.library-search-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: var(--lt-space-4) var(--lt-space-6) var(--lt-space-2);
+  font-size: var(--lt-text-11);
+  line-height: var(--lt-leading-1-4);
+}
+.library-search-read {
+  color: var(--lt-muted-foreground);
+}
+/* A field name nobody in the vault has set. It reads as a warning rather than as a result count, because a filter naming one can only ever match nothing. */
+.library-search-unknown {
+  color: var(--lt-warning);
+}
+/* A search hit: the file's title on top, the match snippet below it. */
+.library-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  padding: var(--lt-space-6) var(--lt-space-8);
+  margin: 0 0 var(--lt-space-2);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+}
+.library-hit:hover {
+  background: var(--lt-wash-hover);
+}
+.library-hit-title {
+  display: block;
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The other name a hit matched, beside the file's own name on the same line. */
+.library-hit-alias {
+  margin-left: var(--lt-space-4);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-400);
+  color: var(--lt-muted-foreground);
+}
+.library-hit-snippet {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: var(--lt-space-2);
+  font-size: var(--lt-text-11);
+  line-height: var(--lt-leading-1-4);
+  color: var(--lt-muted-foreground);
+}
+.library-hit-mark {
+  background: color-mix(in srgb, var(--lt-primary) 40%, transparent);
+  color: inherit;
+  border-radius: var(--lt-radius-xs);
+}
+/* The search box fills the rest of the pinned header, beside the view chip; its min-width floors the controls so a narrow pane clips them (see .library-header) rather than squashing the field away. */
+.library-search-wrap {
+  flex: 1 1 auto;
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 var(--lt-space-8);
+  border-radius: var(--lt-radius-md);
+  border: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-muted-foreground) 25%, transparent);
+  /* The chrome shade again, but flat: the border is what reads as the field, and an ungrained fill keeps dots out from behind the search text. */
+  background-color: var(--lt-surface);
+}
+.library-search-wrap:focus-within {
+  /* A neutral white focus border rather than the accent, which is a strong color of its own in most families. */
+  border-color: color-mix(in srgb, var(--lt-white) 85%, transparent);
+}
+:root[data-theme="light"] .library-search-wrap:focus-within {
+  /* White vanishes on the light field, so key the focus off the ink instead. */
+  border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
+}
+.library-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--lt-text-12);
+}
+.library-search:focus {
+  outline: none;
+}
+.library-search-clear {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.library-search-clear:hover {
+  background: var(--lt-wash-hover);
+}
+.library-search-clear .lt-icon {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: auto;
+}
+/* The platform's own clear button, in the platform's own blue. Escape already clears the field, and nothing else in the app wears a color nobody chose. */
+.library-search::-webkit-search-cancel-button {
+  display: none;
+}
+/* What you can type next, under the search box and placed from it: the header clips at its own height, so the menu cannot live inside it. */
+.filter-menu {
+  position: absolute;
+  z-index: var(--lt-z-50);
+  max-width: 240px;
+  padding: var(--lt-space-2);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow-raised);
+}
+.filter-menu[hidden] {
+  display: none;
+}
+.filter-menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--lt-space-2) var(--lt-space-6);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11);
+  text-align: left;
+}
+.filter-menu-item.is-active,
+.filter-menu-item:hover {
+  background: var(--lt-wash-hover);
+}
+/* Search reads the active vault's text, so with no vault there is nothing for it to read: the row collapses and the list starts where the field was. */
+.library-pane[data-searchable="false"] {
+  --library-header-height: 0px;
+}
+.library-pane[data-searchable="false"] .library-header {
+  display: none;
+}
+/* The two pinned bands: the breadcrumb directly under the app bar, the search row under that. Both absolute against the pane (not sticky) so neither drifts with the list, which slides up behind them. Same treatment on both — the pane's own surface and grain, on the same lattice — so the chrome is one continuous texture. Opaque, so the list never shows through. */
+.library-crumbs,
+.library-header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  /* Clip at the pane's right edge (the divider) so a narrow drag slides the controls under it instead of squashing or spilling past it. */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+.library-crumbs {
+  top: var(--library-app-bar);
+  height: var(--library-crumbs-height);
+  /* Tight against the trail: the button and the root crumb read as one group, the way a toolbar's control sits against what it acts on. */
+  gap: var(--lt-space-2);
+  padding: 0 var(--lt-space-6) 0 var(--lt-space-8);
+}
+.library-header {
+  top: calc(var(--library-app-bar) + var(--library-crumbs-height));
+  height: var(--library-header-height);
+  justify-content: flex-start;
+  gap: var(--lt-space-8);
+  padding: 0 var(--lt-space-12);
+  font-weight: var(--lt-weight-600);
+}
+.library-crumb-trail {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  overflow: hidden;
+}
+.library-crumb {
+  flex: 0 0 auto;
+  max-width: 55%;
+  padding: var(--lt-space-1) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font-family: inherit;
+  font-size: var(--lt-text-11);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.library-crumb:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+/* The folder you are in: full ink, and it gets the leftover room — the ancestors above it give way first. */
+.library-crumb.is-current {
+  flex: 0 1 auto;
+  max-width: none;
+  cursor: default;
+  color: var(--lt-foreground);
+  font-weight: var(--lt-weight-600);
+}
+.library-crumb.is-current:hover {
+  background: transparent;
+  color: var(--lt-foreground);
+}
+/* The "…" standing in for the folders that didn't fit. A real button: it opens a menu of what it swallowed (see .crumb-menu). */
+.library-crumb.is-elided {
+  padding: var(--lt-space-1) var(--lt-space-4);
+}
+.library-crumb.is-elided[aria-expanded="true"] {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+/* While the trail measures how much of the path fits, nothing shrinks or clips — every crumb reports the width it actually wants. Held for one synchronous pass inside a single task, so this state never paints. */
+.library-crumb-trail.is-measuring .library-crumb {
+  flex: 0 0 auto;
+  max-width: none;
+}
+/* The vault switcher, left of the trail. Its own control rather than the first crumb: that crumb is a place, and clicking a place should go there. This is the only thing in the pane that changes which root the trail is even about, so it sits outside the trail and reads as chrome. */
+.library-vault-switch {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  /* A bigger target than the glyph inside it: the whole thing is one button, and 20px of it is easy to miss. The icon plus the edge the crumbs beside it pay. */
+  height: 23px;
+  /* One edge either side, so the box says where the button ends: the band around the trail is what holds it off the pane, and the name beside it pays the same at their joint. */
+  padding: 0 var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.library-vault-switch .lt-icon {
+  width: 15px;
+  height: 15px;
+}
+.library-vault-switch:hover,
+.library-vault-switch[aria-expanded="true"] {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+/* Open, the button and the vault's name beside it are one pill: what the list changes is the whole pane, not the 20px of icon you pressed. The button grows into the 2px gap and pulls the trail back by the same amount, so the name and every folder after it stay exactly where they were. The state is an attribute on the button, so a disk change rebuilding the trail underneath cannot lose it. */
+.library-vault-switch[aria-expanded="true"] {
+  padding-right: calc(var(--lt-space-4) + var(--lt-space-2));
+  margin-right: calc(-1 * var(--lt-space-2));
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.library-vault-switch[aria-expanded="true"] + .library-crumb-trail .library-crumb:first-child {
+  /* The switcher's own height, or the joined pill goes ragged along its top and bottom edge. */
+  height: 23px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+/* Standing at the vault's own root, the name is a span rather than a button, so nothing centers its text in a box this tall. It is also the only crumb there, so there is no ellipsis to lose. */
+.library-vault-switch[aria-expanded="true"] + .library-crumb-trail .library-crumb.is-current:first-child {
+  display: flex;
+  align-items: center;
+}
+/* The start screen's copy heads a row rather than sitting in a band, so it cancels the switcher's left padding to sit flush with what is under it. */
+.home-vault-switch {
+  margin-left: calc(-1 * var(--lt-space-4));
+  gap: var(--lt-space-4);
+}
+.library-crumb-caret {
+  flex: none;
+  font-size: var(--lt-text-9);
+  line-height: var(--lt-leading-1);
+}
+/* The tick on the row you are in — including the whole-library row, which is a choice like any other. */
+.crumb-menu-item.is-selected {
+  font-weight: var(--lt-weight-600);
+}
+.crumb-menu-check {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-left: auto;
+  color: var(--lt-accent);
+}
+/* A vault row switches to it; its button opens that vault's settings. */
+.crumb-menu-row {
+  display: flex;
+  align-items: center;
+}
+.crumb-menu-row .crumb-menu-item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.crumb-menu-edit {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: var(--lt-space-4);
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  opacity: 0;
+  /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here and in the row's own hover below. */
+  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
+  color: color-mix(in srgb, var(--lt-muted-foreground) 75%, transparent);
+}
+.crumb-menu-edit .lt-icon {
+  width: 14px;
+  height: 14px;
+}
+.crumb-menu-row:hover .crumb-menu-edit,
+.crumb-menu-row:focus-within .crumb-menu-edit {
+  opacity: 1;
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
+}
+.crumb-menu-row:hover .crumb-menu-edit {
+  color: var(--lt-muted-foreground);
+}
+.crumb-menu-edit:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+/* Which vault the panel is about, so the rows below it are unambiguous. */
+.crumb-menu-heading {
+  padding: var(--lt-space-4) var(--lt-space-10) var(--lt-space-2);
+  font-size: var(--lt-text-10);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-040);
+  text-transform: uppercase;
+  color: var(--lt-muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The name field. Enter or leaving it commits; Escape abandons the edit. */
+.crumb-menu-input {
+  display: block;
+  width: calc(100% - 12px);
+  box-sizing: border-box;
+  margin: var(--lt-space-2) var(--lt-space-6) var(--lt-space-4);
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border-radius: var(--lt-radius-md);
+  border: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  background: var(--lt-surface);
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--lt-text-12);
+}
+.crumb-menu-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
+}
+/* The elided folders, listed under the "…". Rows carry a folder icon, so they read as places rather than commands. */
+.crumb-menu {
+  min-width: 132px;
+  max-width: 300px;
+}
+.crumb-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  font-weight: var(--lt-weight-500);
+}
+.crumb-menu-item .library-folder-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--lt-muted-foreground);
+}
+.crumb-menu-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.library-crumb-sep {
+  flex: none;
+  color: color-mix(in srgb, var(--lt-muted-foreground) 60%, transparent);
+  font-size: var(--lt-text-10);
+}
+/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. */
+.library-nav-up {
+  color: var(--lt-muted-foreground);
+  margin-bottom: var(--lt-space-6);
+  padding-bottom: var(--lt-space-6);
+  border-bottom: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-border) 60%, transparent);
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
+}
+.library-nav-up:hover {
+  color: var(--lt-foreground);
+}
+.library-nav-up .library-folder-icon {
+  width: 14px;
+  height: 14px;
+}
+.library-file,
+.library-nav-folder {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  width: 100%;
+  text-align: left;
+  padding: var(--lt-space-4) var(--lt-space-6);
+  /* A hair of vertical space so adjacent row highlights don't touch. */
+  margin-bottom: var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.library-file:hover,
+.library-nav-folder:hover {
+  background: var(--lt-wash-hover);
+}
+/* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere. */
+.library-file.is-selected,
+.library-file.is-selected:hover {
+  background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
+}
+/* The leaf mark before Markdown file names. Same inline glyph as the header logomark, so it tracks the theme's primary color instead of a baked-in one. */
+.library-file > .lt-icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--lt-primary);
+}
+/* Folder glyph before folder names, dimmed to the muted tone so the name stays primary. The row is a flex box with its own gap, so it needs no margin. */
+.library-folder-icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--lt-muted-foreground);
+}
+.library-file-label {
+  /* Fill the row so the fade lands on empty space until the name overflows; without flex:1 the label hugs its text and the mask clips every name. */
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  /* Long names fade out at the right edge instead of showing an ellipsis, matching the tab labels. */
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+}
+.library-file .library-file-label,
+.library-hit-title,
+.home-row-name {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+}
+.library-file .library-file-label,
+.library-hit-title {
+  overflow: visible;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.file-name-stem {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.library-file .file-name-stem {
+  /* Long names fade before the badge, keeping the type visible at the trailing edge. */
+  -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+  mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
+}
+.file-type-badge {
+  flex: none;
+  padding: 0 var(--lt-space-4);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10);
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+}
+.library-file .file-type-badge,
+.library-hit-title .file-type-badge {
+  margin-left: auto;
+}
+/* Folder rows: name left, a muted chevron pinned to the right edge marking the row as something you can enter. */
+.library-nav-chevron {
+  margin-left: auto;
+  padding-left: var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+}
+.library-project {
+  display: flex;
+  flex-direction: column;
+}
+.library-empty {
+  padding: var(--lt-space-8) var(--lt-space-12);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}

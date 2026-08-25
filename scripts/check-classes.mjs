@@ -20,29 +20,31 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const relative = 'src/assets/reading.css';
-const css = readFileSync(join(root, relative), 'utf8');
+import { parts } from './reading-css.mjs';
 
-// A comment mentioning `block-controls.js` is not a class. Blank the comments, keeping each line's length so the line numbers still point at the right place.
-let inComment = false;
-const code = css.split('\n').map((line, index) => {
-  let text = line;
-  if (inComment) {
-    const end = text.indexOf('*/');
-    if (end < 0) return { n: index + 1, text: '' };
-    text = ' '.repeat(end + 2) + text.slice(end + 2);
-    inComment = false;
-  }
-  text = text.replace(/\/\*.*?\*\//g, (m) => ' '.repeat(m.length));
-  const open = text.indexOf('/*');
-  if (open >= 0) {
-    inComment = true;
-    text = text.slice(0, open);
-  }
-  // `[href*="GLOSSARY.md#"]` names a file, not a class.
-  text = text.replace(/\[[^\]]*\]/g, (m) => ' '.repeat(m.length));
-  return { n: index + 1, text };
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+// A comment mentioning `block-controls.js` is not a class. Blank the comments, keeping each line's length so the line numbers still point at the right place. Each part of the stylesheet is read on its own, so a hit names the file a reader opens rather than a line in the concatenation.
+const code = parts().flatMap(({ path, css }) => {
+  let inComment = false;
+  return css.split('\n').map((line, index) => {
+    let text = line;
+    if (inComment) {
+      const end = text.indexOf('*/');
+      if (end < 0) return { path, n: index + 1, text: '' };
+      text = ' '.repeat(end + 2) + text.slice(end + 2);
+      inComment = false;
+    }
+    text = text.replace(/\/\*.*?\*\//g, (m) => ' '.repeat(m.length));
+    const open = text.indexOf('/*');
+    if (open >= 0) {
+      inComment = true;
+      text = text.slice(0, open);
+    }
+    // `[href*="GLOSSARY.md#"]` names a file, not a class.
+    text = text.replace(/\[[^\]]*\]/g, (m) => ' '.repeat(m.length));
+    return { path, n: index + 1, text };
+  });
 });
 
 // The three tables in design/components.md.
@@ -76,17 +78,17 @@ const accounted = (cls) =>
   /^(?:is|has|no)-/.test(cls);
 
 const unaccounted = new Map();
-for (const { n, text } of code) {
+for (const { path, n, text } of code) {
   for (const match of text.matchAll(/\.([a-z][a-z0-9-]*)/g)) {
     const cls = match[1];
     if (accounted(cls) || unaccounted.has(cls)) continue;
-    unaccounted.set(cls, n);
+    unaccounted.set(cls, { path, n });
   }
 }
 
 if (unaccounted.size) {
   console.error(`${unaccounted.size} class(es) nothing accounts for:`);
-  for (const [cls, line] of unaccounted) console.error(`  ${relative}:${line}  .${cls}`);
+  for (const [cls, where] of unaccounted) console.error(`  ${where.path}:${where.n}  .${cls}`);
   console.error(
     'Add it to design/components.md: a component row (with the markup the gallery draws it\n' +
       'with), a document prefix if the renderer writes it into a page, or a state name.'

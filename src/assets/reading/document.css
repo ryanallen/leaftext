@@ -1,0 +1,617 @@
+.document-body {
+  width: min(var(--type-measure-body), 100%);
+  margin: calc(-1 * var(--reader-scroll-origin, 0px)) 0 0;
+  padding: var(--reader-content-pad) 0;
+  /* The floating bar sits over this corner of the page. Without the extra room the last thing on the page ends underneath it — which the Previous/Next pager makes obvious, being the last thing and a target. */
+  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-space, 0px));
+  color: var(--lt-markdown-foreground);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line);
+  word-wrap: break-word;
+  word-break: normal;
+}
+/* The reader lays the whole document out up front (like the web reader), which keeps scrolling smooth: content-visibility skipping makes off-screen blocks flash blank and the minimap box jump as heights re-estimate. A drawn diagram is the one exception, and only because its height is measured and remembered rather than estimated. */
+.docs-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--lt-space-16);
+  margin-top: var(--app-bar-height);
+  padding-top: var(--lt-space-24);
+  border-top: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+}
+/* Scoped under the document, never a bare `.docs-pager a`: the blanket link rule below is the same weight and later, so at that weight it takes this button's color at rest and its color and an underline on hover. */
+.document-body .docs-pager a {
+  flex: 1 1 0;
+  min-width: 0;
+  text-decoration: none;
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-lg);
+  color: var(--lt-markdown-foreground);
+  /* The one control left out of the shared hover fade at the top of the file: its hover swaps a dot lattice and the custom property painting it, and neither a `background-image` nor an unregistered property interpolates — so a fade here would drift the border and the ink around a lattice that had already snapped. */
+  transition: none;
+}
+.docs-pager-skeleton {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-lg);
+}
+.docs-pager-label-skeleton,
+.docs-pager-title-skeleton {
+  display: block;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-markdown-rule);
+  animation: pager-skeleton-pulse var(--lt-duration-1250) var(--lt-ease-in-out) infinite;
+}
+.docs-pager-label-skeleton {
+  width: 72px;
+  height: 0.74rem;
+  margin-bottom: var(--lt-space-8);
+}
+.docs-pager-title-skeleton {
+  width: min(220px, 80%);
+  height: 1rem;
+}
+.docs-pager-next .docs-pager-label-skeleton,
+.docs-pager-next .docs-pager-title-skeleton {
+  margin-left: auto;
+}
+@keyframes pager-skeleton-pulse {
+  0%,
+  100% {
+    opacity: var(--lt-opacity-38);
+  }
+  50% {
+    opacity: var(--lt-opacity-78);
+  }
+}
+/* Its own block, because the blanket rule carries no opacity and the bars have none of their own: a skeleton stopped at full strength reads as loaded content. The shorthand here takes the name away too, so the pulse is off rather than parked on whichever keyframe it ended at. */
+@media (prefers-reduced-motion: reduce) {
+  .docs-pager-label-skeleton,
+  .docs-pager-title-skeleton {
+    animation: none;
+    opacity: var(--lt-opacity-55);
+  }
+}
+/* The page's own lattice rather than the flat wash: this button is wide enough that a tint reads as a slab laid over the grained code blocks and table heads beside it. Window-anchored so the dots stay in phase across its edge, and nothing may set `background` after this — at equal weight the shorthand blanks the image. */
+.document-body .docs-pager a:hover,
+.document-body .docs-pager a:focus-visible {
+  --lt-grain-dot: var(--lt-grain-hover);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  border-color: var(--lt-markdown-link);
+  color: var(--lt-markdown-link);
+  text-decoration: none;
+}
+.docs-pager .docs-pager-next {
+  text-align: right;
+}
+.docs-pager-label {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--lt-muted-foreground);
+  margin-bottom: var(--lt-space-2);
+}
+@media (max-width: 700px) {
+  .docs-pager {
+    flex-direction: column;
+  }
+  .docs-pager .docs-pager-next {
+    text-align: left;
+  }
+}
+.document-body :target,
+.document-body [id] {
+  scroll-margin-top: var(--lt-space-16);
+}
+.document-body h1,
+.document-body h2,
+.document-body h3,
+.document-body h4,
+.document-body h5,
+.document-body h6 {
+  color: var(--lt-markdown-heading);
+  font-family: var(--heading-font);
+  letter-spacing: 0;
+  margin: var(--type-spacing) 0 var(--type-spacing);
+}
+.document-body h1 {
+  border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-h1-weight);
+  line-height: var(--type-h1-line);
+  padding-bottom: 0.3em;
+}
+/* A heading the page borrowed from the file's name renames the file when pressed, and only here: the same document on a published site draws the same mark, whose host can rename nothing. */
+.app-surface .document-body [data-borrowed-title] {
+  cursor: text;
+}
+.document-body h1:first-of-type {
+  font-size: var(--type-display-size);
+  font-weight: var(--type-display-weight);
+  line-height: var(--type-display-line);
+}
+/* h1 takes the base heading color; h2–h6 each have their own token, so a theme can tint the deeper levels or leave them equal. */
+.document-body h2 {
+  color: var(--lt-markdown-heading-2);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
+  line-height: var(--type-h2-line);
+  padding-bottom: 0.3em;
+}
+.document-body h3 {
+  color: var(--lt-markdown-heading-3);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-h3-weight);
+  line-height: var(--type-h3-line);
+}
+.document-body h4 {
+  color: var(--lt-markdown-heading-4);
+  font-size: var(--type-h4-size);
+  font-weight: var(--type-h4-weight);
+  line-height: var(--type-h4-line);
+}
+.document-body h5 {
+  color: var(--lt-markdown-heading-5);
+  font-size: var(--type-h5-size);
+  font-weight: var(--type-h5-weight);
+  line-height: var(--type-h4-line);
+}
+.document-body h6 {
+  color: var(--lt-markdown-heading-6);
+  font-size: var(--type-h6-size);
+  font-weight: var(--type-h6-weight);
+  line-height: var(--type-caption-line);
+}
+.document-body p,
+.document-body ul,
+.document-body ol,
+.document-body blockquote,
+.document-body table,
+.document-body pre {
+  margin: 0 0 var(--type-spacing);
+}
+.document-body [align="left"] {
+  text-align: left;
+}
+.document-body [align="center"] {
+  margin: var(--type-spacing-sm) 0;
+  text-align: center;
+}
+.document-body [align="center"] > table {
+  margin-left: auto;
+  margin-right: auto;
+}
+.document-body [align="right"] {
+  text-align: right;
+}
+.document-body [align="justify"] {
+  text-align: justify;
+}
+.document-body a {
+  color: var(--lt-markdown-link);
+  text-decoration: none;
+}
+.document-body a:hover {
+  color: var(--lt-link-hover);
+  text-decoration: underline;
+}
+/* Leaf custom Markdown buttons: a link wrapped in braces renders as a button styled like the app's action controls (the zero-state "Choose file"). The base rule is the filled variant, from `{{{[Label](url)}}}`. */
+.document-body a.leaf-md-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* The mark a button may wear sits before the label, so the two need a gap. */
+  gap: var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-primary);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-600);
+  /* A button can sit inside an italic run of a document. */
+  font-style: normal;
+  line-height: var(--lt-leading-1-2);
+  padding: var(--lt-space-12) var(--lt-space-20);
+  /* An atomic inline box keeps a vertical margin, so a run of buttons that wraps has room between its lines rather than two fills meeting. None on the left, so the first button stays on the text column. */
+  margin: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) 0;
+  text-decoration: none;
+  /* The arrow, because a reader reads the drawing and this is drawn as a button. Written rather than left off: an anchor's hand is the browser's own, so nothing here would take it away. */
+  cursor: default;
+}
+.document-body a.leaf-md-button:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
+  text-decoration: none;
+}
+/* Outline, from `{{[Label](url)}}`: an outline at rest that fills on hover. */
+.document-body a.leaf-md-button--secondary {
+  background: transparent;
+  border-color: var(--lt-primary);
+  color: var(--lt-primary);
+}
+.document-body a.leaf-md-button--secondary:hover {
+  background: var(--lt-primary);
+  border-color: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+}
+/* Ghost, from `{[Label](url)}`: no fill or outline until hover, when it fills. */
+.document-body a.leaf-md-button--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--lt-primary);
+}
+.document-body a.leaf-md-button--ghost:hover {
+  background: var(--lt-primary);
+  border-color: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+}
+/* A link with nothing behind it drops the link color and the hover underline, which promise there is: the words stay the document's own under a quiet dotted rule, saying the author meant a link here and this app does not follow that kind of address. `decorate.js` writes the class, because an anchor with no address is not by itself a stripped link. Placed after the button rules so it wins the tie against them. */
+.document-body a.link-goes-nowhere {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 0.18em;
+}
+/* A brace-wrapped button with nothing behind it stops being a pressable button: the fill, the outline and the box go, leaving the words the rule above draws. */
+.document-body a.leaf-md-button.link-goes-nowhere {
+  display: inline;
+  border: none;
+  border-radius: 0;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+}
+.document-body strong {
+  font-weight: var(--lt-weight-600);
+}
+/* Outline: a collapsed <details> built from the headings, dropped in under the title (see buildDocumentOutline). Closed by default. */
+.document-body .document-outline {
+  margin: 1.5em 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-editor-code-background);
+}
+.document-body .document-outline-summary {
+  padding: 0.5em 0.9em;
+  font-weight: var(--lt-weight-600);
+  color: var(--lt-markdown-foreground);
+  list-style: none;
+  user-select: none;
+}
+.document-body .document-outline-summary::-webkit-details-marker {
+  display: none;
+}
+.document-body .document-outline-summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  /* Emphasized: the caret turns in place and both ends of the turn are at rest. */
+  transition: transform var(--lt-duration-150) var(--lt-ease-emphasized);
+}
+.document-body .document-outline[open] > .document-outline-summary::before {
+  transform: rotate(90deg);
+}
+.document-body .document-outline-summary:hover {
+  color: var(--lt-link-hover);
+}
+/* The document's total line count, stamped in after the numbering pass. */
+.document-body .document-outline-count {
+  margin-left: 0.45em;
+  font-weight: var(--lt-weight-400);
+  color: var(--lt-muted-foreground);
+}
+/* Bulleted, not numbered: a deep outline runs a counter into the hundreds and the wide markers overflow the panel's left edge. */
+.document-body .document-outline > ul {
+  margin: 0;
+  padding: 0 1.4em 0.7em 2.4em;
+}
+.document-body .document-outline ul {
+  margin: 0;
+  padding-left: 1.6em;
+  list-style: disc;
+}
+.document-body .document-outline li {
+  margin: 0.15em 0;
+  color: var(--lt-muted-foreground);
+}
+.document-body .document-outline-link {
+  color: var(--lt-muted-foreground);
+}
+.document-body .document-outline-link:hover {
+  color: var(--lt-link-hover);
+}
+/* Alternate-language title lines under a TEI main title. Muted and tight, and pulled up toward the h1, so the stack reads as one title block. */
+.document-body .tei-doc-subtitles {
+  margin: calc(-0.5 * var(--type-spacing)) 0 var(--type-spacing);
+  color: var(--lt-muted-foreground);
+}
+.document-body .tei-doc-subtitles .tei-doc-subtitle {
+  margin: 0 0 0.3em;
+}
+.document-body .tei-doc-subtitles .tei-doc-subtitle:last-child {
+  margin-bottom: 0;
+}
+/* TEI front matter (summary, acknowledgments, introduction) rendered as a collapsed <details> before the body — mirrors the outline toggle above. */
+.document-body .tei-front {
+  margin: 1.5em 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-editor-code-background);
+}
+.document-body .tei-front-summary {
+  /* The arrow: a control is not a link. Written rather than left off, because an unlocked block says `cursor: text` and this would inherit it. */
+  cursor: default;
+  padding: 0.5em 0.9em;
+  font-weight: var(--lt-weight-600);
+  color: var(--lt-markdown-foreground);
+  list-style: none;
+  user-select: none;
+}
+.document-body .tei-front-summary::-webkit-details-marker {
+  display: none;
+}
+.document-body .tei-front-summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  transition: transform var(--lt-duration-150) var(--lt-ease-emphasized);
+}
+.document-body .tei-front[open] > .tei-front-summary::before {
+  transform: rotate(90deg);
+}
+.document-body .tei-front-summary:hover {
+  color: var(--lt-link-hover);
+}
+.document-body .tei-front-body {
+  padding: 0 1.4em 0.7em;
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
+.document-body .tei-front-body > :first-child {
+  margin-top: 0.7em;
+}
+/* Tree documents — generic (non-TEI) XML, JSON, YAML: label/value rows share one two-column grid, so the labels line up down the page. */
+.document-body .data-fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.3em 1.2em;
+  margin: var(--type-spacing) 0;
+}
+.document-body .data-fields dt {
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 0.9em;
+  font-weight: var(--lt-weight-600);
+  line-height: inherit;
+  padding-top: 0.12em;
+}
+.document-body .data-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+/* An element's attributes sit tighter under its heading than its content does. */
+.document-body .data-attributes {
+  margin-top: calc(-0.4 * var(--type-spacing));
+}
+/* Attributes carried alongside a value, shown after it. */
+.document-body .data-value-attrs {
+  color: var(--lt-muted-foreground);
+  font-size: 0.9em;
+}
+/* Repeated records (a sitemap's urls, a POM's dependencies, a JSON array of objects) become a table. Long URL cells wrap rather than pushing the table into a scroll. */
+.document-body .data-table {
+  font-size: 0.95em;
+  width: 100%;
+}
+.document-body .data-table td {
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+/* A comment the file carries, folded away as a labeled row: a note beside the document rather than words of it, so it takes one line until somebody opens it. */
+.document-body .xml-comment {
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 0.9em;
+  margin: var(--type-spacing) 0;
+}
+.document-body .xml-comment-summary {
+  /* The arrow, for the reason on .tei-front-summary above: an unlocked block's caret would land here. */
+  cursor: default;
+  font-weight: var(--lt-weight-600);
+  list-style: none;
+  user-select: none;
+}
+.document-body .xml-comment-summary::-webkit-details-marker {
+  display: none;
+}
+.document-body .xml-comment-summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  transition: transform var(--lt-duration-150) var(--lt-ease-emphasized);
+}
+.document-body .xml-comment[open] > .xml-comment-summary::before {
+  transform: rotate(90deg);
+}
+.document-body .xml-comment-summary:hover {
+  color: var(--lt-link-hover);
+}
+.document-body .xml-comment-body {
+  padding: 0.35em 0 0 1.5em;
+}
+:root[data-speed-reader="true"] .document-body {
+  color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
+  font-weight: var(--lt-weight-400);
+}
+:root[data-speed-reader="true"] .document-body h1,
+:root[data-speed-reader="true"] .document-body h2,
+:root[data-speed-reader="true"] .document-body h3,
+:root[data-speed-reader="true"] .document-body h4,
+:root[data-speed-reader="true"] .document-body h5,
+:root[data-speed-reader="true"] .document-body h6,
+:root[data-speed-reader="true"] .document-body strong,
+:root[data-speed-reader="true"] .document-body b,
+:root[data-speed-reader="true"] .document-body .github-mention,
+:root[data-speed-reader="true"] .document-body .markdown-alert-note::before,
+:root[data-speed-reader="true"] .document-body .markdown-alert-tip::before,
+:root[data-speed-reader="true"] .document-body .markdown-alert-important::before,
+:root[data-speed-reader="true"] .document-body .markdown-alert-warning::before,
+:root[data-speed-reader="true"] .document-body .markdown-alert-caution::before {
+  color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
+  font-weight: var(--lt-weight-400);
+}
+:root[data-speed-reader="true"] .document-body em,
+:root[data-speed-reader="true"] .document-body i {
+  font-style: italic;
+  font-weight: var(--lt-weight-400);
+}
+:root[data-speed-reader="true"] .document-body a,
+:root[data-speed-reader="true"] .document-body .github-ref,
+:root[data-speed-reader="true"] .document-body .github-mention {
+  color: inherit;
+  /* Quiet, dim underline so links stay findable without competing with the bold lead anchors. */
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 0.18em;
+}
+:root[data-speed-reader="true"] .document-body a:hover,
+:root[data-speed-reader="true"] .document-body a:focus-visible,
+:root[data-speed-reader="true"] .document-body .github-ref:hover,
+:root[data-speed-reader="true"] .document-body .github-mention:hover {
+  color: var(--lt-link-hover);
+  text-decoration: underline;
+}
+:root[data-speed-reader="true"] .document-body .speed-reader-anchor {
+  color: var(--lt-markdown-foreground);
+  font-weight: var(--lt-weight-700);
+}
+/* Glossary term links: a quiet dotted underline in the surrounding text's color (not the accent), so a term stays discoverable without standing out. Matches both `glossary:slug` and a `…/GLOSSARY.md#slug` link; placed last so it wins ties against the generic link/hover rules above. */
+.document-body a[href^="glossary:" i],
+.document-body a[href*="GLOSSARY.md#" i],
+.document-body a[href^="glossary:" i]:hover,
+.document-body a[href*="GLOSSARY.md#" i]:hover,
+:root[data-speed-reader="true"] .document-body a[href^="glossary:" i],
+:root[data-speed-reader="true"] .document-body a[href*="GLOSSARY.md#" i] {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 0.18em;
+}
+.document-body .github-ref,
+.document-body .github-mention {
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-markdown-badge-background);
+  color: var(--lt-markdown-badge-foreground);
+  font-family: var(--app-font);
+  font-size: 0.82em;
+  font-weight: var(--lt-weight-700);
+  padding: 0.08em 0.42em;
+  text-decoration: none;
+}
+.document-body .emoji {
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+.document-body ul,
+.document-body ol {
+  padding-left: 2em;
+}
+.document-body li + li {
+  margin-top: 0.25em;
+}
+.document-body li > ul,
+.document-body li > ol {
+  margin: 0.25em 0 0;
+}
+/* Ordered lists follow the classic outline sequence by depth (I, A, 1, a, i) rather than restarting at decimal each level. */
+.document-body ol {
+  list-style-type: upper-roman;
+}
+.document-body ol ol {
+  list-style-type: upper-alpha;
+}
+.document-body ol ol ol {
+  list-style-type: decimal;
+}
+.document-body ol ol ol ol {
+  list-style-type: lower-alpha;
+}
+.document-body ol ol ol ol ol {
+  list-style-type: lower-roman;
+}
+.document-body input[type="checkbox"] {
+  accent-color: var(--lt-checkbox-accent);
+  margin-right: 0.4em;
+}
+/* A task checkbox the reading view has made interactive (its `disabled` attribute removed). The arrow: a control is not a link. Written rather than left off, because an unlocked block says `cursor: text` and this would inherit it. */
+.document-body input[type="checkbox"]:not([disabled]) {
+  cursor: default;
+}
+/* Live editing affordances: text caret on hover, a focus ring while editing, and the monospace source font for XML blocks edited as raw source. */
+.document-body .leaf-editable {
+  cursor: text;
+}
+/* Nothing at all around the block you are typing in. A ring or a shaded band draws a box on a page whose whole point is that it is a page and not a form. The caret says where you are, and the words are already there to be read. A raw-source block is the one exception below — its code tint is what says "this is source", not "this is selected". */
+.document-body .leaf-editable:focus,
+.document-body .leaf-editable:focus-visible {
+  outline: none;
+}
+.document-body .leaf-editing-source {
+  font-family: var(--lt-code-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  white-space: pre-wrap;
+  background: var(--lt-editor-inline-code-background);
+  border-radius: var(--lt-radius-sm);
+}
+/* The fresh empty paragraph Enter opens below a block: give it a line's height so the caret has somewhere to blink (Markdown has no empty block). */
+.document-body .leaf-insert-block {
+  min-height: 1.5em;
+}
+/* The gray wording a blank block shows: printed rather than typed, so it is not in the document and cannot be committed. Switched off by the first keystroke (see makeBlankBlock) rather than by `:empty`, which a contenteditable's leftover <br> would defeat. */
+.document-body .leaf-insert-block[data-blank="true"][data-placeholder]::before {
+  content: attr(data-placeholder);
+  color: var(--lt-muted-foreground);
+  pointer-events: none;
+}
+/* The block gutter's insert row lies across this line while it is open, and a placeholder under it reads as text struck through by the controls. */
+.document-body .leaf-insert-block.is-insert-open[data-blank="true"][data-placeholder]::before {
+  content: none;
+}
+/* A heading's underline belongs to a heading that says something. On a blank page it is a line drawn under nothing, which is the difference between a title and a field. Kept as a transparent color so the space it holds doesn't move when the first letter arrives. */
+.document-body h1.leaf-insert-block[data-blank="true"],
+.document-body h2.leaf-insert-block[data-blank="true"] {
+  border-bottom-color: transparent;
+}
+/* Links inside an editable block keep the hand, not the block's text caret. Never the ones drawn as buttons: this rule comes later at equal specificity, so without the exception it would put the hand back on them. */
+.document-body .leaf-editable a:not(.leaf-md-button) {
+  cursor: pointer;
+}
+

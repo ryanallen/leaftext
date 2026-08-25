@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { POLICY, sitePage } from '../web-page.mjs';
+import { whole } from '../reading-css.mjs';
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 export const failures = [];
@@ -29,12 +30,19 @@ export const checkSettled = (name, run) => {
   );
 };
 
+// The app stylesheet the way the browser is handed it: every part of it, joined in cascade order. Read here rather than in a subject file, so a part added to the sheet reaches every check at once.
+let readingSource = null;
+export const readingCss = () => {
+  if (readingSource === null) readingSource = whole();
+  return readingSource;
+};
+
 // What layer a rule is painted on, read as the named token rather than the number in the rule: a layer written by hand is what `check-literals` refuses, so a rule that stopped naming one fails here rather than being read. Shared by every check that compares two layers, because a second copy is a second answer.
 let layerSources = null;
 export const layerOf = (selector) => {
   if (!layerSources) {
     layerSources = {
-      css: readFileSync(join(root, 'src/assets/reading.css'), 'utf8'),
+      css: readingCss(),
       tokens: readFileSync(join(root, 'src/assets/tokens.css'), 'utf8'),
     };
   }

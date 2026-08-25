@@ -3,13 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import {
-  check,
-  fakeElement,
-  homeStand,
-  record,
-  root,
-} from './shared.mjs';
+import { check, fakeElement, homeStand, readingCss, record, root } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -271,7 +265,7 @@ export function run() {
   });
 
   check('the home vault switcher keeps the regular marks and leaves room before its name', () => {
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const switcher = (css.split('\n.library-vault-switch {\n')[1] || '').split('}')[0];
     const edge = /\n {2}padding: 0 (var\(--lt-space-\d+\));\n/.exec(switcher);
     if (!edge) throw new Error('the vault switcher no longer pays one token either side');

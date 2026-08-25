@@ -1,0 +1,312 @@
+/* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
+/* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
+:root {
+  --reader-toolbar-space: 0px;
+}
+body:has(#readerToolbar:not([hidden])) {
+  --reader-toolbar-space: 52px;
+}
+.reader-toolbar {
+  /* Page column plus the minimap's, in every view: only the reading view opens that second track, so centering on the page alone put the same bar 31px left of where the source view drew it and moved the button a reader goes back to most. The source view's own map strip is the editor's, drawn inside the page column, so it is already inside this measurement. */
+  grid-column: 2 / 4;
+  grid-row: 1;
+  align-self: end;
+  justify-self: center;
+  z-index: 6;
+  /* Anchor for the dot-screened shadow behind it. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  /* Off the page's bottom edge by the same 8px the card is held off the frame. */
+  margin-bottom: var(--lt-space-8);
+  padding: var(--lt-space-4);
+  border-radius: var(--lt-radius-lg);
+  /* Transparent, not gone: the border keeps the box's size while ::after paints the visible face — see below. */
+  border: var(--lt-stroke-1) solid transparent;
+  background: transparent;
+  /* Only the contact line stays smooth; the soft spread is the dot screen below. */
+  box-shadow: var(--lt-shadow-raised);
+}
+/* The bar's face — fill and hairline — on ::after rather than the element: a negative-z child paints over its parent's own background, so the only way the dot shadow (::before) gets behind an opaque face is for the face to be a later negative-z child itself. inset -1px re-covers the border box the element's transparent border holds in layout. */
+.reader-toolbar::after {
+  content: "";
+  position: absolute;
+  z-index: var(--lt-z-below);
+  inset: -1px;
+  border-radius: var(--lt-radius-lg);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  /* Opaque: the page scrolls underneath it. */
+  background: var(--lt-surface);
+  pointer-events: none;
+}
+/* The bar's drop shadow: the same 2px dot lattice the page fade is screened with, in shadow ink instead of the page's color, thinning away from the bar under a mask — a halftone shadow rather than a smooth blur. Fixed attachment keeps its dots on the one window-anchored lattice every grained surface shares. z-index -1 keeps it inside the bar's own stacking context, above the page fade (4) and under the ::after face that follows it in tree order. */
+.reader-toolbar::before {
+  content: "";
+  position: absolute;
+  z-index: var(--lt-z-below);
+  inset: -14px -22px -9px;
+  pointer-events: none;
+  --lt-grain-dot: var(--lt-grain-dot-strong);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
+  mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
+}
+.reader-tool-group {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+/* The reading view's tools, sunk into the bar beside the button that turns that view on. A recess says "these belong to the thing next to them"; another row of same-level buttons would just read as more views. Grained on the same window-anchored lattice as the bar and the rail, so it is the same surface pressed in rather than a different one laid on top. */
+/* The vault's own sync button, at the end of its crumb row. Carries a count rather than a bare dot: "3" is a reason to press it, a dot is only a rumor. Absent entirely when there is nothing waiting -- see renderVaultSyncButton. */
+.library-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: var(--lt-space-2) var(--lt-space-6) var(--lt-space-2) var(--lt-space-4);
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lt-accent) 16%, transparent);
+  color: var(--lt-accent);
+  font-size: var(--lt-text-11);
+  font-variant-numeric: tabular-nums;
+}
+.library-sync:hover {
+  background: color-mix(in srgb, var(--lt-accent) 26%, transparent);
+}
+.library-sync[hidden] {
+  display: none;
+}
+/* On its way out, still turning. */
+.library-sync.is-leaving {
+  opacity: 0;
+  /* Accelerate, because it is leaving. Its length stays: SYNC_FADE_MS in library.js hides the button on the same 260ms, and it is slow on purpose — the last thing seen is the work finishing. */
+  transition: opacity var(--lt-duration-260) var(--lt-ease-accelerate);
+  pointer-events: none;
+}
+.library-sync .lt-icon {
+  width: 13px;
+  height: 13px;
+}
+.library-sync:disabled {
+  cursor: default;
+}
+/* Turning while it works, so a slow push looks like a slow push. An <svg> takes its transform origin from its own box, so this has to be said out loud or the glyph orbits the button's top-left corner instead of spinning. */
+.library-sync.is-busy .lt-icon {
+  transform-origin: 50% 50%;
+  animation: lt-spin var(--lt-duration-1100) var(--lt-ease-linear) infinite;
+}
+/* Slowed, not stopped, and its own rule because the glyph is an icon rather than an .lt-spinner. */
+@media (prefers-reduced-motion: reduce) {
+  .library-sync.is-busy .lt-icon {
+    animation-duration: var(--lt-duration-2400) !important;
+  }
+}
+
+/* A line of explanation inside the vault menu: what the repository is, or what is missing before it can be one. Sized down from a row and not clickable, so it never looks like a button that has stopped working. */
+.crumb-menu-note {
+  padding: var(--lt-space-4) var(--lt-space-10) var(--lt-space-6);
+  font-size: var(--lt-text-11);
+  line-height: var(--lt-leading-1-4);
+  color: var(--lt-muted-foreground);
+  white-space: normal;
+  word-break: break-word;
+}
+/* Save beside Cancel, sharing the width, rather than stacked into two rows that read as two separate choices. */
+.crumb-menu-actions {
+  display: flex;
+  gap: var(--lt-space-4);
+  padding: var(--lt-space-2) var(--lt-space-4);
+}
+.crumb-menu-actions .crumb-menu-action {
+  flex: 1 1 0;
+  justify-content: center;
+}
+/* The check icon is borrowed from the selected-row tick, which pushes itself to the far edge; here it rides next to its label, centered as one group. */
+.crumb-menu-actions .crumb-menu-action .lt-icon {
+  margin-left: 0;
+}
+.crumb-menu-actions .crumb-menu-action.is-primary {
+  color: var(--lt-accent);
+}
+.crumb-menu-note.is-danger {
+  color: var(--lt-danger);
+}
+.crumb-menu-item:disabled {
+  opacity: var(--lt-opacity-50);
+  cursor: default;
+}
+/* Exactly as tall as a view button, so the recess and the buttons beside it share one top and one bottom edge and sit the same 4px off the bar's stroke; its own tools are smaller and center inside it. No margin on the left, where an inset of its own would land on top of the bar's padding and leave that side twice as deep as the other three. */
+.reader-view-tools {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 30px;
+  gap: var(--lt-space-1);
+  margin: 0 var(--lt-space-2) 0 0;
+  padding: 0 var(--lt-space-2);
+  border-radius: var(--lt-radius-md);
+  /* A well cut into the bar: a wash of shadow over its face, and more inside the top edge. Black at an alpha, never a mix toward the foreground — that lightens on a dark theme, which is a recess lit from inside. Not a shade mixed from the chrome token either, so the bar stays one color. */
+  background-color: var(--lt-tint-recess);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-attachment: fixed;
+  box-shadow: var(--lt-shadow-inset);
+}
+.reader-view-tools[hidden] {
+  display: none;
+}
+/* The graph's one setting, the only labeled control in the recess: a named list of four sizes, so it reads rather than being clicked through. Same box as the panel dropdown it came from, one padding step shorter because it stands beside 24px buttons. */
+.reader-subselect {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  padding: 0 var(--lt-space-4);
+  color: var(--lt-muted-foreground);
+}
+.reader-subselect[hidden] {
+  display: none;
+}
+.reader-subselect-label {
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-800);
+  white-space: nowrap;
+}
+.reader-subselect select {
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
+  padding: var(--lt-space-4) var(--lt-space-24) var(--lt-space-4) var(--lt-space-8);
+}
+/* Smaller than a view button, and never blue: the blue chip is how this bar says which view you are in, and a setting inside a view must not wear it. On gets a page-colored fill raised out of the recess's grain, so the state reads at a glance; off sits flat and muted. */
+.reader-subtool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  /* Switching this on lights a fill, an ink and a hairline together, and the shared rule at the top of the file carries no shadow — so all three are named here rather than putting a shadow transition on every button in the app to time one chip. */
+  transition: background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease),
+    box-shadow var(--lt-duration-120) var(--lt-ease);
+}
+/* The tools in the recess come and go with the view, and a display of our own beats the browser's rule for [hidden] — so say it again here. */
+.reader-subtool[hidden] {
+  display: none;
+}
+.reader-subtool .lt-icon {
+  width: 16px;
+  height: 16px;
+}
+.reader-subtool:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+/* On is a lit chip in its own frame: the page color pushed away from the recess, so it lifts off the grain on a light theme and a dark one alike, and a hairline drawing the edge of what is switched on. The page color alone is the tone of the bar behind it and reads as nothing. */
+.reader-subtool[aria-pressed="true"],
+.reader-subtool[aria-pressed="true"]:hover {
+  color: var(--lt-foreground);
+  background: color-mix(in srgb, var(--lt-background) 88%, var(--lt-foreground));
+  box-shadow: var(--lt-shadow-edge-strong);
+}
+/* One button, two glyphs, and the pressed state picks which. Swapping innerHTML instead would rebuild the icon under the pointer on every render. */
+.reader-swap-glyph {
+  display: inline-flex;
+}
+/* The gauge reads as a speedometer: off, its needle points left (slow), so the off glyph is mirrored; on, it points right (fast) and its heavier stroke makes it the louder of the two. */
+.reader-subtool .reader-glyph-off {
+  transform: scaleX(-1);
+}
+.reader-subtool .reader-glyph-on,
+.reader-subtool[aria-pressed="true"] .reader-glyph-off {
+  display: none;
+}
+.reader-subtool[aria-pressed="true"] .reader-glyph-on {
+  display: inline-flex;
+}
+.reader-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.reader-tool .lt-icon {
+  width: 17px;
+  height: 17px;
+}
+/* No `:not(:disabled)` here: every tool in the bar is always enterable, and the bar itself is gone when there is no document. */
+.reader-tool:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+/* The view you are in. The one piece of color in the bar, so the bar answers "where am I" at a glance — the same job the highlighted tool does in Figma. */
+.reader-tool.is-active,
+.reader-tool.is-active:hover {
+  background: var(--lt-accent);
+  color: var(--lt-markdown-background);
+}
+/* The active glyph is drawn a touch heavier than its resting outline, so the selected view reads as bolder as well as brighter. A mask has no strokes to thicken, so it swaps to the bolder drawing, which `just bundle-icons` writes from the same file at stroke-width 2.25. */
+.reader-tool.is-active .lt-icon-document {
+  -webkit-mask-image: var(--lt-icon-document-heavy);
+  mask-image: var(--lt-icon-document-heavy);
+}
+.reader-tool.is-active .lt-icon-code-view {
+  -webkit-mask-image: var(--lt-icon-code-view-heavy);
+  mask-image: var(--lt-icon-code-view-heavy);
+}
+.reader-tool.is-active .lt-icon-graph {
+  -webkit-mask-image: var(--lt-icon-graph-heavy);
+  mask-image: var(--lt-icon-graph-heavy);
+}
+.reader-tool-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 var(--lt-space-4);
+  background: var(--lt-border);
+}
+/* Save keeps its word. It is the one thing in the bar that writes to disk, and an icon would make it guessable rather than certain. */
+.reader-tool-save {
+  height: 30px;
+  padding: 0 var(--lt-space-12);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-accent);
+  color: var(--lt-markdown-background);
+  font-family: inherit;
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
+.reader-tool-save:hover {
+  filter: brightness(1.08);
+}
+/* `display` on a class beats the user agent's `[hidden] { display: none }`, so every one of these has to turn itself off explicitly. Without the first rule the bar ignored `hidden` entirely and sat over the home screen. */
+.reader-toolbar[hidden],
+.reader-tool[hidden],
+.reader-tool-save[hidden] {
+  display: none;
+}
+/* Nothing drawn after the divider: it has nothing to divide. Asked of the markup rather than named button by button, so a button added after it needs no edit here — which is why every element after it has to ship `hidden`. */
+.reader-toolbar:not(:has(.reader-tool-divider ~ *:not([hidden]))) .reader-tool-divider {
+  display: none;
+}

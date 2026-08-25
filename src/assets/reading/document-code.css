@@ -1,0 +1,361 @@
+.document-body blockquote {
+  border-left: 0.25em solid var(--lt-markdown-blockquote-border);
+  color: var(--lt-markdown-blockquote-foreground);
+  padding: 0 1em;
+}
+.document-body blockquote:not(.markdown-alert) p {
+  padding-left: 1.25em;
+  text-indent: -1.25em;
+}
+.document-body blockquote:not(.markdown-alert) p.blockquote-lines {
+  padding-left: 0;
+  text-indent: 0;
+}
+.document-body blockquote:not(.markdown-alert) .blockquote-line {
+  display: block;
+  padding-left: 1.25em;
+  text-indent: -1.25em;
+}
+.document-body blockquote > :first-child {
+  margin-top: 0;
+}
+.document-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+.document-body .markdown-alert-note,
+.document-body .markdown-alert-tip,
+.document-body .markdown-alert-important,
+.document-body .markdown-alert-warning,
+.document-body .markdown-alert-caution {
+  border-left-width: var(--lt-stroke-6);
+  font-family: var(--app-font);
+  font-size: 0.92em;
+  line-height: var(--lt-leading-1-55);
+  position: relative;
+}
+.document-body .markdown-alert-note::before,
+.document-body .markdown-alert-tip::before,
+.document-body .markdown-alert-important::before,
+.document-body .markdown-alert-warning::before,
+.document-body .markdown-alert-caution::before {
+  display: block;
+  font-weight: var(--lt-weight-700);
+  letter-spacing: 0;
+  margin-bottom: 0.15em;
+}
+.document-body .markdown-alert-note {
+  border-left-color: var(--lt-markdown-alert-note);
+}
+.document-body .markdown-alert-note::before {
+  color: var(--lt-markdown-alert-note);
+  content: "Note";
+}
+.document-body .markdown-alert-tip {
+  border-left-color: var(--lt-markdown-alert-tip);
+}
+.document-body .markdown-alert-tip::before {
+  color: var(--lt-markdown-alert-tip);
+  content: "Tip";
+}
+.document-body .markdown-alert-important {
+  border-left-color: var(--lt-markdown-alert-important);
+}
+.document-body .markdown-alert-important::before {
+  color: var(--lt-markdown-alert-important);
+  content: "Important";
+}
+.document-body .markdown-alert-warning {
+  border-left-color: var(--lt-markdown-alert-warning);
+}
+.document-body .markdown-alert-warning::before {
+  color: var(--lt-markdown-alert-warning);
+  content: "Warning";
+}
+.document-body .markdown-alert-caution {
+  border-left-color: var(--lt-markdown-alert-caution);
+}
+.document-body .markdown-alert-caution::before {
+  color: var(--lt-markdown-alert-caution);
+  content: "Caution";
+}
+.document-body code {
+  background: var(--lt-editor-inline-code-background);
+  border-radius: var(--lt-radius-md);
+  color: var(--lt-editor-inline-code-foreground);
+  font-family: var(--code-font);
+  font-size: 0.875em;
+  padding: 0.2em 0.4em;
+}
+.document-body pre {
+  position: relative;
+  background: var(--lt-editor-code-background);
+  background-clip: padding-box;
+  border-radius: var(--lt-radius-md);
+  clip-path: inset(0 round 6px);
+  color: var(--lt-editor-code-foreground);
+  line-height: var(--lt-leading-1-45);
+  overflow: auto;
+  padding: 1em;
+  tab-size: 4;
+}
+/* Hand the horizontal scroll (and the corner clip with it) to the <code> inside, so the gutter number hung outside is not clipped and the language label and copy button hold still while the code scrolls. A raw-HTML <pre> with no <code> keeps scrolling itself — there is nothing inside to hand the job to. */
+.document-body pre:has(> code) {
+  clip-path: none;
+  overflow: visible;
+}
+.document-body pre code {
+  background: transparent;
+  color: inherit;
+  font-size: 0.875em;
+  padding: 0;
+  white-space: pre;
+  word-break: normal;
+}
+.document-body pre:has(> code) > code {
+  display: block;
+  overflow-x: auto;
+}
+.document-body pre ::selection {
+  background: var(--lt-editor-code-selection-background);
+  color: var(--lt-editor-code-selection-foreground);
+}
+.document-body pre.highlight,
+.document-body pre.mermaid {
+  position: relative;
+}
+/* Mermaid measures a diagram hundreds of times while drawing it, and each read of a dirty page relaid out the whole document. Layout containment keeps those reads inside the block. Layout only — size containment would flatten the block to nothing, and paint containment would clip what overflows it. */
+.document-body pre.mermaid {
+  contain: layout;
+}
+/* A diagram not drawn yet is not its own source code — showing that text gives the reader words that vanish a second later. The ink goes, the block keeps its laid-out height, and a spinner stands in the middle. A diagram mermaid refused keeps everything: it drew its own error in there, and that is the answer. */
+.document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]) {
+  min-height: 88px;
+  color: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+/* Only the box waiting its turn spins: one too far away to be queued may never be scrolled to, and fifty-seven animating for as long as the file is open is work nobody asked for. */
+.document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Pulled back half its own size to center it. Not a spacing step — it is locked to the box, and the spin animation owns `transform`, so the usual translate is not available. */
+  --lt-spinner-size: 18px;
+  width: var(--lt-spinner-size);
+  height: var(--lt-spinner-size);
+  margin: calc(var(--lt-spinner-size) / -2) 0 0 calc(var(--lt-spinner-size) / -2);
+  border-radius: var(--lt-radius-full);
+  border: var(--lt-stroke-2) solid color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
+  border-top-color: var(--lt-accent);
+  animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
+  pointer-events: none;
+}
+/* Slowed, not stopped: a diagram can take a while and the tile has nothing else to say it is coming. Its own rule — a pseudo-element carries no class. */
+@media (prefers-reduced-motion: reduce) {
+  .document-body pre.mermaid:not([data-processed="true"]):not([data-diagram-wait="far"])::after {
+    animation-duration: var(--lt-duration-1600) !important;
+  }
+}
+.document-body pre.highlight::before,
+.document-body pre.mermaid::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-700);
+  /* The label sits inside a document that can set italic around its block. */
+  font-style: normal;
+  line-height: var(--lt-leading-1-2);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+/* On highlighted blocks the copy button sits top-right, so nudge the language label left to make room. */
+.document-body pre.highlight::before {
+  right: 44px;
+}
+/* "Copy all" button on code blocks: muted at rest, brightening on hover/focus, swapping to a check mark briefly on copy. */
+.document-body pre > .code-copy {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-md);
+  background: color-mix(in srgb, var(--lt-editor-code-background) 65%, transparent);
+  color: var(--lt-muted-foreground);
+  /* The arrow: a control is not a link. Written rather than left off, because a code block is always source-editable and unlocked it says `cursor: text`. */
+  cursor: default;
+  opacity: var(--lt-opacity-50);
+  transition: opacity var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease), background var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease);
+}
+.document-body pre:hover > .code-copy,
+.document-body pre > .code-copy:focus-visible {
+  opacity: 1;
+}
+.document-body pre > .code-copy:hover {
+  background: var(--lt-editor-code-background);
+  border-color: var(--lt-editor-code-border);
+  color: var(--lt-markdown-foreground);
+}
+.document-body pre > .code-copy.is-copied {
+  opacity: 1;
+  color: var(--lt-success, currentColor);
+}
+.code-copy-mark {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+.code-copy-check {
+  display: none;
+}
+.code-copy.is-copied .code-copy-copy {
+  display: none;
+}
+.code-copy.is-copied .code-copy-check {
+  display: block;
+}
+.document-body pre.mermaid[data-processed="true"] {
+  /* The code block's own cell, kept rather than cleared: a diagram you drag around needs an edge to be inside of. The grain is restated here because the shared rule further down loses to this selector — same token and the same 2px window-anchored lattice, so it is one texture with every other reading surface. */
+  background-color: var(--lt-editor-code-background);
+  --lt-grain-dot: var(--reader-surface-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  border: 0;
+  color: var(--lt-markdown-foreground);
+  padding: 0.75em;
+  text-align: center;
+  /* A window onto the drawing: zooming moves the picture inside rather than the page around it. At life size nothing is clipped, so a page nobody zooms looks exactly as it did. */
+  overflow: hidden;
+  /* Grab, not the text caret .leaf-editable gives every editable block: the source opens from the corner button now, not from a press. */
+  cursor: grab;
+}
+.document-body pre.mermaid[data-processed="true"]::before {
+  content: none;
+}
+/* Direct child, always: the drawing is the block's own SVG, and the corner buttons hold SVGs of their own. A descendant selector here takes every icon with it — they pile up at the pan offset and leave empty buttons behind. */
+/* The full-window stage rides on all three of these: setMermaidView drives them by hand, so a rule the stage misses is a diagram that pans into nowhere. */
+.document-body pre.mermaid[data-processed="true"] > svg,
+.diagram-stage > svg {
+  display: inline-block;
+  height: auto;
+  max-width: 100%;
+}
+/* A box wired to a link. The block itself is `grab` because a diagram is dragged to move it, so the anchor has to say pointer over the top of that — otherwise the one part of a diagram that goes somewhere is the part that looks least like it does. */
+.document-body pre.mermaid[data-processed="true"] a[href] {
+  cursor: pointer;
+}
+/* And it reads as a link, in the page and on the editor's canvas alike: mermaid wraps the label in an anchor, so the label is underlined the way a link in the text is. On the canvas that anchor carries only `xlink:href`, which is why this does not ask for the attribute. */
+.document-body pre.mermaid[data-processed="true"] a {
+  text-decoration: underline;
+}
+.flow-stage > svg a {
+  text-decoration: underline;
+}
+/* Moved or zoomed, the drawing comes out of the flow and the block holds the height the page gave it, so the words around a diagram never shift. Only ever translated — a CSS scale re-lays out the labels inside mermaid's foreignObjects against boxes that did not grow with them and clips every one, so the size is set on the SVG instead. */
+.document-body pre.mermaid[data-processed="true"].is-moved,
+.diagram-stage.is-moved {
+  height: var(--mermaid-box-height);
+}
+.document-body pre.mermaid[data-processed="true"].is-moved > svg,
+.diagram-stage.is-moved > svg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) translate(var(--mermaid-pan-x, 0px), var(--mermaid-pan-y, 0px));
+}
+.document-body pre.mermaid[data-processed="true"].is-panning,
+.diagram-stage.is-panning {
+  cursor: grabbing;
+}
+/* A diagram swapped for its source is a code block again. The rules above center it, tighten its padding and print it in the preview ink, and they outrank .leaf-editing-source — so without this the mermaid sits centered in a diagram's cell rather than reading as the source it now is. */
+.document-body pre.mermaid[data-processed="true"][data-editing-source="true"] {
+  background: var(--lt-editor-code-background);
+  color: var(--lt-editor-code-foreground);
+  padding: 1em;
+  text-align: left;
+}
+.document-body pre.mermaid[data-processed="true"][data-editing-source="true"]::before {
+  content: attr(data-language);
+}
+.document-body .syn-comment {
+  color: var(--lt-syntax-comment);
+  font-style: italic;
+}
+.document-body .syn-keyword,
+.document-body .syn-storage,
+.document-body .syn-control {
+  color: var(--lt-syntax-keyword);
+  font-weight: var(--lt-weight-700);
+}
+.document-body .syn-operator {
+  color: var(--lt-syntax-operator);
+  font-weight: var(--lt-weight-700);
+}
+.document-body .syn-string {
+  color: var(--lt-syntax-string);
+}
+.document-body .syn-constant,
+.document-body .syn-numeric,
+.document-body .syn-boolean,
+.document-body .syn-character,
+.document-body .syn-language {
+  color: var(--lt-syntax-number);
+}
+.document-body .syn-entity,
+.document-body .syn-tag,
+.document-body .syn-attribute,
+.document-body .syn-heading {
+  color: var(--lt-syntax-function);
+}
+.document-body .syn-function,
+.document-body .syn-method {
+  color: var(--lt-syntax-function);
+}
+.document-body .syn-type,
+.document-body .syn-class,
+.document-body .syn-support {
+  color: var(--lt-syntax-type);
+}
+.document-body .syn-variable,
+.document-body .syn-parameter,
+.document-body .syn-property {
+  color: var(--lt-syntax-variable);
+}
+.document-body .syn-punctuation {
+  color: var(--lt-syntax-punctuation);
+}
+.document-body .syn-invalid,
+.document-body .syn-illegal {
+  color: var(--lt-syntax-deleted);
+  text-decoration: underline;
+}
+.document-body .syn-inserted {
+  background: var(--lt-syntax-inserted-background);
+  color: var(--lt-syntax-inserted);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+.document-body .syn-deleted {
+  background: var(--lt-syntax-deleted-background);
+  color: var(--lt-syntax-deleted);
+  text-decoration: line-through;
+  text-decoration-thickness: 0.08em;
+}
+.document-body .syn-changed {
+  background: var(--lt-syntax-changed-background);
+  color: var(--lt-syntax-changed);
+  font-style: italic;
+}

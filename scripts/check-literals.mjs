@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Every value in the interface comes from a token. This fails on a hand-written one in src/assets/reading.css, naming the line — so the next value is a deliberate row in design/tokens.md rather than a number typed into a rule.
+// Every value in the interface comes from a token. This fails on a hand-written one in src/assets/reading/, naming the part and the line — so the next value is a deliberate row in design/tokens.md rather than a number typed into a rule.
 //
 //   node scripts/check-literals.mjs   report every hit and exit non-zero (`just verify`)
 //
@@ -23,9 +23,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parts } from './reading-css.mjs';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const relative = 'src/assets/reading.css';
-const css = readFileSync(join(root, relative), 'utf8');
+
+// The stylesheet is served as ordered parts. Each one is scanned on its own so a hit names the file a reader opens, with that file's own line number.
+const stylesheet = parts();
 
 // Comments and @media conditions are not declarations.
 function strip(source) {
@@ -48,8 +51,6 @@ function strip(source) {
     return { n: index + 1, text };
   });
 }
-
-const code = strip(css);
 
 // The metrics that are one geometry, named once, and stay in the stylesheet.
 const METRICS = /^\s*--(?:app-bar-height|reader-|library-|minimap-|cv-|tab-|sheet-|flow-|mermaid-|block-|selection-|card-|sw-|code-|glossary-|graph-|type-)/;
@@ -110,9 +111,11 @@ function propertyHits(lines) {
 }
 
 const hits = [];
-for (const { n, what, value } of propertyHits(code)) {
-  const hint = what === 'a font shorthand' ? ' — write font-family, font-size, font-weight and line-height, each from the table' : '';
-  hits.push(`${relative}:${n}  ${what} written by hand: ${value.trim()}${hint}`);
+for (const { path, css } of stylesheet) {
+  for (const { n, what, value } of propertyHits(strip(css))) {
+    const hint = what === 'a font shorthand' ? ' — write font-family, font-size, font-weight and line-height, each from the table' : '';
+    hits.push(`${path}:${n}  ${what} written by hand: ${value.trim()}${hint}`);
+  }
 }
 
 // A hover fill is one wash, and only that wash. Two ways of writing one leave a row under the pointer invisible: naming a surface color, which a family is free to set to the very value of the panel behind it, and mixing a percentage here, which is a strength nothing checks — it reached five different numbers across nine rules before this.
@@ -214,8 +217,10 @@ for (const [source, want, label] of FIXTURE) {
   }
 }
 
-for (const { n, why, value } of hoverFills(code)) {
-  hits.push(`${relative}:${n}  a hover ${why}: ${value} — every hover fill is var(--lt-wash-hover)`);
+for (const { path, css } of stylesheet) {
+  for (const { n, why, value } of hoverFills(strip(css))) {
+    hits.push(`${path}:${n}  a hover ${why}: ${value} — every hover fill is var(--lt-wash-hover)`);
+  }
 }
 
 if (hits.length) {
@@ -224,4 +229,4 @@ if (hits.length) {
   console.error('Add a row to design/tokens.md (or design/colors.md for a color), then `just bundle-tokens`.');
   process.exit(1);
 }
-console.log(`literals: none in ${relative} — every value comes from a token, and every hover fill is the one wash`);
+console.log(`literals: none across ${stylesheet.length} stylesheet part(s) — every value comes from a token, and every hover fill is the one wash`);

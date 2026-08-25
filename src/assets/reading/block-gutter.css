@@ -1,0 +1,159 @@
+/* ---- The block gutter --------------------------------------------------
+   The handle you drag a block by and the plus that writes a new one, in the page's left margin. Positioned inside .reader-layout (the reader's positioned ancestor), so it scrolls with the document instead of being chased down the page by a scroll handler. See block-controls.js.
+
+   --block-gutter-shift is how far left of the text the pair sits; the script sets it from the margin actually available, so a window too narrow to center the measure keeps the controls at the page edge rather than losing them. */
+.block-gutter[hidden] {
+  display: none;
+}
+.block-gutter {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-10);
+  transform: translate(calc(-1 * var(--block-gutter-shift, 72px)), -50%);
+}
+.block-gutter-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  /* Page-colored, so where the margin is too narrow to hold them the tools read over the start of a line instead of dissolving into it. */
+  background: var(--lt-markdown-background);
+  border-radius: var(--lt-radius-pill);
+}
+.block-gutter button {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lt-muted-foreground);
+}
+.block-gutter button[hidden] {
+  display: none;
+}
+.block-gutter .lt-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+/* The handle is for carrying, not for clicking. */
+.block-gutter .block-grip {
+  width: 22px;
+  height: 30px;
+  cursor: grab;
+}
+.block-gutter .block-grip:active {
+  cursor: grabbing;
+}
+.block-gutter .block-add,
+.block-gutter .block-insert-option {
+  width: 32px;
+  height: 32px;
+  border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-markdown-background);
+  transition: color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease);
+}
+.block-gutter .block-grip:hover,
+.block-gutter .block-add:hover,
+.block-gutter .block-insert-option:hover {
+  color: var(--lt-accent, var(--lt-markdown-foreground));
+  border-color: var(--lt-accent, var(--lt-border));
+}
+.block-add-close {
+  display: none;
+}
+.block-gutter.is-expanded .block-add-open {
+  display: none;
+}
+.block-gutter.is-expanded .block-add-close {
+  display: block;
+}
+/* The space under the line being typed in, made clickable. Laid over the gap rather than opened in it: a real box there re-lays out the page every time the gutter moves, and the page growing and shrinking a line mid-sentence is what made whole lines jump under the pointer. Invisible — the plus is the mark. */
+.block-gap-line {
+  position: absolute;
+  z-index: 2;
+  cursor: text;
+}
+/* The image box: which picture, before anything is written. Its own row so the field has the width of the line rather than the width of a button. */
+.block-insert-choose {
+  flex: none;
+  height: 30px;
+  padding: 0 var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-markdown-background);
+  color: var(--lt-markdown-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
+}
+.block-insert-choose:hover {
+  border-color: var(--lt-accent, var(--lt-border));
+  color: var(--lt-accent, var(--lt-markdown-foreground));
+}
+.block-insert-url {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 320px;
+  height: 30px;
+  padding: 0 var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-markdown-background);
+  color: var(--lt-markdown-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-400);
+  line-height: var(--lt-leading-1-2);
+}
+.block-insert-url:focus {
+  border-color: var(--lt-accent, var(--lt-border));
+  outline: none;
+}
+/* The options fan out to the right of the cross, over the (nearly always empty) line the plus was pressed on — the rule is the divider between "close this" and "pick one of these". */
+.block-insert-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  padding-left: var(--lt-space-10);
+  border-left: var(--lt-stroke-1) solid var(--lt-markdown-rule);
+  background: var(--lt-markdown-background);
+}
+.block-insert-row[hidden] {
+  display: none;
+}
+/* The tools are the handle you grabbed; once the block itself is following the pointer they are one thing too many. Faded rather than hidden, so the grip holding the pointer capture stays where the drag started. */
+.block-gutter.is-dragging {
+  opacity: 0;
+}
+/* The block being carried. A copy lifted off the page, over the gap its neighbors open for it. */
+.block-drag-ghost {
+  position: absolute;
+  z-index: 5;
+  padding: var(--lt-space-2) var(--lt-space-10);
+  margin-left: calc(var(--lt-space-10) * -1);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-markdown-background);
+  opacity: var(--lt-opacity-92);
+  pointer-events: none;
+}
+.block-drag-ghost > * {
+  margin: 0;
+}
+/* The original keeps its space while it is away — the neighbors step over it, and stepping over something visible would just be two copies of one block. */
+.document-body .is-block-dragging {
+  visibility: hidden;
+}
+/* Blocks slide to open the gap rather than jumping to it, so the page reads as making room. Only while a drag is on: no document pays for this at rest. */
+body.is-block-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+body.is-block-dragging .document-body [data-src-start] {
+  /* Emphasized: a block stays where it is on the page and steps aside, so both ends of the move are at rest. */
+  transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
+}

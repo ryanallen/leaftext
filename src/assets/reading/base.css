@@ -1,0 +1,190 @@
+:root {
+  color-scheme: light dark;
+  /* App bar height, shared by the bar itself and everything that offsets content below the fixed bar (document padding, library pane, minimap). */
+  --app-bar-height: 40px;
+  --reader-content-pad: 32px;
+  /* The strip anything widened past the measure keeps clear either side — a table, a picture, the start screen's lists: the block handle and plus, so it is BLOCK_TOOLS_WIDTH in block-controls.js and not a spacing choice. check-shell.mjs holds the two copies to one number. */
+  --reader-lane-inset: 62px;
+  /* How deep an edge fade reaches — one number for the dot screen and the wash under it, which have to end together. Given half the depth the wash stopped where the screen carried on, and the break in slope read as a bright edge at the halfway mark; the eye catches a change of gradient far more readily than a gradient. At :root because a widened table's own ends use it too, and every edge in the app is one profile. */
+  --reader-edge-fade-depth: 36px;
+  /* One row in a start-screen list, exactly: two lines that never wrap, plus its own padding. Every cap on those lists is a whole number of these, so one never ends part-way down a row. At :root because the sheet draws the same rows outside the grid that holds them on the screen. */
+  --home-row-height: calc(
+    var(--lt-text-14) * var(--lt-leading-1-4) + var(--lt-text-12) * var(--lt-leading-1-4) + var(--lt-space-8) * 2
+  );
+  /* How long a fade holds at full before going, so the cut is crossed solid. Shared for the same reason as the depth: one profile, not two. */
+  --reader-edge-fade-hold: 2px;
+  /* Where a document's first line opens, from the reader shell's own top edge (so the app bar's height is inside it). Has to clear --reader-edge-fade-depth or the line starts half dissolved, and to equal READER_CONTENT_TOP_GAP in the shell script, which is how the reading view reaches it. */
+  --reader-content-top-gap: 88px;
+  /* Cassette-style grain dot shared by the app bar and library surfaces: a faint dark speckle on the light surface, overridden heavier for dark themes. */
+  --app-bar-grain: var(--lt-grain-light);
+  /* A heavier grain for inactive tabs, so one reads as a darker dotted cell set apart from its neighbors without any outline. Overridden darker still for dark themes. */
+  --library-header-grain: var(--lt-grain-heavy);
+  /* The reading view's tinted surfaces — the outline, a diagram's cell, a code block, a table head — take the chrome's grain rather than one of their own. Screen them lighter and they read as a second texture, brighter than the pane beside them, which is what the dots are there to prevent. */
+  --reader-surface-grain: var(--app-bar-grain);
+  /* The ink the dot lattice is drawn in, and the only part of it that is a variable: each rule writes the circles into its own `background-image`. Never hold the whole gradient in a custom property — its `var()` is substituted where the property is declared and descendants inherit the finished string, so one declared here silently paints every surface below in this ink whatever `--lt-grain-dot` they set. */
+  --lt-grain-dot: var(--app-bar-grain);
+  /* The untinted table rows — the ones carrying no fill, so the grain above has nothing to speckle. Dark themes only: on a light theme these are the near-white rows, where a dot dark enough to see reads as a gray screen-door mesh laid over the whole table. Light themes leave them plain. */
+  --reader-row-grain: transparent;
+  /* How far the reading surface is held off the window frame. The chrome shows through the gap, so the page reads as a card floating on the bar's texture rather than something bleeding off the edge of the glass. */
+  --reader-gutter: 8px;
+  /* The gutter the reader's scrollbar occupies, for overlays that must keep off it. Repeats ::-webkit-scrollbar's width rather than feeding it: that rule stays class-driven because Chromium won't re-resolve a scrollbar pseudo on a :has() flip. */
+  --reader-scrollbar: 14px;
+  /* The minimap rail's metrics. Global because the rail sits outside the page now: the shell sizes its column from them, and the rail itself reads them from the other side of that boundary. */
+  --minimap-padding-inline: 8px;
+  --minimap-preview-width: 68px;
+  --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
+  /* What separates the page's right border from the rail. The rail's far side keeps --reader-gutter, so it is held off the frame exactly as the page is. */
+  --reader-minimap-gap: 4px;
+  /* The code view's version of that gap: how far the page frame's right border — which is also the rail's divider — stands off Monaco's minimap. Said once because three things have to land on it: the frame, the app bar's divider, and the top-right corner arc, all measured from the window's right edge. */
+  --cv-minimap-standoff: 4px;
+  /* How far the code view's line numbers stand off the page frame's left border. Said here because the pinned heading rows draw their own gutter and have to land on the same column. */
+  --cv-line-number-pad: 8px;
+  /* How much width the rail takes out of the page's column. Zero until a document actually has a minimap, or turning it off would leave a dead band. Set from `body` (below) rather than the shell: the app bar's divider and corner have to stop at the same place, and they sit outside the shell. */
+  --reader-minimap-column: 0px;
+  --heading-font: "Noto Serif", Georgia, Cambria, "Times New Roman", serif;
+  --app-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --code-font: "Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  color: var(--lt-foreground);
+  font-family: var(--reading-font);
+}
+/* The app's own page and nothing else. Every declaration here is the window's, and the whole file is what a browser is handed — so a bare `body` rule reaches leaftext.com and empty.guru too, and a browser takes the viewport's overflow from `body` where the root element's is `visible`. v1.5.0 shipped both sites with no scrollport at all, unscrollable on every device. */
+body:has(.app-surface) {
+  overflow: hidden;
+  /* Nothing paints the whole window: past the app's own edge the window is where the shadow falls, and a page color there would be the app painting its own halo out to the frame. The app surface below carries the color. */
+  background: transparent;
+  /* How far the app is held off the window, which is how much room the shadow band has to fall in — the same spread every floating surface inside the app throws, so the app has one shadow size rather than two. Zero here: a window with no frame of its own has nothing outside it to cast onto, and a browser has no window at all. The two classes below turn it on. */
+  --app-shadow-top: 0px;
+  --app-shadow-side: 0px;
+  --app-shadow-bottom: 0px;
+}
+/* Where the app owns its own frame, so the shadow is the app's to draw. One class covers both platforms: a Mac carries this as well as `mac-frame`, because both kinds draw the app bar as the title bar. */
+body.frameless {
+  --app-shadow-top: 13px;
+  --app-shadow-side: 20px;
+  --app-shadow-bottom: 10px;
+}
+/* Nothing behind a window filling the screen for a shadow to fall on, and a band there would show the desktop through a frame inside the screen edge. Filling the screen means maximized on Windows and full screen on a Mac — never a Mac's maximized, which is a zoomed window that still floats over what is behind it and still casts a shadow. Hence `:not(.mac-frame)`: both platforms report maximized, and only one of them means this by it. */
+body.frameless:not(.mac-frame).is-maximized,
+body.mac-frame.is-fullscreen {
+  --app-shadow-top: 0px;
+  --app-shadow-side: 0px;
+  --app-shadow-bottom: 0px;
+}
+/* One box that means "the app", holding everything the page has. `contain: paint` is the whole point of it: it makes this element what a `position: fixed` child is measured from and what one is clipped to, so the fourteen rules below that place an overlay against the window place it against the app instead. The two are the same rectangle until the inset above turns on, and part company after it. Fixed rather than a block, so its height is definite for the two grids that fill it. */
+.app-surface {
+  position: fixed;
+  inset: var(--app-shadow-top) var(--app-shadow-side) var(--app-shadow-bottom);
+  contain: paint;
+  /* The page color and the app's own edge, both the app's to draw: with the client area running out to the window's own edge there is no frame left for the platform to draw a line in. */
+  background: var(--lt-background);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+}
+/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. */
+body:not(.frameless) .app-surface,
+body.frameless:not(.mac-frame).is-maximized .app-surface,
+body.mac-frame.is-fullscreen .app-surface {
+  border: 0;
+  border-radius: 0;
+}
+/* The window's own shadow, thrown by the app rather than by the platform: the same 2px dot lattice every floating surface inside the app throws, in shadow ink, over the strip of page the app is held off the window by. Four edge gradients intersected — alpha nothing at the window's edge, full where the app surface starts — so each corner is the product of two and falls off the way a corner should. No punch layer: this is a sibling of the app surface rather than a child of it, and the surface is opaque and paints over the middle. Zero-sized when the inset is zero, which is what takes it off a maximized window and out of a browser. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: var(--lt-z-below);
+  pointer-events: none;
+  --lt-grain-dot: var(--lt-grain-dot-strong);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  /* Anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. */
+  background-attachment: fixed;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-top)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-bottom));
+  -webkit-mask-composite: source-in, source-in, source-in;
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-top)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-bottom));
+  mask-composite: intersect;
+}
+/* No frame of its own, maximized, or in full screen: no band at all rather than one masked away to nothing. A browser carries neither frame class, so this is also what takes it off a published page. */
+body:not(.frameless)::before,
+body.frameless:not(.mac-frame).is-maximized::before,
+body.mac-frame.is-fullscreen::before {
+  content: none;
+}
+::selection {
+  background: var(--lt-focus-selection-background);
+  color: var(--lt-focus-selection-foreground);
+}
+:root[data-theme="dark"] {
+  /* Dark themes use a darker grain so the surface reads as speckled darker, not lighter — needs a heavier alpha than light mode to show against the already-dark surface. */
+  --app-bar-grain: var(--lt-grain-dark);
+  --library-header-grain: var(--lt-grain-dark-heavy);
+  /* Light, not dark — the one grain in the app that goes the other way. This row is the darkest surface there is, so darkening it has nowhere to go: black at any alpha shifts `#0d1117` by ~10 and `#2a2d3d` by ~32, faint and uneven across families. Lifting instead moves every dark theme by a steady ~15. */
+  --reader-row-grain: var(--lt-grain-lift);
+}
+/* Reduce Motion for the whole file, so a new transition is covered by existing: a block per component left fifteen of the eighteen moving ones answering it nowhere. `!important` is not optional — `*` has no specificity, so every class rule below outranks it and the block does nothing on screen. Never the `animation` shorthand: it sets `animation-name: none`, and two rules reach their resting state through an animation rather than despite one. Never `animation-iteration-count`: pinned to 1 it stops every spinner after a single turn, and a still spinner reads as a hang. Whatever must keep moving wins this back by name below, with its reason. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: var(--lt-duration-0) !important;
+    animation-duration: var(--lt-duration-0) !important;
+  }
+}
+/* Pointing at a control lights it up over a beat instead of between two frames, said once for the whole file so a hover rule written later fades by existing rather than by somebody remembering. `:where()` carries no specificity, so anything with a `transition` of its own keeps it outright rather than fighting this — which is why those elements name these colors by hand instead. One duration and one curve in both directions, because a hover has no direction to say. Only the three properties a hover changes: a `box-shadow` here would time one chip at the cost of every button in the app, and `text-decoration` is not a color. A theme swap cross-fades whatever this covers, which is measured and kept — both ends of every fade are the same token in two palettes, so it settles rather than arriving late. The Reduce Motion blanket above zeroes all of it. */
+:where(a, button, summary, .library-crumb, .home-row-name, .code-sticky-row, .flow-ring, .github-mention) {
+  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
+}
+/* Anything that folds open travels to its new height instead of the page arriving at one, said once for the whole file so a folding block written later slides by existing rather than by somebody remembering. Two halves, because there are two kinds: the `folds` mark for an ordinary box the app shows and hides, and a `details` inside the document for the front matter, the outline and whatever an author folded for themselves. That half is scoped to the document body on purpose — the update menu is a `details` too, and its panel hangs over the page rather than sitting in it, so nothing under it moves and it must not take this; every other popover is out for the same reason. Opening is an arrival and closing a departure, shorter, the way the rest of the file reads a direction. Never the overshoot curve here, however much a fold wants a spring: it runs a tenth of the whole travel past the mark, and a fold's travel is however tall its contents are — measured at 533px past on a long front matter and 133px on a forty-entry outline, which is a lurch rather than a rubberband. The sheet refused the same curve for the same reason over a full-height rise. `interpolate-size` is the whole reason a height nobody set can be animated at all, so everything sits behind it: an engine without it gets no rule rather than half of one, and the block simply appears. `clip` rather than `hidden` — clipping is not a scroll container, so a sticky code header inside a folded block still sticks to the page. The Reduce Motion blanket above zeroes all of it. */
+@supports (interpolate-size: allow-keywords) {
+  .folds,
+  .document-body details {
+    interpolate-size: allow-keywords;
+  }
+  .folds {
+    overflow: clip;
+    height: auto;
+    /* A flex item will not go below its own contents unless it is told it may, and without this the find bar's Replace row stays at full height for the whole travel — exactly the jump this replaces. */
+    min-height: 0;
+    transition: height var(--lt-duration-260) var(--lt-ease-decelerate),
+      display var(--lt-duration-260) var(--lt-ease-decelerate) allow-discrete;
+  }
+  @starting-style {
+    .folds {
+      height: 0;
+    }
+  }
+  .folds[hidden] {
+    display: none;
+    height: 0;
+    transition: height var(--lt-duration-220) var(--lt-ease-accelerate),
+      display var(--lt-duration-220) var(--lt-ease-accelerate) allow-discrete;
+  }
+  .document-body details::details-content {
+    overflow: clip;
+    block-size: 0;
+    transition: block-size var(--lt-duration-220) var(--lt-ease-accelerate),
+      content-visibility var(--lt-duration-220) var(--lt-ease-accelerate) allow-discrete;
+  }
+  .document-body details[open]::details-content {
+    block-size: auto;
+    transition: block-size var(--lt-duration-260) var(--lt-ease-decelerate),
+      content-visibility var(--lt-duration-260) var(--lt-ease-decelerate) allow-discrete;
+  }
+}

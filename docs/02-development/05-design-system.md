@@ -151,10 +151,10 @@ It is a page in the repo, not a feature in the app: looking at every component i
 | `check-tokens` | a generated token file has drifted from `design/`, a theme sets a color nothing lists, or a component row names a class family nothing styles |
 | `check-icons` | `icons.css` has drifted, a row names a file that is not there, an SVG has no row, a row names no pack or one with no license notice, a drawing is in a box its weight was not set for, or two rows compile to the same mask |
 | `check-gallery` | the gallery has drifted, or a component has no sample to draw it with |
-| `check-classes` | a class in `reading.css` is not accounted for — as a component, as something a rendered document brings, or as a state |
+| `check-classes` | a class in `src/assets/reading/` is not accounted for — as a component, as something a rendered document brings, or as a state |
 | `check-design-docs` | this page has drifted from `design/` |
 | `check-verify` | one of these checks is not in `just verify` |
-| `check-literals` | a color, spacing, text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow or layer is written by hand in `reading.css` |
+| `check-literals` | a color, spacing, text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow or layer is written by hand in `src/assets/reading/` |
 | `check-themes` | the embedded theme bundle has drifted from `themes/` |
 
 To change a value: edit the file under `design/`, run `just bundle-tokens` (or `bundle-icons`, `bundle-gallery`), and never edit a generated file.

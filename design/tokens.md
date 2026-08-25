@@ -4,7 +4,7 @@
 
 A color is themed and lives in [colors.md](colors.md); these do not change with the theme, so this file holds the value itself.
 
-`just bundle-tokens` compiles the tables below into `src/assets/tokens.css`, which is served ahead of `reading.css` so every `var()` in the stylesheet resolves. `just check-tokens` fails when the two drift. **Never edit `src/assets/tokens.css`** — it is generated, the same way `src/assets/themes.md` is.
+`just bundle-tokens` compiles the tables below into `src/assets/tokens.css`, which is served ahead of the app stylesheet so every `var()` in it resolves. `just check-tokens` fails when the two drift. **Never edit `src/assets/tokens.css`** — it is generated, the same way `src/assets/themes.md` is.
 
 A row is `| Token | Value | What it is for |`, the name written bare of the `--`.
 
@@ -230,9 +230,9 @@ Every `z-index` of 20 or more is a page layer and takes a token. Values of 11 or
 
 ## Strokes, rings and one recess
 
-Everything the app puts in a `box-shadow`. None of them is a cast shadow: a floating surface throws the dot halftone `reading.css` draws instead. Each takes a color from the contract or mixes one, so it still belongs to its theme.
+Everything the app puts in a `box-shadow`. None of them is a cast shadow: a floating surface throws the dot halftone the stylesheet draws instead. Each takes a color from the contract or mixes one, so it still belongs to its theme.
 
-**The halftone shadow** is the one cast shadow, and it is not a token because only its ink is a value — the geometry is one shared rule in `reading.css`. Every floating surface — menu, toast, dialog, sheet, find bar, rename box, drag ghost, link card — joins that rule's selector list rather than writing a shadow of its own: the strong grain ink on a thin band around the surface, thinning out under an ellipse, with the surface's own box punched back out so no dot lands on its face. The ellipse fades across a fraction of the box, so a surface as small as the link card lands its whole visible band in the nearly transparent tail and shows nothing; a surface that small keeps the shared rule and overrides only the fade stops, moving the fade into the band itself.
+**The halftone shadow** is the one cast shadow, and it is not a token because only its ink is a value — the geometry is one shared rule in `src/assets/reading/panels.css`. Every floating surface — menu, toast, dialog, sheet, find bar, rename box, drag ghost, link card — joins that rule's selector list rather than writing a shadow of its own: the strong grain ink on a thin band around the surface, thinning out under an ellipse, with the surface's own box punched back out so no dot lands on its face. The ellipse fades across a fraction of the box, so a surface as small as the link card lands its whole visible band in the nearly transparent tail and shows nothing; a surface that small keeps the shared rule and overrides only the fade stops, moving the fade into the band itself.
 
 | Token | Value | What it is for |
 | --- | --- | --- |

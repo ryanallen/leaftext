@@ -11,8 +11,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { locate, parts, whole } from './reading-css.mjs';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const relative = 'src/assets/reading.css';
 
 // Blank the comments, keeping every line's length so the line numbers still point at the right place.
 const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
@@ -126,11 +127,36 @@ for (const [source, want, label] of FIXTURE) {
   }
 }
 
+// This is the only caller that turns a place in the whole sheet back into a part, so it is where that arithmetic is proved. Walked at every seam: the first line of each part has to come back as line 1 of that part, and the last line of the sheet as the last line of the last one. A `locate` off by one sends a reader to the wrong rule and nothing else would say so.
+{
+  const list = parts();
+  let first = 1;
+  for (const part of list) {
+    const lines = part.css.split('\n').length - 1;
+    for (const [line, want] of [[first, 1], [first + lines - 1, lines]]) {
+      const got = locate(line);
+      if (got.path !== part.path || got.n !== want) {
+        console.error(`locate is broken: line ${line} of the whole sheet came back as ${got.path}:${got.n}, wanted ${part.path}:${want}`);
+        process.exit(1);
+      }
+    }
+    first += lines;
+  }
+  if (first - 1 !== whole().split('\n').length - 1) {
+    console.error('locate is broken: the parts do not add up to the sheet it maps into');
+    process.exit(1);
+  }
+}
+
 const buttons = buttonClasses();
-const found = check(readFileSync(join(root, relative), 'utf8'), buttons);
+// The whole cascade at once, not part by part: the second rule pairs a rest rule that clears its fill with the hover rule that has to name one back, and the two are free to sit in different parts. `locate` turns the place it lands on into the part a reader opens.
+const found = check(whole(), buttons);
 if (found.length) {
   console.error(`${found.length} rule(s) painting what the pointer must not:`);
-  for (const hit of found) console.error(`  ${relative}:${hit.n}  ${hit.why} — ${hit.fix}`);
+  for (const hit of found) {
+    const where = locate(hit.n);
+    console.error(`  ${where.path}:${where.n}  ${hit.why} — ${hit.fix}`);
+  }
   process.exit(1);
 }
 console.log(`hover fills: nothing paints behind a note's field values, and none of the ${buttons.size} button classes the design system draws takes the app-wide fill by accident`);

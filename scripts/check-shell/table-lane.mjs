@@ -3,14 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import {
-  check,
-  fakeElement,
-  layerOf,
-  record,
-  root,
-  source,
-} from './shared.mjs';
+import { check, fakeElement, layerOf, readingCss, record, root, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -34,7 +27,7 @@ export function run() {
     if (!dom.includes('function dragWindowFrom(bar) {')) {
       throw new Error('the full-window table header no longer borrows the app bar drag rule');
     }
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     for (const rule of ['.table-sheet-grid th,', 'border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);', 'background: var(--lt-markdown-table-header-background);', '.table-sheet-grid tr:nth-child(2n) td']) {
       if (!css.includes(rule)) throw new Error(`the table sheet no longer carries the page table treatment: ${rule}`);
     }
@@ -415,7 +408,7 @@ export function run() {
 
   // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.
   const tableLaneRule = () => {
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const opened = css.indexOf('.document-body > .table-lane {');
     if (opened < 0) throw new Error('no rule widens a table lane to the reader lane');
     return { css, rule: css.slice(opened, css.indexOf('}', opened)) };
@@ -572,7 +565,7 @@ export function run() {
 
   // A box that folds in the flow wears `folds` and slides to its new height, so the mark and the rule are held to each other here: only the two together make it move, and a box that loses the mark snaps open with every other check still green.
   check('both boxes that fold in place wear the mark the stylesheet slides', () => {
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     if (!css.includes('@supports (interpolate-size: allow-keywords) {') || !css.includes('  .folds {')) {
       throw new Error('the shared folding rule is gone, so the mark below moves nothing');
     }

@@ -1,0 +1,573 @@
+/* ---- The flowchart sheet ------------------------------------------------
+   Full screen, unlike the other two sheets: it is an editor, not something to glance at, and it has two panes to fit. No grab bar for the same reason — a sheet you can flick away is wrong over unsaved work. */
+.flow-sheet[hidden] {
+  display: none;
+}
+.flow-sheet {
+  position: fixed;
+  inset: 16px;
+  z-index: var(--lt-z-43);
+  display: flex;
+  flex-direction: column;
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-xl);
+  /* The panes fill the sheet corner to corner, so without this the two bottom corners are squared off by whatever is drawn in them. */
+  overflow: hidden;
+  font-family: var(--app-font);
+  transform: translateY(12px);
+  opacity: 0;
+  transition: transform var(--lt-duration-160) var(--lt-ease-accelerate), opacity var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+.flow-sheet.open {
+  transform: none;
+  opacity: 1;
+  /* The rise keeps the drag-tuned curve the bottom sheet's does; the fade rides along on plain decelerate. */
+  transition: transform var(--lt-duration-220) var(--lt-ease-sheet), opacity var(--lt-duration-220) var(--lt-ease-decelerate);
+}
+.flow-sheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-12);
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  /* The sheet covers the app bar, so this strip is what the window is dragged by while it is open — and a drag must not sweep a selection across the title on the way. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.flow-sheet-title {
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-800);
+}
+.flow-sheet-actions {
+  display: flex;
+  gap: var(--lt-space-8);
+}
+.flow-sheet-export,
+.flow-sheet-cancel,
+.flow-sheet-save {
+  padding: var(--lt-space-8) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+  font-size: var(--lt-text-13);
+}
+.flow-sheet-save {
+  border-color: transparent;
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+  font-weight: var(--lt-weight-700);
+}
+.flow-sheet-export:hover,
+.flow-sheet-cancel:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
+}
+.flow-sheet-export:disabled {
+  opacity: var(--lt-opacity-45);
+  cursor: default;
+}
+.flow-sheet-save:hover {
+  background: var(--lt-navigation-button-hover-background);
+}
+.flow-sheet-panes {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  /* How wide the text pane is, dragged by the bar between the two. */
+  grid-template-columns: minmax(0, 1fr) 5px var(--flow-code-width, 340px);
+}
+/* The bar between the picture and the text. Thin ink, a wide grab area. */
+.flow-split {
+  position: relative;
+  background: var(--lt-border);
+  cursor: col-resize;
+}
+.flow-split::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+.flow-split:hover,
+.flow-split:focus-visible {
+  background: var(--lt-link);
+  outline: none;
+}
+.flow-pane {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The chrome the canvas leaves to the strip: how far back you can step, which way the flow runs, and how big it is drawn. */
+.flow-sheet-tools {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-10);
+}
+.flow-steps {
+  display: flex;
+  gap: var(--lt-space-2);
+}
+.flow-steps button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.flow-steps button:hover:not(:disabled) {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.flow-steps button:disabled {
+  opacity: var(--lt-opacity-35);
+  cursor: default;
+}
+.flow-steps svg {
+  width: 16px;
+  height: 16px;
+}
+/* The little drawing on a shape button is mermaid's too — one tiny diagram per shape, so a button cannot show something the canvas draws differently. */
+.flow-chip {
+  display: block;
+  width: 46px;
+  height: 28px;
+  max-width: none;
+}
+.flow-chip-line {
+  stroke: var(--lt-foreground);
+  stroke-width: var(--lt-stroke-1-5);
+  fill: none;
+}
+.flow-chip-line.is-dotted {
+  stroke-dasharray: 4 3;
+}
+.flow-chip-line.is-thick {
+  stroke-width: var(--lt-stroke-3);
+}
+/* A line that isn't drawn at all. Shown as the ghost of one, because a button with nothing on it reads as a button that failed to load. */
+.flow-chip-line.is-invisible {
+  stroke-dasharray: 1 4;
+  opacity: var(--lt-opacity-40);
+}
+.flow-end-mark {
+  fill: var(--lt-foreground);
+  stroke: none;
+}
+.flow-end-mark.is-open {
+  fill: none;
+  stroke: var(--lt-foreground);
+  stroke-width: var(--lt-stroke-1-5);
+}
+.flow-zoom {
+  display: flex;
+}
+/* Shaped like the reading view's diagram controls (.mermaid-zoom), on the sheet's own control surface so it sits with the Flow picker beside it. */
+.flow-zoom button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: 0;
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+}
+.flow-zoom .lt-icon {
+  width: 16px;
+  height: 16px;
+}
+.flow-zoom button:first-child {
+  border-radius: var(--lt-radius-md) 0 0 var(--lt-radius-md);
+}
+.flow-zoom button:last-child {
+  border-radius: 0 var(--lt-radius-md) var(--lt-radius-md) 0;
+}
+.flow-zoom button + button {
+  border-left: 0;
+}
+.flow-zoom button:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.flow-sheet-direction {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
+.flow-sheet-direction select {
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+  font-size: var(--lt-text-12);
+}
+/* What the thing under the pointer is for. Fourteen shapes is more than anyone knows by outline, so hovering one says what it means; otherwise it carries the gestures the canvas answers to. */
+.flow-hint {
+  flex: none;
+  margin: 0;
+  padding: var(--lt-space-6) var(--lt-space-14) var(--lt-space-8);
+  min-height: 1.4em;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+}
+/* The drawing surface. It scrolls rather than shrinks: a big diagram in a small window is a diagram you pan, not one you squint at. */
+.flow-canvas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+  padding: var(--lt-space-12);
+  background: var(--lt-surface);
+  outline: none;
+  /* Stops a drag sweeping a selection across the diagram. A preventDefault on the pointerdown would too, but it also eats dblclick. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.flow-canvas.is-disabled {
+  background: var(--lt-surface-muted);
+}
+.flow-canvas.is-connecting {
+  cursor: crosshair;
+}
+.flow-canvas.is-dragging,
+.flow-canvas.is-panning {
+  cursor: grabbing;
+}
+/* The diagram's own box at the current zoom: mermaid's SVG, with our handles laid over it. It is `position: relative` so the overlay and the rename field can be placed in its pixels, and `margin: auto` centers it — the obvious `justify-content` clips the top-left off anything larger than the scroll box. */
+.flow-stage {
+  position: relative;
+  flex: none;
+  margin: auto;
+  /* Where the diagram has been dragged to. A transform rather than a scroll, because a diagram smaller than the pane has nothing to scroll and dragging one has to work anyway — most of all with the picker covering the bottom. The overlay is inside the stage, so the handles come along for free. */
+  transform: translate(var(--flow-pan-x, 0px), var(--flow-pan-y, 0px));
+}
+.flow-stage > svg {
+  display: block;
+}
+/* Rings, handles and drop marks. The layer itself lets the pointer through to mermaid's own boxes and lines; only its children answer. */
+.flow-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.flow-overlay > * {
+  pointer-events: auto;
+}
+/* One box's worth of handles, sized to the shape mermaid drew. It owns its own ring and buds so hovering one box cannot light up another's — which a sibling selector across a flat overlay does. */
+.flow-node-tools {
+  position: absolute;
+  pointer-events: none;
+}
+/* The ring is what a click lands on, and what a drag carries. Invisible until it matters. */
+/* Its radius is set per box, from the shape mermaid drew plus the gap — see FLOW_RING_GAP. `border-box` so the border grows inward and the standoff stays the 8px it says it is. */
+.flow-ring {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: var(--lt-stroke-2) solid transparent;
+  pointer-events: auto;
+  cursor: grab;
+}
+/* Above hover and selection on purpose: this one is always on, and those two are what the pointer is doing right now, so they win. */
+.flow-ring.is-linked {
+  border-color: var(--lt-link);
+  border-style: dotted;
+}
+.flow-node-tools:hover .flow-ring {
+  border-color: var(--lt-border-strong);
+}
+.flow-node-tools.is-selected .flow-ring {
+  border-color: var(--lt-link);
+}
+.flow-node-tools.is-drop .flow-ring {
+  border-color: var(--lt-link);
+  border-style: dashed;
+}
+/* The box travels with the pointer and stops answering it, or it would be the box every drop landed on. Nothing stores where you put it, so it settles back into mermaid's layout on release. */
+.flow-node-tools.is-dragging {
+  pointer-events: none;
+  opacity: var(--lt-opacity-60);
+}
+/* A box's + handles, on its four sides. They show on the box you are pointing at, so a page of boxes is not a page of buttons. */
+.flow-bud {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin: calc(var(--lt-space-10) * -1) 0 0 calc(var(--lt-space-10) * -1);
+  padding: 0;
+  border: var(--lt-stroke-2) solid var(--lt-surface);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-link);
+  color: var(--lt-surface);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1);
+  opacity: 0;
+  pointer-events: auto;
+  cursor: crosshair;
+  /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the fill is named here instead. */
+  transition: opacity var(--lt-duration-100) var(--lt-ease), background-color var(--lt-duration-120) var(--lt-ease);
+}
+.flow-bud.is-up {
+  left: 50%;
+  top: 0;
+}
+.flow-bud.is-down {
+  left: 50%;
+  top: 100%;
+}
+.flow-bud.is-left {
+  left: 0;
+  top: 50%;
+}
+.flow-bud.is-right {
+  left: 100%;
+  top: 50%;
+}
+.flow-node-tools:hover .flow-bud,
+.flow-node-tools.is-selected .flow-bud,
+.flow-bud:focus-visible {
+  opacity: 1;
+}
+.flow-bud:hover {
+  background: var(--lt-link-hover);
+}
+/* A selected line's two ends: grab either to point it somewhere else. */
+.flow-edge-end {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: calc(var(--lt-space-6) * -1) 0 0 calc(var(--lt-space-6) * -1);
+  padding: 0;
+  border: var(--lt-stroke-2) solid var(--lt-surface);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-link);
+  cursor: crosshair;
+}
+/* The line that follows the pointer while a connection is drawn or moved. */
+.flow-rubber-band {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.flow-rubber {
+  stroke: var(--lt-link);
+  stroke-width: var(--lt-stroke-2);
+  stroke-dasharray: 5 4;
+}
+/* Mermaid's own line, when it is the one selected or the one a box would drop into. Its drawing, our state. */
+.flow-stage path[data-id].is-selected {
+  stroke: var(--lt-link) !important;
+  stroke-width: var(--lt-stroke-3) !important;
+}
+.flow-stage path[data-id].is-drop {
+  stroke: var(--lt-link) !important;
+  stroke-width: var(--lt-stroke-4) !important;
+  stroke-dasharray: 6 4 !important;
+}
+/* A group about to take the box being dragged. Mermaid draws the cluster's outline as a rect inside the group, so the mark goes on that rather than on the group itself — which has no stroke of its own to change. */
+.flow-stage g.cluster.is-drop rect {
+  stroke: var(--lt-link) !important;
+  stroke-width: var(--lt-stroke-2) !important;
+  stroke-dasharray: 6 4 !important;
+}
+/* Right-click anything on the canvas. The gestures are quicker once they are known; this is where they are named, and where the rarer ones live at all. */
+.flow-menu {
+  position: absolute;
+  z-index: 4;
+  min-width: 180px;
+  padding: var(--lt-space-4);
+  /* The app-chrome pair, the same one .context-menu is built from: the reading surfaces this used are two shades that a dark theme draws almost alike, so the hover was there and invisible. */
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  font-size: var(--lt-text-12-5);
+}
+.flow-menu-heading {
+  grid-column: 1 / -1;
+  margin: var(--lt-space-6) 0 var(--lt-space-2);
+  padding: 0 var(--lt-space-10);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10-5);
+  font-weight: var(--lt-weight-800);
+  letter-spacing: var(--lt-tracking-060);
+  text-transform: uppercase;
+}
+.flow-menu-heading:first-child {
+  margin-top: 0;
+}
+.flow-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  width: 100%;
+  padding: var(--lt-space-6) var(--lt-space-10);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: var(--lt-foreground);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+}
+.flow-menu-item:hover,
+.flow-menu-item:focus-visible {
+  background: var(--lt-wash-hover);
+  outline: none;
+}
+.flow-menu-item .flow-chip {
+  flex: none;
+  width: 34px;
+  height: 22px;
+}
+/* Renaming happens over the thing being renamed, not in a strip at the bottom. */
+.flow-label-box {
+  position: absolute;
+  z-index: 5;
+  padding: 0 var(--lt-space-6);
+  border: var(--lt-stroke-2) solid var(--lt-link);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  text-align: center;
+  outline: none;
+  /* The canvas around it turns selection off; this is the one place you type. */
+  user-select: text;
+  -webkit-user-select: text;
+}
+.flow-notice {
+  flex: none;
+  margin: 0;
+  padding: var(--lt-space-10) var(--lt-space-14);
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
+/* A document marks a failed diagram and moves on; an editor has to say what is wrong, so mermaid's own message is printed here. */
+.flow-notice.is-error {
+  border-top-color: var(--lt-danger);
+  color: var(--lt-danger);
+  font-family: var(--code-font);
+  white-space: pre-wrap;
+}
+/* The picker: what a box or a line can be changed to, and what a new box can be. One sheet for both, sliding up from the bottom of the canvas — see .leaf-sheet, which the glossary and the theme picker are built from too. */
+.flow-picker {
+  /* Measured against the whole editor — the sheet is `position: fixed` — so it is centered on the modal rather than on the half of it left of the text. */
+  position: absolute;
+  z-index: 5;
+  max-height: 62%;
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
+/* The one field in the sheet, in a row of its own that does not scroll. */
+.flow-picker-head {
+  flex: none;
+  padding: var(--lt-space-2) var(--lt-space-12) var(--lt-space-4);
+}
+.flow-picker-head .flow-field {
+  width: min(360px, 100%);
+}
+.flow-picker-body {
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-4) var(--lt-space-10) var(--lt-space-12);
+}
+/* Delete belongs to the whole selection rather than to one column of choices, so it gets the row to itself — and is not worth the whole width of it. */
+.flow-picker-body > .flow-delete {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: var(--lt-space-8);
+}
+.flow-field {
+  min-width: 0;
+  padding: var(--lt-space-6) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+  font-size: var(--lt-text-13);
+}
+/* The browser's own focus ring is a second outline around a control that already has a border, drawn in a blue that belongs to no theme here. One ring, in the theme's link color, sitting just outside the border. */
+.flow-field:focus,
+.flow-field:focus-visible {
+  outline: none;
+  border-color: var(--lt-link);
+  box-shadow: var(--lt-shadow-focus);
+}
+/* The one already chosen. An outline rather than a fill: the row carries a drawing of the shape, and a fill behind it fights the drawing. */
+.flow-menu-item.is-current {
+  box-shadow: var(--lt-shadow-edge-link);
+}
+.flow-delete {
+  padding: var(--lt-space-6) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-danger);
+  font: inherit;
+  font-size: var(--lt-text-12);
+}
+/* What Save will do to the text below it. Muted and one line: it is a fact to have read once, not a warning to be argued with every time. */
+.flow-code-note {
+  flex: none;
+  margin: 0;
+  padding: var(--lt-space-8) var(--lt-space-14) var(--lt-space-6);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+}
+.flow-code {
+  flex: 1 1 45%;
+  min-height: 0;
+  padding: var(--lt-space-12) var(--lt-space-14);
+  border: 0;
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-syntax-background);
+  color: var(--lt-syntax-foreground);
+  font-family: var(--code-font);
+  font-size: var(--lt-text-12-5);
+  line-height: var(--lt-leading-1-55);
+  resize: none;
+  outline: none;
+  white-space: pre;
+  overflow: auto;
+}
+@media (max-width: 860px) {
+  .flow-sheet-panes {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 5px minmax(0, 0.6fr);
+  }
+  .flow-split {
+    cursor: row-resize;
+  }
+}

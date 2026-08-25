@@ -1,0 +1,79 @@
+/* The page: a card on the chrome, held off the window frame by --reader-gutter on the sides and the bottom so the bar's texture runs around it. Its own hairline and bottom rounding draw three of the four edges; the top stays flush and square, tucked under the bar, because the active tab has to read as joined to the document there — the bar's ::after divider is that edge, and .reader-corner-tl / -tr round where it turns the corner.
+
+   Against an open library there is no left gutter: the card sits flush on the rail, and its left border is the stroke that marks the rail's edge. */
+/* The graph, in the reader's own cell and wearing the page's frame, because it stands in for the page. The Pixi canvas owns pan and zoom, so this never scrolls. */
+/* Columns 2 and 3: the reading column and the minimap's track. The map has no minimap, and a reserved-but-empty strip down the right of a canvas reads as a rendering fault rather than a layout. The gutter (column 4) stays, so the map is held off the window frame like the page is. */
+.reader-graph {
+  grid-column: 2 / 4;
+  grid-row: 1;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  background: var(--lt-markdown-background);
+  border-left: var(--lt-stroke-1) solid var(--lt-border);
+  border-right: var(--lt-stroke-1) solid var(--lt-border);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  /* Clear the app bar the page tucks under. */
+  padding-top: var(--app-bar-height);
+}
+.reader-graph-canvas {
+  width: 100%;
+  height: 100%;
+}
+/* The wash over a slow load has to cover the same width the map draws on, or it stops a column short and leaves a lit strip down the right. The bar spans both columns in every view (see .reader-toolbar), so it needs nothing here. */
+:root[data-graph-view="true"] .reader-loading {
+  grid-column: 2 / 4;
+}
+/* The map has no minimap, so in this view there is no minimap column — said once here rather than in each place measuring to a rail that is not there. The bar's divider and .reader-corner-tr are both positioned off it, so they stopped a column short of the map and turned the arc down in mid-air over the canvas. On `body`, where the rule that opens the column sets it: a custom property set on an element beats one inherited from :root, however specific that selector. */
+:root[data-graph-view="true"] > body {
+  --reader-minimap-column: 0px;
+}
+.reader-graph-canvas canvas {
+  display: block;
+}
+/* The key to the two node shapes, in the map's top corner — out of the way of the status line at the foot, and of the toolbar that floats over it. */
+.reader-graph-legend {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  margin: 0;
+  font-size: var(--lt-text-12);
+  color: var(--lt-muted-foreground);
+  pointer-events: none;
+}
+/* Laid out with flex, so the attribute that hides it needs saying explicitly. */
+.reader-graph-legend[hidden] {
+  display: none;
+}
+/* The swatches are the nodes themselves at rest: a filled dot and a ring, in the same two tokens graphColors() hands PixiJS. */
+.graph-key {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.graph-key-document {
+  background: var(--lt-muted-foreground);
+}
+.graph-key-external {
+  /* Set off from the label before it, so the two pairs read as two pairs. */
+  margin-left: var(--lt-space-8);
+  /* Ring plus a dot at the middle, matching the node — the dot is what an edge ends behind on the canvas. */
+  border: var(--lt-stroke-1-5) solid var(--lt-border);
+  background: radial-gradient(circle at center, var(--lt-border) 1.6px, transparent 1.6px);
+}
+.reader-graph-status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  margin: 0;
+  padding: 0 var(--lt-space-16);
+  text-align: center;
+  font-size: var(--lt-text-12);
+  color: var(--lt-muted-foreground);
+  pointer-events: none;
+}

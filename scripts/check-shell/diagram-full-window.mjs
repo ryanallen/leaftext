@@ -175,7 +175,7 @@ export function run() {
     if (again.innerHTML !== good.innerHTML) throw new Error('a diagram that drew fine left no memo entry');
   });
 
-  // The diagram's labels are set in the theme's body font, which theme.rs emits per family rather than reading.css.
+  // The diagram's labels are set in the theme's body font, which theme.rs emits per family rather than the stylesheet.
   check('the theme compiler emits the font the diagrams ask for', () => {
     const theme = readFileSync(join(root, 'src/theme.rs'), 'utf8');
     if (!theme.includes('--reading-font')) {

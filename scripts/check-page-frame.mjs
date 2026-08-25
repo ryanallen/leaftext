@@ -14,10 +14,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { partPaths } from './reading-css.mjs';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The stylesheets `reading_mode_css()` concatenates, in its order. */
-const FILES = ['src/assets/tokens.css', 'src/assets/icons.css', 'src/assets/reading.css'];
+/** The stylesheets `reading_mode_css()` concatenates, in its order — the two generated ones, then every part of the app's own sheet. Each is read on its own, so a hit names the file a reader opens. */
+const FILES = ['src/assets/tokens.css', 'src/assets/icons.css', ...partPaths()];
 
 /** Nothing else in a page belongs to the page's frame. A class, an attribute, a pseudo-class or a combinator scopes a rule to something; these three name whatever document the stylesheet lands in. */
 const BARE = new Set(['html', 'body', ':root']);

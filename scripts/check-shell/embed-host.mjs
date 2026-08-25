@@ -3,17 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import {
-  check,
-  checkSettled,
-  noopPost,
-  record,
-  root,
-  runShell,
-  settle,
-  source,
-  standInState,
-} from './shared.mjs';
+import { check, checkSettled, noopPost, readingCss, record, root, runShell, settle, source, standInState } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -160,7 +150,7 @@ export function run() {
       throw new Error('an embedded page never marked its body, so the stylesheet has nothing to read');
     }
     // The stylesheet is what takes the bar, the pane, the handle and the floating toolbar down, so what it aims at has to exist.
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     for (const wanted of ['body.is-embedded .app-bar', 'body.is-embedded .library-pane', 'body.is-embedded .library-divider', 'body.is-embedded .reader-toolbar', 'body.is-embedded .library-shell']) {
       if (!css.includes(wanted)) throw new Error(`the stylesheet no longer has a rule for ${wanted}, so an embed would draw it`);
     }

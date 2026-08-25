@@ -1,0 +1,146 @@
+/* ---- The selection toolbar ---------------------------------------------
+   What highlighted text can become, floating over it. Positioned inside .reader-layout like the block gutter, so it travels with the words instead of being chased down the page by a scroll handler. See selection-toolbar.js.
+
+   --selection-arrow is where the point sits along the bar: the script keeps it over the words even where the bar itself had to stop at the page edge. */
+.selection-toolbar[hidden] {
+  display: none;
+}
+.selection-toolbar {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  padding: var(--lt-space-4);
+  /* Transparent, not gone: the border holds the box's size while ::after paints the visible face — the same arrangement the reader's bottom toolbar uses, and for the same reason. A negative-z child paints over its parent's own background, so the only way the dot shadow (::before) gets behind an opaque face is for the face to be a later negative-z child itself. */
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-lg);
+  background: transparent;
+  /* Only the contact line stays smooth; the soft spread is the dot screen. */
+  box-shadow: var(--lt-shadow-raised);
+  font-family: var(--app-font);
+  transform: translate(-50%, -100%);
+}
+/* The bar's drop shadow: the same 2px dot lattice the reader's toolbar throws, in shadow ink, thinning away under a mask — a halftone shadow rather than a smooth blur. Fixed attachment keeps its dots on the one window-anchored lattice every grained surface shares. */
+.selection-toolbar::before {
+  content: '';
+  position: absolute;
+  z-index: var(--lt-z-below);
+  inset: -13px -20px -10px;
+  pointer-events: none;
+  --lt-grain-dot: var(--lt-grain-dot-strong);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
+  mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
+}
+/* The face — fill and hairline. inset -1px re-covers the border box the element's transparent border holds in layout. */
+.selection-toolbar::after {
+  content: '';
+  position: absolute;
+  z-index: var(--lt-z-below);
+  inset: -1px;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  pointer-events: none;
+}
+/* The point, drawn as a rotated corner of the bar so it takes the same border and background without a second color to keep in step. A real element, so it paints above both layers behind it. */
+.selection-toolbar-point {
+  position: absolute;
+  bottom: -5px;
+  left: var(--selection-arrow, 50%);
+  width: 8px;
+  height: 8px;
+  margin-left: calc(var(--lt-space-4) * -1);
+  border-right: var(--lt-stroke-1) solid var(--lt-border);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-surface-elevated);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.selection-format-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+.selection-toolbar.is-linking .selection-format-row {
+  display: none;
+}
+.selection-link-row {
+  display: none;
+  padding: 0 var(--lt-space-4);
+}
+.selection-toolbar.is-linking .selection-link-row {
+  display: block;
+}
+.selection-link-input {
+  width: 240px;
+  padding: var(--lt-space-6) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-400);
+  line-height: var(--lt-leading-1-2);
+}
+.selection-link-input:focus {
+  border-color: var(--lt-accent, var(--lt-border));
+  outline: none;
+}
+.selection-format {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: none;
+  color: var(--lt-foreground);
+}
+.selection-format[hidden] {
+  display: none;
+}
+.selection-format .lt-icon {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+/* One H at two sizes, which is the whole message: bigger, or smaller. */
+.selection-format.is-heading-bigger .lt-icon {
+  width: 20px;
+  height: 20px;
+}
+.selection-format.is-heading-smaller .lt-icon {
+  width: 13px;
+  height: 13px;
+}
+.selection-format:hover:not(:disabled) {
+  background: var(--lt-wash-hover);
+}
+/* The kind the block already is: grayed, not pressable. Overrides the app-wide disabled fill — in a floating bar a filled box reads as pressed, not unavailable. */
+.selection-format:disabled,
+.selection-format:disabled:hover {
+  border: 0;
+  background: none;
+  color: var(--lt-muted-foreground);
+  cursor: default;
+}
+/* Lit for a format the highlighted words already carry — the bar says what they are as much as what they could be. */
+.selection-format.is-active {
+  color: var(--lt-accent, var(--lt-foreground));
+}
+.selection-format-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 var(--lt-space-4);
+  background: var(--lt-border);
+}
+.selection-toolbar:not(.has-block-formats) .selection-format-divider {
+  display: none;
+}

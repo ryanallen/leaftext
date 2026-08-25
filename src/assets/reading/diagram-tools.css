@@ -1,0 +1,73 @@
+/* A drawn diagram's corner controls: how it is looked at, top right, and what it can be opened as, bottom right. Zoom takes the corner a reader looks at first, because it is the one used on every diagram and editing is the rarer act. Both sit on the block itself and appear on hover, so a page being read carries none of them. */
+.document-body pre.mermaid {
+  position: relative;
+}
+.mermaid-tools,
+.mermaid-view-controls {
+  position: absolute;
+  right: 6px;
+  display: flex;
+  opacity: 0;
+  transition: opacity var(--lt-duration-120) var(--lt-ease);
+}
+.mermaid-tools {
+  bottom: 6px;
+  gap: var(--lt-space-6);
+}
+/* Keeping a diagram sits beside looking at one, in one row, so the space between them is a gap rather than an offset somebody measured against the corner. */
+.mermaid-view-controls {
+  top: 6px;
+  gap: var(--lt-space-6);
+}
+.mermaid-zoom {
+  display: flex;
+}
+.document-body pre.mermaid:hover .mermaid-tools,
+.document-body pre.mermaid:hover .mermaid-view-controls,
+.mermaid-tools:focus-within,
+.mermaid-view-controls:focus-within {
+  opacity: 1;
+}
+.mermaid-export,
+.mermaid-tool,
+.mermaid-zoom button {
+  display: grid;
+  place-items: center;
+  height: 28px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+}
+.mermaid-export,
+.mermaid-tool,
+.mermaid-zoom button {
+  width: 28px;
+}
+.mermaid-export:hover,
+.mermaid-tool:hover,
+.mermaid-zoom button:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.mermaid-export .lt-icon,
+.mermaid-tool .lt-icon,
+.mermaid-zoom .lt-icon {
+  width: 16px;
+  height: 16px;
+}
+/* One control in three parts, so it reads as the zoom rather than three buttons that happen to be near each other. */
+.mermaid-zoom button {
+  border-radius: 0;
+}
+.mermaid-zoom button:first-child {
+  border-radius: var(--lt-radius-md) 0 0 var(--lt-radius-md);
+}
+.mermaid-zoom button:last-child {
+  border-radius: 0 var(--lt-radius-md) var(--lt-radius-md) 0;
+}
+.mermaid-zoom button + button {
+  border-left: 0;
+}

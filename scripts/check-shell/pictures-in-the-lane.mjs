@@ -2,13 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  check,
-  fakeElement,
-  record,
-  root,
-  source,
-} from './shared.mjs';
+import { check, fakeElement, readingCss, record, root, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -62,7 +56,7 @@ export function run() {
 
   // Its width rule, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a picture back at the text measure, a small one stretched to the lane, or one grown past the strip the block controls need.
   check('a widened picture takes the lane and a small one keeps its own size', () => {
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const opened = css.indexOf('.document-body > p.image-lane {');
     if (opened < 0) throw new Error('no rule widens a picture to the reader lane');
     const rule = css.slice(opened, css.indexOf('}', opened));
@@ -83,7 +77,7 @@ export function run() {
 
   // The one place in the app where the hover wash sits on something other than the page. It is a 16% tint over transparent, so a rule that hands it the whole background takes the control's own surface away — beside a table that reads as a tint on the page and is nearly invisible, and over a picture it is a see-through square with the picture showing through it.
   check('the pointer never takes a corner opener s surface away', () => {
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const at = css.indexOf('.table-sheet-open:hover,');
     if (at < 0) throw new Error('the two corner openers no longer share one hover rule');
     const rule = css.slice(at, css.indexOf('}', at));
@@ -237,7 +231,7 @@ export function run() {
 
   // The close mark is the only thing drawn over the picture, so it waits in a corner rather than on the glass: absent until the pointer comes for it, and reachable by keyboard, because Escape and the ground are the other two ways out.
   check('the close mark is hidden until its corner is pointed at', () => {
-    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const css = readingCss();
     const ruleBody = (selector) => {
       const at = css.indexOf(selector);
       if (at < 0) throw new Error(`no rule for ${selector}`);

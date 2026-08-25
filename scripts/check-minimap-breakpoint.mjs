@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Whether the two stylesheets that decide when the published minimap rail is on the page still name one width. `site/styles.css` takes the rail off the page at or below a number and `src/assets/reading.css` puts the exported page's rail back above another, so the two are one edge written twice — and a reader meets the gap between them as a rail standing on one page and gone from the other at the very same window width.
+// Whether the two stylesheets that decide when the published minimap rail is on the page still name one width. `site/styles.css` takes the rail off the page at or below a number and the app stylesheet puts the exported page's rail back above another, so the two are one edge written twice — and a reader meets the gap between them as a rail standing on one page and gone from the other at the very same window width.
 //
 //   node scripts/check-minimap-breakpoint.mjs          say what each stylesheet names
 //   node scripts/check-minimap-breakpoint.mjs --check  exit 1 when they disagree (`just verify`)
@@ -12,10 +12,13 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { whole as wholeReadingCss } from './reading-css.mjs';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const SITE = 'site/styles.css';
-const EXPORTED = 'src/assets/reading.css';
+// The app's own stylesheet, named rather than pathed: it is served as ordered parts and the rule that draws the exported rail is free to move between them.
+const EXPORTED = 'the app stylesheet';
 
 // The two bounds a media condition can carry here, read as their own pattern so no width is built out of a string.
 const BOUNDS = {
@@ -102,7 +105,7 @@ function selfTest() {
 if (process.argv[1] && fileURLToPath(import.meta.url) === join(process.argv[1])) {
   selfTest();
   const siteCss = readFileSync(join(root, SITE), 'utf8');
-  const exportedCss = readFileSync(join(root, EXPORTED), 'utf8');
+  const exportedCss = wholeReadingCss();
   const found = problems(siteCss, exportedCss);
   if (found.length) {
     console.error('the two stylesheets no longer name one width for the minimap rail:');
