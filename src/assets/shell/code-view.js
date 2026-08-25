@@ -170,6 +170,13 @@ function saveActiveDocument() {
   });
 }
 
+// The place the map took on its way up, for the document on screen — or null when the map is not up, which is every other reading of the two below. Declared here because both of them are asked while the reader has no box to answer with.
+function graphExitPlace() {
+  if (!graphViewOpen) return null;
+  const path = activeDocumentPath();
+  return viewHandoff && viewHandoff.path === path ? viewHandoff : null;
+}
+
 // How far down the active view is scrolled, as a 0..1 fraction of its scrollable range. Approximate by design — the two views wrap differently — but it keeps "top is top" and "middle is middle" across the toggle. Monaco scrolls itself and the shell around it doesn't, so in the code view only Monaco knows.
 function viewScrollFraction() {
   if (codeViewActive && monacoEditor) {
@@ -177,6 +184,9 @@ function viewScrollFraction() {
     if (scrollable <= 0) return 0;
     return Math.min(1, Math.max(0, monacoEditor.getScrollTop() / scrollable));
   }
+  // Under the map the reader has no box at all, so scrollHeight and clientHeight both read zero and this would answer the top for a reader half way down. The fraction taken before the hiding is the true one.
+  const taken = graphExitPlace();
+  if (taken) return taken.graphReaderFraction == null ? 0 : taken.graphReaderFraction;
   const scrollable = app.scrollHeight - app.clientHeight;
   if (scrollable <= 0) return 0;
   return Math.min(1, Math.max(0, app.scrollTop / scrollable));
@@ -221,6 +231,9 @@ function saveSessionPlace() {
 // Whether the active view sits at its very top. Same split as above: asking the shell in the code view always says yes, which sends every toggle back to the top.
 function viewAtTop() {
   if (codeViewActive && monacoEditor) return monacoEditor.getScrollTop() <= 1;
+  // Same reason as the fraction above: a hidden reader reads flush at the top whatever place it is holding, and a `true` here defeats the source-line landing outright.
+  const taken = graphExitPlace();
+  if (taken) return taken.graphReaderScrollTop == null || taken.graphReaderScrollTop <= 1;
   return app.scrollTop <= 1;
 }
 
@@ -279,11 +292,27 @@ function viewHandoffFor(path) {
       // And where the toggle put it. Still equal means nobody scrolled it since.
       readerLanded: null,
       codeLanded: null,
+      // And where the reading view was when the map went up over it, taken before the hiding because nothing can be measured after it — see takeGraphExitPlace.
+      graphFromCodeView: false,
+      graphReaderScrollTop: null,
+      graphReaderFraction: null,
+      graphReaderSrcOffset: null,
       // Armed by the toggle, consumed by the landing render.
       restoreExact: false,
     };
   }
   return viewHandoff;
+}
+
+// Take the reading view's place as the map goes up. `#app` is hidden for as long as the map is up and a hidden element measures zero on every box it has, so every question about where the reader was has to be asked now — the map's exits spend these. Entered from the source view there is nothing live to read: the reading view has not rendered yet, and the pixel the toggle is landing it on is the record's own.
+function takeGraphExitPlace() {
+  const path = activeDocumentPath();
+  if (!path) return;
+  const handoff = viewHandoffFor(path);
+  handoff.graphFromCodeView = !!codeViewActive;
+  handoff.graphReaderScrollTop = codeViewActive ? handoff.readerScrollTop : app.scrollTop;
+  handoff.graphReaderFraction = codeViewActive ? null : viewScrollFraction();
+  handoff.graphReaderSrcOffset = codeViewActive ? null : topReadingBlockSourceOffset();
 }
 
 // A saved position is spent once the text under it moves.
@@ -352,11 +381,12 @@ function toggleCodeView() {
       pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(codeViewText, lineIndex);
     } else {
       pendingReadingSrcOffset = null;
-      handoff.readerScrollTop = graphViewOpen ? null : app.scrollTop;
-      handoff.restoreExact =
-        handoff.codeScrollTop != null && viewStillLanded(handoff.readerScrollTop, handoff.readerLanded);
-      // Coming from the map there is no reading position to carry, and asking for one measures a document that is not on screen.
-      pendingCodeViewSrcOffset = graphViewOpen ? null : topReadingBlockSourceOffset();
+      // Out of the map nothing here can be measured — the reading view has been off screen the whole time — so spend the place taken as the map went up. A map entered from the source view gives that view its own pixel straight back, which is the one thing viewStillLanded cannot say for it: the reading render it never saw landed on an element with no box, so what it read back was zero.
+      handoff.readerScrollTop = graphViewOpen ? handoff.graphReaderScrollTop : app.scrollTop;
+      handoff.restoreExact = graphViewOpen
+        ? Boolean(handoff.graphFromCodeView && handoff.codeScrollTop != null)
+        : handoff.codeScrollTop != null && viewStillLanded(handoff.readerScrollTop, handoff.readerLanded);
+      pendingCodeViewSrcOffset = graphViewOpen ? handoff.graphReaderSrcOffset : topReadingBlockSourceOffset();
     }
     // Either direction re-renders the whole view (highlighting a big source or rebuilding a big document is slow), so arm the spinner for the wait.
     beginReaderLoading();
@@ -1007,6 +1037,8 @@ function renderCodeView(state) {
   disposeMonacoEditor();
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
+  // A pass the map's reveal queued would land after the line below has replaced the document with the editor, find nothing to measure, and write that nothing over the reader's place.
+  cancelReaderLayoutUpdate();
   // Same as a document render: what is in `app` goes, so the overlay has to be taken down rather than swept away underneath its own handlers.
   closeDiagramOverlay();
   readerAnchorBlocks = null;

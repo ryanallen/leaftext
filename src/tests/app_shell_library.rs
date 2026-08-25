@@ -1465,10 +1465,16 @@ fn going_from_the_map_to_the_source_does_not_lay_out_the_reading_view_on_the_way
         render.contains("graphExitPending = false;") && render.contains("closeGraphView();"),
         "the source render must drop the held map before it renders: {render}"
     );
-    // Nothing measures a document that is not on screen for a position to carry.
+    // Nothing measures a document that is not on screen for a position to carry: out of the map both of these spend the place taken before the hiding instead.
     assert!(html.contains(
-        "pendingCodeViewSrcOffset = graphViewOpen ? null : topReadingBlockSourceOffset();"
+        "pendingCodeViewSrcOffset = graphViewOpen ? handoff.graphReaderSrcOffset : topReadingBlockSourceOffset();"
     ));
+    assert!(html.contains(
+        "handoff.readerScrollTop = graphViewOpen ? handoff.graphReaderScrollTop : app.scrollTop;"
+    ));
+    // And the place itself is taken as the map goes up, which is the last moment there is anything to measure.
+    assert!(html.contains("  if (next) takeGraphExitPlace();"));
+    assert!(html.contains("function takeGraphExitPlace() {"));
 }
 
 #[test]

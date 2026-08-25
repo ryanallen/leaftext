@@ -56,10 +56,11 @@ window.leafReloadDocument = (state) => {
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = false;
     renderState();
-    readerScrollAnchor = anchor;
+    // A reload arriving while the reader is off screen has nothing to capture, and its null must not stand in for the place the reader still holds.
+    readerScrollAnchor = anchor || readerScrollAnchor;
     window.requestAnimationFrame(() => {
       restoreReaderScrollAnchor(anchor);
-      readerScrollAnchor = captureReaderScrollAnchor();
+      refreshReaderScrollAnchor();
       updateMinimapViewport();
     });
   });
@@ -80,7 +81,7 @@ function renderStateKeepingPlace() {
   updateMinimapViewport();
   window.requestAnimationFrame(() => {
     restoreReaderScrollAnchor(anchor);
-    readerScrollAnchor = captureReaderScrollAnchor();
+    refreshReaderScrollAnchor();
     updateMinimapViewport();
   });
 }
@@ -107,7 +108,7 @@ window.leafSwitchTab = (state, anchor) => {
     // Re-apply after layout settles; renderState's reflow observer keeps re-pinning the anchor as images above it decode and grow, so the landing doesn't drift.
     window.requestAnimationFrame(() => {
       restoreReaderScrollAnchor(anchor);
-      readerScrollAnchor = captureReaderScrollAnchor();
+      refreshReaderScrollAnchor();
       updateMinimapViewport();
     });
   });
@@ -151,11 +152,11 @@ window.leafScrollToFragment = (fragment) => {
     target.scrollIntoView({ block: 'start' });
     setReaderScrollTop(app.scrollTop);
     // Record where we landed as the reader anchor, or the ResizeObserver's scheduleReaderLayoutUpdate would re-pin the pre-jump position and yank the page back. Re-pin next frame too so the landing converges on the target.
-    readerScrollAnchor = captureReaderScrollAnchor();
+    refreshReaderScrollAnchor();
     updateMinimapViewport();
     window.requestAnimationFrame(() => {
       restoreReaderScrollAnchor(readerScrollAnchor);
-      readerScrollAnchor = captureReaderScrollAnchor();
+      refreshReaderScrollAnchor();
       updateMinimapViewport();
     });
   });
@@ -191,7 +192,7 @@ window.leafRestoreScrollAnchor = (anchor) => {
   readerScrollAnchor = anchor;
   window.requestAnimationFrame(() => {
     restoreReaderScrollAnchor(anchor);
-    readerScrollAnchor = captureReaderScrollAnchor();
+    refreshReaderScrollAnchor();
     updateMinimapViewport();
   });
 };

@@ -612,7 +612,7 @@ function renderState() {
       window.requestAnimationFrame(() => {
         setReaderScrollTop(exactRestore.readerScrollTop);
         recordReaderLanded();
-        readerScrollAnchor = captureReaderScrollAnchor();
+        refreshReaderScrollAnchor();
         updateMinimapViewport();
       });
     } else if (pendingViewAtTop) {
@@ -635,7 +635,7 @@ function renderState() {
           return;
         }
         recordReaderLanded();
-        readerScrollAnchor = captureReaderScrollAnchor();
+        refreshReaderScrollAnchor();
         updateMinimapViewport();
       });
     } else if (resetReaderScrollOnNextRender) {

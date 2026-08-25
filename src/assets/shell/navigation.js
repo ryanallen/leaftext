@@ -1,6 +1,6 @@
-// The reader's place as a document-intrinsic anchor (heading + block + offset), so it survives a full re-render. Falls back to the top with no document.
+// The reader's place as a document-intrinsic anchor (heading + block + offset), so it survives a full re-render. The place the page is already holding stands in when nothing can be measured — under the map there is no box to read and the top would be sent to the host as though the reader were there. Falls back to the top with no document at all.
 function currentScrollAnchor() {
-  return captureReaderScrollAnchor() || { section: null, block: 0, offsetY: 0 };
+  return captureReaderScrollAnchor() || readerScrollAnchor || { section: null, block: 0, offsetY: 0 };
 }
 function sendNavigationCommand(command) {
   send({ command, scroll_anchor: currentScrollAnchor() });

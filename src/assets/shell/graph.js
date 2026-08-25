@@ -41,6 +41,8 @@ function setGraphView(open) {
   // A map needs one thing: a document to be a map of. Not a vault — see graphSeeds and the host's graph_source.
   const next = Boolean(open) && Boolean(activeDocumentPath());
   if (next === graphViewOpen) return;
+  // Where the reader is, taken before the map covers the view — after the hiding there is nothing left to ask. See takeGraphExitPlace.
+  if (next) takeGraphExitPlace();
   graphViewOpen = next;
   applyGraphView();
   // The host needs to know so a file changing on disk only costs a redraw when there is something on screen to redraw.

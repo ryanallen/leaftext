@@ -393,7 +393,7 @@ function resetReaderScrollToContentStart() {
       setReaderScrollTop(content.topOffset);
     }
     recordReaderLanded();
-    readerScrollAnchor = captureReaderScrollAnchor();
+    refreshReaderScrollAnchor();
     updateMinimapViewport();
   });
 }
@@ -435,9 +435,21 @@ function anchorForBlockIndex(blocks, targetIndex, shellRect) {
   const offsetY = shellRect.top - rect.top;
   return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };
 }
+// Whether the reader is off screen. The map hides `#app` outright, and a hidden element measures zero on every box it has — so a place read while this answers true is not a bad reading of where the reader is, it is a reading of nothing at all.
+function readerOffScreen() {
+  return !app || app.hidden === true;
+}
+// Re-record where the reader is now. A reader that is off screen has no answer to give, so the anchor it was holding before it went stands; a reader on screen with nothing to anchor to genuinely has no place, and that null is the truth.
+function refreshReaderScrollAnchor() {
+  if (readerOffScreen()) {
+    return;
+  }
+  readerScrollAnchor = captureReaderScrollAnchor();
+}
 function captureReaderScrollAnchor() {
   const source = app.querySelector('.document-body');
-  if (!currentState?.document || !source) {
+  // No answer rather than a wrong one: every block's box reads zero while the reader is hidden, so the search below clears none of them and falls through to its seed — the last block of the document, which is the very bottom of the page.
+  if (readerOffScreen() || !currentState?.document || !source) {
     return null;
   }
   const blocks = readerAnchorBlockList(source);
@@ -463,7 +475,7 @@ function captureReaderScrollAnchor() {
 // Settle the reader where it now sits and re-record that as the anchor. Every reflow re-pin restores readerScrollAnchor, so anything moving app.scrollTop itself must call this — a stale anchor turns the next late layout change (an image decoding, the async pager landing) into a yank back to the pre-jump position. The scroll listener covers user scrolls; the minimap, which it ignores, calls this instead.
 function recordReaderScrollPosition() {
   clampReaderScrollPosition();
-  readerScrollAnchor = captureReaderScrollAnchor();
+  refreshReaderScrollAnchor();
 }
 // Anchor to the nearest anchorable block strictly above `el`, keeping its offset from the top edge. Blocks above a block never move when it resizes, so this holds the reader steady while an image collapses to source and re-decodes on commit — at worst landing on the line directly above the image, never the top. Null when `el` is the first block (nothing above it to anchor to).
 function anchorAboveElement(el) {
@@ -535,6 +547,10 @@ function scheduleReaderLayoutUpdate() {
   }
   readerLayoutFrame = window.requestAnimationFrame(() => {
     readerLayoutFrame = 0;
+    // Nothing to pin while the reader is off screen, and nothing honest to measure either: hidden, it reads as flush at the top, so every line below would write the top of the document over the place the reader is holding.
+    if (readerOffScreen()) {
+      return;
+    }
     // The origin write below can change the document's height, so the rail's cached geometry can't outlive it.
     invalidateMinimapMetrics();
     correctReaderScrollOrigin();
@@ -544,7 +560,8 @@ function scheduleReaderLayoutUpdate() {
     }
     // Past the guard, settleReaderScroll has run, so the anchor is current.
     restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());
-    readerScrollAnchor = captureReaderScrollAnchor();
+    // Keep the anchor we hold when the capture has nothing to say: a pass queued by the map's reveal lands after the source editor has replaced the document, and its null would be the reader's place written away.
+    readerScrollAnchor = captureReaderScrollAnchor() || readerScrollAnchor;
     updateMinimapViewport();
   });
 }
@@ -946,7 +963,7 @@ function settleReaderScroll() {
   readerScrollSettleTimer = 0;
   readerScrolling = false;
   clampReaderScrollPosition();
-  readerScrollAnchor = captureReaderScrollAnchor();
+  refreshReaderScrollAnchor();
   // The clamp may have moved the reader; the rail follows it.
   updateMinimapViewport();
   // Diagrams stand aside while the reader scrolls, so this is where they are told they can draw.

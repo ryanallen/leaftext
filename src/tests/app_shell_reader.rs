@@ -702,7 +702,7 @@ fn app_shell_throttles_minimap_scroll_sync() {
         "function updateMinimapViewport() {",
         "app.addEventListener('scroll', () => {",
         "clampReaderScrollPosition();",
-        "readerScrollAnchor = captureReaderScrollAnchor();",
+        "refreshReaderScrollAnchor();",
         "scheduleMinimapViewportUpdate();",
         "window.addEventListener('resize', () => {",
         "scheduleReaderLayoutUpdate();",
@@ -989,7 +989,7 @@ fn app_shell_resets_new_documents_to_rendered_content_top() {
         "function resetReaderScrollToContentStart() {",
         "const content = correctReaderScrollOrigin(source);",
         "setReaderScrollTop(content.topOffset);",
-        "readerScrollAnchor = captureReaderScrollAnchor();",
+        "refreshReaderScrollAnchor();",
         "const firstContent = source.firstElementChild;",
         "const rawTopOffset = Math.ceil(app.scrollTop + firstContentRect.top - shellRect.top);",
         "const topOffset = Math.max(0, rawTopOffset - READER_CONTENT_TOP_GAP);",
@@ -1056,7 +1056,8 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "function scheduleReaderLayoutUpdate() {",
             "correctReaderScrollOrigin();",
             "restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());",
-            "readerScrollAnchor = captureReaderScrollAnchor();",
+            "    if (readerOffScreen()) {",
+            "readerScrollAnchor = captureReaderScrollAnchor() || readerScrollAnchor;",
             "window.addEventListener('resize', () => {",
             "scheduleReaderLayoutUpdate();",
             // The reflow observer re-pins the anchor as images decode and grow, and drops the stale anchor-block cache so the re-pin resolves against the current DOM rather than detached, zero-rect entries.
@@ -1076,7 +1077,9 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
 
     for expected in [
         "function recordReaderScrollPosition() {",
-        "clampReaderScrollPosition();\n  readerScrollAnchor = captureReaderScrollAnchor();",
+        "clampReaderScrollPosition();\n  refreshReaderScrollAnchor();",
+        // Every re-record goes through the one helper, which keeps the place the reader is holding when there is nothing to measure -- a reader off screen answers against boxes that all read zero, and the search below falls through to the last block of the document.
+        "function refreshReaderScrollAnchor() {\n  if (readerOffScreen()) {",
         // Rail click (pointerdown, so already flagged as dragging).
         "app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));\n    recordReaderScrollPosition();",
         // Drag release: drop the queued pass built on the pre-drag anchor first, then record where the drag landed.
