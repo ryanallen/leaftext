@@ -1,6 +1,6 @@
 // Run the WebView front-end: does it parse, does it boot, and is the code view's edit arithmetic right (it decides what gets written to a file).
 //
-// Nothing else runs this script before a user does, and a fragment that throws as it loads opens a blank window. Order is load-bearing, so both the fragment list and the fake page's elements are read from the app itself — APP_SHELL_SCRIPT_PARTS in lib.rs and the ids and classes in app-shell.html.
+// Nothing else runs this script before a user does, and a fragment that throws as it loads opens a blank window. One subject per file in `check-shell/`; this is the order they run in, and the boot is first because it fills the record the rest read.
 
 import { failures, names, record, settled } from './check-shell/shared.mjs';
 import { run as runParsesAndBoots } from './check-shell/parses-and-boots.mjs';

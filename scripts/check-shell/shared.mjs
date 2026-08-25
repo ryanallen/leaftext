@@ -16,7 +16,6 @@ export const check = (name, run) => {
   } catch (error) {
     failures.push(`${name}: ${error && error.message ? error.message : error}`);
   } finally {
-    // The page is shared by every check after the boot, so a check that drives the app — opens the pane, folds the bar, switches a view — would otherwise leave the next check standing in whatever it left behind, failing on something it never names.
     if (record.restore) record.restore();
   }
 };
@@ -1107,19 +1106,18 @@ export function pageSnapshot(context, script) {
   };
 }
 
-
 // ---- the script the whole suite is read against -----------------------------
 
 export const { names, source } = shellSource();
 
 // ---- what crosses a file boundary by assignment ------------------------------
 //
-// A module cannot assign to a name it imported, so nothing here is an exported `let`. The booted page, the hand-back the collector calls between checks, and the two host counts are properties of one record every subject file reads and the few that write, write.
+// A module cannot assign to a name it imported, so nothing that is written from another file can be an exported `let`. Those four are properties of one record instead.
 
 export const record = {
   // The page the boot made. Every check after it reads this one, whatever the check before it did to it.
   booted: null,
-  // The hand-back `check` calls after every check, so a check that drove the app leaves the next one reading the page the boot made.
+  // The hand-back `check` calls after every check: without it a check that drives the app — opens the pane, folds the bar, switches a view — leaves the next one standing in whatever it left behind, failing on something it never names.
   restore: null,
   // How many commands the browser's own host answers, counted off its own table by the check that reads it rather than written down twice.
   webAnswered: 0,

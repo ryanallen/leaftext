@@ -38,7 +38,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | `src/platform.rs`, `journal.rs`, `pipe.rs`, `single_instance.rs` | `src/app/tests.rs` as well — these sit beside the library's files and belong to the binary, so nothing in `src/tests/` can see them. `main.rs`'s `mod` lines are what settle which crate a top-level file is in, not the folder it sits in |
 | `src/store/**.rs` | `src/store/tests.rs` |
 | `installer/**.rs` — the Windows EXE installer | `installer/src/tests.rs`, run by `just check-installer`. It installs nothing: the plan is data, and the one test that writes drives a scratch folder and a scratch registry key and removes both |
-| `src/assets/shell/*.js` | `scripts/check-shell.mjs` |
+| `src/assets/shell/*.js` | `scripts/check-shell/`, one file per subject — the file for the part that changed, and a new one where the subject is new. `scripts/check-shell.mjs` beside it is imports, the calls in order and the report |
 | `site/*.js`, `docs/docs.js` — what draws the published pages | `scripts/check-site-boot.mjs`, which boots both entry readers and everything they import against a stand-in page, fetch and renderer module. It reads the finished page, never the absence of a throw: both readers catch a mid-boot fault into a status line |
 | `src/assets/reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
 | a new class, component, token or icon | no test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list. Run them and add the row |
@@ -59,7 +59,7 @@ The diff, per file. For each changed function, ask what a caller would get wrong
 Search the suite for it before writing anything:
 
 ```bash
-grep -rn "<function or behavior>" src/tests/ src/app/tests.rs scripts/check-shell.mjs
+grep -rn "<function or behavior>" src/tests/ src/app/tests.rs scripts/check-shell/
 ```
 
 Report one row per change: the change, the test that covers it, or **missing**. A test that only proves the code runs is missing.
@@ -70,7 +70,7 @@ Report one row per change: the change, the test that covers it, or **missing**. 
 - **Test the rule, not the implementation.** A test that mirrors the code line for line fails on a rewrite that changed nothing a user sees.
 - **Cover what it cost.** A bug fixed in a version gets a test named after what went wrong, so the same regression cannot ship twice.
 - Put it in the subject's file, beside its neighbors, and match their style. A new subject file needs its `mod` line in `src/tests/mod.rs`.
-- Front-end behavior goes in `scripts/check-shell.mjs`, which boots the fragments in order against a stand-in page — a fragment that throws as it loads fails there rather than opening a blank window.
+- Front-end behavior goes in the `scripts/check-shell/` file for its subject, which the entry beside them boots the fragments in order for against a stand-in page — a fragment that throws as it loads fails there rather than opening a blank window. A subject file reads the collector, the fake page and the shared stands out of `shared.mjs` and never out of another subject file, so anything a second subject starts using moves into `shared.mjs` rather than being imported across.
 
 ### 3a. A gap wider than the change is a ticket
 
@@ -103,7 +103,8 @@ Leave the tests uncommitted. Say which files gained a test, which changes are co
 
 - `src/tests/mod.rs` — the module list and the shared helpers.
 - `src/app/tests.rs` — the binary's tests: tabs, history, watching, link routing, file actions.
-- `scripts/check-shell.mjs` — the front-end's boot and edit-offset checks.
+- `scripts/check-shell/` — the front-end's checks, one file per subject, with `shared.mjs` holding the collector, the fake page and what more than one of them reaches for.
+- `scripts/check-shell.mjs` — what runs them, in order, and prints the report.
 - `/check` — runs this, then `just verify`.
 - `/git-release` — the only thing that touches git.
 

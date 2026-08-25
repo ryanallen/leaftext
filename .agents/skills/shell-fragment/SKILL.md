@@ -21,7 +21,7 @@ The front-end is 28 files under `src/assets/shell/`, joined in `APP_SHELL_SCRIPT
 1. Write it. One subject per file, named after the subject.
 2. Add `include_str!` to `APP_SHELL_SCRIPT_PARTS` in `lib.rs`, **in the position its dependencies demand** — after anything it calls at load time, before anything that calls it at load time.
 3. `just check-shell`. It boots them joined, in order, against a stand-in page, so a fragment that throws as it loads fails the build rather than opening a blank window on somebody's machine.
-4. A test in `check-shell.mjs` for whatever the fragment claims. `/sync-tests` names what is missing.
+4. A test in the `scripts/check-shell/` file for whatever the fragment claims, or a new file there where the subject is new. `/sync-tests` names what is missing.
 
 ## New interface needs a row
 
@@ -50,7 +50,7 @@ The page is handed to the web view as one string with a ~2 MB ceiling; past it t
 ## Reference
 
 - `src/lib.rs` — `APP_SHELL_SCRIPT_PARTS`, the order.
-- `scripts/check-shell.mjs` — the boot check and the edit-offset arithmetic.
+- `scripts/check-shell/` — the checks, one file per subject; `scripts/check-shell.mjs` beside them runs them in order.
 - `docs/02-development/01-architecture.md` — what each fragment is for.
 
 <!-- keycode: LEAF-16D8 -->
