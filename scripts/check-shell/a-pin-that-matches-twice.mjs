@@ -26,7 +26,7 @@ function rustSource() {
   return readFileSync(join(root, 'src/lib.rs'), 'utf8');
 }
 
-// The theme bootstrap as the page carries it: a second script inline in the page, so a line in it is a second place a test would match. The vendored runtimes' URLs are built from the key-and-file pairs Rust builds them from; the other two seams are the theme registry's own lists, stood in for because their values are Rust's and no pin needs one spelled — what matters is that the name is gone, since a placeholder left standing reads as page text and every pin under it counts nowhere.
+// The theme bootstrap as the page carries it: a second script inline in the page, so a line in it is a second place a test would match. The vendored runtimes' URLs are built from the key-and-file pairs Rust builds them from; the other two seams are the theme registry's own lists, stood in for because their values are Rust's and no pin needs one spelled. What matters is that the name goes: a placeholder left standing is not the value a test reads, so a pin inside that value counts nowhere.
 function filledThemeBootstrap(lib) {
   const urls = vendoredAssetsIn(lib, VENDORED_ASSETS_BUILDER)
     .map(([key, asset]) => `"${key}":"${standInAssetUrl(asset)}"`)
@@ -277,7 +277,7 @@ const SUBSTITUTION = /\.replace\(\s*"\{\{(\w+)\}\}"\s*,\s*&(\w+)\(\s*(?:"([^"]*)
  *
  * An empty read is refused rather than taken for a builder with nothing to fill: a read that has quietly stopped matching leaves this file's copy of the page exactly as short as the hand-written one it replaced, which is the drift this whole rule exists to refuse.
  */
-export function substitutionsIn(lib, builder) {
+function substitutionsIn(lib, builder) {
   const body = rustFunctionBody(lib, builder);
   if (!body) throw new Error(`could not find fn ${builder} in src/lib.rs`);
   const found = [...body.text.matchAll(SUBSTITUTION)].map((one) => ({
@@ -294,7 +294,7 @@ export function substitutionsIn(lib, builder) {
 }
 
 /** The vendored runtimes a Rust builder names, as `[key, file]` pairs — the keys the page reads them back by and the files they are served from. Empty is refused for the same reason. */
-export function vendoredAssetsIn(lib, builder) {
+function vendoredAssetsIn(lib, builder) {
   const body = rustFunctionBody(lib, builder);
   if (!body) throw new Error(`could not find fn ${builder} in src/lib.rs`);
   const pairs = [...body.text.matchAll(/\("(\w+)",\s*"([^"]+)"\)/g)].map((one) => [one[1], one[2]]);
@@ -311,7 +311,7 @@ export function vendoredAssetsIn(lib, builder) {
  *
  * Rust's `replacen(…, 1)` takes the first occurrence, which is what JavaScript's string `.replace` does. A mark the script no longer holds is refused: a respelling that has stopped applying is a rebuild that has already broken, and it would go on producing a string no test ever reads.
  */
-export function respelledScript(lib, builder, script) {
+function respelledScript(lib, builder, script) {
   const body = rustFunctionBody(lib, builder);
   if (!body) throw new Error(`could not find fn ${builder} in src/lib.rs`);
   const wrapper = literalAfter(body.text, body.text.indexOf('format!('));
