@@ -155,14 +155,14 @@ fn the_first_run_bubble_never_takes_the_pointer() {
     let css = reading_mode_css();
 
     // The owner asked for this by name, on the built thing: the box is a message with nothing in it to press, so a pointer crossing it on the way somewhere else must not lose the words mid-sentence, and it must not stand between the pointer and whatever it is laid over. The bubble registers no listeners of its own either — see `the vault hint shows once, and being met is permanent` in the front-end check — and this is the half of the rule that lives in the stylesheet.
-    let rule = rule_body(css, "\n.hint-bubble {");
+    let rule = rule_body(css, ".hint-bubble {");
     assert_contains(rule, "pointer-events: none;");
     // Over the page and out of the layout: wedged into a row it would be pinched against the pane's edge, and nothing on screen may move to make room for it. The layer is the line above read on a menu — it points at the pane's folder switch, and a right-click on a folder row below opens one into the same space.
     assert_contains(rule, "position: fixed;");
     assert_contains(rule, "z-index: var(--lt-z-44);");
 
     // The chevron carries the box's own edge and fill rather than a second set, so the two cannot drift apart.
-    let tail = rule_body(css, "\n.hint-bubble-tail {");
+    let tail = rule_body(css, ".hint-bubble-tail {");
     assert_contains(tail, "background: var(--lt-surface-elevated);");
     assert_contains(
         tail,
@@ -207,11 +207,11 @@ fn width_media_blocks(css: &str) -> Vec<&str> {
 fn the_start_screen_folds_on_its_own_width_and_never_on_the_windows() {
     // The library pane is a remembered width the reader column shrinks under, and it can be dragged to the window less the reader's minimum — so a 1160px window can leave this section 320px wide while an 880px one with the pane shut leaves it 720px. A window breakpoint would call both of those the same thing. One container query on the section sets the column count, and it is the only thing allowed to.
     let css = reading_mode_css();
-    let column = rule_body(&css, "\n.reader-shell.empty {");
+    let column = rule_body(&css, ".reader-shell.empty {");
     assert_contains(column, "container-type: inline-size;");
     assert_contains(column, "container-name: home;");
     assert_contains(&css, "@container home (min-width: 600px) {");
-    let grid = rule_body(&css, "\n.home-list-grid {");
+    let grid = rule_body(&css, ".home-list-grid {");
     // One column until the query says two, so the fold and the column count are one number in one place.
     assert_contains(grid, "grid-template-columns: minmax(0, 1fr);");
     // The writing's own width, growing past it only where a path needs the room and never past the reader. Stretched to the reader it left two thin columns at opposite edges of an empty screen; held to its content it was narrower than the writing above it.
@@ -222,34 +222,19 @@ fn the_start_screen_folds_on_its_own_width_and_never_on_the_windows() {
         "max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));",
     );
     // And the list fills its column, so the fill under the pointer ends where the list ends.
-    assert_contains(
-        rule_body(
-            &css,
-            "
-.home-list {",
-        ),
-        "width: 100%;",
-    );
+    assert_contains(rule_body(&css, ".home-list {"), "width: 100%;");
     assert_contains(grid, "transform: translateX(-50%);");
     // Each list is a box of its own rather than a section of the writing, so nothing draws a rule across the screen above them.
-    let card = rule_body(&css, "\n.home-list {");
+    let card = rule_body(&css, ".home-list {");
     assert_contains(card, "border: var(--lt-stroke-1) solid var(--lt-border);");
     assert_contains(card, "border-radius: var(--lt-radius-lg);");
     // With nothing kept the screen is prod's own: the plain recent block, its own rules, its own color.
     assert_contains(
-        rule_body(
-            &css,
-            "
-.recent {",
-        ),
+        rule_body(&css, ".recent {"),
         "border-top: var(--lt-stroke-1) solid var(--lt-navigation-recent-border);",
     );
     assert_contains(
-        rule_body(
-            &css,
-            "
-.recent button {",
-        ),
+        rule_body(&css, ".recent button {"),
         "overflow-wrap: anywhere;",
     );
 
@@ -267,11 +252,8 @@ fn the_start_screen_folds_on_its_own_width_and_never_on_the_windows() {
 fn a_folded_list_shows_five_and_hands_the_rest_to_the_sheet() {
     // The way out is drawn only where the columns have folded: wide, the box scrolls and a button saying "show all" would be offering what is already on screen. The button is in the markup either way, so this rule is the whole of the mode.
     let css = reading_mode_css();
-    assert_contains(rule_body(&css, "\n.home-showall {"), "display: none;");
-    let folded = css
-        .find("@container home (max-width: 599px) {")
-        .map(|at| &css[at..])
-        .expect("the folded layout is a container query on the section");
+    assert_contains(rule_body(&css, ".home-showall {"), "display: none;");
+    let folded = &css[rule_at(&css, "@container home (max-width: 599px) {")..];
     let folded = &folded[..folded.find("\n}\n").expect("the query closes")];
     assert_contains(folded, "display: block;");
     // Five rows, and no scroll box: a nested scroller inside a page that also scrolls takes a wheel meant for the page.
@@ -281,11 +263,11 @@ fn a_folded_list_shows_five_and_hands_the_rest_to_the_sheet() {
     assert_contains(folded, ".home-list-fade {\n    display: none;\n  }");
 
     // In the sheet the same box is uncapped, because the sheet's own ceiling is what bounds it.
-    let inside = rule_body(&css, "\n.home-sheet .home-list-scroll {");
+    let inside = rule_body(&css, ".home-sheet .home-list-scroll {");
     assert_contains(inside, "max-height: none;");
     // The sheet dissolves to its own surface rather than the reader's, or the ramp ends on a color that is not under it.
     assert_contains(
-        rule_body(&css, "\n.home-sheet .home-list-fade {"),
+        rule_body(&css, ".home-sheet .home-list-fade {"),
         "--home-list-surface: var(--lt-background);",
     );
 }

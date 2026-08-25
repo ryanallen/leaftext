@@ -23,7 +23,7 @@ fn an_undrawn_diagram_does_not_spin_in_the_rail() {
         "the rail's cancel counts {rail} class-level parts against the spinner rule's {page}, so the ring would go on turning"
     );
     assert!(
-        css.find(&cancel) > css.find(&spinner),
+        rule_at(css, &format!("{cancel} {{")) > rule_at(css, &format!("{spinner} {{")),
         "a tie on weight is broken by source order, so the rail's cancel has to sit after the spinner rule"
     );
     // The block itself must stay in the copy: its source text is transparent in the page and is the only thing holding the block at the height the real one has.
@@ -79,7 +79,7 @@ fn a_glossary_entrys_undrawn_diagram_is_a_strip_rather_than_a_ring_that_never_st
         "the sheet's cancel counts {sheet} class-level parts against the spinner rule's {page}, so the ring would go on turning"
     );
     assert!(
-        css.find(&cancel) > css.find(&spinner),
+        rule_at(css, &format!("{cancel} {{")) > rule_at(css, &format!("{spinner} {{")),
         "a tie on weight is broken by source order, so the sheet's cancel has to sit after the spinner rule"
     );
 
@@ -98,7 +98,8 @@ fn a_glossary_entrys_undrawn_diagram_is_a_strip_rather_than_a_ring_that_never_st
         "the sheet's height rule counts {held} class-level parts against the floor's {floored}, so the block would stay 88px tall"
     );
     assert!(
-        css.find(SHEET_UNDRAWN_DIAGRAM) > css.find(UNDRAWN_DIAGRAM_FLOOR),
+        rule_at(css, &format!("{SHEET_UNDRAWN_DIAGRAM} {{"))
+            > rule_at(css, &format!("{UNDRAWN_DIAGRAM_FLOOR} {{")),
         "a tie on weight is broken by source order, so the sheet's height rule has to sit after the floor"
     );
     let height = strip
@@ -133,7 +134,7 @@ fn a_diagram_the_card_will_not_draw_is_a_strip_rather_than_a_ring_that_never_sto
         "the card's cancel counts {card} class-level parts against the spinner rule's {page}, so the ring would go on turning"
     );
     assert!(
-        css.find(&cancel) > css.find(&spinner),
+        rule_at(css, &format!("{cancel} {{")) > rule_at(css, &format!("{spinner} {{")),
         "a tie on weight is broken by source order, so the card's cancel has to sit after the spinner rule"
     );
 

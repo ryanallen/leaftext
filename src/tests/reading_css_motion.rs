@@ -42,7 +42,7 @@ fn reduce_motion_is_answered_once_and_won_back_by_name() {
     assert_contains(
         rule_body(
             css,
-            ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-diagram-wait=\"far\"])::after {\n    animation-duration:",
+            "  .document-body pre.mermaid:not([data-processed=\"true\"]):not([data-diagram-wait=\"far\"])::after {\n    animation-duration:",
         ),
         "animation-duration: var(--lt-duration-1600) !important;",
     );
@@ -56,7 +56,7 @@ fn reduce_motion_is_answered_once_and_won_back_by_name() {
     // The pager skeleton keeps its own block: the blanket rule carries no opacity and the bars have none, so bars stopped at full strength read as loaded content.
     let skeleton = rule_body(
         css,
-        ".docs-pager-label-skeleton,\n  .docs-pager-title-skeleton {",
+        "  .docs-pager-label-skeleton,\n  .docs-pager-title-skeleton {",
     );
     assert_contains(skeleton, "animation: none;");
     assert_contains(skeleton, "opacity: var(--lt-opacity-55);");
@@ -133,9 +133,7 @@ fn anything_that_folds_slides_to_its_new_height_from_one_shared_rule() {
         assert_contains(css, shut);
     }
     // Never the spring, however much a fold wants one: it runs a tenth of the whole travel past its mark, and a fold's travel is however tall its contents are — 533px past on a long front matter, 133px on a forty-entry outline. The sheet's rubber band refused the same curve over a full-height rise for the same reason.
-    let folding = &css[css
-        .find("@supports (interpolate-size: allow-keywords) {")
-        .expect("the folding rule should be in the stylesheet")..];
+    let folding = &css[rule_at(css, "@supports (interpolate-size: allow-keywords) {")..];
     let folding = &folding[..folding
         .find("\n/*")
         .expect("the folding rule should be followed by another")];
@@ -241,12 +239,8 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
     }
 
     // The sheet's drag exemption ties with `.open` on specificity, so it wins only by coming after it — the drag has to track the pointer exactly.
-    let open = css
-        .find(".leaf-sheet.open {")
-        .expect("the sheet has an open state");
-    let dragging = css
-        .find(".leaf-sheet.is-dragging {")
-        .expect("the sheet exempts its own drag");
+    let open = rule_at(css, ".leaf-sheet.open {");
+    let dragging = rule_at(css, ".leaf-sheet.is-dragging {");
     assert!(
         open < dragging,
         "the drag exemption must follow .open to win the tie"
@@ -256,7 +250,7 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
     for hover in [
         ".block-gutter .block-insert-option {",
         ".document-body pre > .code-copy {",
-        ".mermaid-view-controls {",
+        ".mermaid-view-controls {\n  position: absolute;",
     ] {
         assert_contains(rule_body(css, hover), "var(--lt-ease)");
     }
@@ -301,17 +295,17 @@ fn a_bottom_sheet_lands_with_a_rubber_band_and_leaves_with_a_boost() {
     // Each direction is one animation, so where the sheet is on every frame of it is written down here rather than being however long a class spent waiting on another class's end event. The landing's three marks: below the window, past the seat at the rise's share of the whole, then down onto it — and the settle takes the emphasized curve for the same reason the pull-up does, a 10px move by something already on screen.
     let land = block(css, "@keyframes sheet-land {");
     for (mark, expected) in [
-        ("0% {", "transform: translateY(100%);"),
-        ("0% {", "animation-timing-function: var(--lt-ease-sheet);"),
+        ("  0% {", "transform: translateY(100%);"),
+        ("  0% {", "animation-timing-function: var(--lt-ease-sheet);"),
         (
-            "65% {",
+            "  65% {",
             "transform: translateY(calc(var(--sheet-raise) * -1));",
         ),
         (
-            "65% {",
+            "  65% {",
             "animation-timing-function: var(--lt-ease-emphasized);",
         ),
-        ("100% {", "transform: translateY(var(--sheet-drag, 0px));"),
+        ("  100% {", "transform: translateY(var(--sheet-drag, 0px));"),
     ] {
         assert_contains(rule_body(land, mark), expected);
     }
@@ -323,31 +317,31 @@ fn a_bottom_sheet_lands_with_a_rubber_band_and_leaves_with_a_boost() {
     // The leave's three: the seat, the raised mark at the pull-up's share of the whole, and gone.
     let leave = block(css, "@keyframes sheet-leave {");
     for (mark, expected) in [
-        ("0% {", "transform: translateY(var(--sheet-drag, 0px));"),
+        ("  0% {", "transform: translateY(var(--sheet-drag, 0px));"),
         (
-            "0% {",
+            "  0% {",
             // A 10px move by something already on screen. The arriving curve spends half that in the first frame, which is the jitter itself.
             "animation-timing-function: var(--lt-ease-emphasized);",
         ),
         (
-            "43% {",
+            "  43% {",
             "transform: translateY(calc(var(--sheet-drag, 0px) - var(--sheet-raise)));",
         ),
         (
-            "43% {",
+            "  43% {",
             "animation-timing-function: var(--lt-ease-accelerate);",
         ),
-        ("100% {", "transform: translateY(100%);"),
+        ("  100% {", "transform: translateY(100%);"),
     ] {
         assert_contains(rule_body(leave, mark), expected);
     }
     // A drag dismissal is the departure alone, from wherever the hand let the sheet go.
     let boost = block(css, "@keyframes sheet-boost {");
     assert_contains(
-        rule_body(boost, "from {"),
+        rule_body(boost, "  from {"),
         "transform: translateY(var(--sheet-drag, 0px));",
     );
-    assert_contains(rule_body(boost, "to {"), "transform: translateY(100%);");
+    assert_contains(rule_body(boost, "  to {"), "transform: translateY(100%);");
     assert_contains(
         rule_body(css, ".leaf-sheet.is-leaving {"),
         "animation: sheet-leave var(--lt-duration-280) both;",
@@ -360,23 +354,21 @@ fn a_bottom_sheet_lands_with_a_rubber_band_and_leaves_with_a_boost() {
 
     // A wide window centers the sheet with the `translate` property, which the browser composes ahead of whatever `transform` is drawing. One rule, so no state and no keyframe repeats it — written as half of a transform it had to be said on all six moving states, and a keyframe could not have said it at all.
     let wide = block(css, "@media (min-width: 760px) {\n  .leaf-sheet {");
-    assert_contains(rule_body(wide, ".leaf-sheet {"), "translate: -50%;");
+    assert_contains(rule_body(wide, "  .leaf-sheet {"), "translate: -50%;");
     assert!(
         !wide.contains("transform"),
         "the wide window must not repeat a transform: the centering composes with the one the animations draw"
     );
 
     // The drag exemption ties with the boost on specificity, so it still has to come last of all the moving states — a held pointer tracks directly or it does not track at all.
-    let dragging = css
-        .find(".leaf-sheet.is-dragging {")
-        .expect("the sheet exempts its own drag");
+    let dragging = rule_at(css, ".leaf-sheet.is-dragging {");
     for moving in [
         ".leaf-sheet.open.is-landing {",
         ".leaf-sheet.is-leaving {",
         ".leaf-sheet.is-boosting {",
     ] {
         assert!(
-            css.find(moving).expect("the state is declared") < dragging,
+            rule_at(css, moving) < dragging,
             "{moving} must come before the drag exemption"
         );
     }
@@ -430,7 +422,7 @@ fn the_normal_width_library_toggle_rides_the_motion_rail() {
 
     // The wide grid spends the rail width itself, so the transition above has one property to interpolate; the closed state is the same rule with the var at 0px, not a second track list.
     assert_contains(
-        rule_body(css, "\n.library-shell {"),
+        rule_body(css, ".library-shell {"),
         "grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);",
     );
     assert!(!css.contains(".library-shell.library-closed {\n  grid-template-columns:"));
@@ -451,7 +443,7 @@ fn the_normal_width_library_toggle_rides_the_motion_rail() {
     assert!(!css.contains(".app-bar.has-rail::after {"));
 
     // The pane's list clips sideways: rows truncate themselves, so a horizontal scrollbar on a narrow pane is noise — and it popped in and out while the pane animates.
-    let scroll = rule_body(css, "\n.library-scroll {");
+    let scroll = rule_body(css, ".library-scroll {");
     assert_contains(scroll, "overflow-y: auto;");
     assert_contains(scroll, "overflow-x: hidden;");
 
@@ -471,7 +463,7 @@ fn the_normal_width_library_toggle_rides_the_motion_rail() {
     assert_contains(fade_in, "body.is-library-opening .library-scroll {");
 
     // A grid item's min-width is its content, which would hold the shrinking track open; the pane itself still never clips, because the corner arc on its right edge is real geometry.
-    assert_contains(rule_body(css, "\n.library-pane {"), "min-width: 0;");
+    assert_contains(rule_body(css, ".library-pane {"), "min-width: 0;");
 
     // No component Reduce Motion block: the file's blanket rule zeroes these transitions like every other, so each motion rule appears exactly once.
     assert_eq!(
@@ -490,7 +482,7 @@ fn the_normal_width_library_toggle_rides_the_motion_rail() {
 fn a_home_lists_bar_and_edges_answer_the_scroll_not_the_pointer() {
     // Asked for by name: the bar is there while the list is moving and gone a moment after it stops. Never on hover — pointing at a list on the way somewhere else is not asking to be told how long it is.
     let css = reading_mode_css();
-    let box_ = rule_body(&css, "\n.home-list-scroll {");
+    let box_ = rule_body(&css, ".home-list-scroll {");
     // The bar's width is held whether or not there is one, so a list too short to need it keeps the same inset as the one beside it.
     assert_contains(box_, "scrollbar-gutter: stable;");
     assert!(
@@ -508,7 +500,7 @@ fn a_home_lists_bar_and_edges_answer_the_scroll_not_the_pointer() {
     );
 
     // The soft edge is the reader's own ramp to the surface the start screen paints. It takes no pointer events, and it stops short of the right edge — a wash laid over the bar would bury the thumb, which starts at that same edge.
-    let fade = rule_body(&css, "\n.home-list-fade {");
+    let fade = rule_body(&css, ".home-list-fade {");
     assert_contains(fade, "pointer-events: none;");
     assert_contains(fade, "inset: 0 var(--reader-scrollbar) 0 0;");
     // Neither edge until there is list past it: a soft top on a list sitting at its first row says something is above it that is not.
@@ -520,11 +512,11 @@ fn a_home_lists_bar_and_edges_answer_the_scroll_not_the_pointer() {
     );
     assert_contains(fade, "background-position: 0 0, 0 100%;");
     assert_contains(
-        rule_body(&css, "\n.home-list-box.has-above .home-list-fade {"),
+        rule_body(&css, ".home-list-box.has-above .home-list-fade {"),
         "--home-list-fade-top: var(--reader-edge-fade-depth);",
     );
     assert_contains(
-        rule_body(&css, "\n.home-list-box.has-below .home-list-fade {"),
+        rule_body(&css, ".home-list-box.has-below .home-list-fade {"),
         "--home-list-fade-bottom: var(--reader-edge-fade-depth);",
     );
 }
@@ -542,15 +534,15 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
     ];
     // The block is nine rules and every wearer is in all of them, named here by the first selector of each. Six paint the bar; the three in the middle sit on the box and are the only place the thumb's color and inset come from, so a wearer in the pseudo rules alone reserves a 14px gutter and never draws anything in it — `--lt-scroll-thumb` is registered with an initial value of `transparent`, which looks exactly like the work not having been done.
     const RULES: [&str; 9] = [
-        "\n.leaf-scroll::-webkit-scrollbar,",
-        "\n.leaf-scroll::-webkit-scrollbar-track,",
-        "\n.leaf-scroll,",
-        "\n.leaf-scroll.is-scrolling,",
-        "\n.leaf-scroll.is-pointing,",
-        "\n.leaf-scroll::-webkit-scrollbar-thumb,",
-        "\n.leaf-scroll::-webkit-scrollbar-thumb:vertical,",
-        "\n.leaf-scroll::-webkit-scrollbar-thumb:horizontal,",
-        "\n.leaf-scroll::-webkit-scrollbar-corner,",
+        ".leaf-scroll::-webkit-scrollbar,",
+        ".leaf-scroll::-webkit-scrollbar-track,",
+        ".leaf-scroll,",
+        ".leaf-scroll.is-scrolling,",
+        ".leaf-scroll.is-pointing,",
+        ".leaf-scroll::-webkit-scrollbar-thumb,",
+        ".leaf-scroll::-webkit-scrollbar-thumb:vertical,",
+        ".leaf-scroll::-webkit-scrollbar-thumb:horizontal,",
+        ".leaf-scroll::-webkit-scrollbar-corner,",
     ];
     for rule in RULES {
         let block = rule_body(&css, rule);
@@ -564,11 +556,11 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
     }
 
     // At rest the thumb is painted in nothing at all. A scrollbar pseudo has no box of its own to fade, so what moves is a property the thumb rule reads — which is also why the bar's width is reserved either way and nothing on the page reflows when one appears.
-    let resting = rule_body(&css, "\n.leaf-scroll,\n.library-scroll,");
+    let resting = rule_body(&css, ".leaf-scroll,\n.library-scroll,");
     assert_contains(resting, "--lt-scroll-thumb: transparent;");
-    let moving = rule_body(&css, "\n.leaf-scroll.is-scrolling,");
+    let moving = rule_body(&css, ".leaf-scroll.is-scrolling,");
     assert_contains(moving, "--lt-scroll-thumb: color-mix(");
-    let pointed = rule_body(&css, "\n.leaf-scroll.is-pointing,");
+    let pointed = rule_body(&css, ".leaf-scroll.is-pointing,");
     assert_contains(pointed, "--lt-scroll-thumb: color-mix(");
     for wearer in WEARERS {
         assert_contains(resting, wearer);
@@ -601,18 +593,18 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
         3,
         "a fourth box took a standard scrollbar property, so its bar can never be painted at all"
     );
-    assert_contains(rule_body(&css, "\n.tab-bar {"), "scrollbar-width: none;");
+    assert_contains(rule_body(&css, ".tab-bar {"), "scrollbar-width: none;");
     assert_contains(
-        rule_body(&css, "\n.reader-shell.has-minimap {"),
+        rule_body(&css, ".reader-shell.has-minimap {"),
         "scrollbar-width: none;",
     );
     // The third is that same decision on the one page that is not the app: an exported page has no reader pane, so the box the browser scrolls is the body itself and the rail down its edge is what replaces its bar. Asked of the rail rather than written flat, so a page whose script never arrived keeps the bar it still needs.
     assert_contains(
-        rule_body(&css, "\n  body.leaf-web:has(.document-minimap) {"),
+        rule_body(&css, "  body.leaf-web:has(.document-minimap) {"),
         "scrollbar-width: none;",
     );
 
-    let thumb = rule_body(&css, "\n.leaf-scroll::-webkit-scrollbar-thumb,");
+    let thumb = rule_body(&css, ".leaf-scroll::-webkit-scrollbar-thumb,");
     assert_contains(thumb, "background-color: var(--lt-scroll-thumb);");
     // A transition here is the bug this fixes, not the fix: measured in the app's own web view, nothing written on a scrollbar part animates, so the bar blinked for as long as the fade lived on this rule.
     assert!(
@@ -659,7 +651,7 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
     );
     // The pointing rule comes last, so a box that is both scrolling and pointed at keeps the thicker thumb.
     assert!(
-        css.find("\n.leaf-scroll.is-pointing,") > css.find("\n.leaf-scroll.is-scrolling,"),
+        rule_at(&css, ".leaf-scroll.is-pointing,") > rule_at(&css, ".leaf-scroll.is-scrolling,"),
         "a box that is scrolling as well as pointed at loses the thickening it was aimed at"
     );
 

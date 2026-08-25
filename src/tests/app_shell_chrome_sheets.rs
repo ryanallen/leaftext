@@ -139,7 +139,7 @@ fn the_list_of_boxes_wearing_the_bar_is_the_same_list_in_both_files() {
     let css = reading_mode_css();
     let script = app_shell_script();
 
-    let resting = rule_body(&css, "\n.leaf-scroll,");
+    let resting = rule_body(&css, ".leaf-scroll,");
     let painted = &resting[..resting.find('{').expect("the resting rule opens")];
 
     const NAMED: &str = "LEAF_SCROLL_WEARERS = '";

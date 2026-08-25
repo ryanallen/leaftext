@@ -1,6 +1,94 @@
-//! The reader's grid cell, its edges, the minimap column, the floating bar and the find bar.
+//! The reader's grid cell, its edges, the minimap column, the floating bar and the find bar — and `rule_body`, the helper every stylesheet test reads a rule through, which the floating bar's own rule is what caught.
 
 use super::*;
+
+/// A stylesheet of the shape the compiled one has: a rule whose selector ends with a shorter rule's, that shorter rule, a rule indented inside a block, a group spelled down several lines, and one selector opening two rules.
+fn made_up_stylesheet() -> &'static str {
+    "body.is-embedded .reader-toolbar {
+  display: none;
+}
+.reader-toolbar {
+  bottom: var(--lt-space-16);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-toolbar {
+    transition: none;
+  }
+}
+.leaf-scroll,
+.library-scroll {
+  --lt-scroll-thumb: transparent;
+}
+.tab-active {
+  max-width: none;
+}
+.tab-active {
+  --tab-fill: var(--lt-background);
+}
+"
+}
+
+#[test]
+fn a_rule_is_read_off_the_line_its_selector_opens() {
+    // The fault itself: matched as a plain substring, `.reader-toolbar {` answered from seventeen characters into the embedded reader's rule, with `display: none`.
+    assert_contains(
+        rule_body(made_up_stylesheet(), ".reader-toolbar {"),
+        "bottom: var(--lt-space-16);",
+    );
+}
+
+#[test]
+#[should_panic(expected = "body.is-embedded .reader-toolbar {")]
+fn a_selector_that_is_only_ever_the_tail_of_a_longer_one_is_refused() {
+    // Refused rather than answered, and the refusal shows the line the match landed inside — which is the only thing that tells the reader their rule is not the one they asked for.
+    rule_body(made_up_stylesheet(), "embedded .reader-toolbar {");
+}
+
+#[test]
+fn a_rule_indented_inside_a_block_is_answered_when_the_selector_carries_the_indent() {
+    assert_contains(
+        rule_body(made_up_stylesheet(), "  .reader-toolbar {"),
+        "transition: none;",
+    );
+}
+
+#[test]
+fn a_group_spelled_down_several_lines_answers_with_its_own_body() {
+    assert_contains(
+        rule_body(made_up_stylesheet(), ".leaf-scroll,\n.library-scroll {"),
+        "--lt-scroll-thumb: transparent;",
+    );
+}
+
+#[test]
+#[should_panic(expected = "opens 2 rules")]
+fn a_selector_the_stylesheet_opens_twice_is_refused() {
+    // Answered with the first, a rule the caller never meant reads as the rule they asked for — and the first is only first until somebody adds a rule above it.
+    rule_body(made_up_stylesheet(), ".tab-active {");
+}
+
+#[test]
+fn naming_the_first_declaration_says_which_of_two_rules_with_one_selector_is_meant() {
+    assert_contains(
+        rule_body(made_up_stylesheet(), ".tab-active {\n  --tab-fill:"),
+        "--tab-fill: var(--lt-background);",
+    );
+}
+
+#[test]
+fn one_rule_sits_after_another_by_where_each_rule_opens() {
+    // A comparison made on the first substring reads whichever longer selector happens to end the same way. Here the embedded reader's rule is the first `.reader-toolbar` in the file and the bar's own rule is the last, so the two answers sit on opposite sides of the group they are weighed against.
+    let css = made_up_stylesheet();
+
+    assert!(
+        rule_at(css, ".reader-toolbar {") > rule_at(css, "body.is-embedded .reader-toolbar {"),
+        "the bar's own rule is written after the one that turns it off"
+    );
+    assert!(
+        css.find(".reader-toolbar {") < css.find(".leaf-scroll,"),
+        "the plain find lands inside the embedded rule, which is what a source-order comparison used to read"
+    );
+}
 
 #[test]
 fn reading_mode_css_offsets_document_by_measured_scroll_origin() {
@@ -28,11 +116,7 @@ fn find_matches_are_painted_without_touching_the_document() {
     }
 
     // The bar holds its place while the document scrolls under it, and its box is padded rather than being the tightest thing on screen.
-    let bar_start = css
-        .find(".find-bar {")
-        .expect("reading-mode CSS should define .find-bar");
-    let bar_rule =
-        &css[bar_start..bar_start + css[bar_start..].find('}').expect(".find-bar closes")];
+    let bar_rule = rule_body(css, ".find-bar {");
     assert_contains(bar_rule, "grid-column: 2;");
     assert_contains(bar_rule, "grid-row: 1;");
     assert_contains(bar_rule, "padding: var(--lt-space-10);");
@@ -42,10 +126,7 @@ fn find_matches_are_painted_without_touching_the_document() {
 fn find_bar_controls_are_the_app_bars_own_button_size() {
     // The bar's buttons wear .icon-button for their 32px box, and this rule is 4,650 lines later at the same one-class depth — so a height, a min-width or a padding here would silently win and put them back at 16px, which is an icon with no button around it.
     let css = reading_mode_css();
-    let start = css
-        .find(".find-flag,\n.find-step,\n.find-action {")
-        .expect("the find bar's buttons share one face rule");
-    let rule = &css[start..start + css[start..].find('}').expect("the rule closes")];
+    let rule = rule_body(css, ".find-flag,\n.find-step,\n.find-action {");
 
     for absent in ["height:", "min-width:", "padding:"] {
         assert!(
@@ -61,7 +142,7 @@ fn find_bar_controls_are_the_app_bars_own_button_size() {
     assert_contains(css, ".find-action {\n  width: auto;");
 
     // And the box they defer to is the 32px one, so "same as the app bar's" is a number and not a hope. At the start of a line, or the comment that quotes the selector matches first.
-    let box_rule = rule_body(css, "\n.icon-button {");
+    let box_rule = rule_body(css, ".icon-button {");
     assert_contains(box_rule, "height: 32px;");
     assert_contains(box_rule, "min-width: 32px;");
 }
@@ -71,7 +152,7 @@ fn the_bare_button_rule_names_its_own_line_height() {
     // A `font` shorthand here once left this at `normal`, read off whichever face is loaded — on the one rule reaching every button in the app and every button a document draws.
     let css = reading_mode_css();
     assert_contains(
-        rule_body(css, "\nbutton {"),
+        rule_body(css, "button {"),
         "line-height: var(--lt-leading-1-2);",
     );
 }
@@ -80,9 +161,7 @@ fn the_bare_button_rule_names_its_own_line_height() {
 fn the_find_bar_throws_the_same_dot_shadow_as_every_other_floating_panel() {
     // In the shared list, not a tenth copy of it: the spread is a fixed inset and the punch is that inset taken back off, so it fits any size of box. The reader toolbar's own copy is not a precedent — it has one mask, no punch, having no opaque face to clear.
     let css = reading_mode_css();
-    let shared = css
-        .find(".app-overflow-panel::before,")
-        .expect("the shared dot-shadow rule");
+    let shared = rule_at(css, ".app-overflow-panel::before,");
     let selectors = &css[shared..shared + css[shared..].find('{').expect("the rule opens")];
     assert_contains(selectors, ".find-bar::before,");
 
@@ -108,10 +187,7 @@ fn the_find_bar_gives_way_rather_than_running_off_a_narrow_page() {
     assert_contains(bar, "max-width: calc(100% - var(--lt-space-16));");
 
     // The full-width block is the reader's own 600px, not a second number nobody can defend.
-    let phone = css
-        .find("@media (max-width: 600px) {\n  .find-bar {")
-        .expect("the find bar spans the page at a phone's width");
-    let block = &css[phone..phone + css[phone..].find('}').expect("the rule closes")];
+    let block = rule_body(css, "@media (max-width: 600px) {\n  .find-bar {");
     assert_contains(block, "justify-self: stretch;");
     assert_contains(block, "max-width: none;");
 }
@@ -120,14 +196,7 @@ fn the_find_bar_gives_way_rather_than_running_off_a_narrow_page() {
 fn reading_mode_css_pins_reader_to_its_grid_cell() {
     // The reader must be explicitly placed in the library-shell grid. Auto-placed, unhiding the .reader-loading overlay (explicitly at column 2, row 1) evicts the reader into an implicit row in the 0px library column, reflowing the whole document at zero width and turning every in-flight scroll computation into garbage — the "page jumps all over the place" bug.
     let css = reading_mode_css();
-    let shell_rule_start = css
-        .find(".reader-shell {")
-        .expect("reading-mode CSS should define .reader-shell");
-    let shell_rule_end = css[shell_rule_start..]
-        .find('}')
-        .map(|offset| shell_rule_start + offset)
-        .expect(".reader-shell rule should close");
-    let shell_rule = &css[shell_rule_start..shell_rule_end];
+    let shell_rule = rule_body(css, ".reader-shell {");
 
     assert_contains(shell_rule, "grid-column: 2;");
     assert_contains(shell_rule, "grid-row: 1;");
@@ -137,14 +206,7 @@ fn reading_mode_css_pins_reader_to_its_grid_cell() {
 fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     // The wash has to be a sibling in the reader's grid cell, hung off the app bar's height at the top. Inside the scroller it would be positioned against the scrolled content and slide away with the document; drawn from the cell's top it would sit behind the opaque bar and never show.
     let css = reading_mode_css();
-    let rule_start = css
-        .find(".reader-edge-fade {")
-        .expect("reading-mode CSS should define .reader-edge-fade");
-    let rule_end = css[rule_start..]
-        .find('}')
-        .map(|offset| rule_start + offset)
-        .expect(".reader-edge-fade rule should close");
-    let rule = &css[rule_start..rule_end];
+    let rule = rule_body(css, ".reader-edge-fade {");
 
     assert_contains(rule, "grid-column: 2;");
     assert_contains(rule, "grid-row: 1;");
@@ -176,7 +238,7 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     let railed = rule_body(css, "body:has(.document-minimap) {");
     assert_contains(railed, "--reader-scrollbar: 0px;");
     // Same width the scrollbar itself is set to, which stays a literal there: Chromium won't re-resolve a scrollbar pseudo-element on a :has() flip. The block is named by its first selector, not its last, because the wearer list grows at the end and a box joining it read as this rule having been deleted.
-    let bar = rule_body(css, "\n.leaf-scroll::-webkit-scrollbar,");
+    let bar = rule_body(css, ".leaf-scroll::-webkit-scrollbar,");
     assert_contains(bar, "width: 14px;");
     // Two cuts, two washes.
     assert_eq!(rule.matches("linear-gradient(").count(), 2);
@@ -270,9 +332,7 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     assert_eq!(shared.matches("radial-gradient(").count(), 1);
 
     // Opposite directions, and both taking their hold from the same variable the wash does: the two fades cover one span, and any daylight between their profiles comes back as a bright line where the slopes part. A transform would flip the box but also make it the containing block for its own fixed background, knocking it off the shared lattice. Anchored past the shared rule, whose own selector list ends in the same `.reader-edge-fade::after {` the bottom band's rule opens with.
-    let standalone = &css[css
-        .find(".reader-edge-fade::before {")
-        .expect("the top band should have its own rule")..];
+    let standalone = &css[rule_at(css, ".reader-edge-fade::before {")..];
     let top = rule_body(standalone, ".reader-edge-fade::before {");
     let bottom = rule_body(standalone, ".reader-edge-fade::after {");
     assert_contains(top, "mask-image: linear-gradient(\n    to bottom,");
@@ -490,8 +550,8 @@ fn the_page_ends_above_the_floating_bar() {
 fn the_bar_is_measured_against_the_page_and_the_map_together() {
     let css = reading_mode_css();
 
-    // Only the reading view opens the minimap's track, so a bar centered on the page column alone lands 31px left of where the source view draws the identical bar, and the button a reader goes back to most moves every time they switch view. The source view's own map strip is the editor's, drawn inside the page column, so it is already inside the measurement. Anchored on the line start: the embedded reader turns the whole bar off in a grouped selector ending the same way, and that rule comes first.
-    let bar = rule_body(css, "\n.reader-toolbar {");
+    // Only the reading view opens the minimap's track, so a bar centered on the page column alone lands 31px left of where the source view draws the identical bar, and the button a reader goes back to most moves every time they switch view. The source view's own map strip is the editor's, drawn inside the page column, so it is already inside the measurement.
+    let bar = rule_body(css, ".reader-toolbar {");
     assert_contains(bar, "grid-column: 2 / 4;");
     // The bar keeps the size and the centering it has always had: only which lane it is measured against changes.
     assert_contains(bar, "justify-self: center;");
@@ -566,7 +626,7 @@ fn the_map_takes_the_column_the_minimap_is_not_using() {
     ));
     // The wash over a slow load has to cover the same width, or it stops a column short and leaves a lit strip down the right of the canvas. The floating bar needs no override here: it spans both columns in every view — see the_bar_is_measured_against_the_page_and_the_map_together.
     assert_contains(
-        rule_body(css, "\n:root[data-graph-view=\"true\"] .reader-loading {"),
+        rule_body(css, ":root[data-graph-view=\"true\"] .reader-loading {"),
         "grid-column: 2 / 4;",
     );
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-edge-fade {"));
@@ -577,12 +637,8 @@ fn the_map_takes_the_column_the_minimap_is_not_using() {
         ":root[data-graph-view=\"true\"] > body {\n  --reader-minimap-column: 0px;\n}",
     );
     // Set on `body`, where the rule that opens the column sets it. A custom property on an element beats one inherited from :root, however specific the :root selector is — the override would simply never apply.
-    let opens = css
-        .find("body:has(.document-minimap) {")
-        .expect("stylesheet opens the minimap column on body");
-    let closes = css
-        .find(":root[data-graph-view=\"true\"] > body {")
-        .expect("stylesheet closes it again in graph view");
+    let opens = rule_at(css, "body:has(.document-minimap) {");
+    let closes = rule_at(css, ":root[data-graph-view=\"true\"] > body {");
     assert!(
         opens < closes,
         "the graph-view override has to come after the rule it overrides"

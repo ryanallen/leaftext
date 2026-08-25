@@ -549,9 +549,9 @@ fn the_open_switcher_lights_the_vault_name_beside_it() {
             .to_string()
     };
     assert_eq!(
-        height_of("\n.library-vault-switch {"),
+        height_of(".library-vault-switch {"),
         height_of(
-            "\n.library-vault-switch[aria-expanded=\"true\"] + .library-crumb-trail .library-crumb:first-child {"
+            ".library-vault-switch[aria-expanded=\"true\"] + .library-crumb-trail .library-crumb:first-child {"
         ),
         "the open pill's two halves are different heights, so it is ragged along its top and bottom edge"
     );

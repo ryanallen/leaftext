@@ -7,12 +7,8 @@ fn a_note_that_asked_for_a_full_width_page_gets_the_whole_lane() {
     let css = reading_mode_css();
 
     // Two classes deep, so it out-specifies `.document-body`'s own measure without a `!important`.
-    let wide = css
-        .find(".document-body.document-body-wide {")
-        .expect("the full-width page rule");
-    let measure = css
-        .find(".document-body {")
-        .expect("the reading measure rule");
+    let wide = rule_at(css, ".document-body.document-body-wide {");
+    let measure = rule_at(css, ".document-body {");
     assert!(
         measure < wide,
         "the wide rule has to come after the measure it overrides"
@@ -20,9 +16,7 @@ fn a_note_that_asked_for_a_full_width_page_gets_the_whole_lane() {
     assert_contains(&css[wide..], "width: 100%;");
 
     // A list-valued field is reached through the table, because `class` does not survive the sanitizer on a `ul`.
-    let list = css
-        .find(".document-body .frontmatter td ul {")
-        .expect("the list-valued field rule");
+    let list = rule_at(css, ".document-body .frontmatter td ul {");
     assert_contains(&css[list..], "list-style: none;");
 }
 
@@ -151,9 +145,7 @@ fn a_wrapped_run_of_document_buttons_does_not_touch() {
 fn the_print_block_hands_the_whole_document_to_the_paper() {
     let css = reading_mode_css();
     // The rules are on a class rather than in a media block, because the page has to be able to measure the layout it is about to ask a sheet for.
-    let print = &css[css
-        .find("body.leaf-paper:has(.app-surface) {")
-        .expect("the paper rules")..];
+    let print = &css[rule_at(css, "body.leaf-paper:has(.app-surface) {")..];
 
     // The three things pinning this page to one screen, and a print that leaves any of them gives a single sheet. The surface is a fixed box with `contain: paint`, so it is what every overlay is measured from and clipped to; the reader carries its own scroller, which is what holds a whole document inside a window's height; and the window's own overflow is what stops the page scrolling at all.
     let surface = rule_body(print, "body.leaf-paper .app-surface {");
@@ -275,7 +267,7 @@ fn the_table_edge_bands_animate_only_where_a_scroll_can_drive_them() {
         "the bands' resting rule must carry no animation of its own: {bands}"
     );
     let guard = "@supports (animation-timeline: scroll()) {";
-    let opens = css.find(guard).expect("the support guard exists");
+    let opens = rule_at(css, guard);
     let shuts = opens + css[opens..].find("\n}").expect("the guard closes");
     let guarded = &css[opens..shuts];
     assert_contains(guarded, "animation-timeline: --lt-table-scroll;");

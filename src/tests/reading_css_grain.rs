@@ -177,19 +177,20 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
     }
 
     // The grain rule has to follow the fills it grains: at equal specificity a `background:` shorthand declared later blanks the image again. Found by its own selector list, not by the first mention of the token — a surface that outranks this rule restates the grain for itself, and the first mention is one of those.
-    let shared = css
-        .find(".document-body tr:nth-child(2n) td {")
-        .expect("the shared grain rule");
+    let shared = rule_at(
+        css,
+        ".document-body tr:nth-child(2n) td {\n  --lt-grain-dot:",
+    );
     let grain = shared
         + css[shared..]
             .find("var(--reader-surface-grain)")
             .expect("reader grain rule");
     for fill in [
         ".document-body .document-outline {",
-        ".document-body pre {",
+        ".document-body pre {\n  position: relative;",
         ".document-body th {",
     ] {
-        let at = css.find(fill).unwrap_or_else(|| panic!("{fill} rule"));
+        let at = rule_at(css, fill);
         assert!(at < grain, "{fill} must be declared before the grain rule");
     }
 
@@ -404,7 +405,7 @@ fn the_confirmation_throws_the_shared_dot_shadow_rather_than_a_blur_of_its_own()
     let selectors = &css[shared..shared + css[shared..].find('{').expect("the rule opens")];
     assert_contains(selectors, ".confirm-dialog::before,");
 
-    let dialog = rule_body(css, "\n.confirm-dialog {");
+    let dialog = rule_body(css, ".confirm-dialog {");
     assert!(
         !dialog.contains("box-shadow"),
         "the confirmation takes the shared lattice, not a shadow of its own"

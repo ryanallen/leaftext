@@ -8,7 +8,7 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
     let css = reading_mode_css();
 
     // The two that hold groups rather than buttons: the leaf beside the library button and the history pair, and the actions beside the window controls.
-    for selector in ["\n.app-bar-lead {", "\n.app-trailing-items {"] {
+    for selector in [".app-bar-lead {", ".app-trailing-items {"] {
         let body = rule_body(css, selector);
         assert!(
             body.contains("gap: var(--lt-space-16);"),
@@ -17,7 +17,7 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
     }
 
     // Back and forward are one control, not two stops along the row, so they close up to the same 4px the window buttons take. The theme switch, the folder, the plus and the page export are the same reading: one set of things to press, and the last run on the bar to join them.
-    for selector in ["\n.history-actions {", "\n.app-actions-items {"] {
+    for selector in [".history-actions {", ".app-actions-items {"] {
         let body = rule_body(css, selector);
         assert!(
             body.contains("gap: var(--lt-space-4);"),
@@ -26,7 +26,7 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
     }
 
     // Inside the strip the tabs close up to 4px so they read as one set, while each end of the strip keeps the row's 16px: that inset is what the flares below are capped by, and the strip carries it while the two zones either side add none.
-    let strip = rule_body(css, "\n.tab-bar {");
+    let strip = rule_body(css, ".tab-bar {");
     assert!(
         strip.contains("gap: var(--lt-space-4);"),
         "the tabs sit tight against each other rather than on the row's gap: {strip}"
@@ -36,71 +36,71 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
         "the strip's side insets stay on the bar's own gap: {strip}"
     );
     // The tighter gap takes 12px off each side of the active tab's flare, so the tab buys it back itself. Without that margin the flare's page-colored fill runs onto the neighbor and the three tabs read as one block; without it in the transition, every tab to the right jumps the moment the selection moves.
-    let active = rule_body(css, "\n.tab-active {");
+    let active = rule_body(css, ".tab-active {\n  max-width: none;");
     assert!(
         active.contains("margin: 0 var(--lt-space-12);"),
         "the active tab buys back the room its flare turns in: {active}"
     );
     // At an end of the strip there is no neighbor, and the strip's own 16px inset is already wider than the 14px flare — so the margin there would only push the first tab past the 16px every other space in the row keeps. Both drop, which is also a one-tab strip losing both.
-    let first = rule_body(css, "\n.tab-active:first-child {");
+    let first = rule_body(css, ".tab-active:first-child {");
     assert!(
         first.contains("margin-left: 0;"),
         "a selected first tab leaves the strip's own inset to feed its flare: {first}"
     );
-    let last = rule_body(css, "\n.tab-active:last-child {");
+    let last = rule_body(css, ".tab-active:last-child {");
     assert!(
         last.contains("margin-right: 0;"),
         "a selected last tab leaves the strip's own inset to feed its flare: {last}"
     );
-    let tab = rule_body(css, "\n.tab {");
+    let tab = rule_body(css, ".tab {");
     assert!(
         tab.contains("margin var(--lt-duration-120) var(--lt-ease-emphasized)"),
         "the tabs slide as that margin arrives and leaves: {tab}"
     );
-    let lead = rule_body(css, "\n.app-bar-lead {");
+    let lead = rule_body(css, ".app-bar-lead {");
     assert!(
         lead.contains("padding: 0 0 0 var(--lt-space-12);"),
         "the lead keeps its logo-aligning left inset and adds no right one: {lead}"
     );
     // Handing the inset back is a negative margin rather than less padding, so the controls after the leaf move and its own 32px hit area does not. The gap beside it measured 20.67px against every other space's 16px.
-    let brand = rule_body(css, "\n.brand-button {");
+    let brand = rule_body(css, ".brand-button {");
     assert!(
         brand.contains("padding: var(--lt-space-4);")
             && brand.contains("margin-right: calc(-1 * var(--lt-space-4));"),
         "the leaf keeps its 32px box and gives its trailing inset back to the row: {brand}"
     );
     // The window buttons close up to 4px instead of taking the row's gap, so the three read as one set, and they add no lead-in of their own.
-    let controls = rule_body(css, "\n.window-controls {");
+    let controls = rule_body(css, ".window-controls {");
     assert!(
         controls.contains("gap: var(--lt-space-4);") && controls.contains("margin-left: 0;"),
         "the window buttons sit tight against each other: {controls}"
     );
 
     // The close chip's own distance from the window edge is not part of the rhythm and does not move: 4px on a frameless window, matching the 4px the chip leaves above it.
-    let trailing = rule_body(css, "\n.app-trailing {");
+    let trailing = rule_body(css, ".app-trailing {");
     assert!(
         trailing.contains("padding-left: 0;")
             && trailing.contains("padding-right: var(--lt-space-24);"),
         "the trailing group adds no left inset and stays off the window edge: {trailing}"
     );
-    let frameless = rule_body(css, "\n.frameless:not(.mac-frame) .app-trailing {");
+    let frameless = rule_body(css, ".frameless:not(.mac-frame) .app-trailing {");
     assert!(
         frameless.contains("padding-right: var(--lt-space-4);"),
         "the close chip stays 4px off the window corner: {frameless}"
     );
     // A Mac's dot is a quarter of a Windows button, so the same 4px reads as a third of a dot and the three run together: they take twice the gap while the Windows three above keep theirs.
-    let mac = rule_body(css, "\n.mac-frame .window-controls {");
+    let mac = rule_body(css, ".mac-frame .window-controls {");
     assert!(
         mac.contains("gap: var(--lt-space-8);") && mac.contains("margin-left: 0;"),
         "the Mac's dots take twice the Windows gap: {mac}"
     );
     // Folded into the chevron's menu the same three stack, still 12px on the same gap, so the Mac column follows the row and the shared column stays where Windows needs it.
-    let mac_panel = rule_body(css, "\n.mac-frame .app-overflow-panel .window-controls {");
+    let mac_panel = rule_body(css, ".mac-frame .app-overflow-panel .window-controls {");
     assert!(
         mac_panel.contains("gap: var(--lt-space-8);"),
         "the Mac's stacked dots take the same widened gap: {mac_panel}"
     );
-    let shared_panel = rule_body(css, "\n.app-overflow-panel .window-controls {");
+    let shared_panel = rule_body(css, ".app-overflow-panel .window-controls {");
     assert!(
         shared_panel.contains("gap: var(--lt-space-4);"),
         "the shared stacked column keeps the Windows gap: {shared_panel}"
@@ -121,7 +121,7 @@ fn an_emptied_history_strip_stops_taking_a_gap() {
     // The gap above lands between every pair of the lead's children, so the strip the fold leaves behind is 16px spent on nothing at the one moment the bar has no room. `:empty` cannot see that state: the markup writes the strip over eight lines, so three whitespace text nodes stay when the two buttons go. The child combinator and the attribute are the actions group's shape rather than anything the strip needs — its arrows are `disabled` and never `hidden` — and both containers are written in it so a reader meets one question rather than two.
     let css = reading_mode_css();
 
-    let emptied = rule_body(css, "\n.history-actions:not(:has(> *:not([hidden]))) {");
+    let emptied = rule_body(css, ".history-actions:not(:has(> *:not([hidden]))) {");
     assert!(
         emptied.contains("display: none;"),
         "a history strip with nothing drawn in it is not drawn: {emptied}"
@@ -137,7 +137,7 @@ fn an_emptied_actions_group_stops_taking_a_gap() {
     // The trailing zone's gap lands between the actions group and the window buttons, so the group the fold empties first is 16px spent on nothing at the one moment the bar has no room. The child combinator and the attribute are both load-bearing: the update bell stays in the group hidden, and its own summary and panel are descendants nothing marks hidden, so `:empty`, `:has(*)` and `:has(*:not([hidden]))` all fail to see the emptied group.
     let css = reading_mode_css();
 
-    let emptied = rule_body(css, "\n.app-actions-items:not(:has(> *:not([hidden]))) {");
+    let emptied = rule_body(css, ".app-actions-items:not(:has(> *:not([hidden]))) {");
     assert!(
         emptied.contains("display: none;"),
         "an actions group with nothing drawn in it is not drawn: {emptied}"
@@ -203,7 +203,7 @@ fn the_reader_bar_divider_goes_when_nothing_beside_it_is_drawn() {
 
     let emptied = rule_body(
         css,
-        "\n.reader-toolbar:not(:has(.reader-tool-divider ~ *:not([hidden]))) .reader-tool-divider {",
+        ".reader-toolbar:not(:has(.reader-tool-divider ~ *:not([hidden]))) .reader-tool-divider {",
     );
     assert!(
         emptied.contains("display: none;"),

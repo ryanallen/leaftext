@@ -227,12 +227,67 @@ fn strip_css_comments(css: &str) -> String {
     out
 }
 
+/// The whole line a byte sits on, so a refusal can show the rule that was matched instead of the one that was asked for.
+fn line_holding(text: &str, at: usize) -> &str {
+    let start = text[..at].rfind('\n').map_or(0, |newline| newline + 1);
+    let end = text[at..]
+        .find('\n')
+        .map_or(text.len(), |newline| at + newline);
+    &text[start..end]
+}
+
+/// Which line of the text a byte sits on, counting from one. Two rules opened by one selector are the same words twice, so the line number is what tells a refusal's reader which is which.
+fn line_number(text: &str, at: usize) -> usize {
+    text[..at].matches('\n').count() + 1
+}
+
+/// The first thing a rule declares, read off what follows its selector. It is what a caller carries to say which of two rules with one selector they mean, so a refusal hands it to them rather than making them go and look. Every rule in this stylesheet is introduced by a comment, which is not a declaration and is not what a caller would carry.
+fn first_declaration(after_selector: &str) -> String {
+    strip_css_comments(after_selector)
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .unwrap_or("nothing")
+        .to_string()
+}
+
+/// Where the one rule a selector opens begins. Everything that locates a rule reads through this — its declarations, and where it sits against another rule — so there is one anchored find rather than a second one hand-written beside it.
+///
+/// The selector is the head of the line the rule opens on, indent and all: a match counts only where it begins what was handed in or sits straight after a newline. Matched as a plain substring it answered with any rule merely *ending* with the one asked for — `.reader-toolbar {` came back out of `body.is-embedded .reader-toolbar {` with `display: none`. A selector opening two rules says nothing about which is meant, so it is refused rather than resolved to the first; carrying the declaration that tells them apart is how a caller says which.
+fn rule_at(css: &str, selector: &str) -> usize {
+    let opens: Vec<usize> = css
+        .match_indices(selector)
+        .map(|(at, _)| at)
+        .filter(|at| *at == 0 || css.as_bytes()[at - 1] == b'\n')
+        .collect();
+    match opens.as_slice() {
+        [only] => *only,
+        [] => match css.find(selector) {
+            Some(at) => panic!(
+                "no rule opens with {selector}; it is only ever part of a longer line, first this one:\n{}",
+                line_holding(css, at)
+            ),
+            None => panic!("the stylesheet should define {selector}"),
+        },
+        _ => panic!(
+            "{selector} opens {} rules, so it does not say which one is meant. Name the declaration that tells them apart:\n{}",
+            opens.len(),
+            opens
+                .iter()
+                .map(|at| format!(
+                    "line {}, then {}",
+                    line_number(css, *at),
+                    first_declaration(&css[at + selector.len()..])
+                ))
+                .collect::<Vec<_>>()
+                .join("\n")
+        ),
+    }
+}
+
 /// One rule's declarations, from its selector to the first closing brace. The compiled stylesheet has no nested rules, so the first `}` is always the end.
 fn rule_body<'a>(css: &'a str, selector: &str) -> &'a str {
-    let start = css
-        .find(selector)
-        .unwrap_or_else(|| panic!("the stylesheet should define {selector}"));
-    let body = &css[start..];
+    let body = &css[rule_at(css, selector)..];
     &body[..body.find('}').expect("the rule should close")]
 }
 

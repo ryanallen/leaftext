@@ -50,7 +50,7 @@ fn every_element_starts_as_a_border_box_and_no_comment_denies_it() {
     let css = reading_mode_css();
 
     // The second rule in the stylesheet, and the reason a width cap below it counts the border and the padding. No comment may deny it: one claiming the stylesheet had no global rule talked a plan into a declaration it already had.
-    assert_contains(rule_body(css, "\n* {"), "box-sizing: border-box;");
+    assert_contains(rule_body(css, "* {"), "box-sizing: border-box;");
     assert!(
         !css.contains("no global"),
         "no comment may tell a reader this stylesheet has no global box-sizing"
@@ -202,19 +202,19 @@ fn every_icon_sits_the_same_distance_from_its_label() {
 
     // The commonest relationship in the interface — a small drawing, then the word for it — is one value everywhere, so a seventh control cannot pick its own out of the scale.
     for selector in [
-        "\n.crumb-menu-item {",
-        "\n.flow-menu-item {",
-        "\n.library-file,\n.library-nav-folder {",
-        "\n.reader-graph-legend {",
-        "\n.primary-new {",
-        "\n.library-sync {",
+        ".crumb-menu-item {",
+        ".flow-menu-item {",
+        ".library-file,\n.library-nav-folder {",
+        ".reader-graph-legend {",
+        ".primary-new {",
+        ".library-sync {",
     ] {
         let rule = rule_body(css, selector);
         assert_contains(rule, "gap: var(--lt-space-6);");
     }
 
     // The one place it cannot land: the switcher and the name beside it share one pill, so the room between its icon and its word is the two halves' own edges meeting rather than a gap of its own.
-    let switcher = rule_body(css, "\n.library-vault-switch {");
+    let switcher = rule_body(css, ".library-vault-switch {");
     assert_contains(switcher, "gap: var(--lt-space-2);");
     assert_contains(switcher, "padding: 0 var(--lt-space-4);");
 }
