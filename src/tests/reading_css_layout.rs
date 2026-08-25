@@ -99,7 +99,7 @@ fn a_theme_card_holds_its_name_to_one_line_height() {
 fn the_macs_three_dots_are_ours_and_take_the_themes_colors() {
     let css = reading_mode_css();
 
-    // The bar reserves nothing for Apple's dots any more. It used to hold 86px at the left zone whether the bar had the room or not, because a native view pinned to the window cannot fold — and with the zone sized from its content that was a quarter of a narrow bar spent on nothing, pushing the tab strip right.
+    // The bar reserves nothing for Apple's dots. A native view pinned to the window cannot fold, so a fixed 86px left zone is spent whether the bar has the room or not — a quarter of a narrow bar, pushing the tab strip right.
     assert!(
         !css.contains("--app-bar-mac-dots"),
         "the bar must not reserve room for dots it draws itself"
