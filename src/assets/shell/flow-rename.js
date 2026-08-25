@@ -1,4 +1,4 @@
-// Typing a new name onto a box or a line, in place on the flowchart canvas. Opened by the double-click in flow-pointer.js and by the menu row in flow-menu.js, so it loads after both.
+// Typing a new name onto a box or a line, in place on the flowchart canvas. Opened by the double-click in flow-pointer.js and by the menu row in flow-menu.js.
 
 // ---- renaming on the canvas ------------------------------------------------
 

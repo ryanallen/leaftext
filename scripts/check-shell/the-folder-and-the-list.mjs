@@ -1,11 +1,11 @@
 // The folder of fragments and the list that loads them have to hold the same files.
 //
-// Nothing else compares them. The boot below joins whatever `APP_SHELL_SCRIPT_PARTS` names and reports how many parsed, so a fragment written, saved and never added to that list fails at nothing — the suite goes green over an app missing the code, which was watched while the diagram theme mapping was being cut out of `decorate.js`.
+// Nothing else compares them. The boot joins whatever `APP_SHELL_SCRIPT_PARTS` names and reports how many parsed, so a fragment written, saved and never added to that list fails at nothing: the whole suite goes green over an app missing the code.
 //
 // Two refusals, because they catch two different things:
 //
 //   a file the list does not name   code was written and never wired, so it is in the tree and not in the app.
-//   an entry the folder lacks       the list names a file that is gone, and the binary will not compile — but the check should say which name rather than leaving it to `include_str!`.
+//   an entry the folder lacks       the list names a file that is gone. The binary will not compile either; this says which name rather than leaving it to `include_str!`.
 //
 // Both are proved on made-up input before the real folder is opened, the way `scripts/check-doc-modules.mjs` proves its two: a walk that finds nothing because it is broken passes exactly like one that finds nothing because the tree is clean.
 

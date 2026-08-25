@@ -1,4 +1,4 @@
-// Taking a flowchart out of the app: the picture, the source and the formats each is offered in. It reads FLOW_SVG_NS out of flow-pointer.js, which is the other reason these five keep the order they already ran in.
+// Taking a flowchart out of the app: the picture, the source and the formats each is offered in. DIAGRAM_EXPORTS here is the page's copy of the host's list, held to it by check-format-prose.mjs. It reads FLOW_SVG_NS out of flow-pointer.js.
 
 // ---- taking the diagram out ------------------------------------------------
 

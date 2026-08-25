@@ -1,4 +1,4 @@
-// The menu a right-click on the flowchart canvas opens, and what each row does to the graph. Its rows read the selection flow-pointer.js keeps, so it loads after it.
+// The menu a right-click on the flowchart canvas opens, and what each row does to the graph. Its rows read the selection flow-pointer.js keeps.
 
 // ---- the menu on a right-click ---------------------------------------------
 

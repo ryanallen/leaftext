@@ -126,10 +126,10 @@ const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     // The error handlers lead, so a fragment that throws as it loads is reported instead of vanishing. Nothing above them could catch it.
     include_str!("assets/shell/journal.js"),
-    // Then the flowchart sheet, in seven: the grammar, the sheet that asks it, and the five below cut off that sheet's tail. Mermaid draws the canvas, so there is no layout of ours in between — and the grammar led the page's script tags before the two became one file, so it leads the rest here.
+    // Then the flowchart sheet, in seven: the grammar, the sheet that asks it, then five more of that sheet. Mermaid draws the canvas, so there is no layout of ours in between, and the grammar leads because everything else calls into it.
     include_str!("assets/shell/flow-model.js"),
     include_str!("assets/shell/flow-canvas.js"),
-    // Cut off that file's tail, in the order they already ran in: they reach back into the canvas, the graph and the redraw, and flow-export.js reads FLOW_SVG_NS out of flow-pointer.js.
+    // Then the rest of the sheet, all of it reaching back into the canvas, the graph and the redraw above. flow-export.js reads FLOW_SVG_NS out of flow-pointer.js, so it comes after it.
     include_str!("assets/shell/flow-pointer.js"),
     include_str!("assets/shell/flow-menu.js"),
     include_str!("assets/shell/flow-rename.js"),

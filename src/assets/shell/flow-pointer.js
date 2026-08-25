@@ -1,4 +1,4 @@
-// Every press, drag and release on the flowchart canvas: selecting a box, moving one, drawing a line between two, and the double-click that opens a name for typing. It is cut off the tail of flow-canvas.js and reaches back into it — the canvas element, the graph and the redraw all live there — so it loads immediately after it.
+// Every press, drag and release on the flowchart canvas: selecting a box, moving one, drawing a line between two, and the double-click that opens a name for typing. The canvas element, the graph and the redraw all live in flow-canvas.js, which is why this loads after it.
 
 // ---- pointer work on the canvas -------------------------------------------
 
