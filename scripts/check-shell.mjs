@@ -12726,7 +12726,7 @@ check('the source button writes down where the reader is, whose document it is, 
 
 // ---- 4d. the reading view's place while the map covers it --------------------
 //
-// The map hides `#app` outright, and a hidden element measures zero on every box it has — so the watcher that keeps the reader pinned as images settle used to capture an anchor against blocks whose rects all read zero and answer with the last block of the document, which is the very bottom of the page. The checks below hide the reader the way a window does, with every rect flattened, and drive the three paths that used to write that answer down.
+// The map hides `#app` outright, and a hidden element measures zero on every box it has — so a place captured while the map is up is measured against blocks whose rects all read zero, and the search for the topmost visible one falls through to the last block of the document, which is the very bottom of the page. The checks below hide the reader the way a window does, with every rect flattened, and drive the three paths that would otherwise write that answer down.
 
 /** Hide the reader the way the window does: no box at all, on the surface and on every block in it. Hands back the reveal, which puts the geometry it took back. */
 function hideTheReader(app, body) {
@@ -12795,7 +12795,7 @@ check('the map going up over the reading view leaves the reader on the block the
   if (!watch) throw new Error('the render left nothing watching the document for reflow, so the map hiding it fires nothing');
   const reveal = hideTheReader(app, body);
   try {
-    // Hiding the surface is a resize, which is the one thing that used to capture while there was nothing to measure.
+    // Hiding the surface is a resize, which is what wakes the watcher while there is nothing left to measure.
     watch.callback([{ target: body, contentRect: { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 } }], watch);
     context.__frames.drain();
     if (anchorOn(context) !== halfway) {

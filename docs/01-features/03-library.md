@@ -288,6 +288,7 @@ The second map is **smaller, not wrong**. A document only ever records what it l
 - Opening a document from the pane while the map is up **keeps the map up** too, and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
 - Closing the last tab closes the map with it: the start screen is not one of a document's views.
 - Editing a document the map covers **redraws it in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
+- Leaving the map puts the page back where you were reading. Press **Reading** and you are on the paragraph you left; press **Source** and it opens on the lines that were on screen rather than at line 1, and a source view you were already in comes back to the same scroll. A map opened from the source view still hands the reading view back at the top of the page.
 - Building the map shows the same spinner a slow document does — including the redraw after a node click, which builds a new map. Leaving the map shows it too: open a search hit or switch to the [source](07-editing.md#code-view) and the map holds until its replacement is ready rather than dropping to a half-drawn page, with the wait shown on top of it.
 
 ### How much it draws
