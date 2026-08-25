@@ -169,7 +169,7 @@ Where folders are joined by `README.md` files, a **Previous / Next** bar appears
 
 ![A glossary term underlined in a paragraph, with its entry open in a bottom sheet sliding up over the page, the document still visible behind it](imgs/glossary-sheet.png)
 
-Write one `GLOSSARY.md` and every mention of a defined term, across every document, links to it — and clicking one opens a sheet over the page instead of taking you away from it. **[Glossary →](docs/01-features/02-navigation.md#glossary)**
+Write one `GLOSSARY.md` and every mention of a defined term, across every document, links to it — resting on one draws its entry in the hover card, and clicking one opens a sheet over the page instead of taking you away from it. **[Glossary →](docs/01-features/02-navigation.md#glossary)**
 
 ## Make it yours
 

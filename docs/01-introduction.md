@@ -40,7 +40,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Jump to any section from the [outline](01-features/02-navigation.md#outline) at the top of each document, or from the [minimap](01-features/04-minimap.md) rail beside it.
 - Move [back and forward](01-features/02-navigation.md#history) through documents and in-page jumps, like a browser.
 - Read a folder in order with the [pager](01-features/02-navigation.md#pager) at the foot of each page.
-- Hover a link for a [hint](01-features/02-navigation.md#link-hints) saying what kind it is, where it goes, and how long that document is.
+- Hover a link for a [hint](01-features/02-navigation.md#link-hints) saying what kind it is, where it goes, and how long that document is — and over a [glossary](01-features/02-navigation.md#glossary) term, the entry itself, so the word is read without leaving the sentence.
 - Define a word once in a [glossary](01-features/02-navigation.md#glossary) and every mention of it, in every document, opens the entry in a sheet over the page.
 - Edit a file in another app and Leaftext [picks up the change](01-features/02-navigation.md#reload) without losing your place.
 

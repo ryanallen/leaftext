@@ -167,7 +167,7 @@ let linkHoverShowFrame = 0;
 let linkHoverEndFade = null;
 let linkHoverPointer = null;
 let linkHoverLeaveFrame = 0;
-// Whether the card the pointer is on is a glossary link's. It decides how the picture box is drawn, and the answer arrives long after the rest that asked for it, so it is read at drawing time rather than carried through the ask.
+// Whether the card the pointer is on is a glossary link's. Read at drawing time rather than carried through the ask, because the host's answer arrives long after the rest that asked for it.
 let linkHoverEntry = false;
 // The pointer's latest place. A leave settles here, not at the stale point its own event carried.
 let linkHoverClientX = -1;
@@ -235,13 +235,13 @@ function measureLinkPreviewShrink(note) {
   linkHoverTipPreviewScale.style.width = measured + 'px';
   return box / measured;
 }
-// The card's own width at reading size. The shrink is a measurement of a page's note against the box, and a glossary entry is not a picture of a page — it is the answer itself, so it is laid out at the width it is drawn at and the stylesheet's `calc(100% / var(--link-preview-shrink))` reads 1 as the box's width exactly.
+// The card's own width at reading size. The shrink fits a page's note into a thumbnail, and an entry is the answer itself rather than a picture of one, so it stays at 1 — which the stylesheet's own `calc` reads as the box's width exactly.
 function holdLinkPreviewUnshrunk() {
   linkHoverTipPreview.style.setProperty('--link-preview-shrink', '1');
   linkHoverTipPreviewScale.style.width = '';
   return 1;
 }
-// The room a glossary entry gets. Measured in the card at its own width, 480px draws three of every four entries across both glossaries whole and leaves the card standing on seven tenths of a full window. The window fraction is what carries a short one, where a fixed cap would put the card over the very sentence the pointer is resting in.
+// The room a glossary entry gets. Measured in the card, 480px draws three of every four entries whole and holds the card to seven tenths of a full window; the fraction is what carries a short window, where a fixed cap would cover the sentence being read.
 const LINK_PREVIEW_ENTRY_CAP = 480;
 function linkPreviewEntryCap() {
   const room = Math.floor(leafAppRect().height * 0.6);
@@ -508,7 +508,7 @@ function requestLinkPreview(key, token) {
 // The last answer the host sent, parsed once — one file's render is parsed once however many of its sections are rested on, and it is only read from, so holding it between rests is safe.
 let linkPreviewParsedHtml = null;
 let linkPreviewParsedRoot = null;
-// The section of the host's answer that the address names, as words the card can draw. The answer is a base and one `article`, and the card measures the note by that article, so the opening the host wrote is kept and only what stands inside it is swapped. A glossary link names its term through the scheme, which has no `#` to cut at, so that is read first. An address naming no section is the whole answer — which is the card that shipped before this — and a glossary address whose term is not in what arrived is nothing at all, because a whole glossary is not what that reader was promised.
+// The section of the host's answer that the address names, as words the card can draw. The answer is a base and one `article` the card measures the note by, so the opening the host wrote is kept and only what stands inside it is swapped. A glossary link names its term through the scheme, which has no `#` to cut at, so that is read first. An address naming no section is the whole answer; a glossary term the answer has not got is nothing at all, because a whole glossary is not what that reader was promised.
 function linkPreviewSectionHtml(html, href) {
   const term = glossaryAnchorFromHref(href);
   let anchor = term;
@@ -638,7 +638,7 @@ function startLinkHover(event) {
   const entry = info.kind === 'Glossary entry';
   linkHoverEntry = entry;
   if (entry || info.kind === 'Another page') {
-    // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string. A glossary link goes as it was written instead: its scheme carries the term, and a relative address read back off the page resolves against the page rather than against the document the host joins it onto.
+    // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string. A glossary link goes as it was written instead: the scheme carries the term, and a relative address read back off the page resolves against the page rather than against the document the host joins it onto.
     const key = entry ? rawHref : (typeof link.href === 'string' && link.href) || rawHref;
     if (linkPreviewCache.has(key)) {
       // Seen already: straight back up rendered, so a return to a link never blinks its spinner — and a page the host could not draw raises no box at all.

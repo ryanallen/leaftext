@@ -594,11 +594,11 @@
   overflow: hidden;
   transition: height var(--lt-duration-100) var(--lt-ease-emphasized);
 }
-/* A glossary entry is the card's whole answer rather than a picture of a page, so it is laid out at the card's own width at reading size and the picture's own ceiling comes off. What it gets instead is measured against the window in the page, because a cap that fits a tall window covers the sentence being read in a short one. */
+/* A glossary entry is the card's whole answer rather than a picture of a page, so a thumbnail's ceiling comes off it. The room it gets instead is measured against the window in the page. */
 .link-hover-tip-preview.is-entry {
   max-height: none;
 }
-/* The entry starts at its first word. The host wraps every answer in a page's own top framing and the first block adds its own margin on top of that — 53px, which reads as ordinary page framing at a thumbnail's scale and as a hole at reading size, a sixth of a short entry spent on nothing. */
+/* The entry starts at its first word. The host's page framing plus the first block's own margin is 53px, which reads as framing at a thumbnail's scale and as a hole at reading size — a sixth of a short entry spent on nothing. */
 .link-hover-tip-preview.is-entry .link-hover-tip-preview-document > article {
   padding-top: 0;
 }

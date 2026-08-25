@@ -140,7 +140,7 @@ Pointing a [vault](GLOSSARY.md#vault) at a GitHub repository and pushing to it. 
 
 ## Glossary
 
-The shared `GLOSSARY.md` this page is one of. Leaftext finds it by walking up from the open document, matches its terms in every format it renders, and links them for you — so one file defines the words for a whole set of documents. See [Navigation](01-features/02-navigation.md#glossary).
+The shared `GLOSSARY.md` this page is one of. Leaftext finds it by walking up from the open document, matches its terms in every format it renders, and links them for you — so one file defines the words for a whole set of documents. Resting on a term draws its entry in the [link hint](GLOSSARY.md#link-hint); clicking one opens it in a [bottom sheet](GLOSSARY.md#bottom-sheet). See [Navigation](01-features/02-navigation.md#glossary).
 
 ## Graph size
 
@@ -188,7 +188,7 @@ What the [library pane](GLOSSARY.md#library-pane) becomes on a window too narrow
 
 ## Link hint
 
-The tooltip that names what a link is — glossary term, in-page jump, another document, external site, email — and shows the address it was written with. On a link to another document it also shows how many lines that document is. Mouse only. See [Navigation](01-features/02-navigation.md#link-hints).
+The tooltip that names what a link is — glossary term, in-page jump, another document, external site, email — and shows the address it was written with. On a link to another document it also draws that document's opening and how many lines it is; on a [glossary](GLOSSARY.md#glossary) term it draws the entry itself, at the words' own size, capped and faded where the entry runs long. Mouse only. See [Navigation](01-features/02-navigation.md#link-hints).
 
 ## Link menu
 
