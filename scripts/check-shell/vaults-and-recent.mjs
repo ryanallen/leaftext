@@ -1,9 +1,8 @@
 // Vaults, the switcher between them, and the Recent list each one scopes.
 
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, fakeElement, homeStand, readingCss, record, root } from './shared.mjs';
+import { check, fakeElement, homeStand, readingCss, record } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;

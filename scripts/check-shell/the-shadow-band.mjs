@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import {
   check,
   record,
-  root,
   runShell,
   source,
 } from './shared.mjs';

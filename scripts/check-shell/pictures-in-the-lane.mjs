@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { check, fakeElement, readingCss, record, root, source } from './shared.mjs';
+import { check, fakeElement, readingCss, record, root } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;

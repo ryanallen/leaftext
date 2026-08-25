@@ -6,7 +6,6 @@ import vm from 'node:vm';
 import {
   check,
   fakeElement,
-  names,
   record,
   root,
   source,

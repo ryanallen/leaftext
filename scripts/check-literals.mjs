@@ -19,7 +19,6 @@
 //
 // It also holds every hover fill to the one wash, or to the app's own dot lattice where a target is too big to take a flat tint. Refused there: a surface color, which a family may set to the very value of the panel behind it; a strength mixed from the theme's ink here rather than in the token; and a lattice drawn in any ink but the hover's, or any other image at all. A control already saying something — pressed, selected, open, disabled — keeps its own fill, and so does one deepening its own accent.
 
-import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

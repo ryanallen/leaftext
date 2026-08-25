@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import {
   check,
   fakeElement,
-  names,
   record,
   root,
 } from './shared.mjs';

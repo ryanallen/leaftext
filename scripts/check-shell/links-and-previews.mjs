@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, checkSettled, fakeElement, names, readingCss, record, root, settle, settled, source } from './shared.mjs';
+import { check, checkSettled, fakeElement, readingCss, record, root, settle, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;

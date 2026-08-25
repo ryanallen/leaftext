@@ -6,7 +6,7 @@
 // site/vendor/highlight.min.js and site/styles.css have no src/assets counterpart (web-only) and are deliberately left alone.
 
 import { cpSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');

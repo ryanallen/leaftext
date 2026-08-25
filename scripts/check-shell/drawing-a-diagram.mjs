@@ -1,8 +1,7 @@
 // Drawing a diagram into the page: what it costs the reader on screen, and what a failed one says.
 
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { check, checkSettled, fakeElement, names, readingCss, record, root, runShell, settle, settled, source } from './shared.mjs';
+import { check, checkSettled, fakeElement, readingCss, record, runShell, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;

@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, fakeElement, names, readingCss, record, root, settle, settled, source } from './shared.mjs';
+import { check, fakeElement, readingCss, record, root, source } from './shared.mjs';
 
 // The flowchart sheet, every fragment of it. The two negative guards below read the lot rather than whichever file kept the name, or a later cut quietly takes lines out of their reach.
 const SHEET_FRAGMENTS = [

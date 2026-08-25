@@ -11,7 +11,6 @@ import {
   root,
   runShell,
   settle,
-  settled,
   source,
 } from './shared.mjs';
 

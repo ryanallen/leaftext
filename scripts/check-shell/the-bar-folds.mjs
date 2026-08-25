@@ -6,7 +6,6 @@ import vm from 'node:vm';
 import {
   check,
   detachChild,
-  node,
   record,
   root,
   settled,

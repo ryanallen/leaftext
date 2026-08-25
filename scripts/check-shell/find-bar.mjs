@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import {
   check,
-  names,
   record,
   source,
 } from './shared.mjs';

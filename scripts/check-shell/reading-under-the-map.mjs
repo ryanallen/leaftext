@@ -7,7 +7,6 @@ import {
   record,
   registrationsOn,
   renderReadingDocument,
-  source,
 } from './shared.mjs';
 
 export function run() {

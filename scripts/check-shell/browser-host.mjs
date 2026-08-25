@@ -7,7 +7,6 @@ import { POLICY, sitePage } from '../web-page.mjs';
 import {
   check,
   checkSettled,
-  names,
   noopPost,
   pageMarkup,
   record,

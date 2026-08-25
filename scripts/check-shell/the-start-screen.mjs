@@ -6,9 +6,7 @@ import {
   check,
   fakeElement,
   homeStand,
-  names,
   record,
-  source,
 } from './shared.mjs';
 
 export function run() {

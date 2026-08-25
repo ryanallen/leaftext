@@ -3,7 +3,6 @@
 import { join } from 'node:path';
 import {
   check,
-  names,
   record,
   runShell,
   siteBoot,

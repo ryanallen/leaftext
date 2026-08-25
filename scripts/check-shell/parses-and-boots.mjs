@@ -6,7 +6,6 @@ import {
   check,
   fakeElement,
   fakePage,
-  names,
   node,
   pageSnapshot,
   record,

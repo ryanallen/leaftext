@@ -6,13 +6,11 @@ import vm from 'node:vm';
 import {
   VIEW_WIDTH,
   check,
-  names,
   node,
   pageMarkup,
   record,
   root,
   runShell,
-  settle,
   source,
 } from './shared.mjs';
 

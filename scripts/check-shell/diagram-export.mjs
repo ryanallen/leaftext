@@ -1,9 +1,8 @@
 // Taking a diagram out of the page, and the endings the save window answers with.
 
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, checkSettled, diagramStand, names, readingCss, record, root, runShell, source } from './shared.mjs';
+import { check, checkSettled, diagramStand, readingCss, record, runShell, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;

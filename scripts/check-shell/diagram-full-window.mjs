@@ -7,13 +7,10 @@ import {
   check,
   checkSettled,
   diagramStand,
-  failures,
   fakeElement,
   names,
   record,
   root,
-  settled,
-  source,
 } from './shared.mjs';
 
 export function run() {
