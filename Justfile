@@ -28,6 +28,14 @@ test:
 check-loop-not-read-as-text:
     node scripts/check-loop-not-read-as-text.mjs --check
 
+# A stylesheet test reaches one rule through `rule_body`, which anchors its find to a line
+# start and refuses a selector opening two rules. Split by hand it carries neither guard,
+# and the pass that moved seventy calls onto the helper was followed the next day by a
+# test written the old way. It sees a literal, so a selector held in a variable is
+# invisible to it: a fence against the shape being copied, never a proof.
+check-rule-not-split-by-hand:
+    node scripts/check-rule-not-split-by-hand.mjs --check
+
 format:
     cargo fmt
 
@@ -517,7 +525,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

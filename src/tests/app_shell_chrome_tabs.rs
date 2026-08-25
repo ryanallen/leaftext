@@ -7,11 +7,7 @@ fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
     // The dot was in the tab's row and hidden on hover, so pointing at a modified tab deleted 13px of content: the tab shrank and its label jumped, and the dot had been shoving the close button away from the name the whole time. Sharing the button's corner means the swap costs no layout.
     let css = reading_mode_css();
 
-    let dot = css
-        .split(".tab-dirty-dot {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines the unsaved-edits dot");
+    let dot = rule_body(css, ".tab-dirty-dot {");
     assert!(
         dot.contains("position: absolute;"),
         "the dot must be out of flow or showing it resizes the tab: {dot}"
@@ -26,11 +22,7 @@ fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
     );
 
     // The close button sits in the same corner, so the two swap in place.
-    let close = css
-        .split(".tab-close {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines the close button");
+    let close = rule_body(css, ".tab-close {");
     assert!(close.contains("position: absolute;"));
     assert!(close.contains("top: 2px;") && close.contains("right: 2px;"));
 
@@ -46,11 +38,7 @@ fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
     );
 
     // Swapping one for the other costs no layout either way, both being out of flow — and the tab's inset is even, since neither corner is bought from the row.
-    let tab = css
-        .split("\n.tab {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines a tab");
+    let tab = rule_body(css, ".tab {");
     assert!(
         tab.contains("padding: 0 var(--lt-space-4);"),
         "the tab reserves nothing for either corner button: {tab}"
@@ -68,11 +56,7 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
         r#"<span class="lt-icon lt-icon-tab-close"></span>"#,
     );
 
-    let close = css
-        .split(".tab-close {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines the close button");
+    let close = rule_body(css, ".tab-close {");
     // A wash behind it, since it now lands on the last letters of the name rather than in cleared space.
     assert!(
         close.contains("background: var(--lt-surface);"),
@@ -97,15 +81,9 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
 #[test]
 fn tabs_keep_full_filenames_and_balanced_padding() {
     let css = reading_mode_css();
-    let rule = |head: &str| {
-        css.split(head)
-            .nth(1)
-            .and_then(|rest| rest.split('}').next())
-            .unwrap_or_else(|| panic!("stylesheet defines {head}"))
-            .to_string()
-    };
-    let tab = rule("\n.tab {");
-    let label = rule("\n.tab-label {");
+    let rule = |head: &str| rule_body(css, head);
+    let tab = rule(".tab {");
+    let label = rule(".tab-label {");
     assert!(tab.contains("max-width: 132px;"), "{tab}");
     assert!(tab.contains("padding: 0 var(--lt-space-4);"), "{tab}");
     assert!(
@@ -120,17 +98,17 @@ fn tabs_keep_full_filenames_and_balanced_padding() {
         label.contains("mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));"),
         "an inactive tab must fade to the same right inset as its left inset: {label}"
     );
-    let name = rule("\n.file-name-stem {");
+    let name = rule(".file-name-stem {");
     assert!(
         name.contains("flex: 1;") && name.contains("overflow: hidden;"),
         "only a library filename may clip before its badge: {name}"
     );
-    let stem = rule("\n.library-file .file-name-stem {");
+    let stem = rule(".library-file .file-name-stem {");
     assert!(
         stem.contains("mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);"),
         "a library filename must fade before its badge: {stem}"
     );
-    let active = rule("\n.tab-active .tab-label {");
+    let active = rule(".tab-active .tab-label {");
     assert!(active.contains("max-width: none;"), "{active}");
     assert!(active.contains("mask-image: none;"), "{active}");
 }
@@ -142,21 +120,13 @@ fn both_corner_buttons_sit_above_the_name_they_cover() {
     let script = app_shell_script();
 
     for corner in [".tab-favorite {", ".tab-close {"] {
-        let rule = css
-            .split(corner)
-            .nth(1)
-            .and_then(|rest| rest.split('}').next())
-            .unwrap_or_else(|| panic!("stylesheet defines {corner}"));
+        let rule = rule_body(css, corner);
         assert!(
             rule.contains("z-index: 1;"),
             "{corner} must outrank the masked label or its click goes to the tab: {rule}"
         );
     }
-    let label = css
-        .split("\n.tab-label {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines the tab label");
+    let label = rule_body(css, ".tab-label {");
     assert!(
         label.contains("mask-image: linear-gradient(to right,"),
         "{label}"
@@ -227,11 +197,7 @@ fn a_marked_tab_is_the_width_of_an_unmarked_one() {
     let css = reading_mode_css();
 
     // Out of the label's flow, like the close button in the corner opposite, so a mark costs the tab nothing.
-    let mark = css
-        .split(".tab-favorite {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines the tab's heart");
+    let mark = rule_body(css, ".tab-favorite {");
     assert!(mark.contains("position: absolute;"));
     assert!(mark.contains("top: 2px;") && mark.contains("left: 2px;"));
     assert!(
@@ -249,10 +215,6 @@ fn a_marked_tab_is_the_width_of_an_unmarked_one() {
         ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite {\n  opacity: 1;\n  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),",
     );
     // A mark adds nothing to the tab's own padding, which is even: it is out of flow, and so is the cross in the opposite corner.
-    let tab = css
-        .split("\n.tab {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines a tab");
+    let tab = rule_body(css, ".tab {");
     assert_contains(&tab.to_string(), "padding: 0 var(--lt-space-4);");
 }

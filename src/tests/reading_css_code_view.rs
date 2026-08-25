@@ -366,11 +366,7 @@ fn the_flowchart_canvas_is_dragged_by_the_stage_not_by_its_scrollbars() {
         "transform: translate(var(--flow-pan-x, 0px), var(--flow-pan-y, 0px));",
     );
     // The sheet's own corners: the panes fill it, so it has to clip them.
-    let sheet = css
-        .split(".flow-sheet {")
-        .nth(1)
-        .expect("the flowchart sheet has a rule");
-    let sheet = &sheet[..sheet.find('}').expect("the rule closes")];
+    let sheet = rule_body(&css, ".flow-sheet {");
     assert!(
         sheet.contains("border-radius") && sheet.contains("overflow: hidden"),
         "the flowchart sheet must clip its rounded corners: {sheet}"

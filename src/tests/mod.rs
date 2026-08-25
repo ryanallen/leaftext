@@ -255,11 +255,7 @@ fn first_declaration(after_selector: &str) -> String {
 ///
 /// The selector is the head of the line the rule opens on, indent and all: a match counts only where it begins what was handed in or sits straight after a newline. Matched as a plain substring it answered with any rule merely *ending* with the one asked for — `.reader-toolbar {` came back out of `body.is-embedded .reader-toolbar {` with `display: none`. A selector opening two rules says nothing about which is meant, so it is refused rather than resolved to the first; carrying the declaration that tells them apart is how a caller says which.
 fn rule_at(css: &str, selector: &str) -> usize {
-    let opens: Vec<usize> = css
-        .match_indices(selector)
-        .map(|(at, _)| at)
-        .filter(|at| *at == 0 || css.as_bytes()[at - 1] == b'\n')
-        .collect();
+    let opens = rule_opens(css, selector);
     match opens.as_slice() {
         [only] => *only,
         [] => match css.find(selector) {
@@ -283,6 +279,25 @@ fn rule_at(css: &str, selector: &str) -> usize {
                 .join("\n")
         ),
     }
+}
+
+/// Every line start a selector opens a rule on, in source order. The one anchored find in the suite: `rule_at` narrows it to the single match a caller naming one rule means, and `rule_bodies` reads all of them.
+fn rule_opens(css: &str, selector: &str) -> Vec<usize> {
+    css.match_indices(selector)
+        .map(|(at, _)| at)
+        .filter(|at| *at == 0 || css.as_bytes()[at - 1] == b'\n')
+        .collect()
+}
+
+/// The declarations of every rule a selector opens, each to its own first closing brace, empty where it opens none. For the caller that composes a selector and has to carry on when the stylesheet says nothing: a class with no rule is an answer there, and a class with two is two rules that both have to be looked at.
+fn rule_bodies<'a>(css: &'a str, selector: &str) -> Vec<&'a str> {
+    rule_opens(css, selector)
+        .into_iter()
+        .map(|at| {
+            let body = &css[at..];
+            &body[..body.find('}').expect("the rule should close")]
+        })
+        .collect()
 }
 
 /// One rule's declarations, from its selector to the first closing brace. The compiled stylesheet has no nested rules, so the first `}` is always the end.

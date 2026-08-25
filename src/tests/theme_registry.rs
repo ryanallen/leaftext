@@ -236,11 +236,7 @@ fn theme_preview_images_are_prose_the_parser_ignores() {
 fn github_family_uses_github_markdown_fonts_not_noto() {
     let css = reading_mode_css();
     // The GitHub family swaps the document fonts for GitHub's own markdown stack: system sans (no serif) for body and headings, system mono for code.
-    let block = css
-        .split(":root[data-leaf-theme=\"github\"] {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("github family font override block exists");
+    let block = rule_body(css, ":root[data-leaf-theme=\"github\"] {");
     assert!(block.contains("--heading-font: -apple-system"));
     assert!(block.contains("--reading-font: -apple-system"));
     assert!(block.contains("--code-font: ui-monospace"));

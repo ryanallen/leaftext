@@ -424,21 +424,16 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     assert!(html.contains("send({ command: 'getVaultGit', id: vault.id });"));
     assert!(html.contains(r#"edit.className = 'crumb-menu-edit';"#));
     assert!(css.contains(".crumb-menu-edit {"));
-    let edit_style = css
-        .split(".crumb-menu-edit {")
-        .nth(1)
-        .and_then(|rest| rest.split("\n}").next())
-        .expect("the settings button has a style rule");
+    let edit_style = rule_body(css, ".crumb-menu-edit {");
     assert!(edit_style.contains("opacity: 0;"));
     // The colors ride behind the opacity leg in both rules; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.
     assert!(edit_style.contains(
         "transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300),"
     ));
-    let reveal_style = css
-        .split(".crumb-menu-row:hover .crumb-menu-edit,\n.crumb-menu-row:focus-within .crumb-menu-edit {")
-        .nth(1)
-        .and_then(|rest| rest.split("\n}").next())
-        .expect("the settings button is revealed for pointer and keyboard use");
+    let reveal_style = rule_body(
+        css,
+        ".crumb-menu-row:hover .crumb-menu-edit,\n.crumb-menu-row:focus-within .crumb-menu-edit {",
+    );
     assert!(reveal_style.contains("opacity: 1;"));
     assert!(reveal_style
         .contains("transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),"));

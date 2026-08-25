@@ -76,6 +76,25 @@ fn naming_the_first_declaration_says_which_of_two_rules_with_one_selector_is_mea
 }
 
 #[test]
+fn reading_every_rule_a_selector_opens_answers_absence_and_duplication_rather_than_refusing_them() {
+    // The caller that composes its selector out of a class name cannot take a refusal: a class with no rule is an answer, and a class with two is two rules that both have to be read. Answered with the first, a `display` in the second is silently not there.
+    assert!(rule_bodies(made_up_stylesheet(), ".no-such-class {").is_empty());
+    let both = rule_bodies(made_up_stylesheet(), ".tab-active {");
+    assert_eq!(both.len(), 2, "both rules the selector opens: {both:?}");
+    assert!(both[0].contains("max-width: none;"), "{both:?}");
+    assert!(
+        both[1].contains("--tab-fill: var(--lt-background);"),
+        "{both:?}"
+    );
+    // And it anchors the same way the single-rule read does, so a longer selector ending the same way is not one of the answers.
+    assert_eq!(
+        rule_bodies(made_up_stylesheet(), ".reader-toolbar {").len(),
+        1,
+        "the embedded reader's rule merely ends with this selector"
+    );
+}
+
+#[test]
 fn one_rule_sits_after_another_by_where_each_rule_opens() {
     // A comparison made on the first substring reads whichever longer selector ends the same way, which here is a rule above the one meant rather than below it.
     let css = made_up_stylesheet();
@@ -505,11 +524,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
     );
 
     // The corner overlay paints chrome over the card's square corner and masks the arc back out. The mask must be unconditional: on a rule only some states match, the rest render a plain block in the corner.
-    let corner = css
-        .split(".reader-corner-tr {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines .reader-corner-tr");
+    let corner = rule_body(css, ".reader-corner-tr {");
     assert!(
         corner.contains("mask-image: radial-gradient(circle at 0 100%"),
         "the corner's mask must sit on its base rule: {corner}"

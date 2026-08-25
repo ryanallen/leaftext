@@ -20,11 +20,7 @@ fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
     }
 
     let css = reading_mode_css();
-    let sheet = css
-        .split(".library-shell.library-narrow .library-pane {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines the narrow-window sheet");
+    let sheet = rule_body(css, ".library-shell.library-narrow .library-pane {");
     // Out of flow so the grid still gives the page the whole window, parked off the left edge, and animated in rather than appearing.
     for expected in [
         "position: absolute;",
@@ -103,32 +99,15 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     assert_contains(css, ".app-trailing.has-overflow .overflow-toggle {");
     assert_contains(css, ".app-trailing.overflow-open .app-overflow-panel {");
     // Staying off the fold list is only half of it: a squeezed zone shrank the button out from under the tab strip instead, so it refuses to give up any of its box.
-    let library_open = css
-        .split(".library-open {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines .library-open");
+    let library_open = rule_body(css, ".library-open {");
     assert_contains(library_open, "flex-shrink: 0;");
     // Stacked inside the panel: everything else in the menu is one button per line, and an inline three-across row would make the whole menu three times its own width for one item.
-    let folded_controls = css
-        .split(".app-overflow-panel .window-controls {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet folds the window controls");
+    let folded_controls = rule_body(css, ".app-overflow-panel .window-controls {");
     assert_contains(folded_controls, "flex-direction: column;");
     // The tab strip's two shoulders have to match: both are zero, so each end of the strip is the strip's own gap and a tab comes no closer to the actions than the first one comes to the history buttons.
-    let lead_inset = css
-        .split(".app-bar-lead {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines .app-bar-lead")
-        .contains("padding: 0 0 0 var(--lt-space-12);");
-    let trailing_inset = css
-        .split(".app-trailing {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines .app-trailing")
-        .contains("padding-left: 0;");
+    let lead_inset =
+        rule_body(css, ".app-bar-lead {").contains("padding: 0 0 0 var(--lt-space-12);");
+    let trailing_inset = rule_body(css, ".app-trailing {").contains("padding-left: 0;");
     assert!(
         lead_inset && trailing_inset,
         "the tab strip's shoulders must stay symmetric"
@@ -167,11 +146,7 @@ fn the_folded_header_menu_is_drawn_inside_the_apps_own_edge() {
 #[test]
 fn the_folded_header_menu_hangs_off_the_chevrons_own_width() {
     let css = reading_mode_css();
-    let icon_button = css
-        .split("\n.icon-button {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines .icon-button");
+    let icon_button = rule_body(css, ".icon-button {");
     let width = icon_button
         .lines()
         .find_map(|line| line.trim().strip_prefix("width:"))
@@ -185,23 +160,15 @@ fn the_folded_header_menu_hangs_off_the_chevrons_own_width() {
     );
 }
 
-// The bare rule, not the one that shows it: `.app-trailing.overflow-open .app-overflow-panel` ends with the same selector, so the split is anchored to the start of a line.
 fn overflow_panel_rule(css: &str) -> &str {
-    css.split("\n.app-overflow-panel {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines .app-overflow-panel")
+    rule_body(css, ".app-overflow-panel {")
 }
 
 #[test]
 fn a_shut_pane_leaves_the_bars_left_zone_sized_by_its_own_buttons() {
     let css = reading_mode_css();
 
-    let lead = css
-        .split(".app-bar-lead {")
-        .nth(1)
-        .and_then(|rest| rest.split('}').next())
-        .expect("stylesheet defines .app-bar-lead");
+    let lead = rule_body(css, ".app-bar-lead {");
     // Open, the zone still follows the rail so the tabs begin at the pane's edge.
     assert_contains(lead, "width: var(--library-rail-width, 240px);");
     // Shut, it sizes from content instead. The keyword is the floor only until the front end has measured the zone and written that number over it: a Mac reads `fit-content` as no floor at all and squeezes the library button out under the tab strip, and the button is the only way back to the pane.

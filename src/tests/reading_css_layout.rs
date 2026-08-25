@@ -2,12 +2,9 @@
 
 use super::*;
 
-#[test]
-fn anything_that_hides_itself_is_allowed_to() {
-    // `display` on a class outranks the user agent's `[hidden] { display: none }`, so an element that sets one and relies on the other is simply always visible. That is how the floating toolbar came to sit over the home screen: the attribute was set, the rule ignored it, and nothing failed.
-    let html = app_shell_page();
-    let css = reading_mode_css();
-
+/// Every class on an element that starts hidden whose own rules set a `display` and which has no `[hidden]` escape. The reading the test below makes of the real page, lifted out so a made-up pair can be handed to it.
+fn classes_that_hide_without_an_escape(html: &str, css: &str) -> Vec<String> {
+    let mut stranded = Vec::new();
     for element in html.split('<').skip(1) {
         let Some(tag) = element.split('>').next() else {
             continue;
@@ -23,25 +20,56 @@ fn anything_that_hides_itself_is_allowed_to() {
             continue;
         };
         for class in classes.split_whitespace() {
-            let rule = format!(".{class} {{");
-            let Some(body) = css
-                .split(&rule)
-                .nth(1)
-                .and_then(|rest| rest.split('}').next())
-            else {
-                continue;
-            };
-            if !body.contains("display:") {
+            // Every rule the class opens, not the first substring the name lands in: `.folds` opens none and used to land inside a comment, `.window-controls` landed on a longer rule that merely ends the same way, and `.leaf-sheet` opens two. A `display` in any of them is a `display` on the element.
+            let bodies = rule_bodies(css, &format!(".{class} {{"));
+            if !bodies.iter().any(|body| body.contains("display:")) {
                 continue;
             }
-            let escape = format!(".{class}[hidden]");
-            assert!(
-                css.contains(&escape),
-                ".{class} sets `display`, so the `hidden` attribute on it does \
-                 nothing. Add `{escape} {{ display: none; }}`."
-            );
+            if !css.contains(&format!(".{class}[hidden]")) {
+                stranded.push(class.to_string());
+            }
         }
     }
+    stranded
+}
+
+#[test]
+fn anything_that_hides_itself_is_allowed_to() {
+    // `display` on a class outranks the user agent's `[hidden] { display: none }`, so an element that sets one and relies on the other is simply always visible. That is how the floating toolbar came to sit over the home screen: the attribute was set, the rule ignored it, and nothing failed.
+    let stranded = classes_that_hide_without_an_escape(&app_shell_page(), reading_mode_css());
+    assert!(
+        stranded.is_empty(),
+        "each of these sets `display`, so the `hidden` attribute on it does nothing. Add `.CLASS[hidden] {{ display: none; }}` for: {stranded:?}"
+    );
+}
+
+#[test]
+fn a_display_in_the_second_of_two_rules_one_class_opens_still_demands_its_escape() {
+    // The split answered with the first rule and said nothing about the second, so a class hiding itself in its later rule read as a class that hides itself nowhere. Absence reads the same way: a class the stylesheet never opens must not be answered off a longer line it merely sits inside.
+    let html = "<div class=\"leaf-sheet\" hidden></div><div class=\"folds\" hidden></div>";
+    let css = ".leaf-sheet {
+  position: fixed;
+}
+.leaf-sheet {
+  display: flex;
+}
+/* the folds live in .library-shell .folds */
+.library-shell .folds {
+  display: none;
+}
+";
+    assert_eq!(
+        classes_that_hide_without_an_escape(html, css),
+        vec!["leaf-sheet".to_string()],
+        "the second rule's `display` is the one that strands the sheet, and `.folds` opens no rule of its own"
+    );
+    let escaped = format!(
+        "{css}.leaf-sheet[hidden] {{
+  display: none;
+}}
+"
+    );
+    assert!(classes_that_hide_without_an_escape(html, &escaped).is_empty());
 }
 
 #[test]
