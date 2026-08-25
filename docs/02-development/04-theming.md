@@ -212,7 +212,7 @@ Two consequences worth remembering:
 - **The memo key carries the family.** `mermaidCacheKey()` keys the rendered-SVG cache on family *and* appearance, because two themes of the same appearance draw the same diagram in different colors.
 - **A theme switch redraws.** An SVG holds its colors as literal values, so `repaintMermaidDiagrams()` puts the Mermaid text back and renders again. A `MutationObserver` on the root element's `data-theme`/`data-leaf-theme` is what triggers it, so the picker and the system's own light/dark switch both work without either knowing diagrams exist.
 
-`check-shell.mjs` holds every token name in those tables to the ones `reading.css` defines — a name that does not exist reads as an empty string, Mermaid falls back to its own palette, and the diagram quietly stops matching the page.
+`just check-shell` holds every token name in those tables to the ones `reading.css` defines — a name that does not exist reads as an empty string, Mermaid falls back to its own palette, and the diagram quietly stops matching the page.
 
 ## Adding a theme
 
