@@ -752,10 +752,10 @@ export function run() {
     drawing.querySelector('style').remove();
     drawing.classList.add('lt-mmd-0');
     if (drawing.outerHTML !== '<svg id="good" class="lt-mmd-0"><g class="node"></g></svg>') throw new Error(`the picture says ${JSON.stringify(drawing.outerHTML)}`);
-    // The words come back spelled the way they went in, because nothing is unescaped on the way in.
+    // The words come back spelled the way they went in, because the walker reads every entity the writer writes and no others. One round trip over the whole of both sets: a reader unescaping something the writer never escapes grows a pile of `&amp;amp;` here rather than in whatever check happened to meet it first.
     const words = fakeElement('markup-words');
-    words.innerHTML = '<p>a &amp; b</p>';
-    if (words.innerHTML !== '<p>a &amp; b</p>') throw new Error(`a run of words came back as ${JSON.stringify(words.innerHTML)}`);
+    words.innerHTML = '<p>a &amp; b &gt; c&nbsp;d</p>';
+    if (words.innerHTML !== '<p>a &amp; b &gt; c&nbsp;d</p>') throw new Error(`a run of words came back as ${JSON.stringify(words.innerHTML)}`);
   });
 
   check('a picture and a line break close themselves rather than swallowing what follows', () => {
@@ -792,6 +792,71 @@ export function run() {
     if (hidden.outerHTML !== '<section hidden></section>') throw new Error(`a hidden element says ${JSON.stringify(hidden.outerHTML)}`);
   });
 
+  check('a reader\u2019s own words in a run of text are written out the way a browser writes them, and read back whole', () => {
+    // The fault this pair was built for: a title holding a tag-shaped fragment used to compose as a tag, so reading it back lost eight characters and invented a child nobody put there.
+    const title = fakeElement('markup-title');
+    const line = fakeElement('');
+    line.tagName = 'DIV';
+    title.appendChild(line);
+    line.textContent = 'Notes <b> and </b> drafts';
+    if (line.outerHTML !== '<div>Notes &lt;b&gt; and &lt;/b&gt; drafts</div>') throw new Error(`the title composed as ${JSON.stringify(line.outerHTML)}`);
+    const read = fakeElement('markup-title-read');
+    read.innerHTML = line.outerHTML;
+    if (read.children[0].textContent !== 'Notes <b> and </b> drafts') throw new Error(`the title read back as ${JSON.stringify(read.children[0].textContent)}`);
+    if (read.children[0].children.length) throw new Error(`reading the title back invented ${read.children[0].children.length} child element(s)`);
+    // A bare angle bracket used to stop the document at it, so everything after was simply gone.
+    line.textContent = 'a <unclosed thing';
+    const stopped = fakeElement('markup-bare-angle');
+    stopped.innerHTML = line.outerHTML;
+    if (stopped.children[0].textContent !== 'a <unclosed thing') throw new Error(`a bare angle bracket read back as ${JSON.stringify(stopped.children[0].textContent)}`);
+    // The hard space is read as the character it names rather than as a plain space, or a name holding one loses it silently.
+    line.textContent = 'two words';
+    if (line.outerHTML !== '<div>two&nbsp;words</div>') throw new Error(`a hard space composed as ${JSON.stringify(line.outerHTML)}`);
+    const spaced = fakeElement('markup-hard-space');
+    spaced.innerHTML = line.outerHTML;
+    if (spaced.children[0].textContent !== 'two words') throw new Error('a hard space came back as a plain space');
+  });
+
+  check('an attribute value holding a quote composes as markup this page\u2019s own walker reads back', () => {
+    // The value used to close its own attribute, so the words were truncated at the quote and nothing said so.
+    const field = fakeElement('');
+    field.tagName = 'INPUT';
+    field.setAttribute('value', 'she said "go"');
+    if (field.outerHTML !== '<input value="she said &quot;go&quot;">') throw new Error(`the value composed as ${JSON.stringify(field.outerHTML)}`);
+    const read = fakeElement('markup-value');
+    read.innerHTML = field.outerHTML;
+    if (read.children[0].getAttribute('value') !== 'she said "go"') throw new Error(`the value read back as ${JSON.stringify(read.children[0].getAttribute('value'))}`);
+    // An angle bracket standing inside a value needs no escape, and a browser leaves one alone — so the writer must not add one the walker would then have to read.
+    field.setAttribute('value', 'a < b & c');
+    if (field.outerHTML !== '<input value="a < b &amp; c">') throw new Error(`an angle bracket in a value composed as ${JSON.stringify(field.outerHTML)}`);
+  });
+
+  check('an element whose text is set says those words in its own markup, and a child\u2019s words reach its parent\u2019s', () => {
+    // The safe way a fragment puts a reader’s words on the page. The string used to sit to one side of the element, so the markup said `<span></span>` however well the escapes worked.
+    const holder = fakeElement('markup-set-text');
+    const name = fakeElement('');
+    name.tagName = 'SPAN';
+    holder.appendChild(name);
+    name.textContent = 'Notes & <drafts>';
+    if (name.innerHTML !== 'Notes &amp; &lt;drafts&gt;') throw new Error(`an element whose text was set says ${JSON.stringify(name.innerHTML)}`);
+    if (holder.innerHTML !== '<span>Notes &amp; &lt;drafts&gt;</span>') throw new Error(`the child\u2019s words did not reach the parent: ${JSON.stringify(holder.innerHTML)}`);
+    // Written again it replaces the run rather than stacking a second one, and cleared it empties the element.
+    name.textContent = 'Just notes';
+    if (name.innerHTML !== 'Just notes') throw new Error(`rewriting the text stacked a second run: ${JSON.stringify(name.innerHTML)}`);
+    name.textContent = '';
+    if (name.innerHTML !== '' || name.contents.length) throw new Error(`clearing the text left ${JSON.stringify(name.innerHTML)}`);
+  });
+
+  check('a file path the front end escapes into an attribute reads back as the path that went in', () => {
+    // The whole point of the pair: the page spells a backtick `&#96;`, which no browser writes, so a walker reading a browser-shaped set alone hands a path with one in it back wrong.
+    const path = "C:\\\\Notes\\\\Tom's `draft` & co.md";
+    const escaped = vm.runInContext(`escapeAttr(${JSON.stringify(path)})`, booted);
+    const row = fakeElement('markup-path');
+    row.innerHTML = `<li data-home-favorite="${escaped}" title="${escaped}"></li>`;
+    const one = row.children[0];
+    if (one.getAttribute('title') !== path) throw new Error(`the path read back as ${JSON.stringify(one.getAttribute('title'))}`);
+    if (one.dataset.homeFavorite !== path) throw new Error(`the dataset read the path back as ${JSON.stringify(one.dataset.homeFavorite)}`);
+  });
   check('writing an element markup swaps it for what the markup declares', () => {
     const row = fakeElement('markup-row');
     row.innerHTML = '<span class="lt-icon lt-icon-package"></span><span class="name">Notes</span>';

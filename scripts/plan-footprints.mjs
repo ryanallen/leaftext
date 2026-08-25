@@ -81,9 +81,17 @@ export function claimedBy(ticket, text) {
 }
 
 // A row naming a folder claims everything inside it, so a sweep across `docs/features/` is never called safe beside a ticket in that folder. Read as a prefix on the written string: a footprint that names `app/src/assets/shell/` and one that names `app/src/assets/shell/state.js` are the same file being written twice.
-/// Whether two claims are the same file, one inside the other, or neither.
+//
+// **A split is read as the same claim from both sides, and this is the rule that had to be paid for.** Splitting a file leaves its name standing over the folder the work moved into — `scripts/check-shell.mjs` became a 101-line entry over 43 files in `scripts/check-shell/`, and `src/app/tests.rs` became `src/app/tests/` — and a footprint written before the split goes on naming the file. Nothing moves it, so 41 live tickets named the file while meaning the folder, and two builds writing the same code compared as writing nothing in common. On 25 August 2026, 9:52am the column sent two sessions into one file on exactly that: one had `app/scripts/check-shell.mjs`, the other `app/scripts/check-shell/page.mjs`, and the pairing called them each other's safest partner. So a claim's stem is read as the folder beside it: `foo.ext` and anything under `foo/` are one file. It over-reports where a split really did leave two separate things, which costs a pair somebody could have built alongside — the cheap direction, against an edit one of two sessions loses.
+const stemFolder = (claim) => (claim.endsWith('/') ? null : `${claim.replace(/.[^./]+$/, '')}/`);
+/// Whether two claims are the same file, one inside the other, one inside the folder the other was split into, or neither.
 export function sharesFile(a, b) {
-  return a === b || (a.endsWith('/') && b.startsWith(a)) || (b.endsWith('/') && a.startsWith(b));
+  const inside = (folder, claim) => folder !== null && claim.startsWith(folder);
+  return a === b
+    || inside(a.endsWith('/') ? a : null, b)
+    || inside(b.endsWith('/') ? b : null, a)
+    || inside(stemFolder(a), b)
+    || inside(stemFolder(b), a);
 }
 
 /// Every file two footprints both write. Empty means the two builds touch nothing in common.
@@ -332,6 +340,10 @@ const PAIR_CLAIMS = new Map([
   ['fixes/reading/e.md', ['app/src/agent/mod.rs']],
   // Names the folder e's file sits in.
   ['fixes/reading/f.md', ['app/src/agent/']],
+  // Names a file by the name it had before it was split, the way 41 live footprints did.
+  ['fixes/reading/g.md', ['app/src/shell.rs']],
+  // Names a file inside the folder that split left behind.
+  ['fixes/reading/h.md', ['app/src/shell/parts.rs']],
 ]);
 
 const PAIR_CASES = [
@@ -342,6 +354,9 @@ const PAIR_CASES = [
   ['a pair both of which will create the same file that is not there yet is not disjoint', 'fixes/reading/e.md', 'fixes/reading/f.md', false],
   ['a pair where one names the folder the other\'s file sits in is not disjoint', 'fixes/reading/f.md', 'fixes/reading/e.md', false],
   ['a pair sharing nothing but a made-up module is disjoint', 'fixes/reading/c.md', 'fixes/reading/e.md', true],
+  ['a pair where one names a file and the other names the folder that file was split into is not disjoint', 'fixes/reading/g.md', 'fixes/reading/h.md', false],
+  ['and the same pair read the other way round', 'fixes/reading/h.md', 'fixes/reading/g.md', false],
+  ['a file whose stem is not a folder anybody writes still collides with nothing', 'fixes/reading/g.md', 'fixes/reading/c.md', true],
 ];
 
 // What the exclusion list actually promises, read on its own rather than through the six-row order above, so adding a case here perturbs no other one. A pair differing only in an excluded file is called safe on purpose; a pair differing only in a shared plan file that is **not** excluded has to be called colliding, which is the whole of what taking a file off that list buys.

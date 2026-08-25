@@ -772,7 +772,7 @@ export function run() {
       await settle();
       if (drew.length !== 2) throw new Error('the abandoned card never started its drawing, so nothing was dropped');
       if (remembered('flowchart LR gone')) throw new Error('a drawing made for a card nobody is looking at was remembered anyway');
-      if (!remembered('flowchart LR A--&gt;B')) throw new Error('the two readings prove nothing if a drawing that was kept reads as missing too');
+      if (!remembered('flowchart LR A-->B')) throw new Error('the two readings prove nothing if a drawing that was kept reads as missing too');
 
       // A drawing over the room is scaled into it and kept where it is still wide enough to read, and put back as the strip where it is not.
       vm.runInContext('activeHoverToken = 62;', booted);
