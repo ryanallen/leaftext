@@ -11,6 +11,18 @@ pub(crate) fn run_page_script(webview: Option<&WebView>, script: &str, what: &st
     }
 }
 
+/// Whether `tab`'s edit buffer has to take what `path` now holds on disk before the page is drawn from it.
+///
+/// A tab the reader has touched is drawn from its buffer rather than from the file, and the live reload refreshes only the tab at the front — so a change that lands behind another tab is never shown, and coming back does not go and look. This is that look, asked once on the way in.
+///
+/// Yes only where the buffer is this document's, is clean, and holds different text. A dirty buffer says no: the disk must never write over words the reader has not saved. No buffer says no as well — that render reads the file itself.
+pub(crate) fn buffer_must_take_disk(tab: &Tab, path: &Path, disk: &str) -> bool {
+    tab.edit
+        .as_ref()
+        .filter(|_| tab.has_edit_for(path))
+        .is_some_and(|edit| !edit.is_dirty() && edit.text() != disk)
+}
+
 /// What it takes to put a document on screen: the window to title, the page to write to, the tabs to draw, the recents to record, the favorites to mark, and where images resolve from. One bundle because they always travel together.
 pub(crate) struct Reader {
     pub(crate) window: tao::window::Window,
@@ -115,6 +127,31 @@ impl Reader {
         );
     }
 
+    /// Bring this tab's clean edit buffer into step with the file before the page is drawn from it, the way the live reload does for the tab at the front. Reads only where the page is about to come out of a buffer, so the branch that reads the file anyway pays nothing.
+    fn take_disk_into_clean_buffer(&mut self, index: usize, path: &Path) {
+        if !self
+            .workspace
+            .tabs
+            .get(index)
+            .is_some_and(|tab| tab.has_edit_for(path))
+        {
+            return;
+        }
+        // Unreadable mid-save or briefly gone during an atomic rename: leave the buffer as it is rather than acting on a read that would have settled.
+        let Ok(source) = read_source(path) else {
+            return;
+        };
+        let Some(tab) = self.workspace.tabs.get_mut(index) else {
+            return;
+        };
+        if !buffer_must_take_disk(tab, path, &source.text) {
+            return;
+        }
+        if let Some(edit) = tab.edit.as_mut() {
+            edit.adopt_external(source);
+        }
+    }
+
     /// The document for `path`: the tab's cached render when the file still hashes the same, a fresh render (cached on the tab) when not. The read is cheap; the render is what the cache saves.
     fn document_for(&mut self, index: usize, path: &Path) -> io::Result<OpenedDocument> {
         let source = read_source(path)?;
@@ -157,6 +194,11 @@ impl Reader {
                     self.workspace.active = None;
                     return self.render(scroll);
                 };
+                // Opening, Back, Forward and a tab switch are the four ways a reader arrives at a document they have been away from, and any of them can arrive at a buffer the disk has moved past. A `Preserve` render is the app redrawing its own edit, where the buffer is the truth and a read could only ever say the same thing.
+                if !matches!(scroll, ScrollIntent::Preserve { .. }) {
+                    self.take_disk_into_clean_buffer(index, &path);
+                }
+
                 // A tab left in code view must stay in code view when it is re-rendered (switching tabs away and back, a save, a rename, the file changing on disk). The reading-view render below would silently drop out of the source editor, so restore the code view from the tab's buffer instead.
                 if self
                     .workspace

@@ -285,3 +285,74 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
         "one tab's render is not another tab's"
     );
 }
+
+/// A tab with a clean buffer for `path` holding `text`.
+fn tab_with_buffer(path: &Path, text: &str) -> Tab {
+    Tab {
+        edit: Some(EditableDocument::new(
+            path.to_path_buf(),
+            SourceText::utf8(text.to_string()),
+        )),
+        ..Tab::default()
+    }
+}
+
+#[test]
+fn a_clean_buffer_takes_the_file_and_unsaved_words_are_kept() {
+    // What the page is drawn from when the buffer and the file disagree. Ticking one box leaves a tab holding a buffer, and from then on the disk only reaches the page through this.
+    let path = PathBuf::from("notes/plan.md");
+    let on_disk = "- [x] one\n- [ ] two\n- [ ] three\n";
+
+    let behind = tab_with_buffer(&path, "- [x] one\n- [ ] two\n");
+    assert!(
+        buffer_must_take_disk(&behind, &path, on_disk),
+        "a clean buffer behind the file has to take what the file now holds"
+    );
+
+    let mut caught_up = behind;
+    caught_up
+        .edit
+        .as_mut()
+        .expect("buffer")
+        .adopt_external(SourceText::utf8(on_disk.to_string()));
+    assert_eq!(
+        caught_up.edit.as_ref().expect("buffer").text(),
+        on_disk,
+        "and the page is then drawn from the file's own bytes"
+    );
+    assert!(
+        !buffer_must_take_disk(&caught_up, &path, on_disk),
+        "a buffer already holding the file is left alone, so nothing re-renders"
+    );
+
+    let mut typed_into = tab_with_buffer(&path, "- [x] one\n- [ ] two\n");
+    typed_into
+        .edit
+        .as_mut()
+        .expect("buffer")
+        .replace_range(0, 0, "# Unsaved\n");
+    assert!(
+        !buffer_must_take_disk(&typed_into, &path, on_disk),
+        "unsaved words are never written over by the disk"
+    );
+
+    assert!(
+        !buffer_must_take_disk(&Tab::default(), &path, on_disk),
+        "a tab with no buffer is left to the render that reads the file itself"
+    );
+    assert!(
+        !buffer_must_take_disk(
+            &tab_with_buffer(Path::new("notes/other.md"), "# Other\n"),
+            &path,
+            on_disk
+        ),
+        "a buffer belonging to another document is not this document's"
+    );
+
+    let mut in_code_view = tab_with_buffer(&path, "- [x] one\n- [ ] two\n");
+    in_code_view.code_view = true;
+    assert!(
+        buffer_must_take_disk(&in_code_view, &path, on_disk),
+        "a tab left showing raw source is drawn from the same buffer, so it is answered the same"
+    );
+}
