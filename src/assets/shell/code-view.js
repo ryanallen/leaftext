@@ -21,6 +21,20 @@ function setDirtyState(path, dirty) {
   updateEditingChrome();
 }
 
+function holdViewButtonsStill() {
+  if (!readerToolbar) return;
+  const viewGroup = readerToolbar.querySelector('.reader-tool-group');
+  if (!viewGroup) return;
+  const toolbarRect = readerToolbar.getBoundingClientRect();
+  const viewRect = viewGroup.getBoundingClientRect();
+  const trailingPadding = parseFloat(getComputedStyle(readerToolbar).paddingRight) || 0;
+  const value = `${Math.max(0, toolbarRect.right - viewRect.right - trailingPadding)}px`;
+  if (readerToolbar.style.getPropertyValue('--reader-toolbar-edits') === value) return;
+  readerToolbar.style.setProperty('--reader-toolbar-edits', value);
+}
+
+if (readerToolbar) new ResizeObserver(holdViewButtonsStill).observe(readerToolbar);
+
 // Show/hide and style the floating bar for the active document: which view is on, and whether there is anything to save or undo.
 function updateEditingChrome() {
   const path = activeDocumentPath();
@@ -40,6 +54,7 @@ function updateEditingChrome() {
   }
   // Save/Undo/Redo/code-view visibility changes the action row's width — refold.
   refitAppBar();
+  holdViewButtonsStill();
 }
 
 // Ask the host to revert the most recent reading-view edit. Words still under the caret are committed first, so undo pressed mid-typing takes back what was just typed rather than the edit before it. The host pops its snapshot, re-renders, and resyncs the chrome, so undoing the last edit hides both buttons.

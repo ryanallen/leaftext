@@ -130,8 +130,11 @@ export function run() {
         if (linkHoverKind(href) !== 'Opens in another app') throw new Error(`${href} is called ${linkHoverKind(href)}`);
         if (openItem(href) !== 'Open in another app') throw new Error(`the menu offers ${openItem(href)} over ${href}, which the tip says opens in another app`);
       }
+      // An email address is the other link that leaves, and it leaves for a program the reader chose rather than for this app, so the item names whose program it is.
+      if (linkHoverKind('mailto:someone@example.com') !== 'Email link') throw new Error(`an email address is called ${linkHoverKind('mailto:someone@example.com')}`);
+      if (openItem('mailto:someone@example.com') !== 'Open in your mail app') throw new Error(`the menu offers ${openItem('mailto:someone@example.com')} over an email address`);
       // A page in the app, a place in this page and an address belonging to another program all stay where they are, so the word does not spread past the links that leave.
-      for (const href of ['./two.md', '#a-heading', 'obsidian://open?vault=x']) {
+      for (const href of ['./two.md', '#a-heading', 'obsidian://open?vault=x', 'glossary:vault', 'glossary:']) {
         if (openItem(href) !== 'Open') throw new Error(`the menu offers ${openItem(href)} over ${href}`);
       }
       // The one word the item already carried is untouched.

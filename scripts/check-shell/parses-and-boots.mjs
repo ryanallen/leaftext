@@ -200,7 +200,7 @@ export function run() {
     if (watchers.length !== wanted.length) throw new Error(`the record holds ${watchers.length} registrations, not the ${wanted.length} named here`);
   }
 
-  /** The four a bare boot makes, each top-level in its own fragment. */
+  /** The five a bare boot makes, each top-level in its own fragment. */
   function bootRegistrations(context) {
     const { document } = context;
     return [
@@ -208,6 +208,7 @@ export function run() {
       ['the minimap width fit', 'ResizeObserver', document.getElementById('app')],
       ['the crumb trail fit', 'ResizeObserver', document.getElementById('libraryCrumbs')],
       ['the app bar refit', 'ResizeObserver', document.getElementById('appBar')],
+      ['the reader bar hold', 'ResizeObserver', document.getElementById('readerToolbar')],
     ];
   }
 

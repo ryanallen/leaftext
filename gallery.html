@@ -4374,6 +4374,7 @@ body.library-resizing {
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
 :root {
   --reader-toolbar-space: 0px;
+  --reader-toolbar-edits: 0px;
 }
 body:has(#readerToolbar:not([hidden])) {
   --reader-toolbar-space: 52px;
@@ -4392,6 +4393,7 @@ body:has(#readerToolbar:not([hidden])) {
   gap: var(--lt-space-2);
   /* Off the page's bottom edge by the same 8px the card is held off the frame. */
   margin-bottom: var(--lt-space-8);
+  margin-right: calc(-1 * var(--reader-toolbar-edits));
   padding: var(--lt-space-4);
   border-radius: var(--lt-radius-lg);
   /* Transparent, not gone: the border keeps the box's size while ::after paints the visible face — see below. */

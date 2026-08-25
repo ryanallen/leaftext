@@ -496,6 +496,8 @@ fn the_bar_is_measured_against_the_page_and_the_map_together() {
     // The bar keeps the size and the centering it has always had: only which lane it is measured against changes.
     assert_contains(bar, "justify-self: center;");
     assert_contains(bar, "display: flex;");
+    assert_contains(bar, "margin-right: calc(-1 * var(--reader-toolbar-edits));");
+    assert_contains(css, "--reader-toolbar-edits: 0px;");
     // Column 4 is the gutter holding the page off the window frame, and the bar stops short of it the way the page does.
     assert!(!bar.contains("grid-column: 2 / 5;"));
 }
