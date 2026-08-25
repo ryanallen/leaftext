@@ -7,7 +7,7 @@
 //
 // The article's skill copies are byte-identical, because the article is evidence about this repository and a copy that reads better than its skill is the copy lying. `--fix` copies bytes so the copy stays exact.
 //
-// The other giveaway is not that. It is a system written to be dropped into any repository, so its ten skills are rewritten throughout — a human rather than an owner, no path, no script name, no keycode — and two of them answer to a different name here. Held to the bytes, every one of them would fail for being correct. So it is answered for instead: a row per file saying which of three answers it is, the reason beside every row that is not compared, and the folder walked against the list rather than the list trusted. Nothing named that folder at all, which is how it came to tell a stranger to give a second agent its own checkout months after this tree stopped saying so.
+// The other giveaway is not that. It is a system written to be dropped into any repository, so its ten skills are rewritten throughout — a human rather than an owner, no path, no script name, no keycode — and two of them answer to a different name here. Held to the bytes, every one of them would fail for being correct. So it is answered for instead: a row per file saying which of three answers it is, the reason beside every row that is not compared, and the folder walked against the list rather than the list trusted. The download beside it is written from the system rows by bundle-giveaway.mjs and opened entry by entry in the gate.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -91,9 +91,9 @@ const SYSTEM = join(planTree(root), 'learn', 'ticket-workflow-linkedin');
 const SYSTEM_LABEL = '../docs/learn/ticket-workflow-linkedin';
 
 // Every file in that folder and which of three answers it is. `taken` is a byte copy of a skill here and is compared exactly. `rewritten` names the skill here it was written again from, and what is held is that the skill still exists: rename or retire one and the giveaway is teaching a job this repo no longer has. `own` is the giveaway's own writing, which this repo has no source for. **The reason column is what the table is for** — a file left out of the comparison with nothing beside it saying why is a decision nobody was asked to make.
-const SYSTEM_FILES = [
+export const SYSTEM_FILES = [
   ['AUDIT.md', 'own', 'the reading that produced the giveaway, about the giveaway'],
-  ['ryans-product-team-template.zip', 'own', 'the packaged download, built from system/ by hand'],
+  ['ryans-product-team-template.zip', 'own', 'the packaged download, written from the system rows by bundle-giveaway.mjs'],
   ['system/DESIGN.md', 'own', 'the system explained to a stranger, in place of the design skill and the checks behind it'],
   ['system/GLOSSARY.md', 'own', 'the planning words, with no part of this app in them'],
   ['system/GUIDE.md', 'own', 'the guide a stranger starts from, holding none of the rules this repo paid for'],
@@ -194,6 +194,7 @@ const onDisk = {
   skill: (name) => bytesAt(join(SOURCES, name, 'SKILL.md')),
 };
 
+function main() {
 const entries = fromDisk();
 
 if (process.argv.includes('--check')) {
@@ -282,3 +283,6 @@ if (unanswered.length) {
   process.exit(1);
 }
 console.log(`learn snapshots: ${entries.length} copies, every one the skill it was taken from, and ${SYSTEM_FILES.length} giveaway-system files each answered for`);
+}
+
+if (process.argv[1] && import.meta.url === `file:///${process.argv[1].replaceAll('\\', '/')}`) main();

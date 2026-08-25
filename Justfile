@@ -136,6 +136,14 @@ check-plan-stage:
 bundle-plan-status:
     node scripts/check-plan-stage.mjs --write
 
+# Write the giveaway archive from the system rows in the folder's own file table.
+bundle-giveaway:
+    node scripts/bundle-giveaway.mjs
+
+# Fail when the giveaway archive no longer matches those rows entry by entry.
+check-giveaway:
+    node scripts/bundle-giveaway.mjs --check
+
 # Fail on a copy of a skill in the shared workflow article that no longer says what the
 # skill says. The article is handed on with an exact copy of every skill it cites, so the
 # copy is the reader's evidence — a drifted one is the article teaching a rule that was
@@ -501,7 +509,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
