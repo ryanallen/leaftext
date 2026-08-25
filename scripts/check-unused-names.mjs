@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// A name at the top of a file that the file never reaches for is a dependency that is not there: it says the file reads the disk, or boots the page, or reaches the checkout top, when it does none of those. The Rust half of this tree stops the build over exactly this; the JavaScript half had nothing at all.
+// A name at the top of a file that the file never reaches for is a dependency that is not there: it says the file reads the disk, or boots the page, or reaches the checkout top, when it does none of those. The Rust half of this tree stops the build over exactly this, and the JavaScript half is bigger by file count, so this is the same refusal for the half that has no compiler.
 //
 //   node scripts/check-unused-names.mjs --check   fail on an imported name nothing under it uses (`just verify`)
 //
