@@ -32,7 +32,7 @@ const FOOTPRINT_ROOTS = ['app/', 'docs/'];
 //
 // `docs/README.md` and `docs/GLOSSARY.md`: a build reaches these only by filing what it found beside its work, which appends a row to a table rather than rewriting the file.
 //
-// **`docs/TRACKS.md` is deliberately no longer on this list.** Read out of the skills, it has one writer — `/pm`, giving a subject its first track — and no build touches it, so a file that was excluded as one every build writes is a real collider and two tickets planning to write it are told so.
+// **`docs/TRACKS.md` is deliberately not on this list.** Read out of the skills it has one writer — `/pm`, giving a subject its first track — and no build among them, so it is a real collider and two tickets planning to write it are told so.
 //
 // **`app/AGENTS.md` is deliberately not on it either.** It is the biggest single false collider among citations, and a workflow ticket genuinely does change the guide: excluding it would call two such tickets safe together, which is the one mistake that costs somebody's work.
 export const EXCLUDED = ['docs/PLAN.md', 'docs/README.md', 'docs/GLOSSARY.md'];
@@ -74,7 +74,7 @@ export function footprintMisspelled(text) {
   return (footprintPaths(text) ?? []).filter((path) => path.includes('..') || !FOOTPRINT_ROOTS.some((root) => path.startsWith(root)));
 }
 
-/// What one ticket's build actually claims, with the four shared plan files dropped and its own file dropped — one ticket has one writer.
+/// What one ticket's build actually claims, with the excluded shared plan files dropped and its own file dropped — one ticket has one writer.
 export function claimedBy(ticket, text) {
   const own = `docs/${ticket}`;
   return (footprintPaths(text) ?? []).filter((path) => path !== own && !EXCLUDED.includes(path));

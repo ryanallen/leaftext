@@ -195,7 +195,6 @@ window.leafLineCount = (token, lines) => {
     setLinkHoverLines(lines);
   }
 };
-// The desktop command and page function land together; phase two gives this answer its delayed preview behavior.
 function durationTokenMilliseconds(token) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
   const amount = Number.parseFloat(value);

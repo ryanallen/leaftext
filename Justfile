@@ -124,10 +124,10 @@ bundle-devs-with:
 check-footprints:
     node scripts/plan-footprints.mjs --check
 
-# Fail on a running-order Status cell that is not what its ticket's own dated lines say. The
-# cell used to be typed in by hand, which made the running order the one shared file every
-# build wrote — and the column beside it tells two agents in this checkout that they share no
-# file. Now it is derived, so a build writes its stage in its own ticket and nothing shared.
+# Fail on a running-order Status cell that is not what its ticket's own dated lines say. A
+# cell typed in by hand makes the running order a shared file every build writes, while the
+# column beside it tells two agents in this checkout they share no file. Derived, a build
+# writes its stage in its own ticket and nothing shared.
 check-plan-stage:
     node scripts/check-plan-stage.mjs --check
 

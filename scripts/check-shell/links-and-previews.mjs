@@ -228,7 +228,7 @@ export function run() {
     }
   });
 
-  // A whole path from a drive letter is how a person on Windows writes a link to a file of their own, and it now keeps its address through the sanitizer. Three answers used to call it an app's own address, where the guard beside them and the host both call it a path — so the card would have named it wrongly the moment the address arrived.
+  // A whole path from a drive letter is how a person on Windows writes a link to a file of their own, and it keeps its address through the sanitizer — so the card, the guard beside it and the host all have to call it a path rather than an app's own address.
   check('a whole path from a drive letter is a file on this disk, not an app address', () => {
     const { linkHoverInfo, linkHoverKind, isAnotherPageHref, linkHasAFileBehindIt } = booted;
     // Both spellings, as the renderer hands them over: the sanitizer rewrites a drive-letter path to a `file:` address before it judges it.

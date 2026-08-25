@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// A running-order row's stage is a claim about the ticket beside it, so the ticket is where it is written and this is what carries it across. It used to be typed into the shared running order by hand, which is the one thing a build did to a file every other build also writes — two sessions in one checkout, told by the order's own column that they share no file, both editing the same 150-row list.
+// A running-order row's stage is a claim about the ticket beside it, so the ticket is where it is written and this is what carries it across. A stage typed into the shared running order instead is the one thing a build does to a file every other build also writes: two sessions in one checkout, told by the order's own column that they share no file, both editing the same 150-row list.
 //
 //   node scripts/check-plan-stage.mjs           fail on a cell that is not what its ticket's dated lines say (`just verify`)
 //   node scripts/check-plan-stage.mjs --check   self-test the reading, then check the real files
@@ -26,7 +26,7 @@ export function isDesigned(ticket) {
   return /\*\*Designed\s+\d/.test(ticket);
 }
 
-// The other proof a build has started, and one every ticket already carries. The dated line covers only the stretch before the first box goes in — which is the longest part of a build, and the whole reason the stage used to be typed into the running order by hand.
+// The other proof a build has started, and one every ticket already carries. The dated line covers only the stretch before the first box goes in, which is the longest part of a build and the stretch a reader most needs an answer for.
 const TICKED = /^[ \t]*- \[x\]/mi;
 
 // The dated line the two stages above `Designed` rest on, richest first. `Designed` is not in here: it is the floor a designed ticket falls back to once neither of these nor a ticked box has answered.
