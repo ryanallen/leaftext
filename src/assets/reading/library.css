@@ -336,7 +336,7 @@ body.library-resizing {
   font-family: inherit;
 }
 .library-hit:hover {
-  background: var(--lt-wash-hover);
+  background: var(--lt-wash-hover-chrome);
 }
 .library-hit-title {
   display: block;
@@ -416,7 +416,7 @@ body.library-resizing {
   color: var(--lt-muted-foreground);
 }
 .library-search-clear:hover {
-  background: var(--lt-wash-hover);
+  background: var(--lt-wash-hover-chrome);
 }
 .library-search-clear .lt-icon {
   display: block;
@@ -521,7 +521,7 @@ body.library-resizing {
   text-overflow: ellipsis;
 }
 .library-crumb:hover {
-  background: var(--lt-wash-hover);
+  background: var(--lt-wash-hover-chrome);
   color: var(--lt-foreground);
 }
 /* The folder you are in: full ink, and it gets the leftover room — the ancestors above it give way first. */
@@ -541,7 +541,7 @@ body.library-resizing {
   padding: var(--lt-space-1) var(--lt-space-4);
 }
 .library-crumb.is-elided[aria-expanded="true"] {
-  background: var(--lt-wash-hover);
+  background: var(--lt-wash-hover-chrome);
   color: var(--lt-foreground);
 }
 /* While the trail measures how much of the path fits, nothing shrinks or clips — every crumb reports the width it actually wants. Held for one synchronous pass inside a single task, so this state never paints. */
@@ -570,7 +570,7 @@ body.library-resizing {
 }
 .library-vault-switch:hover,
 .library-vault-switch[aria-expanded="true"] {
-  background: var(--lt-wash-hover);
+  background: var(--lt-wash-hover-chrome);
   color: var(--lt-foreground);
 }
 /* Open, the button and the vault's name beside it are one pill: what the list changes is the whole pane, not the 20px of icon you pressed. The button grows into the 2px gap and pulls the trail back by the same amount, so the name and every folder after it stay exactly where they were. The state is an attribute on the button, so a disk change rebuilding the trail underneath cannot lose it. */
@@ -585,7 +585,7 @@ body.library-resizing {
   height: 23px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  background: var(--lt-wash-hover);
+  background: var(--lt-wash-hover-chrome);
   color: var(--lt-foreground);
 }
 /* Standing at the vault's own root, the name is a span rather than a button, so nothing centers its text in a box this tall. It is also the only crumb there, so there is no ellipsis to lose. */
@@ -748,7 +748,7 @@ body.library-resizing {
 }
 .library-file:hover,
 .library-nav-folder:hover {
-  background: var(--lt-wash-hover);
+  background: var(--lt-wash-hover-chrome);
 }
 /* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere. */
 .library-file.is-selected,
