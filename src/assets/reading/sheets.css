@@ -594,6 +594,28 @@
   overflow: hidden;
   transition: height var(--lt-duration-100) var(--lt-ease-emphasized);
 }
+/* A glossary entry is the card's whole answer rather than a picture of a page, so it is laid out at the card's own width at reading size and the picture's own ceiling comes off. What it gets instead is measured against the window in the page, because a cap that fits a tall window covers the sentence being read in a short one. */
+.link-hover-tip-preview.is-entry {
+  max-height: none;
+}
+/* The entry starts at its first word. The host wraps every answer in a page's own top framing and the first block adds its own margin on top of that — 53px, which reads as ordinary page framing at a thumbnail's scale and as a hole at reading size, a sixth of a short entry spent on nothing. */
+.link-hover-tip-preview.is-entry .link-hover-tip-preview-document > article {
+  padding-top: 0;
+}
+.link-hover-tip-preview.is-entry .link-hover-tip-preview-document > article > :first-child {
+  margin-top: 0;
+}
+/* An entry taller than that room is cut, so the words at the cut fade into the card rather than stopping mid-line. Above the divider, not over it: the box's own padding is what the fade stops at. */
+.link-hover-tip-preview.is-capped::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: var(--lt-space-8);
+  left: 0;
+  height: 3rem;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--lt-background) 92%, black));
+  pointer-events: none;
+}
 .link-hover-tip-preview-placeholder {
   position: absolute;
   inset: 0;
@@ -664,6 +686,13 @@
   margin-top: var(--lt-space-4);
   color: var(--lt-foreground);
   font-weight: var(--lt-weight-600);
+  font-size: 0.74rem;
+  line-height: var(--lt-leading-1-2);
+}
+/* What the fade above it promises: the rest of the entry is a press away. */
+.link-hover-tip-more {
+  margin-top: var(--lt-space-4);
+  color: var(--lt-muted-foreground);
   font-size: 0.74rem;
   line-height: var(--lt-leading-1-2);
 }

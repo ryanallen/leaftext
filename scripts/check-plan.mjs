@@ -82,6 +82,8 @@ function planRows(text) {
       shown: cells[1].replace(/\s+/g, ' '),
       blocks: links(cells[3]),
       blockers: links(cells[4]),
+      // The last cell is always `Why here`, whether or not the file carries a `Track` column.
+      why: cells[cells.length - 1],
     });
   }
   return rows;
@@ -262,7 +264,55 @@ function shapeProblems(text, tree) {
     }
   }
 
+  for (const row of rows) {
+    for (const problem of whyProblems(row)) say('why here', row.ticket ?? row.position, `position ${row.position}: ${problem}`);
+  }
+
   return problems;
+}
+
+// The `Why here` cell says what makes this row belong in its tier, in the words of what a reader of the app meets. It once said where the row sat relative to its neighbors instead, and that column grew to nearly two thirds of the file: 153 cells averaging 352 characters, the longest 956.
+//
+// Two faults, and the ceiling alone would not have caught either. A cell written as "behind the row above, ahead of everything under it" is a claim about a position, so every reorder falsifies every cell it moved past and nobody rewrites a hundred of them. A cell carrying the day it was found, the day it was designed and what the build will do is the ticket's own writing, copied — the ticket is where it stays true.
+//
+// So the cell is held to three things: it is short, it names no neighbor, and it carries no date.
+const WHY_LIMIT = 200;
+
+// Every one of these is a claim about where a row sits rather than about what it is, so every one of them is a lie the next reorder tells.
+const NEIGHBOR = [
+  'row above', 'rows above', 'row below', 'rows below', 'row under', 'rows under', 'row over',
+  'ahead of', 'directly behind', 'behind the row', 'behind both', 'behind every', 'behind all',
+  'beside the row', 'everything above', 'everything below', 'everything under',
+  'top of the band', 'top of the tier', 'top of the file', 'last of the band', 'last of the tier',
+  'first of the band', 'first of the tier', 'the band above', 'the band below', 'the tier above', 'the tier below',
+  'position ',
+];
+
+const MONTHS = 'January|February|March|April|May|June|July|August|September|October|November|December';
+const WHY_DATE = new RegExp(`\\b\\d{1,2}\\s+(?:${MONTHS})\\s+\\d{4}`, 'i');
+
+// A link is read at the length a reader sees it, so a cell is not made long by the path behind a name.
+function whySpelled(cell) {
+  return cell.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\s+/g, ' ').trim();
+}
+
+function whyProblems(row) {
+  const found = [];
+  if (row.why === undefined || row.why === '') return found;
+  const spelled = whySpelled(row.why);
+  if (spelled.length > WHY_LIMIT) {
+    found.push(`the Why here cell runs ${spelled.length} characters and the ceiling is ${WHY_LIMIT} — what a row is comes from its tier and one sentence, and the rest of it belongs in the ticket`);
+  }
+  const lower = spelled.toLowerCase();
+  for (const phrase of NEIGHBOR) {
+    if (lower.includes(phrase)) {
+      found.push(`the Why here cell says "${phrase.trim()}", which is a claim about where the row sits — the next reorder makes it untrue and nobody comes back to rewrite it`);
+      break;
+    }
+  }
+  const date = WHY_DATE.exec(spelled);
+  if (date) found.push(`the Why here cell carries the date "${date[0]}" — when it was found, designed or asked for is the ticket's own record, and copying it here is a second copy that goes stale`);
+  return found;
 }
 
 // Every live ticket belongs to a subject order next door, one step of one track, and a subject with one ticket is a track with one step. Twice now the ranking has grown a run of rows carrying no track at all: nothing said which subject they were part of, so they were read as loose faults, ranked on their own words and walked up the tiers one pass at a time until they sat above the app's own. The track cell is what stops that, and a cell nobody checks is a cell nobody fills.
@@ -685,6 +735,21 @@ const CASES = [
     plan(PAIR, [1, ONE], [3, TWO]).replace('**Last ranked 9 August 2026, 4:07pm.**', ''), PAIR, ['stamp the foot of the file']],
   ['a stamp written round the clock is a time too',
     plan(PAIR, [1, ONE], [3, TWO]).replace('4:07pm', '16:07'), PAIR, []],
+  ['a Why here cell over the ceiling is refused',
+    plan(PAIR, [1, `| 1 | [one](refactor/a/one.md) | Ready | — | — | ${'a word about the app '.repeat(12)}|`], [3, TWO]),
+    PAIR, ['why here refactor/a/one.md']],
+  ['a Why here cell naming the row above it is refused',
+    plan(PAIR, [1, ONE], [3, '| 2 | [two](refactor/b/two.md) | Ready | — | — | behind the row above on cost |']),
+    PAIR, ['why here refactor/b/two.md']],
+  ['a Why here cell placing itself in the band is refused',
+    plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) | Ready | — | — | last of the band and cheapest in it |'], [3, TWO]),
+    PAIR, ['why here refactor/a/one.md']],
+  ['a Why here cell carrying the day it was found is refused',
+    plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) | Ready | — | — | the padlock opens on a document with nothing in it. Found 24 August 2026, 1:43pm |'], [3, TWO]),
+    PAIR, ['why here refactor/a/one.md']],
+  ['a link is read at the length a reader sees it, so the path behind a name does not spend the ceiling',
+    plan(PAIR, [1, `| 1 | [one](refactor/a/one.md) | Ready | — | — | it shares a seam with [the other one](refactor/${'and-another-long-word-'.repeat(12)}two.md) |`], [3, TWO]),
+    PAIR, []],
 ];
 
 // `shipped([1, row, row], ...)` — one entry per tier heading, each row under the four columns the shipped tiers carry. It opens with the shipped log's own title, so only a case about a row above that title has to disagree with it.

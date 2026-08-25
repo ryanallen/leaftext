@@ -8001,6 +8001,28 @@ body.is-home-row-dragging .home-list-scroll li {
   overflow: hidden;
   transition: height var(--lt-duration-100) var(--lt-ease-emphasized);
 }
+/* A glossary entry is the card's whole answer rather than a picture of a page, so it is laid out at the card's own width at reading size and the picture's own ceiling comes off. What it gets instead is measured against the window in the page, because a cap that fits a tall window covers the sentence being read in a short one. */
+.link-hover-tip-preview.is-entry {
+  max-height: none;
+}
+/* The entry starts at its first word. The host wraps every answer in a page's own top framing and the first block adds its own margin on top of that — 53px, which reads as ordinary page framing at a thumbnail's scale and as a hole at reading size, a sixth of a short entry spent on nothing. */
+.link-hover-tip-preview.is-entry .link-hover-tip-preview-document > article {
+  padding-top: 0;
+}
+.link-hover-tip-preview.is-entry .link-hover-tip-preview-document > article > :first-child {
+  margin-top: 0;
+}
+/* An entry taller than that room is cut, so the words at the cut fade into the card rather than stopping mid-line. Above the divider, not over it: the box's own padding is what the fade stops at. */
+.link-hover-tip-preview.is-capped::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: var(--lt-space-8);
+  left: 0;
+  height: 3rem;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--lt-background) 92%, black));
+  pointer-events: none;
+}
 .link-hover-tip-preview-placeholder {
   position: absolute;
   inset: 0;
@@ -8071,6 +8093,13 @@ body.is-home-row-dragging .home-list-scroll li {
   margin-top: var(--lt-space-4);
   color: var(--lt-foreground);
   font-weight: var(--lt-weight-600);
+  font-size: 0.74rem;
+  line-height: var(--lt-leading-1-2);
+}
+/* What the fade above it promises: the rest of the entry is a press away. */
+.link-hover-tip-more {
+  margin-top: var(--lt-space-4);
+  color: var(--lt-muted-foreground);
   font-size: 0.74rem;
   line-height: var(--lt-leading-1-2);
 }
@@ -9893,7 +9922,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </section>
 <section class="part">
 <header><h3>Link preview</h3><code class="built">.link-hover</code><span class="built">glossary.js</span></header>
-<div class="stage"><div class="link-hover-tip shown has-preview" style="position:static"><div class="link-hover-tip-preview"><div class="link-hover-tip-preview-placeholder"><span class="lt-spinner link-hover-tip-preview-spinner"></span></div><div class="link-hover-tip-preview-scale"><div class="document-body link-hover-tip-preview-document"><h2>A linked note</h2><p>Its opening line.</p><pre class="mermaid" data-card-diagram="unshown" data-language="mermaid">flowchart TD A--&gt;B</pre></div></div></div><div class="link-hover-tip-kind">Note</div><div class="link-hover-tip-detail">A linked note — its opening line.</div></div></div>
+<div class="stage"><div class="link-hover-tip shown has-preview" style="position:static"><div class="link-hover-tip-preview"><div class="link-hover-tip-preview-placeholder"><span class="lt-spinner link-hover-tip-preview-spinner"></span></div><div class="link-hover-tip-preview-scale"><div class="document-body link-hover-tip-preview-document"><h2>A linked note</h2><p>Its opening line.</p><pre class="mermaid" data-card-diagram="unshown" data-language="mermaid">flowchart TD A--&gt;B</pre></div></div></div><div class="link-hover-tip-kind">Note</div><div class="link-hover-tip-detail">A linked note — its opening line.</div></div><div class="link-hover-tip shown has-preview" style="position:static;margin-top:12px"><div class="link-hover-tip-preview is-loaded is-entry is-capped" style="--link-preview-shrink:1;height:96px"><div class="link-hover-tip-preview-scale"><div class="document-body link-hover-tip-preview-document"><h2>Tier</h2><p>One of the bands the running order groups its rows into.</p><p>A row moves a band at a time rather than a place at a time, so what changes is what kind of thing it is.</p></div></div></div><div class="link-hover-tip-kind">Glossary entry</div><div class="link-hover-tip-detail">glossary:tier</div><div class="link-hover-tip-more">Press to read the rest</div></div></div>
 </section>
 <section class="part">
 <header><h3>Document alerts</h3><code class="built">.markdown-alert</code><span class="built">decorate.js, dom-to-markdown.js</span></header>

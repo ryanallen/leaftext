@@ -144,7 +144,8 @@ linkHoverTip.innerHTML =
   '<div class="link-hover-tip-preview" hidden><div class="link-hover-tip-preview-placeholder"><span class="lt-spinner link-hover-tip-preview-spinner"></span></div><div class="link-hover-tip-preview-scale"><div class="document-body link-hover-tip-preview-document"></div></div></div>' +
   '<div class="link-hover-tip-kind"></div>' +
   '<div class="link-hover-tip-detail"></div>' +
-  '<div class="link-hover-tip-lines" hidden></div>';
+  '<div class="link-hover-tip-lines" hidden></div>' +
+  '<div class="link-hover-tip-more" hidden>Press to read the rest</div>';
 appSurface.appendChild(linkHoverTip);
 const linkHoverTipPreview = linkHoverTip.querySelector('.link-hover-tip-preview');
 const linkHoverTipPreviewScale = linkHoverTip.querySelector('.link-hover-tip-preview-scale');
@@ -152,6 +153,7 @@ const linkHoverTipPreviewDocument = linkHoverTip.querySelector('.link-hover-tip-
 const linkHoverTipKind = linkHoverTip.querySelector('.link-hover-tip-kind');
 const linkHoverTipDetail = linkHoverTip.querySelector('.link-hover-tip-detail');
 const linkHoverTipLines = linkHoverTip.querySelector('.link-hover-tip-lines');
+const linkHoverTipMore = linkHoverTip.querySelector('.link-hover-tip-more');
 const canHoverLinks = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 // A hovered cross-document link shows the target's line count. The webview asks the host (countLines IPC); the host answers via window.leafLineCount. Each hover gets a token so a stale answer is ignored, and answers are cached by href.
 let activeHoverToken = 0;
@@ -165,6 +167,8 @@ let linkHoverShowFrame = 0;
 let linkHoverEndFade = null;
 let linkHoverPointer = null;
 let linkHoverLeaveFrame = 0;
+// Whether the card the pointer is on is a glossary link's. It decides how the picture box is drawn, and the answer arrives long after the rest that asked for it, so it is read at drawing time rather than carried through the ask.
+let linkHoverEntry = false;
 // The pointer's latest place. A leave settles here, not at the stale point its own event carried.
 let linkHoverClientX = -1;
 let linkHoverClientY = -1;
@@ -202,6 +206,10 @@ function setLinkHoverPreview(html) {
   const present = typeof html === 'string' && html !== '';
   linkHoverTipPreviewDocument.innerHTML = present ? html : '';
   linkHoverTipPreview.classList.toggle('is-loaded', present);
+  linkHoverTipPreview.classList.toggle('is-entry', present && linkHoverEntry);
+  // Whether this answer runs past the cap is the drawing's own answer, so the cut and the line it promises start off every card.
+  linkHoverTipPreview.classList.remove('is-capped');
+  linkHoverTipMore.hidden = true;
   // Every answer is measured on its own. A shrink and a layer width left over from the last card would cap this note at that card's width and hold it there.
   linkHoverTipPreview.style.removeProperty('--link-preview-shrink');
   linkHoverTipPreviewScale.style.width = '';
@@ -227,17 +235,35 @@ function measureLinkPreviewShrink(note) {
   linkHoverTipPreviewScale.style.width = measured + 'px';
   return box / measured;
 }
+// The card's own width at reading size. The shrink is a measurement of a page's note against the box, and a glossary entry is not a picture of a page — it is the answer itself, so it is laid out at the width it is drawn at and the stylesheet's `calc(100% / var(--link-preview-shrink))` reads 1 as the box's width exactly.
+function holdLinkPreviewUnshrunk() {
+  linkHoverTipPreview.style.setProperty('--link-preview-shrink', '1');
+  linkHoverTipPreviewScale.style.width = '';
+  return 1;
+}
+// The room a glossary entry gets. Measured in the card at its own width, 480px draws three of every four entries across both glossaries whole and leaves the card standing on seven tenths of a full window. The window fraction is what carries a short one, where a fixed cap would put the card over the very sentence the pointer is resting in.
+const LINK_PREVIEW_ENTRY_CAP = 480;
+function linkPreviewEntryCap() {
+  const room = Math.floor(leafAppRect().height * 0.6);
+  return room > 0 ? Math.min(LINK_PREVIEW_ENTRY_CAP, room) : LINK_PREVIEW_ENTRY_CAP;
+}
 function sizeLinkHoverPreview() {
   if (!linkHoverTipPreview.classList.contains('is-loaded')) return;
   const article = linkHoverTipPreviewDocument.querySelector('article');
   const note = article && article.children.length ? article : null;
   const source = note || linkHoverTipPreviewDocument;
-  const shrink = measureLinkPreviewShrink(note);
+  const shrink = linkHoverEntry ? holdLinkPreviewUnshrunk() : measureLinkPreviewShrink(note);
   // The whole opening, not its first blocks: the height cap lands most notes at one size, and only a note shorter than the cap hugs its content.
   const blocks = [...source.children].filter((block) => block.offsetHeight > 0);
   const last = blocks[blocks.length - 1];
   const height = last ? last.offsetTop + last.offsetHeight : source.scrollHeight;
-  linkHoverTipPreview.style.height = Math.ceil(height * shrink) + 'px';
+  const drawn = Math.ceil(height * shrink);
+  // An entry under the cap hugs its own height, the way a short note already does; one past it is cut, and the cut says so rather than stopping mid-word.
+  const cap = linkHoverEntry ? linkPreviewEntryCap() : 0;
+  const capped = cap > 0 && drawn > cap;
+  linkHoverTipPreview.style.height = (capped ? cap : drawn) + 'px';
+  linkHoverTipPreview.classList.toggle('is-capped', capped);
+  linkHoverTipMore.hidden = !capped;
   if (linkHoverPointer) positionLinkHoverTip(linkHoverPointer);
   drawLinkPreviewDiagrams();
 }
@@ -482,12 +508,16 @@ function requestLinkPreview(key, token) {
 // The last answer the host sent, parsed once — one file's render is parsed once however many of its sections are rested on, and it is only read from, so holding it between rests is safe.
 let linkPreviewParsedHtml = null;
 let linkPreviewParsedRoot = null;
-// The section of the host's answer that the address names, as words the card can draw. The answer is a base and one `article`, and the card measures the note by that article, so the opening the host wrote is kept and only what stands inside it is swapped. An address naming no section, or naming one that is not in what arrived, is the whole answer — which is the card that shipped before this.
+// The section of the host's answer that the address names, as words the card can draw. The answer is a base and one `article`, and the card measures the note by that article, so the opening the host wrote is kept and only what stands inside it is swapped. A glossary link names its term through the scheme, which has no `#` to cut at, so that is read first. An address naming no section is the whole answer — which is the card that shipped before this — and a glossary address whose term is not in what arrived is nothing at all, because a whole glossary is not what that reader was promised.
 function linkPreviewSectionHtml(html, href) {
-  const hashAt = String(href || '').indexOf('#');
-  if (hashAt < 0) return html;
-  let anchor = String(href).slice(hashAt + 1);
-  try { anchor = decodeURIComponent(anchor); } catch (e) {}
+  const term = glossaryAnchorFromHref(href);
+  let anchor = term;
+  if (!anchor) {
+    const hashAt = String(href || '').indexOf('#');
+    if (hashAt < 0) return html;
+    anchor = String(href).slice(hashAt + 1);
+    try { anchor = decodeURIComponent(anchor); } catch (e) {}
+  }
   if (!anchor) return html;
   const opens = html.indexOf('<article');
   const opened = opens < 0 ? -1 : html.indexOf('>', opens);
@@ -499,7 +529,7 @@ function linkPreviewSectionHtml(html, href) {
   }
   const note = linkPreviewParsedRoot.querySelector('article') || linkPreviewParsedRoot;
   const blocks = documentSectionBlocks(note, anchor);
-  if (!blocks) return html;
+  if (!blocks) return term ? '' : html;
   return html.slice(0, opened + 1) + blocks.map((block) => block.outerHTML).join('') + '</article>';
 }
 window.leafLinkPreview = (token, html) => {
@@ -605,10 +635,11 @@ function startLinkHover(event) {
   linkHoverTipDetail.textContent = info.detail;
   const token = ++activeHoverToken;
   setLinkHoverLines(null);
-  // Only in-app page links carry a line count; nothing else does.
-  if (info.kind === 'Another page') {
-    // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string.
-    const key = (typeof link.href === 'string' && link.href) || rawHref;
+  const entry = info.kind === 'Glossary entry';
+  linkHoverEntry = entry;
+  if (entry || info.kind === 'Another page') {
+    // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string. A glossary link goes as it was written instead: its scheme carries the term, and a relative address read back off the page resolves against the page rather than against the document the host joins it onto.
+    const key = entry ? rawHref : (typeof link.href === 'string' && link.href) || rawHref;
     if (linkPreviewCache.has(key)) {
       // Seen already: straight back up rendered, so a return to a link never blinks its spinner — and a page the host could not draw raises no box at all.
       applyLinkHoverPreview(linkPreviewCache.get(key));
@@ -616,11 +647,14 @@ function startLinkHover(event) {
       showLinkHoverPreviewPlaceholder();
       requestLinkPreview(key, token);
     }
-    if (lineCountCache.has(key)) {
-      setLinkHoverLines(lineCountCache.get(key));
-    } else {
-      pendingLineTokens.set(token, key);
-      send({ command: 'countLines', href: key, token });
+    // Only in-app page links carry a line count. A glossary link's would be the whole file's, above three blocks of one entry.
+    if (!entry) {
+      if (lineCountCache.has(key)) {
+        setLinkHoverLines(lineCountCache.get(key));
+      } else {
+        pendingLineTokens.set(token, key);
+        send({ command: 'countLines', href: key, token });
+      }
     }
   } else {
     hideLinkHoverPreview();

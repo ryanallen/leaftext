@@ -55,6 +55,57 @@ fn a_local_link_preview_is_bounded_cached_and_refreshed_after_an_edit() {
 }
 
 #[test]
+fn a_glossary_link_previews_the_nearest_glossary_above_the_open_document() {
+    let root = std::env::temp_dir().join(format!("leaf-glossary-preview-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    let deep = root.join("features").join("reading");
+    fs::create_dir_all(&deep).expect("fixture tree is created");
+    let current = deep.join("ticket.md");
+    fs::write(&current, "# Ticket").expect("the open document is written");
+    fs::write(
+        root.join("GLOSSARY.md"),
+        "# Glossary
+
+## Tier
+
+One of the bands the running order groups its rows into.
+
+## Track
+
+A line of work.
+",
+    )
+    .expect("the glossary is written");
+
+    // The scheme names a term and no file at all, so the file is the walk up from the open document — the same one the press already makes.
+    let html = link_preview_html("glossary:tier", &current)
+        .expect("a glossary link previews the glossary above the open document");
+    assert!(
+        html.contains(r#"id="tier""#),
+        "the entry the scheme names is in the answer the page lifts from: {html}"
+    );
+    assert!(
+        html.contains("One of the bands"),
+        "the entry's own words are in the answer"
+    );
+
+    // Nothing at all rather than a wait: the card drops its picture box on an empty answer, and a document with no glossary above it has no entry to draw.
+    let alone_dir = std::env::temp_dir().join(format!("leaf-no-glossary-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&alone_dir);
+    fs::create_dir_all(&alone_dir).expect("the glossaryless folder is created");
+    let alone = alone_dir.join("alone.md");
+    fs::write(&alone, "# Alone").expect("the glossaryless document is written");
+    assert_eq!(
+        link_preview_html("glossary:tier", &alone),
+        None,
+        "a document with no glossary above it previews nothing"
+    );
+
+    fs::remove_dir_all(&root).expect("fixture tree is removed");
+    fs::remove_dir_all(&alone_dir).expect("the glossaryless folder is removed");
+}
+
+#[test]
 fn a_link_preview_request_arrives_with_its_hover_token() {
     match serde_json::from_str::<IpcCommand>(
         r#"{"command":"previewLink","href":"./b.md","token":7}"#,

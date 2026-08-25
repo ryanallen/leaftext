@@ -457,6 +457,147 @@ export function run() {
     }
   });
 
+  // The picture box shrinks a page's note into a thumbnail, because what a reader wants off a link to another page is what that page looks like. A glossary entry is the answer itself, so it is laid out at the card's own width at reading size and the shrink stays 1 — then held to the room the window has, with the cut saying where the rest of it is.
+  check('a glossary entry is drawn unshrunk and capped to the window, while a page preview still measures its shrink', () => {
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const scale = vm.runInContext('linkHoverTipPreviewScale', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const more = vm.runInContext('linkHoverTipMore', booted);
+    const wasQuery = previewDocument.querySelector;
+    const wasBoxWidth = preview.clientWidth;
+    booted.__wasAppRect = vm.runInContext('appSurface.getBoundingClientRect', booted);
+    // The host's answer as the card meets it: one `article` at the width the note reads at, holding a block of a known height.
+    const note = (width, height) => {
+      const article = fakeElement('article');
+      article.offsetWidth = width;
+      article.children = [Object.assign(fakeElement('p'), { offsetTop: 0, offsetHeight: height })];
+      return article;
+    };
+    const window0f = (height) => vm.runInContext(`appSurface.getBoundingClientRect = () => ({ top: 0, left: 0, right: 1200, bottom: ${height}, width: 1200, height: ${height} });`, booted);
+    const draw = (entry, article) => {
+      vm.runInContext(`linkHoverEntry = ${entry};`, booted);
+      previewDocument.querySelector = (selector) => (selector === 'article' ? article : wasQuery(selector));
+      vm.runInContext('setLinkHoverPreview("<p>Drawn.</p>");', booted);
+      booted.__frames.drain();
+    };
+    try {
+      preview.clientWidth = 250;
+      // A tall window, where three fifths of it stands above 480px and the measured cap is the one that bites.
+      window0f(900);
+
+      draw(false, note(692, 200));
+      if (preview.style.getPropertyValue('--link-preview-shrink') === '1') throw new Error('a page preview stopped measuring its shrink');
+      if (preview.classList.contains('is-entry')) throw new Error('a page preview was drawn as a glossary entry');
+      if (preview.style.height !== '73px') throw new Error(`a page preview no longer lands at its thumbnail height: ${preview.style.height}`);
+
+      draw(true, note(692, 300));
+      if (preview.style.getPropertyValue('--link-preview-shrink') !== '1') throw new Error('a glossary entry was scaled down rather than drawn at the card\'s own width');
+      if (scale.style.width !== '') throw new Error('a glossary entry kept a measured layer width, so it is laid out at a page\'s measure');
+      if (!preview.classList.contains('is-entry')) throw new Error('a glossary entry did not say it was one, so the box keeps a page thumbnail\'s ceiling');
+      if (preview.style.height !== '300px') throw new Error(`an entry under the cap did not hug its own height: ${preview.style.height}`);
+      if (preview.classList.contains('is-capped') || !more.hidden) throw new Error('an entry drawn whole promised a rest it has not got');
+
+      draw(true, note(692, 900));
+      if (preview.style.height !== '480px') throw new Error(`an entry past the cap was not held at it: ${preview.style.height}`);
+      if (!preview.classList.contains('is-capped') || more.hidden) throw new Error('an entry past the cap has no fade over the cut and no line under it');
+      if (more.textContent !== 'Press to read the rest') throw new Error(`the line under a cut entry reads "${more.textContent}"`);
+
+      // A short window is where a fixed cap would put the card over the very sentence the pointer is resting in.
+      window0f(600);
+      draw(true, note(692, 900));
+      if (preview.style.height !== '360px') throw new Error(`a short window did not bring the cap down with it: ${preview.style.height}`);
+
+      const css = readingCss();
+      if (!css.includes('.link-hover-tip-preview.is-entry')) throw new Error('nothing lifts the picture box\'s own ceiling off an entry');
+      if (!css.includes('.link-hover-tip-preview.is-capped::after')) throw new Error('a cut entry has no fade over the cut');
+      if (!css.includes('.link-hover-tip-more')) throw new Error('the line under a cut entry is unstyled');
+      if (!css.includes('.link-hover-tip-preview.is-entry .link-hover-tip-preview-document > article > :first-child')) throw new Error('an entry still opens on the page framing rather than on its first word');
+    } finally {
+      previewDocument.querySelector = wasQuery;
+      preview.clientWidth = wasBoxWidth;
+      vm.runInContext('appSurface.getBoundingClientRect = __wasAppRect; linkHoverEntry = false; hideLinkHoverPreview();', booted);
+      delete booted.__wasAppRect;
+    }
+  });
+
+  // A glossary link names its term through the scheme, which carries no `#` for the cut to find, so the term is read off the scheme instead. And an entry the answer has not got is nothing at all rather than the whole glossary: a reader who rested on one word was never promised the file.
+  check('a glossary link is cut to the entry its scheme names, and a term the glossary has not got draws no picture', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const wasHidden = tip.hidden;
+    try {
+      seedPreviewParse();
+      tip.hidden = false;
+      vm.runInContext('activeHoverToken = 46; linkHoverPointer = null; pendingPreviewTokens.set(46, "glossary:layer-order");', booted);
+      booted.window.leafLinkPreview(46, previewSectionHtml);
+      const drawn = previewDocument.innerHTML;
+      const want = PREVIEW_SECTION_OPENING + previewSectionBlocks.slice(2, 6).join('') + '</article>';
+      if (drawn !== want) throw new Error(`the card drew something other than the entry the scheme named: ${drawn}`);
+      if (drawn.includes('The opening.')) throw new Error('the card opened at the glossary rather than at the term rested on');
+
+      vm.runInContext('activeHoverToken = 47; pendingPreviewTokens.set(47, "glossary:renamed-since"); showLinkHoverPreviewPlaceholder();', booted);
+      booted.window.leafLinkPreview(47, previewSectionHtml);
+      if (vm.runInContext('linkPreviewCache.get("glossary:renamed-since")', booted) !== '') throw new Error('a term the glossary has not got kept the whole glossary');
+      if (!preview.hidden || tip.classList.contains('has-preview')) throw new Error('a term the glossary has not got left an empty picture box standing');
+    } finally {
+      vm.runInContext('activeHoverToken = 0; hideLinkHoverPreview();', booted);
+      tip.hidden = wasHidden;
+      forgetPreviewParse();
+    }
+  });
+
+  // A glossary link is the one link a reader follows without wanting to go anywhere, so the card asks for the entry the way it asks for a page. The line count is the one thing it does not ask for — the number it would answer is the whole glossary's, above three blocks of one term — and the address goes as it was written, because the scheme carries the term and a relative address read back off the page resolves against the page rather than against the document the host joins it onto.
+  check('a rest on a glossary link asks for the entry, as written, and never for a line count', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const link = (written, resolved) => {
+      const item = {
+        href: resolved === undefined ? written : resolved,
+        getAttribute: (name) => (name === 'href' ? written : null),
+        getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }),
+      };
+      item.closest = () => item;
+      return item;
+    };
+    const wasSend = booted.ipc.postMessage;
+    const wasTimeout = booted.setTimeout;
+    const wasRect = tip.getBoundingClientRect;
+    const rest = (written, resolved) => {
+      const sent = [];
+      const waiting = [];
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.setTimeout = (fn) => waiting.push(fn);
+      booted.__hoverEvent = { target: link(written, resolved), relatedTarget: { body: true }, clientX: 240, clientY: 210 };
+      vm.runInContext('activeHoverLink = null; startLinkHover(__hoverEvent);', booted);
+      waiting.forEach((fn) => fn());
+      vm.runInContext('hideLinkHoverTip(); activeHoverLink = null;', booted);
+      return sent;
+    };
+    try {
+      tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 240, bottom: 120, width: 240, height: 120 });
+      vm.runInContext('linkPreviewCache.clear(); lineCountCache.clear();', booted);
+      for (const [written, resolved] of [['glossary:tier', undefined], ['../GLOSSARY.md#tier', 'file:///notes/GLOSSARY.md#tier']]) {
+        const sent = rest(written, resolved);
+        const asked = sent.filter((one) => one.command === 'previewLink');
+        if (asked.length !== 1) throw new Error(`resting on ${written} sent ${asked.length} preview asks`);
+        if (asked[0].href !== written) throw new Error(`the preview ask carried ${asked[0].href} instead of the address as written`);
+        if (sent.some((one) => one.command === 'countLines')) throw new Error(`resting on ${written} asked for the whole glossary's line count`);
+      }
+      const page = rest('./other.md', 'file:///notes/other.md');
+      const both = ['previewLink', 'countLines'].map((command) => page.find((one) => one.command === command));
+      if (both.some((one) => !one)) throw new Error(`a rest on a link to another page asked for ${page.map((one) => one.command).join(', ') || 'nothing'}`);
+      for (const ask of both) {
+        if (ask.href !== 'file:///notes/other.md') throw new Error(`${ask.command} no longer carries the address the page resolved`);
+      }
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      booted.setTimeout = wasTimeout;
+      tip.getBoundingClientRect = wasRect;
+      vm.runInContext('hideLinkHoverTip(); activeHoverLink = null; linkPreviewCache.clear(); lineCountCache.clear(); pendingPreviewTokens.clear(); pendingLineTokens.clear();', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
   // The running order links at a hundred and forty-two sections of one page. What is kept per address is that address's own section, so those links hold a hundred and forty-two sections rather than that many copies of the page.
   check('a preview remembers the section its address named, not the file it was cut from', () => {
     try {
