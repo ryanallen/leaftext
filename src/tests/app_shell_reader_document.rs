@@ -208,8 +208,6 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
         // One window of margin either way, so a diagram is drawn before it is reached rather than after.
         "const MERMAID_NEAR_SCREENS = 1;",
         "rootMargin: `${MERMAID_NEAR_SCREENS * 100}% 0px`",
-        // The root is the reader's own scroller, not the window: the document scrolls inside `app`.
-        "{ root: app, rootMargin:",
         // A box says which of the two it is, and the stylesheet spins only the one waiting its turn.
         "diagram.dataset.diagramWait = near ? 'near' : 'far';",
         // The height it drew to, so a box refilled at that height moves nothing above the reader. Keyed on the reading column's width as well as the theme: a drawing wider than the column is scaled to fit it, so its height is only true at that width.
@@ -253,6 +251,13 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
             "the front-end should contain {expected}"
         );
     }
+
+    // The root is the reader's own scroller, not the window: the document scrolls inside `app`. Scoped, because the watcher that puts a far diagram back writes the same margin.
+    assert_in(
+        script,
+        "function watchMermaidDiagrams(candidates) {",
+        "{ root: app, rootMargin:",
+    );
 
     // The height is measured before the skip is written, or a drawing off screen measures the size it was standing in for and remembers that instead.
     let finish = script
@@ -333,8 +338,6 @@ fn a_diagram_scrolled_well_past_goes_back_to_a_box_only_past_the_memo_cap() {
         "const MERMAID_FAR_SCREENS = 3;",
         "rootMargin: `${MERMAID_FAR_SCREENS * 100}% 0px`",
         "function recycleMermaidDiagram(diagram) {",
-        // The box goes back at exactly the height its drawing had, so recycling moves nothing on the page.
-        "diagram.textContent = diagram.__mermaidSource;",
         "markMermaidWait(diagram, false);",
         // One reading of "more diagrams than the memos hold", spent by the warm pass and by the hand-back alike.
         "function mermaidDocumentPastMemory() {",
@@ -346,6 +349,13 @@ fn a_diagram_scrolled_well_past_goes_back_to_a_box_only_past_the_memo_cap() {
             "the front-end should contain {expected}"
         );
     }
+
+    // The box goes back at exactly the height its drawing had, so recycling moves nothing on the page. Scoped, because the repaint after a theme change puts the same source text back.
+    assert_in(
+        script,
+        "function recycleMermaidDiagram(diagram) {",
+        "diagram.textContent = diagram.__mermaidSource;",
+    );
 
     let may = script
         .split("function mermaidMayRecycle(diagram) {")
