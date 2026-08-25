@@ -43,7 +43,7 @@ export function skillFor(prompt, read = (file) => readFileSync(join(root, file),
   const named = [];
   for (const file of keyedFiles()) {
     const name = file.match(/skills\/(.*?)\//)?.[1];
-    const at = name ? prompt.search(new RegExp(`(^|\\s)[$/]${name}\\b`, 'i')) : -1;
+    const at = name ? prompt.search(new RegExp(`(^|\\s)[$/]${name}(?=\\s|$)`, 'i')) : -1;
     if (at >= 0) named.push({ name, file, at });
   }
   for (const { name, file } of named.sort((a, b) => a.at - b.at)) {
@@ -124,15 +124,35 @@ function selfTest() {
   if (steps[1] !== '2. `just verify`') fails.push('stepsIn: a step written in code did not survive');
   if (stepsIn('# A skill\n\n## A section\n\nProse.').length) fails.push('stepsIn: invented steps for a skill with no numbered headings');
 
-  // The two skills whose order actually went wrong. Both are read out of their own file, which is the whole point: there is no second copy to drift.
-  for (const name of ['check', 'dev']) {
+  // Every invocable skill owns an ordered pass. Each is read out of its own file, which is the whole point: there is no second copy to drift.
+  const skillFiles = keyedFiles().filter((file) => /skills\/[^/]+\/SKILL\.md$/.test(file));
+  for (const file of skillFiles) {
+    const name = file.match(/skills\/(.*?)\//)?.[1];
+    const source = readFileSync(join(root, file), 'utf8');
     const found = skillFor(`/${name} the ticket`);
     if (!found) fails.push(`${name}: names no steps, so the hook would write nothing`);
     else if (found.name !== name) fails.push(`${name}: matched ${found.name} instead`);
+    const withoutHeadings = source.replace(/^###\s+\d+\.\s+.+$/gm, '');
+    const mutated = skillFor(`/${name} the ticket`, (candidate) => candidate === file ? withoutHeadings : readFileSync(join(root, candidate), 'utf8'));
+    if (mutated) fails.push(`${name}: removing its numbered headings still produced an enforced list`);
+  }
+  const requiredClosingSteps = new Map([
+    ['git-release', ['Mark every shipped ticket Released and finish']],
+    ['done', ['Remove the live row', 'Rerank with /pm', 'Read the running order back']],
+  ]);
+  for (const [name, required] of requiredClosingSteps) {
+    const found = skillFor(`/${name} the ticket`);
+    for (const title of required) {
+      if (!found?.steps.some((step) => step.endsWith(title))) fails.push(`${name}: lost its ${title} step`);
+      const source = readFileSync(join(root, `.agents/skills/${name}/SKILL.md`), 'utf8');
+      const without = stepsIn(source.replace(new RegExp(`^### \\d+\\. ${title.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\s*$`, 'm'), ''));
+      if (without.some((step) => step.endsWith(title))) fails.push(`${name}: removing its ${title} heading did not remove the enforced step`);
+    }
   }
   if (skillFor('run the checker')) fails.push('skillFor: prose named a skill');
   if (skillFor('hello')) fails.push('skillFor: a message naming nothing got a list');
   if (skillFor('$check it')?.name !== 'check') fails.push("skillFor: the dollar sign did not name a skill");
+  if (skillFor('$design-tokens change it')?.name !== 'design-tokens') fails.push('skillFor: a hyphenated skill fell back to its shorter prefix');
   // A message naming two runs the one it leads with, whichever order the table happens to hold them in.
   if (skillFor('/dev the ticket then /check')?.name !== 'dev') fails.push('skillFor: took the second skill named');
   if (skillFor('/check it then /dev the next one')?.name !== 'check') fails.push('skillFor: took the second skill named');

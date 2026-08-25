@@ -15,6 +15,52 @@ user-invocable: true
 
 **Never run git. Never edit a ticket's phases.** A ticket that is wrong is [`/design`](../design/SKILL.md)'s work; here it gets a tier 0 row and a corrected status. Outside the three rankings this pass edits only a ticket's row in [`../docs/README.md`](../../../../docs/README.md), a glossary row (step 6), and a track's step order where this pass proves it wrong (step 5). A ticket this pass finds unrankable or carrying two jobs is handed to [`/ticket`](../ticket/SKILL.md) to write or split (step 3), which is how a new file reaches the tree without this skill writing phases.
 
+## Ordered pass
+
+### 1. Read every live ticket and index row
+
+Open the README, the three plan files, the tracks, the glossary and every live ticket before ranking.
+
+### 2. Re-derive every status
+
+Read dated lines and boxes from each ticket and rebuild the status cells.
+
+### 3. Rank wrong work, dependencies and cost
+
+Apply the three tests in order and file anything that cannot honestly be ranked.
+
+### 4. Put every row in its tier and sub-band
+
+Use the tier definitions and the phase count, with Hold changed only on the owner's word.
+
+### 5. Rewrite the live table
+
+Write one numbered row per live ticket with its blocks, track and one-sentence reason.
+
+### 6. Keep the glossary and tracks true
+
+Add missing planning words and correct a proved-wrong subject order.
+
+### 7. Recheck the release kind
+
+Hold every ticket folder to the version class the release skill will read.
+
+### 8. Read the shipped plan
+
+Confirm every retired row remains inside the tier table it left.
+
+### 9. Rebuild the canceled plan
+
+Walk the canceled folder and write one refused row for every ticket there.
+
+### 10. Rebuild derived cells and check all five files
+
+Bundle status and `Devs with`, stamp the ranking and run the plan checks.
+
+### 11. Hand back the next skill
+
+Name only the host command that should run next and the fault it prevents.
+
 ## 1. Read first
 
 - [`../docs/README.md`](../../../../docs/README.md) — every ticket, one line, and the source of every ticket path.

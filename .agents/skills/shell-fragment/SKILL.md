@@ -9,6 +9,32 @@ user-invocable: true
 
 The front-end is 28 files under `src/assets/shell/`, joined in `APP_SHELL_SCRIPT_PARTS` order and served as one file. **They are one scope, not modules** — the page has no module loader — so a fragment alone is not a valid program, and where it sits in the list decides what it can see.
 
+## Process
+
+### 1. Read the fragment order and shared scope
+
+Open the ordered asset list, the neighboring fragments and `state.js` before placing anything.
+
+### 2. Put each value in its owner
+
+Keep one-fragment state local and move only values multiple fragments touch into `state.js`.
+
+### 3. Add or split the fragment in load order
+
+Declare every load-time dependency earlier, keep bootstrap last and leave no placeholder.
+
+### 4. Add the interface contract
+
+Record every new class and component in the design system in the same edit.
+
+### 5. Add the front-end check
+
+Boot the changed behavior through its subject file in `scripts/check-shell/`.
+
+### 6. Check the joined program
+
+Run `/check` against the fragments in their real order.
+
 ## The rules the list carries
 
 1. **The flowchart pair leads.** `flow-model.js` then `flow-canvas.js`: everything else calls into them.

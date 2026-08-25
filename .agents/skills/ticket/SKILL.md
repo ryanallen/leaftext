@@ -11,6 +11,40 @@ A ticket is the research somebody follows months later with none of this convers
 
 **Never run git.** Writing a ticket is not a release.
 
+## Process
+
+### 1. Read the index and neighboring tickets
+
+Open `../docs/README.md` first and refuse to re-plan an answer already in the tree.
+
+### 2. Research the code and the request
+
+Open the paths, callers, tests and repo rules the ticket will rely on without choosing a genuine fork.
+
+### 3. Write the seven ticket parts
+
+Create the title, note, summary, why, measured table, build account, phases, footprint and record in their required order.
+
+### 4. Give every phase proof and an owner's box
+
+Name the test for each phase and end the file with the one gesture only the owner ticks.
+
+### 5. Draw the interface or flow
+
+Add a measured wireframe for visible work or a Mermaid flow for an ordered mechanism.
+
+### 6. Update the README and track
+
+Write the ticket's one owned index row and place it as one numbered step of exactly one subject.
+
+### 7. Run /pm
+
+Add the ticket to the running order and rebuild its derived cells.
+
+### 8. Hand back the ticket
+
+Name the plan and the next host skill, with no app change claimed.
+
 ## Where it goes
 
 The ticket tree is `leaftext/docs/`, the folder beside the app — not `app/docs/`, which is the published site.

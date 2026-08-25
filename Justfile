@@ -131,8 +131,8 @@ check-footprints:
 check-plan-stage:
     node scripts/check-plan-stage.mjs --check
 
-# Write every live row's Status cell from its ticket. /pm and /done run it; a build never does,
-# because the running order is the one file two builds must not both write.
+# Write every live row's Status cell from its ticket. /design, /pm and /done run it; a build
+# never does, because the running order is the one file two builds must not both write.
 bundle-plan-status:
     node scripts/check-plan-stage.mjs --write
 

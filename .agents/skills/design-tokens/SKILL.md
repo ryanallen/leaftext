@@ -11,6 +11,32 @@ Every value in the interface comes from a token, and the tokens live in four Mar
 
 **Never edit a generated file.** `src/assets/tokens.css`, `icons.css`, `gallery.html`, the token list in `src/theme.rs`, `src/assets/themes.md`, `themes/README.md` and `docs/02-development/05-design-system.md` are all written by a bundler. An edit there is lost on the next run, and `just verify` fails first.
 
+## Process
+
+### 1. Put the value in its source table
+
+Choose colors, tokens, icons or components from the table below and edit only that source.
+
+### 2. Add the component contract when needed
+
+Give new interface its markup and states in `design/components.md` before styling it.
+
+### 3. Bundle every generated consumer
+
+Run the bundlers named by the source table rather than editing their output.
+
+### 4. Apply the generated name
+
+Use the token, icon or component name in the interface without writing a literal value.
+
+### 5. Look at the result
+
+Open the gallery or the app surface that changed and compare the actual state requested.
+
+### 6. Check the design system
+
+Run `/check`; fix the source table and rebundle if any generated file or literal check disagrees.
+
 ## Where a thing lives
 
 | What | File | Then run |

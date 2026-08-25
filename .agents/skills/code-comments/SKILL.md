@@ -17,6 +17,28 @@ This is a quality pass, not a git operation — never commit, tag, or push, and 
 
 **Nothing here is a bulk edit.** A pattern match finds candidates; it never decides. Every verdict is reached by reading the comment *and the code under it*.
 
+## Ordered pass
+
+### 1. Find comments in the touched files
+
+List the comments in scope and leave untouched files out.
+
+### 2. Read each comment with its code
+
+Give every candidate a cut, rewrite, shorten, keep or fix verdict from the code under it.
+
+### 3. Edit only the comments that fail the bar
+
+Keep rationale and measured history, cut drafting history, and verify every replacement claim.
+
+### 4. Run the proof the file needs
+
+Build Rust documentation after Rust comment edits, then run `/check`.
+
+### 5. Hand back the comment pass
+
+Report only what the owner can act on, leaving the tree dirty.
+
 ## Scope
 
 **The file, not the author.** Every comment in a file this work touches is in scope; a file the work does not touch is not, so a pass never sprawls into an unrelated refactor. Who wrote a comment, and when, says nothing about whether it is still true — and "only tidy your own" is a ratchet that lets wrong ones pile up.

@@ -11,6 +11,24 @@ user-invocable: true
 
 So a new format is one arm there, and then whatever stops compiling. **Never a second list.** A hard-coded extension somewhere else is how the dialog and the pager end up disagreeing about what a document is.
 
+## Process
+
+### 1. Add the format to the one table
+
+Add one `DocumentFormat` arm with its extensions in `src/format.rs`.
+
+### 2. Follow every exhaustive match
+
+Compile and work every place the new enum arm makes incomplete.
+
+### 3. Route and document the format
+
+Use an existing render shape where it fits, add a module only for a genuinely new one, and update the published format lists.
+
+### 4. Test and check it
+
+Add the format-table and rendering coverage, then run `/check`.
+
 ## The work
 
 1. **One arm in `DocumentFormat`**, with its extensions.

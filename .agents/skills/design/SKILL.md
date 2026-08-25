@@ -17,6 +17,48 @@ A ticket is followed months later by somebody with none of the conversation in t
 
 Written for the tickets in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, each of which groups its files into subject folders. Read [ticket](../ticket/SKILL.md) first: it is the shape this holds a file to.
 
+## Ordered pass
+
+### 1. Open every citation and prove the cause
+
+Read every cited line and watch the fault, or stop behind the tooling needed to see it.
+
+### 2. Hold the plan against the repo rules
+
+Correct any phase that breaks a standing boundary or names the wrong files.
+
+### 3. Check the cost
+
+Measure work on first paint, per open and per keystroke wherever the plan adds it.
+
+### 4. Refuse shortcuts
+
+Cut any phase that gets green by weakening, skipping or duplicating the thing meant to prove it.
+
+### 5. Make every phase buildable and proved
+
+Fix the phase order, test boxes, owner's box and footprint from the code and suite.
+
+### 6. Complete the ticket and draw it
+
+Hold the seven parts to their jobs and leave a wireframe or flow diagram that matches the phases.
+
+### 7. Make the file read cleanly
+
+Use the planning glossary, remove open questions and keep every paragraph on one line.
+
+### 8. Sign the designed line
+
+Write the current time and whether the cause was watched or inferred, then rebuild the derived status.
+
+### 9. Leave the design record
+
+Write what the earlier draft got wrong, what was checked and left alone, and what remains open.
+
+### 10. Hand back the designed ticket
+
+Say only what changed in the plan; app code remains untouched.
+
 **It runs mid-build as well as before one.** [`/dev`](../dev/SKILL.md) calls it when a round of refinement opens a real fork, when a line the plan rests on turns out to be false, or when what the owner asked for reaches past the phases — and it answers the same way it would on a cold ticket: decide from the code and the repo's rules, fix the plan in place, leave the record. A phase already built is not evidence a decision was made; the ticket is.
 
 ## 1. Every citation is opened
@@ -196,7 +238,7 @@ It goes at the top because that is where somebody decides whether to trust the f
 
 It is also the flag [dev](../dev/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
 
-**The dated line is the whole of it, and this skill writes nothing in the running order.** [`../docs/PLAN.md`](../../../../docs/PLAN.md) carries a `Status` column and that column is computed: `scripts/check-plan-stage.mjs` reads this ticket's own dated lines and answers `Designed`, `just bundle-plan-status` writes every cell from them, and the same check refuses a cell that disagrees. So the line and the cell cannot start disagreeing, because there is only one of them. It used to be typed in here, and that made the running order the one shared file every reading and every build wrote — while the column beside it was telling two agents in this checkout that they share no file. [`/pm`](../pm/SKILL.md) and [`/done`](../done/SKILL.md) are what write that file now, and neither runs beside a build.
+**The dated line is the whole authored answer; then run `just bundle-plan-status`.** [`../docs/PLAN.md`](../../../../docs/PLAN.md) carries a `Status` column and that column is computed: `scripts/check-plan-stage.mjs` reads this ticket's own dated lines and answers `Designed`, the bundler writes every cell from them, and the same check refuses a cell that disagrees. Refresh it in this pass so the owner sees `Designed` when the design exists rather than after some later ranking happens to rebuild the column. This skill authors no ranking text and types no status by hand; [`/pm`](../pm/SKILL.md) and [`/done`](../done/SKILL.md) remain the running order's only authored writers, and neither runs beside a build.
 
 A ticket with no row there yet is a ticket [`/ticket`](../ticket/SKILL.md) did not finish — add the row, unticked, then tick it.
 

@@ -1,21 +1,22 @@
 // The public release: check this app copy, then commit and tag it.
 //
-//   node --experimental-strip-types scripts/prepare-release.mts <version> <message...> [--no-sign-commit]
-//   node --experimental-strip-types scripts/prepare-release.mts --land <message...>    get the tree onto main now (`just land`)
+//   LEAFTEXT_RELEASE_PATHS='["path"]' node --experimental-strip-types scripts/prepare-release.mts <version> <message...> [--no-sign-commit]
+//   LEAFTEXT_RELEASE_PATHS='["path"]' node --experimental-strip-types scripts/prepare-release.mts --land <message...>    get this pass's work onto main now (`just land`)
 //   node --experimental-strip-types scripts/prepare-release.mts --check                self-test (`just check-release`)
 //
 // Every commit names its work — the ticket in plain words, or what changed where no ticket carries it. A history that says one repeated title cannot answer which commit brought what, so a blank message is refused before anything is read rather than filled in with a placeholder.
 //
-// The landing runs first and on its own: it stages what is in the tree, commits and pushes main, with no gate, no version and no tag. A release spends an hour in docs, comments and the whole suite, and every minute of it is a minute the work sits uncommitted where another session can collide with it. So the work goes out at the start, unchecked on purpose, and the release then commits whatever the rest of it writes on top.
+// The landing runs first and on its own: it stages only the paths this pass names, commits and pushes main, with no gate, no version and no tag. Other sessions' paths stay in the checkout. A release spends an hour in docs, comments and the whole suite, and every minute of that is a minute its own work sits uncommitted where another session can collide with it.
 //
-// The tree is dirty on purpose: the work being released was written in this checkout and never committed, so the release stages the paths that have work in them by name and commits those. A clean tree is nothing to release.
+// The tree is dirty on purpose: the work being released was written in this checkout and never committed, so the caller names its paths and the release intersects that list with the work on disk. A clean owned set is nothing to release, however much work another session has beside it.
 //
 // The gate reads a still copy of the plan tree rather than the live one. Tickets, README rows and skill copies are written straight into the tree the owner reads while a release runs, and one landing mid-gate is real drift that the release did not cause and cannot fix — which is how a release stopped after the old tag had already gone.
 //
 // Every command the release runs goes through one runner, so the self-test can hand it a fixture and read back the order: what must not happen after a failed gate is proved by the commands that were never reached.
 
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { PLAN_ROOT_ENV, dirtyPaths, withPlanSnapshot } from "./plan-tree.mjs";
@@ -28,13 +29,15 @@ type ReleaseHost = {
   enterRepoRoot: () => void;
   packageVersion: () => string;
   withSnapshot: (fn: (root: string) => void) => void;
+  withPrivateIndex: (fn: (env: Record<string, string | undefined>) => void) => void;
   recordTag: (tag: string) => void;
   changedPaths: () => string[];
   tagsOnHead: () => string[];
 };
-type ReleaseOptions = { signCommit: boolean; host?: ReleaseHost };
+type ReleaseOptions = { signCommit: boolean; host?: ReleaseHost; paths?: string[] };
 
 const versionPattern = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
+const RELEASE_PATHS_ENV = "LEAFTEXT_RELEASE_PATHS";
 
 function liveRun(command: string, args: string[], options: RunOptions = {}): CommandResult {
   const result = spawnSync(command, args, {
@@ -71,6 +74,16 @@ export function liveHost(): ReleaseHost {
     },
     withSnapshot: (fn) => {
       withPlanSnapshot((snapshot: { root: string }) => fn(snapshot.root));
+    },
+    withPrivateIndex: (fn) => {
+      const folder = mkdtempSync(join(tmpdir(), "leaftext-release-index-"));
+      const env = { ...process.env, GIT_INDEX_FILE: join(folder, "index") };
+      try {
+        required(host, "git", ["read-tree", "HEAD"], { env });
+        fn(env);
+      } finally {
+        rmSync(folder, { recursive: true, force: true });
+      }
     },
     recordTag: (tag: string) => {
       writeFileSync(".release-tag", tag);
@@ -160,17 +173,46 @@ function requireMessage(message: string, what: string): string {
   return named;
 }
 
+function normalizePath(path: string): string {
+  return path.replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+function ownedChanges(changed: string[], paths?: string[]): string[] {
+  if (paths === undefined) return changed;
+  const owned = new Set(paths.map(normalizePath));
+  return changed.filter((path) => owned.has(normalizePath(path)));
+}
+
+function pathsFromEnvironment(): string[] {
+  const raw = process.env[RELEASE_PATHS_ENV];
+  if (!raw) throw new Error(`${RELEASE_PATHS_ENV} must name this pass's files as a JSON array.`);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`${RELEASE_PATHS_ENV} must be a JSON array of repository paths.`);
+  }
+  if (!Array.isArray(parsed) || !parsed.length || parsed.some((path) => typeof path !== "string" || !path.trim())) {
+    throw new Error(`${RELEASE_PATHS_ENV} must be a non-empty JSON array of repository paths.`);
+  }
+  return [...new Set(parsed.map((path) => normalizePath((path as string).trim())))];
+}
+
 // The work in this checkout, onto main, now: staged by name, committed and pushed, with no gate, no version and no tag. Nothing here is checked, which is the point — the gate runs after, in the release, and until then another session can pull this and work beside it. A clean tree is not a failure: it means the last landing already took everything, and the release goes on from there.
 export function landWork(message: string, options: ReleaseOptions = { signCommit: true }): string[] {
   const named = requireMessage(message, "landing");
   const host = options.host ?? liveHost();
   host.enterRepoRoot();
-  const changed = host.changedPaths();
+  const changed = ownedChanges(host.changedPaths(), options.paths);
   if (!changed.length) {
     return [];
   }
+  host.withPrivateIndex((env) => {
+    required(host, "git", ["add", "--", ...changed], { env });
+    required(host, "git", commitArgs(options.signCommit, named), { env });
+  });
+  // The shared index still points at the parent commit for these paths. Bring only this pass's entries forward; every other staged entry stays byte for byte as it was.
   required(host, "git", ["add", "--", ...changed]);
-  required(host, "git", commitArgs(options.signCommit, named));
   required(host, "git", ["push", "origin", "HEAD"]);
   return changed;
 }
@@ -189,7 +231,7 @@ export function prepareRelease(version: string, message: string, options: Releas
     ? ["tag", "-s", tag, "-m", `Release ${tag}`]
     : ["-c", "tag.gpgSign=false", "tag", "-a", "--no-sign", tag, "-m", `Release ${tag}`];
   // Read before the gate for one job only: a clean tree is refused here, rather than an hour later by the commit.
-  const waiting = host.changedPaths();
+  const waiting = ownedChanges(host.changedPaths(), options.paths);
   assertSomethingToRelease(host, waiting);
   assertTagDoesNotExist(host, tag);
   // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
@@ -198,11 +240,14 @@ export function prepareRelease(version: string, message: string, options: Releas
     // After the gate, before anything is written: a stop here spends nothing.
     assertMacHalfCompiles(host);
     // Read again, because the gate compiles and a compile rewrites `Cargo.lock` with the package's own version in it: staging the earlier list commits a bump whose lockfile still names the version before it, and both release builds pass `--locked`, so they die on their first command with the tag already up and nothing published under it. v1.15.4 went out that way. The gate is the only thing between the two reads, and every file it writes into this checkout is one the release is supposed to carry.
-    const staging = host.changedPaths();
+    const staging = ownedChanges(host.changedPaths(), options.paths);
     // Only now: a gate that stops here leaves the last released tag exactly where it was.
     retireOldTags(host, tag);
+    host.withPrivateIndex((env) => {
+      required(host, "git", ["add", "--", ...staging], { env });
+      required(host, "git", releaseCommit, { env });
+    });
     required(host, "git", ["add", "--", ...staging]);
-    required(host, "git", releaseCommit);
     required(host, "git", tagArgs);
     host.recordTag(tag);
     required(host, "git", ["push", "origin", "HEAD"]);
@@ -248,6 +293,14 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
         fn("/snapshot/docs");
       } finally {
         record("snapshot removed");
+      }
+    },
+    withPrivateIndex: (fn) => {
+      record("private index created");
+      try {
+        fn({ GIT_INDEX_FILE: "/scratch/release-index" });
+      } finally {
+        record("private index removed");
       }
     },
     recordTag: (tag) => {
@@ -391,6 +444,28 @@ function selfTest(): void {
   // The landing commit is the message it was handed, so the history names the work rather than repeating one title.
   if (!landed.calls.includes("git -c commit.gpgsign=false commit --no-gpg-sign -m Fix the find bar")) fails.push("a landing commit did not carry the name of the work");
 
+  // Another session's dirty paths never enter this pass's index, even when they were already staged in the shared checkout.
+  const scoped = fixture();
+  const scopedPaths = landWork("Fix the find bar", { signCommit: false, host: scoped.host, paths: ["src/lib.rs"] });
+  if (scopedPaths.join(" ") !== "src/lib.rs") fails.push(`a scoped landing answered ${scopedPaths.join(" ") || "nothing"} rather than its own path`);
+  if (!scoped.calls.includes("git add -- src/lib.rs")) fails.push(`a scoped landing staged ${scoped.calls.filter((call) => call.startsWith("git add")).join(", ") || "nothing"} rather than only its own path`);
+  if (scoped.calls.some((call) => call.includes("Cargo.toml"))) fails.push("a scoped landing touched another session's path");
+  const scopedAddEnv = scoped.envs[scoped.calls.indexOf("git add -- src/lib.rs")];
+  const scopedCommitEnv = scoped.envs[scoped.calls.findIndex((call) => call.includes("commit --no-gpg-sign"))];
+  if (scopedAddEnv?.GIT_INDEX_FILE !== "/scratch/release-index" || scopedCommitEnv?.GIT_INDEX_FILE !== "/scratch/release-index") fails.push("a scoped landing used the shared index, so another session's staged work could ride into its commit");
+  const scopedAdds = scoped.calls.flatMap((call, at) => call === "git add -- src/lib.rs" ? [at] : []);
+  if (scopedAdds.length !== 2 || scoped.envs[scopedAdds[1]!]?.GIT_INDEX_FILE !== undefined) fails.push("a scoped landing did not bring only its own entry in the shared index forward after the private commit");
+
+  const scopedRelease = fixture();
+  prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: scopedRelease.host, paths: ["src/lib.rs", "Cargo.lock"] });
+  if (!scopedRelease.calls.includes("git add -- src/lib.rs Cargo.lock")) fails.push(`a scoped release staged ${scopedRelease.calls.filter((call) => call.startsWith("git add")).join(", ") || "nothing"} rather than only its own paths after the gate`);
+  if (scopedRelease.calls.some((call) => call.startsWith("git add") && call.includes("Cargo.toml"))) fails.push("a scoped release staged another session's path");
+  const scopedReleaseAddEnv = scopedRelease.envs[scopedRelease.calls.indexOf("git add -- src/lib.rs Cargo.lock")];
+  const scopedReleaseCommitEnv = scopedRelease.envs[scopedRelease.calls.findIndex((call) => call.includes("commit --no-gpg-sign"))];
+  if (scopedReleaseAddEnv?.GIT_INDEX_FILE !== "/scratch/release-index" || scopedReleaseCommitEnv?.GIT_INDEX_FILE !== "/scratch/release-index") fails.push("a scoped release used the shared index, so another session's staged work could ride into its commit");
+  const scopedReleaseAdds = scopedRelease.calls.flatMap((call, at) => call === "git add -- src/lib.rs Cargo.lock" ? [at] : []);
+  if (scopedReleaseAdds.length !== 2 || scopedRelease.envs[scopedReleaseAdds[1]!]?.GIT_INDEX_FILE !== undefined) fails.push("a scoped release did not bring only its own entries in the shared index forward after the private commit");
+
   // A landing or a release with no message: refused before the repository is touched, so a placeholder title can never reach the history.
   const unnamedLanding = fixture();
   const unnamedLandingFailed = refused(() => landWork("  ", { signCommit: false, host: unnamedLanding.host }));
@@ -516,7 +591,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts the tree on main in three writes, reaching no gate, no plan copy and no tag, and writes nothing at all when there is nothing to land; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean one and again after the gate, so the lockfile a compile rewrote is committed with the bump that moved it; the paths with work in them are staged by name rather than the whole tree; the old tags go only after the gate passes; the newest completed Mac answer on main is read after the gate and a failed one stops the release naming its run before any tag work, while GitHub silent or no run yet stops nothing; a failed gate, a moving tree, a clean tree or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty tree an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
+  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts only this pass's named paths on main, using an index of its own so another session's staged work stays out, reaching no gate, no plan copy and no tag, and writing nothing when its owned set is clean; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean owned set and again after the gate, with both readings filtered through the same path list and the release commit using that private index too; the old tags go only after the gate passes; the newest completed Mac answer on main is read after the gate and a failed one stops the release naming its run before any tag work, while GitHub silent or no run yet stops nothing; a failed gate, a moving tree, a clean owned set or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty owned set an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
 }
 
 function isMainModule(): boolean {
@@ -530,13 +605,13 @@ if (isMainModule()) {
   if (process.argv.includes("--check")) {
     selfTest();
   } else if (process.argv.includes("--land")) {
-    const landed = landWork(words.join(" "), { signCommit });
-    console.log(landed.length ? `landed on main: ${landed.join(" ")}` : "nothing to land: this checkout has no work sitting in it.");
+    const landed = landWork(words.join(" "), { signCommit, paths: pathsFromEnvironment() });
+    console.log(landed.length ? `landed on main: ${landed.join(" ")}` : "nothing to land: none of this pass's files have work sitting in them.");
   } else {
     const [version, ...rest] = words;
     if (!version) {
       throw new Error("Usage: node --experimental-strip-types scripts/prepare-release.mts <version> <message> [--no-sign-commit], or --land <message> to put the tree on main first.");
     }
-    prepareRelease(version, rest.join(" "), { signCommit });
+    prepareRelease(version, rest.join(" "), { signCommit, paths: pathsFromEnvironment() });
   }
 }

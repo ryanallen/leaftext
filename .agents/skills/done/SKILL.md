@@ -17,15 +17,37 @@ Retire a ticket on the owner's word. **Closing is the owner's call.** Never refu
 
 With no argument, take a live ticket at `Released`.
 
-1. Add the shipped note — `> **Shipped 18 August 2026, 9:11pm, v1.21.2.**` — and keep the dated `Designed` line.
-2. Move the ticket into the matching folder under `../docs/done/` and fix its relative links. Take the links pointing *at* it with it: search both trees for its file name and repoint every one, or `/check` fails naming each.
-3. Rewrite its README row to say what shipped, and **move it out of the live half into the `## Shipped` table for its subject** — the index is navigated by heading, so a row left where it was reads as work that is waiting however its words are rewritten. Seven sat that way at once. `scripts/check-plan.mjs` refuses one now, naming the heading it belongs under.
-4. Remove its live row from `../docs/PLAN.md` and move it into `../docs/done/PLAN.md`, its `Status` cell rewritten to the date and time it closed. **This pass and [`/pm`](../pm/SKILL.md) are the live running order's only writers, and neither runs beside a build** — it is one ranked list, two rewrites of it are not something any merge can settle, and it is the one file the `Devs with` column cannot promise a pair is safe over. A live cell is otherwise computed, so nothing here types a stage in by hand. **It lands inside the `## Retired from tier N` table for the tier its live row sat in**, in that table's own closing order and with a cell for every column that table's header names — a tier with no table there yet gets one. Never above the file's title: that file is read by the tier a row was retired from, and a row dropped at the top belongs to no tier and sits under no header, which is how 30 of them once came to open it. Empty a tier that its going leaves with no rows. Keep the live file starting with its title, `# Leaftext Plan Log`, and its first work table the first thing under it; put its count line, summary, and other notes after the work tables.
-5. Sync any published pages made false by the change — the development pages included, when the work added a test subject file, a check, or changed how a skill works.
+### 1. Add the shipped note
+
+Add `> **Shipped 18 August 2026, 9:11pm, v1.21.2.**` and keep the dated `Designed` line.
+
+### 2. Move the ticket
+
+Move the ticket into the matching folder under `../docs/done/` and fix its relative links. Take the links pointing *at* it with it: search both trees for its file name and repoint every one, or `/check` fails naming each.
+
+### 3. Move the README row
+
+Rewrite its README row to say what shipped, and **move it out of the live half into the `## Shipped` table for its subject** — the index is navigated by heading, so a row left where it was reads as work that is waiting however its words are rewritten. Seven sat that way at once. `scripts/check-plan.mjs` refuses one now, naming the heading it belongs under.
+
+### 4. Remove the live row
+
+Remove its live row from `../docs/PLAN.md` and move it into `../docs/done/PLAN.md`, its `Status` cell rewritten to the date and time it closed. **This pass and [`/pm`](../pm/SKILL.md) are the live running order's only writers, and neither runs beside a build** — it is one ranked list, two rewrites of it are not something any merge can settle, and it is the one file the `Devs with` column cannot promise a pair is safe over. A live cell is otherwise computed, so nothing here types a stage in by hand. **It lands inside the `## Retired from tier N` table for the tier its live row sat in**, in that table's own closing order and with a cell for every column that table's header names — a tier with no table there yet gets one. Never above the file's title: that file is read by the tier a row was retired from, and a row dropped at the top belongs to no tier and sits under no header, which is how 30 of them once came to open it. Empty a tier that its going leaves with no rows. Keep the live file starting with its title, `# Leaftext Plan Log`, and its first work table the first thing under it; put its count line, summary, and other notes after the work tables.
+
+### 5. Sync and check
+
+Sync any published pages made false by the change — the development pages included, when the work added a test subject file, a check, or changed how a skill works. Then run `/sync-docs`, `/code-comments` and `/check`, in that order.
+
+### 6. Rerank with /pm
+
+Run `/pm` after the retirement edits and checks. Its `Devs with` bundler removes the retired ticket from every remaining cell, and its authored rewrite puts every remaining row back in order.
+
+### 7. Read the running order back
+
+Read both plan files after `/pm`. Stop if the retired ticket still appears in `../docs/PLAN.md`, is absent from `../docs/done/PLAN.md`, any remaining position is stale, or the live plan's `Last ranked` stamp is older than the shipped note.
 
 **Every date this pass writes carries the time beside it** — the shipped note, the README row, the `Status` cell of the retired row — read off this machine's clock (`Get-Date`) as it is written. Several tickets close in one afternoon, and a day is the same six words on all of them, so nothing says which shipped first or how long ago the last one did. `AGENTS.md` holds the rule; `just check-docs` refuses a date written from `2026-08-19` on with no time after it.
 
-Then run `/sync-docs`, `/code-comments`, `/check`, and `/pm`, in that order. Do not run git. **`/pm` runs the `Devs with` bundler as part of its own pass, and that is what this retirement needs it for**: a retired ticket has to leave every cell that names it, since a cell pointing at shipped work sends somebody at nothing, and `/check` refuses one before the hand-back either way. Where a box never shipped, strike it with what is missing, so the file does not claim it.
+Do not run git. Where a box never shipped, strike it with what is missing, so the file does not claim it.
 
 Hand back whether anything is broken and what the owner must press. If the ticket is released but not done, tell the owner to run `/done`.
 

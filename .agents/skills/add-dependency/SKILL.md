@@ -9,6 +9,24 @@ user-invocable: true
 
 Every crate here ships to users and nobody reviews its code. That makes this a security decision, not a convenience one — and it **ends by asking**, never by adding.
 
+## Process
+
+### 1. Prove a dependency is needed
+
+Check the platform, the existing tree and a small local implementation before reaching outward.
+
+### 2. Measure the full cost
+
+Read the transitive tree, default features, platform gates, license, maintenance and release footprint.
+
+### 3. Write one recommendation
+
+Compare the viable choices with what each wins and costs, and mark the pick with the reason.
+
+### 4. Ask before adding it
+
+Hand the measured choice to the owner and stop; this skill never adds the crate on its own.
+
 ## First: is it needed at all?
 
 Three things usually answer yes-you-already-have-this:
