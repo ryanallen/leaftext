@@ -768,7 +768,7 @@ export function run() {
   });
 
   check('an attribute set by hand comes back out in the markup, and a data- name follows its dataset', () => {
-    // An element the page built rather than one the markup walker made: this one used to drop every name written onto it.
+    // An element the page built rather than one the markup walker made, which has to answer for a name written onto it exactly as a parsed one does.
     const ghost = fakeElement('');
     ghost.tagName = 'LI';
     ghost.setAttribute('aria-hidden', 'true');
@@ -793,7 +793,7 @@ export function run() {
   });
 
   check('a reader\u2019s own words in a run of text are written out the way a browser writes them, and read back whole', () => {
-    // The fault this pair was built for: a title holding a tag-shaped fragment used to compose as a tag, so reading it back lost eight characters and invented a child nobody put there.
+    // The fault this pair holds: a title holding a tag-shaped fragment written out as a tag loses eight characters on the way back and gains a child nobody put there.
     const title = fakeElement('markup-title');
     const line = fakeElement('');
     line.tagName = 'DIV';
@@ -804,7 +804,7 @@ export function run() {
     read.innerHTML = line.outerHTML;
     if (read.children[0].textContent !== 'Notes <b> and </b> drafts') throw new Error(`the title read back as ${JSON.stringify(read.children[0].textContent)}`);
     if (read.children[0].children.length) throw new Error(`reading the title back invented ${read.children[0].children.length} child element(s)`);
-    // A bare angle bracket used to stop the document at it, so everything after was simply gone.
+    // A bare angle bracket left unescaped stops the document at it, and everything after it is simply gone.
     line.textContent = 'a <unclosed thing';
     const stopped = fakeElement('markup-bare-angle');
     stopped.innerHTML = line.outerHTML;
@@ -818,7 +818,7 @@ export function run() {
   });
 
   check('an attribute value holding a quote composes as markup this page\u2019s own walker reads back', () => {
-    // The value used to close its own attribute, so the words were truncated at the quote and nothing said so.
+    // A quote written straight out closes its own attribute, so the words are truncated at it and nothing says so.
     const field = fakeElement('');
     field.tagName = 'INPUT';
     field.setAttribute('value', 'she said "go"');
@@ -832,7 +832,7 @@ export function run() {
   });
 
   check('an element whose text is set says those words in its own markup, and a child\u2019s words reach its parent\u2019s', () => {
-    // The safe way a fragment puts a reader’s words on the page. The string used to sit to one side of the element, so the markup said `<span></span>` however well the escapes worked.
+    // The safe way a fragment puts a reader’s words on the page. A string kept to one side of the element leaves the markup saying `<span></span>` however well the escapes work.
     const holder = fakeElement('markup-set-text');
     const name = fakeElement('');
     name.tagName = 'SPAN';
