@@ -192,7 +192,7 @@ The tooltip that names what a link is — glossary term, in-page jump, another d
 
 ## Link menu
 
-The right-click menu on a link in a document you are reading: Open, Open in new page, Copy link, Copy link text, Reveal file, Copy path. The three that need a document in this app to act on are left out on an outside link and on an in-page jump. Ctrl-click (Cmd on macOS) or a middle click is the same as **Open in new page** — the linked document opens as a [tab](GLOSSARY.md#tab) behind the one you are reading, so you keep your place. See [Navigation](01-features/02-navigation.md#opening-a-link-in-a-new-page).
+The right-click menu on a link in a document you are reading: Open, Open in new page, Copy link, Copy link text, Reveal file, Copy path. Open says where it is sending you when that is out of Leaftext — **Open in browser** on an outside link, **Open in another app** on a file Leaftext does not read, **Open in your mail app** on an email address. The three that need a document in this app to act on are left out on an outside link and on an in-page jump. Ctrl-click (Cmd on macOS) or a middle click is the same as **Open in new page** — the linked document opens as a [tab](GLOSSARY.md#tab) behind the one you are reading, so you keep your place. See [Navigation](01-features/02-navigation.md#opening-a-link-in-a-new-page).
 
 ## Live reload
 

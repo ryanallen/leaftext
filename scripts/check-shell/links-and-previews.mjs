@@ -133,11 +133,11 @@ export function run() {
       // An email address is the other link that leaves, and it leaves for a program the reader chose rather than for this app, so the item names whose program it is.
       if (linkHoverKind('mailto:someone@example.com') !== 'Email link') throw new Error(`an email address is called ${linkHoverKind('mailto:someone@example.com')}`);
       if (openItem('mailto:someone@example.com') !== 'Open in your mail app') throw new Error(`the menu offers ${openItem('mailto:someone@example.com')} over an email address`);
-      // A page in the app, a place in this page and an address belonging to another program all stay where they are, so the word does not spread past the links that leave.
+      // A page in the app, a place in this page, a glossary term, the whole glossary and an address belonging to another program all stay where they are, so a kind with no row falls through to the bare word.
       for (const href of ['./two.md', '#a-heading', 'obsidian://open?vault=x', 'glossary:vault', 'glossary:']) {
         if (openItem(href) !== 'Open') throw new Error(`the menu offers ${openItem(href)} over ${href}`);
       }
-      // The one word the item already carried is untouched.
+      // The word a web site already carried is untouched.
       if (openItem('https://example.com/a.pdf') !== 'Open in browser') throw new Error('a web site lost its own word');
       // Every other item on that menu is handed back exactly as it was written.
       const copy = { action: 'copyLink', label: 'Copy link' };

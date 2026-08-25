@@ -303,7 +303,7 @@ Right-click a link for the same thing by name, plus copying it. The pointer has 
 
 | Item | What it does |
 | --- | --- |
-| Open | Follows the link, as a plain click does. It says where it is sending you when that is out of Leaftext: **Open in browser** on an outside link, and **Open in another app** on a file Leaftext does not read, which are the same words the [hint](#link-hints) over that link uses |
+| Open | Follows the link, as a plain click does. It says where it is sending you when that is out of Leaftext: **Open in browser** on an outside link, **Open in another app** on a file Leaftext does not read, and **Open in your mail app** on an email address, which come off the same answer the [hint](#link-hints) over that link gives |
 | Open in new page | Opens it as a tab behind this one |
 | Copy link | Copies the link exactly as it is written in the document |
 | Copy link text | Copies the words the link is written on |
