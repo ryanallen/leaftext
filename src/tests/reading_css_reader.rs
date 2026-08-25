@@ -1,4 +1,4 @@
-//! The reader's grid cell, its edges, the minimap column, the floating bar and the find bar — and `rule_body`, the helper every stylesheet test reads a rule through, which the floating bar's own rule is what caught.
+//! The reader's grid cell, its edges, the minimap column, the floating bar and the find bar — and `rule_body`, the helper every stylesheet test reads a rule through, which the floating bar's own rule caught.
 
 use super::*;
 
@@ -77,7 +77,7 @@ fn naming_the_first_declaration_says_which_of_two_rules_with_one_selector_is_mea
 
 #[test]
 fn one_rule_sits_after_another_by_where_each_rule_opens() {
-    // A comparison made on the first substring reads whichever longer selector happens to end the same way. Here the embedded reader's rule is the first `.reader-toolbar` in the file and the bar's own rule is the last, so the two answers sit on opposite sides of the group they are weighed against.
+    // A comparison made on the first substring reads whichever longer selector ends the same way, which here is a rule above the one meant rather than below it.
     let css = made_up_stylesheet();
 
     assert!(

@@ -241,7 +241,7 @@ fn line_number(text: &str, at: usize) -> usize {
     text[..at].matches('\n').count() + 1
 }
 
-/// The first thing a rule declares, read off what follows its selector. It is what a caller carries to say which of two rules with one selector they mean, so a refusal hands it to them rather than making them go and look. Every rule in this stylesheet is introduced by a comment, which is not a declaration and is not what a caller would carry.
+/// The first thing a rule declares, read off what follows its selector — what a caller carries to say which of two rules with one selector they mean, so a refusal hands it over rather than sending them to look. The comments come out first: every rule here is introduced by one, and a paragraph of prose is not something anybody can quote back.
 fn first_declaration(after_selector: &str) -> String {
     strip_css_comments(after_selector)
         .lines()
