@@ -1,6 +1,6 @@
 // The page's script, assembled the way the binary assembles it, and the one record what crosses a file boundary by assignment rides on. The fragment list is read from the app itself — APP_SHELL_SCRIPT_PARTS in `src/lib.rs` — so nothing here is a second copy of it.
 //
-// A subject file never imports this one: it reads these names through `shared.mjs`, the folder's one doorway.
+// Reached through `shared.mjs`, never imported by a subject file directly.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

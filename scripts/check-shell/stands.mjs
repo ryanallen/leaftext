@@ -1,6 +1,6 @@
 // The helpers and stands more than one subject reaches for. A subject file never imports another subject file, so anything two of them touch lives here.
 //
-// A subject file never imports this one either: it reads these names through `shared.mjs`, the folder's one doorway.
+// Reached through `shared.mjs`, never imported by a subject file directly.
 
 import vm from 'node:vm';
 import { FakeElement, fakeElement, matchingDescendants, runShell, VIEW_WIDTH } from './page.mjs';

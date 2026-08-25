@@ -1,6 +1,6 @@
 // The collector every front-end check reports through, and the app stylesheet a check reads a rule out of. A failure lands in one list and the report at the foot of the run reads it, so no subject prints its own.
 //
-// A subject file never imports this one: it reads these names through `shared.mjs`, the folder's one doorway.
+// Reached through `shared.mjs`, never imported by a subject file directly.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

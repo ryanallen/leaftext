@@ -1,11 +1,14 @@
 // The fake page every front-end check boots the app's script in: the app's own markup read off disk, a stand-in element answering the parts of a browser the page actually reaches for, the selector matcher those elements are asked with, and the boot and snapshot that run the assembled script over them.
 //
-// The elements are read from the app itself — the ids and classes in app-shell.html — so nothing here is a second copy of them. A subject file never imports this one: it reads these names through `shared.mjs`, the folder's one doorway.
+// The elements are read from the app itself — the ids and classes in app-shell.html — so nothing here is a second copy of them.
+//
+// Reached through `shared.mjs`, never imported by a subject file directly.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
 import { root } from './script.mjs';
+
 export function pageMarkup() {
   return readFileSync(join(root, 'src/assets/app-shell.html'), 'utf8');
 }
@@ -181,16 +184,25 @@ function attributeNames(node) {
   return names;
 }
 
-/** What an element's markup says: its tag, what it is wearing, everything written inside it asked the same question in turn, then its closing tag. A void tag closes itself, so nothing written after it is written inside it. Nothing is escaped on the way out because nothing is unescaped on the way in — the walker keeps a run of words exactly as the markup spelled it, so a round trip has to hand the same spelling back. */
+// The eight spellings a run of words or an attribute value can arrive in, and what each of them says. Seven are a browser's; the eighth is the front end's own — `escapeAttr` in `minimap.js` writes a backtick as `&#96;` in every attribute it composes, so a file path holding one would read back wrong without it. The hard space reads as the character it names and never as a plain space, or a check over a name holding one loses the character silently.
+const ESCAPE_SPELLINGS = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&apos;': "'", '&nbsp;': '\u00a0', '&#96;': '`' };
+const readEscapes = (text) => String(text).replace(/&(?:amp|lt|gt|quot|apos|nbsp|#39|#96);/g, (found) => ESCAPE_SPELLINGS[found]);
+// The browser's own two sets, and no more. A run of words takes the ampersand, both angle brackets and the hard space; an attribute value takes the ampersand, the double quote and the hard space, because an angle bracket standing inside a value needs no escape and a browser leaves one alone. Both sides name the same set or the round trip every check in this file makes is not one.
+const RUN_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\u00a0': '&nbsp;' };
+const VALUE_ESCAPES = { '&': '&amp;', '"': '&quot;', '\u00a0': '&nbsp;' };
+const escapeRun = (text) => String(text).replace(/[&<>\u00a0]/g, (char) => RUN_ESCAPES[char]);
+const escapeValue = (text) => String(text).replace(/[&"\u00a0]/g, (char) => VALUE_ESCAPES[char]);
+
+/** What an element's markup says: its tag, what it is wearing, everything written inside it asked the same question in turn, then its closing tag. A void tag closes itself, so nothing written after it is written inside it. A run of words and an attribute value are each escaped on the way out the way a browser escapes them, and the walker reads the same spellings back in — so a round trip hands the same markup back, and a reader’s own words survive both crossings whatever characters are in them. */
 function composedMarkup(node) {
-  if (typeof node === 'string') return node;
+  if (typeof node === 'string') return escapeRun(node);
   if (!node || !node.tagName) return String(node?.textContent ?? '');
   const name = String(node.tagName).toLowerCase();
   const wearing = attributeNames(node)
     .map((key) => [key, node.getAttribute ? node.getAttribute(key) : null])
     .filter(([, value]) => value !== null)
     // A bare name is how the page's own markup spells a flag, and how the walker reads one back.
-    .map(([key, value]) => (value === '' ? ` ${key}` : ` ${key}="${value}"`))
+    .map(([key, value]) => (value === '' ? ` ${key}` : ` ${key}="${escapeValue(value)}"`))
     .join('');
   if (VOID_TAGS.has(name)) return `<${name}${wearing}>`;
   return `<${name}${wearing}>${(node.contents || []).map(composedMarkup).join('')}</${name}>`;
@@ -395,6 +407,10 @@ export function fakeElement(id = '') {
         // By this name and never childNodes: no move here writes that one, so it is not a child list — it is what eight checks rebind to hand-made text for a line being typed on. Each child leaves through the same detach a removal uses, so a whole redraw's worth of dropped children are not left naming the container that dropped them.
         for (const child of [...element.children]) detachChild(child);
         element.contents.length = 0;
+        // The safe way a fragment puts a reader's own words on the page is to set the text rather than write markup, so the element has to hold them: a title set that way used to leave the markup saying `<span></span>`, and a check asking what the page says read an empty element however well the escapes worked.
+        if (name === 'textContent') {
+          if (held[name]) element.contents.push(held[name]);
+        }
         if (name === 'innerHTML') {
           // A redraw clears what the container said before, the way a browser's does: a container written with nothing in it answers with nothing rather than with its last text.
           held.textContent = '';
@@ -460,10 +476,10 @@ function elementsFromMarkup(markup) {
   const root = fakeElement('');
   const open = [{ name: '', node: root }];
   let after = 0;
-  // The words between two tags belong to whatever tag is open around them, and the run is kept before the stack moves — so what was written before a closing tag is still inside the element it closes.
+  // The words between two tags belong to whatever tag is open around them, and the run is kept before the stack moves — so what was written before a closing tag is still inside the element it closes. What the markup spelled as an entity becomes the character it names, the way a browser reads one.
   const keepRun = (upto) => {
     const run = text.slice(after, upto);
-    if (run) open[open.length - 1].node.contents.push(run);
+    if (run) open[open.length - 1].node.contents.push(readEscapes(run));
   };
   for (const tag of text.matchAll(MARKUP_TAGS)) {
     keepRun(tag.index);
@@ -479,7 +495,7 @@ function elementsFromMarkup(markup) {
     const node = fakeElement('');
     node.tagName = name.toUpperCase();
     // Into the element's own store, the one every element has: a private map here left an element the page built afterwards dropping every name written onto it, and left the two kinds of element answering differently.
-    for (const [, key, value] of attrs.matchAll(/([a-zA-Z_:][-\w:.]*)\s*=\s*"([^"]*)"/g)) node.setAttribute(key, value);
+    for (const [, key, value] of attrs.matchAll(/([a-zA-Z_:][-\w:.]*)\s*=\s*"([^"]*)"/g)) node.setAttribute(key, readEscapes(value));
     if (/(^|\s)hidden(\s|=|$)/.test(attrs)) node.hidden = true;
     open[open.length - 1].node.appendChild(node);
     if (!VOID_TAGS.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
