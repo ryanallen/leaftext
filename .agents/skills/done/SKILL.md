@@ -23,7 +23,7 @@ With no argument, take a live ticket at `Released`.
 
 **Every date this pass writes carries the time beside it** — the shipped note, the README row, the `Status` cell of the retired row — read off this machine's clock (`Get-Date`) as it is written. Several tickets close in one afternoon, and a day is the same six words on all of them, so nothing says which shipped first or how long ago the last one did. `AGENTS.md` holds the rule; `just check-docs` refuses a date written from `2026-08-19` on with no time after it.
 
-Then run `/sync-docs`, `/code-comments`, `/check`, and `/pm`, in that order. Do not run git. Where a box never shipped, strike it with what is missing, so the file does not claim it.
+Then run `/sync-docs`, `/code-comments`, `/check`, and `/pm`, in that order. Do not run git. **`/pm` runs the `Devs with` bundler as part of its own pass, and that is what this retirement needs it for**: a retired ticket has to leave every cell that names it, since a cell pointing at shipped work sends somebody at nothing, and `/check` refuses one before the hand-back either way. Where a box never shipped, strike it with what is missing, so the file does not claim it.
 
 Hand back whether anything is broken and what the owner must press. If the ticket is released but not done, tell the owner to run `/done`.
 

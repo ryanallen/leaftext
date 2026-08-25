@@ -63,7 +63,7 @@ The evidence and options go in the file; the decision belongs to `/design`. A ti
 
 ## The shape of the file
 
-**Every ticket has the same six parts, in this order.** Not a suggestion — a reader who has opened one has opened all of them, and knows where the answer they want is without reading the rest.
+**Every ticket has the same seven parts, in this order.** Not a suggestion — a reader who has opened one has opened all of them, and knows where the answer they want is without reading the rest.
 
 ```markdown
 # What it does, in the owner's words
@@ -92,6 +92,12 @@ Where the code goes and what each piece touches. Options, evidence, and the deci
 Only when the reader will see a difference — drawn, not described. See below.
 
 ## Phases
+
+## What it writes
+
+| file | phase |
+|---|---|
+| `app/src/render/decorate.js` | 1 |
 
 ## What an earlier draft got wrong
 ```
@@ -160,6 +166,26 @@ Drop the bundler line when the work is nowhere near `design/`.
 **It holds the gesture, never a stock line.** What the owner does to see the thing, written in what they will look at — the line above, never "confirm it works". A ticket whose subject genuinely has nothing to press writes the box and [strikes it](../../../../docs/GLOSSARY.md#struck-through) with that reason, the way a test box that cannot be built here is struck.
 
 **It stays unticked while a machine works the file.** [`/dev`](../dev/SKILL.md) stops there and hands back the gestures for it, [`/git-release`](../git-release/SKILL.md) refuses a ticket whose one open box sits anywhere else, and `scripts/check-docs.mjs` refuses a live plan with no such heading, one that keeps it anywhere but as the last `###` inside `## Phases`, and one writing a box that opens `The owner ` outside it — from the day it is written rather than from its first ticked box — a plan is easiest to write the box into while it is being scoped, and hardest from inside a half-built phase. Without the heading a plan goes fully ticked on machine work alone, and a machine agreeing with itself is not evidence — which is the whole of why the glossary calls the last box the owner's.
+
+## What it writes — the ticket's footprint
+
+**Directly after `## Phases`, a table of one row per file this build will change and the phase that changes it.** Not the files the plan read: [a citation](../../../../docs/GLOSSARY.md#citation) is evidence, and a ticket quoting a rule out of `app/AGENTS.md` writes nothing there. This section is what a build will write, which is the only thing a collision between two agents is about — it is the [footprint](../../../../docs/GLOSSARY.md#footprint) the running order's [Devs with](../../../../docs/GLOSSARY.md#devs-with) cell is computed from, so a wrong one makes every cell naming this ticket wrong.
+
+```markdown
+## What it writes
+
+| file | phase |
+|---|---|
+| `app/src/render/decorate.js` | 1 |
+| `app/docs/02-development/01-architecture.md` | 1, 3 |
+| `docs/GLOSSARY.md` | 2 |
+```
+
+- **Every path is spelled from the pair's top** — `app/…` or `docs/…`, never `src/render/decorate.js`, never a bare `state.js`, never `../../GLOSSARY.md`. Both repositories hold a `README.md` and an `AGENTS.md`, so a bare path names two different files and cannot be compared; and the tree already cites the same file from two roots, which a set comparison reads as two files. One spelling makes the comparison exact, and it is the one thing `just check-docs` refuses here.
+- **A file the build will create is written down like any other.** Most of what a build writes does not exist when the plan is written, so nothing asks whether a footprint path is on the disk — a path is compared as the string it is written as, which is what lets two tickets that will both create the same module collide before either has.
+- **A ticket that writes no file at all writes `—`.** An empty section reads as a ticket nobody has filled in.
+- **A folder counts as a row** where the work is a sweep across one — a row naming `docs/features/` is a footprint, and it collides with every ticket inside it.
+- **Write the shared plan files down like any other.** `docs/PLAN.md`, `docs/README.md`, `docs/TRACKS.md` and `docs/GLOSSARY.md` are written by every build, so the comparison drops all four by name; the section is what this build writes, and leaving them out to help the comparison is the section lying about the work.
 
 ## Every phase says how it is proved
 

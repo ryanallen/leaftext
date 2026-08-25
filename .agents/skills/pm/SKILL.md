@@ -104,17 +104,17 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 
 ## Tier 1 — wrong today
 
-| # | Ticket | Status | Blocks | Blocked by | Track | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |
 
 ## Tier 3 — the features people would name, cheapest first
 
 ### One or two phases
 
-| # | Ticket | Status | Blocks | Blocked by | Track | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |
 
 ### Three or four phases
 
-| # | Ticket | Status | Blocks | Blocked by | Track | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |
 ```
 
 - **The number is the position**, not the ticket's identity: moving a row renumbers everything under it, and the number is never copied anywhere else. The name is what every line of prose cites.
@@ -129,6 +129,8 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 - **`Blocked by` holds live blockers only**, linked, or `—`. A ticket that has shipped does not block anything, so naming one there reads as a wait that is over.
 - **`Track` names the subject order a row sits in** — the track in [`TRACKS.md`](../../../../docs/TRACKS.md), linked to its heading, with the step or steps the ticket is there as. **Every live row carries one, and `—` is not an answer**: a subject with one ticket is a track with one step, so a ticket with nowhere to sit means the track has not been written yet, never that the cell is empty. Write it in this pass — heading, one line saying what the subject is, and the step — and add its node and its `click` line to the map at the top of that file. The step numbers are read out of that file in this pass, never remembered or copied from an older row, and the `Why here` cell does not repeat them: a track named in one cell is one cell to fix when its steps renumber.
 - **A row with no track is how a subject climbs the tiers unnoticed.** Twice now a run of build-machinery rows has been ranked with an empty cell, read as loose faults on their own words, and walked up one pass at a time until they sat above the app's own work. `scripts/check-plan.mjs` refuses an empty cell, a track no heading in that file spells, and a track the ticket is not a step of — the last being the one a reader cannot see, since the link opens a real table their ticket is nowhere in. So the pass that writes a row writes its track in the same edit.
+- **`Devs with` is computed, never written.** It names the three highest-ranked live rows this one shares no file with, then the total in brackets where there are more, and `—` where there are none — read off each ticket's own [`## What it writes`](../../../../docs/GLOSSARY.md#footprint) section. **This pass does not derive it the way it derives `Blocks`**: a wait is a handful of rows across the whole tree and this is 153 set comparisons a row, 11,781 in all, which is not a pass anybody makes carefully twice. So the pass runs `just bundle-devs-with` after the rows are in their final order and reads the result rather than composing it, and `scripts/check-plan.mjs` refuses a cell the bundler would not have written, one naming a ticket that is not live, and one naming a row whose footprint it shares a file with.
+- **The order the two run in is the order they are written in.** The bundler orders every cell by position, so running it before the rows are settled writes 153 cells against the old numbering. Rank, then bundle, then read the file back.
 - **A track is `TRACKS.md`'s.** The `Track` cell says which step a row is and nothing more, and the ranking does not import the track's order — most steps are a preference the track says so about, and only a real block moves a row. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is one track, not two**, so a subject the ranking is carrying in three separate cells gets one written instead — and a ticket is a step of exactly one track, named in one cell, however many other tracks mention it in their prose.
 - **Every ticket under `refactor/workflow/` is a step of [`Process upkeep`](../../../../docs/TRACKS.md#process-upkeep), parked in the Hold band, and belongs nowhere else.** None of them changes what a reader of the app can meet, so none of them is ever tier 1 however wrong it is, or tier 2 or 3 however cheap: a workflow fault is not a fault in the app, and a build gate going quiet is not a document opening at the wrong line. They do not leave that band because a pass found one urgent — only the owner moves a row in or out of Hold. Filing one in a tier is the failure the owner has now named twice.
 - **Off the list** — a sentence, with what would put it back. Off with a reason beats bottom of the list.

@@ -18,6 +18,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planTree } from './plan-tree.mjs';
+import { footprintMisspelled, hasFootprint } from './plan-footprints.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const plans = planTree(root);
@@ -207,7 +208,7 @@ if (adviceFails.length) {
 const LIVE_PLANS = ['features', 'refactor', 'fixes'];
 const livePlan = (file) => LIVE_PLANS.some((p) => file.startsWith(`../docs/${p}/`));
 
-// The first line of the six-part shape every ticket is written to, and the one part of a plan that can be copied in from the guide and left saying nothing — the summary sentence below it is written either way. A plan wearing it cannot be told from any other plan wearing it, in the index, in the running order, or in a link from another plan.
+// The first line of the seven-part shape every ticket is written to, and the one part of a plan that can be copied in from the guide and left saying nothing — the summary sentence below it is written either way. A plan wearing it cannot be told from any other plan wearing it, in the index, in the running order, or in a link from another plan.
 //
 // Written down rather than read out of the guide, so the refusal says exactly what it refuses and reads on its own. `templateSelfTest` below is what stops the two drifting apart, the way `adviceSelfTest` holds the /done line above.
 //
@@ -1157,6 +1158,8 @@ const unapprovable = [];
 const misplaced = [];
 const loose = [];
 const reasonless = [];
+const footprintless = [];
+const misspelled = [];
 
 // Every file in the plan tree, not only the live half: a shipped note, a retired row and a refused row each carry a date, and each is written after the cutoff by a pass that has to read the clock for it.
 const dayOnly = [];
@@ -1183,6 +1186,8 @@ for (const file of rows.map(([f]) => f)) {
   if (placeholderTitle(file, text)) untitled.push(file);
   if (ownerBoxOwed(file, text)) unapprovable.push(file);
   if (drawingOwed(file, text)) undrawn.push(file);
+  if (!hasFootprint(text)) footprintless.push(file);
+  for (const path of footprintMisspelled(text)) misspelled.push(`${file}  ->  ${path}`);
 }
 
 if (dayOnly.length) {
@@ -1219,6 +1224,27 @@ if (undrawn.length) {
   console.error('Draw it: write the sketch as HTML in ../docs/imgs/wireframes/<ticket>.html, photograph it with');
   console.error('node scripts/wireframe.mjs, and embed the picture under that heading — see the "ticket" skill.');
   console.error('If nothing new is drawn, the section is one sentence saying so and why.');
+  process.exit(1);
+}
+
+if (footprintless.length) {
+  console.error('these live plans never say which files they will write:');
+  for (const file of footprintless) console.error(`  ${file}  ->  no "## What it writes" section`);
+  console.error('the running order says which rows can be built alongside each other, and it is computed from');
+  console.error('these — so a plan with none reads as a plan that collides with nothing. Write the section');
+  console.error('directly after ## Phases: a row per file with the phase that writes it, every path spelled from');
+  console.error('the pair\'s top as app/… or docs/…, and — where the plan writes no file. See "What it writes" in');
+  console.error('.agents/skills/ticket/SKILL.md.');
+  process.exit(1);
+}
+
+if (misspelled.length) {
+  console.error('these footprint paths are spelled from neither top of the pair:');
+  for (const at of misspelled) console.error(`  ${at}`);
+  console.error('both repositories hold a README.md and an AGENTS.md, so a bare path names two different files');
+  console.error('and cannot be compared, and the same file cited from two roots reads as two files. Spell every');
+  console.error('one app/… or docs/…, from the folder the two repositories sit in. Whether the file is there yet');
+  console.error('is never asked — most of what a build writes does not exist when the plan is written.');
   process.exit(1);
 }
 
@@ -1305,4 +1331,4 @@ if (outOfOrder.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan opening with a title of its own rather than the template placeholder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date written since 19 August 2026 saying what time it was, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan opening with a title of its own rather than the template placeholder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every live plan saying which files it will write with every path spelled from the top of the pair, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date written since 19 August 2026 saying what time it was, ${links}`);

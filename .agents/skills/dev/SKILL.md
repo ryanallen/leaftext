@@ -29,6 +29,10 @@ Work phases in order. Drive what the running app can reach; name anything that n
 
 **So: never a sweep afterwards, and never ahead.** A box goes from empty to ticked at the moment its code and its test are both in, and at no other moment. A session that writes a whole phase and then goes back to tick its boxes has handed the owner a file that was wrong for the whole build and right only once nobody needed it, and it will be told so.
 
+**A file a phase turned out to touch joins `## What it writes` in the same edit as the code, the way a box is ticked.** A plan cannot know every file it will open, so the [footprint](../../../../docs/GLOSSARY.md#footprint) is finished here or it is wrong here — and the thing it is wrong about is the running order's [Devs with](../../../../docs/GLOSSARY.md#devs-with) cell, which tells somebody two tickets may be built alongside each other. Add the row, name this phase beside it, spell the path from the pair's top.
+
+**Then a pass that moved a footprint ends by running `just bundle-devs-with`** — the column alone, never [`/pm`](../pm/SKILL.md). A file list changing is not a reason for a row to move, and a rerank rewrites the running order whole and re-derives every position. `scripts/check-plan.mjs` refuses a cell the footprints no longer give, so the alternative to running it is a red gate rather than a stale column.
+
 **A change that moves something on the screen is proved by sampled positions, never by classes.** `just probe-motion <selector> <trigger>` watches one element's computed value every frame while the trigger runs and fails when the first frame is already at the resting value. Classes arrive on schedule whether or not anything draws — the leg runner carries a timer for the case where no `transitionend` comes — so a proof that reads the class timeline passes on a motion that snapped, which is how the bottom sheet's entrance shipped.
 
 ### 4. Build each phase's test with its code

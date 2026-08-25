@@ -17,6 +17,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planTree } from './plan-tree.mjs';
+import { links, planRows } from './plan-rows.mjs';
+import { CELL_BOUND, CELL_SHAPE, cellFor, claimsInTree, overlap, partnersFor, waitsOnEachOther } from './plan-footprints.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const plans = planTree(root);
@@ -29,65 +31,6 @@ const ARCHIVED_PLANS = ['done', 'canceled'];
 
 // The running order is a named document, so its name comes before its ranked work.
 const TITLE = '# Leaftext Plan Log';
-
-const LINK = /\[[^\]]*\]\(\s*([^)\s]+)\)/g;
-
-function links(cell) {
-  return [...cell.matchAll(LINK)].map((m) => m[1].split('#')[0]);
-}
-
-// An empty tier is deleted heading and all, so this reads the headings it finds rather than expecting five.
-function planRows(text) {
-  const rows = [];
-  let tier = null;
-  // A `###` line is a sub-band: it groups rows inside the band it sits in and carries no position of its own.
-  let sub = null;
-  const lines = text.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    const heading = /^##(?!#)\s+Tier\s+(\d+)\b/.exec(line);
-    if (heading) {
-      tier = Number(heading[1]);
-      sub = null;
-      continue;
-    }
-    // The Hold band: ranked rows the owner has parked, always after the numbered tiers.
-    if (/^##(?!#)\s+Hold\b/.test(line)) {
-      tier = 'hold';
-      sub = null;
-      continue;
-    }
-    if (/^##(?!#)\s/.test(line)) {
-      tier = null;
-      sub = null;
-      continue;
-    }
-    const subHeading = /^###\s+(.+)$/.exec(line);
-    if (subHeading) {
-      sub = subHeading[1].trim();
-      continue;
-    }
-    if (tier === null || !line.startsWith('|')) continue;
-    const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
-    if (cells.length < 6) continue;
-    if (cells[0] === '#') continue;
-    if (cells.every((c) => /^:?-{3,}:?$/.test(c))) continue;
-    rows.push({
-      line: i + 1,
-      tier,
-      sub,
-      position: /^\d+$/.test(cells[0]) ? Number(cells[0]) : null,
-      // The first link only: a `Ticket` cell can carry words after it, and a `Why here` cell links neighbors.
-      ticket: links(cells[1])[0] ?? null,
-      shown: cells[1].replace(/\s+/g, ' '),
-      blocks: links(cells[3]),
-      blockers: links(cells[4]),
-      // The last cell is always `Why here`, whether or not the file carries a `Track` column.
-      why: cells[cells.length - 1],
-    });
-  }
-  return rows;
-}
 
 // A band is ordered cheapest first, so its sub-bands are cost. The boundaries are the counts themselves — nothing here is measured in time.
 const SUB_BANDS = [
@@ -356,6 +299,81 @@ function trackColumn(text) {
     return at === -1 ? null : at;
   }
   return null;
+}
+
+// The `Devs with` column says which live rows can be built alongside this one, and it is read as a promise: somebody starts a second agent on what it names. It is never written by hand — every cell is 153 set comparisons and the whole column is 11,781 — so what is refused here is a cell that is not what the bundler would have written.
+//
+// Found by name in the header row, the way `Track` is, so a running order carrying no such column is outside this rule rather than failing every row of it.
+//
+// **The symmetry rule is not `Blocks`'s, and the difference is deliberate.** `Blocks` and `Blocked by` are held to each other because each is the other read backwards over the whole file. This column is bounded at three, so row 1's three partners will not each name row 1 back — they have three of their own — and holding the two cells to each other would refuse a column that is entirely correct. What is held instead is the **disjointness**: a named pair must share no file whichever row is read first, which is the claim the cell actually makes.
+const DEVS_WITH_HEADING = 'Devs with';
+
+/// The column index the header row gives `Devs with`, or null where the file carries no such column.
+function devsWithColumn(text) {
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('|')) continue;
+    const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+    if (cells[0] !== '#') continue;
+    const at = cells.indexOf(DEVS_WITH_HEADING);
+    return at === -1 ? null : at;
+  }
+  return null;
+}
+
+// `claims` is what each live ticket's footprint says its build writes, or null where the caller has none to give — the self-tests read the shape of a cell without needing a tree of tickets behind it.
+function devsWithProblems(planText, live, claims = null) {
+  const problems = [];
+  const say = (subject, message) => problems.push({ rule: 'devs-with', subject, message });
+  const column = devsWithColumn(planText);
+  if (column === null) return problems;
+  const rows = claims ? planRows(planText) : null;
+  let tier = null;
+  for (const line of planText.split('\n').map((l) => l.trim())) {
+    if (/^##(?!#)\s+Tier\s+\d+\b/.test(line) || /^##(?!#)\s+Hold\b/.test(line)) {
+      tier = line;
+      continue;
+    }
+    if (/^##(?!#)\s/.test(line)) {
+      tier = null;
+      continue;
+    }
+    if (tier === null || !line.startsWith('|')) continue;
+    const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+    if (cells.length <= column || cells[0] === '#') continue;
+    if (cells.every((c) => /^:?-{3,}:?$/.test(c))) continue;
+    const ticket = links(cells[1])[0];
+    if (!ticket || !live.has(ticket)) continue;
+    const cell = cells[column];
+    if (!CELL_SHAPE.test(cell)) {
+      say(ticket, `position ${cells[0]} says "${cell}", which is not a cell the bundler writes — the column is an em dash, or up to ${CELL_BOUND} links and a count in brackets. Run \`just bundle-devs-with\` rather than editing it`);
+      continue;
+    }
+    for (const named of links(cell)) {
+      if (named === ticket) {
+        say(ticket, `position ${cells[0]} names itself, and a ticket has one writer`);
+        continue;
+      }
+      if (!live.has(named)) {
+        say(ticket, `position ${cells[0]} names ${named}, which is not live work — a retired or refused ticket is nothing to build alongside, so the column has not been rewritten since it left. Run \`just bundle-devs-with\``);
+        continue;
+      }
+      if (!claims) continue;
+      const shared = overlap(claims.get(ticket) ?? [], claims.get(named) ?? []);
+      if (shared.length) {
+        say(ticket, `position ${cells[0]} names ${named}, and both builds write ${shared.join(', ')} — the column says two agents may work these alongside each other, and one would land on the other's edit. Run \`just bundle-devs-with\``);
+        continue;
+      }
+      if (waitsOnEachOther(rows, ticket, named)) say(ticket, `position ${cells[0]} names ${named}, and one of the two waits on the other — a wait is not a parallel run, whatever their files say. Run \`just bundle-devs-with\``);
+    }
+    if (!claims) continue;
+    // Silent where the row has already been named: the pair that collides is the reason a reader needs, and saying the whole cell disagrees on top of it buries it.
+    if (problems.some((p) => p.subject === ticket)) continue;
+    // The whole cell, not only what it names: a hand edit that drops a partner or reorders two reads as a correct cell by every rule above.
+    const want = cellFor(partnersFor(rows, claims, ticket));
+    if (cell !== want) say(ticket, `position ${cells[0]} says "${cell}" and the footprints say "${want}" — the column is generated, so a cell that disagrees is a hand edit or a footprint that moved under it. Run \`just bundle-devs-with\``);
+  }
+  return problems;
 }
 
 function trackProblems(planText, tracksText, live) {
@@ -916,7 +934,7 @@ const NAME_CASES = [
 ];
 
 // The track a row names, read against the file the tracks live in. `tracked(row, ...)` writes a running order carrying the seventh column, and `tracks(...)` the file beside it.
-const TRACKED_TABLE = '| # | Ticket | Status | Blocks | Blocked by | Track | Why here |\n|---|---|---|---|---|---|---|\n';
+const TRACKED_TABLE = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |\n|---|---|---|---|---|---|---|---|\n';
 
 function tracked(...rows) {
   return `${TITLE}\n\n## Tier 3 — a band\n\n${TRACKED_TABLE}${rows.map((r) => `${r}\n`).join('')}\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. Retired: 0. Turned down: 0.\n`;
@@ -925,11 +943,11 @@ function tracked(...rows) {
 const TRACKS_FILE = '# Tracks\n\n## A subject\n\n| step | Work |\n|---|---|\n| 1 | [one](refactor/a/one.md) |\n\n## Another subject\n\n| step | Work |\n|---|---|\n| 1 | [two](refactor/b/two.md) |\n';
 
 const TRACK_LIVE = new Set(['refactor/a/one.md']);
-const TRACK_ROW = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | first |';
-const TRACK_NONE = '| 1 | [one](refactor/a/one.md) | Ready | — | — | — | first |';
-const TRACK_UNLINKED = '| 1 | [one](refactor/a/one.md) | Ready | — | — | A subject step 1 | first |';
-const TRACK_MISSING = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Nowhere](TRACKS.md#nowhere) step 1 | first |';
-const TRACK_WRONG = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Another subject](TRACKS.md#another-subject) step 1 | first |';
+const TRACK_ROW = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | — | first |';
+const TRACK_NONE = '| 1 | [one](refactor/a/one.md) | Ready | — | — | — | — | first |';
+const TRACK_UNLINKED = '| 1 | [one](refactor/a/one.md) | Ready | — | — | A subject step 1 | — | first |';
+const TRACK_MISSING = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Nowhere](TRACKS.md#nowhere) step 1 | — | first |';
+const TRACK_WRONG = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Another subject](TRACKS.md#another-subject) step 1 | — | first |';
 // The same row without the seventh column: a running order that carries no Track column is outside the rule rather than failing every row of it.
 const TRACK_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. Retired: 0. Turned down: 0.\n`;
 
@@ -946,10 +964,83 @@ const TRACK_CASES = [
   ['a running order with no Track column at all is outside the rule', TRACK_ABSENT, []],
 ];
 
+// The eighth column, read the same way. `tracked(...)` writes the header this column sits in, so a row here is a `Devs with` cell in the seventh place and `Why here` in the eighth.
+const DEVS_ROW = (cell) => `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | ${cell} | first |`;
+const DEVS_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. Retired: 0. Turned down: 0.\n`;
+
+// The rule reads the cell's links against what is live, so the fixture's live set has to hold the tickets a passing cell names.
+const DEVS_LIVE = new Set(['refactor/a/one.md', 'refactor/b/two.md', 'refactor/b/three.md', 'a.md', 'b.md', 'c.md', 'd.md']);
+
+const DEVS_CASES = [
+  ['an em dash passes, which is what nothing disjoint reads as', tracked(DEVS_ROW('—')), []],
+  ['links and a count pass, which is what the bundler writes',
+    tracked(DEVS_ROW('[two](refactor/b/two.md), [three](refactor/b/three.md) (9 in all)')), []],
+  ['a cell written in words is refused, because nothing here writes one',
+    tracked(DEVS_ROW('anything in the front end')), ['devs-with refactor/a/one.md'], 'not a cell the bundler writes'],
+  ['four links are refused, since the bundler stops at three and gives a total',
+    tracked(DEVS_ROW('[a](a.md), [b](b.md), [c](c.md), [d](d.md)')), ['devs-with refactor/a/one.md'], 'not a cell the bundler writes'],
+  ['a count with no number is refused',
+    tracked(DEVS_ROW('[two](refactor/b/two.md) (lots in all)')), ['devs-with refactor/a/one.md'], 'not a cell the bundler writes'],
+  ['a cell naming a ticket that is not live is refused, which is what a retirement nobody rewrote leaves',
+    tracked(DEVS_ROW('[gone](done/a/gone.md)')), ['devs-with refactor/a/one.md'], 'is not live work'],
+  ['a cell naming its own row is refused, because a ticket has one writer',
+    tracked(DEVS_ROW('[one](refactor/a/one.md)')), ['devs-with refactor/a/one.md'], 'names itself'],
+  ['a running order with no Devs with column at all is outside the rule', DEVS_ABSENT, []],
+];
+
+// The same column read against real footprints. Three rows: `one` and `two` share a file, `one` and `three` share none, and `four` waits on `one`.
+const DEVS_CLAIMS = new Map([
+  ['refactor/a/one.md', ['app/src/format.rs']],
+  ['refactor/b/two.md', ['app/src/format.rs', 'app/src/lib.rs']],
+  ['refactor/b/three.md', ['app/src/theme.rs']],
+  ['refactor/b/four.md', ['app/src/png.rs']],
+]);
+const DEVS_CLAIMED_LIVE = new Set([...DEVS_CLAIMS.keys()]);
+
+// Four rows in one table, so the whole column is read at once the way the real file is. `cell` fills row 1's; the other three carry what the footprints say.
+function devsTable(cell) {
+  return tracked(
+    `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | ${cell} | first |`,
+    '| 2 | [two](refactor/b/two.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | [three](refactor/b/three.md), [four](refactor/b/four.md) | second |',
+    '| 3 | [three](refactor/b/three.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | [one](refactor/a/one.md), [two](refactor/b/two.md), [four](refactor/b/four.md) | third |',
+    '| 4 | [four](refactor/b/four.md) | Ready | — | [one](refactor/a/one.md) | [A subject](TRACKS.md#a-subject) step 1 | [two](refactor/b/two.md), [three](refactor/b/three.md) | fourth |',
+  );
+}
+
+const DEVS_FOOTPRINT_CASES = [
+  ['the column the footprints say passes', devsTable('[three](refactor/b/three.md)'), []],
+  ['a named pair whose builds write the same file is refused, which is the whole point of the column',
+    devsTable('[two](refactor/b/two.md)'), ['devs-with refactor/a/one.md'], 'both builds write app/src/format.rs'],
+  ['a named pair where one waits on the other is refused, whatever their files say',
+    devsTable('[four](refactor/b/four.md)'), ['devs-with refactor/a/one.md'], 'waits on the other'],
+  ['a cell that drops a partner is refused, since the column is generated',
+    devsTable('—'), ['devs-with refactor/a/one.md'], 'the footprints say'],
+];
+
 function selfTest() {
   const fails = [];
   for (const [name, text, want, said] of TRACK_CASES) {
     const found = trackProblems(text, TRACKS_FILE, TRACK_LIVE);
+    const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+    if (said && !found.some((p) => p.message.includes(said))) {
+      fails.push(`${name}: no message said \`${said}\``);
+    }
+  }
+  for (const [name, text, want, said] of DEVS_FOOTPRINT_CASES) {
+    const found = devsWithProblems(text, DEVS_CLAIMED_LIVE, DEVS_CLAIMS);
+    const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+    if (said && !found.some((p) => p.message.includes(said))) {
+      fails.push(`${name}: no message said \`${said}\``);
+    }
+  }
+  for (const [name, text, want, said] of DEVS_CASES) {
+    const found = devsWithProblems(text, DEVS_LIVE);
     const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
     if (got.join(', ') !== [...want].sort().join(', ')) {
       fails.push(`${name}: got [${got}], want [${want}]`);
@@ -1067,6 +1158,7 @@ const problems = [
   ...shapeProblems(text, { live, retired, turnedDown, phases }),
   ...shippedRead.problems,
   ...trackProblems(text, readFileSync(join(plans, 'TRACKS.md'), 'utf8'), live),
+  ...devsWithProblems(text, live, claimsInTree(plans)),
 ];
 
 // The same walks answer the index, so the two cannot disagree about what is live or what is archived.
@@ -1100,4 +1192,4 @@ if (nameFails.length) {
 
 if (problems.length || indexFails.length || nameFails.length) process.exit(1);
 
-console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, every row naming a track it is a step of in TRACKS.md, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} shipped or turned down, no live one taking a name the archived half already holds`);
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, every row naming a track it is a step of in TRACKS.md, every Devs with cell the one the footprints give and every pair it names sharing no file and waiting on nothing, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} shipped or turned down, no live one taking a name the archived half already holds`);

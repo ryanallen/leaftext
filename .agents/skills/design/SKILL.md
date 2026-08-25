@@ -29,6 +29,8 @@ A ticket earns its keep with the measured table — the claim beside the line it
 - Names get opened too. A ticket that says a function will be called with a string, when it takes a struct, sends the next person the wrong way.
 - **A flow diagram is a measured table drawn sideways, so every node and every edge is opened.** A node is a real thing or it is cut; an edge is a call that exists, or one this ticket is adding and says so. A drawing reads as settled in a way a sentence does not, which is exactly why a wrong one costs more — see step 6b.
 
+**`## What it writes` is corrected in the same reading**, because this is the one pass that has every cited line open and can tell a file the plan *read* from a file the build will *write*. Add the file a phase touches and never declares, cut the one it only quotes, spell every path from the pair's top, and name the phase beside it. That table is the ticket's [footprint](../../../../docs/GLOSSARY.md#footprint), and the running order's [Devs with](../../../../docs/GLOSSARY.md#devs-with) cell is computed from it — so a footprint left wrong here does not make this ticket wrong, it makes every cell naming this ticket wrong, and the failure that lands on is two agents told they may build alongside each other when they cannot. **A pass that moved it ends by running `just bundle-devs-with`**, the column alone and never [`/pm`](../pm/SKILL.md): a file list changing is no reason for a row to move, and a rerank rewrites the running order whole.
+
 Read the repo, do not remember it. A plausible sentence that is false is worse than no sentence.
 
 ## 1a. The cause is proved, never inferred
@@ -130,9 +132,9 @@ grep -rn "<the behavior>" src/tests/ src/app/tests/ src/store/tests.rs scripts/c
 - **Name it in this ticket's Still open** only when it does not help this ticket work, so a later reader cannot mistake it for covered.
 - **Keep the phase honest.** This skill does not edit app code, so every added box must name how it makes the ticket's own outcome work.
 
-## 6. The six parts are there, and the summary earns its keep
+## 6. The seven parts are there, and the summary earns its keep
 
-[ticket](../ticket/SKILL.md) holds the six parts and their order; this holds the file to them. A file missing one, or carrying its own invented heading, is one a reader has to search rather than skim.
+[ticket](../ticket/SKILL.md) holds the seven parts and their order; this holds the file to them. A file missing one, or carrying its own invented heading, is one a reader has to search rather than skim.
 
 **The summary sentence is checked hardest, because it is the only part most readers finish**, and the piece that goes missing is always the fourth — the evidence it will work. A summary that stops at the change is a wish: add the reason out of the measured table, or say plainly that nothing measured backs it yet.
 

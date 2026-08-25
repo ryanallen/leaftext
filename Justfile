@@ -107,6 +107,23 @@ check-docs:
 check-plan:
     node scripts/check-plan.mjs
 
+# Which live tickets can be built alongside the one named — every row whose build writes none of
+# the same files, highest-ranked first, with the total. Named however it is easiest to name: the
+# path a running-order row links, one from the top of the pair, or the file name on its own.
+devs-with ticket:
+    node scripts/plan-footprints.mjs {{ ticket }}
+
+# Write the `Devs with` column into every row of the running order next door — the three
+# highest-ranked live tickets each one shares no file with, and the total. Never written by hand:
+# it is 153 set comparisons a row, 11,781 in all.
+bundle-devs-with:
+    node scripts/plan-footprints.mjs --write
+
+# Prove the footprint reader, the pairing and the cell on made-up footprints, before any of the
+# three is trusted over the real tree. Every cell of the `Devs with` column is computed through this.
+check-footprints:
+    node scripts/plan-footprints.mjs --check
+
 # Fail on a running-order row claiming a stage its ticket never reached: Designed, Dev and
 # Released all rest on the ticket carrying a dated Designed line, and a row that claims one
 # without it tells the owner a build is happening off a plan nobody read against the code.
@@ -478,7 +495,7 @@ check-build-jobs:
 check-version-rule:
     node scripts/check-version-rule.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

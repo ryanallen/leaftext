@@ -49,19 +49,19 @@ export function faults(plan, read) {
   return problems;
 }
 
-const HEAD = '| # | Ticket | Status | Blocks | Blocked by | Track | Why here |\n| --- | --- | --- | --- | --- | --- | --- |\n';
+const HEAD = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n';
 const DESIGNED = '# A plan\n\n> **Designed 19 August 2026, 7:07pm.** Citations opened.\n';
 const PLAIN = '# A plan\n\n> **Not built.** A plan.\n';
 const READ = (path) => (path === 'refactor/a/designed.md' ? DESIGNED : PLAIN);
 
 const CASES = [
-  ['a Ready row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Ready | — | — | — | first |`, false],
-  ['a Designed row whose ticket carries the line', `${HEAD}| 1 | [d](refactor/a/designed.md) | Designed | — | — | — | first |`, false],
-  ['a Dev row whose ticket carries the line', `${HEAD}| 1 | [d](refactor/a/designed.md) | Dev | — | — | — | first |`, false],
-  ['a Released row whose ticket carries the line', `${HEAD}| 1 | [d](refactor/a/designed.md) | Released | — | — | — | first |`, false],
-  ['a Designed row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Designed | — | — | — | first |`, true],
-  ['a Dev row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Dev | — | — | — | first |`, true],
-  ['a Released row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Released | — | — | — | first |`, true],
+  ['a Ready row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Ready | — | — | — | — | first |`, false],
+  ['a Designed row whose ticket carries the line', `${HEAD}| 1 | [d](refactor/a/designed.md) | Designed | — | — | — | — | first |`, false],
+  ['a Dev row whose ticket carries the line', `${HEAD}| 1 | [d](refactor/a/designed.md) | Dev | — | — | — | — | first |`, false],
+  ['a Released row whose ticket carries the line', `${HEAD}| 1 | [d](refactor/a/designed.md) | Released | — | — | — | — | first |`, false],
+  ['a Designed row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Designed | — | — | — | — | first |`, true],
+  ['a Dev row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Dev | — | — | — | — | first |`, true],
+  ['a Released row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Released | — | — | — | — | first |`, true],
 ];
 
 const problems = [];
