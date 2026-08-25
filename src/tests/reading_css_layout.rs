@@ -20,7 +20,7 @@ fn classes_that_hide_without_an_escape(html: &str, css: &str) -> Vec<String> {
             continue;
         };
         for class in classes.split_whitespace() {
-            // Every rule the class opens, not the first substring the name lands in: `.folds` opens none and used to land inside a comment, `.window-controls` landed on a longer rule that merely ends the same way, and `.leaf-sheet` opens two. A `display` in any of them is a `display` on the element.
+            // Every rule the class opens, not the first substring its name lands in: `.folds` opens none, `.window-controls` is the tail of a longer selector, and `.leaf-sheet` opens two. A `display` in any of them is a `display` on the element.
             let bodies = rule_bodies(css, &format!(".{class} {{"));
             if !bodies.iter().any(|body| body.contains("display:")) {
                 continue;
@@ -45,7 +45,7 @@ fn anything_that_hides_itself_is_allowed_to() {
 
 #[test]
 fn a_display_in_the_second_of_two_rules_one_class_opens_still_demands_its_escape() {
-    // The split answered with the first rule and said nothing about the second, so a class hiding itself in its later rule read as a class that hides itself nowhere. Absence reads the same way: a class the stylesheet never opens must not be answered off a longer line it merely sits inside.
+    // A class can set its `display` in the later of two rules it opens, and a class the stylesheet never opens must not be answered off a longer line its name merely sits inside.
     let html = "<div class=\"leaf-sheet\" hidden></div><div class=\"folds\" hidden></div>";
     let css = ".leaf-sheet {
   position: fixed;

@@ -15,7 +15,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** The four test trees. A hand-split rule in any of them is the same claim. */
 const TREES = ['src/app/tests', 'src/tests', 'src/store/tests.rs', 'installer/src/tests.rs'];
 
-/** A `split` on a string literal that opens like a selector — after an optional leading newline, which is how the suite used to anchor a match by hand — and ends with the brace that opens a rule. The other brace-ending splits in these trees are JavaScript function heads read out of the page script, and none of those starts with a selector character. */
+/** A `split` on a string literal that opens like a selector — after an optional leading newline, which is how a hand-written anchor is spelled — and ends with the brace that opens a rule. The other brace-ending splits in these trees are JavaScript function heads read out of the page script, and none of those starts with a selector character. */
 const SPLIT = /\.split\(\s*&?"((?:\\n)?[.#:[][^"]*\{)"\s*\)/g;
 
 /** Faults in one test file. */
