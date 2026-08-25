@@ -44,6 +44,7 @@ import { run as runEmbedHost } from './check-shell/embed-host.mjs';
 import { run as runTheAppsOwnBox } from './check-shell/the-apps-own-box.mjs';
 import { run as runTheShadowBand } from './check-shell/the-shadow-band.mjs';
 import { run as runTheFocusRing } from './check-shell/the-focus-ring.mjs';
+import { run as runAPinThatMatchesTwice } from './check-shell/a-pin-that-matches-twice.mjs';
 
 // Every subject, in the order it was written in. The boot comes first: it fills the record the rest read.
 
@@ -88,6 +89,7 @@ runEmbedHost();
 runTheAppsOwnBox();
 runTheShadowBand();
 runTheFocusRing();
+runAPinThatMatchesTwice();
 
 // ---- report -----------------------------------------------------------------
 

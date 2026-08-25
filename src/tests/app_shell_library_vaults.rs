@@ -149,7 +149,12 @@ fn a_vault_settings_panel_survives_the_window_losing_focus() {
     ));
     // Set for the panel and null for a list, which is the whole of what the guard reads.
     assert!(html.contains("let crumbMenuVault = null;"));
-    assert!(html.contains("  crumbMenuVault = null;"));
+    // Three places null it; the one the guard is about is a list opening rather than a panel.
+    assert_in(
+        &html,
+        "function bindVaultSwitch(button, retire) {",
+        "crumbMenuVault = null;",
+    );
     // A list of vaults or folders is a menu and still closes with the window, and so does the file right-click menu.
     assert!(html.contains("window.addEventListener('blur', hideContextMenu);"));
     // Three ways out that owe nothing to the window: Back and a press outside are presses, Escape is a key.
@@ -183,7 +188,11 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
     assert!(html.contains("window.leafVaultGitBusy = (id) => {"));
     assert!(html.contains("send({ command: 'syncVault', id: vault.id }),"));
     assert!(html.contains("send({ command: 'createVaultRepo', id: vault.id }),"));
-    assert!(html.contains("command: 'linkVaultRemote', id: vault.id, url"));
+    assert_in(
+        &html,
+        "function pushCreateRoutes(items, vault, state, busy) {",
+        "command: 'linkVaultRemote', id: vault.id, url",
+    );
 
     // Git is the one hard requirement, and it is named rather than assumed.
     assert!(html.contains("if (!state.tooling.git) {"));
@@ -205,7 +214,8 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
 
     // Work happens in the panel, so the panel stays up to report it.
     assert!(html.contains("if (!entry.keepOpen) hideCrumbMenu();"));
-    assert!(html.contains("keepOpen: true,"));
+    // Fifteen rows carry that mark, so the claim is that the git panel's own rows do.
+    assert_in(&html, "function vaultGitItems(vault) {", "keepOpen: true,");
     assert!(css.contains(".crumb-menu-note {"));
     assert!(css.contains(".crumb-menu-item:disabled {"));
 
@@ -213,11 +223,16 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
         "heading: 'GitHub'",
         "'Syncing needs git, which is not installed.'",
         "'Create a private repo'",
-        "'Paste the repository address'",
         "`Pushed ${committed} changed.`",
     ] {
         assert!(html.contains(wording), "missing wording: {wording}");
     }
+    // Two panels ask for an address, and this one is the create route's.
+    assert_in(
+        &html,
+        "function pushCreateRoutes(items, vault, state, busy) {",
+        "'Paste the repository address'",
+    );
 }
 
 #[test]
@@ -231,7 +246,11 @@ fn creating_a_repo_in_the_browser_leaves_the_paste_field_standing() {
     // The mark is only worth anything because the handler reads it before it hides.
     assert!(html.contains("      if (!entry.keepOpen) hideCrumbMenu();"));
     // The field those words point at is the next row in the same block, so closing on the press takes away the only place the address can go.
-    assert!(html.contains("    placeholder: 'Paste the repository address',"));
+    assert_in(
+        &html,
+        "function pushCreateRoutes(items, vault, state, busy) {",
+        "placeholder: 'Paste the repository address',",
+    );
     // The other half of the round trip: the browser taking the foreground blurs the window, and a blur closes a list rather than the panel.
     assert!(html.contains(
         "window.addEventListener('blur', () => { if (!crumbMenuVault) hideCrumbMenu(); });"
@@ -349,7 +368,11 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     ));
     // Its label names the root you are in, so hovering says what would change.
     assert!(html.contains("function renderLibraryVaultSwitch()"));
-    assert!(html.contains("const label = `Switch vault (in ${libraryRootLabel()})`;"));
+    assert_in(
+        &html,
+        "function renderLibraryVaultSwitch() {",
+        "const label = `Switch vault (in ${libraryRootLabel()})`;",
+    );
 
     // The leftmost crumb is a place: it goes to the root, and nothing in the trail opens a menu.
     assert!(html.contains("[{ path: '', name: libraryRootLabel() }]"));
@@ -363,7 +386,12 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains("function vaultMenuItems()"));
     assert!(html.contains("selected: !activeVaultId,"));
     assert!(html.contains("selected: vault.id === activeVaultId,"));
-    assert!(html.contains("send({ command: 'createVault' })"));
+    // Three places ask for a new vault; the menu's own row is the one this test is about.
+    assert_in(
+        &html,
+        "function vaultMenuItems() {",
+        "send({ command: 'createVault' })",
+    );
     assert!(html.contains("send({ command: 'setActiveVault', id });"));
     assert!(html.contains("if (id === activeVaultId) {\n    setLibraryFolder('');"));
 
@@ -373,7 +401,6 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
 
     for wording in [
         r#"aria-label="Vaults""#,
-        "`Switch vault (in ${libraryRootLabel()})`",
         "'Everything the library has indexed'",
         "'New vault…'",
         "'Choose a folder to use as a library root'",
@@ -387,8 +414,12 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // A row button, not a right-click: rename, re-point and remove all live behind it.
-    assert!(html.contains("showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));"));
+    // A row button, not a right-click: rename, re-point and remove all live behind it. Four places open that panel; the claim is that the row's own list is one of them.
+    assert_in(
+        &html,
+        "function vaultMenuItems() {",
+        "showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));",
+    );
     // Opening the panel asks about the folder's repository straight away, so the answer is there by the time anyone has read down to it.
     assert!(html.contains("send({ command: 'getVaultGit', id: vault.id });"));
     assert!(html.contains(r#"edit.className = 'crumb-menu-edit';"#));
@@ -436,10 +467,19 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     assert!(html.contains("send({ command: 'renameVault', id: vault.id, name });"));
     assert!(html.contains("send({ command: 'changeVaultFolder', id: vault.id })"));
     assert!(html.contains("send({ command: 'removeVault', id: vault.id })"));
-    assert!(html.contains("showCrumbMenu(crumbMenuOwner, vaultMenuItems())"));
+    assert_in(
+        &html,
+        "function editVaultMenuItems(vault) {",
+        "showCrumbMenu(crumbMenuOwner, vaultMenuItems())",
+    );
     // The name field commits on Enter or on leaving it, and Escape abandons it.
     assert!(html.contains("field.addEventListener('blur', commit);"));
-    assert!(html.contains("} else if (event.key === 'Escape') {"));
+    // Four fields in the page abandon on Escape; this one is the menu's own.
+    assert_in(
+        &html,
+        "function showCrumbMenu(button, items) {",
+        "} else if (event.key === 'Escape') {",
+    );
     assert!(css.contains(".crumb-menu-input {"));
 
     for wording in [
@@ -565,8 +605,12 @@ fn cloning_a_repository_takes_an_address_and_then_a_folder() {
     // Folded away until asked for, like changing a repository — the common way in is still picking a folder.
     assert!(html.contains("label: 'Clone a repository…',"));
     assert!(html.contains("cloneRevealed = true;"));
-    // And unfolded again when the menu closes, or the panel would be waiting there the next time it opens.
-    assert!(html.contains("cloneRevealed = false;"));
+    // And unfolded again when the menu closes, or the panel would be waiting there the next time it opens. Four places write that; the claim is the menu closing is one of them.
+    assert_in(
+        &html,
+        "function hideCrumbMenu() {",
+        "cloneRevealed = false;",
+    );
 
     // The address goes to the host; the folder is picked there, because a dialog belongs to the window's thread.
     assert!(html.contains("send({ command: 'cloneVault', url });"));

@@ -122,16 +122,31 @@ fn app_shell_resets_new_documents_to_rendered_content_top() {
     for expected in [
         "let resetReaderScrollOnNextRender = false;",
         "resetReaderScrollOnNextRender = true;",
-        "resetReaderScrollToContentStart();",
         "function resetReaderScrollToContentStart() {",
-        "const content = correctReaderScrollOrigin(source);",
         "setReaderScrollTop(content.topOffset);",
-        "refreshReaderScrollAnchor();",
         "const firstContent = source.firstElementChild;",
         "const rawTopOffset = Math.ceil(app.scrollTop + firstContentRect.top - shellRect.top);",
         "const topOffset = Math.max(0, rawTopOffset - READER_CONTENT_TOP_GAP);",
     ] {
         assert_contains(&html, expected);
+    }
+
+    // Each of these three is in the page many times over, so where it is is the claim: the landing resets when a new document asked for it, and the reset re-origins and re-pins.
+    for (inside, expected) in [
+        (
+            "} else if (resetReaderScrollOnNextRender) {",
+            "resetReaderScrollToContentStart();",
+        ),
+        (
+            "function resetReaderScrollToContentStart() {",
+            "const content = correctReaderScrollOrigin(source);",
+        ),
+        (
+            "function resetReaderScrollToContentStart() {",
+            "refreshReaderScrollAnchor();",
+        ),
+    ] {
+        assert_in(&html, inside, expected);
     }
 
     assert!(
@@ -158,12 +173,19 @@ fn app_shell_clamps_reader_scroll_to_rendered_content_range() {
             "app.scrollTop = clampReaderScrollTop(scrollTop);",
             "function clampReaderScrollPosition() {",
             "const clampedScrollTop = clampReaderScrollTop(app.scrollTop);",
-            "app.addEventListener('scroll', () => {",
-            "clampReaderScrollPosition();",
+            // A scroll reaches the clamp through the settle, and this line is the whole of that path.
+            "readerScrollSettleTimer = window.setTimeout(settleReaderScroll, READER_SCROLL_SETTLE_MS);",
             "setReaderScrollTop(app.scrollTop);",
         ] {
             assert_contains(&html, expected);
         }
+
+    // The page holds this line in three places, so the settle is what has to hold it.
+    assert_in(
+        &html,
+        "function settleReaderScroll() {",
+        "clampReaderScrollPosition();",
+    );
 
     assert!(
         !html.contains("app.scrollTop = Math.max(0, nextScrollTop);"),
@@ -185,26 +207,41 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR)).filter(",
             // And never what is inside a drawing. A mermaid label is a `<p>` in a `<foreignObject>`, so a page of diagrams grows hundreds of them the moment they land — each taking a slot in this list, above the reader, walking the restore back toward the top a batch at a time.
             "(block) => !block.closest('svg'),",
-            "const blocks = readerAnchorBlockList(source);",
             "return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };",
             "function resolveReaderAnchorElement(anchor) {",
             "function restoreReaderScrollAnchor(anchor) {",
             "setReaderScrollTop(app.scrollTop + rect.top - shellRect.top + offsetY);",
             "function scheduleReaderLayoutUpdate() {",
-            "correctReaderScrollOrigin();",
             "restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());",
             "    if (readerOffScreen()) {",
             "readerScrollAnchor = captureReaderScrollAnchor() || readerScrollAnchor;",
-            "window.addEventListener('resize', () => {",
-            "scheduleReaderLayoutUpdate();",
+            // A resize is what queues the pass, and the pair is that path — the two lines apart are in the page six times over.
+            "invalidateMinimapMetrics();\n  scheduleReaderLayoutUpdate();",
             // The reflow observer re-pins the anchor as images decode and grow, and drops the stale anchor-block cache so the re-pin resolves against the current DOM rather than detached, zero-rect entries.
             "function observeReaderReflow() {",
             "readerReflowObserver = new ResizeObserver(() => {",
-            "readerAnchorBlocks = null;",
             "image.addEventListener('load', () => scheduleReaderLayoutUpdate(), { once: true });",
         ] {
             assert_contains(&html, expected);
         }
+
+    // Three lines the page holds many times over, so the block each is in is the claim: the capture reads the cached list, the queued pass re-origins, and the reflow observer is what drops the cache.
+    for (inside, expected) in [
+        (
+            "function captureReaderScrollAnchor() {",
+            "const blocks = readerAnchorBlockList(source);",
+        ),
+        (
+            "function scheduleReaderLayoutUpdate() {",
+            "correctReaderScrollOrigin();",
+        ),
+        (
+            "readerReflowObserver = new ResizeObserver(() => {",
+            "readerAnchorBlocks = null;",
+        ),
+    ] {
+        assert_in(&html, inside, expected);
+    }
 }
 
 #[test]
@@ -214,7 +251,12 @@ fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
 
     // Entering the code view mounts a Monaco container and clears the reader's own rail — Monaco draws its own minimap.
     assert!(html.contains(r#"app.innerHTML = '<div class="code-view-monaco"></div>';"#));
-    assert!(html.contains("setMinimapMarkup('');"));
+    // The page clears the rail in two places, so the code view's own render is what has to.
+    assert_in(
+        &html,
+        "function renderCodeView(state) {",
+        "setMinimapMarkup('');",
+    );
 
     // Wrapping stays on and the minimap is Monaco's own. The wrap is 'bounded' (not 'on') so applyCodeViewWrapColumn can hold the text short of the minimap — 'on' wraps flush under the minimap's drop-shadow.
     assert!(html.contains("wordWrap: 'bounded',"));
@@ -336,7 +378,12 @@ fn the_field_block_at_the_top_of_a_note_is_bound_to_the_block_not_to_a_place_on_
 
     // The value cells the renderer stamped, and the control each type asks for — never one this guesses at.
     assert_contains(&html, "block.querySelectorAll('td[data-leaf-field]')");
-    assert_contains(&html, "if (kind === 'list') {");
+    // The markdown writer holds this line too, so the binding is where it has to be.
+    assert_in(
+        &html,
+        "function bindFrontmatterFields(root) {",
+        "if (kind === 'list') {",
+    );
     assert_contains(&html, "} else if (kind === 'checkbox') {");
     // A date the picker cannot read keeps the text box, rather than opening a picker that shows nothing and clears the value on the way out.
     assert_contains(
@@ -402,8 +449,17 @@ fn a_note_with_no_fields_starts_one_from_the_plus_that_is_already_in_the_gutter(
 
     // Above everything, on an unlocked Markdown note that has no block — and nowhere else, or an insert between two paragraphs would make metadata nobody meant.
     assert_contains(&html, "function frontmatterCanStart(gap) {");
-    assert_contains(&html, "&& !gap.above");
-    assert_contains(&html, "&& currentDocumentFormat === 'markdown'");
+    // Both clauses are in the page twice, so the test names the one function that has to carry them.
+    assert_in(
+        &html,
+        "function frontmatterCanStart(gap) {",
+        "&& !gap.above",
+    );
+    assert_in(
+        &html,
+        "function frontmatterCanStart(gap) {",
+        "&& currentDocumentFormat === 'markdown'",
+    );
     assert_contains(&html, "&& readerEditingAllowed()");
     assert_contains(&html, "&& !frontmatterBlock();");
 

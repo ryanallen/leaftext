@@ -13,7 +13,12 @@ fn changing_document_does_not_change_which_view_you_are_in() {
         exits, 2,
         "expected the search hit and the source button to leave the map, found {exits}"
     );
-    assert!(html.contains("if (graphExitPending) {"));
+    // The source render tests the same flag, so the claim is that the arriving state is what acts on it.
+    assert_in(
+        &html,
+        "window.leafSetState = (state) => {",
+        "if (graphExitPending) {",
+    );
     // And nothing else may reach for the door, bar the one state where there is nothing left to map: the home screen. Leaving a vault is not such a state — the open document answers for the map instead of the map closing.
     let closes = html.matches("closeGraphView();").count();
     assert_eq!(
@@ -33,8 +38,12 @@ fn changing_document_does_not_change_which_view_you_are_in() {
 fn the_map_waits_with_the_same_spinner_a_slow_document_does() {
     let html = app_shell_page();
 
-    // A line of text in the corner reads as a result, not a wait. The overlay is shared with the reader, so it tracks who raised it: a document rendering behind a map that is *staying* must not throw a spinner over it, and must not take down the one the map is waiting on. Leaving the map is the exception — see `leaving_the_map_for_a_document_shows_the_spinner`.
-    assert!(html.contains("beginReaderLoading('graph');"));
+    // A line of text in the corner reads as a result, not a wait. The overlay is shared with the reader, so it tracks who raised it: a document rendering behind a map that is *staying* must not throw a spinner over it, and must not take down the one the map is waiting on. Leaving the map is the exception — see `leaving_the_map_for_a_document_shows_the_spinner`. A node click raises it too, so the claim is that asking for the data is what raises it.
+    assert_in(
+        &html,
+        "function requestGraphData() {",
+        "beginReaderLoading('graph');",
+    );
     assert!(html.contains("if (graphViewOpen && !graphExitPending && !forGraph) return;"));
     assert!(html.contains("if (readerLoadingOwner === 'graph' && owner !== 'graph') return;"));
     // Every way out of a build puts it down; the safety timeout is the backstop.
@@ -80,7 +89,12 @@ fn a_redraw_of_the_same_map_is_not_a_redraw() {
     ));
     // No scene to carry from means the map is being entered, not redrawn, and the camera the last one was left at is the answer -- for one build, and only where the payload draws the same picture.
     assert!(html.contains("function keptGraphCameraFor(data)"));
-    assert!(html.contains("keptGraphCamera = null;"));
+    // The declaration reads the same, so the claim is that reading the kept camera is what spends it.
+    assert_in(
+        &html,
+        "function keptGraphCameraFor(data) {",
+        "keptGraphCamera = null;",
+    );
     assert!(html.contains("if (seat) { node.x = seat.x; node.y = seat.y; }"));
     assert!(html.contains("if (carried && carried.positions.size) sim.alpha(GRAPH_WARM_ALPHA);"));
 
@@ -207,7 +221,11 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
         "  send({ command: 'setReadingUnlocked', enabled: readingUnlocked });\n  renderStateKeepingPlace();"
     ));
     assert!(html.contains("function renderStateKeepingPlace() {"));
-    assert!(html.contains("    restoreReaderScrollAnchor(anchor);"));
+    assert_in(
+        &html,
+        "function renderStateKeepingPlace() {",
+        "restoreReaderScrollAnchor(anchor);",
+    );
     assert!(html.contains("monacoEditor.updateOptions({ readOnly: !codeUnlocked });"));
     assert!(html.contains("readOnly: !codeUnlocked,"));
     // And a refused keystroke says so, rather than reading as a dead editor.
@@ -226,7 +244,11 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     // The glyph shown is the state you are in, not the one a click would take you to, so pressed (unlocked, or the speed reader running) shows the on glyph.
     assert!(html.contains("      viewLockTooltip(onCodeView)\n"));
     assert!(html.contains("setSubtoolState(speedReaderButton, speedReaderEnabled,"));
-    assert!(html.contains("button.setAttribute('aria-pressed', String(on));"));
+    assert_in(
+        &html,
+        "function setSubtoolState(button, on, label) {",
+        "button.setAttribute('aria-pressed', String(on));",
+    );
 
     // The speed reader stays one preference for the whole app -- a way of reading, not a property of a document -- driven from the reading toolbar's own control alone.
     for icon in ["speed-reader-on", "speed-reader-off"] {
@@ -301,7 +323,11 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(!html.contains("libraryView"));
     // Going to a document puts the document back.
     assert!(html.contains("function closeGraphView()"));
-    assert!(html.contains("closeGraphView();"));
+    assert_in(
+        &html,
+        "window.leafSetState = (state) => {",
+        "closeGraphView();",
+    );
 
     // PixiJS + d3-force still load lazily from the bundled-asset protocol, whose URLs are injected on window.__lt rather than written into the fragment.
     assert!(html.contains("pixi: PIXI_SCRIPT_URL,"));
@@ -309,8 +335,9 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(html.contains("pixiUnsafeEval: PIXI_UNSAFE_EVAL_SCRIPT_URL,"));
     assert!(html.contains("} = window.__lt.assets;"));
     assert!(html.contains(r#""pixi":"#) && html.contains("pixi.min.js"));
-    assert!(html.contains("leaf-asset"));
-    assert!(html.contains("window.d3.forceSimulation"));
+    // The grant itself rather than the bare word, which is in the page eight times, and the one line that lays the map out.
+    assert!(html.contains("script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:"));
+    assert!(html.contains("const sim = window.d3.forceSimulation(nodes)"));
     assert!(!html.contains("script-src 'self' 'unsafe-inline' 'unsafe-eval'"));
 
     // Data still flows over the same command and callback, and a node still opens its document.
@@ -411,8 +438,12 @@ fn leaving_the_map_for_a_document_shows_the_spinner() {
     // A node click is the other side of it: the map stays, so the document's spinner is withheld and the map raises its own while the new slice builds.
     assert!(html.contains("  beginReaderLoading('graph');\n  send({ command: 'getGraph'"));
 
-    // And the map stepping aside must not pull down the spinner the document raised, or the wait comes back as a blink mid-handover.
-    assert!(html.contains("clearReaderLoading('graph');"));
+    // And the map stepping aside must not pull down the spinner the document raised, or the wait comes back as a blink mid-handover. Eight places put it down; the one that matters here is the map being taken apart.
+    assert_in(
+        &html,
+        "function teardownGraph() {",
+        "clearReaderLoading('graph');",
+    );
     assert!(html.contains("if (owner === 'graph' && readerLoadingOwner !== 'graph') return;"));
 }
 

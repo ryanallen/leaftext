@@ -65,6 +65,130 @@ fn assert_contains(haystack: &str, needle: &str) {
     );
 }
 
+/// A pin that says where the line has to be. `assert_contains` reads the whole joined page, so a line lifted out of the function a test names and put in a helper still matches from wherever it landed and the test goes on passing while nothing holds what it says it holds. This reads only the block `opener` opens.
+///
+/// `opener` is the line as it is written in the fragment, bracket and all — a function's declaration, the callback handed to a listener, since an anonymous listener is declared by no name a helper could take, or the line that opens a list, since two lists holding one row is the same ambiguity.
+fn assert_in(haystack: &str, opener: &str, needle: &str) {
+    match block_opened_by(haystack, opener) {
+        Err(why) => panic!("{why}"),
+        Ok(block) => assert!(
+            block.contains(needle),
+            "expected\n{needle}\ninside\n{opener}\nbut it is {}\n\nthe block holds:\n{block}",
+            if haystack.contains(needle) {
+                "somewhere else in the page, so this test no longer holds the block it names"
+            } else {
+                "nowhere in the page at all"
+            }
+        ),
+    }
+}
+
+/// The body of the block one line opens. The fragments are indented a level at a time, so the block ends at the first line closing at the opener's own indentation — a brace inside a string or a comment cannot end it early the way counting braces would.
+///
+/// An opener the page holds twice says nothing about which block is meant, so it is refused rather than resolved to the first.
+fn block_opened_by<'a>(haystack: &'a str, opener: &str) -> Result<&'a str, String> {
+    let closer = match opener.trim_end().chars().last() {
+        Some('{') => '}',
+        Some('[') => ']',
+        _ => {
+            return Err(format!(
+                "an opener is the line that opens the block, bracket and all, and this one has none:\n{opener}"
+            ));
+        }
+    };
+    let places = haystack.matches(opener).count();
+    if places != 1 {
+        return Err(match places {
+            0 => format!("the page holds no\n{opener}"),
+            _ => format!(
+                "the page holds\n{opener}\nin {places} places, so it does not say which block is meant"
+            ),
+        });
+    }
+    let at = haystack
+        .find(opener)
+        .expect("the one place was just counted");
+    let line_start = haystack[..at].rfind('\n').map_or(0, |newline| newline + 1);
+    let indent: String = haystack[line_start..at]
+        .chars()
+        .take_while(|character| character.is_whitespace())
+        .collect();
+    let body = &haystack[at + opener.len()..];
+    body.find(&format!("\n{indent}{closer}"))
+        .map(|end| &body[..end])
+        .ok_or_else(|| format!("this never closes at its own indentation:\n{opener}"))
+}
+
+#[test]
+fn a_scoped_pin_finds_a_line_inside_the_block_it_names() {
+    let page = made_up_script();
+
+    assert_in(&page, "function settle() {", "refresh();");
+    // An anonymous listener has no name to be scoped by, so the line that registers it is the opener.
+    assert_in(
+        &page,
+        "app.addEventListener('scroll', () => {",
+        "schedule();",
+    );
+    // A nested block does not end the outer one.
+    assert_in(&page, "function settle() {", "clamp();");
+    // Two lists holding one row is the same ambiguity a function is, so a list opens a block too.
+    assert_in(&page, "const FIRST_MENU = [", "{ action: 'open' },");
+}
+
+#[test]
+fn a_scoped_pin_refuses_a_line_that_sits_outside_the_block_it_names() {
+    let page = made_up_script();
+
+    let block = block_opened_by(&page, "function settle() {").expect("the block is found");
+    assert!(
+        !block.contains("schedule();"),
+        "the settle block should not reach into the scroll listener"
+    );
+    assert!(
+        page.contains("schedule();"),
+        "the line is in the page, which is what makes an unscoped pin pass"
+    );
+}
+
+#[test]
+#[should_panic(expected = "somewhere else in the page")]
+fn a_scoped_pin_says_the_line_moved_rather_than_that_it_is_gone() {
+    assert_in(&made_up_script(), "function settle() {", "schedule();");
+}
+
+#[test]
+fn a_scoped_pin_refuses_an_opener_the_page_does_not_hold() {
+    let page = made_up_script();
+
+    let why = block_opened_by(&page, "function gone() {").expect_err("the opener is not there");
+    assert!(
+        why.contains("holds no"),
+        "the refusal should say the opener is missing, got: {why}"
+    );
+    // Two blocks opened by one line say nothing about which is meant, so that is refused too.
+    let why = block_opened_by(&page, "if (ready) {").expect_err("the opener is in two places");
+    assert!(
+        why.contains("in 2 places"),
+        "the refusal should count the places, got: {why}"
+    );
+}
+
+/// A page of the shape the fragments have: a function, a nested block, an anonymous listener, two lists holding one row, and one opener in two places.
+fn made_up_script() -> String {
+    [
+        "function settle() {\n",
+        "  if (ready) {\n    clamp();\n  }\n",
+        "  refresh();\n}\n",
+        "app.addEventListener('scroll', () => {\n",
+        "  if (ready) {\n    schedule();\n  }\n",
+        "});\n",
+        "const FIRST_MENU = [\n  { action: 'open' },\n];\n",
+        "const OTHER_MENU = [\n  { action: 'open' },\n];\n",
+    ]
+    .concat()
+}
+
 /// The page and the front-end script together. The script is served as `app.js` rather than inlined, so a test that asserts on both has to be handed both — one string, in load order, which is what the web view ends up with anyway.
 fn app_shell_page() -> String {
     format!(

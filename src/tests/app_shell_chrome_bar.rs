@@ -402,9 +402,10 @@ fn the_update_bell_keeps_the_menu_keyboard_and_pointer_polish() {
 fn both_shells_draw_their_own_three_window_buttons() {
     // Two kinds of frameless, one flag each, and neither platform leaves us a native title bar to keep. Apple's dots are off, so the same three buttons and the same three commands serve both; only the look and the place differ, and the Mac's move to the bar's left end where Apple's were.
     let html = app_shell_page();
+    // The guard is written twice on purpose — this is the one that draws the chrome, and the flag line alone cannot tell them apart.
     assert_contains(
         &html,
-        "if (window.__leafFrameless || window.__leafMacFrame) {",
+        "if (window.__leafFrameless || window.__leafMacFrame) {\n  document.body.classList.add('frameless');",
     );
     assert_contains(
         &html,

@@ -185,12 +185,18 @@ fn a_tab_carries_the_heart_and_the_menu_marks_everything_else() {
     for expected in [
         r#"<button type="button" class="tab-favorite${favorite ? ' is-on' : ''}""#,
         r#"<span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span>"#,
-        "{ action: 'favorite', label: 'Favorite' },",
         "return { action: entry.action, label: 'Unfavorite' };",
         r#"<button type="button" class="home-row-heart" data-home-unfavorite="${attr}""#,
     ] {
         assert_contains(&page, expected);
     }
+    // Two menus carry that row, so the one for a file is the one this test is about.
+    assert_in(
+        &page,
+        "const CONTEXT_MENU_ITEMS = [",
+        "{ action: 'favorite', label: 'Favorite' },",
+    );
+
     // Not in the pane, where a row really is one button and a second control inside it is not markup.
     assert!(
         !page.contains("library-file-favorite"),

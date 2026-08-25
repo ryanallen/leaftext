@@ -15,7 +15,11 @@ fn app_shell_decorates_blockquote_hard_break_lines_for_hanging_indent() {
         &html,
         "if (!children.some((node) => node.nodeName === 'BR')) return;",
     );
-    assert_contains(&html, "line.className = 'blockquote-line';");
+    assert_in(
+        &html,
+        "function decorateBlockquoteLines(root = app) {",
+        "line.className = 'blockquote-line';",
+    );
     assert_contains(&html, "paragraph.classList.add('blockquote-lines');");
     assert_contains(&html, "decorateBlockquoteLines();");
 }
@@ -139,11 +143,8 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
     for expected in [
         "mermaid.min.js",
         "let mermaidLoadPromise = null;",
-        "renderMermaidDiagrams();",
         "function loadMermaid() {",
         "function renderMermaidDiagrams() {",
-        "pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"])",
-        "mermaid.initialize(mermaidRuntimeConfig())",
         "securityLevel: 'strict'",
         "await mermaid.run({ nodes: batch });",
         "diagram.dataset.mermaidRender = 'failed';",
@@ -173,6 +174,24 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
     ] {
         assert_contains(&html, expected);
     }
+
+    // Three lines the page holds twice, five and five times over: a render is what asks for the sweep, the sweep is what names the undrawn fences, and the batch draw is what starts mermaid.
+    assert_in(
+        &html,
+        "function renderState() {",
+        "renderMermaidDiagrams();",
+    );
+    assert_in(
+        &html,
+        "function renderMermaidDiagrams() {",
+        "pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"])",
+    );
+    assert_in(
+        &html,
+        "function drawMermaidBatches(diagrams, generation, warming) {",
+        "mermaid.initialize(mermaidRuntimeConfig())",
+    );
+
     // Mermaid and KaTeX are served from the bundled-asset protocol, never a CDN.
     assert!(
         !html.contains("cdn.jsdelivr"),
@@ -419,10 +438,12 @@ fn a_drawn_diagram_opens_on_the_whole_window() {
         assert_contains(&html, expected);
     }
     // Both sweeps leave the stage alone: it is a `pre.mermaid` inside `app` like any other, and an overlay-sized SVG in the render memo would come back in the page at that size.
-    assert_contains(
-        &html,
-        "pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-stage])",
-    );
+    for sweep in [
+        "function renderMermaidDiagrams() {",
+        "function mermaidWarmCandidates() {",
+    ] {
+        assert_in(&html, sweep, "pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-stage])");
+    }
     assert_contains(
         &html,
         "app.querySelectorAll('pre.mermaid:not([data-diagram-stage])')",
@@ -502,7 +523,12 @@ fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
         "mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));",
     );
     assert_contains(&html, "    htmlLabels,\n    flowchart: { htmlLabels },");
-    assert_contains(&html, "mermaid.initialize(mermaidRuntimeConfig())");
+    // The page's own draw leaves the answer alone, and that bare call is in the page five times.
+    assert_in(
+        &html,
+        "function drawMermaidBatches(diagrams, generation, warming) {",
+        "mermaid.initialize(mermaidRuntimeConfig())",
+    );
 }
 
 #[test]
@@ -516,10 +542,16 @@ fn app_shell_loads_bundled_katex_and_renders_math_after_document_insert() {
         "function loadKatex() {",
         "function renderMathElements() {",
         "renderMathElements();",
-        "node.classList.contains('math-display')",
     ] {
         assert_contains(&html, expected);
     }
+
+    // Both places that read it are in the one render, so that is what has to hold it.
+    assert_in(
+        &html,
+        "function renderMathElements() {",
+        "node.classList.contains('math-display')",
+    );
 }
 
 #[test]
@@ -531,7 +563,11 @@ fn app_shell_routes_fragment_links_through_reader_anchor_scrolling() {
         &html,
         "const target = document.getElementById(decoded) || document.getElementById(raw);",
     );
-    assert_contains(&html, "target.focus({ preventScroll: true });");
+    assert_in(
+        &html,
+        "window.leafScrollToFragment = (fragment) => {",
+        "target.focus({ preventScroll: true });",
+    );
     assert_contains(&html, "function sameDocumentFragmentHref(rawHref) {");
     assert_contains(&html, "if (rawHref.startsWith('#')) {");
     assert_contains(&html, "if (rawHref.startsWith('./#')) {");
@@ -543,7 +579,12 @@ fn app_shell_routes_fragment_links_through_reader_anchor_scrolling() {
         "const fragmentHref = sameDocumentFragmentHref(rawHref);",
     );
     assert_contains(&html, "if (fragmentHref) {");
-    assert_contains(&html, "event.preventDefault();");
+    // The page swallows a default in a hundred and ten places, so the link binding is the one that has to here.
+    assert_in(
+        &html,
+        "function bindDocumentLinks() {",
+        "event.preventDefault();",
+    );
     assert_contains(
         &html,
         "send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });",
@@ -592,15 +633,20 @@ fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
         "return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;",
         "sendDocumentLink(link, newPageModifierHeld(event));",
         "send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
-        // The middle button raises `auxclick` and never `click`; the web view's own scroll puck opens on the mousedown before it, so both are answered.
-        "app.addEventListener('auxclick', (event) => {",
         "app.addEventListener('mousedown', (event) => {",
-        "const link = event.button === 1 ? documentLinkFor(event.target) : null;",
-        "sendDocumentLink(link, true);",
         // A middle click only acts where there is a page to open.
         "if (!link || !isAnotherPageHref(link.getAttribute('href'))) {",
     ] {
         assert_contains(&html, expected);
+    }
+
+    // The middle button raises `auxclick` and never `click`; the web view's own scroll puck opens on the mousedown before it, so both are answered. All three of these lines are in the page twice, so the link binding is what has to carry them.
+    for expected in [
+        "app.addEventListener('auxclick', (event) => {",
+        "const link = event.button === 1 ? documentLinkFor(event.target) : null;",
+        "sendDocumentLink(link, true);",
+    ] {
+        assert_in(&html, "function bindDocumentLinks() {", expected);
     }
 
     // One platform test for the whole front-end, shared out of state.js — the menu reads it for Ctrl-click and the link handler for which key opens a page.
@@ -658,18 +704,28 @@ fn app_shell_gives_a_document_link_its_own_right_click_menu() {
 fn app_shell_gives_the_reading_page_its_file_actions_right_click_menu() {
     let html = app_shell_page();
 
-    for expected in [
-        "const PAGE_MENU_ITEMS = [",
+    assert_contains(&html, "const PAGE_MENU_ITEMS = [");
+    assert_contains(
+        &html,
+        "showContextMenu(event.clientX, event.clientY, activeDocumentPath(), 'page');",
+    );
+
+    // Every one of these rows is in the pane's own menu too, so the page's list is the one that has to hold them.
+    for row in [
         "{ action: 'favorite', label: 'Favorite' },",
         "{ action: 'copyPath', label: 'Copy path' },",
         "{ action: 'reveal', label: 'Reveal file' },",
         "{ action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },",
         "{ action: 'delete', label: 'Delete', danger: true },",
-        "showContextMenu(event.clientX, event.clientY, activeDocumentPath(), 'page');",
-        "contextMenuTargetKind === 'page'",
     ] {
-        assert_contains(&html, expected);
+        assert_in(&html, "const PAGE_MENU_ITEMS = [", row);
     }
+    // And the menu the page opens is picked by that kind, in the one place that picks a list.
+    assert_in(
+        &html,
+        "function contextMenuEntries() {",
+        "contextMenuTargetKind === 'page'",
+    );
 
     let link_branch = html
         .find("const documentLink = documentLinkFor(event.target);")
@@ -754,14 +810,22 @@ fn code_blocks_get_a_copy_button() {
     assert!(html.contains(".document-body pre:not(.mermaid)"));
     assert!(html.contains("function copyCodeBlock(button, text)"));
     // Clipboard API with an execCommand fallback for locked-down webviews.
-    assert!(html.contains("navigator.clipboard.writeText(text)"));
+    assert_in(
+        &html,
+        "function copyCodeBlock(button, text) {",
+        "navigator.clipboard.writeText(text)",
+    );
     assert!(html.contains("document.execCommand('copy')"));
     // The button styling and copied-state swap exist.
     assert!(css.contains(".document-body pre > .code-copy {"));
     assert!(css.contains(".code-copy.is-copied .code-copy-check {"));
 
     // Both labels the button swaps between are present.
-    assert!(html.contains("setCodeCopyLabel(button, 'Copy code');"));
+    assert_in(
+        &html,
+        "function decorateCodeBlocks() {",
+        "setCodeCopyLabel(button, 'Copy code');",
+    );
     assert!(html.contains("setCodeCopyLabel(button, 'Copied');"));
 }
 
@@ -773,8 +837,14 @@ fn select_all_in_the_reading_view_selects_only_the_page() {
     assert!(html.contains("event.key.toLowerCase() === 'a'"));
     assert!(html.contains("if (!caretBlock && isEditableMouseTarget(event.target))"));
     assert!(html.contains("range.selectNodeContents(body)"));
-    assert!(html.contains("selection.removeAllRanges()"));
-    assert!(html.contains("selection.addRange(range)"));
+    // The page makes both calls nine and seven times over, so the shortcut's own branch is what has to.
+    for expected in ["selection.removeAllRanges()", "selection.addRange(range)"] {
+        assert_in(
+            &html,
+            "if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'a') {",
+            expected,
+        );
+    }
 
     // With the caret in a block it widens a step per press instead — block, section, page — and the first press has to stay the browser's own, so the early return is what the step reaches rather than something that replaced it.
     assert!(html.contains("const caretBlock = caretBlockForSelectAll(event.target);"));

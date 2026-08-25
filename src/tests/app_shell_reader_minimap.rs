@@ -9,9 +9,6 @@ fn app_shell_renders_interactive_document_minimap() {
     for expected in [
             "renderDocumentMinimap(state.document.minimap)",
             "function renderDocumentMinimap(model) {",
-            "document-minimap-track",
-            "document-minimap-content",
-            "document-minimap-viewport",
             "aria-label=\"Document minimap\"",
             "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"lt-spinner document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
             "bindDocumentMinimap();",
@@ -75,7 +72,6 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function invalidateMinimapPreview() {",
         "minimapContentVersion += 1;",
         "function disconnectMinimapPreviewObservers() {",
-        "window.cancelAnimationFrame(minimapPreviewFrame);",
         "function scheduleMinimapPreviewUpdate() {",
         "minimapPreviewFrame = window.requestAnimationFrame(() => {",
         "function updateDocumentMinimapPreview() {",
@@ -88,7 +84,6 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "preview.classList.add('document-minimap-preview');",
         // The clone is laid out inside a frame the width of the reading layout's content box, and the frame is what scales: without it a document's container queries measure the whole window, a wide table is drawn wider than the page draws it, and the thumbnail ends short of the bottom. The content box, so the layout's inline padding — outside the container query — is not counted.
         "function minimapFrameWidth(fallbackWidth) {",
-        "const layout = app.querySelector('.reader-layout');",
         "const width = layout.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);",
         "const frameWidth = minimapFrameWidth(metrics.sourceWidth);",
         "frame.className = 'document-minimap-frame';",
@@ -97,7 +92,6 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "frame.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;",
         "frame.appendChild(preview);",
         "content.replaceChildren(frame);",
-        "updateMinimapViewport();",
         // A document taller than the rail is cloned as the slice the rail can actually show, not whole: a full clone put a second copy of every element on the page, which cost ~890ms a frame to slide on a 4MB glossary. The window is still a clone of the real rendering, so the rail keeps real text — and on any document the rail can show in full it IS the whole document, which is why nothing here is gated on a size threshold.
         "function minimapWindowCoversView(metrics, scrollTop) {",
         "function minimapVisibleDocumentRange(metrics, scrollTop) {",
@@ -178,18 +172,26 @@ fn app_shell_throttles_minimap_scroll_sync() {
     for expected in [
         "let minimapViewportFrame = 0;",
         "function scheduleMinimapViewportUpdate() {",
-        "window.requestAnimationFrame(() => {",
         "function updateMinimapViewport() {",
-        "app.addEventListener('scroll', () => {",
-        "clampReaderScrollPosition();",
-        "refreshReaderScrollAnchor();",
-        "scheduleMinimapViewportUpdate();",
-        "window.addEventListener('resize', () => {",
-        "scheduleReaderLayoutUpdate();",
-        "scheduleMinimapViewportUpdate();",
-        "scheduleMinimapPreviewUpdate();",
+        // A scroll schedules the sync and flags the reader as scrolling; a resize invalidates the metrics, queues the layout pass and rebuilds the thumbnail. Each of those calls alone is in the page many times over, so the pin is the pair.
+        "scheduleMinimapViewportUpdate();\n  readerScrolling = true;",
+        "invalidateMinimapMetrics();\n  scheduleReaderLayoutUpdate();",
+        "scheduleMinimapViewportUpdate();\n  scheduleMinimapPreviewUpdate();",
     ] {
         assert_contains(&html, expected);
+    }
+
+    // The sync is throttled to a frame, and the settle — not the listener, and not some other caller — is where a scroll clamps and re-pins.
+    assert_in(
+        &html,
+        "function scheduleMinimapViewportUpdate() {",
+        "window.requestAnimationFrame(() => {",
+    );
+    for expected in [
+        "clampReaderScrollPosition();",
+        "refreshReaderScrollAnchor();",
+    ] {
+        assert_in(&html, "function settleReaderScroll() {", expected);
     }
 }
 
@@ -204,12 +206,18 @@ fn app_shell_clicks_minimap_to_scroll_document() {
         "app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));",
         "track.addEventListener('pointerdown', (event) => {",
         "if (Number.isFinite(minimapPointerOffsetY)) {",
-        "dragMinimapViewportToPointer(event, minimapPointerOffsetY);",
-        "} else {",
-        "scrollToMinimapSnapshotPoint(event);",
+        // A bare click falls through to the snapshot, and the arm on its own is in the page forty-three times.
+        "} else {\n      scrollToMinimapSnapshotPoint(event);",
     ] {
         assert_contains(&html, expected);
     }
+
+    // A grab inside the box drags instead; the page makes that call twice, so the press is what has to make it.
+    assert_in(
+        &html,
+        "if (Number.isFinite(minimapPointerOffsetY)) {",
+        "dragMinimapViewportToPointer(event, minimapPointerOffsetY);",
+    );
 }
 
 #[test]
@@ -229,14 +237,24 @@ fn app_shell_drags_minimap_to_scroll_document() {
             "leafHoldPointer(track, event.pointerId);",
             "track.addEventListener('pointermove', (event) => {",
             "if (event.pointerId !== minimapPointerId) {",
-            "dragMinimapViewportToPointer(event, minimapPointerOffsetY);",
-            "minimapPointerOffsetY = null;",
             "track.addEventListener('pointerup', endDrag);",
             "track.addEventListener('pointercancel', endDrag);",
             "track.addEventListener('lostpointercapture', endDrag);",
         ] {
             assert_contains(&html, expected);
         }
+
+    // Both of these are in the page twice, so the move is what has to keep dragging and the release is what has to forget the offset.
+    assert_in(
+        &html,
+        "track.addEventListener('pointermove', (event) => {",
+        "dragMinimapViewportToPointer(event, minimapPointerOffsetY);",
+    );
+    assert_in(
+        &html,
+        "if (event.pointerId === minimapPointerId) {",
+        "minimapPointerOffsetY = null;",
+    );
 
     // A grab inside the box preserves the offset (drag); a bare click centers the reader on the pointer (snapshot). The drag handler is defined before the snapshot handler in bindDocumentMinimap.
     let drag_position = html
@@ -261,14 +279,29 @@ fn app_shell_preserves_focus_and_updates_minimap_viewport_indicator() {
 
     for expected in [
         "const restoreFocus = () => {",
-        "const active = document.activeElement;",
         "active.focus({ preventScroll: true });",
-        "event.preventDefault();",
         "viewport.style.top = ",
         "viewport.style.height = ",
-        "updateMinimapViewport();",
     ] {
         assert_contains(&html, expected);
+    }
+
+    // Three lines the page holds six, a hundred and ten, and twenty-one times over: the focus is taken before the jump, the press keeps the page from doing its own thing with it, and the jump ends by placing the box.
+    for (inside, expected) in [
+        (
+            "const restoreFocus = () => {",
+            "const active = document.activeElement;",
+        ),
+        (
+            "track.addEventListener('pointerdown', (event) => {",
+            "event.preventDefault();",
+        ),
+        (
+            "const scrollToMinimapSnapshotPoint = (event) => {",
+            "updateMinimapViewport();",
+        ),
+    ] {
+        assert_in(&html, inside, expected);
     }
 }
 
@@ -303,13 +336,10 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
 
     for expected in [
         "function minimapAvailableHeight(minimap) {",
-        "const shellRect = app.getBoundingClientRect();",
         "const minimapRect = minimap.getBoundingClientRect();",
         "return Math.max(1, Math.floor(shellRect.bottom - minimapRect.top));",
         "function measureDocumentMinimap(track) {",
         "const scrollHeight = Math.max(1, Math.ceil(app.scrollHeight));",
-        "const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));",
-        "const scrollable = Math.max(0, scrollHeight - viewportHeight);",
         "const scrollTop = Math.min(scrollable, Math.max(0, app.scrollTop));",
         "const scaledDocumentHeight = Math.max(1, scrollHeight * previewScale);",
         "const availableHeight = minimap ? minimapAvailableHeight(minimap) : viewportHeight;",
@@ -317,6 +347,19 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
         "track.style.height = `${trackHeight}px`;",
     ] {
         assert_contains(&html, expected);
+    }
+
+    // Three measurements the page takes in several places each, so the two that measure the rail are named.
+    assert_in(
+        &html,
+        "function minimapAvailableHeight(minimap) {",
+        "const shellRect = app.getBoundingClientRect();",
+    );
+    for expected in [
+        "const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));",
+        "const scrollable = Math.max(0, scrollHeight - viewportHeight);",
+    ] {
+        assert_in(&html, "function measureDocumentMinimap(track) {", expected);
     }
 
     // The track caps its height at the scaled document height, so a short document gets a short rail with no dead space below it.
@@ -339,10 +382,16 @@ fn app_shell_rebinds_minimap_after_document_updates() {
             "app.innerHTML = `<div class=\"${layoutClass}\" style=\"display:none\">${state.document.html}</div>`;",
             "setMinimapMarkup(minimapHtml);",
             "bindDocumentMinimap();",
-            "updateMinimapViewport();",
         ] {
         assert_contains(&html, expected);
     }
+
+    // The page places the box in twenty-one places, so the rebind is the one that has to.
+    assert_in(
+        &html,
+        "function bindDocumentMinimap() {",
+        "updateMinimapViewport();",
+    );
 }
 
 #[test]
@@ -350,9 +399,15 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
     // The scroll listener is deliberately inert during a minimap drag, so the minimap must record the anchor itself. Without that, the anchor keeps the pre-drag position and the next late reflow — most visibly the async bottom pager landing seconds after the document — restores it and throws the reader back up the page.
     let html = app_shell_page();
 
-    for expected in [
+    // The clamp-then-repin pair is in the page twice, so the one helper every re-record goes through is what has to hold it.
+    assert_in(
+        &html,
         "function recordReaderScrollPosition() {",
         "clampReaderScrollPosition();\n  refreshReaderScrollAnchor();",
+    );
+
+    for expected in [
+        "function recordReaderScrollPosition() {",
         // Every re-record goes through the one helper, which keeps the place the reader is holding when there is nothing to measure -- a reader off screen answers against boxes that all read zero, and the search below falls through to the last block of the document.
         "function refreshReaderScrollAnchor() {\n  if (readerOffScreen()) {",
         // Rail click (pointerdown, so already flagged as dragging).
@@ -366,10 +421,8 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
     }
 
     // Mid-gesture, the queued pass must not re-pin at all: its anchor predates the drag, so restoring it would fight the pointer and undo the jump. A wheel scroll is guarded for the same reason — the anchor is deliberately only refreshed once the scroll settles, so it is stale by design until then.
-    let update_start = html
-        .find("function scheduleReaderLayoutUpdate(")
+    let update_body = block_opened_by(&html, "function scheduleReaderLayoutUpdate() {")
         .expect("app shell should schedule reader layout updates");
-    let update_body = &html[update_start..];
     let gesture_guard = update_body
         .find("if (minimapDragging || readerScrolling) {")
         .expect("the layout pass should bail while a drag or a scroll owns the reader");

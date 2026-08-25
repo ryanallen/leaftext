@@ -105,13 +105,10 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
             "event.button === 4",
             "return 'goForward';",
             "window.addEventListener('mousedown', (event) => {",
-            "event.preventDefault();",
             "const isBackShortcut = event.altKey && !event.ctrlKey && !event.metaKey && key === 'ArrowLeft';",
             "const isMacBackShortcut = event.metaKey && !event.altKey && !event.ctrlKey && key === 'ArrowLeft';",
             "event.key.toLowerCase() === 'w' && currentState.active != null",
             "send({ command: 'closeTab', index: currentState.active });",
-            "command: 'switchTab',",
-            "code_scroll: codeViewActive ? viewScrollFraction() : null,",
             "send({ command: 'closeTab', index: Number(close.dataset.tabClose) });",
             "send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });",
             "send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
@@ -122,6 +119,23 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
         ] {
             assert_contains(&html, expected);
         }
+
+    // Three lines the page holds over and over: the press is what has to swallow the browser's own answer to a mouse button, and Ctrl+Tab is what has to switch tabs and carry the place in the source view with it.
+    assert_in(
+        &html,
+        "window.addEventListener('mousedown', (event) => {",
+        "event.preventDefault();",
+    );
+    for expected in [
+        "command: 'switchTab',",
+        "code_scroll: codeViewActive ? viewScrollFraction() : null,",
+    ] {
+        assert_in(
+            &html,
+            "if (event.ctrlKey && !event.metaKey && !event.altKey && event.key === 'Tab') {",
+            expected,
+        );
+    }
 
     assert!(
         !html.contains(r#"<path d="m15 18-6-6 6-6"/>"#),
@@ -188,12 +202,18 @@ fn app_shell_persists_and_applies_speed_reader_setting() {
         "function setSpeedReaderEnabled(enabled) {",
         "document.documentElement.dataset.speedReader = String(speedReaderEnabled);",
         "send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });",
-        "applySpeedReaderToDocument();",
         "function leadAnchorPrefixLength(count) {",
         "anchor.className = 'speed-reader-anchor';",
     ] {
         assert_contains(&html, expected);
     }
+    // A render applies it too, so turning it on is what has to reach the document that is already open.
+    assert_in(
+        &html,
+        "function setSpeedReaderEnabled(enabled) {",
+        "applySpeedReaderToDocument();",
+    );
+
     // The Settings checkbox and everything that fed it are gone.
     assert!(!html.contains(r#"id="speedReaderEnabled""#));
     assert!(!html.contains("speedReaderEnabledControl"));
@@ -308,7 +328,12 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
         "if (mode === 'daylight') return isDaytime() ? 'light' : 'dark';",
     );
     assert_contains(&html, "const scheduleDaylight = () => {");
-    assert_contains(&html, "subscribe(listener)");
+    // The page's own settings object holds that line too, so the bootstrap's is named by what it does with the listener.
+    assert_contains(
+        &html,
+        "      listeners.add(listener);
+      listener(snapshot());",
+    );
     assert_contains(&html, "listeners.forEach((listener) => listener(theme))");
     assert_contains(
         &html,
@@ -404,7 +429,8 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
 
     // One approved headline, subtitle and sentence per family, so a line dropped out of the registry fails here rather than on somebody's home screen.
     for expected in [
-        "Turn over a new leaf.",
+        // The registry's own spelling: the words alone are in the page three times, two of them a blank block's placeholder.
+        "hero: 'Turn over a new leaf.',",
         "Knowledge kept, leaf by leaf.",
         "A palm-leaf book was threaded through a single hole and bound between wooden covers. Open yours.",
         "Refine your mind.",

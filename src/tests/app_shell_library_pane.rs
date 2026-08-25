@@ -254,7 +254,9 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 
     // State seeded from the host-injected settings, not localStorage.
     assert!(html.contains("let libraryUserClosed = LEAF_SETTINGS.libraryClosed === true;"));
-    assert!(html.contains("LEAF_SETTINGS.libraryWidth"));
+    assert!(html.contains(
+        "let libraryWidth = Number.isFinite(LEAF_SETTINGS.libraryWidth) && LEAF_SETTINGS.libraryWidth > 0"
+    ));
 
     // Snap-shut closes mid-drag; the divider drag is rAF-throttled.
     assert!(html.contains("if (raw < SNAP_SHUT) {"));
@@ -291,7 +293,11 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
     assert!(html.contains("libraryOpen.addEventListener('click', toggleLibrary);"));
     assert!(html
         .contains("applyPaneLayout();\nsend({ command: 'getFolder', path: libraryProjectPath });"));
-    assert!(html.contains("window.addEventListener('resize', () => {"));
+    // Four fragments watch a resize, so the pane's own is named by the frame it throttles itself to.
+    assert!(html.contains(
+        "window.addEventListener('resize', () => {
+  if (paneResizeFrame) return;"
+    ));
 }
 
 #[test]
@@ -421,7 +427,9 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     assert!(!html.contains("window.leafSetScanProgress ="));
     assert!(html.contains("window.leafSetSearchResults ="));
     assert!(html.contains("const LEAF_SETTINGS = (window.__leafSettings"));
-    assert!(html.contains("send({ command: 'getFolder', path: libraryProjectPath });"));
+    // Three places ask for a folder; the boot's is the one paired with the first paint.
+    assert!(html
+        .contains("applyPaneLayout();\nsend({ command: 'getFolder', path: libraryProjectPath });"));
 
     // The search field, its debounced request, and the result-open + jump.
     assert!(html.contains(r#"<input id="librarySearch" class="library-search""#));
@@ -439,9 +447,9 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     assert!(html.contains(r#"data-open-path="${escapeAttr(node.path)}""#));
     assert!(html.contains(r#"data-open-path="${escapeAttr(path)}""#));
 
-    // Every string the pane shows is present, so none of it renders blank.
+    // Every string the pane shows is present, so none of it renders blank. The vault menu carries that word too, so the pane's own label is named where it is decided.
+    assert_in(&html, "function libraryRootLabel() {", "'Library'");
     for wording in [
-        "'Library'",
         "aria-label=\"Folder path\"",
         "`Open ${segment.name}`",
         "`Skipped folders: ${names.join(' › ')}`",
@@ -568,19 +576,19 @@ fn library_row_context_menu_offers_file_actions() {
 
     // The right-click menu is built from a list of file actions, ordered with the destructive delete flagged and set apart.
     assert!(html.contains("const CONTEXT_MENU_ITEMS = ["));
-    for action in [
-        "'open'",
-        "'cut'",
-        "'copy'",
-        "'copyPath'",
-        "'rename'",
-        "'reveal'",
-        "'properties'",
-        "'delete'",
+    // The whole row, inside that one list: a bare `'open'` is in the page twenty-seven times and holds nothing, and three of these rows are in a second menu as well.
+    for row in [
+        "{ action: 'open', label: 'Open' },",
+        "{ action: 'cut', label: 'Cut' },",
+        "{ action: 'copy', label: 'Copy' },",
+        "{ action: 'copyPath', label: 'Copy path' },",
+        "{ action: 'rename', label: 'Rename' },",
+        "{ action: 'reveal', label: 'Reveal file' },",
+        "{ action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },",
+        "{ action: 'delete', label: 'Delete', danger: true },",
     ] {
-        assert!(html.contains(action), "menu missing action {action}");
+        assert_in(&html, "const CONTEXT_MENU_ITEMS = [", row);
     }
-    assert!(html.contains("danger: true"));
 
     // Each action maps to the backend command that carries it out.
     assert!(html.contains("send({ command: 'copyFile', path, cut: true })"));
@@ -593,7 +601,6 @@ fn library_row_context_menu_offers_file_actions() {
 
     // The inline rename box and the new menu labels are present.
     assert!(html.contains("function openRenameBox(path, anchor)"));
-    assert!(html.contains("{ action: 'delete', label: 'Delete', danger: true }"));
 }
 
 #[test]
