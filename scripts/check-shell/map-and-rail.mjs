@@ -89,7 +89,7 @@ export function run() {
     }
   });
 
-  // Leaving the map destroys the drawing, and the camera used to go with it — so a reader who had zoomed into one corner of a vault came back to a fresh auto-fit of the whole thicket. What outlives the scene is taken on the one path that means the view is being left.
+  // Leaving the map destroys the drawing, and the camera goes with it unless something takes it first — a reader who has zoomed into one corner of a vault comes back to a fresh auto-fit of the whole thicket. What outlives the scene is taken on the one path that means the view is being left.
   check('the camera the map was left at is answered once, and only for the same picture', () => {
     const { keptGraphCameraFor, graphSignature } = booted;
     const same = { nodes: [{ path: 'a.md', degree: 1 }, { path: 'b.md', degree: 1 }], edges: [{ source: 'a.md', target: 'b.md' }] };

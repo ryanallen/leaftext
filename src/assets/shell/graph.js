@@ -370,7 +370,7 @@ window.leafSetGraph = (payload) => {
 function teardownGraph() {
   graphRequested = false;
   clearReaderLoading('graph');
-  // Leaving the map is not the map changing, so the corner the reader built up outlives the drawing. Taken here because this is the one path that means the view is being left, and spent by the next build, which has no scene to read it off.
+  // Leaving the map is not the map changing, so the corner the reader built up outlives the drawing. This is the one path that means the view is being left, and the next build is what spends it, having no scene to read it off.
   keptGraphCamera = graphScene ? { ...carryGraphLayout(graphScene), signature: graphScene.signature } : null;
   teardownGraphScene();
 }
