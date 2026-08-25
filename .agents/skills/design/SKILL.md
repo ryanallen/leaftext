@@ -109,12 +109,12 @@ If a fix changes what gets built rather than how it is described, choose among t
 **Search the suite before writing the box.** The same reading this skill already does, aimed at the tests:
 
 ```bash
-grep -rn "<the behavior>" src/tests/ src/app/tests.rs src/store/tests.rs scripts/check-shell/
+grep -rn "<the behavior>" src/tests/ src/app/tests/ src/store/tests.rs scripts/check-shell/
 ```
 
 - Where a test already covers the claim, **the box says so and names it** rather than asking for a second one. A phase that writes a test the suite already has is work done twice, and the second copy is the one that rots.
 - **A box naming a test that does not exist is struck**, with the reason, and rewritten as the test that is actually missing. That belongs in the record: a reader trusts a named test the way they trust a citation.
-- The box names the file it goes in — `src/tests/` per subject, `src/app/tests.rs` for the binary, `scripts/check-shell/` per subject for `src/assets/shell/`. A phase whose only work is a row in `design/` asks for no test; the design checks already refuse what is not listed.
+- The box names the file it goes in — `src/tests/` per subject, `src/app/tests/` per subject for the binary, `scripts/check-shell/` per subject for `src/assets/shell/`. A phase whose only work is a row in `design/` asks for no test; the design checks already refuse what is not listed.
 - **What genuinely cannot be tested here gets its line in the phase** — a real window, live selected text, a held pointer. Never the Mac build, the installer or the workflows; [`/check`](../check/SKILL.md) step 4 holds that rule.
 
 **A test gap this reading turns up that proves this ticket's change is a box in this ticket.**

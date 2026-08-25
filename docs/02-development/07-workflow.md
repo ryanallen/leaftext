@@ -44,17 +44,17 @@ Work here starts as a written plan and ends as a released version, and the same 
 | What changed | Where its test lives |
 |:--|:--|
 | `src/**.rs` — the library | `src/tests/`, one file per subject, with the shared helpers in `mod.rs` |
-| `src/app/**.rs` — the binary | `src/app/tests.rs` |
-| `src/platform.rs`, `journal.rs`, `pipe.rs`, `single_instance.rs` | `src/app/tests.rs` as well. These sit beside the library's files and belong to the binary, so nothing in `src/tests/` can see them — the file's folder does not tell you which crate it is in, `main.rs`'s own `mod` lines do |
+| `src/app/**.rs` — the binary | `src/app/tests/`, one file per subject |
+| `src/platform.rs`, `journal.rs`, `pipe.rs`, `single_instance.rs` | `src/app/tests/` as well. These sit beside the library's files and belong to the binary, so nothing in `src/tests/` can see them — the file's folder does not tell you which crate it is in, `main.rs`'s own `mod` lines do |
 | `src/store/**.rs` | `src/store/tests.rs` |
 | `installer/**.rs` — the Windows EXE installer | `installer/src/tests.rs`, run by `just check-installer`. It installs nothing: the plan is data, and the one test that writes drives a scratch folder and a scratch registry key and removes both |
 | `src/assets/shell/*.js` — the page's script | `scripts/check-shell/`, one file per subject — the file for the part that changed, and a new one where the subject is new. `scripts/check-shell.mjs` beside it is imports, the calls in order and the report, and it is what boots the fragments in order against a stand-in page |
 | `web/preview/host.js` — the browser's own host | `scripts/check-shell/browser-host.mjs`, which boots it over a stand-in module in that same page; the embed's host has `embed-host.mjs` beside it. A new command also owes a row in the host's own table, which `just check-web-commands` refuses the build without |
 | `site/*.js` and `docs/docs.js` — what draws the published pages | `scripts/check-site-boot.mjs`, which boots both entry readers and everything they import against a stand-in page, fetch and renderer module, and reads the page each one finished |
-| `reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
+| `reading.css`, `src/theme.rs`, `themes/` | the `src/tests/reading_css_*` subjects, `src/tests/theme_registry.rs`, and `just check-themes` |
 | A new class, component, token or icon | No test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` refuse what `design/` does not list |
 | A new `scripts/*.mjs` | A self-test on made-up input at the top of its own run, proving each refusal before a real file is opened, plus a line in `just verify` — `check-verify` fails on a check the suite does not run. A `check-*` gate never puts that proof behind a flag, because the gate never passes one and a matcher that quietly stopped matching would then pass everything |
-| A test that writes outside the repo | Anywhere above, and it asks `scratch_dir` for the folder rather than building a name — one helper per crate, in `src/tests/mod.rs` and `src/app/tests.rs`, naming the folder after the test that asked, this run's own process id and a counter. `just check-scratch-names` refuses a fixed name, a name whose only substitution is a clock reading, and two tests asking one helper for the same word |
+| A test that writes outside the repo | Anywhere above, and it asks `scratch_dir` for the folder rather than building a name — one helper per crate, in `src/tests/mod.rs` and `src/app/tests/mod.rs`, naming the folder after the test that asked, this run's own process id and a counter. `just check-scratch-names` refuses a fixed name, a name whose only substitution is a clock reading, and two tests asking one helper for the same word |
 
 A test is named as a sentence about behavior — `a_staged_update_installs_itself_at_launch_but_only_once` — and tests the rule rather than the implementation, so a rewrite that changed nothing a reader sees does not fail it. See [Building](02-building.md#verification-suite) for what the suite runs and how to run one step of it.
 

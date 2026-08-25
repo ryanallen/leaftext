@@ -101,7 +101,7 @@ export function run() {
     }
   });
 
-  // The request half of the CORS pair: a script fetched without anonymous mode has every throw inside it masked as `Script error.` with no place, whatever the response allows. The response half — the asset handler's allow-origin header — is held by src/tests/theme_registry.rs, and the page's own tag by src/tests/app_shell_chrome.rs.
+  // The request half of the CORS pair: a script fetched without anonymous mode has every throw inside it masked as `Script error.` with no place, whatever the response allows. The response half — the asset handler's allow-origin header — is held by src/tests/theme_registry.rs, and the page's own tag by src/tests/app_shell_chrome_boot.rs.
   check('every constructed script tag asks for its errors unmasked', () => {
     const constructors = [...source.matchAll(/document\.createElement\('script'\)/g)];
     if (constructors.length < 3) {

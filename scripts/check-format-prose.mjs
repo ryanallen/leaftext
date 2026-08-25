@@ -13,7 +13,7 @@
 //
 // **What holds the reading list itself, and what a green run does not say.** Every path recorded here is held to a file that exists, so a file renamed or deleted out from under the list fails rather than being printed as a name with nothing behind it. Beyond that, every `.rs` and `.js` under `src/` whose comment line names two or more of a list's rows — `src/assets/vendor/` skipped as compiled output, and each list's own source skipped because the check already reads that one as the table — is either in that list's `prose` or in its `looked` with a one-line reason the format words are there for something else. A file that gains such a comment fails with the two answers offered.
 //
-// **That catches an addition and never an omission.** A comment whose prose names one row or none is invisible to it, and the standing example is `src/main.rs:605` — "the window carries every row the table holds" is real prose about the diagram export table and names no format word at all, so it lives in the hand-typed list and nothing but a person could have put it there. `src/tests/app_shell_chrome.rs` is the same shape: two paragraphs about that table naming Markdown and nothing else. So a green run means the recorded paths are all real and nothing has quietly gained a comment about the list; it does not mean the list is every file that describes it.
+// **That catches an addition and never an omission.** A comment whose prose names one row or none is invisible to it, and the standing example is `src/main.rs:605` — "the window carries every row the table holds" is real prose about the diagram export table and names no format word at all, so it lives in the hand-typed list and nothing but a person could have put it there. `src/tests/app_shell_chrome_icons.rs` is the same shape: two paragraphs about that table naming Markdown and nothing else. So a green run means the recorded paths are all real and nothing has quietly gained a comment about the list; it does not mean the list is every file that describes it.
 //
 // The rules are proved on made-up lists before the real tree is opened, so a parser that quietly stops finding rows fails the build instead of passing everything.
 
@@ -42,8 +42,8 @@ const LISTS = [
       'src/app/events.rs',
       'src/main.rs',
       'src/assets/shell/flow-canvas.js',
-      'src/app/tests.rs',
-      'src/tests/app_shell_chrome.rs',
+      'src/app/tests/export.rs',
+      'src/tests/app_shell_chrome_icons.rs',
     ],
     looked: [
       ['src/markdown/images.rs', 'a picture named inside a mermaid box — `shot.png` is one example spelling in a comment about resolving a path, not a row of the export table'],

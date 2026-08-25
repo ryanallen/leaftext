@@ -27,7 +27,7 @@ const SELF = 'scripts/check-scratch-names.mjs';
 
 /// A fixed name that has to stay fixed: the file it is in, enough of the name to find it, and why. The reason is the point — without it the row is just a way of turning the rule off.
 export const ON_PURPOSE = [
-  ['src/app/tests.rs', 'leaf-link-fixtures',
+  ['src/app/tests/links.rs', 'leaf-link-fixtures',
     'only builds a name for a link test to resolve against; nothing is ever written there'],
   ['src/tests/mod.rs', 'leaf-render-fixtures',
     'only builds a name for an image test to resolve against; nothing is ever written there'],

@@ -89,8 +89,8 @@ const DIFFERS = [
 ];
 
 // The four test trees are carve-outs inside `src/` and `installer/`, so both sides of these pairs name those two prefixes and only a missing tree differs.
-const TREES_GUIDE = `${GUIDE_ANCHOR} \`src/\` and \`installer/\` are the app, and the four test trees inside them — \`src/tests/\`, \`src/app/tests.rs\`, \`src/store/tests.rs\` and \`installer/src/tests.rs\` — take no number.`;
-const TREES_SKILL = `${SKILL_ANCHOR} \`src/\` and \`installer/\`, less \`src/tests/\`, \`src/app/tests.rs\`, \`src/store/tests.rs\` and \`installer/src/tests.rs\`.`;
+const TREES_GUIDE = `${GUIDE_ANCHOR} \`src/\` and \`installer/\` are the app, and the four test trees inside them — \`src/tests/\`, \`src/app/tests/\`, \`src/store/tests.rs\` and \`installer/src/tests.rs\` — take no number.`;
+const TREES_SKILL = `${SKILL_ANCHOR} \`src/\` and \`installer/\`, less \`src/tests/\`, \`src/app/tests/\`, \`src/store/tests.rs\` and \`installer/src/tests.rs\`.`;
 
 // A `site/` pair is read against the compiled set as well as against the other paragraph, which is the second reading no other prefix gets.
 const SITE_GUIDE = `${GUIDE_ANCHOR} \`src/\` is the app, and \`site/minimap.js\` with it, because it is compiled into the binary.`;

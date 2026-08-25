@@ -8,7 +8,7 @@
 //
 // Out of reach on purpose: a selector carrying a class, an attribute, a pseudo-class or a combinator — `body.frameless`, `body:has(.app-surface)`, `body::before` — which is how the app's own window keeps every rule it needs. Element rules like `button` and `::selection` are out too: they restyle what a page already has, and both sites have shipped under them since v1.5.0.
 //
-// The compiled themes are not read here. `theme.rs` emits one custom property per row of `design/colors.md` and can emit nothing else, and `src/tests/reading_css.rs` walks the concatenated result the browser actually gets.
+// The compiled themes are not read here. `theme.rs` emits one custom property per row of `design/colors.md` and can emit nothing else, and `src/tests/reading_css_layout.rs` walks the concatenated result the browser actually gets.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

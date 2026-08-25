@@ -1,0 +1,85 @@
+//! The raw source view and the payload it fetches.
+
+use super::*;
+
+#[test]
+fn a_document_opened_while_reading_source_opens_in_source() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/notes/first.md"));
+    assert!(
+        !workspace.tabs[0].code_view,
+        "the first tab starts in the reading view"
+    );
+
+    // The view is where the reader is working, not a property of the file they picked, so opening one from the pane must not throw them back to the page.
+    workspace.tabs[0].code_view = true;
+    workspace.open_path(PathBuf::from("/notes/second.md"));
+    assert_eq!(workspace.active, Some(1));
+    assert!(workspace.tabs[1].code_view);
+
+    // And back the other way: leaving source leaves it for what opens next.
+    workspace.tabs[1].code_view = false;
+    workspace.open_path(PathBuf::from("/notes/third.md"));
+    assert!(!workspace.tabs[2].code_view);
+
+    // Returning to a tab shows that tab's own view, not the one you came from.
+    workspace.tabs[0].code_view = true;
+    workspace.set_active(0);
+    assert!(workspace.tabs[0].code_view);
+}
+
+/// One code-view payload is held at a time on purpose, so a test that stages one takes this until it is done with the slot — on the harness's threads another test's staging supersedes it and the read is a 404. Poison is shrugged off so one broken test is one failure.
+static SOURCE_PAYLOAD_SLOT: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+#[test]
+fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
+    let _slot = SOURCE_PAYLOAD_SLOT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let url = stage_source_payload("{\"html\":\"x\"}".to_string());
+
+    let served = source_payload_response(&url);
+    assert_eq!(served.status, 200);
+    assert_eq!(served.body, b"{\"html\":\"x\"}");
+    assert_eq!(
+        served.allow_origin, "*",
+        "the payload is a different origin from the page; without CORS the fetch dies"
+    );
+    assert!(served.content_type.starts_with("application/json"));
+
+    // Staging again supersedes it, so only one payload is ever held.
+    let next = stage_source_payload("{\"html\":\"y\"}".to_string());
+    assert_ne!(url, next, "each entry gets its own URL");
+    assert_eq!(source_payload_response(&next).body, b"{\"html\":\"y\"}");
+    assert_eq!(
+        source_payload_response(&url).status,
+        404,
+        "a superseded payload must not still be served"
+    );
+
+    // A URL naming no payload we hold is a 404, not a panic or a stale body.
+    assert_eq!(
+        source_payload_response("http://leaf-source.local/payload/nonsense").status,
+        404
+    );
+}
+
+#[test]
+fn the_code_view_script_carries_a_url_and_not_the_source() {
+    // The whole point: the megabytes stay behind the URL. A regression here is silent — it still works, just slowly.
+    let _slot = SOURCE_PAYLOAD_SLOT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let payload = code_view_payload("huge text", "markdown", "Markdown", false, None);
+    let script = code_view_fetch_script(&stage_source_payload(payload));
+
+    assert!(script.contains("leafLoadCodeView"), "{script}");
+    assert!(
+        !script.contains("huge"),
+        "the script must not carry the source: {script}"
+    );
+    assert!(
+        script.len() < 200,
+        "the script should be a URL, not a payload: {script}"
+    );
+}

@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The four test trees. A read of the loop from any of them is the same claim. */
-const TREES = ['src/app/tests.rs', 'src/tests', 'src/store/tests.rs', 'installer/src/tests.rs'];
+const TREES = ['src/app/tests', 'src/tests', 'src/store/tests.rs', 'installer/src/tests.rs'];
 
 /** Both spellings the suite uses — the binary's own `event_loop.rs`, and the same file reached from the library's tree — and the bytes form beside the string one, since a read is a read. */
 const READ = /include_(?:str|bytes)!\(\s*"[^"]*event_loop\.rs"\s*\)/g;

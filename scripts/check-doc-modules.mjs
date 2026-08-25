@@ -30,7 +30,7 @@ const PAGE = 'docs/02-development/01-architecture.md';
 const SECTION = '## Source files';
 
 /** The three test trees the section's own last entry names. Skipped rather than mapped. */
-const TEST_TREES = ['src/tests/', 'src/app/tests.rs', 'src/store/tests.rs'];
+const TEST_TREES = ['src/tests/', 'src/app/tests/', 'src/store/tests.rs'];
 
 // The tree has had scores of modules for its whole life. A count far off that means the walk stopped matching, not that the app shrank — and an empty walk would otherwise pass a page that named nothing.
 const FEWEST_MODULES = 60;

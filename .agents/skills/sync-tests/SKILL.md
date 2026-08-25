@@ -34,19 +34,19 @@ git diff --name-only HEAD~5..HEAD   # recent
 | changed | test |
 | --- | --- |
 | `src/**.rs` (library) | `src/tests/`, one file per subject — add the `mod` line in `src/tests/mod.rs` if the subject is new |
-| `src/app/**.rs` (binary) | `src/app/tests.rs` |
-| `src/platform.rs`, `journal.rs`, `pipe.rs`, `single_instance.rs` | `src/app/tests.rs` as well — these sit beside the library's files and belong to the binary, so nothing in `src/tests/` can see them. `main.rs`'s `mod` lines are what settle which crate a top-level file is in, not the folder it sits in |
+| `src/app/**.rs` (binary) | `src/app/tests/`, one file per subject |
+| `src/platform.rs`, `journal.rs`, `pipe.rs`, `single_instance.rs` | `src/app/tests/` as well — these sit beside the library's files and belong to the binary, so nothing in `src/tests/` can see them. `main.rs`'s `mod` lines are what settle which crate a top-level file is in, not the folder it sits in |
 | `src/store/**.rs` | `src/store/tests.rs` |
 | `installer/**.rs` — the Windows EXE installer | `installer/src/tests.rs`, run by `just check-installer`. It installs nothing: the plan is data, and the one test that writes drives a scratch folder and a scratch registry key and removes both |
 | `src/assets/shell/*.js` | `scripts/check-shell/`, one file per subject — the file for the part that changed, and a new one where the subject is new. `scripts/check-shell.mjs` beside it is imports, the calls in order and the report |
 | `site/*.js`, `docs/docs.js` — what draws the published pages | `scripts/check-site-boot.mjs`, which boots both entry readers and everything they import against a stand-in page, fetch and renderer module. It reads the finished page, never the absence of a throw: both readers catch a mid-boot fault into a status line |
-| `src/assets/reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
+| `src/assets/reading.css`, `src/theme.rs`, `themes/` | the `src/tests/reading_css_*` subjects, `src/tests/theme_registry.rs`, and `just check-themes` |
 | a new class, component, token or icon | no test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list. Run them and add the row |
 | a new `scripts/*.mjs` | a self-test on made-up input at the top of its own run, and a line in `just verify`. A `check-*` gate never puts that proof behind a flag: the gate would pass it and a matcher that quietly stopped matching would pass everything |
 | a test that writes outside the repo | anywhere above, under a name carrying the run's own process id. Two runs at once share every fixed one, and `just check-scratch-names` refuses it |
 | `wix/`, `.github/workflows/` | **cannot be run here** — say so instead of pretending |
 
-The subject files today: `app_shell_chrome` `app_shell_library` `app_shell_reader` `app_shell_scripts` `code_intel` `data_xml` `doc_graph` `editing` `eml` `encoding` `folder_tree` `git` `glossary` `images` `indexer_pager` `markdown_code` `markdown_github` `markdown_rawhtml` `markdown_render` `minimap` `png` `reading_css` `remote` `settings_paths` `theme_registry` `updater` `vault_corpus`. Shared helpers are in `src/tests/mod.rs` — use them rather than writing a second `assert_contains`.
+The subject files today: `app_shell_chrome_bar` `app_shell_chrome_boot` `app_shell_chrome_export` `app_shell_chrome_icons` `app_shell_chrome_sheets` `app_shell_chrome_tabs` `app_shell_library_graph` `app_shell_library_pane` `app_shell_library_vaults` `app_shell_reader_document` `app_shell_reader_editing` `app_shell_reader_minimap` `app_shell_scripts` `code_intel` `data_xml` `doc_graph` `editing` `eml` `encoding` `folder_tree` `git` `glossary` `images` `indexer_pager` `known_folders` `markdown_code` `markdown_github` `markdown_rawhtml` `markdown_render` `minimap` `png` `query` `reading_css_code_view` `reading_css_document` `reading_css_grain` `reading_css_layout` `reading_css_motion` `reading_css_reader` `reading_css_tokens` `remote` `settings_paths` `theme_registry` `updater` `vault_corpus` `web_core`. Shared helpers are in `src/tests/mod.rs` — use them rather than writing a second `assert_contains`.
 
 ## Process
 
@@ -59,7 +59,7 @@ The diff, per file. For each changed function, ask what a caller would get wrong
 Search the suite for it before writing anything:
 
 ```bash
-grep -rn "<function or behavior>" src/tests/ src/app/tests.rs scripts/check-shell/
+grep -rn "<function or behavior>" src/tests/ src/app/tests/ scripts/check-shell/
 ```
 
 Report one row per change: the change, the test that covers it, or **missing**. A test that only proves the code runs is missing.
@@ -102,7 +102,7 @@ Leave the tests uncommitted. Say which files gained a test, which changes are co
 ## Reference
 
 - `src/tests/mod.rs` — the module list and the shared helpers.
-- `src/app/tests.rs` — the binary's tests: tabs, history, watching, link routing, file actions.
+- `src/app/tests/` — the binary's tests, one file per subject with the shared helpers in its own `mod.rs`: tabs, history, watching, link routing, file actions.
 - `scripts/check-shell/` — the front-end's checks, one file per subject, with `shared.mjs` holding the collector, the fake page and what more than one of them reaches for.
 - `scripts/check-shell.mjs` — what runs them, in order, and prints the report.
 - `/check` — runs this, then `just verify`.

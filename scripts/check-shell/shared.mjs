@@ -115,7 +115,7 @@ export function detachChild(child) {
   child.parentElement = null;
 }
 
-/** The selectors in a comma list, each trimmed and its spacing squeezed. Split only where the comma is the list's own: a comma inside `:is(...)` or a bracket separates selectors within one entry, and cutting there hands the matcher fragments that are not selectors at all. The same rule as `wearer_list` in `src/tests/app_shell_chrome.rs`, which splits the page's scrollbar-wearer list on the Rust side. */
+/** The selectors in a comma list, each trimmed and its spacing squeezed. Split only where the comma is the list's own: a comma inside `:is(...)` or a bracket separates selectors within one entry, and cutting there hands the matcher fragments that are not selectors at all. The same rule as `wearer_list` in `src/tests/app_shell_chrome_sheets.rs`, which splits the page's scrollbar-wearer list on the Rust side. */
 export function selectorParts(selector) {
   const parts = [];
   let depth = 0;

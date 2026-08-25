@@ -72,7 +72,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
 
 #[test]
 fn defaulted_colors_compile_to_a_copied_value_not_a_pointer() {
-    // A `Default` in design/colors.md lets a family leave a row out. What it gets is the named row's *value*, written into its own block as a hex: a `var()` there would be a second name for that color, which src/tests/reading_css.rs refuses, and it would make a family's compiled block a mix of colors and indirection to read.
+    // A `Default` in design/colors.md lets a family leave a row out. What it gets is the named row's *value*, written into its own block as a hex: a `var()` there would be a second name for that color, which src/tests/reading_css_tokens.rs refuses, and it would make a family's compiled block a mix of colors and indirection to read.
     let css = reading_mode_css();
 
     for source in theme_sources() {
