@@ -82,7 +82,7 @@ The leaf mark at the left is the way home — click it to return to the no-file 
 
 ### Export the page
 
-The export button in the app bar — shown only while a rendered document is in front of you — asks where the file goes, and which kind of file it is. On Windows the save window carries every kind it can write and the ending on the name is what gets written; on a Mac that window shows no format at all, so a short menu asks first and the window then carries the one you picked. Either way the list is the one the app can actually write on the machine you are on. The button steps aside on the home screen, in the [source view](07-editing.md#code-view) and on the [graph](03-library.md#graph), since none of those is a page to hand over.
+The export button in the app bar — shown only while a rendered document is in front of you — asks where the file goes, and which kind of file it is. On Windows the save window carries every kind it can write and the ending on the name is what gets written; on a Mac that window shows no format at all, so a short menu asks first and the window then carries the one you picked. Either way the list is the one the app can actually write on the machine you are on. The reader stays exactly where it is while the save window is open and while the file is rendered: its tabs, bar, pane and toolbar do not move. The button steps aside on the home screen, in the [source view](07-editing.md#code-view) and on the [graph](03-library.md#graph), since none of those is a page to hand over.
 
 **PDF document** writes the page as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line.
 
