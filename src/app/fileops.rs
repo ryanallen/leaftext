@@ -329,7 +329,7 @@ pub(crate) fn page_export_rows() -> Vec<(&'static str, &'static [&'static str])>
 
 /// Every way the page can be written out as `window.__leafPageExports` — the words the save window shows, and the ending each row writes.
 ///
-/// The page used to keep a copy of this list. It cannot: a Mac panel shows no format at all, so the page draws the menu instead, and it draws it on a Mac browser reading the published site as well — where every export ends in the browser's own print. A row the page offered that its host could not write handed that reader a printed PDF and called it a picture. So the host says what it writes, each host says it for itself, and a page whose host says nothing offers the one row every host has.
+/// The page cannot keep a copy of this list. A Mac panel shows no format at all, so the page draws the menu instead, and it draws it on a Mac browser reading the published site as well — where every export ends in the browser's own print, so a row the page offers that its host cannot write hands that reader a printed PDF and calls it a picture. Each host says what it writes, and a page whose host says nothing offers the one row every host has.
 ///
 /// The order is the table's, which is the order the save window offers them in, and it is load-bearing: Windows names a file with no ending off the first.
 pub fn initial_page_exports_script() -> String {
@@ -434,7 +434,7 @@ pub(crate) fn export_page(
             }
         }
         Some(PageExportKind::Picture) => {
-            // The writer raises a hold of its own for the capture and drops it again, because the ask pipe reaches it with nothing held. The hold counts, so this arm still has to drop the one the page raised before it sent — otherwise the count never reaches zero, the paper class stays on, and every control in the app is hidden under it, the close button with them.
+            // The writer raises a hold of its own for the capture and drops it again, because the ask pipe reaches it with nothing held. The hold counts, so this arm still owes the one the page raised before it sent: a count that never reaches zero leaves the paper class on, and every control in the app hidden under it, the close button with them.
             let outcome = write_page_picture_at(webview, scale, &target, width, height);
             release(page);
             match outcome {
@@ -1018,6 +1018,7 @@ pub(crate) fn capture_page(
     height: f64,
     _format: &PictureFormat,
 ) -> Result<PageShot, String> {
+    use objc2::{AllocAnyThread, MainThreadMarker};
     use objc2_app_kit::{NSBitmapImageFileType, NSBitmapImageRep, NSImage};
     use objc2_foundation::{NSData, NSDictionary, NSError, NSPoint, NSRect, NSSize};
     use objc2_web_kit::WKPDFConfiguration;
@@ -1027,9 +1028,11 @@ pub(crate) fn capture_page(
     /// Long enough for a document of any length this app opens, short enough that a render which never lands does not take the window with it.
     const RENDER_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
 
+    let main = MainThreadMarker::new()
+        .ok_or_else(|| "a picture is rendered on the window's own thread".to_string())?;
     let view = page.webview();
     // The whole document rather than the visible view: this is the one Mac call that takes a rect past the fold, which is why the picture is drawn out of a sheet rather than out of a snapshot.
-    let how = unsafe { WKPDFConfiguration::new() };
+    let how = unsafe { WKPDFConfiguration::new(main) };
     unsafe {
         how.setRect(NSRect::new(
             NSPoint::new(0.0, 0.0),
@@ -1045,8 +1048,8 @@ pub(crate) fn capture_page(
         let sheet = unsafe { &*sheet };
         let picture = NSImage::initWithData(NSImage::alloc(), sheet).and_then(|drawn| {
             // The sheet is measured in points and the picture in CSS pixels, which on this path are the same number: the rect above was written in the size the page measured.
-            unsafe { drawn.setSize(NSSize::new(width, height)) };
-            let tiff = unsafe { drawn.TIFFRepresentation() }?;
+            drawn.setSize(NSSize::new(width, height));
+            let tiff = drawn.TIFFRepresentation()?;
             let bitmap = NSBitmapImageRep::imageRepWithData(&tiff)?;
             unsafe {
                 bitmap.representationUsingType_properties(
@@ -1061,7 +1064,7 @@ pub(crate) fn capture_page(
                 .ok_or_else(|| "The picture could not be read back.".to_string()),
         );
     });
-    unsafe { view.createPDFWithConfiguration_completionHandler(&how, &handler) };
+    unsafe { view.createPDFWithConfiguration_completionHandler(Some(&how), &handler) };
     answer
         .recv_timeout(RENDER_WAIT)
         .map_err(|_| "The view did not answer with a picture.".to_string())?

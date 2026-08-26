@@ -192,7 +192,7 @@ export function run() {
     }
   });
 
-  // A Mac panel throws every label away, so the app draws the menu itself — and it draws it on a Mac browser reading the published site too, where every export ends in that browser's own print. So the rows have to be the host's rather than the page's: a row this page offered that its host could not write handed that reader a printed PDF and called it a picture.
+  // A Mac panel throws every label away, so the app draws the menu itself — and it draws it on a Mac browser reading the published site too, where every export ends in that browser's own print. So the rows are the host's rather than the page's: a row the page offers that its host cannot write hands that reader a printed PDF and calls it a picture.
   const macPage = (extras) =>
     runShell(source, {
       navigator: { userAgent: 'Macintosh; Intel Mac OS X 10_15_7', platform: 'MacIntel', clipboard: { writeText: () => {} } },
@@ -269,7 +269,7 @@ export function run() {
   });
 
   check('Pressing Export leaves exactly one hold for the host to give back', () => {
-    // The hold counts rather than switches, so what the host has to undo is a number and the page is what sets it. It shipped as two — the page raised one and the host raised a second for the render, and only one came off — and the app was left wearing the paper, where every one of its own controls is hidden and the close button with them.
+    // The hold counts rather than switches, so what the host has to undo is a number and the page is what sets it. A count that never reaches zero leaves the app wearing the paper, where every one of its own controls is hidden and the close button with them.
     const sent = [];
     const page = runShell(source, { ipc: { postMessage: (message) => sent.push(JSON.parse(message)) } });
     let held = 0;

@@ -1,6 +1,6 @@
 [package]
 name = "leaftext"
-version = "1.34.4"
+version = "1.35.0"
 edition = "2021"
 
 # The window, the web view, the file dialog, the watcher and SQLite are the desktop's, and none of them builds for a browser. They are optional so the library alone — the renderer, the format table, the editor's maps and the host boundary — compiles for `wasm32`, which is what a browser core is. The binary asks for them by name, so a plain `cargo build` is unchanged.
@@ -136,8 +136,9 @@ objc2-app-kit = { version = "0.3.2", default-features = false, features = [
 # The other half of that photograph: `takeSnapshotWithConfiguration:` on the `WKWebView` `wry` hands back, and the object that says how to take it. Both already compile into this binary through `wry`, at this version, so naming them adds no code and no feature — what it buys is the name to call the method by. `block2` is how its answer comes back, and it is in the tree for the same reason.
 objc2-web-kit = { version = "0.3.2", default-features = false, features = [
     "std",
+    "block2",
     "WKWebView",
-    "WKSnapshotConfiguration",
+    "WKPDFConfiguration",
 ] }
 block2 = "0.6.2"
 objc2-foundation = { version = "0.3.2", default-features = false, features = [
