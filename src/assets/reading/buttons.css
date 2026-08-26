@@ -107,7 +107,7 @@ button:disabled:hover {
 }
 .history-button:hover:not(:disabled) {
   border-color: transparent;
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
 }
 .history-button:disabled,
 .history-button:disabled:hover {

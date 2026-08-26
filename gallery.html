@@ -2109,8 +2109,8 @@
   --lt-grain-dark: rgba(0, 0, 0, 0.35);
   --lt-grain-dark-heavy: rgba(0, 0, 0, 0.72);
   --lt-grain-lift: rgba(255, 255, 255, 0.07);
-  --lt-grid-light: rgba(0, 0, 0, 0.06);
-  --lt-grid-dark: rgba(255, 255, 255, 0.04);
+  --lt-grid-light: rgba(0, 0, 0, 0.12);
+  --lt-grid-dark: rgba(255, 255, 255, 0.075);
   --lt-grain-hover: rgba(0, 0, 0, 0.55);
   /* Fixed colors */
   --lt-mask-opaque: #000;
@@ -2432,8 +2432,6 @@
   --lt-grain-dot: var(--app-bar-grain);
   /* The wide notebook grid's ink on chrome, over the fine speckle rather than instead of it. Overridden to lift rather than darken on dark themes, for the reason --reader-row-grain is. */
   --app-bar-grid: var(--lt-grid-light);
-  /* A hover fill for a control standing on the chrome: the wash over the chrome's own shade and speckle rather than over nothing. A see-through wash lets the wide dot grid read straight through the control, which makes a button look like a hole rather than a thing sitting on the paper. The speckle is deliberately the chrome's own — this is the one place the finished gradient is wanted rather than the ink, because every surface that takes this fill wears the same one. */
-  --lt-wash-hover-chrome: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px) 0 0 / 2px 2px repeat fixed, linear-gradient(var(--lt-surface), var(--lt-surface));
   /* How far apart the wide dot grid's dots are, and the one place that number is written: the page reads it back to work out how far to slide the lattice while the window moves, so the two cannot drift. A whole multiple of the fine grain's 2px, or the two lattices beat against each other across the window. */
   --lt-grid-pitch: 20px;
   /* How far each chrome surface's grid layer starts into the lattice, so the five of them share one phase and no seam opens where two meet. Written by the page from each box's own offset within the window, on layout and never per frame; zero here is the app surface's own corner, which most of them stand on. */
@@ -2632,13 +2630,6 @@ body.mac-frame.is-fullscreen::before {
   background-position: var(--lt-grid-phase-x) var(--lt-grid-phase-y);
   transform: translate3d(var(--lt-grid-offset-x), var(--lt-grid-offset-y), 0);
 }
-/* Behind the surface's own content, so a tab, a crumb or a button drawn on the chrome covers the grid rather than wearing it. Only the surfaces that already stand in a layer of their own can take it: a negative layer escapes to the nearest one, and the shell and the pane have none — giving them one drops the reader's corner arc behind the app bar, which is the one thing that arc exists to sit on top of. */
-.library-header::before,
-.library-crumbs::before,
-.reader-corner::before,
-.app-bar::before {
-  z-index: -1;
-}
 /* Every piece of app chrome — this bar, the library pane, its two bands, the search field — takes `--lt-surface` itself. No per-surface tint or mix: any variant shows up as a tone seam where two of them meet. */
 .app-bar {
   position: fixed;
@@ -2768,9 +2759,8 @@ body.mac-frame.is-fullscreen::before {
   border-right: var(--lt-stroke-1) solid transparent;
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
-  /* An inactive tab reads as a darker cell by tiling the header's cassette grain at its heavier weight — denser ink, no outline needed. The bar's own shade under it rather than nothing: a see-through cell wears the bar's dot grid, and a tab is a thing sitting on the chrome, not a window onto it. */
+  /* An inactive tab reads as a darker cell by tiling the header's cassette grain at its heavier weight — denser ink, no outline needed. */
   --lt-grain-dot: var(--library-header-grain);
-  background-color: var(--lt-surface);
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
@@ -3488,7 +3478,7 @@ button:disabled:hover {
 }
 .history-button:hover:not(:disabled) {
   border-color: transparent;
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
 }
 .history-button:disabled,
 .history-button:disabled:hover {
@@ -3603,9 +3593,6 @@ body.is-library-settling .app-bar::after {
 .reader-minimap {
   grid-column: 3;
   grid-row: 1;
-  /* Over the shell's dot grid, which is a layer of its own and would otherwise paint across the page drawn in the rail. The shell cannot put that layer underneath its content the way the bar and the bands do — see the grid's own rule. */
-  position: relative;
-  z-index: 1;
   min-width: 0;
   padding-left: var(--reader-minimap-gap);
   padding-top: var(--app-bar-height);
@@ -3847,7 +3834,7 @@ body.library-resizing {
   font-family: inherit;
 }
 .library-hit:hover {
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
 }
 .library-hit-title {
   display: block;
@@ -3927,7 +3914,7 @@ body.library-resizing {
   color: var(--lt-muted-foreground);
 }
 .library-search-clear:hover {
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
 }
 .library-search-clear .lt-icon {
   display: block;
@@ -4032,7 +4019,7 @@ body.library-resizing {
   text-overflow: ellipsis;
 }
 .library-crumb:hover {
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* The folder you are in: full ink, and it gets the leftover room — the ancestors above it give way first. */
@@ -4052,7 +4039,7 @@ body.library-resizing {
   padding: var(--lt-space-1) var(--lt-space-4);
 }
 .library-crumb.is-elided[aria-expanded="true"] {
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* While the trail measures how much of the path fits, nothing shrinks or clips — every crumb reports the width it actually wants. Held for one synchronous pass inside a single task, so this state never paints. */
@@ -4081,7 +4068,7 @@ body.library-resizing {
 }
 .library-vault-switch:hover,
 .library-vault-switch[aria-expanded="true"] {
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* Open, the button and the vault's name beside it are one pill: what the list changes is the whole pane, not the 20px of icon you pressed. The button grows into the 2px gap and pulls the trail back by the same amount, so the name and every folder after it stay exactly where they were. The state is an attribute on the button, so a disk change rebuilding the trail underneath cannot lose it. */
@@ -4096,7 +4083,7 @@ body.library-resizing {
   height: 23px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* Standing at the vault's own root, the name is a span rather than a button, so nothing centers its text in a box this tall. It is also the only crumb there, so there is no ellipsis to lose. */
@@ -4259,7 +4246,7 @@ body.library-resizing {
 }
 .library-file:hover,
 .library-nav-folder:hover {
-  background: var(--lt-wash-hover-chrome);
+  background: var(--lt-wash-hover);
 }
 /* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere. */
 .library-file.is-selected,
@@ -9742,8 +9729,8 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 <div class="value"><code>lt-grain-dark</code><code>rgba(0, 0, 0, 0.35)</code></div>
 <div class="value"><code>lt-grain-dark-heavy</code><code>rgba(0, 0, 0, 0.72)</code></div>
 <div class="value"><code>lt-grain-lift</code><code>rgba(255, 255, 255, 0.07)</code></div>
-<div class="value"><code>lt-grid-light</code><code>rgba(0, 0, 0, 0.06)</code></div>
-<div class="value"><code>lt-grid-dark</code><code>rgba(255, 255, 255, 0.04)</code></div>
+<div class="value"><code>lt-grid-light</code><code>rgba(0, 0, 0, 0.12)</code></div>
+<div class="value"><code>lt-grid-dark</code><code>rgba(255, 255, 255, 0.075)</code></div>
 <div class="value"><code>lt-grain-hover</code><code>rgba(0, 0, 0, 0.55)</code></div>
 </div>
 <h3>Fixed colors</h3><div class="wall wide">

@@ -84,34 +84,20 @@ fn every_hover_fills_with_the_one_wash() {
         ".context-menu-item:hover",
         ".filter-menu-item.is-active",
         ".flow-menu-item:hover",
+        ".library-file:hover",
+        ".library-hit:hover",
+        ".library-crumb:hover",
+        ".library-vault-switch:hover",
         ".crumb-menu-edit:hover",
         ".reader-tool:hover",
         ".reader-subtool:hover",
+        ".history-button:hover:not(:disabled)",
     ] {
         assert!(
             rule_after(selector).contains("background: var(--lt-wash-hover);"),
             "expected {selector} to fill with the hover wash"
         );
     }
-
-    // A control standing on the chrome takes the same wash on the chrome's own ground, because a see-through fill there lets the notebook grid read straight through the thing under the pointer.
-    for selector in [
-        ".library-file:hover",
-        ".library-hit:hover",
-        ".library-crumb:hover",
-        ".library-search-clear:hover",
-        ".library-vault-switch:hover",
-        ".history-button:hover:not(:disabled)",
-    ] {
-        assert!(
-            rule_after(selector).contains("background: var(--lt-wash-hover-chrome);"),
-            "expected {selector} to fill with the hover wash on the chrome's ground"
-        );
-    }
-    assert_contains(
-        css,
-        "--lt-wash-hover-chrome: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)),",
-    );
 
     // And the wash is one mix of a color the family owns, so it can never come out the tone of what it sits on.
     assert_contains(
@@ -508,59 +494,6 @@ fn the_notebook_grid_stops_at_the_chrome_and_reaches_no_reading_surface_or_shado
         !css.contains("background-position: var(--lt-grid-offset-x)"),
         "a grid layer moved by its background position is the shape that took a drag to 7 frames a second"
     );
-}
-
-#[test]
-fn the_notebook_grid_sits_behind_whatever_the_chrome_carries() {
-    // A layer of dots over the surface paints over everything standing on it, so a tab, a crumb and the page drawn in the rail all wore the grid instead of covering it. Behind the surface's own content is where it belongs.
-    let css = reading_mode_css();
-    let under = rule_body(&css, ".library-header::before,");
-    assert_contains(under, "z-index: -1;");
-    let selectors = under.split('{').next().unwrap_or_default();
-    for surface in [
-        ".reader-corner::before",
-        ".app-bar::before",
-        ".library-crumbs::before",
-        ".library-header::before",
-    ] {
-        assert!(
-            selectors.split(',').any(|one| one.trim() == surface),
-            "{surface} stands in a layer of its own, so its grid goes behind what it carries"
-        );
-    }
-    // The shell and the pane are the two that cannot: a negative layer escapes to the nearest one, and giving either a layer of its own drops the reader's corner arc behind the app bar.
-    for escapes in [".library-shell::before", ".library-pane::before"] {
-        assert!(
-            !selectors.split(',').any(|one| one.trim() == escapes),
-            "{escapes} has no layer of its own, so a negative one escapes and the grid disappears"
-        );
-    }
-
-    // The rail's page is the one thing the shell's layer would still paint across, so it is lifted over it by hand.
-    let minimap = rule_body(&css, ".reader-minimap {");
-    assert_contains(minimap, "position: relative;");
-    assert_contains(minimap, "z-index: 1;");
-
-    // An inactive tab is a thing sitting on the bar, not a window onto it: without the bar's own shade under it the grid reads straight through.
-    assert_contains(
-        rule_body(&css, ".tab {"),
-        "background-color: var(--lt-surface);",
-    );
-
-    // And a hover fill on chrome stands on the chrome's own ground for the same reason — a see-through wash tints the dots rather than covering them.
-    for hovered in [
-        ".library-file:hover,",
-        ".library-crumb:hover {",
-        ".library-vault-switch:hover,",
-        ".library-hit:hover {",
-        ".library-search-clear:hover {",
-        ".history-button:hover:not(:disabled) {",
-    ] {
-        assert_contains(
-            rule_body(&css, hovered),
-            "background: var(--lt-wash-hover-chrome);",
-        );
-    }
 }
 
 #[test]

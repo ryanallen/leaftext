@@ -25,8 +25,6 @@
   --lt-grain-dot: var(--app-bar-grain);
   /* The wide notebook grid's ink on chrome, over the fine speckle rather than instead of it. Overridden to lift rather than darken on dark themes, for the reason --reader-row-grain is. */
   --app-bar-grid: var(--lt-grid-light);
-  /* A hover fill for a control standing on the chrome: the wash over the chrome's own shade and speckle rather than over nothing. A see-through wash lets the wide dot grid read straight through the control, which makes a button look like a hole rather than a thing sitting on the paper. The speckle is deliberately the chrome's own — this is the one place the finished gradient is wanted rather than the ink, because every surface that takes this fill wears the same one. */
-  --lt-wash-hover-chrome: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px) 0 0 / 2px 2px repeat fixed, linear-gradient(var(--lt-surface), var(--lt-surface));
   /* How far apart the wide dot grid's dots are, and the one place that number is written: the page reads it back to work out how far to slide the lattice while the window moves, so the two cannot drift. A whole multiple of the fine grain's 2px, or the two lattices beat against each other across the window. */
   --lt-grid-pitch: 20px;
   /* How far each chrome surface's grid layer starts into the lattice, so the five of them share one phase and no seam opens where two meet. Written by the page from each box's own offset within the window, on layout and never per frame; zero here is the app surface's own corner, which most of them stand on. */
@@ -226,9 +224,9 @@ body.mac-frame.is-fullscreen::before {
   transform: translate3d(var(--lt-grid-offset-x), var(--lt-grid-offset-y), 0);
 }
 /* Behind the surface's own content, so a tab, a crumb or a button drawn on the chrome covers the grid rather than wearing it. Only the surfaces that already stand in a layer of their own can take it: a negative layer escapes to the nearest one, and the shell and the pane have none — giving them one drops the reader's corner arc behind the app bar, which is the one thing that arc exists to sit on top of. */
-.library-header::before,
-.library-crumbs::before,
+.app-bar::before,
 .reader-corner::before,
-.app-bar::before {
+.library-crumbs::before,
+.library-header::before {
   z-index: -1;
 }
