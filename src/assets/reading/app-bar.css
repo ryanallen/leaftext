@@ -127,9 +127,8 @@
   border-right: var(--lt-stroke-1) solid transparent;
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
-  /* An inactive tab reads as a darker cell by tiling the header's cassette grain at its heavier weight — denser ink, no outline needed. The bar's own shade under it rather than nothing: a see-through cell wears the bar's dot grid, and a tab is a thing sitting on the chrome, not a window onto it. */
+  /* An inactive tab reads as a darker cell by tiling the header's cassette grain at its heavier weight — denser ink, no outline needed. */
   --lt-grain-dot: var(--library-header-grain);
-  background-color: var(--lt-surface);
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;

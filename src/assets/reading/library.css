@@ -92,9 +92,6 @@ body.is-library-settling .app-bar::after {
 .reader-minimap {
   grid-column: 3;
   grid-row: 1;
-  /* Over the shell's dot grid, which is a layer of its own and would otherwise paint across the page drawn in the rail. The shell cannot put that layer underneath its content the way the bar and the bands do — see the grid's own rule. */
-  position: relative;
-  z-index: 1;
   min-width: 0;
   padding-left: var(--reader-minimap-gap);
   padding-top: var(--app-bar-height);
