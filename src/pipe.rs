@@ -93,6 +93,15 @@ pub(crate) enum Ask {
         width: f64,
         height: f64,
     },
+    /// Write the page at the front out as a picture at `path`, with no save window in the way. The ending on the path is the format, the way it is in that window.
+    ///
+    /// The whole document rather than the visible view — the same picture the Export button's picture rows write, which is the one worth looking at. `width` and `height` are the page's own measurement, read with `eval` of `pageExportSize()` the way the PDF export's are, or the picture is a reading of somebody's arithmetic instead of the app's.
+    #[serde(rename = "shot")]
+    Shot {
+        path: PathBuf,
+        width: f64,
+        height: f64,
+    },
     /// Wait for the page to finish rendering, then answer. What a driven pass asks instead of guessing a sleep: guessing costs three seconds a command for a render that takes a fraction of that.
     #[serde(rename = "idle")]
     Idle,
@@ -159,6 +168,7 @@ where
                  {{\"ask\":\"save\",\"path\":\"notes/a.md\",\
                  \"expect\":\"the fingerprint doc answered\"}}, \
                  {{\"ask\":\"export\",\"path\":\"page.pdf\",\"width\":1280,\"height\":5819}}, \
+                 {{\"ask\":\"shot\",\"path\":\"page.png\",\"width\":1136,\"height\":29719}}, \
                  {{\"ask\":\"idle\"}}, \
                  {{\"ask\":\"version\"}}, {{\"ask\":\"quit\"}}"
             ))
@@ -254,7 +264,7 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
     let (reply, answers) = mpsc::sync_channel(1);
     // Read before the ask is spent building the event: an export is the one that takes real time on the loop.
     let budget = match ask {
-        Ask::Export { .. } => EXPORT_TIMEOUT,
+        Ask::Export { .. } | Ask::Shot { .. } => EXPORT_TIMEOUT,
         _ => REPLY_TIMEOUT,
     };
     let event = match ask {
@@ -296,6 +306,16 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
             width,
             height,
         } => UserEvent::PipeExport {
+            path,
+            width,
+            height,
+            reply,
+        },
+        Ask::Shot {
+            path,
+            width,
+            height,
+        } => UserEvent::PipeShot {
             path,
             width,
             height,

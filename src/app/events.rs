@@ -119,6 +119,13 @@ pub(crate) enum UserEvent {
         height: f64,
         reply: PipeReply,
     },
+    /// Somebody on the ask pipe wants the page written out as a picture at a path they name, skipping the save window they cannot answer. The same call the Export button's picture rows run, so what comes out is the picture a reader would get.
+    PipeShot {
+        path: PathBuf,
+        width: f64,
+        height: f64,
+        reply: PipeReply,
+    },
     /// Somebody on the ask pipe wants the app closed. This one only answers that the loop heard: closing here would end the process with the reply still in the pipe, where it is thrown away.
     PipeQuit { reply: PipeReply },
     /// Close now — the pipe thread saying the asker has taken its answer. The second half of `PipeQuit`, and the only thing that closes the app on its behalf.

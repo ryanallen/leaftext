@@ -38,6 +38,208 @@ fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
 }
 
 #[test]
+fn a_page_picture_is_measured_off_its_own_header_or_refused() {
+    // The engine answers an empty file when a format cannot hold a page this size, and that is the only way it ever says no — so "did a picture come back" is read off the bytes rather than off an error, and a header that does not parse has to mean nothing was written rather than a file nobody can open.
+
+    // A PNG: the signature, the IHDR length, the name, then the two sizes.
+    let png = |width: u32, height: u32| {
+        let mut bytes = b"\x89PNG\r\n\x1a\n".to_vec();
+        bytes.extend_from_slice(&13u32.to_be_bytes());
+        bytes.extend_from_slice(b"IHDR");
+        bytes.extend_from_slice(&width.to_be_bytes());
+        bytes.extend_from_slice(&height.to_be_bytes());
+        bytes
+    };
+    assert_eq!(picture_pixel_size(&png(1137, 29077)), Some((1137, 29077)));
+    // The tallest page the engine has been asked for, and one pixel of picture: both are pictures.
+    assert_eq!(picture_pixel_size(&png(1, 1)), Some((1, 1)));
+    // A header claiming no pixels is not a picture, whatever its signature says.
+    assert_eq!(picture_pixel_size(&png(0, 900)), None);
+    assert_eq!(picture_pixel_size(&png(900, 0)), None);
+
+    // A WebP: RIFF, the file size, WEBP, then the extended header, which carries each side as three little-endian bytes holding one less than the real value.
+    let webp = |width: u32, height: u32| {
+        let mut bytes = b"RIFF".to_vec();
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(b"WEBPVP8X");
+        // The chunk's length, its flags and the three reserved bytes it carries before the sizes.
+        bytes.extend_from_slice(&10u32.to_le_bytes());
+        bytes.extend_from_slice(&[0, 0, 0, 0]);
+        for side in [width, height] {
+            let less = side - 1;
+            bytes.extend_from_slice(&[
+                (less & 0xff) as u8,
+                ((less >> 8) & 0xff) as u8,
+                ((less >> 16) & 0xff) as u8,
+            ]);
+        }
+        bytes
+    };
+    assert_eq!(picture_pixel_size(&webp(1137, 4091)), Some((1137, 4091)));
+    // The tallest side the format holds, which is where the row below it stops being offered.
+    assert_eq!(picture_pixel_size(&webp(1137, 16383)), Some((1137, 16383)));
+
+    // The empty answer, which is the whole reason this function exists: a page the format could not hold.
+    assert_eq!(picture_pixel_size(b""), None);
+    // Anything that is not a picture at all, and a header cut off before its sizes.
+    assert_eq!(
+        picture_pixel_size(b"not a picture at all, not even close"),
+        None
+    );
+    assert_eq!(picture_pixel_size(&png(1137, 29077)[..20]), None);
+    assert_eq!(picture_pixel_size(b"RIFF\0\0\0\0WEBP"), None);
+}
+
+#[test]
+fn only_the_endings_the_save_window_offers_reach_the_engine() {
+    // The picture rows are written by asking the web view's own engine for a format by name, so an ending nobody offered must be refused before that ask rather than sent through as a name the engine has never heard of.
+    assert!(
+        page_picture_format("png").is_some(),
+        "the PNG row is offered on both platforms and has to be writable on both"
+    );
+    for unoffered in ["pdf", "html", "htm", "gif", "jpg", "jpeg", "svg", "", "PNG"] {
+        assert!(
+            page_picture_format(unoffered).is_none(),
+            "{unoffered} is not a picture row this window offers, so it must not reach the engine"
+        );
+    }
+
+    // Every picture ending the save window offers is one the engine writes, and every one it writes is offered: two lists that disagree is a row that writes nothing, or a format nobody can pick.
+    for (label, endings) in page_export_rows() {
+        for ending in endings {
+            let offered = page_picture_format(ending).is_some();
+            let a_picture = matches!(
+                page_export_kind(Path::new(&format!("a.{ending}"))),
+                Some(PageExportKind::Picture)
+            );
+            assert_eq!(
+                offered, a_picture,
+                "the {label} row spells {ending}, which the window and the engine disagree about"
+            );
+        }
+    }
+
+    // Every row this platform offers is one something answers for. A row reaching the save window that nothing answers is a reader picking a format and getting no file and no reason.
+    let offered = page_export_rows();
+    assert!(!offered.is_empty(), "the save window was left with no rows");
+    for (label, endings) in &offered {
+        for ending in *endings {
+            assert!(
+                page_export_kind(Path::new(&format!("a.{ending}"))).is_some(),
+                "the {label} row offers .{ending} and nothing answers for it"
+            );
+        }
+    }
+
+    // And they are the one table's own rows, in its own order — a filter that reordered or invented one would be a second table wearing the first one's name.
+    let every: Vec<&str> = PAGE_EXPORT_FORMATS
+        .iter()
+        .map(|(label, _)| *label)
+        .collect();
+    let mut past = 0;
+    for (label, _) in &offered {
+        let at = every[past..]
+            .iter()
+            .position(|one| one == label)
+            .unwrap_or_else(|| {
+                panic!("{label} is offered and is not in the one table, or is out of its order")
+            });
+        past += at + 1;
+    }
+
+    // PDF first, because Windows names a file with no ending off the first row and a reader who types nothing should still get the format the app has always written.
+    assert_eq!(
+        offered[0].1[0], "pdf",
+        "the row a bare name is written under moved"
+    );
+
+    // WebP is the one row a platform can be short of, and the difference is the bitmap on a Mac: it writes PNG and does not write WebP, so a Mac must never be offered the row.
+    assert_eq!(
+        offered.iter().any(|(_, endings)| endings.contains(&"webp")),
+        cfg!(target_os = "windows"),
+        "the WebP row is offered where the engine behind the view writes one, and nowhere else"
+    );
+}
+
+#[test]
+fn a_page_too_big_for_its_format_is_refused_in_words_that_name_the_row_that_holds_it() {
+    // The engine behind the web view answers an empty file when a format cannot hold a page this size — watched at 1,137 by 29,077, where WebP came back with zero bytes — and that is the only way it ever says no. So the refusal is written on nothing having come back, which stays true of every format and every future ceiling with no number in the app to keep in step.
+    let refused = PageShot::from_bytes(Vec::new())
+        .err()
+        .expect("a picture with no bytes in it is not a picture");
+
+    // The reader picked a row and pressed Save, so the sentence has to say that nothing was written — an app that says only "too big" leaves them looking for a file.
+    assert!(
+        refused.to_lowercase().contains("nothing was written"),
+        "a refusal that does not say the file was not written sends the reader looking for it: {refused}"
+    );
+    // And it names the row that can hold it, because the reader wants the picture rather than the format.
+    assert!(
+        refused.to_uppercase().contains("PNG"),
+        "the refusal has to name the row with no such limit: {refused}"
+    );
+
+    // A picture that did come back is measured rather than refused, however large.
+    let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
+    png.extend_from_slice(&13u32.to_be_bytes());
+    png.extend_from_slice(b"IHDR");
+    png.extend_from_slice(&1137u32.to_be_bytes());
+    png.extend_from_slice(&29077u32.to_be_bytes());
+    let held = PageShot::from_bytes(png).expect("a page this size is a picture PNG holds");
+    assert_eq!((held.width, held.height), (1137, 29077));
+}
+
+#[test]
+fn every_way_an_export_can_end_gives_the_page_its_appearance_back() {
+    // The hold is a counter, and the page raises one before it sends. Every arm below has to drop that one, whatever it did — because the paper class hides the whole of the app's own interface, the close button included, so a count that never reaches zero is a window nobody can shut from inside it. That shipped once: the picture arm left the writer's own hold to do the job and the writer's hold was a second one.
+    //
+    // Read as source, because the whole of `export_page` is a native window, a render and a web view, and none of the three is reachable here. What is reachable is that no path through it is missing the release.
+    let file = include_str!("../fileops.rs");
+    let body = file
+        .split("pub(crate) fn export_page(")
+        .nth(1)
+        .and_then(|rest| {
+            rest.split(
+                "
+/// ",
+            )
+            .next()
+        })
+        .expect("the page export");
+
+    // The four ways it ends: the reader canceled the window, a PDF was rendered, a picture was written, and a web page was handed back to the page to build.
+    let arms = [
+        (
+            "the reader canceled the save window",
+            "release(page);
+        return;",
+        ),
+        ("a PDF was rendered", "PageExportKind::Printed"),
+        ("a picture was written", "PageExportKind::Picture"),
+        ("a web page was handed back", "PageExportKind::WebPage"),
+        ("the ending was one no row offers", "None => {"),
+    ];
+    for (ending, opens) in arms {
+        let at = body
+            .find(opens)
+            .unwrap_or_else(|| panic!("{ending} is not a way this export can end any more"));
+        // Everything from where the arm opens to the end of the function: the release may sit before the write, after it, or in the closure either calls, and all three give the page back.
+        let rest = &body[at..];
+        let arm_end = rest
+            .find(
+                "
+        Some(",
+            )
+            .unwrap_or(rest.len());
+        let arm = &rest[..arm_end];
+        assert!(
+            arm.contains("release(page)") || arm.contains("release(page);"),
+            "when {ending}, nothing gives the page its appearance back — the app is left wearing the paper with no close button: {arm}"
+        );
+    }
+}
+
+#[test]
 fn a_diagram_export_writes_the_page_s_own_bytes_or_none_at_all() {
     // The write itself is a disk call into a path a native window answered with, so this is the whole of the decision. No two kinds of row in the five reach the file the same way — the page sends the text for Markdown, pixels for a PNG, and a finished file for a WebP and a JPEG, while the PDF row is printed rather than encoded and never arrives here with bytes at all — and a payload that does not decode has to end as nothing rather than as a file that will not open.
     let written = |format: &str, data: &str, width: u32, height: u32| match diagram_export_file(
@@ -309,12 +511,18 @@ fn the_export_ask_carries_a_destination_and_the_size_the_page_measured() {
         "the appearance is held across the render and released after it: {body}"
     );
 
-    // Its own wait. Two seconds is what every other ask gets, and a twenty-screen document takes longer than that to render.
+    // Its own wait. Two seconds is what every other ask gets, and a twenty-screen document takes longer than that to render — which is true of the picture the `shot` ask writes as well, so both share the arm.
     let source = include_str!("../../pipe.rs");
-    assert!(
-        source.contains("Ask::Export { .. } => EXPORT_TIMEOUT,"),
-        "an export that outlasts the ordinary wait would be reported as a stuck app"
-    );
+    let waits = source
+        .lines()
+        .find(|line| line.contains("=> EXPORT_TIMEOUT,"))
+        .expect("the arm that gives an export its own wait");
+    for ask in ["Ask::Export", "Ask::Shot"] {
+        assert!(
+            waits.contains(ask),
+            "{ask} outlasts the ordinary wait, so it would be reported as a stuck app: {waits}"
+        );
+    }
 }
 
 /// What a Mac reader gets when they press Export and pick the PDF row. The arm is Mac code and nothing here compiles or runs it, so the proof is the source: the panel switched off, the chosen path named as where the job saves to, and the sheet the page measured spent rather than dropped. Read the same way as the ask above it, for the same reason.

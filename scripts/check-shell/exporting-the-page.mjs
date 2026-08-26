@@ -192,6 +192,102 @@ export function run() {
     }
   });
 
+  // A Mac panel throws every label away, so the app draws the menu itself — and it draws it on a Mac browser reading the published site too, where every export ends in that browser's own print. So the rows have to be the host's rather than the page's: a row this page offered that its host could not write handed that reader a printed PDF and called it a picture.
+  const macPage = (extras) =>
+    runShell(source, {
+      navigator: { userAgent: 'Macintosh; Intel Mac OS X 10_15_7', platform: 'MacIntel', clipboard: { writeText: () => {} } },
+      ...extras,
+    });
+  const macMenuRows = (page) => {
+    page.renderReaderToolbar(true);
+    const button = page.document.getElementById('exportPdfButton');
+    (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+    const surface = page.document.getElementById('appSurface');
+    const menu = surface.children.find((child) => String(child.className || '').includes('flow-menu'));
+    if (!menu) throw new Error('a Mac pressed Export and no menu opened, so the panel is the only question and it shows no format at all');
+    const labels = [];
+    (function walk(node) {
+      for (const child of node.children) {
+        const text = String(child.textContent || '').trim();
+        if (String(child.className || '').includes('flow-menu-item') && text) labels.push(text.split('\n')[0].trim());
+        else walk(child);
+      }
+    })(menu);
+    return labels;
+  };
+
+  check('A Mac is offered the rows its own host says it writes, and no others', () => {
+    const sent = [];
+    const page = macPage({
+      ipc: { postMessage: (message) => sent.push(JSON.parse(message)) },
+      // What the desktop seeds: its own save-window table, in the order that window offers it.
+      __leafPageExports: [
+        { id: 'pdf', label: 'PDF document' },
+        { id: 'html', label: 'Web page' },
+        { id: 'png', label: 'PNG picture' },
+      ],
+    });
+    const labels = macMenuRows(page);
+    const named = labels.filter((label) => ['PDF document', 'Web page', 'PNG picture'].includes(label));
+    if (named.length !== 3) {
+      throw new Error(`the host named three rows and the menu drew ${JSON.stringify(labels)}`);
+    }
+    // The order is the save window's, and it is load-bearing: a file typed with no ending is named off the first row.
+    if (named[0] !== 'PDF document') {
+      throw new Error(`the menu opened with ${named[0]} rather than the row a bare name is written under`);
+    }
+    // A row the host never named must not be there at all — that is the whole point of asking it.
+    for (const absent of ['WebP picture', 'JPEG picture']) {
+      if (labels.includes(absent)) throw new Error(`the menu offered ${absent}, which this host never said it writes`);
+    }
+  });
+
+  check('A host that names no rows still prints, and offers nothing it cannot write', () => {
+    const sent = [];
+    // A browser reading the published site: no save window, no disk, and `exportPdf` reaching `window.print()`. Its own seeded row is the one it can honestly answer.
+    const page = macPage({
+      ipc: { postMessage: (message) => sent.push(JSON.parse(message)) },
+      __leafPageExports: undefined,
+    });
+    const labels = macMenuRows(page);
+    if (labels.length !== 1 || labels[0] !== 'PDF') {
+      throw new Error(`a host that named nothing was drawn as ${JSON.stringify(labels)} rather than the one row every host has`);
+    }
+    // And pressing it still reaches the command a browser answers with its own print.
+    const menu = page.document.getElementById('appSurface').children.find((child) => String(child.className || '').includes('flow-menu'));
+    let pressed = null;
+    (function walk(node) {
+      for (const child of node.children) {
+        if (String(child.className || '').includes('flow-menu-item') && !pressed) pressed = child;
+        else walk(child);
+      }
+    })(menu);
+    (pressed.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+    const asked = sent.filter((one) => one.command === 'exportPdf');
+    if (asked.length !== 1) throw new Error(`the one row a host with no table offers sent ${asked.length} exports`);
+    if (asked[0].format !== 'pdf') throw new Error(`it asked for ${asked[0].format} rather than the row it was drawn as`);
+  });
+
+  check('Pressing Export leaves exactly one hold for the host to give back', () => {
+    // The hold counts rather than switches, so what the host has to undo is a number and the page is what sets it. It shipped as two — the page raised one and the host raised a second for the render, and only one came off — and the app was left wearing the paper, where every one of its own controls is hidden and the close button with them.
+    const sent = [];
+    const page = runShell(source, { ipc: { postMessage: (message) => sent.push(JSON.parse(message)) } });
+    let held = 0;
+    page.window.leafHoldAppearance = (on) => {
+      held = Math.max(0, held + (on ? 1 : -1));
+    };
+    page.renderReaderToolbar(true);
+    const button = page.document.getElementById('exportPdfButton');
+    (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+    if (sent.filter((one) => one.command === 'exportPdf').length !== 1) {
+      throw new Error('pressing Export did not ask for one export');
+    }
+    // One, not two and not none: measuring the sheet raises and drops a hold of its own, and what is left standing is the one the render is laid out under.
+    if (held !== 1) {
+      throw new Error(`pressing Export left ${held} holds on the page, and the host gives back one`);
+    }
+  });
+
   check('The saved growl opens the file it names', () => {
     // Its own boot: the growl slot replaces itself, so a shared page carries whatever an earlier check left in it.
     const sent = [];

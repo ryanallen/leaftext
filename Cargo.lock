@@ -1414,6 +1414,7 @@ version = "1.34.4"
 dependencies = [
  "ammonia",
  "blake3",
+ "block2",
  "embed-resource",
  "flate2",
  "html-escape",
@@ -1424,6 +1425,7 @@ dependencies = [
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",
+ "objc2-web-kit",
  "png",
  "pulldown-cmark",
  "rfd",

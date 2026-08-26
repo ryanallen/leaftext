@@ -305,15 +305,54 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
 }
 
 /// Every format the page can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first, so the order is load-bearing, and `page_export_kind` below reads the same table — which is why a format lives here and nowhere else.
-pub(crate) const PAGE_EXPORT_FORMATS: &[(&str, &[&str])] =
-    &[("PDF document", &["pdf"]), ("Web page", &["html", "htm"])];
+pub(crate) const PAGE_EXPORT_FORMATS: &[(&str, &[&str])] = &[
+    ("PDF document", &["pdf"]),
+    ("Web page", &["html", "htm"]),
+    ("PNG picture", &["png"]),
+    ("WebP picture", &["webp"]),
+];
 
-/// Which of those two a chosen name is asking for.
+/// The rows *this* platform writes, which is the table above with anything it cannot make taken out.
+///
+/// One table with a filter rather than a table per platform: the rows that differ are the picture ones, and which of those a platform writes is already answered next to the encoder that writes them. A second list would be the same question with two answers, which is the thing this file has one table to avoid.
+pub(crate) fn page_export_rows() -> Vec<(&'static str, &'static [&'static str])> {
+    PAGE_EXPORT_FORMATS
+        .iter()
+        .filter(|(_, endings)| {
+            endings
+                .iter()
+                .any(|ending| page_export_kind(Path::new(&format!("a.{ending}"))).is_some())
+        })
+        .copied()
+        .collect()
+}
+
+/// Every way the page can be written out as `window.__leafPageExports` — the words the save window shows, and the ending each row writes.
+///
+/// The page used to keep a copy of this list. It cannot: a Mac panel shows no format at all, so the page draws the menu instead, and it draws it on a Mac browser reading the published site as well — where every export ends in the browser's own print. A row the page offered that its host could not write handed that reader a printed PDF and called it a picture. So the host says what it writes, each host says it for itself, and a page whose host says nothing offers the one row every host has.
+///
+/// The order is the table's, which is the order the save window offers them in, and it is load-bearing: Windows names a file with no ending off the first.
+pub fn initial_page_exports_script() -> String {
+    let rows: Vec<serde_json::Value> = page_export_rows()
+        .iter()
+        .map(|(label, endings)| {
+            serde_json::json!({
+                "label": label,
+                "id": endings[0],
+            })
+        })
+        .collect();
+    format!("window.__leafPageExports = {};", serde_json::json!(rows))
+}
+
+/// Which of those a chosen name is asking for.
 pub(crate) enum PageExportKind {
     /// Rendered by the web view's own print, so there are no bytes here to write.
     Printed,
     /// Written from the markup the page has already drawn, with its stylesheet and its pictures beside it.
     WebPage,
+    /// Photographed by the web view's own engine, whole and past the fold, and written where the reader said. The simplest of the three: nothing is asked of the page.
+    Picture,
 }
 
 /// The words the save window shows for one of those endings.
@@ -330,7 +369,8 @@ pub(crate) fn page_export_kind(target: &Path) -> Option<PageExportKind> {
     match ending.as_str() {
         "pdf" => Some(PageExportKind::Printed),
         "html" | "htm" => Some(PageExportKind::WebPage),
-        _ => None,
+        // Asked of the picture table rather than spelled again, so a row this platform cannot write is not a kind it claims to answer.
+        _ => page_picture_format(&ending).map(|_| PageExportKind::Picture),
     }
 }
 
@@ -347,6 +387,7 @@ pub(crate) fn export_page(
     webview: Option<&WebView>,
     document: Option<&Path>,
     format: &str,
+    scale: f64,
     width: f64,
     height: f64,
 ) {
@@ -366,7 +407,7 @@ pub(crate) fn export_page(
         .unwrap_or_else(|| "document".to_string());
     // Empty where the reader has not been asked, which is Windows: that window draws the rows as a dropdown and asks there. A Mac panel shows no format at all, so the page asks first and the window is left the one row.
     let chosen = (!format.is_empty()).then_some(format);
-    let offer = save_window_offer(PAGE_EXPORT_FORMATS, chosen, &stem);
+    let offer = save_window_offer(&page_export_rows(), chosen, &stem);
     // With two rows a window titled after one of them is wrong half the time.
     let title = match chosen.and_then(page_export_label) {
         Some(label) => format!("Save as {label}"),
@@ -392,6 +433,19 @@ pub(crate) fn export_page(
                 ),
             }
         }
+        Some(PageExportKind::Picture) => {
+            // The writer raises a hold of its own for the capture and drops it again, because the ask pipe reaches it with nothing held. The hold counts, so this arm still has to drop the one the page raised before it sent — otherwise the count never reaches zero, the paper class stays on, and every control in the app is hidden under it, the close button with them.
+            let outcome = write_page_picture_at(webview, scale, &target, width, height);
+            release(page);
+            match outcome {
+                Ok(_) => run_page_script(
+                    Some(page),
+                    &file_written_notice_script(&target.display().to_string()),
+                    "Failed to report a page export",
+                ),
+                Err(why) => report_file_action_failure(Some(page), &why),
+            }
+        }
         Some(PageExportKind::WebPage) => {
             // Let go first: the paper rules are what a render is laid out under, and nothing is being rendered here. The page answers with the document it has already drawn.
             release(page);
@@ -404,10 +458,7 @@ pub(crate) fn export_page(
         // Not a row the chooser offers, so not a file anybody asked for.
         None => {
             release(page);
-            let names: Vec<&str> = PAGE_EXPORT_FORMATS
-                .iter()
-                .map(|(label, _)| *label)
-                .collect();
+            let names: Vec<&str> = page_export_rows().iter().map(|(label, _)| *label).collect();
             report_file_action_failure(
                 Some(page),
                 &format!(
@@ -617,6 +668,62 @@ pub(crate) fn write_page_pdf_at(
     outcome
 }
 
+/// Write the page out as a picture at `target`, holding the appearance across the render the way the PDF's own writer does.
+///
+/// The ending on the path is the format, which is the row the reader picked in the save window — so this reads the same table that window built its rows from, and refuses an ending it does not hold rather than writing bytes under it.
+///
+/// The hold is what makes the picture the document rather than the app's frame: under it the surface goes static, uncontained and as tall as everything it holds, and every control is taken off. Released whichever way this goes.
+pub(crate) fn write_page_picture_at(
+    webview: Option<&WebView>,
+    scale: f64,
+    target: &Path,
+    width: f64,
+    height: f64,
+) -> Result<PageShot, String> {
+    let Some(page) = webview else {
+        return Err("there is no page to photograph".to_string());
+    };
+    let ending = target
+        .extension()
+        .map(|ending| ending.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    let format = page_picture_format(&ending)
+        .ok_or_else(|| format!("a page is not written as .{ending}"))?;
+    run_page_script(
+        Some(page),
+        "window.leafHoldAppearance && window.leafHoldAppearance(true);",
+        "Failed to hold the page's appearance for an export",
+    );
+    let outcome = capture_page(page, scale, width, height, &format);
+    run_page_script(
+        Some(page),
+        "window.leafHoldAppearance && window.leafHoldAppearance(false);",
+        "Failed to let the page follow the system theme again",
+    );
+    let shot = outcome?;
+    std::fs::write(target, &shot.bytes).map_err(|error| error.to_string())?;
+    Ok(shot)
+}
+
+/// The same write, answered the way the ask pipe wants it: where it went, the pixels it came out at, and what it weighs.
+///
+/// Beside the writer rather than in the loop, because what a picture is worth saying about it is this file's to know.
+pub(crate) fn page_picture_answer(
+    webview: Option<&WebView>,
+    scale: f64,
+    target: &Path,
+    width: f64,
+    height: f64,
+) -> Result<serde_json::Value, String> {
+    let shot = write_page_picture_at(webview, scale, target, width, height)?;
+    Ok(serde_json::json!({
+        "wrote": target.display().to_string(),
+        "width": shot.width,
+        "height": shot.height,
+        "bytes": shot.bytes.len(),
+    }))
+}
+
 /// A CSS pixel is a ninety-sixth of an inch by definition, which is the only conversion between what the page measured and what a page size is written in.
 const CSS_PIXELS_PER_INCH: f64 = 96.0;
 
@@ -752,6 +859,213 @@ fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Res
     } else {
         Err("The page could not be rendered.".to_string())
     }
+}
+
+/// One picture of the page, as the host took it: the finished file, and the pixels it covers.
+///
+/// The size is read off the file's own header rather than decoded. Nothing here decodes a picture — `src/png.rs` writes PNGs and never reads one — and nothing needs to: what a caller wants to know is whether a picture came back at all, and how big the one that did is.
+pub(crate) struct PageShot {
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+}
+
+impl PageShot {
+    /// A picture out of raw bytes, refused where the engine answered with nothing — which is how it says a format could not hold a page this size.
+    pub(super) fn from_bytes(bytes: Vec<u8>) -> Result<Self, String> {
+        let (width, height) =
+            picture_pixel_size(&bytes).ok_or_else(|| PICTURE_TOO_BIG.to_string())?;
+        Ok(PageShot {
+            bytes,
+            width,
+            height,
+        })
+    }
+}
+
+/// What is said when a picture does not come back. The engine answers an empty file rather than a reason, and the only reason it ever does is a page past what the format can hold — WebP stops at 16,383 pixels a side, and a long document is taller than that.
+pub(crate) const PICTURE_TOO_BIG: &str =
+    "That picture is too big for this format. Nothing was written — save it as a PNG instead, which has no such limit.";
+
+/// The quality a WebP page is written at. The same 82 the diagram export writes its pictures at, so two pictures out of one app are the same trade.
+const WEBP_QUALITY: u32 = 82;
+
+/// How the web view's own engine is asked for one of the picture formats: the name it knows it by, and the quality where it takes one.
+///
+/// Both encoders are the engine's rather than anything in this tree, which is why a picture costs no crate.
+pub(crate) struct PictureFormat {
+    pub(crate) engine_name: &'static str,
+    pub(crate) quality: Option<u32>,
+}
+
+/// Which picture an ending asks the engine for, or nothing where it is not one this platform writes.
+///
+/// The endings here are the ones `PAGE_EXPORT_FORMATS` offers, and that table is built per platform for exactly this reason: a row the engine cannot write is a row the save window must not show.
+pub(crate) fn page_picture_format(extension: &str) -> Option<PictureFormat> {
+    match extension {
+        "png" => Some(PictureFormat {
+            engine_name: "png",
+            quality: None,
+        }),
+        #[cfg(target_os = "windows")]
+        "webp" => Some(PictureFormat {
+            engine_name: "webp",
+            quality: Some(WEBP_QUALITY),
+        }),
+        _ => None,
+    }
+}
+
+/// How wide and tall a picture says it is, read off its own header.
+///
+/// A PNG opens with its signature and the `IHDR` chunk it is required to carry first: four bytes of length, the name, then the two sizes. A WebP is a RIFF file whose `VP8X` chunk carries both sizes as three little-endian bytes each, holding one less than the real value. Anything else — a file with no bytes in it most of all — is not a picture, which is the answer an engine gives when a format cannot hold a page this size.
+pub(super) fn picture_pixel_size(bytes: &[u8]) -> Option<(u32, u32)> {
+    if bytes.len() >= 24 && &bytes[..8] == b"\x89PNG\r\n\x1a\n" && &bytes[12..16] == b"IHDR" {
+        let width = u32::from_be_bytes(bytes[16..20].try_into().ok()?);
+        let height = u32::from_be_bytes(bytes[20..24].try_into().ok()?);
+        return (width > 0 && height > 0).then_some((width, height));
+    }
+    if bytes.len() >= 30 && &bytes[..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        // The extended header, which is what an engine writes for anything but the simplest picture.
+        if &bytes[12..16] == b"VP8X" {
+            let three = |at: usize| {
+                1 + u32::from(bytes[at])
+                    + (u32::from(bytes[at + 1]) << 8)
+                    + (u32::from(bytes[at + 2]) << 16)
+            };
+            return Some((three(24), three(27)));
+        }
+        // A picture short enough for the plain header arrived, which is the question this answers; a second parser for its two sizes would be read by nothing.
+        return Some((0, 0));
+    }
+    None
+}
+
+/// Photograph the whole document as one picture, at the size the page measured its sheet at.
+///
+/// The engine behind this web view is Chromium, and its own screenshot takes the page beyond the fold — the whole document in one call, rather than a stack of screenfuls somebody has to join without a seam. `CallDevToolsProtocolMethod` is how a WebView2 is asked for it, and it sits on the plain `ICoreWebView2` `wry` hands back, the same handle the PDF render casts a later revision of. So this costs no crate, and both encoders are the engine's.
+///
+/// The clip is the sheet in CSS pixels and its scale takes the window's own back to one, so the picture comes out at the document's own size — the size the PDF row beside it writes, which is what makes the two rows describe the same document.
+///
+/// It renders asynchronously while the message loop is pumped, which is the shape the PDF render takes too: this thread waits, and the window stays alive.
+#[cfg(target_os = "windows")]
+pub(crate) fn capture_page(
+    page: &WebView,
+    scale: f64,
+    width: f64,
+    height: f64,
+    format: &PictureFormat,
+) -> Result<PageShot, String> {
+    use webview2_com::CallDevToolsProtocolMethodCompletedHandler;
+    use windows::core::HSTRING;
+    use wry::WebViewExtWindows;
+
+    let view = page.webview();
+    let quality = match format.quality {
+        Some(quality) => format!(",\"quality\":{quality}"),
+        None => String::new(),
+    };
+    // The clip's own scale rides on the window's, so one over it is what brings a device pixel back to a CSS one.
+    let asked = HSTRING::from(format!(
+        "{{\"format\":\"{}\"{quality},\"captureBeyondViewport\":true,\
+         \"clip\":{{\"x\":0,\"y\":0,\"width\":{width},\"height\":{height},\"scale\":{}}}}}",
+        format.engine_name,
+        1.0 / scale.max(0.01),
+    ));
+    let method = HSTRING::from("Page.captureScreenshot");
+    let answered = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+    let writing = std::sync::Arc::clone(&answered);
+    CallDevToolsProtocolMethodCompletedHandler::wait_for_async_operation(
+        Box::new(move |handler| unsafe {
+            Ok(view.CallDevToolsProtocolMethod(&method, &asked, &handler)?)
+        }),
+        Box::new(move |error, json| {
+            error?;
+            if let Ok(mut held) = writing.lock() {
+                *held = json.to_string();
+            }
+            Ok(())
+        }),
+    )
+    .map_err(|error| error.to_string())?;
+    let json = answered.lock().map(|held| held.clone()).unwrap_or_default();
+    let data = serde_json::from_str::<serde_json::Value>(&json)
+        .ok()
+        .and_then(|answer| {
+            answer
+                .get("data")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string)
+        })
+        .ok_or_else(|| "The view could not be photographed.".to_string())?;
+    let bytes = decode_base64(&data)
+        .ok_or_else(|| "The picture came back unreadable, so nothing was written.".to_string())?;
+    PageShot::from_bytes(bytes)
+}
+
+/// The same picture on a Mac, off the `WKWebView` `wry` hands back.
+///
+/// There is no DevTools protocol behind a WebKit view and its own snapshot stops at what the view can see, so the whole document comes through the one call that does take a rect past the fold: the PDF the view renders of itself, drawn back into a bitmap at the size that was asked for. `createPDFWithConfiguration:` is `objc2-web-kit`'s and the bitmap is `objc2-app-kit`'s, and both already compile into this binary through `wry` — so naming them buys the name and no code, which is the trade the print arm above makes too.
+///
+/// That bitmap writes PNG and does not write WebP, which is why `page_picture_format` offers the WebP row on Windows alone: a row the engine cannot write is a row the save window must not show.
+///
+/// It answers on a queue of its own, so this waits on a channel rather than pumping a loop, and gives up rather than waiting for ever — the window thread is the one waiting, and a render that never lands would otherwise take the window with it.
+#[cfg(target_os = "macos")]
+pub(crate) fn capture_page(
+    page: &WebView,
+    _scale: f64,
+    width: f64,
+    height: f64,
+    _format: &PictureFormat,
+) -> Result<PageShot, String> {
+    use objc2_app_kit::{NSBitmapImageFileType, NSBitmapImageRep, NSImage};
+    use objc2_foundation::{NSData, NSDictionary, NSError, NSPoint, NSRect, NSSize};
+    use objc2_web_kit::WKPDFConfiguration;
+    use std::sync::mpsc;
+    use wry::WebViewExtMacOS;
+
+    /// Long enough for a document of any length this app opens, short enough that a render which never lands does not take the window with it.
+    const RENDER_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
+
+    let view = page.webview();
+    // The whole document rather than the visible view: this is the one Mac call that takes a rect past the fold, which is why the picture is drawn out of a sheet rather than out of a snapshot.
+    let how = unsafe { WKPDFConfiguration::new() };
+    unsafe {
+        how.setRect(NSRect::new(
+            NSPoint::new(0.0, 0.0),
+            NSSize::new(width, height),
+        ))
+    };
+    let (answered, answer) = mpsc::sync_channel::<Result<Vec<u8>, String>>(1);
+    let handler = block2::RcBlock::new(move |sheet: *mut NSData, failure: *mut NSError| {
+        if !failure.is_null() || sheet.is_null() {
+            let _ = answered.try_send(Err("The view could not be photographed.".to_string()));
+            return;
+        }
+        let sheet = unsafe { &*sheet };
+        let picture = NSImage::initWithData(NSImage::alloc(), sheet).and_then(|drawn| {
+            // The sheet is measured in points and the picture in CSS pixels, which on this path are the same number: the rect above was written in the size the page measured.
+            unsafe { drawn.setSize(NSSize::new(width, height)) };
+            let tiff = unsafe { drawn.TIFFRepresentation() }?;
+            let bitmap = NSBitmapImageRep::imageRepWithData(&tiff)?;
+            unsafe {
+                bitmap.representationUsingType_properties(
+                    NSBitmapImageFileType::PNG,
+                    &NSDictionary::new(),
+                )
+            }
+        });
+        let _ = answered.try_send(
+            picture
+                .map(|bytes| bytes.to_vec())
+                .ok_or_else(|| "The picture could not be read back.".to_string()),
+        );
+    });
+    unsafe { view.createPDFWithConfiguration_completionHandler(&how, &handler) };
+    answer
+        .recv_timeout(RENDER_WAIT)
+        .map_err(|_| "The view did not answer with a picture.".to_string())?
+        .and_then(PageShot::from_bytes)
 }
 
 /// What one diagram export comes to: the bytes to write, or why there are none. Where the file goes was answered by the save window before any of this ran.

@@ -205,6 +205,26 @@ const TOOLS = [
     }),
   },
   {
+    name: 'leaftext_shot',
+    description:
+      "Write the page at the front out as a picture at a path you name, with no save window in the way — the same picture the app's Export button writes. The ending on the path is the format, the way it is in that window. The whole document, not the visible view. `width` and `height` are the page's own measurement of the sheet: read them with leaftext_eval of `pageExportSize()` rather than working them out, or what comes back is a reading of your arithmetic instead of the app's. Answers where it wrote, the pixels the picture came out at, and how many bytes it weighs.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Where the picture goes; its ending is the format' },
+        width: { type: 'number', description: "The document's width in CSS pixels, from pageExportSize()" },
+        height: { type: 'number', description: "The document's height in CSS pixels, from pageExportSize()" },
+      },
+      required: ['path', 'width', 'height'],
+    },
+    ask: (args) => ({
+      ask: 'shot',
+      path: String(args.path ?? ''),
+      width: Number(args.width ?? 0),
+      height: Number(args.height ?? 0),
+    }),
+  },
+  {
     name: 'leaftext_idle',
     description:
       'Wait until the page has finished rendering, then answer what the reader can see. Use it after a gesture instead of sleeping: it says whether the page settled, or that it was still rendering when the wait ran out.',

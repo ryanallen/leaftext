@@ -136,11 +136,23 @@ const openButton = document.getElementById('openButton');
 const newButton = document.getElementById('newButton');
 if (openButton) openButton.addEventListener('click', () => send({ command: 'open' }));
 if (newButton) newButton.addEventListener('click', () => send({ command: 'newDocument' }));
-// What Export writes. The save window is what offers these — a row here is a row in that window's own dropdown, never a menu over the page, except on a Mac where the panel shows no format at all.
-const PAGE_EXPORTS = [
-  { id: 'pdf', label: 'PDF', hint: 'The whole document as one continuous page, in the theme on screen' },
-  { id: 'html', label: 'Web page', hint: 'The page as it looks here, with its stylesheet and pictures in a folder beside it' },
-];
+// What each row of the Export menu says it is. The rows themselves are the host's — `window.__leafPageExports`, read at the press rather than at load — because only the host knows what it can write, and this page runs over three of them. These are this page's own words for the ones it recognizes; a row the host names and this does not still opens, with no line under it.
+const PAGE_EXPORT_HINTS = {
+  pdf: 'The whole document as one continuous page, in the theme on screen',
+  html: 'The page as it looks here, with its stylesheet and pictures in a folder beside it',
+  png: 'The whole document as one picture, in the theme on screen',
+  webp: 'The same picture, at about half the file — and only where it fits',
+};
+// The row every host has: a host that named none can still print, which is what Export has always done on a published site.
+const PAGE_EXPORT_FALLBACK = [{ id: 'pdf', label: 'PDF' }];
+// What this host says it writes, in the order its own save window offers them — so a Mac menu holds what a Mac writes and a browser is never offered a row that would quietly print instead.
+function pageExportRows() {
+  const named = window.__leafPageExports;
+  const rows = Array.isArray(named) && named.length ? named : PAGE_EXPORT_FALLBACK;
+  return rows
+    .filter((row) => row && row.id)
+    .map((row) => ({ id: String(row.id), label: String(row.label || row.id), hint: PAGE_EXPORT_HINTS[row.id] || '' }));
+}
 // The sheet the document needs, read off the page wearing the paper rules rather than worked out from the screen.
 //
 // Three rounds were spent subtracting things from the reader's own measurement — the app bar's room, the toolbar's room, the strip at the foot — and every one of them left blank paper under the last line, because what the render lays out is a different layout and not the screen's minus a list. So the page puts the paper class on, reads the one box that is the whole sheet, and takes it off again: the surface, which under those rules is static, uncontained and as tall as everything it holds.
@@ -173,7 +185,7 @@ if (exportPdfButton) {
     openFlowMenuWith(
       spot.left,
       spot.bottom + 6,
-      PAGE_EXPORTS.map((kind) => ({ label: kind.label, hint: kind.hint, run: () => askPageExport(kind.id) })),
+      pageExportRows().map((kind) => ({ label: kind.label, hint: kind.hint, run: () => askPageExport(kind.id) })),
       appSurface,
     );
   });

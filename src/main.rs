@@ -392,6 +392,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         ))
         .with_initialization_script(initial_document_exts_script())
         .with_initialization_script(initial_document_formats_script())
+        .with_initialization_script(initial_page_exports_script())
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script(
             platform::platform_update_asset_suffix(),

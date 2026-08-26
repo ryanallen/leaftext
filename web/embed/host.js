@@ -276,6 +276,8 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
     console.info('this host does not answer', command.command, '—', reason);
   }
 
+  // What this host can write the page out as. A browser has no save window and no disk, so its one row is the browser's own print — which is what `exportPdf` reaches here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.
+  window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }];
   window.ipc = { postMessage: handle };
   // Whatever the front end sent while this was still loading.
   for (const message of window.__leafPending || []) handle(message);

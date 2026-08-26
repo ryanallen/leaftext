@@ -631,6 +631,18 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     });
                 let _ = reply.try_send(answer);
             }
+            // The picture the Export button's picture rows write, at a path the asker named. The render is inside the loop, which is why this ask waits as long as an export does.
+            Event::UserEvent(UserEvent::PipeShot {
+                path,
+                width,
+                height,
+                reply,
+            }) => {
+                let scale = reader.window.scale_factor();
+                let answer =
+                    page_picture_answer(reader.webview.as_ref(), scale, &path, width, height);
+                let _ = reply.try_send(answer);
+            }
             Event::UserEvent(UserEvent::PipeQuit { reply }) => {
                 // Answer only. The asker still has nothing in hand, and a loop that stopped here would take the reply with it.
                 let _ = reply.try_send(Ok(serde_json::json!({ "closing": true })));
@@ -1375,6 +1387,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         reader.page(),
                         export.document.as_deref(),
                         &export.format,
+                        reader.window.scale_factor(),
                         export.width,
                         export.height,
                     );

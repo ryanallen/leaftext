@@ -128,7 +128,18 @@ objc2-app-kit = { version = "0.3.2", default-features = false, features = [
     "objc2-core-foundation",
     "NSPrintInfo",
     "NSPrintOperation",
+    # Photographing the view: a snapshot arrives as an `NSImage`, and this is what turns one into the PNG bytes the Windows side hands the page too.
+    "NSBitmapImageRep",
+    "NSImage",
+    "NSImageRep",
 ] }
+# The other half of that photograph: `takeSnapshotWithConfiguration:` on the `WKWebView` `wry` hands back, and the object that says how to take it. Both already compile into this binary through `wry`, at this version, so naming them adds no code and no feature — what it buys is the name to call the method by. `block2` is how its answer comes back, and it is in the tree for the same reason.
+objc2-web-kit = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "WKWebView",
+    "WKSnapshotConfiguration",
+] }
+block2 = "0.6.2"
 objc2-foundation = { version = "0.3.2", default-features = false, features = [
     "std",
     "objc2-core-foundation",
@@ -178,4 +189,8 @@ windows-sys = { version = "0.59", features = [
 # re-exports neither, and the only alternative is the print panel the reader
 # refused.
 webview2-com = "0.38.2"
-windows = { version = "0.61.3", features = ["Win32_Foundation"] }
+# `Win32_System_Com_StructuredStorage` is the stream a photograph of the view is written into — `CapturePreview` writes a whole PNG into one, and it is freed with the stream, because the page is what stacks the picture and nothing here writes it to a disk.
+windows = { version = "0.61.3", features = [
+    "Win32_Foundation",
+    "Win32_System_Com_StructuredStorage",
+] }
