@@ -13,6 +13,16 @@
 // A link crossing between the two repositories is resolved inside the other tree's own root rather than wherever climbing out of this one lands, because only a primary checkout has them side by side: a session's copy is the app alone, so every skill linking into the plan tree opened nothing there. The one thing that cannot be looked up is an app file the owner has and a copy was cut before, so the owner's app is a second place to look and a link found only there is reported rather than failed.
 //
 // It also refuses a live ticket that adds a control and never says what it looks like. See `drawingOwed` for what that question really asks and what it cannot see.
+//
+// **What it covers.** Every Markdown file in this checkout except the generated and vendored folders `SKIP` names, and every Markdown file in the plan tree next door. Each gets a role out of `ROLES` or `PLAN_ROLES`, and the role is what says who keeps that page true.
+//
+// **`../docs/learn/` is three kinds of writing, not one, and each owes something different.** The folder holds a copy of this workflow written for somebody who has never seen it, and a rule that is right about one kind is wrong about the next: a rule naming a line inside a byte copy of a skill cannot be obeyed at all, because `check-learn-snapshots` refuses the edit that would fix it as drift. So the rows split it, most specific first.
+//
+//   byte copies of this repo's skills   owe exactly what their source owes, and the refusal has to land at the source where the fix is legal
+//   borrowed writing                    owes a role and nothing else: nothing here may edit it
+//   this repo's own writing for strangers   ours, so it owes what our prose owes — a stamp on every date, no box-character drawing, US spelling
+//
+// Across all three: dead links are skipped (`LINK_SKIP`), hard wrapping is skipped (`check-wrapping.mjs`), and the four plan shapes are skipped (`PLAN_SHAPE_SKIP`), because a giveaway page has no phases to finish and nobody to press anything.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
@@ -43,8 +53,11 @@ const PLAN_ROLES = [
   ['done', 'shipped, kept for the reasoning (with the retired running-order rows)'],
   ['canceled', 'decided against, kept for the reasoning'],
   ['tests', 'a document to open in the app, not a plan'],
-  ['learn/ticket-workflow-medium/skills', "this repo's own skills, copied for sharing — held to their sources by `check-learn-snapshots`"],
-  ['learn', "writing from elsewhere, kept to read — not about this app, so nothing here can go stale"],
+  ['learn/ticket-workflow-medium/skills', "giveaway: a byte copy of one of this repo's own skills — owes what its source owes, and is held to it by `check-learn-snapshots`"],
+  ['learn/ticket-workflow-medium/sources/llm-wiki-karpathy-src.md', 'giveaway: borrowed writing, kept to read — nothing here may edit it, so it owes a role and nothing else'],
+  ['learn/llm-wiki-karpathy-src.md', 'giveaway: borrowed writing, kept to read — nothing here may edit it, so it owes a role and nothing else'],
+  ['learn/offered-field-names.md', 'giveaway: what the field box offers, kept true against the front end by `/sync-docs`'],
+  ['learn', "giveaway: this repo's own writing for a reader outside this tree — ours to edit, so it owes a stamp on every date, no box-character drawing and US spelling, and no plan shape"],
   ['.', 'the ticket index, and the glossary of the words it is written in'],
 ];
 
@@ -71,11 +84,34 @@ function markdown(dir, base) {
 function roleFor(file, roles) {
   const folder = file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : '.';
   for (const [prefix, role] of roles) {
-    if (prefix === '.' ? folder === '.' : folder === prefix || folder.startsWith(`${prefix}/`)) {
+    if (prefix.endsWith('.md') ? file === prefix : prefix === '.' ? folder === '.' : folder === prefix || folder.startsWith(`${prefix}/`)) {
       return role;
     }
   }
   return null;
+}
+
+// The role table is the thing every rule below keys on, so it is proved before either tree is read — and the whole risk in it is order, since the first match wins and three of the giveaway rows sit inside a fourth.
+const ROLE_CASES = [
+  ['a plan lands on its own folder', 'features/reading/a.md', 'plan: the app cannot do it yet'],
+  ['a subject folder inherits its parent by prefix', 'refactor/docs/a.md', 'plan: it does it, this changes how'],
+  ['the index at the top of the tree is its own row', 'README.md', 'the ticket index, and the glossary of the words it is written in'],
+  ['a byte copy of a skill owes what its source owes', 'learn/ticket-workflow-medium/skills/done/SKILL.md', "giveaway: a byte copy of one of this repo's own skills — owes what its source owes, and is held to it by `check-learn-snapshots`"],
+  ["borrowed writing beside the copies is nobody here's to edit", 'learn/ticket-workflow-medium/sources/llm-wiki-karpathy-src.md', 'giveaway: borrowed writing, kept to read — nothing here may edit it, so it owes a role and nothing else'],
+  ['the second copy of the borrowed page is the same kind', 'learn/llm-wiki-karpathy-src.md', 'giveaway: borrowed writing, kept to read — nothing here may edit it, so it owes a role and nothing else'],
+  ['the page about this app names who keeps it true', 'learn/offered-field-names.md', 'giveaway: what the field box offers, kept true against the front end by `/sync-docs`'],
+  ["everything else in there is this repo's own writing", 'learn/ticket-workflow-linkedin/AUDIT.md', "giveaway: this repo's own writing for a reader outside this tree — ours to edit, so it owes a stamp on every date, no box-character drawing and US spelling, and no plan shape"],
+  ['an article draft beside the copies is ours too', 'learn/ticket-workflow-medium/leaftext-workflow-v5.md', "giveaway: this repo's own writing for a reader outside this tree — ours to edit, so it owes a stamp on every date, no box-character drawing and US spelling, and no plan shape"],
+  ['a file matching no row has no role at all', 'nowhere/a.md', null],
+];
+
+function roleSelfTest() {
+  const fails = [];
+  for (const [name, file, want] of ROLE_CASES) {
+    const got = roleFor(file, PLAN_ROLES);
+    if (got !== want) fails.push(`${name}: got ${got === null ? 'no role' : `"${got}"`}, want ${want === null ? 'no role' : `"${want}"`}`);
+  }
+  return fails;
 }
 
 // Somebody else's writing, kept to read. Nothing here edits it, so a dead link in it is not a build failure.
@@ -190,6 +226,13 @@ function adviceSelfTest() {
     : [`${DONE_REPOINTS_ADVICE}  ->  .agents/skills/done/SKILL.md no longer says it repoints every link pointing at the ticket it moves`];
 }
 
+const roleFails = roleSelfTest();
+if (roleFails.length) {
+  console.error('roles: the role table or the order it is read in is wrong, so nothing was read:');
+  for (const line of roleFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 const selfTestFails = [...linkSelfTest(), ...crossingSelfTest()];
 if (selfTestFails.length) {
   console.error('links: the code strip or the crossing rule is wrong, so nothing was read:');
@@ -206,7 +249,11 @@ if (adviceFails.length) {
 
 // Where work that has not shipped lives. Used twice: a plan with every box ticked does not belong here, and a plan here that adds a control owes a drawing.
 const LIVE_PLANS = ['features', 'refactor', 'fixes'];
-const livePlan = (file) => LIVE_PLANS.some((p) => file.startsWith(`../docs/${p}/`));
+
+// Giveaway writing is not work: it has no phases to finish and nobody to press anything, so the owner's box, the struck-box reason, the drawing and the retirement report all skip it. Named here rather than left to `LIVE_PLANS` happening not to reach it, so widening that list later does not silently start asking an article draft for an owner's box.
+const PLAN_SHAPE_SKIP = ['../docs/learn/'];
+
+const livePlan = (file) => !PLAN_SHAPE_SKIP.some((p) => file.startsWith(p)) && LIVE_PLANS.some((p) => file.startsWith(`../docs/${p}/`));
 
 // The first line of the seven-part shape every ticket is written to, and the one part of a plan that can be copied in from the guide and left saying nothing — the summary sentence below it is written either way. A plan wearing it cannot be told from any other plan wearing it, in the index, in the running order, or in a link from another plan.
 //
@@ -477,6 +524,38 @@ const AHEAD_OF_CLOCK_CASES = [
   ['a malformed stamp stays for its own validation ticket', 'Designed 31 February 2027, 9:11pm.', [], []],
 ];
 
+// A third-party license notice is reproduced verbatim or not at all, so a date inside one is not this repo's to stamp — the same reason `check-wrapping` leaves that folder alone.
+const DATE_SWEEP_SKIP = ['src/assets/'];
+
+// Which Markdown the two date rules above read: both trees. The whole plan tree, giveaway writing included, because a page handed to a stranger carries dates a stranger wants put in order and the cost of meeting it is one clock read. And this checkout's own Markdown, because a bare day in a skill is copied byte for byte into `../docs/learn/ticket-workflow-medium/skills/` — so reading only the plan tree named the fault in the copy, which `check-learn-snapshots` forbids editing, and never at the source where the fix is legal.
+export function dateSwept(file) {
+  return !DATE_SWEEP_SKIP.some((skip) => file.startsWith(skip));
+}
+
+const DATE_SWEEP_CASES = [
+  ['a live plan is swept', '../docs/features/reading/a.md', true],
+  ['a giveaway page this repo wrote is swept', '../docs/learn/ticket-workflow-linkedin/AUDIT.md', true],
+  ['a published page in the app repo is swept', 'docs/01-features/02-navigation.md', true],
+  ['a skill is swept, so the fault lands where the fix is legal', '.agents/skills/done/SKILL.md', true],
+  ['the guide at the top of the checkout is swept', 'AGENTS.md', true],
+  ['a license notice is reproduced verbatim, so it is left alone', 'src/assets/ammonia-MIT.md', false],
+];
+
+function dateSweepSelfTest() {
+  const fails = [];
+  for (const [name, file, want] of DATE_SWEEP_CASES) {
+    const got = dateSwept(file);
+    if (got !== want) fails.push(`${name}: swept ${got}, want ${want}`);
+  }
+  const bare = '# A giveaway page\n\nWritten 20 August 2026.\n';
+  const stamped = '# A giveaway page\n\nWritten 20 August 2026, 9:11pm.\n';
+  if (!(dateSwept('../docs/learn/a.md') && datesWithoutTime(bare).join(',') === '3')) fails.push('a bare day in a giveaway page is not refused');
+  if (datesWithoutTime(stamped).length) fails.push('the same day with the time beside it is refused anyway');
+  if (!(dateSwept('docs/02-development/02-building.md') && datesWithoutTime(bare).join(',') === '3')) fails.push('a bare day in an app-repo page is not refused');
+  if (dateSwept('src/assets/ammonia-MIT.md')) fails.push('a bare day inside a license notice is refused, and that text is reproduced verbatim or not at all');
+  return fails;
+}
+
 function dateSelfTest() {
   const fails = [];
   for (const [name, text, want] of DATE_CASES) {
@@ -698,6 +777,29 @@ function strikeSelfTest() {
     const states = boxStates(text);
     if (lines.join(',') !== wantLines.join(',')) fails.push(`${name}: refused ${lines.join(',') || 'nothing'}, want ${wantLines.join(',') || 'nothing'}`);
     if (states.join(',') !== wantStates.join(',')) fails.push(`${name}: read as ${states.join(',')}, want ${wantStates.join(',')}`);
+  }
+  return fails;
+}
+
+// The four plan shapes read together, the way the walk below reads them, so the skip is proved rather than inferred from a folder name that happens not to match. One page of text, two folders: work is held to all of it, giveaway writing to none.
+const PLAN_SHAPE_TEXT = '## Phases\n\n### Phase 1\n\n- [x] Built\n- [ ] ~~Moved to tags.md~~\n- [ ] The owner says it works\n';
+
+const PLAN_SHAPE_CASES = [
+  ['a live plan is refused a struck box with no reason, a loose owner box and a missing owner section', '../docs/features/reading/a.md', { reasonless: [6], loose: [7], owed: true }],
+  ['the same words in a giveaway page are held to none of it', '../docs/learn/ticket-workflow-medium/leaftext-workflow-v5.md', { reasonless: [], loose: [], owed: false }],
+  ['a byte copy of a skill is giveaway writing too', '../docs/learn/ticket-workflow-medium/skills/done/SKILL.md', { reasonless: [], loose: [], owed: false }],
+];
+
+function planShapeSelfTest() {
+  const fails = [];
+  for (const [name, file, want] of PLAN_SHAPE_CASES) {
+    const live = livePlan(file);
+    const reasonless = live ? strikesWithoutReason(PLAN_SHAPE_TEXT) : [];
+    const loose = looseOwnerBoxes(file, PLAN_SHAPE_TEXT);
+    const owed = ownerBoxOwed(file, PLAN_SHAPE_TEXT);
+    if (reasonless.join(',') !== want.reasonless.join(',')) fails.push(`${name}: struck boxes refused ${reasonless.join(',') || 'nothing'}, want ${want.reasonless.join(',') || 'nothing'}`);
+    if (loose.join(',') !== want.loose.join(',')) fails.push(`${name}: loose owner boxes ${loose.join(',') || 'nothing'}, want ${want.loose.join(',') || 'nothing'}`);
+    if (owed !== want.owed) fails.push(`${name}: owner's box owed ${owed}, want ${want.owed}`);
   }
   return fails;
 }
@@ -1101,6 +1203,20 @@ if (aheadOfClockFails.length) {
   process.exit(1);
 }
 
+const planShapeFails = planShapeSelfTest();
+if (planShapeFails.length) {
+  console.error('plan shapes: the skip that keeps them off giveaway writing is wrong, so no plan was read:');
+  for (const line of planShapeFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
+const dateSweepFails = dateSweepSelfTest();
+if (dateSweepFails.length) {
+  console.error('dates: what the stamp rules read is wrong, so nothing was read:');
+  for (const line of dateSweepFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 const strikeFails = strikeSelfTest();
 if (strikeFails.length) {
   console.error('struck boxes: the reader is wrong, so nothing was read:');
@@ -1131,7 +1247,7 @@ for (const [base, roles, label] of [
   }
   for (const file of files) {
     const role = roleFor(file, roles);
-    if (role) rows.push([`${label}${file}`, role]);
+    if (role) rows.push([`${label}${file}`, role, join(base, file)]);
     else orphans.push(`${label}${file}`);
     if (!LINK_SKIP.some((skip) => file.startsWith(skip))) scanned.push([base, file, `${label}${file}`]);
   }
@@ -1161,14 +1277,14 @@ const reasonless = [];
 const footprintless = [];
 const misspelled = [];
 
-// Every file in the plan tree, not only the live half: a shipped note, a retired row and a refused row each carry a date, and each is written after the cutoff by a pass that has to read the clock for it.
+// Every file in the plan tree, not only the live half: a shipped note, a retired row and a refused row each carry a date, and each is written after the cutoff by a pass that has to read the clock for it. And this checkout's own Markdown beside it — see `dateSwept` for why the skills have to be read here rather than in their copies.
 const dayOnly = [];
 const aheadOfClock = [];
 const now = new Date();
-for (const file of rows.map(([f]) => f)) {
-  if (!file.startsWith('../docs/')) continue;
-  const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
-  for (const at of datesWithoutTime(text)) dayOnly.push(`${file}:${at}`);
+for (const [file, , at] of rows) {
+  if (!dateSwept(file)) continue;
+  const text = readFileSync(at, 'utf8');
+  for (const line of datesWithoutTime(text)) dayOnly.push(`${file}:${line}`);
   for (const found of datesAheadOfClock(text, now)) aheadOfClock.push(`${file}:${found.line}  ->  "${found.stamp}"`);
 }
 
@@ -1338,4 +1454,4 @@ if (outOfOrder.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan opening with a title of its own rather than the template placeholder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every live plan saying which files it will write with every path spelled from the top of the pair, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date written since 19 August 2026 saying what time it was, ${links}`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan opening with a title of its own rather than the template placeholder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every live plan saying which files it will write with every path spelled from the top of the pair, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date in either tree written from the 2026-08-19 cutoff on saying what time it was, license notices apart, ${links}`);
