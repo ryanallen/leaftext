@@ -887,7 +887,8 @@ impl PageShot {
 pub(crate) const PICTURE_TOO_BIG: &str =
     "That picture is too big for this format. Nothing was written — save it as a PNG instead, which has no such limit.";
 
-/// The quality a WebP page is written at. The same 82 the diagram export writes its pictures at, so two pictures out of one app are the same trade.
+/// The quality a WebP page is written at. The same 82 the diagram export writes its pictures at, so two pictures out of one app are the same trade. Windows only, because that is the one platform whose engine writes the format at all.
+#[cfg(target_os = "windows")]
 const WEBP_QUALITY: u32 = 82;
 
 /// How the web view's own engine is asked for one of the picture formats: the name it knows it by, and the quality where it takes one.
@@ -1016,7 +1017,7 @@ pub(crate) fn capture_page(
     _scale: f64,
     width: f64,
     height: f64,
-    _format: &PictureFormat,
+    format: &PictureFormat,
 ) -> Result<PageShot, String> {
     use objc2::{AllocAnyThread, MainThreadMarker};
     use objc2_app_kit::{NSBitmapImageFileType, NSBitmapImageRep, NSImage};
@@ -1028,6 +1029,11 @@ pub(crate) fn capture_page(
     /// Long enough for a document of any length this app opens, short enough that a render which never lands does not take the window with it.
     const RENDER_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
 
+    // Asked before anything is rendered: this bitmap writes PNG and nothing else, so a format it cannot make is refused rather than written under the wrong ending. `page_picture_format` offers this platform no other row, and reading it here is what keeps the two answers one answer.
+    let kind = match format.engine_name {
+        "png" => NSBitmapImageFileType::PNG,
+        other => return Err(format!("a page is not written as a {other} here.")),
+    };
     let main = MainThreadMarker::new()
         .ok_or_else(|| "a picture is rendered on the window's own thread".to_string())?;
     let view = page.webview();
@@ -1051,12 +1057,7 @@ pub(crate) fn capture_page(
             drawn.setSize(NSSize::new(width, height));
             let tiff = drawn.TIFFRepresentation()?;
             let bitmap = NSBitmapImageRep::imageRepWithData(&tiff)?;
-            unsafe {
-                bitmap.representationUsingType_properties(
-                    NSBitmapImageFileType::PNG,
-                    &NSDictionary::new(),
-                )
-            }
+            unsafe { bitmap.representationUsingType_properties(kind, &NSDictionary::new()) }
         });
         let _ = answered.try_send(
             picture
