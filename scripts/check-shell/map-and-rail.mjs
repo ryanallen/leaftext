@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import {
   VIEW_WIDTH,
   check,
+  fakeElement,
   node,
   pageMarkup,
   record,
@@ -283,5 +284,176 @@ export function run() {
     // The frames the end asks for are the width and the bar's own refit beside it, and what proves the held-back write was taken is the width landing.
     if (!frames.drain()) throw new Error('the pane finishing its motion never asked for the width it held back');
     if (!/^[\d.]+px$/.test(minimapWidth())) throw new Error(`the pane stopped and the rail was left at ${minimapWidth() || 'nothing'}`);
+  });
+  // The rail is chrome in a grid column beside the box that scrolls, and the window's own scroll is gone — so a notch over the one strip the app draws in place of a scrollbar found nothing above it to move, in the very place a click or a drag on it leaves the pointer. Everything below fires the real handler at the real column.
+  const railWheelStand = () => {
+    const rail = booted.document.getElementById('readerMinimap');
+    const handler = (rail.listeners.get('wheel') || []).at(-1);
+    if (!handler) throw new Error('nothing listens for a wheel over the rail');
+    const appEl = booted.document.getElementById('app');
+    const track = fakeElement('');
+    track.classList.add('document-minimap-track');
+    const minimap = fakeElement('');
+    minimap.classList.add('document-minimap');
+    minimap.appendChild(track);
+    rail.appendChild(minimap);
+    const measured = { count: 0 };
+    const wasMeasure = booted.measureDocumentMinimap;
+    booted.measureDocumentMinimap = () => {
+      measured.count += 1;
+      return { scrollable: 10000, viewportHeight: 800 };
+    };
+    vm.runInContext('invalidateMinimapMetrics(); minimapDragging = false;', booted);
+    return {
+      handler,
+      app: appEl,
+      minimap,
+      measured,
+      done: () => {
+        booted.measureDocumentMinimap = wasMeasure;
+        minimap.remove();
+        appEl.scrollTop = 0;
+        vm.runInContext('invalidateMinimapMetrics(); minimapDragging = false; minimapWheelLineHeight = 0;', booted);
+      },
+    };
+  };
+  const railWheel = (changes = {}) => {
+    let prevented = false;
+    return {
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+      shiftKey: false,
+      deltaX: 0,
+      deltaY: 200,
+      deltaMode: 0,
+      preventDefault() {
+        prevented = true;
+      },
+      prevented: () => prevented,
+      ...changes,
+    };
+  };
+
+  // The whole of the fault: a real notch at the rail left the reader where it was, while the same notch over the page moved it 200.
+  check('a wheel over the rail scrolls the reader by the notch and claims it', () => {
+    const stand = railWheelStand();
+    try {
+      stand.app.scrollTop = 400;
+      const notch = railWheel();
+      stand.handler(notch);
+      if (stand.app.scrollTop !== 600) throw new Error(`a notch over the rail moved the reader to ${stand.app.scrollTop}`);
+      if (!notch.prevented()) throw new Error('the notch it spent was left to the web view as well');
+    } finally {
+      stand.done();
+    }
+  });
+
+  // Over the page a notch at either end chains nowhere, because the window's own scroll is gone — so claiming it here is what the reader already sees rather than a stray gesture escaping to the web view.
+  check('the wheel stops the reader at the top and at the foot, and still claims the notch', () => {
+    const stand = railWheelStand();
+    try {
+      stand.app.scrollTop = 0;
+      const up = railWheel({ deltaY: -200 });
+      stand.handler(up);
+      if (stand.app.scrollTop !== 0) throw new Error(`a notch at the top took the reader to ${stand.app.scrollTop}`);
+      if (!up.prevented()) throw new Error('a notch at the top escaped to the web view');
+      stand.app.scrollTop = 10000;
+      const down = railWheel();
+      stand.handler(down);
+      if (stand.app.scrollTop !== 10000) throw new Error(`a notch at the foot took the reader to ${stand.app.scrollTop}`);
+      if (!down.prevented()) throw new Error('a notch at the foot escaped to the web view');
+    } finally {
+      stand.done();
+    }
+  });
+
+  // A zoom over the rail is the web view's exactly as it is over the page, and a sideways trackpad gesture is nobody's here.
+  check('a held key or a sideways notch over the rail is left alone', () => {
+    const stand = railWheelStand();
+    try {
+      for (const changes of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { shiftKey: true }, { deltaY: 0, deltaX: 200 }]) {
+        stand.app.scrollTop = 400;
+        const ignored = railWheel(changes);
+        stand.handler(ignored);
+        if (stand.app.scrollTop !== 400) throw new Error(`an unclaimed wheel moved the reader to ${stand.app.scrollTop}`);
+        if (ignored.prevented()) throw new Error('an unclaimed wheel was taken off the web view anyway');
+      }
+    } finally {
+      stand.done();
+    }
+  });
+
+  // The column stands while the code view is up, where it holds no rail at all — and the same return covers the start screen. Claiming a notch there would take the wheel off a web view that is scrolling something of its own.
+  check('with no rail in the column the notch is left to the web view', () => {
+    const stand = railWheelStand();
+    stand.minimap.remove();
+    try {
+      stand.app.scrollTop = 400;
+      const notch = railWheel();
+      stand.handler(notch);
+      if (stand.app.scrollTop !== 400) throw new Error(`an empty column scrolled the reader to ${stand.app.scrollTop}`);
+      if (notch.prevented()) throw new Error('an empty column claimed the notch');
+    } finally {
+      stand.done();
+    }
+  });
+
+  // A drag holds the box against the pointer and writes the scroll itself; a notch landing mid-drag would fight it for the same value.
+  check('a notch while the box is being dragged changes nothing', () => {
+    const stand = railWheelStand();
+    try {
+      vm.runInContext('minimapDragging = true;', booted);
+      stand.app.scrollTop = 400;
+      const notch = railWheel();
+      stand.handler(notch);
+      if (stand.app.scrollTop !== 400) throw new Error(`a notch mid-drag moved the reader to ${stand.app.scrollTop}`);
+      if (notch.prevented()) throw new Error('a notch mid-drag was claimed');
+    } finally {
+      stand.done();
+    }
+  });
+
+  // This host reports pixels, so raw arithmetic would ship correct here and move the reader three pixels a notch in a browser reporting lines — the same fault in a thinner shape.
+  check('a notch counted in lines or in pages moves further than its raw number', () => {
+    const stand = railWheelStand();
+    try {
+      stand.app.style.setProperty('line-height', '40px');
+      stand.app.scrollTop = 0;
+      stand.handler(railWheel({ deltaY: 3, deltaMode: 1 }));
+      if (stand.app.scrollTop !== 120) throw new Error(`three lines moved the reader ${stand.app.scrollTop}`);
+      stand.app.scrollTop = 0;
+      stand.handler(railWheel({ deltaY: 2, deltaMode: 2 }));
+      if (stand.app.scrollTop !== 1600) throw new Error(`two pages moved the reader ${stand.app.scrollTop}`);
+    } finally {
+      stand.app.style.removeProperty('line-height');
+      stand.done();
+    }
+  });
+
+  // Re-measuring per notch forces a fresh layout of the whole document — ~400ms on a large glossary, the wheel taking two seconds to answer. Scrolling cannot change that geometry, so the scroll path's cache is what the range comes from.
+  check('the wheel takes its range from the cached rail metrics rather than measuring again', () => {
+    const stand = railWheelStand();
+    try {
+      stand.app.scrollTop = 0;
+      for (let i = 0; i < 5; i += 1) stand.handler(railWheel());
+      if (stand.app.scrollTop !== 1000) throw new Error(`five notches moved the reader ${stand.app.scrollTop}`);
+      if (stand.measured.count !== 1) throw new Error(`five notches measured the document ${stand.measured.count} times`);
+    } finally {
+      stand.done();
+    }
+  });
+
+  // The fault was the rail standing outside the box that scrolls, so a notch looking up its ancestors found nothing. The listener has to be on that outside element, and it has to be able to claim the notch.
+  check('the wheel listener is bound to the rail column, which stands outside the scroller', () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/minimap.js'), 'utf8');
+    const opened = fragment.indexOf("readerMinimap.addEventListener('wheel',");
+    if (opened < 0) throw new Error('the wheel is no longer listened for on the rail column itself');
+    if (!/\{ passive: false \}\);/.test(fragment.slice(opened))) throw new Error('the rail wheel listener is passive, so it cannot claim a notch');
+    const page = pageMarkup();
+    const from = page.indexOf('<main id="app"');
+    const to = page.indexOf('</main>', from);
+    if (from < 0 || to < 0) throw new Error('the reading view is not a <main id="app"> any more');
+    if (page.slice(from, to).includes('readerMinimap')) throw new Error('the rail moved inside the scroller, so the notch it answers would have chained there anyway');
   });
 }

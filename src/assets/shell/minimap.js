@@ -977,6 +977,46 @@ function cancelReaderScrollSettle() {
   }
   readerScrolling = false;
 }
+// A wheel over the rail scrolls the page, the same distance the same notch moves it over the page. The rail is chrome, so it stands in a grid column beside the box that scrolls and the window's own scroll is gone (`base.css`) — a notch here found nothing above it to move, in the one strip the app draws in place of a scrollbar and the one the pointer is left on by a click or a drag.
+//
+// On the column, not the track: the column runs the height of the window and the track only as far as the thumbnail reaches, so a listener on the track leaves the whole stretch below it dead. The column is permanent, so this binds once instead of being rebound on every render.
+//
+// A wheel in lines or pages is converted rather than added raw. This host reports pixels, so the arithmetic is the tab strip's there; the same fragment runs the app in a browser this tree does not choose, where a mouse reporting lines would move the reader three pixels a notch.
+const MINIMAP_WHEEL_FALLBACK_LINE = 16;
+let minimapWheelLineHeight = 0;
+function minimapWheelPixels(event, metrics) {
+  // A page is the reader's own height, already in the cached metrics.
+  if (event.deltaMode === 2) {
+    return event.deltaY * metrics.viewportHeight;
+  }
+  if (event.deltaMode !== 1) {
+    return event.deltaY;
+  }
+  if (!minimapWheelLineHeight) {
+    // Read once, off the reading body, and kept: the wheel path may read no layout (see settleReaderScroll).
+    const source = minimapSourceElement();
+    const measured = parseFloat(getComputedStyle(source || app).getPropertyValue('line-height'));
+    minimapWheelLineHeight = Number.isFinite(measured) && measured > 0 ? measured : MINIMAP_WHEEL_FALLBACK_LINE;
+  }
+  return event.deltaY * minimapWheelLineHeight;
+}
+if (readerMinimap) {
+  readerMinimap.addEventListener('wheel', (event) => {
+    // A zoom or a sideways gesture over the rail stays the web view's, exactly as it is over the page.
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    if (!event.deltaY) return;
+    const minimap = currentMinimap();
+    const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
+    if (!track) return;
+    // Never a fresh scrollHeight: that layout read is ~400ms on a large glossary, which is the wheel taking two seconds to answer. Scrolling cannot change this geometry, so the scroll path's cache is the right read.
+    const metrics = minimapMetricsForScroll(track);
+    if (!metrics || metrics.scrollable <= 0) return;
+    // The drag owns the scroll while it stands; a notch must not fight the box being held.
+    if (minimapDragging) return;
+    event.preventDefault();
+    app.scrollTop = Math.min(metrics.scrollable, Math.max(0, app.scrollTop + minimapWheelPixels(event, metrics)));
+  }, { passive: false });
+}
 app.addEventListener('scroll', () => {
   // A minimap drag owns the scroll (clamped scrollTop, box pinned via CSS vars, endDrag re-captures on release), so do nothing here during a drag — the forced layouts would be exactly the stutter this avoids.
   if (minimapDragging) {
