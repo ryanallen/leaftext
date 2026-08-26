@@ -914,7 +914,7 @@ fn a_line_that_worked_answers_what_it_came_to_even_when_that_is_nothing() {
 
 #[test]
 fn a_line_that_threw_answers_the_engines_own_words() {
-    // The failure that used to be indistinguishable from success: the mark stands still because the catch ran instead of the declaration, and the message rides back in the reply.
+    // The failure the engine gives no message for on its own: the mark stands still because the catch ran instead of the declaration, and the message rides back in the reply.
     let thrown = serde_json::json!({
         "leafEvalError": 7,
         "message": "Error: boom\n    at <anonymous>:1:13",
