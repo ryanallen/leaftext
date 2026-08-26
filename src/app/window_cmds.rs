@@ -204,5 +204,6 @@ pub(crate) fn save_place(
 
 /// The native frame painted to the page color, reported by the web view on a theme change.
 pub(crate) fn set_chrome(reader: &Reader, r: u8, g: u8, b: u8, dark: bool) {
+    set_export_cover_color(r, g, b);
     apply_window_chrome(&reader.window, r, g, b, dark);
 }

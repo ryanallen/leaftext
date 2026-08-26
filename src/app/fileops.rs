@@ -376,7 +376,7 @@ pub(crate) fn page_export_kind(target: &Path) -> Option<PageExportKind> {
 
 /// Write the page as it stands out as a file of its own, asking where it goes first.
 ///
-/// No print panel on either desktop. The reader asked for a file, not a printer to choose, so the chooser is the app's own rows and the only question after it is where the file goes. What makes a printed file the whole document in its theme, rather than one screen of app frame, is the stylesheet's `leaf-paper` class, which the page raises before it sends this and which is why the page can measure the sheet it is about to ask for.
+/// No print panel on either desktop. The reader asked for a file, not a printer to choose, so the chooser is the app's own rows and the only question after it is where the file goes. What makes a printed file the whole document in its theme, rather than one screen of app frame, is the stylesheet's `leaf-paper` class, which is raised around the render after the save window answers.
 ///
 /// One continuous page rather than a document chopped across sheets: the page carries its own size here, so the sheet is made as tall as the document is.
 ///
@@ -392,7 +392,7 @@ pub(crate) fn export_page(
     height: f64,
 ) {
     let Some(page) = webview else { return };
-    // The page held its appearance the moment it sent this, so the render's own light color scheme could not repaint the app underneath it. Released whichever way this goes, canceling included.
+    // Each render holds the appearance after the save window answers, then releases it when the render ends.
     let release = |page| {
         run_page_script(
             Some(page),
@@ -414,13 +414,19 @@ pub(crate) fn export_page(
         None => "Export Page".to_string(),
     };
     let Some(target) = pick_export_path_titled(&title, &offer.name, &offer.filters) else {
-        release(page);
         return;
     };
     match page_export_kind(&target) {
         Some(PageExportKind::Printed) => {
+            let cover = ExportCover::raise(page).ok();
+            run_page_script(
+                Some(page),
+                "window.leafHoldAppearance && window.leafHoldAppearance(true);",
+                "Failed to hold the page's appearance for an export",
+            );
             let outcome = write_page_pdf(page, &target, width, height);
             release(page);
+            drop(cover);
             match outcome {
                 Ok(()) => run_page_script(
                     Some(page),
@@ -447,17 +453,16 @@ pub(crate) fn export_page(
             }
         }
         Some(PageExportKind::WebPage) => {
-            // Let go first: the paper rules are what a render is laid out under, and nothing is being rendered here. The page answers with the document it has already drawn.
-            release(page);
+            let cover = ExportCover::raise(page).ok();
             run_page_script(
                 Some(page),
                 &page_html_export_script(&target.display().to_string()),
                 "Failed to ask the page for the document it has drawn",
             );
+            drop(cover);
         }
         // Not a row the chooser offers, so not a file anybody asked for.
         None => {
-            release(page);
             let names: Vec<&str> = page_export_rows().iter().map(|(label, _)| *label).collect();
             report_file_action_failure(
                 Some(page),
@@ -654,6 +659,7 @@ pub(crate) fn write_page_pdf_at(
     let Some(page) = webview else {
         return Err("there is no page to render".to_string());
     };
+    let cover = ExportCover::raise(page).ok();
     run_page_script(
         Some(page),
         "window.leafHoldAppearance && window.leafHoldAppearance(true);",
@@ -665,6 +671,7 @@ pub(crate) fn write_page_pdf_at(
         "window.leafHoldAppearance && window.leafHoldAppearance(false);",
         "Failed to let the page follow the system theme again",
     );
+    drop(cover);
     outcome
 }
 
@@ -683,6 +690,7 @@ pub(crate) fn write_page_picture_at(
     let Some(page) = webview else {
         return Err("there is no page to photograph".to_string());
     };
+    let cover = ExportCover::raise(page).ok();
     let ending = target
         .extension()
         .map(|ending| ending.to_string_lossy().to_lowercase())
@@ -700,6 +708,7 @@ pub(crate) fn write_page_picture_at(
         "window.leafHoldAppearance && window.leafHoldAppearance(false);",
         "Failed to let the page follow the system theme again",
     );
+    drop(cover);
     let shot = outcome?;
     std::fs::write(target, &shot.bytes).map_err(|error| error.to_string())?;
     Ok(shot)

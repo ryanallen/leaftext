@@ -168,9 +168,8 @@ function pageExportSize() {
   if (!held && window.leafHoldAppearance) window.leafHoldAppearance(false);
   return size;
 }
-// Ask where the page goes, and in which format. The hold goes on before the send and is released by the host's answer: it is what lays a print out under the same paper rules the size was measured under, and what stops the render's own light color scheme repainting the app while the file is written. `format` travels only where the reader has already been asked, and leaves the save window that one row to offer.
+// Ask where the page goes, and in which format. Measuring raises and drops its own hold, so the save window opens over the page as the reader left it. `format` travels only where the reader has already been asked, and leaves the save window that one row to offer.
 function askPageExport(format) {
-  if (window.leafHoldAppearance) window.leafHoldAppearance(true);
   const size = pageExportSize();
   send({ command: 'exportPdf', format: format || '', width: size.width, height: size.height });
 }

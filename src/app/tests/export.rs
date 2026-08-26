@@ -190,10 +190,8 @@ fn a_page_too_big_for_its_format_is_refused_in_words_that_name_the_row_that_hold
 }
 
 #[test]
-fn every_way_an_export_can_end_gives_the_page_its_appearance_back() {
-    // The hold is a counter, and the page raises one before it sends. Every arm below has to drop that one, whatever it did — because the paper class hides the whole of the app's own interface, the close button included, so a count that never reaches zero is a window nobody can shut from inside it. That shipped once: the picture arm left the writer's own hold to do the job and the writer's hold was a second one.
-    //
-    // Read as source, because the whole of `export_page` is a native window, a render and a web view, and none of the three is reachable here. What is reachable is that no path through it is missing the release.
+fn only_rendering_an_export_holds_the_page_s_appearance() {
+    // Read as source, because the whole of `export_page` is a native window, a render and a web view. The save window, web-page handoff and refused ending must leave the reader alone; only the PDF and picture renders hold it.
     let file = include_str!("../fileops.rs");
     let body = file
         .split("pub(crate) fn export_page(")
@@ -207,36 +205,205 @@ fn every_way_an_export_can_end_gives_the_page_its_appearance_back() {
         })
         .expect("the page export");
 
-    // The four ways it ends: the reader canceled the window, a PDF was rendered, a picture was written, and a web page was handed back to the page to build.
-    let arms = [
-        (
-            "the reader canceled the save window",
-            "release(page);
-        return;",
-        ),
-        ("a PDF was rendered", "PageExportKind::Printed"),
-        ("a picture was written", "PageExportKind::Picture"),
-        ("a web page was handed back", "PageExportKind::WebPage"),
-        ("the ending was one no row offers", "None => {"),
-    ];
-    for (ending, opens) in arms {
-        let at = body
-            .find(opens)
-            .unwrap_or_else(|| panic!("{ending} is not a way this export can end any more"));
-        // Everything from where the arm opens to the end of the function: the release may sit before the write, after it, or in the closure either calls, and all three give the page back.
-        let rest = &body[at..];
-        let arm_end = rest
-            .find(
-                "
-        Some(",
-            )
-            .unwrap_or(rest.len());
-        let arm = &rest[..arm_end];
+    assert_eq!(
+        body.matches("release(page)").count(),
+        2,
+        "only the PDF and picture renders have a hold to release: {body}"
+    );
+    let before_arms = body
+        .split("match page_export_kind(&target)")
+        .next()
+        .expect("the save window");
+    assert!(
+        !before_arms.contains("release(page)"),
+        "canceling the save window released a hold that was never raised: {before_arms}"
+    );
+    let web = body
+        .split("Some(PageExportKind::WebPage) => {")
+        .nth(1)
+        .and_then(|rest| rest.split("None => {").next())
+        .expect("the web-page arm");
+    assert!(
+        !web.contains("release(page)"),
+        "the web-page handoff released a hold that was never raised: {web}"
+    );
+    let unknown = body
+        .split("None => {")
+        .nth(1)
+        .expect("the refused-ending arm");
+    assert!(
+        !unknown.contains("release(page)"),
+        "a refused ending released a hold that was never raised: {unknown}"
+    );
+}
+
+#[test]
+fn every_page_render_is_held_before_it_starts() {
+    let file = include_str!("../fileops.rs");
+    for (function, render) in [
+        ("pub(crate) fn write_page_pdf_at", "write_page_pdf(page"),
+        ("pub(crate) fn write_page_picture_at", "capture_page(page"),
+    ] {
+        let body = file
+            .split(function)
+            .nth(1)
+            .and_then(|rest| {
+                rest.split(
+                    "
+/// ",
+                )
+                .next()
+            })
+            .unwrap_or_else(|| panic!("{function} is missing"));
+        let held = body
+            .find("leafHoldAppearance(true)")
+            .unwrap_or_else(|| panic!("{function} never holds the page"));
+        let rendered = body
+            .find(render)
+            .unwrap_or_else(|| panic!("{function} never reaches its render"));
         assert!(
-            arm.contains("release(page)") || arm.contains("release(page);"),
-            "when {ending}, nothing gives the page its appearance back — the app is left wearing the paper with no close button: {arm}"
+            held < rendered,
+            "{function} starts its render before the paper rules reach the page: {body}"
         );
     }
+}
+
+#[test]
+fn page_export_rows_keep_their_output_bytes() {
+    let file = include_str!("../fileops.rs");
+    let export = file
+        .split("pub(crate) fn export_page(")
+        .nth(1)
+        .and_then(|rest| {
+            rest.split(
+                "
+/// ",
+            )
+            .next()
+        })
+        .expect("the page export");
+    for unchanged_write in [
+        "write_page_pdf(page, &target, width, height)",
+        "write_page_picture_at(webview, scale, &target, width, height)",
+        "page_html_export_script(&target.display().to_string())",
+    ] {
+        assert!(
+            export.contains(unchanged_write),
+            "the export stopped handing a row to its existing byte writer unchanged: {unchanged_write}"
+        );
+    }
+    let picture = file
+        .split("pub(crate) fn write_page_picture_at")
+        .nth(1)
+        .and_then(|rest| {
+            rest.split(
+                "
+/// ",
+            )
+            .next()
+        })
+        .expect("the page picture writer");
+    assert!(
+        picture.contains("std::fs::write(target, &shot.bytes)"),
+        "the picture render no longer writes the engine's bytes unchanged: {picture}"
+    );
+}
+
+#[test]
+fn every_page_export_is_covered_only_while_its_work_runs() {
+    let file = include_str!("../fileops.rs");
+    let export = file
+        .split("pub(crate) fn export_page(")
+        .nth(1)
+        .and_then(|rest| {
+            rest.split(
+                "
+/// ",
+            )
+            .next()
+        })
+        .expect("the page export");
+    let printed = export
+        .split("Some(PageExportKind::Printed) => {")
+        .nth(1)
+        .and_then(|rest| rest.split("Some(PageExportKind::Picture) => {").next())
+        .expect("the PDF arm");
+    let web = export
+        .split("Some(PageExportKind::WebPage) => {")
+        .nth(1)
+        .and_then(|rest| rest.split("None => {").next())
+        .expect("the web-page arm");
+    for (body, work) in [
+        (printed, "write_page_pdf(page"),
+        (web, "page_html_export_script"),
+    ] {
+        let raised = body.find("ExportCover::raise(page)").expect("the cover");
+        let worked = body
+            .find(work)
+            .unwrap_or_else(|| panic!("{work} is missing"));
+        let dropped = body.find("drop(cover)").expect("the cover drop");
+        assert!(
+            raised < worked && worked < dropped,
+            "the native sheet does not cover the whole export work: {body}"
+        );
+    }
+
+    for (function, render) in [
+        ("pub(crate) fn write_page_pdf_at", "write_page_pdf(page"),
+        ("pub(crate) fn write_page_picture_at", "capture_page(page"),
+    ] {
+        let body = file
+            .split(function)
+            .nth(1)
+            .and_then(|rest| {
+                rest.split(
+                    "
+/// ",
+                )
+                .next()
+            })
+            .unwrap_or_else(|| panic!("{function} is missing"));
+        let raised = body.find("ExportCover::raise(page)").expect("the cover");
+        let held = body.find("leafHoldAppearance(true)").expect("the hold");
+        let rendered = body.find(render).expect("the render");
+        let released = body.find("leafHoldAppearance(false)").expect("the release");
+        let dropped = body.find("drop(cover)").expect("the cover drop");
+        assert!(
+            raised < held && held < rendered && rendered < released && released < dropped,
+            "the page is uncovered before its render has restored the reader: {body}"
+        );
+    }
+
+    let picture = file
+        .split("pub(crate) fn write_page_picture_at")
+        .nth(1)
+        .and_then(|rest| {
+            rest.split(
+                "
+/// ",
+            )
+            .next()
+        })
+        .expect("the picture writer");
+    assert!(
+        picture.find("ExportCover::raise(page)") < picture.find("page_picture_format(&ending)"),
+        "a refused picture ending must still drop a cover it raised: {picture}"
+    );
+    assert!(
+        picture.find("drop(cover)") < picture.find("let shot = outcome?"),
+        "a failed picture render must uncover the reader before returning: {picture}"
+    );
+
+    let cover = include_str!("../export_cover.rs");
+    assert!(
+        cover.contains("impl Drop for ExportCover") && cover.contains("self.native.remove()"),
+        "every early return must uncover the reader through the cover's drop: {cover}"
+    );
+    let chrome = include_str!("../window_cmds.rs");
+    assert!(
+        chrome.contains("set_export_cover_color(r, g, b)"),
+        "the native sheet must take the color the page reports for its own frame: {chrome}"
+    );
 }
 
 #[test]
@@ -631,6 +798,20 @@ fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
     assert!(
         body.contains("Path::file_stem") && !body.contains("active_edit"),
         "the export names the file after the document and reads nothing else of it: {body}"
+    );
+    let printed = body
+        .split("Some(PageExportKind::Printed) => {")
+        .nth(1)
+        .and_then(|rest| rest.split("Some(PageExportKind::Picture) => {").next())
+        .expect("the PDF export arm");
+    let held = printed
+        .find("leafHoldAppearance(true)")
+        .expect("the PDF hold");
+    let rendered = printed.find("write_page_pdf(page").expect("the PDF render");
+    let released = printed.find("release(page)").expect("the PDF release");
+    assert!(
+        held < rendered && rendered < released,
+        "the PDF render is laid out under the paper rules measured for it: {printed}"
     );
 
     // The sheet is the height the page measured, plus a hair against rounding, divided into equal pages only where one page cannot hold it. A proportional allowance was tried and on a document twenty screens tall it is most of a sheet of white below the last line.

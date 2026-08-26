@@ -10,12 +10,12 @@ fn the_theme_is_held_while_a_page_is_being_rendered_for_paper() {
     // The guard itself, on the one listener that can change the appearance without anybody asking.
     assert_contains(boot, "mode === 'system' && !holdingAppearance");
 
-    // A browser's own print says when it starts and stops. The desktop renders the page without the page hearing about it at all, so the press turns the hold on and the host's answer turns it off — which is why it is a count rather than a flag.
+    // A browser's own print says when it starts and stops. The desktop renders the page without the page hearing about it at all, so the host holds around the render — which is why it is a count rather than a flag.
     assert_contains(boot, "window.addEventListener('beforeprint'");
     assert_contains(boot, "window.addEventListener('afterprint'");
     assert_contains(boot, "Math.max(0, holdingAppearance + (held ? 1 : -1))");
 
-    // Both ends of the desktop pair: the press holds, and every way out of the export releases.
+    // Measuring holds briefly, and each native render releases the hold it raised.
     assert_contains(
         include_str!("../assets/shell/overflow.js"),
         "window.leafHoldAppearance(true)",
@@ -26,8 +26,8 @@ fn the_theme_is_held_while_a_page_is_being_rendered_for_paper() {
         "window.leafHoldAppearance && window.leafHoldAppearance(false);",
     );
     assert!(
-        export.matches("release(page)").count() >= 3,
-        "the appearance is released on the cancel, the write and the failure alike"
+        export.matches("release(page)").count() == 2,
+        "only the PDF and picture renders have a hold to release"
     );
 }
 

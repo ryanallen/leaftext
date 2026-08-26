@@ -153,12 +153,11 @@ export function run() {
       if (asked[0].height !== paper.height || asked[0].width !== paper.width) {
         throw new Error(`the sheet was asked for at ${asked[0].width} x ${asked[0].height} rather than the ${paper.width} x ${paper.height} the paper rules lay out`);
       }
-      // The rules stay on until the host answers, so the render is laid out under the ones that were measured.
-      if (!booted.document.body.classList.contains('leaf-paper')) {
-        throw new Error('the paper rules came off before the render, so the sheet is sized for a layout the render will not use');
+      // Measuring is synchronous, so the ask keeps the paper size while the reader is back on screen before the save window opens.
+      if (booted.document.body.classList.contains('leaf-paper')) {
+        throw new Error('the document was still wearing the paper rules when the export ask was sent');
       }
     } finally {
-      booted.window.leafHoldAppearance(false);
       booted.window.leafHoldAppearance = wasHold;
       surface.getBoundingClientRect = wasRect;
       booted.window.ipc = ipc;
@@ -268,8 +267,8 @@ export function run() {
     if (asked[0].format !== 'pdf') throw new Error(`it asked for ${asked[0].format} rather than the row it was drawn as`);
   });
 
-  check('Pressing Export leaves exactly one hold for the host to give back', () => {
-    // The hold counts rather than switches, so what the host has to undo is a number and the page is what sets it. A count that never reaches zero leaves the app wearing the paper, where every one of its own controls is hidden and the close button with them.
+  check('Pressing Export leaves the reader as it was when the save window opens', () => {
+    // Measuring raises and drops its own hold before the ask leaves, so the save window never stands over the paper layout.
     const sent = [];
     const page = runShell(source, { ipc: { postMessage: (message) => sent.push(JSON.parse(message)) } });
     let held = 0;
@@ -282,9 +281,8 @@ export function run() {
     if (sent.filter((one) => one.command === 'exportPdf').length !== 1) {
       throw new Error('pressing Export did not ask for one export');
     }
-    // One, not two and not none: measuring the sheet raises and drops a hold of its own, and what is left standing is the one the render is laid out under.
-    if (held !== 1) {
-      throw new Error(`pressing Export left ${held} holds on the page, and the host gives back one`);
+    if (held !== 0) {
+      throw new Error(`pressing Export left ${held} holds on the page before the save window opened`);
     }
   });
 
