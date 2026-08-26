@@ -527,7 +527,7 @@ const AHEAD_OF_CLOCK_CASES = [
 // A third-party license notice is reproduced verbatim or not at all, so a date inside one is not this repo's to stamp — the same reason `check-wrapping` leaves that folder alone.
 const DATE_SWEEP_SKIP = ['src/assets/'];
 
-// Which Markdown the two date rules above read: both trees. The whole plan tree, giveaway writing included, because a page handed to a stranger carries dates a stranger wants put in order and the cost of meeting it is one clock read. And this checkout's own Markdown, because a bare day in a skill is copied byte for byte into `../docs/learn/ticket-workflow-medium/skills/` — so reading only the plan tree named the fault in the copy, which `check-learn-snapshots` forbids editing, and never at the source where the fix is legal.
+// Which Markdown the two date rules above read: both trees. The whole plan tree, giveaway writing included, because a page handed to a stranger carries dates a stranger wants put in order and the cost of meeting it is one clock read. And this checkout's own Markdown, because a bare day in a skill is copied byte for byte into `../docs/learn/ticket-workflow-medium/skills/`: read the plan tree alone and the fault is named in the copy, which `check-learn-snapshots` refuses to let anyone edit, and never at the source where the fix is legal.
 export function dateSwept(file) {
   return !DATE_SWEEP_SKIP.some((skip) => file.startsWith(skip));
 }
