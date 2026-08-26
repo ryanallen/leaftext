@@ -209,7 +209,7 @@ fn a_press_in_the_shadow_band_resizes_the_window() {
     );
 
     // The one thing about this handler no value can answer: the direction reaches a window library call, on a window no test can build.
-    let source = include_str!("../event_loop.rs");
+    let source = include_str!("../window_cmds.rs");
     assert!(
         source.contains("reader.window.drag_resize_window(direction)"),
         "the resize command reaches no window call, so the band takes the press and nothing moves"

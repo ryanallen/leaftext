@@ -19,141 +19,6 @@ pub(crate) struct AppCtx {
     pub(crate) last_fullscreen: bool,
 }
 
-/// The compass point the page grabbed, as the window library names it. Anything else is dropped rather than guessed at.
-pub(crate) fn resize_direction(direction: &str) -> Option<tao::window::ResizeDirection> {
-    use tao::window::ResizeDirection::*;
-    Some(match direction {
-        "n" => North,
-        "ne" => NorthEast,
-        "e" => East,
-        "se" => SouthEast,
-        "s" => South,
-        "sw" => SouthWest,
-        "w" => West,
-        "nw" => NorthWest,
-        _ => return None,
-    })
-}
-
-/// A window's place and size in logical pixels, top-left origin — the numbers a page-driven resize works in.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct WindowRect {
-    pub(crate) x: f64,
-    pub(crate) y: f64,
-    pub(crate) width: f64,
-    pub(crate) height: f64,
-}
-
-/// Where the window the drag started on ends up once the pointer has moved by this much. The edges named by the direction follow the pointer and the others stay put, so a drag from a corner moves two of them. Never smaller than the smallest window: setting the size directly goes around the limit the platform holds for us.
-pub(crate) fn resized_window(start: WindowRect, direction: &str, dx: f64, dy: f64) -> WindowRect {
-    let (min_width, min_height) = MIN_INNER_SIZE;
-    let mut end = start;
-    if direction.contains('e') {
-        end.width = (start.width + dx).max(min_width);
-    } else if direction.contains('w') {
-        // The left edge follows the pointer, so hitting the smallest width pins it where that width leaves it rather than letting the window walk right.
-        end.width = (start.width - dx).max(min_width);
-        end.x = start.x + start.width - end.width;
-    }
-    if direction.contains('s') {
-        end.height = (start.height + dy).max(min_height);
-    } else if direction.contains('n') {
-        end.height = (start.height - dy).max(min_height);
-        end.y = start.y + start.height - end.height;
-    }
-    end
-}
-
-/// The window where it stands, in the same logical pixels the page reports a pointer in. The place is the frame's and the size is the drawable area's, which are one rectangle on a window whose page runs the full height of its frame.
-fn window_rect(window: &tao::window::Window) -> Option<WindowRect> {
-    let scale = window.scale_factor();
-    let position = window.outer_position().ok()?.to_logical::<f64>(scale);
-    let size = window.inner_size().to_logical::<f64>(scale);
-    Some(WindowRect {
-        x: position.x,
-        y: position.y,
-        width: size.width,
-        height: size.height,
-    })
-}
-
-/// The window as it stood when a page-driven drag began, and where the pointer was on the screen. Held only between the press and the release.
-pub(crate) struct ResizeDrag {
-    pub(crate) direction: String,
-    pub(crate) window: WindowRect,
-    pub(crate) pointer: (f64, f64),
-}
-
-/// What one report of a page-driven window resize amounts to. Windows hands the whole gesture to the platform on the press and hears nothing more: that loop brings snapping, the size limits and the live redraw. A Mac is refused that call, so the host holds the window as it stood and sets it from every move.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum ResizeDragStep {
-    /// Hand the platform this direction and let its own loop run the gesture.
-    HandToPlatform(tao::window::ResizeDirection),
-    /// Remember the window as it stands, against this direction and the pointer that grabbed it.
-    HoldWindow {
-        direction: String,
-        pointer: (f64, f64),
-    },
-    /// Put the window here.
-    SetWindow(WindowRect),
-    /// The gesture is over, so forget what was held.
-    Forget,
-    /// Nothing to do.
-    Nothing,
-}
-
-/// The step this phase of a resize drag is. `platform_drives_it` is the Windows path, where only the press is answered.
-pub(crate) fn resize_drag_step(
-    platform_drives_it: bool,
-    direction: &str,
-    phase: &str,
-    x: f64,
-    y: f64,
-    held: Option<&ResizeDrag>,
-) -> ResizeDragStep {
-    if platform_drives_it {
-        return match (phase, resize_direction(direction)) {
-            ("start", Some(direction)) => ResizeDragStep::HandToPlatform(direction),
-            _ => ResizeDragStep::Nothing,
-        };
-    }
-    match phase {
-        "start" => ResizeDragStep::HoldWindow {
-            direction: direction.to_string(),
-            pointer: (x, y),
-        },
-        "move" => match held {
-            Some(drag) => ResizeDragStep::SetWindow(resized_window(
-                drag.window,
-                &drag.direction,
-                x - drag.pointer.0,
-                y - drag.pointer.1,
-            )),
-            None => ResizeDragStep::Nothing,
-        },
-        _ => ResizeDragStep::Forget,
-    }
-}
-
-/// The two things about a window the page has to be told, both read off the window rather than off a gesture: the green button, the View menu and the shortcut all reach us as a resize and nothing else.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct WindowState {
-    pub(crate) maximized: bool,
-    pub(crate) fullscreen: bool,
-}
-
-/// The lines the page owes now the window has been resized, and none where neither of the two moved. The custom title bar's maximize/restore icon is one; the other is full screen, which takes Apple's three dots away with the rest of the chrome, so the room the app bar leaves for them goes too.
-pub(crate) fn window_state_lines(was: WindowState, now: WindowState) -> Vec<String> {
-    let mut lines = Vec::new();
-    if now.maximized != was.maximized {
-        lines.push(format!("window.leafSetWindowMaximized({});", now.maximized));
-    }
-    if now.fullscreen != was.fullscreen {
-        lines.push(format!("window.leafSetFullscreen({});", now.fullscreen));
-    }
-    lines
-}
-
 /// Apply a page command that records a setting; the one caller persists when this returns true. A new persisted toggle is its command plus an arm here.
 fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
     match command {
@@ -548,21 +413,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 report_update_state(reader.page(), "failed", &version, Some(&message));
             }
             Event::UserEvent(UserEvent::PipeState { reply }) => {
-                // try_send, not send: the asker may already have given up and gone, and the window thread must not block on a dead channel.
-                let _ = reply.try_send(Ok(pipe_state(&reader.workspace, &vault_state)));
+                pipe_asks::state(&reader, &vault_state, &reply)
             }
-            // The one honest visible effect of an agent reading a document: the window shows what it is holding, exactly as if somebody had opened it.
             Event::UserEvent(UserEvent::PipeDoc { path, reply }) => {
-                let answer = match pipe_bring_to_front(&mut reader.workspace, &path) {
-                    Ok(moved) => {
-                        if moved {
-                            reader.render(ScrollIntent::Reset);
-                        }
-                        pipe_document_answer(&mut reader.workspace)
-                    }
-                    Err(reason) => Err(reason),
-                };
-                let _ = reply.try_send(answer);
+                pipe_asks::doc(&mut reader, &path, &reply)
             }
             Event::UserEvent(UserEvent::PipeEdit {
                 path,
@@ -571,78 +425,38 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 text,
                 expect,
                 reply,
-            }) => {
-                let answer =
-                    pipe_edit_document(&mut reader.workspace, &path, start, end, &text, &expect);
-                if answer.is_ok() {
-                    // Straight back on screen, the way a reading-view edit is: the render restores a tab left in source from the same buffer, so either view shows what the agent wrote.
-                    reader.render(ScrollIntent::Preserve { code: None });
-                    resync_editing_state(reader.page(), &reader.workspace);
-                }
-                let _ = reply.try_send(answer);
-            }
+            }) => pipe_asks::edit(&mut reader, &path, start, end, &text, &expect, &reply),
             Event::UserEvent(UserEvent::PipeTask {
                 path,
                 index,
                 expect,
                 reply,
-            }) => {
-                // No render: one marker byte changed, and the resync inside the toggle is what the reader's own checkbox does with it.
-                let answer = pipe_toggle_task(
-                    reader.webview.as_ref(),
-                    &mut reader.workspace,
-                    &mut file_watch,
-                    &path,
-                    index,
-                    &expect,
-                );
-                let _ = reply.try_send(answer);
-            }
+            }) => pipe_asks::task(&mut reader, &mut file_watch, &path, index, &expect, &reply),
             Event::UserEvent(UserEvent::PipeSave {
                 path,
                 expect,
                 reply,
-            }) => {
-                let answer = pipe_save_document(
-                    reader.webview.as_ref(),
-                    &mut reader.workspace,
-                    &mut file_watch,
-                    &vault_state,
-                    &mut refresh_book,
-                    &path,
-                    &expect,
-                );
-                let _ = reply.try_send(answer);
-            }
-            // The Export button's own render with the dialog taken out of the way, so a session can make one of these files and read it back. The loop is inside the render, which is why this ask gets a longer wait than the rest.
+            }) => pipe_asks::save(
+                &mut reader,
+                &mut file_watch,
+                &vault_state,
+                &mut refresh_book,
+                &path,
+                &expect,
+                &reply,
+            ),
             Event::UserEvent(UserEvent::PipeExport {
                 path,
                 width,
                 height,
                 reply,
-            }) => {
-                let answer =
-                    write_page_pdf_at(reader.webview.as_ref(), &path, width, height).map(|()| {
-                        serde_json::json!({
-                            "wrote": path.display().to_string(),
-                            "width": width,
-                            "height": height,
-                        })
-                    });
-                let _ = reply.try_send(answer);
-            }
-            // The picture the Export button's picture rows write, at a path the asker named. The render is inside the loop, which is why this ask waits as long as an export does.
+            }) => pipe_asks::export(&reader, &path, width, height, &reply),
             Event::UserEvent(UserEvent::PipeShot {
                 path,
                 width,
                 height,
                 reply,
-            }) => {
-                let scale = reader.window.scale_factor();
-                let answer =
-                    page_picture_answer(reader.webview.as_ref(), scale, &path, width, height);
-                let _ = reply.try_send(answer);
-            }
+            }) => pipe_asks::shot(&reader, &path, width, height, &reply),
             Event::UserEvent(UserEvent::PipeQuit { reply }) => {
                 // Answer only. The asker still has nothing in hand, and a loop that stopped here would take the reply with it.
                 let _ = reply.try_send(Ok(serde_json::json!({ "closing": true })));
@@ -663,191 +477,37 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             },
             Event::UserEvent(UserEvent::FromPage(command)) => match command {
-                IpcCommand::Open => {
-                    if let Some(path) = pick_document_file() {
-                        reader.workspace.open_path(path);
-                        reader.render(ScrollIntent::Reset);
-                    }
-                }
-                IpcCommand::NewDocument => {
-                    reader.workspace.open_untitled();
-                    // Before the render, so the first paint already carries the editors - there is nothing to click before typing.
-                    run_page_script(
-                        reader.page(),
-                        &unlock_reading_script(),
-                        "Failed to unlock the new document",
-                    );
-                    reader.render(ScrollIntent::Reset);
-                }
-                // The page opening a file is the same act as a forwarded open.
-                IpcCommand::OpenRecent { path } => {
-                    let _ = proxy.send_event(UserEvent::OpenPath(path));
-                }
+                IpcCommand::Open => file_cmds::open(&mut reader),
+                IpcCommand::NewDocument => file_cmds::new_document(&mut reader),
+                IpcCommand::OpenRecent { path } => file_cmds::open_recent(&proxy, path),
                 IpcCommand::PasteFile {
                     path,
                     into_folder,
                     cut,
-                } => match transfer_into_folder(&path, &into_folder, cut) {
-                    Ok(_) => refresh_library_folder(reader.page()),
-                    Err(error) => {
-                        let verb = if cut { "move" } else { "copy" };
-                        eprintln!(
-                            "Failed to {verb} {} into {}: {error}",
-                            path.display(),
-                            into_folder.display()
-                        );
-                        report_file_action_failure(reader.page(), &error.to_string());
-                    }
-                },
-                IpcCommand::RevealFile { path } => {
-                    if let Err(error) = reveal_in_file_manager(&path) {
-                        eprintln!(
-                            "Failed to reveal {} in the file manager: {error}",
-                            path.display()
-                        );
-                        // Explorer here and Finder there, so the sentence names the window rather than either of them. A reveal that says nothing reads as a slow machine, and the reader waits.
-                        report_file_action_failure(
-                            reader.page(),
-                            "the file manager window could not be opened",
-                        );
-                    }
-                }
-                IpcCommand::CopyFile { path, cut } => {
-                    // The helper writes the real clipboard, which another program can be holding open, so the wait for its answer happens off the loop and the window never stops for it.
-                    off_loop(&proxy, move || UserEvent::FileClipboardDone {
-                        cut,
-                        error: copy_file_to_clipboard(&path, cut).err().map(|error| {
-                            format!(
-                                "Failed to copy {} to the clipboard: {error}",
-                                path.display()
-                            )
-                        }),
-                    });
-                }
+                } => file_cmds::paste(&reader, &path, &into_folder, cut),
+                IpcCommand::RevealFile { path } => file_cmds::reveal(&reader, &path),
+                IpcCommand::CopyFile { path, cut } => file_cmds::copy_file(&proxy, path, cut),
                 IpcCommand::ToggleFavorite { path, kind } => {
-                    // Which vault holds it is the registry's answer, not the pane's: something opened from outside every vault belongs to none.
-                    let vault_id = vault_state
-                        .conn
-                        .as_ref()
-                        .and_then(|conn| vault_containing(conn, &path))
-                        .map(|vault| vault.id);
-                    reader.toggle_favorite(path, kind, vault_id);
+                    file_cmds::toggle_favorite(&mut reader, &vault_state, path, kind)
                 }
-                IpcCommand::CheckFavorites => {
-                    // A metadata read per favorite, and only while the start screen is up: the list is short and the user marked every path in it, so this is not a crawl. Never stored, because a stored answer is wrong the moment a file moves with the app shut.
-                    let missing: Vec<String> = reader
-                        .favorites
-                        .entries
-                        .iter()
-                        .filter(|one| !one.path.exists())
-                        .map(|one| one.path.display().to_string())
-                        .collect();
-                    // A vault whose own folder has gone is one fact, not one per row inside it: repointing a file inside a folder that is not there is not the fix.
-                    let gone_vaults: Vec<i64> = vault_state
-                        .conn
-                        .as_ref()
-                        .and_then(|conn| list_vaults(conn).ok())
-                        .unwrap_or_default()
-                        .into_iter()
-                        .filter(|vault| !Path::new(&vault.root_path).is_dir())
-                        .map(|vault| vault.id)
-                        .collect();
-                    run_page_script(
-                        reader.page(),
-                        &favorites_missing_script(&missing, &gone_vaults),
-                        "Failed to mark the favorites that have gone",
-                    );
-                }
+                IpcCommand::CheckFavorites => file_cmds::check_favorites(&reader, &vault_state),
                 IpcCommand::RepointFavorite { path } => {
-                    if let Some(chosen) = pick_document_file() {
-                        let vault_id = vault_state
-                            .conn
-                            .as_ref()
-                            .and_then(|conn| vault_containing(conn, &chosen))
-                            .map(|vault| vault.id);
-                        reader.repoint_favorite(&path, &chosen, vault_id);
-                    }
+                    file_cmds::repoint_favorite(&mut reader, &vault_state, &path)
                 }
                 IpcCommand::MoveFavorite { path, before } => {
-                    reader.move_favorite(&path, before.as_deref());
+                    file_cmds::move_favorite(&mut reader, &path, before.as_deref())
                 }
-                IpcCommand::CopyPath { path } => {
-                    if let Err(error) = copy_path_to_clipboard(&path) {
-                        eprintln!(
-                            "Failed to copy the path {} to the clipboard: {error}",
-                            path.display()
-                        );
-                        // A copy shows nothing of its own, so its failure is otherwise met at a paste in another app.
-                        report_file_action_failure(
-                            reader.page(),
-                            "the path could not be copied — try again",
-                        );
-                    }
+                IpcCommand::CopyPath { path } => file_cmds::copy_path(&reader, &path),
+                IpcCommand::RenameFile { path, new_name } => {
+                    file_cmds::rename(&mut reader, &path, &new_name)
                 }
-                IpcCommand::RenameFile { path, new_name } => match rename_file(&path, &new_name) {
-                    Ok(renamed) => {
-                        // The watcher re-aims itself at the active document every turn and needs nothing here.
-                        if let Some(intent) =
-                            followed_rename_intent(&mut reader.workspace, &path, &renamed)
-                        {
-                            reader.record_recent(renamed);
-                            reader.render(intent);
-                        }
-                        refresh_library_folder(reader.page());
-                    }
-                    Err(error) => {
-                        eprintln!("Failed to rename {}: {error}", path.display());
-                        report_file_action_failure(reader.page(), &error.to_string());
-                    }
-                },
-                IpcCommand::DeleteFile { path } => match delete_to_trash(&path) {
-                    Ok(landed) => {
-                        // Where it went, kept only until the next delete or the undo that spends it. Windows answers `None` and needs nothing more than the original path.
-                        last_delete = Some((path.clone(), landed));
-                        refresh_library_folder(reader.page());
-                        report_file_deleted(reader.page(), &path);
-                    }
-                    Err(error) => {
-                        eprintln!("Failed to move {} to the trash: {error}", path.display());
-                        report_file_action_failure(reader.page(), &error);
-                    }
-                },
+                IpcCommand::DeleteFile { path } => {
+                    file_cmds::delete(&reader, &mut last_delete, path)
+                }
                 IpcCommand::UndoDelete { path } => {
-                    // Only the delete the record is actually about: the page's offer expires with its message, and the two must not be able to drift apart.
-                    let restoring = match last_delete.take() {
-                        Some((original, landed)) if original == path => Some((original, landed)),
-                        // Not ours to undo, and putting the record back would leave a spent offer live.
-                        _ => None,
-                    };
-                    match restoring {
-                        Some((original, landed)) => {
-                            match restore_from_trash(&original, landed.as_deref()) {
-                                Ok(()) => refresh_library_folder(reader.page()),
-                                Err(error) => {
-                                    eprintln!(
-                                        "Failed to bring {} back: {error}",
-                                        original.display()
-                                    );
-                                    report_file_action_failure(reader.page(), &error);
-                                }
-                            }
-                        }
-                        None => report_file_action_failure(
-                            reader.page(),
-                            "there is nothing left to put back",
-                        ),
-                    }
+                    file_cmds::undo_delete(&reader, &mut last_delete, &path)
                 }
-                IpcCommand::ShowProperties { path } => {
-                    if let Err(error) = show_properties(&path) {
-                        eprintln!("Failed to show properties for {}: {error}", path.display());
-                        // The mechanism is a shell verb here and Finder there; neither is what the reader pressed.
-                        report_file_action_failure(
-                            reader.page(),
-                            "the information window could not be opened",
-                        );
-                    }
-                }
+                IpcCommand::ShowProperties { path } => file_cmds::properties(&reader, &path),
                 IpcCommand::CloseTab { index } => {
                     match close_tab_draw(&mut reader.workspace, index) {
                         TabDraw::Strip => reader.refresh_tab_strip(),
@@ -1133,89 +793,36 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         }
                     }
                 }
-                IpcCommand::EnterCodeView => {
-                    // A fresh toggle carries its own position: the page stashed the reading view's scroll fraction before asking to enter.
-                    if let Err(why) =
-                        enter_code_view(reader.webview.as_ref(), &mut reader.workspace, None)
-                    {
-                        say_edit_refused(reader.page(), &reader.workspace, &why);
-                    }
-                }
-                IpcCommand::ExitCodeView => {
-                    if let Some(index) = reader.workspace.active {
-                        if let Some(tab) = reader.workspace.tabs.get_mut(index) {
-                            tab.code_view = false;
-                        }
-                    }
-                    reader.render(ScrollIntent::Reset);
-                }
-                IpcCommand::UpdateSource { text } => {
-                    update_source_buffer(reader.webview.as_ref(), &mut reader.workspace, text);
-                }
+                IpcCommand::EnterCodeView => editing_cmds::enter_source(&mut reader),
+                IpcCommand::ExitCodeView => editing_cmds::exit_source(&mut reader),
+                IpcCommand::UpdateSource { text } => editing_cmds::update_source(&mut reader, text),
                 IpcCommand::SpliceSource {
                     start,
                     removed,
                     inserted,
                     length,
-                } => {
-                    splice_source_buffer(
-                        reader.webview.as_ref(),
-                        &mut reader.workspace,
-                        start,
-                        removed,
-                        &inserted,
-                        length,
-                    );
-                }
+                } => editing_cmds::source_spliced(&mut reader, start, removed, &inserted, length),
                 IpcCommand::CodeCompleteNotes { token } => {
-                    let document = reader.workspace.active_path().map(Path::to_path_buf);
-                    code_complete_notes(&mut vault_state, &proxy, document.as_deref(), token);
+                    editing_cmds::complete_notes(&reader, &mut vault_state, &proxy, token)
                 }
                 IpcCommand::CodeCompleteHeadings { token, note } => {
-                    code_complete_headings(
-                        &mut vault_state,
-                        &proxy,
-                        &reader.workspace,
-                        token,
-                        note,
-                    );
+                    editing_cmds::complete_headings(&reader, &mut vault_state, &proxy, token, note)
                 }
                 IpcCommand::CodeHoverNote { token, note } => {
-                    let document = reader.workspace.active_path().map(Path::to_path_buf);
-                    code_hover_note(&mut vault_state, &proxy, document.as_deref(), token, note);
+                    editing_cmds::hover_note(&reader, &mut vault_state, &proxy, token, note)
                 }
                 IpcCommand::CodeLint { token } => {
-                    code_lint(&mut vault_state, &proxy, &reader.workspace, token);
+                    editing_cmds::lint_source(&reader, &mut vault_state, &proxy, token)
                 }
-                IpcCommand::SaveDocument { format } => {
-                    match name_untitled_document(&mut reader, |path| {
-                        pick_save_path(path, format.as_deref())
-                    }) {
-                        SaveReady::Canceled => {}
-                        ready => {
-                            // The page has already been told how it went; nobody else is waiting on this one.
-                            let _ = save_active_document(
-                                reader.webview.as_ref(),
-                                &mut reader.workspace,
-                                &mut file_watch,
-                                &vault_state,
-                                &mut refresh_book,
-                            );
-                            // The tab, the title and the image folder still say Untitled. A plain save changes none of them.
-                            if matches!(ready, SaveReady::Named) {
-                                reader.render(ScrollIntent::Preserve { code: None });
-                            }
-                        }
-                    }
-                }
+                IpcCommand::SaveDocument { format } => editing_cmds::save_document(
+                    &mut reader,
+                    &mut file_watch,
+                    &vault_state,
+                    &mut refresh_book,
+                    format.as_deref(),
+                ),
                 IpcCommand::ToggleTask { index, token } => {
-                    toggle_task_marker(
-                        reader.webview.as_ref(),
-                        &mut reader.workspace,
-                        &mut file_watch,
-                        index,
-                        token,
-                    );
+                    editing_cmds::task_toggled(&mut reader, &mut file_watch, index, token)
                 }
                 IpcCommand::EditBlock {
                     start,
@@ -1226,9 +833,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     continuing,
                     cell,
                     token,
-                } => {
-                    // Splice into the source buffer, then re-render from it, keeping the reader's place. Source stays authoritative for MD and XML. A checkbox toggle (autosave) splices without an undo step and writes to disk right away. The decision is a function so a test can reach it; the loop keeps the doing.
-                    let asked = BlockEdit {
+                } => editing_cmds::edit_block(
+                    &mut reader,
+                    &mut file_watch,
+                    &BlockEdit {
                         start,
                         end,
                         text: &text,
@@ -1236,120 +844,26 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         live,
                         continuing,
                         cell: cell.as_ref(),
-                    };
-                    match edit_block_outcome(&mut reader.workspace, &asked) {
-                        BlockEditOutcome::Spliced { autosave, render } => {
-                            let unwritten = if autosave {
-                                autosave_active_buffer(&mut reader.workspace, &mut file_watch).err()
-                            } else {
-                                None
-                            };
-                            if render {
-                                reader.render(ScrollIntent::Preserve { code: None });
-                            }
-                            // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess. A failed auto-save leaves the buffer dirty, so this is what lights Save over the tick.
-                            resync_editing_state(reader.page(), &reader.workspace);
-                            // The buffer holds it either way — the splice landed. Where the write behind it did not, that is said rather than swallowed into the log: a box inside a table sends this command, so the log is nowhere its reader looks.
-                            let said = unwritten.map(|why| {
-                                edit_unsaved_words(&front_document_name(&reader.workspace), &why)
-                            });
-                            say_edit_outcome(reader.page(), token, true, said.as_deref());
-                        }
-                        // Nothing was written, so the dirty mark and the Undo button the page raised on its own come back down, and whoever is waiting is told the buffer holds nothing.
-                        BlockEditOutcome::Refused(why) => {
-                            let said =
-                                edit_refused_words(&front_document_name(&reader.workspace), &why);
-                            cleared_editing_state(reader.page());
-                            say_edit_outcome(reader.page(), token, false, Some(&said));
-                        }
-                    }
-                }
-                // Re-rendered rather than patched in place: a field other things read has to change everywhere it is shown, not only in the cell it was typed into.
+                    },
+                    token,
+                ),
                 IpcCommand::SetField { key, value } => {
-                    let edit = match value.as_deref() {
-                        Some(value) => FieldEdit::Set(value),
-                        None => FieldEdit::Remove,
-                    };
-                    match apply_field_edit(&mut reader.workspace, &key, edit) {
-                        Ok(true) => {
-                            reader.render(ScrollIntent::Preserve { code: None });
-                            resync_editing_state(reader.page(), &reader.workspace);
-                        }
-                        Ok(false) => {}
-                        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
-                    }
+                    editing_cmds::set_frontmatter_field(&mut reader, &key, value.as_deref())
                 }
                 IpcCommand::SetListField { key, items } => {
-                    match apply_field_edit(&mut reader.workspace, &key, FieldEdit::SetList(&items))
-                    {
-                        Ok(true) => {
-                            reader.render(ScrollIntent::Preserve { code: None });
-                            resync_editing_state(reader.page(), &reader.workspace);
-                        }
-                        Ok(false) => {}
-                        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
-                    }
+                    editing_cmds::set_frontmatter_list(&mut reader, &key, &items)
                 }
                 IpcCommand::RenameField { key, to } => {
-                    match apply_field_edit(&mut reader.workspace, &key, FieldEdit::Rename(&to)) {
-                        Ok(true) => {
-                            reader.render(ScrollIntent::Preserve { code: None });
-                            resync_editing_state(reader.page(), &reader.workspace);
-                        }
-                        Ok(false) => {}
-                        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
-                    }
+                    editing_cmds::rename_frontmatter_field(&mut reader, &key, &to)
                 }
                 IpcCommand::MoveBlock { ranges, from, to } => {
-                    match apply_block_move(&mut reader.workspace, &ranges, from, to) {
-                        Ok(true) => {
-                            reader.render(ScrollIntent::Preserve { code: None });
-                            resync_editing_state(reader.page(), &reader.workspace);
-                        }
-                        Ok(false) => {}
-                        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
-                    }
+                    editing_cmds::move_source_block(&mut reader, &ranges, from, to)
                 }
                 IpcCommand::PickImage { token } => {
-                    // The dialog blocks this thread, like Open's does. What comes back is a destination for the document to hold, not a file to copy: the picture stays where the user keeps it.
-                    if let Some(image) = pick_image_file() {
-                        // The dialog stood open while the loop was blocked, so the file may have moved under it. The answer below carries offsets the page read before that, so the view is brought back in step first: a moved file redraws, and the redraw clears the page's pending writer, so the picture is dropped instead of spliced into text nobody has seen.
-                        reload_if_file_moved(&mut reader, &mut file_watch);
-                        let source = reader
-                            .workspace
-                            .active_path()
-                            .map(Path::to_path_buf)
-                            .unwrap_or_default();
-                        let destination = markdown_image_insert_destination(&image, &source);
-                        let alt = image
-                            .file_stem()
-                            .map(|stem| stem.to_string_lossy().into_owned())
-                            .unwrap_or_default();
-                        run_page_script(
-                            reader.page(),
-                            &image_picked_script(token, &destination, &alt),
-                            "Failed to hand the page the picked image",
-                        );
-                    }
+                    editing_cmds::pick_image(&mut reader, &mut file_watch, token)
                 }
                 IpcCommand::PickDiagramPath { token, format } => {
-                    // The window blocks this thread, like Open's does. The active document only names the file it suggests; nothing about it is read or written.
-                    let stem = reader
-                        .workspace
-                        .active_path()
-                        .and_then(Path::file_stem)
-                        .map(|stem| stem.to_string_lossy().into_owned())
-                        .filter(|stem| !stem.is_empty())
-                        .unwrap_or_else(|| "diagram".to_string());
-                    if let Some(target) =
-                        pick_diagram_path(&format!("{stem}-diagram"), format.as_deref())
-                    {
-                        run_page_script(
-                            reader.page(),
-                            &diagram_path_picked_script(token, &target.display().to_string()),
-                            "Failed to answer where a diagram goes",
-                        );
-                    }
+                    editing_cmds::pick_diagram(&reader, token, format.as_deref())
                 }
                 IpcCommand::ExportDiagram {
                     format,
@@ -1357,41 +871,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     path,
                     width,
                     height,
-                } => {
-                    // No window here: the page asked where it goes before it drew anything, so this is the write and nothing else.
-                    export_diagram(
-                        reader.page(),
-                        &format,
-                        &data,
-                        Path::new(&path),
-                        width,
-                        height,
-                    );
-                }
+                } => editing_cmds::write_diagram(&reader, &format, &data, &path, width, height),
                 IpcCommand::PrintDiagramPdf {
                     path,
                     width,
                     height,
-                } => {
-                    // No window here: the page asked where it goes before it drew anything. The render blocks this thread, the way the page export's does.
-                    print_diagram_pdf(reader.page(), Path::new(&path), width, height);
-                }
+                } => editing_cmds::write_diagram_pdf(&reader, &path, width, height),
                 IpcCommand::ExportPdf {
                     format,
                     width,
                     height,
-                } => {
-                    // The dialog blocks this thread, like Open's does, and so does the render after it.
-                    let export = page_export_request(&reader.workspace, format, width, height);
-                    export_page(
-                        reader.page(),
-                        export.document.as_deref(),
-                        &export.format,
-                        reader.window.scale_factor(),
-                        export.width,
-                        export.height,
-                    );
-                }
+                } => editing_cmds::export_pdf(&reader, format, width, height),
                 IpcCommand::ExportPageHtml {
                     path,
                     markup,
@@ -1399,47 +889,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     theme,
                     appearance,
                     title,
-                } => {
-                    // Pictures are addressed against the folder the open document sits in, the same way the page addresses them on screen. No window here: the reader said where the page goes before it was asked for any of this.
-                    let source_dir = reader
-                        .workspace
-                        .active_path()
-                        .and_then(local_image_source_dir);
-                    export_page_html(
-                        reader.page(),
-                        Path::new(&path),
-                        &PageHtmlExport {
-                            markup,
-                            sheet,
-                            theme,
-                            appearance,
-                            title,
-                        },
-                        source_dir.as_deref(),
-                    );
-                }
-                IpcCommand::UndoEdit => {
-                    // Pop the buffer back one edit, re-render, and resync so undoing the only edit also clears the Save button.
-                    let undone = reader
-                        .workspace
-                        .active_edit_mut()
-                        .is_some_and(EditableDocument::undo);
-                    if undone {
-                        reader.render(ScrollIntent::Preserve { code: None });
-                        resync_editing_state(reader.page(), &reader.workspace);
-                    }
-                }
-                IpcCommand::RedoEdit => {
-                    // The other direction of the same history, ending in the same resync: a redo that spends the last future step has to take the Redo button away with it.
-                    let redone = reader
-                        .workspace
-                        .active_edit_mut()
-                        .is_some_and(EditableDocument::redo);
-                    if redone {
-                        reader.render(ScrollIntent::Preserve { code: None });
-                        resync_editing_state(reader.page(), &reader.workspace);
-                    }
-                }
+                } => editing_cmds::export_html(
+                    &reader,
+                    &path,
+                    &PageHtmlExport {
+                        markup,
+                        sheet,
+                        theme,
+                        appearance,
+                        title,
+                    },
+                ),
+                IpcCommand::UndoEdit => editing_cmds::undo_edit(&mut reader),
+                IpcCommand::RedoEdit => editing_cmds::redo_edit(&mut reader),
                 // The persisted toggles, applied in one place and saved once.
                 command @ (IpcCommand::SetSpeedReaderEnabled { .. }
                 | IpcCommand::SetCodeIntelEnabled { .. }
@@ -1456,53 +918,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         persist_settings(&settings, settings_path.as_ref());
                     }
                 }
-                IpcCommand::WindowDrag => {
-                    let _ = reader.window.drag_window();
-                }
+                IpcCommand::WindowDrag => window_cmds::drag(&reader),
                 IpcCommand::WindowResizeDrag {
                     direction,
                     phase,
                     x,
                     y,
-                } => {
-                    match resize_drag_step(
-                        cfg!(windows),
-                        &direction,
-                        &phase,
-                        x,
-                        y,
-                        resize_drag.as_ref(),
-                    ) {
-                        ResizeDragStep::HandToPlatform(direction) => {
-                            let _ = reader.window.drag_resize_window(direction);
-                        }
-                        ResizeDragStep::HoldWindow { direction, pointer } => {
-                            resize_drag = window_rect(&reader.window).map(|window| ResizeDrag {
-                                direction,
-                                window,
-                                pointer,
-                            });
-                        }
-                        ResizeDragStep::SetWindow(end) => {
-                            // Size before place: the platform anchors a size change at the top-left, so a drag on the north or west edge sets the size it will end at and then moves that corner to where the pointer put it.
-                            reader
-                                .window
-                                .set_inner_size(LogicalSize::new(end.width, end.height));
-                            reader
-                                .window
-                                .set_outer_position(tao::dpi::LogicalPosition::new(end.x, end.y));
-                        }
-                        ResizeDragStep::Forget => resize_drag = None,
-                        ResizeDragStep::Nothing => {}
-                    }
-                }
-                IpcCommand::WindowMinimize => {
-                    reader.window.set_minimized(true);
-                }
-                IpcCommand::WindowToggleMaximize => {
-                    let maximized = reader.window.is_maximized();
-                    reader.window.set_maximized(!maximized);
-                }
+                } => window_cmds::resize(&reader, &mut resize_drag, &direction, &phase, x, y),
+                IpcCommand::WindowMinimize => window_cmds::minimize(&reader),
+                IpcCommand::WindowToggleMaximize => window_cmds::toggle_maximize(&reader),
                 IpcCommand::WindowClose => shut_down(
                     &mut reader,
                     &mut settings,
@@ -1513,11 +937,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::SaveSessionPlace {
                     scroll_anchor,
                     code_scroll,
-                } => reader
-                    .workspace
-                    .save_active_position(scroll_anchor, code_scroll),
+                } => window_cmds::save_place(&mut reader, scroll_anchor, code_scroll),
                 IpcCommand::SetWindowChrome { r, g, b, dark } => {
-                    apply_window_chrome(&reader.window, r, g, b, dark);
+                    window_cmds::set_chrome(&reader, r, g, b, dark)
                 }
                 IpcCommand::SetGraphView { open } => {
                     vault_state.graph_open = open;
@@ -1540,92 +962,44 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::SetGitIdentity { id, name, email } => {
                     set_vault_git_identity(&vault_state, &proxy, reader.page(), id, name, email);
                 }
-                IpcCommand::RefreshVault { id } => {
-                    // Pressing Refresh wakes a vault the timer had stopped asking: whoever pressed it knows something the app does not — that the network is back, or that the service is answering again.
-                    refresh_book.wake(id);
-                    if let Some(vault) = vault_state
-                        .conn
-                        .as_ref()
-                        .and_then(|conn| find_vault(conn, id).ok().flatten())
-                    {
-                        if !refresh_book.is_busy(id) {
-                            start_refresh(
-                                &vault,
-                                &vault_state,
-                                &mut refresh_book,
-                                &proxy,
-                                reader.page(),
-                            );
-                        }
-                    }
-                }
+                IpcCommand::RefreshVault { id } => vaults::wake_and_refresh_vault(
+                    &reader,
+                    &vault_state,
+                    &mut refresh_book,
+                    &proxy,
+                    id,
+                ),
                 IpcCommand::SignInVault { id } => {
                     sign_in_vault(&vault_state, reader.page(), id);
                 }
                 IpcCommand::SignOutVault { id } => {
-                    if let Err(error) = sign_out_vault(&vault_state, id) {
-                        report_file_action_failure(reader.page(), &error);
-                    }
-                    // The panel draws itself from the vault row, so it has to be handed the row again — the account on it is what just changed.
-                    push_vaults(reader.page(), &vault_state);
+                    vaults::sign_out_vault_row(&reader, &vault_state, id)
                 }
                 IpcCommand::CreateVault => {
-                    if let Some(folder) = pick_vault_folder() {
-                        create_vault(
-                            &folder,
-                            VaultKind::Folder,
-                            &mut vault_state,
-                            &proxy,
-                            reader.page(),
-                        );
-                    }
+                    vaults::create_vault_from_picker(&reader, &mut vault_state, &proxy)
                 }
                 IpcCommand::GetCloudFolders => {
                     request_cloud_folders(&proxy);
                 }
                 IpcCommand::CloneVault { url } => {
-                    // The folder is picked here rather than in the worker: a dialog belongs to the window's thread, and picking it first means a canceled dialog starts nothing.
-                    if let Some(parent) = pick_clone_parent_folder() {
-                        clone_vault(url, parent, &proxy);
-                    }
+                    vaults::clone_vault_into_picked_folder(url, &proxy)
                 }
                 IpcCommand::SetActiveVault { id } => {
-                    set_active_vault(id, &mut vault_state, &proxy, reader.page());
-                    // A different vault has a different repository, and its button should be right before anyone looks at it.
-                    refresh_vault_status(&mut vault_state, &proxy, id);
-                    // Back to the whole library: its top is the drive roots, which `request_folder` returns without reading anything.
-                    if vault_state.root.is_none() {
-                        vault_state.folder.clear();
-                        request_folder(&vault_state, &proxy, String::new());
-                    }
+                    vaults::switch_active_vault(&reader, &mut vault_state, &proxy, id)
                 }
                 IpcCommand::RenameVault { id, name } => {
                     rename_vault_row(id, &name, &vault_state, reader.page());
                 }
                 IpcCommand::ChangeVaultFolder { id } => {
-                    if let Some(folder) = pick_vault_folder() {
-                        change_vault_folder(id, &folder, &mut vault_state, &proxy, reader.page());
-                    }
+                    vaults::change_vault_folder_from_picker(&reader, &mut vault_state, &proxy, id)
                 }
-                IpcCommand::RemoveVault { id } => {
-                    // The sync at the end of this turn puts back whatever watch is still wanted.
-                    for step in vault_removal_steps(&vault_state, id) {
-                        match step {
-                            VaultRemovalStep::ForgetFavorites(id) => {
-                                reader.forget_vault_favorites(id)
-                            }
-                            VaultRemovalStep::RedrawTabStrip => reader.refresh_tab_strip(),
-                            VaultRemovalStep::ReleaseWatch(root) => file_watch.release(&root),
-                            VaultRemovalStep::RemoveRow(id) => {
-                                remove_vault_row(id, &mut vault_state, reader.page())
-                            }
-                            VaultRemovalStep::ShowLibraryRoot => {
-                                vault_state.folder.clear();
-                                request_folder(&vault_state, &proxy, String::new());
-                            }
-                        }
-                    }
-                }
+                IpcCommand::RemoveVault { id } => vaults::remove_vault_everywhere(
+                    &mut reader,
+                    &mut vault_state,
+                    &mut file_watch,
+                    &proxy,
+                    id,
+                ),
                 IpcCommand::GetFolder { path } => {
                     request_folder(&vault_state, &proxy, path);
                 }
@@ -1633,46 +1007,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     reveal_in_library(&path, &mut vault_state, &proxy, reader.page());
                 }
                 IpcCommand::GetGraph { scope, seeds } => {
-                    // Focus keeps the seed neighborhood; the rest cap the densest documents, up to XL (no cap).
-                    let request = match GraphScope::from_client(&scope).unwrap_or_default() {
-                        GraphScope::Small => GraphRequest {
-                            focus: Some(seeds),
-                            limit: None,
-                        },
-                        GraphScope::Medium => GraphRequest {
-                            focus: None,
-                            limit: Some(2000),
-                        },
-                        GraphScope::Large => GraphRequest {
-                            focus: None,
-                            limit: Some(5000),
-                        },
-                        GraphScope::Xl => GraphRequest {
-                            focus: None,
-                            limit: None,
-                        },
-                    };
-                    // Off the vault's own text when the vault holds the document on screen — read once and shared with search — and off that document itself otherwise, so a file in no vault still has a map of what it links to.
-                    let document = reader.workspace.active_path().map(Path::to_path_buf);
-                    request_link_graph(
-                        &mut vault_state,
-                        &proxy,
-                        reader.webview.as_ref(),
-                        document,
-                        request,
-                    );
+                    vaults::request_graph_for(&reader, &mut vault_state, &proxy, &scope, seeds)
                 }
                 IpcCommand::Search { query, today } => {
                     // Search reads the active vault's text. Without a vault there is nothing bounded to read, so the page says so and never asks.
                     let typed = TypedQuery::new(query, today.as_deref());
                     request_vault_search(&mut vault_state, &proxy, typed);
                 }
-                IpcCommand::LoadPager { path } => {
-                    off_loop(&proxy, move || {
-                        let html = document_pager_html(&path);
-                        UserEvent::PagerLoaded { path, html }
-                    });
-                }
+                IpcCommand::LoadPager { path } => vaults::load_pager_page(&proxy, path),
                 IpcCommand::UpdateChecked { version } => {
                     settings.update_last_checked = leaftext::now_unix();
                     persist_settings(&settings, settings_path.as_ref());

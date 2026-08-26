@@ -779,3 +779,155 @@ pub(crate) fn vault_removal_steps(state: &VaultState, id: i64) -> Vec<VaultRemov
     steps.push(VaultRemovalStep::ShowLibraryRoot);
     steps
 }
+
+/// Refresh pressed on one vault. Pressing it wakes a vault the timer had stopped asking: whoever pressed it knows something the app does not — that the network is back, or that the service is answering again.
+pub(crate) fn wake_and_refresh_vault(
+    reader: &Reader,
+    vault_state: &VaultState,
+    refresh_book: &mut RefreshBook,
+    proxy: &EventLoopProxy<UserEvent>,
+    id: i64,
+) {
+    refresh_book.wake(id);
+    let Some(vault) = vault_state
+        .conn
+        .as_ref()
+        .and_then(|conn| find_vault(conn, id).ok().flatten())
+    else {
+        return;
+    };
+    if !refresh_book.is_busy(id) {
+        start_refresh(&vault, vault_state, refresh_book, proxy, reader.page());
+    }
+}
+
+/// The account signed out of one vault, and the panel handed its row again — the panel draws itself from that row, and the account on it is what just changed.
+pub(crate) fn sign_out_vault_row(reader: &Reader, vault_state: &VaultState, id: i64) {
+    if let Err(error) = sign_out_vault(vault_state, id) {
+        report_file_action_failure(reader.page(), &error);
+    }
+    push_vaults(reader.page(), vault_state);
+}
+
+/// A new vault made out of a folder the reader picks.
+pub(crate) fn create_vault_from_picker(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+) {
+    if let Some(folder) = pick_vault_folder() {
+        create_vault(
+            &folder,
+            VaultKind::Folder,
+            vault_state,
+            proxy,
+            reader.page(),
+        );
+    }
+}
+
+/// A repository cloned into a folder the reader picks.
+///
+/// The folder is picked here rather than in the worker: a window belongs to the window's thread, and picking it first means a canceled one starts nothing.
+pub(crate) fn clone_vault_into_picked_folder(url: String, proxy: &EventLoopProxy<UserEvent>) {
+    if let Some(parent) = pick_clone_parent_folder() {
+        clone_vault(url, parent, proxy);
+    }
+}
+
+/// The vault the app is looking at, changed.
+pub(crate) fn switch_active_vault(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    id: i64,
+) {
+    set_active_vault(id, vault_state, proxy, reader.page());
+    // A different vault has a different repository, and its button should be right before anyone looks at it.
+    refresh_vault_status(vault_state, proxy, id);
+    // Back to the whole library: its top is the drive roots, which `request_folder` returns without reading anything.
+    if vault_state.root.is_none() {
+        vault_state.folder.clear();
+        request_folder(vault_state, proxy, String::new());
+    }
+}
+
+/// One vault pointed at a different folder, picked by the reader.
+pub(crate) fn change_vault_folder_from_picker(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    id: i64,
+) {
+    if let Some(folder) = pick_vault_folder() {
+        change_vault_folder(id, &folder, vault_state, proxy, reader.page());
+    }
+}
+
+/// One vault taken off the list, everywhere it is held. The watcher sync at the end of the turn puts back whatever watch is still wanted.
+pub(crate) fn remove_vault_everywhere(
+    reader: &mut Reader,
+    vault_state: &mut VaultState,
+    file_watch: &mut FileWatch,
+    proxy: &EventLoopProxy<UserEvent>,
+    id: i64,
+) {
+    for step in vault_removal_steps(vault_state, id) {
+        match step {
+            VaultRemovalStep::ForgetFavorites(id) => reader.forget_vault_favorites(id),
+            VaultRemovalStep::RedrawTabStrip => reader.refresh_tab_strip(),
+            VaultRemovalStep::ReleaseWatch(root) => file_watch.release(&root),
+            VaultRemovalStep::RemoveRow(id) => remove_vault_row(id, vault_state, reader.page()),
+            VaultRemovalStep::ShowLibraryRoot => {
+                vault_state.folder.clear();
+                request_folder(vault_state, proxy, String::new());
+            }
+        }
+    }
+}
+
+/// The link map at the size the page asked for. Focus keeps the seed neighborhood; the rest cap the densest documents, up to XL, which caps nothing.
+///
+/// Off the vault's own text when the vault holds the document on screen — read once and shared with search — and off that document itself otherwise, so a file in no vault still has a map of what it links to.
+pub(crate) fn request_graph_for(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    scope: &str,
+    seeds: Vec<String>,
+) {
+    let request = match GraphScope::from_client(scope).unwrap_or_default() {
+        GraphScope::Small => GraphRequest {
+            focus: Some(seeds),
+            limit: None,
+        },
+        GraphScope::Medium => GraphRequest {
+            focus: None,
+            limit: Some(2000),
+        },
+        GraphScope::Large => GraphRequest {
+            focus: None,
+            limit: Some(5000),
+        },
+        GraphScope::Xl => GraphRequest {
+            focus: None,
+            limit: None,
+        },
+    };
+    let document = reader.workspace.active_path().map(Path::to_path_buf);
+    request_link_graph(
+        vault_state,
+        proxy,
+        reader.webview.as_ref(),
+        document,
+        request,
+    );
+}
+
+/// The Previous/Next strip's own page, built off the loop because it walks the document's folder.
+pub(crate) fn load_pager_page(proxy: &EventLoopProxy<UserEvent>, path: PathBuf) {
+    off_loop(proxy, move || {
+        let html = document_pager_html(&path);
+        UserEvent::PagerLoaded { path, html }
+    });
+}

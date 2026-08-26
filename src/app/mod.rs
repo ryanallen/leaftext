@@ -8,11 +8,13 @@ mod editing_cmds;
 mod eval_ask;
 mod event_loop;
 mod events;
+mod file_cmds;
 mod fileops;
 mod glossary;
 mod history;
 mod link_preview;
 mod links;
+mod pipe_asks;
 mod render;
 mod update_flow;
 mod vault_auth;
@@ -21,6 +23,7 @@ mod vault_remote;
 mod vault_search;
 mod vaults;
 mod watch;
+mod window_cmds;
 mod workspace;
 
 pub(crate) use code_intel::*;
@@ -40,6 +43,7 @@ pub(crate) use vault_remote::*;
 pub(crate) use vault_search::*;
 pub(crate) use vaults::*;
 pub(crate) use watch::*;
+pub(crate) use window_cmds::*;
 pub(crate) use workspace::*;
 
 #[cfg(test)]

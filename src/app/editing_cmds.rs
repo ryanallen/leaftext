@@ -895,3 +895,322 @@ pub(crate) fn say_edit_refused(webview: Option<&WebView>, workspace: &Workspace,
         "Editing: failed to say the edit was refused",
     );
 }
+
+/// The source view opened. A fresh toggle carries its own position: the page stashed the reading view's scroll fraction before asking to enter.
+pub(crate) fn enter_source(reader: &mut Reader) {
+    if let Err(why) = enter_code_view(reader.webview.as_ref(), &mut reader.workspace, None) {
+        say_edit_refused(reader.page(), &reader.workspace, &why);
+    }
+}
+
+/// The source view closed, and the document drawn again from the buffer it was typed into.
+pub(crate) fn exit_source(reader: &mut Reader) {
+    if let Some(index) = reader.workspace.active {
+        if let Some(tab) = reader.workspace.tabs.get_mut(index) {
+            tab.code_view = false;
+        }
+    }
+    reader.render(ScrollIntent::Reset);
+}
+
+/// The whole source buffer as the code view now holds it.
+pub(crate) fn update_source(reader: &mut Reader, text: String) {
+    update_source_buffer(reader.webview.as_ref(), &mut reader.workspace, text);
+}
+
+/// One range of the source buffer replaced, which is what a keystroke in the code view sends.
+pub(crate) fn source_spliced(
+    reader: &mut Reader,
+    start: usize,
+    removed: usize,
+    inserted: &str,
+    length: usize,
+) {
+    splice_source_buffer(
+        reader.webview.as_ref(),
+        &mut reader.workspace,
+        start,
+        removed,
+        inserted,
+        length,
+    );
+}
+
+/// The notes `[[` can complete to.
+pub(crate) fn complete_notes(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    token: u64,
+) {
+    let document = reader.workspace.active_path().map(Path::to_path_buf);
+    code_complete_notes(vault_state, proxy, document.as_deref(), token);
+}
+
+/// The headings of a named note, or of the buffer in front when none is named.
+pub(crate) fn complete_headings(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    token: u64,
+    note: Option<String>,
+) {
+    code_complete_headings(vault_state, proxy, &reader.workspace, token, note);
+}
+
+/// What a note under the pointer in the code view says.
+pub(crate) fn hover_note(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    token: u64,
+    note: String,
+) {
+    let document = reader.workspace.active_path().map(Path::to_path_buf);
+    code_hover_note(vault_state, proxy, document.as_deref(), token, note);
+}
+
+/// What the code view should underline in the buffer it is holding.
+pub(crate) fn lint_source(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    token: u64,
+) {
+    code_lint(vault_state, proxy, &reader.workspace, token);
+}
+
+/// Save, with the naming window in front of it only for a document that has never had a file.
+pub(crate) fn save_document(
+    reader: &mut Reader,
+    file_watch: &mut FileWatch,
+    vault_state: &VaultState,
+    refresh_book: &mut RefreshBook,
+    format: Option<&str>,
+) {
+    match name_untitled_document(reader, |path| pick_save_path(path, format)) {
+        SaveReady::Canceled => {}
+        ready => {
+            // The page has already been told how it went; nobody else is waiting on this one.
+            let _ = save_active_document(
+                reader.webview.as_ref(),
+                &mut reader.workspace,
+                file_watch,
+                vault_state,
+                refresh_book,
+            );
+            // The tab, the title and the image folder still say Untitled. A plain save changes none of them.
+            if matches!(ready, SaveReady::Named) {
+                reader.render(ScrollIntent::Preserve { code: None });
+            }
+        }
+    }
+}
+
+/// One task marker moved by the box the reader ticked.
+pub(crate) fn task_toggled(
+    reader: &mut Reader,
+    file_watch: &mut FileWatch,
+    index: usize,
+    token: Option<u64>,
+) {
+    toggle_task_marker(
+        reader.webview.as_ref(),
+        &mut reader.workspace,
+        file_watch,
+        index,
+        token,
+    );
+}
+
+/// An inline reading-view edit spliced into the source buffer, then re-rendered from it, keeping the reader's place.
+///
+/// Source stays authoritative for MD and XML. A checkbox toggle writes to disk right away with no undo step. The decision is `edit_block_outcome` so a test can reach it; this keeps the doing.
+pub(crate) fn edit_block(
+    reader: &mut Reader,
+    file_watch: &mut FileWatch,
+    asked: &BlockEdit,
+    token: Option<u64>,
+) {
+    match edit_block_outcome(&mut reader.workspace, asked) {
+        BlockEditOutcome::Spliced { autosave, render } => {
+            let unwritten = if autosave {
+                autosave_active_buffer(&mut reader.workspace, file_watch).err()
+            } else {
+                None
+            };
+            if render {
+                reader.render(ScrollIntent::Preserve { code: None });
+            }
+            // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess. A failed auto-save leaves the buffer dirty, so this is what lights Save over the tick.
+            resync_editing_state(reader.page(), &reader.workspace);
+            // The buffer holds it either way - the splice landed. Where the write behind it did not, that is said rather than swallowed into the log: a box inside a table sends this command, so the log is nowhere its reader looks.
+            let said = unwritten
+                .map(|why| edit_unsaved_words(&front_document_name(&reader.workspace), &why));
+            say_edit_outcome(reader.page(), token, true, said.as_deref());
+        }
+        // Nothing was written, so the dirty mark and the Undo button the page raised on its own come back down, and whoever is waiting is told the buffer holds nothing.
+        BlockEditOutcome::Refused(why) => {
+            let said = edit_refused_words(&front_document_name(&reader.workspace), &why);
+            cleared_editing_state(reader.page());
+            say_edit_outcome(reader.page(), token, false, Some(&said));
+        }
+    }
+}
+
+/// What every frontmatter and block change ends with: the document drawn again where something moved, the chrome put back in step, and a refusal said in the reader's words.
+///
+/// Drawn again rather than patched in place: a field other things read has to change everywhere it is shown, not only in the cell it was typed into.
+fn after_source_change(reader: &mut Reader, changed: Result<bool, String>) {
+    match changed {
+        Ok(true) => {
+            reader.render(ScrollIntent::Preserve { code: None });
+            resync_editing_state(reader.page(), &reader.workspace);
+        }
+        Ok(false) => {}
+        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
+    }
+}
+
+/// One frontmatter field written, or taken out when there is no value.
+pub(crate) fn set_frontmatter_field(reader: &mut Reader, key: &str, value: Option<&str>) {
+    let edit = match value {
+        Some(value) => FieldEdit::Set(value),
+        None => FieldEdit::Remove,
+    };
+    let changed = apply_field_edit(&mut reader.workspace, key, edit);
+    after_source_change(reader, changed);
+}
+
+/// One frontmatter field written as a list.
+pub(crate) fn set_frontmatter_list(reader: &mut Reader, key: &str, items: &[String]) {
+    let changed = apply_field_edit(&mut reader.workspace, key, FieldEdit::SetList(items));
+    after_source_change(reader, changed);
+}
+
+/// One frontmatter field's key renamed, keeping its value and its place in the block.
+pub(crate) fn rename_frontmatter_field(reader: &mut Reader, key: &str, to: &str) {
+    let changed = apply_field_edit(&mut reader.workspace, key, FieldEdit::Rename(to));
+    after_source_change(reader, changed);
+}
+
+/// One run of sibling blocks reordered by a drag in the reading view.
+pub(crate) fn move_source_block(
+    reader: &mut Reader,
+    ranges: &[(usize, usize)],
+    from: usize,
+    to: usize,
+) {
+    let changed = apply_block_move(&mut reader.workspace, ranges, from, to);
+    after_source_change(reader, changed);
+}
+
+/// The picture picker for the reading view's insert box. The window blocks this thread, like Open's does. What comes back is a destination for the document to hold, not a file to copy: the picture stays where the user keeps it.
+pub(crate) fn pick_image(reader: &mut Reader, file_watch: &mut FileWatch, token: u64) {
+    let Some(image) = pick_image_file() else {
+        return;
+    };
+    // The window stood open while the loop was blocked, so the file may have moved under it. The answer below carries offsets the page read before that, so the view is brought back in step first: a moved file redraws, and the redraw clears the page's pending writer, so the picture is dropped instead of spliced into text nobody has seen.
+    reload_if_file_moved(reader, file_watch);
+    let source = reader
+        .workspace
+        .active_path()
+        .map(Path::to_path_buf)
+        .unwrap_or_default();
+    let destination = markdown_image_insert_destination(&image, &source);
+    let alt = image
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    run_page_script(
+        reader.page(),
+        &image_picked_script(token, &destination, &alt),
+        "Failed to hand the page the picked image",
+    );
+}
+
+/// Where a diagram goes, asked before anything is drawn. The window blocks this thread, like Open's does. The document in front only names the file it suggests; nothing about it is read or written.
+pub(crate) fn pick_diagram(reader: &Reader, token: u64, format: Option<&str>) {
+    let stem = reader
+        .workspace
+        .active_path()
+        .and_then(Path::file_stem)
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .filter(|stem| !stem.is_empty())
+        .unwrap_or_else(|| "diagram".to_string());
+    if let Some(target) = pick_diagram_path(&format!("{stem}-diagram"), format) {
+        run_page_script(
+            reader.page(),
+            &diagram_path_picked_script(token, &target.display().to_string()),
+            "Failed to answer where a diagram goes",
+        );
+    }
+}
+
+/// A diagram written as a picture. No window here: the page asked where it goes before it drew anything, so this is the write and nothing else.
+pub(crate) fn write_diagram(
+    reader: &Reader,
+    format: &str,
+    data: &str,
+    path: &str,
+    width: u32,
+    height: u32,
+) {
+    export_diagram(reader.page(), format, data, Path::new(path), width, height);
+}
+
+/// A diagram written as a PDF. No window here either; the render blocks this thread, the way the page export's does.
+pub(crate) fn write_diagram_pdf(reader: &Reader, path: &str, width: f64, height: f64) {
+    print_diagram_pdf(reader.page(), Path::new(path), width, height);
+}
+
+/// The page written out as a sheet or a picture. The window blocks this thread, like Open's does, and so does the render after it.
+pub(crate) fn export_pdf(reader: &Reader, format: String, width: f64, height: f64) {
+    let export = page_export_request(&reader.workspace, format, width, height);
+    export_page(
+        reader.page(),
+        export.document.as_deref(),
+        &export.format,
+        reader.window.scale_factor(),
+        export.width,
+        export.height,
+    );
+}
+
+/// The page written out as a web page. Pictures are addressed against the folder the open document sits in, the same way the page addresses them on screen. No window here: the reader said where the page goes before it was asked for any of this.
+pub(crate) fn export_html(reader: &Reader, path: &str, export: &PageHtmlExport) {
+    let source_dir = reader
+        .workspace
+        .active_path()
+        .and_then(local_image_source_dir);
+    export_page_html(
+        reader.page(),
+        Path::new(path),
+        export,
+        source_dir.as_deref(),
+    );
+}
+
+/// The buffer back one edit, drawn again, and resynced so undoing the only edit also clears the Save button.
+pub(crate) fn undo_edit(reader: &mut Reader) {
+    if reader
+        .workspace
+        .active_edit_mut()
+        .is_some_and(EditableDocument::undo)
+    {
+        reader.render(ScrollIntent::Preserve { code: None });
+        resync_editing_state(reader.page(), &reader.workspace);
+    }
+}
+
+/// The other direction of the same history, ending in the same resync: a redo that spends the last future step has to take the Redo button away with it.
+pub(crate) fn redo_edit(reader: &mut Reader) {
+    if reader
+        .workspace
+        .active_edit_mut()
+        .is_some_and(EditableDocument::redo)
+    {
+        reader.render(ScrollIntent::Preserve { code: None });
+        resync_editing_state(reader.page(), &reader.workspace);
+    }
+}
