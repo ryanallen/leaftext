@@ -162,7 +162,7 @@ struct NativeExportCover {
 #[cfg(target_os = "macos")]
 impl NativeExportCover {
     fn raise(page: &WebView, color: (u8, u8, u8)) -> Result<Self, String> {
-        use objc2::{AllocAnyThread, MainThreadMarker};
+    use objc2::{MainThreadMarker, MainThreadOnly};
         use objc2_app_kit::{NSAutoresizingMaskOptions, NSBox, NSBoxType, NSColor};
         use wry::WebViewExtMacOS;
 
