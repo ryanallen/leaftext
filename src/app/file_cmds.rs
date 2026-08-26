@@ -1,6 +1,6 @@
 //! What the page's file and favorite commands do, one function each — open, new, paste, reveal, copy, favorite, rename, delete, put back, properties.
 //!
-//! Beside `fileops.rs` rather than inside it: that file holds the work these call — the picker, the transfer, the trash, the clipboard — and is long enough already. What is here is what the loop's arms held: read the event's values, call the work, tell the page how it went.
+//! Beside `fileops.rs` rather than inside it: that file holds the work these call — the picker, the transfer, the trash, the clipboard — and is long enough already. Each function here reads the event's values, calls that work, and tells the page how it went.
 //!
 //! Every failure is said twice on purpose. The line to the journal names the file and the operating system's own words, for whoever reads the log; the growl to the page says what the reader can do about it, in the reader's words.
 

@@ -1,6 +1,6 @@
 //! What the ask pipe's arms do, one function each: bring the document to the front, call the helper that already owns the work, put the window back in step, and answer.
 //!
-//! The work itself lives in `editing_cmds.rs`, `fileops.rs` and `events.rs`; what is here is the glue that was in the loop's own arms, moved out the way `eval_ask.rs` moved the evaluate ask before it. The arms that end the app — quit, close and the page's own close — stay in the loop, because they reach `shut_down` and the loop's `control_flow`.
+//! The work itself lives in `editing_cmds.rs`, `fileops.rs` and `events.rs`, and `eval_ask.rs` holds the evaluate ask beside these. The asks that end the app — quit and close — stay in the loop, because they reach `shut_down` and the loop's `control_flow`.
 //!
 //! Every answer goes back with `try_send` rather than `send`: the asker may already have given up and gone, and the window thread must not block on a dead channel.
 
