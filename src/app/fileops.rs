@@ -891,12 +891,13 @@ pub(crate) const PICTURE_TOO_BIG: &str =
 #[cfg(target_os = "windows")]
 const WEBP_QUALITY: u32 = 82;
 
-/// How the web view's own engine is asked for one of the picture formats: the name it knows it by, and the quality where it takes one.
+/// How the web view's own engine is asked for one of the picture formats: the name it knows it by.
+///
+/// The name and nothing else, because a quality is one platform's business — the Windows engine takes one for WebP and the Mac bitmap takes none — and a field only one of them can read is a field the other has to be told to ignore.
 ///
 /// Both encoders are the engine's rather than anything in this tree, which is why a picture costs no crate.
 pub(crate) struct PictureFormat {
     pub(crate) engine_name: &'static str,
-    pub(crate) quality: Option<u32>,
 }
 
 /// Which picture an ending asks the engine for, or nothing where it is not one this platform writes.
@@ -904,14 +905,10 @@ pub(crate) struct PictureFormat {
 /// The endings here are the ones `PAGE_EXPORT_FORMATS` offers, and that table is built per platform for exactly this reason: a row the engine cannot write is a row the save window must not show.
 pub(crate) fn page_picture_format(extension: &str) -> Option<PictureFormat> {
     match extension {
-        "png" => Some(PictureFormat {
-            engine_name: "png",
-            quality: None,
-        }),
+        "png" => Some(PictureFormat { engine_name: "png" }),
         #[cfg(target_os = "windows")]
         "webp" => Some(PictureFormat {
             engine_name: "webp",
-            quality: Some(WEBP_QUALITY),
         }),
         _ => None,
     }
@@ -962,9 +959,10 @@ pub(crate) fn capture_page(
     use wry::WebViewExtWindows;
 
     let view = page.webview();
-    let quality = match format.quality {
-        Some(quality) => format!(",\"quality\":{quality}"),
-        None => String::new(),
+    // The one format whose encoder takes a quality, asked for by name here rather than carried on the format: the other platform's encoder takes none, and a field it cannot read is one it has to be told to ignore.
+    let quality = match format.engine_name {
+        "webp" => format!(",\"quality\":{WEBP_QUALITY}"),
+        _ => String::new(),
     };
     // The clip's own scale rides on the window's, so one over it is what brings a device pixel back to a CSS one.
     let asked = HSTRING::from(format!(
