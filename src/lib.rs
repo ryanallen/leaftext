@@ -138,8 +138,6 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     // Then the state more than one fragment touches, in scope before any of them run. See the file for why it cannot live with its own subject.
     include_str!("assets/shell/state.js"),
     include_str!("assets/shell/dom.js"),
-    // The dot grid's hold on the desktop. It reaches for no other fragment and nothing reaches for it, so it sits early where a fragment that throws as it loads is still reported by the handlers above.
-    include_str!("assets/shell/window-grid.js"),
     // The first-run bubble, ahead of every fragment that registers a hint against it. It needs `send` from dom.js and nothing else.
     include_str!("assets/shell/hints.js"),
     include_str!("assets/shell/overflow.js"),

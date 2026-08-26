@@ -747,9 +747,6 @@ export function runShell(source, extras = {}) {
     devicePixelRatio: 1,
     scrollX: 0,
     scrollY: 0,
-    // Where the window sits on the desktop. Real numbers a check can move, because the one thing that reads them slides the chrome's dot grid back by them so the dots stand still while the window does not.
-    screenX: 0,
-    screenY: 0,
     location: address.location,
     history: address.history,
     // The stack itself, so a check can walk it and read back what each entry was stamped with.

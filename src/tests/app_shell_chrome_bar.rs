@@ -277,22 +277,9 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
         assert_contains(css, expected);
     }
 
-    // No scroll shadow, and nothing blurred hanging below the bar. The one thing the bar's ::before draws is the notebook grid layer, which is flat ink on the same lattice as everything else — so what is refused here is a fade or a shadow on it rather than the layer itself.
-    assert!(
-        !css.contains(".app-bar.is-scrolled"),
-        "app header must not draw .app-bar.is-scrolled"
-    );
-    let grid = rule_body(css, ".app-bar::before,");
-    for absent in [
-        "filter:",
-        "backdrop-filter:",
-        "box-shadow",
-        "linear-gradient",
-    ] {
-        assert!(
-            !grid.contains(absent),
-            "the bar's own layer draws the dot grid and nothing else, so it must not carry {absent}"
-        );
+    // No blurred fade elements hanging below the bar, and no scroll shadow.
+    for absent in [".app-bar::before", ".app-bar.is-scrolled"] {
+        assert!(!css.contains(absent), "app header must not draw {absent}");
     }
 
     // No surface derives its own shade from the token — a tint on one shows up as a tone seam where it meets its neighbor.

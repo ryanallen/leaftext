@@ -2,8 +2,6 @@
 
 use super::*;
 
-use std::time::Instant;
-
 use tao::event_loop::EventLoop;
 
 /// Everything the loop owns between events, assembled by `run_app` at startup. It exists so the loop takes one argument instead of ten.
@@ -19,6 +17,141 @@ pub(crate) struct AppCtx {
     pub(crate) last_windowed_size: LogicalSize<f64>,
     pub(crate) last_maximized: bool,
     pub(crate) last_fullscreen: bool,
+}
+
+/// The compass point the page grabbed, as the window library names it. Anything else is dropped rather than guessed at.
+pub(crate) fn resize_direction(direction: &str) -> Option<tao::window::ResizeDirection> {
+    use tao::window::ResizeDirection::*;
+    Some(match direction {
+        "n" => North,
+        "ne" => NorthEast,
+        "e" => East,
+        "se" => SouthEast,
+        "s" => South,
+        "sw" => SouthWest,
+        "w" => West,
+        "nw" => NorthWest,
+        _ => return None,
+    })
+}
+
+/// A window's place and size in logical pixels, top-left origin — the numbers a page-driven resize works in.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct WindowRect {
+    pub(crate) x: f64,
+    pub(crate) y: f64,
+    pub(crate) width: f64,
+    pub(crate) height: f64,
+}
+
+/// Where the window the drag started on ends up once the pointer has moved by this much. The edges named by the direction follow the pointer and the others stay put, so a drag from a corner moves two of them. Never smaller than the smallest window: setting the size directly goes around the limit the platform holds for us.
+pub(crate) fn resized_window(start: WindowRect, direction: &str, dx: f64, dy: f64) -> WindowRect {
+    let (min_width, min_height) = MIN_INNER_SIZE;
+    let mut end = start;
+    if direction.contains('e') {
+        end.width = (start.width + dx).max(min_width);
+    } else if direction.contains('w') {
+        // The left edge follows the pointer, so hitting the smallest width pins it where that width leaves it rather than letting the window walk right.
+        end.width = (start.width - dx).max(min_width);
+        end.x = start.x + start.width - end.width;
+    }
+    if direction.contains('s') {
+        end.height = (start.height + dy).max(min_height);
+    } else if direction.contains('n') {
+        end.height = (start.height - dy).max(min_height);
+        end.y = start.y + start.height - end.height;
+    }
+    end
+}
+
+/// The window where it stands, in the same logical pixels the page reports a pointer in. The place is the frame's and the size is the drawable area's, which are one rectangle on a window whose page runs the full height of its frame.
+fn window_rect(window: &tao::window::Window) -> Option<WindowRect> {
+    let scale = window.scale_factor();
+    let position = window.outer_position().ok()?.to_logical::<f64>(scale);
+    let size = window.inner_size().to_logical::<f64>(scale);
+    Some(WindowRect {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+    })
+}
+
+/// The window as it stood when a page-driven drag began, and where the pointer was on the screen. Held only between the press and the release.
+pub(crate) struct ResizeDrag {
+    pub(crate) direction: String,
+    pub(crate) window: WindowRect,
+    pub(crate) pointer: (f64, f64),
+}
+
+/// What one report of a page-driven window resize amounts to. Windows hands the whole gesture to the platform on the press and hears nothing more: that loop brings snapping, the size limits and the live redraw. A Mac is refused that call, so the host holds the window as it stood and sets it from every move.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum ResizeDragStep {
+    /// Hand the platform this direction and let its own loop run the gesture.
+    HandToPlatform(tao::window::ResizeDirection),
+    /// Remember the window as it stands, against this direction and the pointer that grabbed it.
+    HoldWindow {
+        direction: String,
+        pointer: (f64, f64),
+    },
+    /// Put the window here.
+    SetWindow(WindowRect),
+    /// The gesture is over, so forget what was held.
+    Forget,
+    /// Nothing to do.
+    Nothing,
+}
+
+/// The step this phase of a resize drag is. `platform_drives_it` is the Windows path, where only the press is answered.
+pub(crate) fn resize_drag_step(
+    platform_drives_it: bool,
+    direction: &str,
+    phase: &str,
+    x: f64,
+    y: f64,
+    held: Option<&ResizeDrag>,
+) -> ResizeDragStep {
+    if platform_drives_it {
+        return match (phase, resize_direction(direction)) {
+            ("start", Some(direction)) => ResizeDragStep::HandToPlatform(direction),
+            _ => ResizeDragStep::Nothing,
+        };
+    }
+    match phase {
+        "start" => ResizeDragStep::HoldWindow {
+            direction: direction.to_string(),
+            pointer: (x, y),
+        },
+        "move" => match held {
+            Some(drag) => ResizeDragStep::SetWindow(resized_window(
+                drag.window,
+                &drag.direction,
+                x - drag.pointer.0,
+                y - drag.pointer.1,
+            )),
+            None => ResizeDragStep::Nothing,
+        },
+        _ => ResizeDragStep::Forget,
+    }
+}
+
+/// The two things about a window the page has to be told, both read off the window rather than off a gesture: the green button, the View menu and the shortcut all reach us as a resize and nothing else.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct WindowState {
+    pub(crate) maximized: bool,
+    pub(crate) fullscreen: bool,
+}
+
+/// The lines the page owes now the window has been resized, and none where neither of the two moved. The custom title bar's maximize/restore icon is one; the other is full screen, which takes Apple's three dots away with the rest of the chrome, so the room the app bar leaves for them goes too.
+pub(crate) fn window_state_lines(was: WindowState, now: WindowState) -> Vec<String> {
+    let mut lines = Vec::new();
+    if now.maximized != was.maximized {
+        lines.push(format!("window.leafSetWindowMaximized({});", now.maximized));
+    }
+    if now.fullscreen != was.fullscreen {
+        lines.push(format!("window.leafSetFullscreen({});", now.fullscreen));
+    }
+    lines
 }
 
 /// Apply a page command that records a setting; the one caller persists when this returns true. A new persisted toggle is its command plus an arm here.
@@ -109,6 +242,33 @@ pub(crate) fn startup_restore_intent(
         .flatten()
 }
 
+/// Whether an arm below could have answered this event, which is what says whether the tail after the match has anything left to do. A skip list rather than a list of what counts, so an event this does not recognize still runs the tail and nothing new is quietly dropped.
+///
+/// It is here because a window drag hands the loop four events per mouse move and no arm answers one of them, while the tail rebuilds the saved session out of every open tab: 1,015 rebuilds across a two-second drag, four fifths of what that gesture costs with ten tabs open.
+///
+/// A device event is one raw input packet — up to a thousand a second on a gaming mouse, delivered per hardware report while focused. It carries raw pointer deltas no arm reads, and letting it run the tail froze a twenty-tab window solid under a fast hand: 4 landed positions across a throw where skipping lands 204.
+pub(crate) fn could_have_changed_anything(event: &Event<UserEvent>) -> bool {
+    match event {
+        Event::NewEvents(_)
+        | Event::MainEventsCleared
+        | Event::RedrawRequested(_)
+        | Event::RedrawEventsCleared => false,
+        Event::DeviceEvent { event, .. } => device_event_could_have_changed_anything(event),
+        Event::WindowEvent { event, .. } => window_event_could_have_changed_anything(event),
+        _ => true,
+    }
+}
+
+/// See `could_have_changed_anything`. Its own function because a `WindowEvent` can be built in a test and the event that wraps it cannot.
+pub(crate) fn window_event_could_have_changed_anything(event: &WindowEvent) -> bool {
+    !matches!(event, WindowEvent::Moved(_))
+}
+
+/// See `could_have_changed_anything`. Its own function for the same reason as the window half: a `DeviceEvent` can be built in a test and the event that wraps it cannot. Always the skip — whatever the packet carries, no arm reads it.
+pub(crate) fn device_event_could_have_changed_anything(_event: &tao::event::DeviceEvent) -> bool {
+    false
+}
+
 /// Runs until the window closes, which ends the process — hence the `!`.
 pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> ! {
     // Unpacked straight back into locals: the arms mutate most of these and read them constantly, and `ctx.` at every use would bury the event handling.
@@ -131,45 +291,20 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
     // Only ever set on a platform the window library refuses `drag_resize_window`, where the host has to drive the resize itself.
     let mut resize_drag: Option<ResizeDrag> = None;
 
-    // When the window last moved or was resized, while a gesture is under way. `Some` means the page is running its own frame loop and owes a note saying it may stop; the deadline is bumped per event and the note is sent once, so a drag that hands the loop a thousand events still costs two scripts.
-    let mut window_moving_until: Option<Instant> = None;
-
     // What the refresh remembers between passes: the token to ask with, how many refusals in a row, and which mirrors are being written into right now.
     let mut refresh_book = RefreshBook::default();
     start_refresh_timer(&proxy);
 
     event_loop.run(move |event, _, control_flow| {
-        // Waiting on the settle rather than on the next event is what ends a move with no note per event: the deadline below is bumped as the window moves, and the loop wakes itself once when it passes.
-        *control_flow = match window_moving_until {
-            Some(deadline) => ControlFlow::WaitUntil(deadline),
-            None => ControlFlow::Wait,
-        };
-        if window_moving_until.is_some_and(|deadline| Instant::now() >= deadline) {
-            window_moving_until = None;
-            *control_flow = ControlFlow::Wait;
-            run_page_script(
-                reader.page(),
-                window_move_line(false),
-                "Failed to tell the page the window stopped moving",
-            );
-        }
+        *control_flow = ControlFlow::Wait;
         // Read here because the match below takes the event by value.
         let anything_to_persist = could_have_changed_anything(&event);
 
         match event {
             Event::WindowEvent {
-                event: WindowEvent::Moved(_),
-                ..
-            } => {
-                // The whole arm: bump the deadline, and say so once. Nothing is read off the event and nothing is persisted — `could_have_changed_anything` still skips a move, which is the shipped fix that kept a drag from rebuilding the saved session a thousand times.
-                note_window_moving(reader.page(), &mut window_moving_until);
-            }
-            Event::WindowEvent {
                 event: WindowEvent::Resized(size),
                 ..
             } => {
-                // A resize slides the window's edges over the desktop exactly as a drag slides the whole of it, so the grid owes the same two notes.
-                note_window_moving(reader.page(), &mut window_moving_until);
                 // Remember the size only while windowed; convert the physical event size to the logical size the next launch expects.
                 if !reader.window.is_maximized()
                     && !reader.window.is_minimized()

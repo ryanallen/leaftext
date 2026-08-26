@@ -319,40 +319,6 @@ fn full_screen_is_read_off_the_window_not_off_a_gesture() {
     );
 }
 
-/// A window move now has an arm of its own — it tells the page to start reading where the window is — and it still must not reach the tail. The arm sends two scripts a gesture; the tail rebuilds the saved session out of every open tab, which is what froze a twenty-tab window under a drag. So the arm and the skip are asserted together: whichever of them a later pass moves, this fails.
-#[test]
-fn a_window_move_starts_the_page_reading_and_still_never_reaches_the_tail_of_the_loop() {
-    use std::time::Instant;
-
-    use tao::dpi::PhysicalPosition;
-
-    assert!(
-        !window_event_could_have_changed_anything(&WindowEvent::Moved(PhysicalPosition::new(
-            300, 200
-        ))),
-        "a move is answered by an arm that persists nothing, so the tail still has nothing to do"
-    );
-
-    // Two lines a gesture and nothing between them: the page reads its own place each frame, so a note per event would put the loop back on the flood path the skip above takes it off.
-    assert_eq!(window_move_line(true), "window.leafWindowMoveStarted();");
-    assert_eq!(window_move_line(false), "window.leafWindowMoveStopped();");
-
-    // The first event of a gesture owes the page a note; every one after it only pushes the deadline out, which is what makes a thousand mouse moves cost two scripts.
-    let mut moving_until: Option<Instant> = None;
-    note_window_moving(None, &mut moving_until);
-    let first = moving_until.expect("the first move marks the window as moving");
-    note_window_moving(None, &mut moving_until);
-    let second = moving_until.expect("a later move keeps it moving");
-    assert!(
-        second >= first,
-        "a move that lands later pushes the settle out rather than pulling it in"
-    );
-    assert!(
-        second.duration_since(first) < WINDOW_MOVE_SETTLE,
-        "the deadline is one settle past the last move, not one settle past the last deadline"
-    );
-}
-
 /// The tail below the match persists the session and re-points the watcher, so it must run after anything an arm answered and after nothing else. Written as a skip list on purpose: an event this test does not name still reaches the tail, which is what keeps a new one from being dropped in silence. A drag is the gesture that made it matter — four of these a mouse move, each rebuilding the session from every open tab.
 #[test]
 fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {

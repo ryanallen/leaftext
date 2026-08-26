@@ -2109,8 +2109,6 @@
   --lt-grain-dark: rgba(0, 0, 0, 0.35);
   --lt-grain-dark-heavy: rgba(0, 0, 0, 0.72);
   --lt-grain-lift: rgba(255, 255, 255, 0.07);
-  --lt-grid-light: rgba(0, 0, 0, 0.12);
-  --lt-grid-dark: rgba(255, 255, 255, 0.075);
   --lt-grain-hover: rgba(0, 0, 0, 0.55);
   /* Fixed colors */
   --lt-mask-opaque: #000;
@@ -2430,16 +2428,6 @@
   --reader-surface-grain: var(--app-bar-grain);
   /* The ink the dot lattice is drawn in, and the only part of it that is a variable: each rule writes the circles into its own `background-image`. Never hold the whole gradient in a custom property — its `var()` is substituted where the property is declared and descendants inherit the finished string, so one declared here silently paints every surface below in this ink whatever `--lt-grain-dot` they set. */
   --lt-grain-dot: var(--app-bar-grain);
-  /* The wide notebook grid's ink on chrome, over the fine speckle rather than instead of it. Overridden to lift rather than darken on dark themes, for the reason --reader-row-grain is. */
-  --app-bar-grid: var(--lt-grid-light);
-  /* How far apart the wide dot grid's dots are, and the one place that number is written: the page reads it back to work out how far to slide the lattice while the window moves, so the two cannot drift. A whole multiple of the fine grain's 2px, or the two lattices beat against each other across the window. */
-  --lt-grid-pitch: 20px;
-  /* How far each chrome surface's grid layer starts into the lattice, so the five of them share one phase and no seam opens where two meet. Written by the page from each box's own offset within the window, on layout and never per frame; zero here is the app surface's own corner, which most of them stand on. */
-  --lt-grid-phase-x: 0px;
-  --lt-grid-phase-y: 0px;
-  /* How far the chrome's grid layers are slid, written by the page while the window is moving and never larger than one pitch. Zero here is a still grid in the right place, which is what a browser draws and what the app draws before its first move. */
-  --lt-grid-offset-x: 0px;
-  --lt-grid-offset-y: 0px;
   /* The untinted table rows — the ones carrying no fill, so the grain above has nothing to speckle. Dark themes only: on a light theme these are the near-white rows, where a dot dark enough to see reads as a gray screen-door mesh laid over the whole table. Light themes leave them plain. */
   --reader-row-grain: transparent;
   /* How far the reading surface is held off the window frame. The chrome shows through the gap, so the page reads as a card floating on the bar's texture rather than something bleeding off the edge of the glass. */
@@ -2551,8 +2539,6 @@ body.mac-frame.is-fullscreen::before {
   /* Dark themes use a darker grain so the surface reads as speckled darker, not lighter — needs a heavier alpha than light mode to show against the already-dark surface. */
   --app-bar-grain: var(--lt-grain-dark);
   --library-header-grain: var(--lt-grain-dark-heavy);
-  /* Lift, not darken — the second grain in the app to turn this corner, and for the same arithmetic: on the darkest family black moves the surface by 5, 6 and 8 channels and white moves it by 21. */
-  --app-bar-grid: var(--lt-grid-dark);
   /* Light, not dark — the one grain in the app that goes the other way. This row is the darkest surface there is, so darkening it has nowhere to go: black at any alpha shifts `#0d1117` by ~10 and `#2a2d3d` by ~32, faint and uneven across families. Lifting instead moves every dark theme by a steady ~15. */
   --reader-row-grain: var(--lt-grain-lift);
 }
@@ -2606,29 +2592,6 @@ body.mac-frame.is-fullscreen::before {
     transition: block-size var(--lt-duration-260) var(--lt-ease-decelerate),
       content-visibility var(--lt-duration-260) var(--lt-ease-decelerate) allow-discrete;
   }
-}
-
-/* The notebook's dot grid, one layer per chrome surface — never one layer spanning the window, which painted dots into the window's own shadow band and could not be clipped back to the chrome without taking the app bar and the minimap rail with it, because the reading column runs the full height behind the bar.
-
-   Each layer is its own box's, so it is clipped by its own box and cannot reach the page or the band. It is grown by one pitch up and to the left because the whole set slides that far and no further; what that spills onto is always another chrome surface carrying the same lattice at the same phase, and `contain: paint` on .app-surface stops any of it reaching the window's edge.
-
-   Moved by transform and never by `background-position`: the same lattice shifted by its position took a real drag from 144 frames a second to 7, five window-wide layers re-rastered every frame, while a composited layer translated instead held 8 milliseconds at its worst frame. */
-.app-bar::before,
-.library-shell::before,
-.library-pane::before,
-.reader-corner::before,
-.library-crumbs::before,
-.library-header::before {
-  content: "";
-  position: absolute;
-  inset: calc(-1 * var(--lt-grid-pitch)) 0 0 calc(-1 * var(--lt-grid-pitch));
-  pointer-events: none;
-  background-image: radial-gradient(circle, var(--app-bar-grid) 0 1.1px, transparent 1.2px);
-  background-size: var(--lt-grid-pitch) var(--lt-grid-pitch);
-  background-repeat: repeat;
-  /* Each box's own start into the lattice, so the five read as one grid. Never `background-attachment: fixed` like the fine grain below them: a transformed element is what a fixed attachment resolves against, so the two cannot both be had. */
-  background-position: var(--lt-grid-phase-x) var(--lt-grid-phase-y);
-  transform: translate3d(var(--lt-grid-offset-x), var(--lt-grid-offset-y), 0);
 }
 /* Every piece of app chrome — this bar, the library pane, its two bands, the search field — takes `--lt-surface` itself. No per-surface tint or mix: any variant shows up as a tone seam where two of them meet. */
 .app-bar {
@@ -9429,7 +9392,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 165 values that do not change with the theme, all 63 icons, and all 70 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 70 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -9449,7 +9412,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>165</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>163</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>63</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>70</b></button>
 </div>
@@ -9552,7 +9515,7 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">165 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">163 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -9729,8 +9692,6 @@ body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
 <div class="value"><code>lt-grain-dark</code><code>rgba(0, 0, 0, 0.35)</code></div>
 <div class="value"><code>lt-grain-dark-heavy</code><code>rgba(0, 0, 0, 0.72)</code></div>
 <div class="value"><code>lt-grain-lift</code><code>rgba(255, 255, 255, 0.07)</code></div>
-<div class="value"><code>lt-grid-light</code><code>rgba(0, 0, 0, 0.12)</code></div>
-<div class="value"><code>lt-grid-dark</code><code>rgba(255, 255, 255, 0.075)</code></div>
 <div class="value"><code>lt-grain-hover</code><code>rgba(0, 0, 0, 0.55)</code></div>
 </div>
 <h3>Fixed colors</h3><div class="wall wide">
