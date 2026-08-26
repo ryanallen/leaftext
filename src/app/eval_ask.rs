@@ -1,6 +1,8 @@
 //! The `eval` ask's answer: what the page really did with a line, rather than what it came to.
 //!
 //! The engine hands back one value and no error, so a script that threw, a script it never read at all, and a script that honestly came to nothing all arrive as `null`. The caller's line therefore goes into a `try` with a numbered mark declared after it, and a second call reads that mark back: a script the page never read is told by the mark standing still, because there is no message to tell it by. A `try` block hands back its own body's value, and a declaration has no value of its own, so neither the wrapper nor the mark costs the answer anything.
+//!
+//! The line runs outside the page's own security policy, and so does anything it reaches before it returns — the web view lifts the `eval` rule for the length of this evaluation, so a `<script>` the line appends is exempt too. The policy is therefore never measured through this ask: scheduled off this stack with a `setTimeout`, the same code throws and the page reports the violation.
 
 use super::*;
 

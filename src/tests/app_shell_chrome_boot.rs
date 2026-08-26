@@ -458,6 +458,25 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
 }
 
 #[test]
+fn app_shell_csp_grants_no_unsafe_eval() {
+    // Three things rest on the page having no `unsafe-eval`: mermaid `click` lines stay inert, the graph loads a companion build, and a whole second eval-free drawing build is vendored. Nothing else holds the grant, so pin it here.
+    let html = app_shell_page();
+    let csp_line = html
+        .lines()
+        .find(|line| line.contains("Content-Security-Policy"))
+        .expect("shell declares a Content-Security-Policy");
+    let script_src = csp_line
+        .split(';')
+        .map(str::trim)
+        .find(|directive| directive.split_whitespace().next() == Some("script-src"))
+        .expect("CSP declares an explicit script-src directive");
+    assert!(
+        !script_src.contains("unsafe-eval"),
+        "script-src must grant no 'unsafe-eval': {script_src}"
+    );
+}
+
+#[test]
 fn app_shell_csp_allows_github_api_for_update_check() {
     // The update check fetches api.github.com; without a connect-src grant the webview's default-src 'self' blocks it. Guard against that regression.
     let html = app_shell_page();
