@@ -5,6 +5,7 @@ use crate::*;
 
 mod code_intel;
 mod editing_cmds;
+mod eval_ask;
 mod event_loop;
 mod events;
 mod fileops;

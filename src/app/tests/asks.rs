@@ -871,3 +871,90 @@ fn the_pipes_refusals_name_the_file_and_the_operating_systems_words_and_write_no
     let _ = fs::remove_dir_all(&logging);
     let _ = fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_wrapper_carries_the_script_through_and_marks_the_window_after_it() {
+    // The two things that would break the answer if they were wrong: the caller's line must arrive untouched, and the mark must be a declaration rather than an assignment, because an assignment is the last expression in the block and would be handed back in place of the answer.
+    let wrapped = eval_ask::wrapped_script("1+1 // a trailing comment", 7);
+    assert!(
+        wrapped.contains("1+1 // a trailing comment\n;const __leafMark"),
+        "the script goes in untouched, with a newline before the mark so a comment cannot swallow it: {wrapped}"
+    );
+    assert!(
+        wrapped.starts_with("try { 1+1"),
+        "the script is the first thing in the try, so its value is the block's: {wrapped}"
+    );
+    assert!(
+        wrapped.contains("leafEvalError: 7"),
+        "the catch tags this ask's own number, which the caller has no way to guess: {wrapped}"
+    );
+    assert!(
+        eval_ask::mark_probe().contains("window.__leafEvalRan"),
+        "the second call reads back the mark the first one leaves"
+    );
+}
+
+#[test]
+fn a_line_that_worked_answers_what_it_came_to_even_when_that_is_nothing() {
+    // The whole cost of the wrapper is meant to be zero, so every honest answer has to come back exactly as it did before — including the two that look like the failures.
+    let mark = serde_json::json!("7");
+    assert_eq!(
+        eval_ask::outcome(serde_json::json!(2), &mark, 7),
+        Ok(serde_json::json!(2))
+    );
+    // A script that really evaluated to nothing. Told from one that never ran only by the mark.
+    assert_eq!(
+        eval_ask::outcome(serde_json::Value::Null, &mark, 7),
+        Ok(serde_json::Value::Null)
+    );
+    // The caller's own object carrying the same key. It is not this ask's number, so it is a value.
+    let theirs = serde_json::json!({ "leafEvalError": 3, "message": "mine" });
+    assert_eq!(eval_ask::outcome(theirs.clone(), &mark, 7), Ok(theirs));
+}
+
+#[test]
+fn a_line_that_threw_answers_the_engines_own_words() {
+    // The failure that used to be indistinguishable from success: the mark stands still because the catch ran instead of the declaration, and the message rides back in the reply.
+    let thrown = serde_json::json!({
+        "leafEvalError": 7,
+        "message": "Error: boom\n    at <anonymous>:1:13",
+    });
+    let answer = eval_ask::outcome(thrown, &serde_json::json!("6"), 7);
+    assert_eq!(
+        answer,
+        Err("Error: boom\n    at <anonymous>:1:13".to_string())
+    );
+}
+
+#[test]
+fn a_line_the_page_never_read_says_so_rather_than_answering_nothing() {
+    // A syntax error hands the engine no message at all, so the mark standing still is the only thing that tells this from a script that honestly came to nothing.
+    let answer = eval_ask::outcome(serde_json::Value::Null, &serde_json::json!("6"), 7);
+    let Err(said) = answer else {
+        panic!("a script the page never read must be a failure, not an answer");
+    };
+    assert!(
+        said.contains("never read the script"),
+        "the reply has to name what happened, since there is no engine message to quote: {said}"
+    );
+}
+
+#[test]
+fn the_two_calls_answer_once_whichever_order_they_land_in() {
+    // The bug this shape is easiest to write wrong: testing the two halves by reading them out empties the first one on the way past, so the second finds nothing waiting and the ask times out at two seconds having answered nothing at all. Both orders, because the web view picks its own thread for each callback.
+    let mut join = eval_ask::Join::default();
+    assert_eq!(join.fill(Some(serde_json::json!(2)), None), None);
+    assert_eq!(
+        join.fill(None, Some(serde_json::json!("7"))),
+        Some((serde_json::json!(2), serde_json::json!("7")))
+    );
+    // And never twice: the reply channel holds one answer, and a second would be the wrong ask's.
+    assert_eq!(join.fill(None, Some(serde_json::json!("7"))), None);
+
+    let mut join = eval_ask::Join::default();
+    assert_eq!(join.fill(None, Some(serde_json::json!("7"))), None);
+    assert_eq!(
+        join.fill(Some(serde_json::Value::Null), None),
+        Some((serde_json::Value::Null, serde_json::json!("7")))
+    );
+}

@@ -103,7 +103,7 @@ const TOOLS = [
   {
     name: 'leaftext_eval',
     description:
-      'Run a line of JavaScript inside the app page and return what it evaluated to. This is arbitrary code execution inside the running app.',
+      'Run a line of JavaScript inside the app page and return what it evaluated to. A line that failed comes back as a failure rather than as an answer: one that threw carries the message and stack the engine gave it, and one the page never read at all — a syntax error, or a `const` an earlier call already declared — says so. So `null` now means the line really did evaluate to nothing. This is arbitrary code execution inside the running app.',
     inputSchema: {
       type: 'object',
       properties: { script: { type: 'string', description: 'JavaScript to evaluate' } },

@@ -49,7 +49,7 @@ pub(crate) enum Ask {
         #[serde(default)]
         reader: bool,
     },
-    /// Run a line of JavaScript in the page and hand back what it came to.
+    /// Run a line of JavaScript in the page and hand back what it came to. A line that failed comes back refused rather than answered: one that threw carries the message and stack the engine gave it, and one the page never read at all says so, so `null` means the line really did evaluate to nothing.
     ///
     /// This is arbitrary code inside the app, reachable by anything running as this user — the same bar as the single-instance pipe, which accepts only a file path where this accepts anything. It is also the whole reason the pipe beats reading the journal: without it you have a log reader, with it a live app can be inspected on both platforms.
     #[serde(rename = "eval")]

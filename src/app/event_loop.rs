@@ -643,26 +643,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 last_windowed_size,
                 control_flow,
             ),
-            Event::UserEvent(UserEvent::PipeEval { script, reply }) => {
-                // The one script the app runs for an answer rather than an effect. It arrives later and on whatever thread the web view calls back on, so the reply channel travels into the callback.
-                match reader.page() {
-                    Some(page) => {
-                        let failed = reply.clone();
-                        if let Err(error) =
-                            page.evaluate_script_with_callback(&script, move |result| {
-                                let value = serde_json::from_str(&result)
-                                    .unwrap_or_else(|_| serde_json::json!(result));
-                                let _ = reply.try_send(Ok(value));
-                            })
-                        {
-                            let _ = failed.try_send(Err(format!("the page refused it: {error}")));
-                        }
-                    }
-                    None => {
-                        let _ = reply.try_send(Err("there is no window to run it in".to_string()));
-                    }
+            // The one script the app runs for an answer rather than an effect. The answer, and whether the page read the script at all, are `eval_ask`'s.
+            Event::UserEvent(UserEvent::PipeEval { script, reply }) => match reader.page() {
+                Some(page) => eval_ask::run(page, &script, reply),
+                None => {
+                    let _ = reply.try_send(Err("there is no window to run it in".to_string()));
                 }
-            }
+            },
             Event::UserEvent(UserEvent::FromPage(command)) => match command {
                 IpcCommand::Open => {
                     if let Some(path) = pick_document_file() {
