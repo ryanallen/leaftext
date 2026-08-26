@@ -216,7 +216,7 @@ A `mermaid` fenced [code block](GLOSSARY.md#code-block), drawn as a diagram by t
 
 ## Minimap
 
-The slim rail down the right edge of the [reading view](GLOSSARY.md#reading-view). It is a real, scaled clone of the page — actual text, not abstract bars — so you can recognize a section by its shape. Click to jump, drag the [viewport indicator](GLOSSARY.md#viewport-indicator) to scroll. See [Minimap](01-features/04-minimap.md).
+The slim rail down the right edge of the [reading view](GLOSSARY.md#reading-view). It is a real, scaled clone of the page — actual text, not abstract bars — so you can recognize a section by its shape. Click to jump, drag the [viewport indicator](GLOSSARY.md#viewport-indicator) to scroll, or turn the wheel over it to scroll the page as if the pointer were on it. See [Minimap](01-features/04-minimap.md).
 
 ## Missing-image mark
 
