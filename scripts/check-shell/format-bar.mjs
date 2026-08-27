@@ -645,6 +645,173 @@ export function run() {
     if (styled.textContent !== 'heavyleaning') throw new Error('folding a styled span lost its words');
   });
 
+  const pressCodeOn = (markup, source, edgeBoundary = false) => {
+    const { applyInlineFormat, blockDomToSource, commitBlockEdit } = booted;
+    const block = fakeElement('code-format-block');
+    block.tagName = 'P';
+    block.dataset = { blockKind: 'paragraph', srcStart: '0', srcEnd: String(Buffer.byteLength(source)) };
+    block.innerHTML = markup;
+    block.__editBaseline = source;
+    const wrapped = block.querySelector('em') || block.querySelector('strong') || block.querySelector('del') || block.querySelector('a');
+    const words = wrapped ? wrapped.childNodes.find((node) => node.nodeType === 3) : block.childNodes.find((node) => node.nodeType === 3);
+    const textNodes = (root) => {
+      const found = [];
+      const walk = (node) => {
+        if (node.nodeType === 3) found.push(node);
+        else for (const child of node.childNodes || []) walk(child);
+      };
+      walk(root);
+      return found;
+    };
+    const contains = (root, wanted) => root === wanted || (root.childNodes || []).some((child) => contains(child, wanted));
+    const visibleOffset = (container, offset) => {
+      let count = 0;
+      const walk = (node) => {
+        if (node === container) {
+          if (node.nodeType === 3) count += Math.min(offset, node.nodeValue.length);
+          else for (const child of (node.childNodes || []).slice(0, offset)) count += child.textContent.length;
+          return true;
+        }
+        if (node.nodeType === 3) {
+          count += node.nodeValue.length;
+          return false;
+        }
+        for (const child of node.childNodes || []) if (walk(child)) return true;
+        return false;
+      };
+      walk(block);
+      return count;
+    };
+    const makeRange = () => {
+      const range = {
+        startContainer: block,
+        startOffset: 0,
+        endContainer: block,
+        endOffset: 0,
+        setStart(container, offset) {
+          this.startContainer = container;
+          this.startOffset = offset;
+        },
+        setEnd(container, offset) {
+          this.endContainer = container;
+          this.endOffset = offset;
+        },
+        selectNodeContents(node) {
+          this.setStart(node, 0);
+          this.setEnd(node, (node.childNodes || []).length);
+        },
+        cloneContents() {
+          return { textContent: block.textContent.slice(visibleOffset(this.startContainer, this.startOffset), visibleOffset(this.endContainer, this.endOffset)) };
+        },
+        cloneRange() {
+          const copy = makeRange();
+          copy.setStart(this.startContainer, this.startOffset);
+          copy.setEnd(this.endContainer, this.endOffset);
+          return copy;
+        },
+        toString() {
+          return block.textContent.slice(visibleOffset(this.startContainer, this.startOffset), visibleOffset(this.endContainer, this.endOffset));
+        },
+        deleteContents() {
+          if (this.startContainer !== this.endContainer || this.startContainer.nodeType !== 3) throw new Error('the normalized code selection did not stay in one run of words');
+          const node = this.startContainer;
+          node.nodeValue = node.nodeValue.slice(0, this.startOffset) + node.nodeValue.slice(this.endOffset);
+          node.textContent = node.nodeValue;
+          this.endOffset = this.startOffset;
+        },
+        insertNode(node) {
+          const holder = this.startContainer.nodeType === 3 ? this.startContainer.parentElement : this.startContainer;
+          const reference = this.startContainer.nodeType === 3 ? this.startContainer : holder.childNodes[this.startOffset] || null;
+          holder.insertBefore(node, reference);
+          if (reference && reference.nodeType === 3 && !reference.nodeValue) holder.removeChild(reference);
+        },
+      };
+      return range;
+    };
+    const selection = {
+      ranges: [],
+      get rangeCount() {
+        return this.ranges.length;
+      },
+      getRangeAt(index) {
+        return this.ranges[index];
+      },
+      removeAllRanges() {
+        this.ranges.length = 0;
+      },
+      addRange(range) {
+        this.ranges.push(range);
+      },
+    };
+    const initial = makeRange();
+    if (edgeBoundary && wrapped) {
+      initial.setStart(block, block.childNodes.indexOf(wrapped));
+      initial.setEnd(words, words.nodeValue.length);
+    } else {
+      initial.setStart(words, 0);
+      initial.setEnd(words, words.nodeValue.length);
+    }
+    selection.addRange(initial);
+    const wasSelection = booted.getSelection;
+    const wasRange = booted.document.createRange;
+    const wasWalker = booted.document.createTreeWalker;
+    const posted = [];
+    const wasIpc = booted.ipc;
+    try {
+      block.contains = (node) => contains(block, node);
+      booted.getSelection = () => selection;
+      booted.document.createRange = makeRange;
+      booted.document.createTreeWalker = (root) => {
+        const nodes = textNodes(root);
+        let at = 0;
+        return { nextNode: () => nodes[at++] || null };
+      };
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+      booted.__codeFormatBlock = block;
+      booted.__codeFormatRange = initial.cloneRange();
+      vm.runInContext('selectionToolbarBlock = __codeFormatBlock; selectionToolbarRange = __codeFormatRange;', booted);
+      applyInlineFormat({ tag: 'code' });
+      const markdown = blockDomToSource(block);
+      commitBlockEdit(block, markdown);
+      return { block, markdown, selected: selection.getRangeAt(0).toString(), edit: posted.find((message) => message.command === 'editBlock') };
+    } finally {
+      booted.getSelection = wasSelection;
+      booted.document.createRange = wasRange;
+      booted.document.createTreeWalker = wasWalker;
+      booted.ipc = wasIpc;
+      delete booted.__codeFormatBlock;
+      delete booted.__codeFormatRange;
+      vm.runInContext('selectionToolbarBlock = null; selectionToolbarRange = null;', booted);
+    }
+  };
+
+  check('code keeps an italic word when the saved selection begins outside its wrapper', () => {
+    const source = 'before*words*after';
+    const result = pressCodeOn('before<em>words</em>after', source, true);
+    if (result.block.innerHTML !== 'before<em><code>words</code></em>after') throw new Error(`the page became ${result.block.innerHTML}`);
+    if (result.selected !== 'words') throw new Error(`the code press selected ${JSON.stringify(result.selected)}`);
+    if (result.markdown !== 'before*`words`*after') throw new Error(`the block serialized as ${JSON.stringify(result.markdown)}`);
+    if (!result.edit || result.edit.start !== 0 || result.edit.end !== source.length) throw new Error('the code press did not commit over the whole block');
+    const written = source.slice(0, result.edit.start) + result.edit.text + source.slice(result.edit.end);
+    if (written !== 'before*`words`*after') throw new Error(`the buffer became ${JSON.stringify(written)}`);
+  });
+
+  check('code keeps every outer format and a selection already on text nodes', () => {
+    const cases = [
+      { name: 'italic', markup: '<em>words</em>', source: '*words*', want: '*`words`*' },
+      { name: 'bold', markup: '<strong>words</strong>', source: '**words**', want: '**`words`**' },
+      { name: 'strikethrough', markup: '<del>words</del>', source: '~~words~~', want: '~~`words`~~' },
+      { name: 'link', markup: '<a href="#place">words</a>', source: '[words](#place)', want: '[`words`](#place)' },
+      { name: 'plain words', markup: 'words', source: 'words', want: '`words`' },
+    ];
+    for (const one of cases) {
+      const result = pressCodeOn(one.markup, one.source);
+      if (result.markdown !== one.want) throw new Error(`${one.name} became ${JSON.stringify(result.markdown)}`);
+      if (result.selected !== 'words') throw new Error(`${one.name} left ${JSON.stringify(result.selected)} selected`);
+      if (!result.edit || result.edit.text !== one.want) throw new Error(`${one.name} did not commit its nested code`);
+    }
+  });
+
   // Pressing a format button a second time takes the wrapper away and leaves the same words selected, so a third press lands on them again. The order is the whole of it: the selection goes on while the phrase is still a run of its own, because the join keeps the first run and drops the rest, so a selection put on after it names a run that is gone.
 
   check('taking a format off selects the phrase before the runs are joined, in every sentence position', () => {

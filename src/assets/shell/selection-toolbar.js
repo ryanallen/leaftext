@@ -178,10 +178,15 @@ function restoreSelectionForEdit() {
   if (!selectionToolbarBlock.isConnected) return false;
   const selection = window.getSelection();
   if (!selection) return false;
-  openWysiwygBlock(selectionToolbarBlock, null);
-  selectionToolbarBlock.focus({ preventScroll: true });
   selection.removeAllRanges();
   selection.addRange(selectionToolbarRange);
+  const span = selectionTextSpanIn(selectionToolbarBlock);
+  if (!span) return false;
+  openWysiwygBlock(selectionToolbarBlock, span);
+  selectionToolbarBlock.focus({ preventScroll: true });
+  selectTextSpanInBlock(selectionToolbarBlock, span);
+  if (!selection.rangeCount) return false;
+  selectionToolbarRange = selection.getRangeAt(0).cloneRange();
   return true;
 }
 

@@ -107,12 +107,14 @@ function selectionTextSpanIn(el) {
 }
 
 // A character offset inside `el`'s visible text as a DOM point, clamped to the end.
-function blockTextPoint(el, offset) {
+function blockTextPoint(el, offset, preferNextAtBoundary = false) {
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   let remaining = Math.max(0, offset || 0);
   let lastNode = null;
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    if (remaining <= node.nodeValue.length) return { node, offset: remaining };
+    if (remaining < node.nodeValue.length || (!preferNextAtBoundary && remaining === node.nodeValue.length)) {
+      return { node, offset: remaining };
+    }
     remaining -= node.nodeValue.length;
     lastNode = node;
   }
@@ -139,7 +141,7 @@ function selectTextSpanInBlock(el, span) {
     return;
   }
   const selection = window.getSelection();
-  const from = blockTextPoint(el, span.start);
+  const from = blockTextPoint(el, span.start, true);
   const to = blockTextPoint(el, span.end);
   if (!selection || !from || !to) {
     placeCaretInBlock(el, span.start);
