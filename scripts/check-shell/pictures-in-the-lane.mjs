@@ -580,7 +580,7 @@ export function run() {
     booted.document.documentElement.style.setProperty('--lt-surface', '#101014');
     const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, naturalWidth: 40, naturalHeight: 30 });
     picture.currentSrc = 'leaf-image://local/imgs/logo.png?leaf-epoch=1';
-    // The page's own picture loads this, off the exact address the conversion asks for. A picture nobody registers takes that same picture's failure branch, which is the refusal the case below drives — so the load itself is decided here rather than by a stand-in that called every address good.
+    // The page's own picture loads this, off the exact address the conversion asks for, so the load is decided here rather than by a stand-in that called every address good. An address nobody registers takes that same picture's failure branch, which is what the case below drives.
     booted.__pictures.set(picture.currentSrc, { width: 64, height: 48 });
     try {
       await booted.pictureFileBase64(picture, 'image/jpeg');
@@ -613,7 +613,7 @@ export function run() {
     }
   });
 
-  // The other end of that same load, and the one a reader actually meets: a picture that does not come back. Nothing stands in for the failure — the page's own picture refuses an address nobody registered — and the whole row is driven, from the press to the path, because the two things that matter are what the reader is told and that no file is written under the name they just picked.
+  // The other end of that same load, and the one a reader meets: a picture that does not come back. Nothing stands in for the failure, and the whole row is driven from the press to the path, because what matters is that the reader is told and that no file is written under the name they just picked.
   checkLendingTheWindow("a picture that will not load is refused in the reader's own words and writes no file", async () => {
     const lane = fakeElement('p');
     lane.tagName = 'P';
@@ -656,7 +656,7 @@ export function run() {
     }
   });
 
-  // What the stand-in page still cannot be asked: whether the pixels come back. It has no canvas, so what is held here is the request the export makes — anonymous cross-origin, which is the whole of what changed in the page, and a fresh request rather than the copy on screen, which is tainted and always will be.
+  // What the stand-in page cannot be asked: whether the pixels come back. It has no canvas, so what is held here is the request the export makes — anonymous cross-origin, which is what lets a pixel be read back at all, and a fresh request rather than the copy on screen, which is tainted and always will be.
   check('a conversion asks for the picture again in anonymous cross-origin mode', () => {
     const fragment = readFileSync(join(root, 'src/assets/shell/image-sheet.js'), 'utf8');
     const draw = fragment.slice(fragment.indexOf('function pictureCanvas('), fragment.indexOf('async function pictureFileBase64('));
