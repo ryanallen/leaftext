@@ -9354,6 +9354,14 @@ body.leaf-paper :is(.docs-pager,
 .diagram-overlay) {
   display: none;
 }
+/* A drawn diagram lets the browser skip its own paint while it is away, written straight onto the block — and a picture render paints what is off screen exactly as it paints what is on it, so ten of a document's twelve drawings came back blank frames. Printing ignores the skip, which is why the PDF never had this. The same declaration the rail already carries, and important for the same reason: the skip is on the element. */
+body.leaf-paper .document-body pre.mermaid {
+  content-visibility: visible !important;
+}
+/* The waiting spinner, off the sheet beside the app's own controls above. A diagram that failed to draw during an export would otherwise print a circle stopped mid-turn, which reads as a picture that is still coming on paper that will never change. The three conditions are the spinner rule's own, so this outweighs it on the paper class rather than on the order these files are joined in. The block keeps its height: its own invisible source text is what holds it. */
+body.leaf-paper .document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
+  content: none;
+}
 /* A diagram on a sheet of its own, which is the same render with one thing left standing. The container holds a copy of the drawing made for the export — never the one on screen, which carries whatever it has been zoomed and dragged to, and in the editor its selection ring and handles as well — and it is out of the layout until an export fills it, so a reader never sees it. */
 .diagram-print {
   display: none;

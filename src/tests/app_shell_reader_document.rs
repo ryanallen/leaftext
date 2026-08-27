@@ -295,9 +295,27 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
         "the pass must wait to be told the scroll settled, not set itself another timer: {drain}"
     );
     // And the settle is what tells it, only when something is actually held back.
+    let settled = script
+        .split("function readerScrollSettled() {")
+        .nth(1)
+        .expect("the front-end has a settle for the reader's scroll");
+    let settled = &settled[..settled
+        .find(
+            "
+}
+",
+        )
+        .expect("that function closes")];
     assert!(
-        script.contains("function readerScrollSettled() {\n  if (mermaidWaitingNearby.size || mermaidLeavingView.size) scheduleMermaidPass();"),
-        "the scroll settling must be what releases a held diagram pass"
+        settled.contains(
+            "if (mermaidWaitingNearby.size || mermaidLeavingView.size) scheduleMermaidPass();"
+        ),
+        "the scroll settling must be what releases a held diagram pass: {settled}"
+    );
+    // The reader is reading again rather than exporting, which is what lets the far drawings an export held go back to boxes.
+    assert!(
+        settled.contains("mermaidExportHolding = false;"),
+        "the scroll settling must be what drops an export's hold on the far drawings: {settled}"
     );
     let settle = script
         .split("function settleReaderScroll() {")

@@ -151,3 +151,37 @@ fn the_exported_pages_rail_is_placed_by_the_class_only_that_page_wears() {
         "the exported page's rail joined the list the paper state hides, which it wears for ever: {list}"
     );
 }
+
+/// A drawn diagram on the paper, and no circle stopped mid-turn where an undrawn one stood.
+///
+/// A finished diagram is told to skip its own paint while it is off screen, written straight onto the block. Printing ignores that; a picture render does not, so a document whose twelve drawings were all finished came back with the two on screen drawn and the other ten blank frames. The rail met the same thing on its clone and answered it with one declaration, and this is that declaration under the paper class.
+#[test]
+fn the_paper_rules_paint_a_documents_diagrams_and_take_the_waiting_spinner_off_the_sheet() {
+    let css = reading_mode_css();
+    // Important, because the skip is on the element rather than in a sheet anything could outrank.
+    assert_contains(
+        css,
+        "body.leaf-paper .document-body pre.mermaid {
+  content-visibility: visible !important;
+}",
+    );
+    // The three conditions are the spinner rule's own, which is what carries the weight: written with the paper class alone it would count three class-level parts against that rule's five and never apply, whatever order the files are joined in.
+    assert_contains(
+        css,
+        "body.leaf-paper .document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])::after {
+  content: none;
+}",
+    );
+    // And the rule it is answering is still spelled that way, so a change to one is caught here rather than printing a stalled circle.
+    assert_contains(
+        css,
+        ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])::after {
+  content: \"\";",
+    );
+    // A picture render is not a print, so a rule shut inside a print block would reach the PDF and leave the pictures exactly as blank as they were. This whole file is keyed on the paper class for that reason, and the two `@media screen` blocks it does carry are what must not grow a third kind.
+    let sheet = include_str!("../assets/reading/print.css");
+    assert!(
+        !sheet.replace("`@media print`", "").contains("@media print"),
+        "the paper stylesheet grew a print-only block, which a picture render never fires"
+    );
+}

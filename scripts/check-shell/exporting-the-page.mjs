@@ -4,9 +4,11 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import {
   check,
+  checkSettled,
   fakeElement,
   record,
   runShell,
+  settle,
   source,
 } from './shared.mjs';
 
@@ -324,6 +326,112 @@ export function run() {
     }
     if (held !== 0) {
       throw new Error(`pressing Export left ${held} holds on the page before the save window opened`);
+    }
+  });
+
+
+  // A document whose diagrams the page has not drawn yet, which is where a reader stands the moment a file opens. Every one of them prints as an empty frame the right size, and the export is the one path they cannot scroll to fix.
+  const waitingDocument = (page) => {
+    const holder = fakeElement('');
+    holder.innerHTML =
+      '<div class="document-body">' +
+      '<h1>Release notes</h1>' +
+      '<pre class="mermaid">flowchart one</pre>' +
+      '<pre class="mermaid">flowchart two</pre>' +
+      '</div>';
+    const body = holder.children[0];
+    // The only copy of the text once a drawing has replaced it, which is what the page marks a box with when it first sees one.
+    for (const diagram of body.children) {
+      if (String(diagram.className || '') === 'mermaid') diagram.__mermaidSource = String(diagram.textContent);
+    }
+    body.cloneNode = () => {
+      const copy = fakeElement('');
+      copy.innerHTML = body.outerHTML;
+      return copy.children[0];
+    };
+    const reader = vm.runInContext('app', page);
+    const wasQuery = reader.querySelector;
+    reader.querySelector = (selector) =>
+      String(selector) === '.document-body' ? body : wasQuery.call(reader, selector);
+    return { body, done: () => { reader.querySelector = wasQuery; } };
+  };
+
+  // Mermaid itself never runs here. What the export depends on is the shape of the drawing path — that it hands back something to wait for, and that the boxes are drawn by the time it settles.
+  const drawingOnDemand = (page, log) => {
+    page.drawMermaidDiagrams = (candidates) => {
+      log.push(`drew ${candidates.length}`);
+      return Promise.resolve().then(() => {
+        for (const diagram of candidates) {
+          diagram.dataset.processed = 'true';
+          diagram.innerHTML = '<svg class="flowchart lt-mmd-0"></svg>';
+        }
+      });
+    };
+  };
+
+  const PAPER = { width: 1277, height: 28207, top: 0, left: 0, right: 1277, bottom: 28207 };
+
+  // The whole of the reported fault: a document of diagrams exported before any of them were drawn came back as a document of blank frames. The measurement has to come after the drawing as well as the send — the height that goes out is the sheet, and a diagram drawn after it is measured is a diagram off the bottom of the paper.
+  checkSettled('Pressing Export draws every diagram still waiting before it measures the sheet', async () => {
+    const sent = [];
+    const page = runShell(source, { ipc: { postMessage: (message) => sent.push(JSON.parse(message)) } });
+    const stand = waitingDocument(page);
+    const log = [];
+    drawingOnDemand(page, log);
+    const surface = page.document.getElementById('appSurface');
+    surface.getBoundingClientRect = () => {
+      log.push('measured');
+      return PAPER;
+    };
+    const waiting = page.document.getElementById('readerLoading');
+    try {
+      page.renderReaderToolbar(true);
+      const button = page.document.getElementById('exportPdfButton');
+      (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      if (sent.some((one) => one.command === 'exportPdf')) {
+        throw new Error('the export was sent while its diagrams were still boxes, which is the blank frames on the paper');
+      }
+      // Seconds of drawing before the save window opens, so the wait is one the reader can see rather than a window that has stopped answering.
+      if (waiting && waiting.hidden) throw new Error('the page drew the whole document with nothing on screen saying it was working');
+      await settle();
+      await settle();
+      if (log[0] !== 'drew 2') throw new Error(`the export drew ${JSON.stringify(log[0])} rather than both waiting diagrams`);
+      if (log.indexOf('measured') < log.indexOf('drew 2')) {
+        throw new Error('the sheet was measured before the diagrams were drawn, so the height that went out is what the boxes stood at');
+      }
+      const asked = sent.filter((one) => one.command === 'exportPdf');
+      if (asked.length !== 1) throw new Error(`the export sent ${asked.length} asks`);
+      if (asked[0].height !== PAPER.height) throw new Error(`the sheet went out at ${asked[0].height} rather than ${PAPER.height}`);
+      if (waiting && !waiting.hidden) throw new Error('the spinner was left up after the save window was asked for');
+    } finally {
+      stand.done();
+      page.renderReaderToolbar(false);
+    }
+  });
+
+  // The Web page row is the same press, and the host asks the page for its markup after it — so the drawing that fixes the paper fixes the exported page with it. Measured before this: 212 of a 220-diagram document traveled as blocks of diagram source text.
+  checkSettled('The markup the exported web page is built from carries no diagram still waiting to be drawn', async () => {
+    const sent = [];
+    const page = runShell(source, { ipc: { postMessage: (message) => sent.push(JSON.parse(message)) } });
+    const stand = waitingDocument(page);
+    drawingOnDemand(page, []);
+    page.document.getElementById('appSurface').getBoundingClientRect = () => PAPER;
+    try {
+      page.renderReaderToolbar(true);
+      const button = page.document.getElementById('exportPdfButton');
+      (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      await settle();
+      await settle();
+      const markup = vm.runInContext('pageExportMarkup', page)();
+      // A box that never drew travels as its own source text behind transparent ink, which is the empty frame in the exported page.
+      if (markup.includes('flowchart one') || markup.includes('flowchart two')) {
+        throw new Error(`the exported page carried a diagram's source text rather than its drawing: ${markup}`);
+      }
+      const drawings = markup.split('<svg class="flowchart lt-mmd-0">').length - 1;
+      if (drawings !== 2) throw new Error(`the exported page carried ${drawings} of the document's two drawings: ${markup}`);
+    } finally {
+      stand.done();
+      page.renderReaderToolbar(false);
     }
   });
 
