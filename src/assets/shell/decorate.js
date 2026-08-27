@@ -259,16 +259,19 @@ function mermaidWaitingForExport() {
     return true;
   });
 }
-// Rounds rather than one call: a theme change or a fresh render still bumps the generation and returns the pass part-way, so it is run again while it is still making progress and given up when a round draws nothing.
+// Rounds rather than one call: a theme change or a fresh render bumps the generation and returns the pass part-way, so it is run again until nothing is waiting. A round that shrank nothing is not the end on its own — the first font load after a document opens repaints every drawing back to a box, and a pass that stopped on that one round sent a 67-diagram document with 376 frames on it. Three such rounds in a row is a block nothing can draw, and that is where it gives up.
+const MERMAID_EXPORT_STALLED_ROUNDS = 3;
 async function drawEveryMermaidDiagram() {
   mermaidExportDrawing += 1;
   mermaidExportHolding = true;
   try {
     let waiting = mermaidWaitingForExport();
+    let stalled = 0;
     while (waiting.length) {
       await drawMermaidDiagrams(waiting);
       const left = mermaidWaitingForExport();
-      if (left.length >= waiting.length) return;
+      stalled = left.length >= waiting.length ? stalled + 1 : 0;
+      if (stalled >= MERMAID_EXPORT_STALLED_ROUNDS) return;
       waiting = left;
     }
   } finally {

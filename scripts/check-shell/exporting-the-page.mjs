@@ -116,6 +116,36 @@ export function run() {
     }
   });
 
+  // The first font load after a document opens repaints every drawing back to a box. A pass that met one mid-way found as many waiting as the round before and stopped, and a 67-diagram document exported the moment it opened printed 376 frames. So a round that shrank nothing is a round to run again, and the press still sends with the diagram drawn.
+  checkPressed('a repaint landing after the first round leaves the press still drawing, and the measurement goes out with the diagram drawn', async () => {
+    const sent = [];
+    const ipc = booted.window.ipc;
+    const { body, diagram } = waitingDocument();
+    const unstand = standDocument(body);
+    const forget = rememberDrawing();
+    booted.window.ipc = { postMessage: (message) => sent.push({ ...JSON.parse(message), drawn: diagram.dataset.processed === 'true' }) };
+    try {
+      booted.renderReaderToolbar(true);
+      const button = booted.document.getElementById('exportPdfButton');
+      (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      if (diagram.dataset.processed !== 'true') throw new Error('the first round did not draw the diagram out of the memo');
+      // The repaint lands before the pass looks again, leaving the block the way the font repaint leaves every drawing: its source back in it and its drawn mark gone. Done on the block itself, because the repaint sweeps the reader element and this block stands in front of it rather than inside it.
+      diagram.textContent = diagram.__mermaidSource;
+      delete diagram.dataset.processed;
+      if (diagram.dataset.processed === 'true') throw new Error('the repaint left the diagram drawn, so nothing here is being tested');
+      await settle();
+      const asked = sent.filter((one) => one.command === 'exportPdf');
+      if (asked.length !== 1) throw new Error(`the export was sent ${asked.length} times after the repaint`);
+      if (!asked[0].drawn) throw new Error('the pass gave up on the round the repaint reset and sent the diagram as a box');
+      booted.readerScrollSettled();
+    } finally {
+      forget();
+      unstand();
+      booted.window.ipc = ipc;
+      booted.renderReaderToolbar(false);
+    }
+  });
+
   // A block the decorating pass has not reached yet has no recorded source, and the draw reads the source rather than the element — so Export pressed the moment a document opens has to give such a block its own text, or it is skipped and prints as a frame.
   check('a diagram with no recorded source is drawn from its own text', () => {
     const { body, diagram } = waitingDocument();
