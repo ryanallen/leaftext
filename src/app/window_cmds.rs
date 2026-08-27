@@ -3,8 +3,70 @@
 //! Its own module because no other one owns the window. The arithmetic here is the Mac half of the resize: Windows hands a whole gesture to the platform on the press, and a Mac is refused that call, so the host holds the window as it stood and sets it from every move.
 //!
 //! `WindowClose` is not here. It reaches `shut_down` and the loop's own `control_flow`, so it stays where the loop can end.
+//!
+//! The startup place below is read here for the same reason: it decides how the window is shown, and no other module owns the window.
 
 use super::*;
+
+/// A monitor's rectangle in physical screen pixels — where it starts and how big it is. The same pixels a startup place is written in.
+#[cfg(windows)]
+pub(crate) type MonitorRect = (i32, i32, i32, i32);
+
+/// Where this process was told to put its first window, or nothing when the launch carried no place at all. Windows keeps a startup place for the first overlapped window built with `CW_USEDEFAULT`, which is the window `main.rs` builds — nothing there asks for a position. A launcher that wants a copy off screen sets this rather than the builder, because a position asked for through the builder is matched against every monitor and thrown away when it matches none, which is exactly the off-screen case.
+#[cfg(windows)]
+pub(crate) fn startup_place() -> Option<(i32, i32)> {
+    use windows_sys::Win32::System::Threading::{
+        GetStartupInfoW, STARTF_USEPOSITION, STARTUPINFOW,
+    };
+
+    let mut info: STARTUPINFOW = unsafe { std::mem::zeroed() };
+    info.cb = std::mem::size_of::<STARTUPINFOW>() as u32;
+    unsafe { GetStartupInfoW(&mut info) };
+    if info.dwFlags & STARTF_USEPOSITION == 0 {
+        return None;
+    }
+    Some((info.dwX as i32, info.dwY as i32))
+}
+
+/// Whether a place lies on none of these monitors. Half-open on the right and bottom, the way a monitor rectangle is: a window whose top-left corner sits one pixel past the last column is off it.
+#[cfg(windows)]
+pub(crate) fn place_is_off_every_monitor(place: (i32, i32), monitors: &[MonitorRect]) -> bool {
+    !monitors.iter().any(|&(x, y, width, height)| {
+        place.0 >= x && place.0 < x + width && place.1 >= y && place.1 < y + height
+    })
+}
+
+/// Whether this copy was started where nobody can see it. True only for a launch carrying a startup place that lies on none of the monitors — which is how a build's own copy comes up. A window nobody can see must not hold the keys, whether a launcher put it out there or a monitor was unplugged from under a remembered place, so this is a rule about the app rather than a branch for a launcher. An ordinary launch carries no place, so it is false and the window comes up in front with the keyboard.
+#[cfg(windows)]
+pub(crate) fn started_off_every_monitor(monitors: &[MonitorRect]) -> bool {
+    startup_place().is_some_and(|place| place_is_off_every_monitor(place, monitors))
+}
+
+/// The monitors as rectangles, in the physical screen pixels a place is written in. One reader for both callers: the window builder, which has only the event loop, and the loop itself, which has the window.
+#[cfg(windows)]
+pub(crate) fn monitor_rects(
+    monitors: impl Iterator<Item = tao::monitor::MonitorHandle>,
+) -> Vec<MonitorRect> {
+    monitors
+        .map(|monitor| {
+            let at = monitor.position();
+            let size = monitor.size();
+            (at.x, at.y, size.width as i32, size.height as i32)
+        })
+        .collect()
+}
+
+/// Bring the window forward and out of the task bar, unless it stands where nobody can see it. Both places that surface it go through here — a second launch forwarding a document, and one carrying none — because a window off every monitor taking the keyboard is the owner typing into something they cannot find. Asked of where the window actually stands rather than of the place it was started at: by now there is a window to ask.
+pub(crate) fn surface_window(window: &tao::window::Window) {
+    #[cfg(windows)]
+    if let Ok(at) = window.outer_position() {
+        if place_is_off_every_monitor((at.x, at.y), &monitor_rects(window.available_monitors())) {
+            return;
+        }
+    }
+    window.set_minimized(false);
+    window.set_focus();
+}
 
 /// The compass point the page grabbed, as the window library names it. Anything else is dropped rather than guessed at.
 pub(crate) fn resize_direction(direction: &str) -> Option<tao::window::ResizeDirection> {

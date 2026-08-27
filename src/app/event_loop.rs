@@ -230,15 +230,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 request_cloud_folders(&proxy);
             }
             Event::UserEvent(UserEvent::FocusWindow) => {
-                reader.window.set_minimized(false);
-                reader.window.set_focus();
+                surface_window(&reader.window);
             }
             Event::UserEvent(UserEvent::OpenPath(path)) => {
                 reader.workspace.open_path(path);
                 reader.render(ScrollIntent::Reset);
-                // A forwarded open from a second launch should surface the window.
-                reader.window.set_minimized(false);
-                reader.window.set_focus();
+                // A forwarded open from a second launch should surface the window — and so should the document a build's own copy was launched with, which arrives down this same arm, so the call is the one that leaves a window nobody can see alone.
+                surface_window(&reader.window);
             }
             Event::UserEvent(UserEvent::RemoteRefreshDue) => {
                 refresh_due_vaults(&vault_state, &mut refresh_book, &proxy, reader.page());

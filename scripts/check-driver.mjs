@@ -275,7 +275,11 @@ for (const [who, caller] of [['the documentation shot', text], ['the probe launc
 
 // The launcher's own half: a copy still up when the command that started it has returned, addressable by a second command, and closed by asking.
 const LAUNCHER = [
-  ['leave its copy running when it returns', /Start-Process -FilePath \$Exe/],
+  ['leave its copy running when it returns', /CloseHandle\(\$pi\.hProcess\)/],
+  // The whole of why a build launches a copy of its own is that the owner keeps working, and a window landing in front of them is the one thing that undoes it. Start-Process cannot carry a place, and the app's own window builder throws away a position matching no monitor — so the place rides on the process.
+  ['start that copy off every monitor rather than over what the owner is reading', /STARTF_USEPOSITION/],
+  ['compute the place against the virtual screen rather than write one down, so a monitor added to the left cannot bring the copy back into view', /SystemInformation\]::VirtualScreen/],
+  ['hand the app nothing but the document, so the place travels with the process instead of an argument an ordinary copy could carry', /\$line = if \(\$doc\)/],
   ['name that copy off its work folder, so a close run later can address it', /Get-LeafProfileName \$workDir/],
   ['close it by asking down its own pipe', /--ask '\{\\"ask\\":\\"quit\\"\}'/],
   ['wait for that pipe to go away rather than for a process', /Wait-LeafPipe \$name \$false/],
@@ -296,6 +300,23 @@ for (const [what, pattern] of LAUNCHER) {
   if (!pattern.test(launcherText)) problems.push(`the probe launcher no longer knows how to ${what}`);
 }
 
+// The photograph's own half of the same promise. A copy off every monitor is drawn with PrintWindow, which needs neither focus nor a place on screen — so pulling it forward first would hand the keyboard back to a window the owner cannot see, at the one moment a build most wants a picture. A window on a monitor is pulled forward exactly as it was.
+const OFF_SCREEN_SHOT = [
+  ['ask whether the window it is about to drive stands on any monitor', /function Test-OffEveryMonitor/],
+  ['skip pulling such a window forward rather than taking the keyboard off what the owner is reading', /if \(Test-OffEveryMonitor \$hwnd\) \{[\s\S]*?Write-Output[\s\S]*?return/],
+  ['still pull a window on a monitor forward, so a documentation shot is unchanged', /return\s+\}\s+\[void\]\[LeafShot\]::SetForegroundWindow\(\$hwnd\)/],
+  ['refuse a gesture against such a window rather than clamping it onto the desktop and clicking whatever the owner has there', /\$gestures\.Count -and \(Test-OffEveryMonitor \$hwnd\)/],
+  ['say what to reach the page with instead, so a refused gesture is not a dead end', /just ask eval/],
+];
+for (const [what, pattern] of OFF_SCREEN_SHOT) {
+  if (!pattern.test(text)) problems.push(`the photograph no longer knows how to ${what}`);
+}
+
+// Only a copy the launcher started is off screen. The documentation shot's copy is photographed as a window on a monitor, and a copy the owner opens carries no startup place at all — which is what keeps the app's no-keyboard rule from ever firing on one of theirs.
+if (/STARTF_USEPOSITION/.test(text)) {
+  problems.push('the documentation shot starts its copy off screen, and a published picture is a picture of a window on a monitor');
+}
+
 // Two development copies can be open at once, each built under its own checkout, so -Attach has to pick the one belonging to the checkout it was run from rather than refuse because it found two windows. With no copy from this checkout running it still takes whatever is up, which is the installed copy the owner reads.
 const ATTACH = [
   ['prefer the copy built from this checkout', /\$ours = @\(\$copies \| Where-Object \{ \$_\.Path -and \$_\.Path\.StartsWith\(\$root/],
@@ -308,5 +329,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands in ${OFF_SCREEN_SHOT.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );

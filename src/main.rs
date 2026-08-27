@@ -326,6 +326,14 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     {
         window_builder = window_builder.with_window_icon(load_window_icon());
     }
+    // A copy a build launched to watch something is started at a place off every monitor, and Windows hands that place to this window because nothing above asks for a position. Such a window must not hold the keyboard: the owner would go on typing into a window they cannot find. So it is shown without taking focus, which tao does with `SW_SHOWNOACTIVATE` — and unlike a position, that flag is never checked against a monitor. The web view is built without focus for the same reason, further down: it takes focus on creation unless told otherwise, and that activates the window the window flag just kept quiet. An ordinary launch carries no startup place, so nothing about it changes.
+    #[cfg(windows)]
+    let comes_up_unseen =
+        started_off_every_monitor(&monitor_rects(event_loop.available_monitors()));
+    #[cfg(windows)]
+    if comes_up_unseen {
+        window_builder = window_builder.with_focused(false);
+    }
     let window = window_builder.build(&event_loop)?;
 
     let proxy = event_loop.create_proxy();
@@ -447,6 +455,14 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             " --disable-backgrounding-occluded-windows",
             " --autoplay-policy=no-user-gesture-required",
         ))
+    };
+
+    // The other half of a copy that comes up where nobody can see it. The web view moves focus into itself as it is created unless told not to, and that activates the window — so a window shown without the keyboard would take it back the moment the page existed.
+    #[cfg(windows)]
+    let builder = if comes_up_unseen {
+        builder.with_focused(false)
+    } else {
+        builder
     };
 
     // Windows and macOS both host the web view in the window directly, so this builds against the window itself rather than a container widget.

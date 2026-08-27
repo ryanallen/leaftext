@@ -384,3 +384,84 @@ fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
         );
     }
 }
+
+#[cfg(windows)]
+#[test]
+fn a_window_started_where_nobody_can_see_it_comes_up_without_the_keyboard() {
+    // A build launches its own copy so the owner's window, tabs and place survive it, and the copy is started at a place off every monitor so it never lands over what they are reading. The other half is the keyboard: a window nobody can see must not hold it, or their typing goes into a window they cannot find.
+    //
+    // Two monitors side by side, the second one shorter, so the gap under it is inside the pair's bounding box and on neither screen.
+    let monitors = [(0, 0, 1920, 1080), (1920, 0, 1280, 720)];
+
+    for place in [(0, 0), (960, 540), (1919, 1079), (1920, 0), (3199, 719)] {
+        assert!(
+            !place_is_off_every_monitor(place, &monitors),
+            "{place:?} is on a monitor, so a window there is a window somebody can see"
+        );
+    }
+    for place in [
+        // Where the launcher puts a copy: past the top-left corner of every monitor at once.
+        (-10000, -10000),
+        // One pixel past the right and bottom edges, which a monitor rectangle does not include.
+        (3200, 0),
+        (0, 1080),
+        // Under the shorter monitor: inside the bounding box the pair makes and on neither of them, which is why the answer is asked of each monitor rather than of the box around them.
+        (2000, 900),
+    ] {
+        assert!(
+            place_is_off_every_monitor(place, &monitors),
+            "{place:?} is on none of them, so a window there is one nobody can see"
+        );
+    }
+    // With no monitors listed at all, every place is off screen. A window with nowhere to be seen is exactly the case that must not take the keys.
+    assert!(place_is_off_every_monitor((0, 0), &[]));
+
+    // The launch this test itself runs under carried no startup place, which is every launch but a probe's — so nothing takes the keyboard away from an ordinary copy.
+    assert_eq!(startup_place(), None);
+    assert!(!started_off_every_monitor(&monitors));
+
+    // And the builder asks for no focus on that answer alone, twice: the window itself, and the web view, which moves focus into itself as it is created unless told not to and so activates the window the first call just kept quiet. Held as source because neither builder chain is a value — nothing here can build the window it makes, so the calls are the whole of the claim.
+    let source = include_str!("../../main.rs");
+    assert_eq!(
+        source.matches("with_focused(false)").count(),
+        2,
+        "the window and the web view are the two things that take the keyboard, and one of them no longer asks for none"
+    );
+    // The answer is read once, off the place this copy was started at against the monitors the window library lists, so unplugging one is answered the same way a launcher's own place is.
+    assert!(
+        source
+            .contains("started_off_every_monitor(&monitor_rects(event_loop.available_monitors()))"),
+        "the answer is no longer read off the place this copy was started at"
+    );
+    for chain in [
+        "window_builder = window_builder.with_focused(false)",
+        "builder.with_focused(false)",
+    ] {
+        let arm = source
+            .split("#[cfg(windows)]")
+            .find(|arm| arm.contains(chain))
+            .unwrap_or_else(|| panic!("main.rs builds with `{chain}`"));
+        assert!(
+            arm.contains("if comes_up_unseen"),
+            "`{chain}` runs on something other than whether this copy came up where nobody can see it"
+        );
+    }
+    // And nothing pulls such a window forward later. Both places that surface one — a second launch forwarding a document, and the document this copy was launched with, which arrives down the same arm — go through the one call that leaves it where it stands.
+    let loop_source = include_str!("../event_loop.rs");
+    assert_eq!(
+        loop_source.matches("set_focus()").count(),
+        0,
+        "the event loop pulls the window forward without asking whether anybody can see it"
+    );
+    assert_eq!(
+        loop_source
+            .matches("surface_window(&reader.window)")
+            .count(),
+        2
+    );
+    // Nothing asks for a position through the builder: tao matches one against every monitor and throws it away when it matches none, which is the one case this needs. The place rides on the process instead.
+    assert!(
+        !source.contains("with_position"),
+        "a position asked for through the builder is dropped for exactly the off-screen case"
+    );
+}

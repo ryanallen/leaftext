@@ -97,6 +97,18 @@ export const ALLOWED = [
     because: "the direction reaches the platform's own resize loop, on a window no test can build",
   },
   {
+    file: 'src/app/tests/window.rs',
+    reads: 'main.rs',
+    asserts: '"the window and the web view are the two things that take the keyboard, and one of them no longer asks for none"',
+    because: 'the window builder chain and the web view builder chain, neither of which is a value any test can build',
+  },
+  {
+    file: 'src/app/tests/window.rs',
+    reads: 'event_loop.rs',
+    asserts: '"the event loop pulls the window forward without asking whether anybody can see it"',
+    because: 'surfacing takes a `&tao::window::Window`, and nothing in this suite can build one',
+  },
+  {
     file: 'src/tests/app_shell_chrome_export.rs',
     reads: 'fileops.rs',
     asserts: '"only the PDF and picture renders have a hold to release"',

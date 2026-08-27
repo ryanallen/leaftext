@@ -251,7 +251,24 @@ function Get-VisibleRect([IntPtr]$hwnd, $window) {
   return $frame
 }
 
+# Whether a window stands where nobody can see it. A copy a build launched to watch
+# something is started off every monitor, and the drawing call below needs neither
+# focus nor a place on screen — so pulling such a window forward would move the
+# keyboard off whatever the owner is typing in and buy the picture nothing.
+function Test-OffEveryMonitor([IntPtr]$hwnd) {
+  $at = New-Object LeafShot+RECT
+  if (-not [LeafShot]::GetWindowRect($hwnd, [ref]$at)) { return $false }
+  foreach ($screen in [System.Windows.Forms.Screen]::AllScreens) {
+    if ($screen.Bounds.Contains($at.Left, $at.Top)) { return $false }
+  }
+  return $true
+}
+
 function Take-Foreground([IntPtr]$hwnd, [int]$processId) {
+  if (Test-OffEveryMonitor $hwnd) {
+    Write-Output 'the window sits on no monitor, so it is photographed where it stands rather than pulled in front of whatever the owner is reading'
+    return
+  }
   [void][LeafShot]::SetForegroundWindow($hwnd)
   if ([LeafShot]::GetForegroundWindow() -eq $hwnd) { return }
   # Windows refuses the call from a process that is not already foreground, which a
@@ -559,6 +576,17 @@ try {
     # Refused rather than reported as done: SetForegroundWindow fails when the caller
     # is not already foreground, and a wheel notch then lands in whatever is. Clicks
     # and drags carry their own position, so they do not need this.
+    # A gesture is made at a point on the screen, and a point on no monitor is clamped onto
+    # the desktop — so a click meant for a copy nobody can see lands on whatever the owner
+    # has at that corner, and a wheel notch or a key press goes to whatever holds the
+    # keyboard. Refused rather than reported as made. The picture still comes out: the
+    # drawing call needs neither focus nor a place on screen.
+    $gestures = @($plan | Where-Object { $_.Kind -ne 'wait' })
+    if ($gestures.Count -and (Test-OffEveryMonitor $hwnd)) {
+      throw ("The window sits on no monitor, so a $($gestures[0].Kind) step cannot reach it: a point off every " +
+        'screen is clamped onto the desktop and the gesture lands on whatever the owner has there. Ask the page ' +
+        "to do it with 'just ask eval', which needs no focus and no place, or run this with no steps for the picture alone.")
+    }
     $needsFocus = @($plan | Where-Object { $_.Kind -in 'scroll', 'type', 'key' })
     if ($needsFocus.Count -and [LeafShot]::GetForegroundWindow() -ne $hwnd) {
       throw ("Windows would not bring the app's window forward, and a $($needsFocus[0].Kind) step " +
