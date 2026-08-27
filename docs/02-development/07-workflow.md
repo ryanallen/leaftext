@@ -12,7 +12,7 @@ Work here starts as a written plan and ends as a released version, and the same 
 
 **3. Rank it.** `/pm` puts every live plan into one running order — what is wrong today first, then what other plans are waiting on it, then cost.
 
-**4. Build it.** `/dev` works the phases in order and checks off each box as it is finished, one at a time along the way, in the same edit as the code and test that finish it — never batched at the end of a phase or of the build, and never ahead. The plan is the only place the owner can see a build happening, so a box left empty after its code is written reads as work that has not started. A change that moves something on the screen is proved by sampled positions rather than by classes — see [the motion probe](02-building.md#driving-the-copy-you-already-have-open).
+**4. Build it.** `/dev` works the phases in order and checks off each box as it is finished, one at a time along the way, in the same edit as the code and test that finish it — never batched at the end of a phase or of the build, and never ahead. It reads the ticket through Leaftext, matches the finished box in the returned document-order task list, and sends that task's index and fingerprint to the guarded task action, which writes immediately; a stale fingerprint starts from a fresh read rather than from the generic edit-and-save path. The plan is the only place the owner can see a build happening, so a box left empty after its code is written reads as work that has not started. A change that moves something on the screen is proved by sampled positions rather than by classes — see [the motion probe](02-building.md#driving-the-copy-you-already-have-open).
 
 **5. Gate it.** `/check` runs `/sync-tests` and then `just verify`. Tests come first because `just verify` only runs the tests that exist — a change with no test passes it and proves nothing.
 
@@ -67,7 +67,7 @@ A test is named as a sentence about behavior — `a_staged_update_installs_itsel
 | `/ticket` | Writes a plan, files it under the right subject, and adds its row to the index |
 | `/design` | Reads a plan against the code, fixes it, dates it, and records what was wrong |
 | `/pm` | Ranks every live plan into one running order |
-| `/dev` | Builds a plan's phases in order and stops at the owner's own box, whether that box is open or struck |
+| `/dev` | Builds a plan's phases in order, checks each finished box through Leaftext's guarded task action, and stops at the owner's own box |
 | `/check` | The gate: tests first, then `just verify`. A failure is fixed and re-run, never explained past |
 | `/sync-tests` | Names the test covering each change, writes the missing ones, says what cannot be tested |
 | `/sync-docs` | Makes these pages match the app, takes the screenshots they ask for, regenerates the crawler files |
