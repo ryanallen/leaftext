@@ -86,7 +86,7 @@ The export button in the app bar — shown only while a rendered document is in 
 
 A page whose [diagrams](01-rendering.md#mermaid-diagrams) are not all drawn yet has every one of them drawn before anything is asked, so a document exported the moment it opens carries its drawings rather than empty frames the right size. The reading spinner stands over the page while that runs — a few seconds on a document of a dozen diagrams, about fifteen on one of two hundred — and the save window opens when it is done.
 
-**PDF document** writes the page as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line.
+**PDF document** writes the page as one continuous page: every screen of it, in the theme on screen, with none of the app's controls and the paper ending at the last line. A document taller than the longest page a PDF can hold — about two hundred inches — is still one page: the whole of it is shrunk to fit that page rather than cut into sheets, because a drawing cannot be split across a cut and every cut left a gap above it.
 
 **PNG picture** writes the whole document as one picture: every screen of it, in the theme on screen, with none of the app's controls — the same document the PDF row writes, at the same width, as pixels. It is the row to pick for pasting the page into a chat, a slide or a web page, none of which will take a PDF. A long document makes a large file; nothing is scaled down to keep it small, because a twentieth-size picture of a document is not a picture of it.
 
