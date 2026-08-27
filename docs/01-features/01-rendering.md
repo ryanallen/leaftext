@@ -12,7 +12,7 @@ Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | GFM | Tables, task lists, strikethrough, autolinks |
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji |
 | Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces |
-| Local content | [Images](#images) by relative, absolute, or `file://` path, using the page's width and opening on the whole window |
+| Local content | [Images](#images) by relative, absolute, or `file://` path, using the page's width, opening on the whole window, and saving out as a PNG, a WebP, a PDF or a Markdown document |
 | Safety | Sanitized HTML allowlist |
 | [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
 | [TEI XML](#tei-xml-84000-translations) | 84000 Buddhist-translation format; headings, paragraphs, verse, footnotes |
@@ -252,6 +252,8 @@ Every local picture is measured as the page is built — its size comes out of i
 Images always show the file that is on disk. Overwriting one refreshes it in the open document straight away ([Reload](02-navigation.md#reload)), and every rerender re-reads them, so a replaced picture never lingers as a cached copy. A missing one that later appears is found by that same refresh.
 
 A picture alone in its paragraph reads at the width of the page rather than the width of the writing, the same room a wide [table](#tables) takes. It is never blown up: a picture smaller than the text column stays exactly the size it is, centered, and the words either side keep the measure. Hovering one shows an expand button at its top right, which opens it on the whole window — the picture fitted whole against the dimmed page, with no title bar and nothing written over it. The close mark appears only when the pointer comes near the top right corner; `Escape` and a click on the dimmed page close it as well. A picture Leaftext could not find gets no button, because there is nothing behind the mark to open.
+
+Beside that expand button is a second one that takes the picture out of the note as a file of its own. It asks where the file goes and which kind: on Windows the save window offers PNG, WebP, PDF and Markdown and the ending on the name you give is what gets written, and on a Mac a short menu asks first, since that window shows none of them. A picture already in the format you asked for is copied rather than made again, so the file you get is the file on disk. **PDF** puts the picture on a page of its own at its own size. **Markdown** writes a small document holding the picture, with the picture itself copied into an `imgs` folder beside it under its own name — or a numbered one, where that name is already taken there, so an export never writes over a picture you already have. Nothing about the note changes: an export is a file beside it. A quiet note in the bottom-right corner names the file when it is written, and the name is a press that opens it. A picture served from the web gets no export button, because there is no file here to take. A picture Leaftext could not find gets neither button.
 
 ### Math
 

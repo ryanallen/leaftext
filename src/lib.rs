@@ -263,9 +263,7 @@ pub struct RenderedDocument {
 pub struct LocalImageResponse {
     pub status: u16,
     pub content_type: &'static str,
-    /// What the response says about who may read it, sent as `Access-Control-Allow-Origin`. Empty for every answer but a picture the reading view draws, where it is `*`.
-    ///
-    /// The page is served with `with_html`, so its origin is opaque and every custom-scheme answer is cross-origin to it — which is why the page cannot read one pixel of a picture it is showing without this. The responder hands back whatever file the address names with no test that it is a picture, so `*` on every answer would open every file on the disk to a `fetch` from the page; held to the eleven types the reading view draws, it opens only pictures, which the page can already cause to be drawn.
+    /// Who may read this answer back, sent as `Access-Control-Allow-Origin`. `*` for a picture the reading view draws, empty for everything else — `allow_origin_for` in `markdown/image_protocol.rs` holds the reason.
     pub allow_origin: &'static str,
     pub body: Vec<u8>,
 }

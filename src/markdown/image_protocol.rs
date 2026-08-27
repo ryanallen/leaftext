@@ -208,7 +208,7 @@ pub(crate) fn empty_local_image_response(status: u16) -> LocalImageResponse {
     }
 }
 
-/// Who may read one of these answers back. A picture the reading view draws is readable by the page, which is what lets a reader export one in a format the file is not already in; nothing else is, because nothing else is a picture.
+/// Who may read one of these answers back. The page's own origin is opaque, so without a header it cannot read one pixel of a picture it is showing — which is what an export in another format needs. This function reads whatever file the address names, so `*` on every answer would open every file on the disk to a fetch from the page; the type holds it to pictures, which the page can already cause to be drawn.
 fn allow_origin_for(content_type: &str) -> &'static str {
     if content_type.starts_with("image/") {
         "*"
