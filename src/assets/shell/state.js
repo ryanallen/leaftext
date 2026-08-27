@@ -23,6 +23,14 @@ function leafClampToApp(x, y, width, height, margin) {
   };
 }
 
+// ---- the page color an export paints behind a picture (flow-export.js, image-sheet.js)
+
+// What an export paints before it draws. Two fragments need it for opposite reasons: a diagram has no page to sit on at all, so a pale-ink theme on nothing is a file that looks blank, and a JPEG carries no transparency, so an unpainted canvas encodes as solid black and a logo with alpha comes out on a black rectangle. Either way the answer is the surface the reader was looking at.
+function leafExportBackground() {
+  const style = window.getComputedStyle(document.documentElement);
+  return (style.getPropertyValue('--lt-surface') || '').trim() || '#ffffff';
+}
+
 // ---- what the pane's trail calls its root (library.js, speed-reader.js) ----
 
 // The name the host gives the whole root. A published site sends its own, because a site is one folder and that folder has a name; the desktop sends none, where the leftmost crumb is the vault you are standing in or the word for the whole library. Written by the folder payload in library.js, read by libraryRootLabel() in speed-reader.js.

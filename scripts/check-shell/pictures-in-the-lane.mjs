@@ -468,6 +468,154 @@ export function run() {
     }
   });
 
+  // The JPEG row, driven the same way. It is the third picture in the run and the only one whose format has two spellings, so what is pressed here is what the canvas was asked for and what the row does with a picture already wearing either name.
+  checkLendingTheWindow('the JPEG row is third among the pictures, asks the canvas once at 0.92, and copies a picture already in the format', async () => {
+    const lane = fakeElement('p');
+    lane.tagName = 'P';
+    const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, alt: 'A photo' });
+    picture.setAttribute('src', 'leaf-image://local/imgs/shot.png?leaf-epoch=1');
+    picture.naturalWidth = 40;
+    picture.naturalHeight = 30;
+    lane.querySelector = (selector) => {
+      if (selector === ':scope > img') return picture;
+      if (selector === ':scope > .image-lane-corner') return lane.children.find((child) => child.className === 'image-lane-corner') || null;
+      return null;
+    };
+    booted.bindImageSheet({ querySelectorAll: () => [lane] });
+    const button = lane.children
+      .find((child) => child.className === 'image-lane-corner')
+      .children.find((child) => child.className === 'image-export-open');
+
+    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, canvas: booted.pictureCanvas };
+    const sent = [];
+    const said = [];
+    const asked = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.leafToast = (words) => said.push(words);
+    booted.pictureCanvas = async () => ({
+      width: 40,
+      height: 30,
+      toDataURL: (type, quality) => {
+        asked.push({ type, quality });
+        return 'data:' + type + ';base64,QUJD';
+      },
+    });
+    const press = () => (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+    const answer = (path) => {
+      const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
+      if (!ask) throw new Error('pressing Export asked nowhere for a path');
+      booted.window.leafPicturePathPicked(ask.token, path);
+    };
+    const settle = async () => {
+      for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
+    };
+    const written = () => sent.filter((one) => one.command === 'exportPicture').pop();
+    try {
+      // A PNG asked for as a JPEG: a conversion, and the encoder is named a quality rather than left to a default a web view update could move under every file already written.
+      press();
+      answer('/out/shot.jpg');
+      await settle();
+      const file = written();
+      if (!file) throw new Error(`the JPEG row wrote nothing: ${said.join(' / ') || 'and said nothing either'}`);
+      if (file.format !== 'jpg' || file.data !== 'QUJD') throw new Error('the JPEG row carried no file for the host to write');
+      if (asked.length !== 1) throw new Error(`the canvas was asked ${asked.length} times for one file`);
+      if (asked[0].type !== 'image/jpeg') throw new Error(`the canvas was asked for ${JSON.stringify(asked[0].type)} rather than a JPEG`);
+      if (asked[0].quality !== 0.92) throw new Error(`the JPEG was written at ${asked[0].quality} rather than at the named 0.92`);
+
+      // Either spelling already on disk, asked for as the row's own word: copied, so nothing is drawn at all and a lossy source is not re-encoded into a bigger file.
+      for (const spelled of ['holiday.jpg', 'holiday.jpeg']) {
+        picture.setAttribute('src', 'leaf-image://local/imgs/' + spelled + '?leaf-epoch=1');
+        asked.length = 0;
+        press();
+        answer('/out/copy.jpg');
+        await settle();
+        if (asked.length) throw new Error(`a ${spelled} exported as a JPEG went through the canvas rather than being copied`);
+        if (written().data) throw new Error(`a ${spelled} exported as a JPEG was re-encoded rather than copied`);
+      }
+
+      // The run the reader is offered, read off the words the page says when the ending is none of them: the rows in the order they are drawn in, which is the order the window offers and the order a bare name is built off. The three pictures together, JPEG under the two it is measured against.
+      picture.setAttribute('src', 'leaf-image://local/imgs/shot.png?leaf-epoch=1');
+      said.length = 0;
+      press();
+      answer('/out/shot.gif');
+      await settle();
+      if (!said.some((words) => words.includes('PNG, WebP, JPEG, PDF, Markdown'))) {
+        throw new Error(`the picture export names its rows as: ${said.join(' / ') || 'nothing'}`);
+      }
+
+      // A canvas answering with a PNG when it was asked for a JPEG: saving that under a `.jpg` name is a file nobody can open, so the type in the answer is what settles it.
+      picture.setAttribute('src', 'leaf-image://local/imgs/shot.png?leaf-epoch=1');
+      booted.pictureCanvas = async () => ({ width: 40, height: 30, toDataURL: () => 'data:image/png;base64,QUJD' });
+      const before = sent.length;
+      said.length = 0;
+      press();
+      answer('/out/shot.jpg');
+      await settle();
+      if (sent.length !== before + 1) throw new Error('a canvas that could not write JPEG still wrote a file under that name');
+      if (!said.some((words) => /cannot write JPEG/.test(words))) {
+        throw new Error(`a canvas that could not write JPEG said: ${said.join(' / ') || 'nothing'}`);
+      }
+    } finally {
+      booted.ipc.postMessage = was.send;
+      booted.leafToast = was.toast;
+      booted.pictureCanvas = was.canvas;
+    }
+  });
+
+  // What a JPEG does to a picture that came with transparency, driven over the drawing itself rather than over a canvas standing in for it. Every way this breaks is silent: an unpainted canvas encodes as solid black rather than failing, read back off a running window at `0, 0, 0, 255`, so a logo with alpha would come out on a black rectangle and nothing would say so.
+  checkLendingTheWindow('a JPEG is drawn onto the surface color the reader was looking at, and the lossless rows are not', async () => {
+    const drawn = [];
+    const ink = {
+      fillStyle: '',
+      fillRect(x, y, width, height) {
+        drawn.push({ what: 'fill', color: ink.fillStyle, x, y, width, height });
+      },
+      drawImage() {
+        drawn.push({ what: 'picture' });
+      },
+    };
+    const madeCanvas = { width: 0, height: 0, getContext: () => ink, toDataURL: (type) => 'data:' + type + ';base64,QUJD' };
+    const was = { create: booted.document.createElement, image: booted.Image };
+    booted.document.createElement = (tag) => (String(tag) === 'canvas' ? madeCanvas : was.create(tag));
+    // The stand-in page has no Image of its own, and what the export does with one is make it, ask anonymously and wait: answering on the next turn is the whole of what a picture that loads does here.
+    booted.Image = class {
+      set src(address) {
+        this.__src = address;
+        Promise.resolve().then(() => this.onload && this.onload());
+      }
+      get src() {
+        return this.__src;
+      }
+    };
+    booted.document.documentElement.style.setProperty('--lt-surface', '#101014');
+    const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, naturalWidth: 40, naturalHeight: 30 });
+    picture.currentSrc = 'leaf-image://local/imgs/logo.png?leaf-epoch=1';
+    try {
+      await booted.pictureFileBase64(picture, 'image/jpeg');
+      if (drawn.length !== 2 || drawn[0].what !== 'fill' || drawn[1].what !== 'picture') {
+        throw new Error(`a JPEG drew ${JSON.stringify(drawn.map((one) => one.what))} rather than the page under the picture`);
+      }
+      if (drawn[0].color !== '#101014') {
+        throw new Error(`a JPEG was painted onto ${JSON.stringify(drawn[0].color)} rather than onto the surface the reader was looking at`);
+      }
+      if (drawn[0].width !== 40 || drawn[0].height !== 30) {
+        throw new Error('the paint under a JPEG does not cover the whole canvas, so the corners come out black');
+      }
+      drawn.length = 0;
+      for (const type of ['image/png', 'image/webp']) {
+        await booted.pictureFileBase64(picture, type);
+        if (drawn.some((one) => one.what === 'fill')) {
+          throw new Error(`a ${type} was flattened onto the page, and it is a format that keeps what it came with`);
+        }
+        drawn.length = 0;
+      }
+    } finally {
+      booted.document.createElement = was.create;
+      booted.Image = was.image;
+      booted.document.documentElement.style.removeProperty('--lt-surface');
+    }
+  });
+
   // The one thing the stand-in page cannot be asked at all: whether the pixels come back. It has no canvas, so what is held here is the request the export makes — anonymous cross-origin, which is the whole of what changed in the page, and a fresh request rather than the copy on screen, which is tainted and always will be.
   check('a conversion asks for the picture again in anonymous cross-origin mode', () => {
     const fragment = readFileSync(join(root, 'src/assets/shell/image-sheet.js'), 'utf8');

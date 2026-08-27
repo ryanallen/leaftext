@@ -88,6 +88,62 @@ fn a_page_picture_is_measured_off_its_own_header_or_refused() {
     );
     assert_eq!(picture_pixel_size(&png(1137, 29077)[..20]), None);
     assert_eq!(picture_pixel_size(b"RIFF\0\0\0\0WEBP"), None);
+
+    // A JPEG, which is the one of the three whose sizes are not at a fixed offset: the opening marker, however many segments the encoder wrote, then the frame header carrying the height first and the width second. `before` is what an encoder puts in front of it — a thumbnail, a color profile, the quantization tables — and every one of them has to be stepped over by its own length.
+    let jpeg = |width: u16, height: u16, before: &[(u8, usize)]| {
+        let mut bytes = vec![0xff, 0xd8];
+        for (marker, payload) in before {
+            bytes.extend_from_slice(&[0xff, *marker]);
+            bytes.extend_from_slice(&((payload + 2) as u16).to_be_bytes());
+            bytes.extend(std::iter::repeat_n(0u8, *payload));
+        }
+        // The frame header: eight bytes of payload, opening with the precision.
+        bytes.extend_from_slice(&[0xff, 0xc0, 0x00, 0x11, 0x08]);
+        bytes.extend_from_slice(&height.to_be_bytes());
+        bytes.extend_from_slice(&width.to_be_bytes());
+        bytes.extend_from_slice(&[0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        bytes
+    };
+    // Nothing in front of the frame header, and the ordinary case with three segments in front of it.
+    assert_eq!(
+        picture_pixel_size(&jpeg(1137, 4000, &[])),
+        Some((1137, 4000))
+    );
+    assert_eq!(
+        picture_pixel_size(&jpeg(1137, 29077, &[(0xe0, 14), (0xe2, 3144), (0xdb, 65)])),
+        Some((1137, 29077))
+    );
+    // The three markers sharing the frame header's own range that are not frame headers: stepped over rather than read as sizes.
+    assert_eq!(
+        picture_pixel_size(&jpeg(800, 600, &[(0xc4, 29), (0xcc, 4), (0xc8, 2)])),
+        Some((800, 600))
+    );
+    // A progressive frame, which is the other header an encoder writes and carries its sizes in the same place.
+    let mut progressive = jpeg(640, 480, &[]);
+    // The frame header opens this one, so its marker is the fourth byte of the file.
+    progressive[3] = 0xc2;
+    assert_eq!(picture_pixel_size(&progressive), Some((640, 480)));
+    // The tallest side the format holds at all.
+    assert_eq!(
+        picture_pixel_size(&jpeg(1137, 65535, &[])),
+        Some((1137, 65535))
+    );
+    // A frame header claiming no pixels is not a picture, the way a PNG one is not.
+    assert_eq!(picture_pixel_size(&jpeg(0, 600, &[])), None);
+    assert_eq!(picture_pixel_size(&jpeg(800, 0, &[])), None);
+    // A file that opens as a JPEG and never reaches a frame header: the chain runs off the end, which is what a page the format could not hold would come back as.
+    assert_eq!(picture_pixel_size(&[0xff, 0xd8, 0xff, 0xd9]), None);
+    assert_eq!(picture_pixel_size(&jpeg(1137, 4000, &[])[..8]), None);
+    // A segment claiming a length shorter than the two bytes the length itself takes, which would walk the reader backwards for ever.
+    assert_eq!(
+        picture_pixel_size(&[0xff, 0xd8, 0xff, 0xe0, 0x00, 0x00, 0, 0]),
+        None
+    );
+    // A byte where a marker has to be: not a JPEG, whatever it opened with.
+    assert_eq!(
+        picture_pixel_size(&[0xff, 0xd8, 0x41, 0x41, 0x41, 0x41]),
+        None
+    );
 }
 
 #[test]
@@ -97,7 +153,13 @@ fn only_the_endings_the_save_window_offers_reach_the_engine() {
         page_picture_format("png").is_some(),
         "the PNG row is offered on both platforms and has to be writable on both"
     );
-    for unoffered in ["pdf", "html", "htm", "gif", "jpg", "jpeg", "svg", "", "PNG"] {
+    for offered in ["jpg", "jpeg"] {
+        assert!(
+            page_picture_format(offered).is_some(),
+            "the JPEG row is offered on both platforms, so both its spellings have to be writable on both"
+        );
+    }
+    for unoffered in ["pdf", "html", "htm", "gif", "svg", "", "PNG"] {
         assert!(
             page_picture_format(unoffered).is_none(),
             "{unoffered} is not a picture row this window offers, so it must not reach the engine"
@@ -130,6 +192,19 @@ fn only_the_endings_the_save_window_offers_reach_the_engine() {
             );
         }
     }
+
+    // The table's own rows, in the order the window offers them: PDF leads because Windows names a file with no ending off the first, and the three pictures run together at the foot with JPEG under the two it is measured against.
+    assert_eq!(
+        PAGE_EXPORT_FORMATS,
+        &[
+            ("PDF document", &["pdf"][..]),
+            ("Web page", &["html", "htm"][..]),
+            ("PNG picture", &["png"][..]),
+            ("WebP picture", &["webp"][..]),
+            ("JPEG picture", &["jpg", "jpeg"][..]),
+        ],
+        "the page window offers a format in an order that names a bare file wrongly, or splits its pictures"
+    );
 
     // And they are the one table's own rows, in its own order — a filter that reordered or invented one would be a second table wearing the first one's name.
     let every: Vec<&str> = PAGE_EXPORT_FORMATS
@@ -1206,6 +1281,7 @@ fn the_picture_save_window_leads_with_png_and_offers_what_the_host_writes() {
         &[
             ("PNG image", &["png"][..]),
             ("WebP image", &["webp"][..]),
+            ("JPEG image", &["jpg", "jpeg"][..]),
             ("PDF document", &["pdf"][..]),
             ("Markdown", DocumentFormat::Markdown.extensions()),
         ],
@@ -1429,6 +1505,60 @@ fn a_picture_already_in_the_format_asked_for_comes_out_byte_for_byte() {
     assert!(
         !empty.exists(),
         "a conversion that made no bytes still wrote an empty file"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// The JPEG row, which is the one whose format has two spellings. `jpg` is the word the row travels under and `jpeg` is a name a picture on disk may already wear, so the copy rule is asked of the row rather than of the one word — otherwise a `.jpeg` picked as a `.jpg` is re-encoded, which on a lossy source loses quality to make a bigger file.
+#[test]
+fn a_jpeg_picture_is_copied_under_either_spelling_and_a_conversion_is_what_the_page_sent() {
+    let dir = std::env::temp_dir().join(format!("leaf-picture-rows-3-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("the folder is made");
+
+    // A real JPEG's first bytes, so a file written from them reads as one.
+    let jpeg = b"\xff\xd8\xff\xe0the picture's own bytes".to_vec();
+    let encoded = "/9j/4HRoZSBwaWN0dXJlJ3Mgb3duIGJ5dGVz";
+
+    // Every spelling a picture on disk may wear, asked for as the row's own word: copied, and the data the page sent is not what lands.
+    for spelled in ["holiday.jpg", "holiday.jpeg", "HOLIDAY.JPEG"] {
+        let source = dir.join(spelled);
+        std::fs::write(&source, &jpeg).expect("the picture is written");
+        let target = dir.join(format!("out-{spelled}"));
+        export_picture(None, "jpg", &source, &target, "", "bm90IHRoZSBmaWxl");
+        assert_eq!(
+            std::fs::read(&target).expect("the copy is there"),
+            jpeg,
+            "{spelled} exported as a JPEG was re-encoded rather than copied, so it is a different file from the one on disk"
+        );
+    }
+
+    // JPEG out of a PNG: a conversion, so what the page's canvas wrote is what is written.
+    let png = dir.join("shot.png");
+    std::fs::write(&png, b"\x89PNG\r\n\x1a\nthe picture's own bytes")
+        .expect("the picture is written");
+    let converted = dir.join("out.jpg");
+    export_picture(None, "jpg", &png, &converted, "", encoded);
+    assert_eq!(
+        std::fs::read(&converted).expect("the converted file is there"),
+        jpeg,
+        "a converted picture is not the file the page's canvas wrote"
+    );
+    assert!(
+        std::fs::read(&converted)
+            .unwrap()
+            .starts_with(b"\xff\xd8\xff"),
+        "the file written under .jpg does not read as a JPEG"
+    );
+
+    // The reader typed the other spelling into the save window, which Windows keeps where the chosen row permits it: the same row, so the same file.
+    let spelled = dir.join("out.jpeg");
+    export_picture(None, "jpg", &png, &spelled, "", encoded);
+    assert_eq!(
+        std::fs::read(&spelled).expect("the converted file is there"),
+        jpeg,
+        "a name typed with the row's other spelling wrote something else"
     );
 
     let _ = std::fs::remove_dir_all(&dir);

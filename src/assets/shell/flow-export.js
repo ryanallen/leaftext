@@ -23,12 +23,6 @@ const DIAGRAM_EXPORTS = [
 
 let diagramExportSeq = 0;
 
-// The page color behind the diagram. A drawing on its own has no page to sit on, and a pale-ink theme on nothing is a file that looks blank.
-function diagramExportBackground() {
-  const style = window.getComputedStyle(document.documentElement);
-  return (style.getPropertyValue('--lt-surface') || '').trim() || '#ffffff';
-}
-
 // Text as base64, through its own bytes: `btoa` takes one character per byte, so a label with an accent or an emoji in it has to be encoded first.
 function diagramBase64(text) {
   const bytes = new TextEncoder().encode(text);
@@ -73,7 +67,7 @@ async function diagramDrawingSvg(source) {
   behind.setAttribute('y', top);
   behind.setAttribute('width', width);
   behind.setAttribute('height', height);
-  behind.setAttribute('fill', diagramExportBackground());
+  behind.setAttribute('fill', leafExportBackground());
   root.insertBefore(behind, root.firstChild);
   return new XMLSerializer().serializeToString(root);
 }
@@ -92,7 +86,7 @@ function diagramCanvas(svgText) {
         return;
       }
       // Painted again here: a picture has no transparency to fall back on once it is dropped into something with a page color of its own.
-      ink.fillStyle = diagramExportBackground();
+      ink.fillStyle = leafExportBackground();
       ink.fillRect(0, 0, canvas.width, canvas.height);
       ink.drawImage(picture, 0, 0, canvas.width, canvas.height);
       resolve(canvas);

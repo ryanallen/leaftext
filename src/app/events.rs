@@ -536,9 +536,11 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         format: Option<String>,
     },
-    /// Write a picture in the document out as a file of its own. `format` is `md`, `png` or `webp`; the `pdf` row never arrives here — it is printed by `printPicturePdf` instead. `source` is the address the picture is drawn from, which the host resolves back to the file on disk; `alt` is the words the note gave it, which only the `md` row writes down. `path` is where it goes, answered by `pickPicturePath` a moment earlier — the host opens no window of its own here.
+    /// Write a picture in the document out as a file of its own. `format` is `md`, `png`, `webp` or `jpg`; the `pdf` row never arrives here — it is printed by `printPicturePdf` instead. `source` is the address the picture is drawn from, which the host resolves back to the file on disk; `alt` is the words the note gave it, which only the `md` row writes down. `path` is where it goes, answered by `pickPicturePath` a moment earlier — the host opens no window of its own here.
     ///
-    /// `data` is empty for `md`, which copies the file rather than encoding anything, and for a picture already in the format asked for, which the host copies byte for byte because that file is smaller, lossless and exact. Otherwise it is a finished file the page's own canvas wrote — for the PNG row as well as the WebP one, because the host's encoder leaves every row unfiltered for flat fill and a photograph is not flat, and because the pixels would cross as about twenty times the bytes of the file they come to.
+    /// `data` is empty for `md`, which copies the file rather than encoding anything, and for a picture already in the format asked for, which the host copies byte for byte because that file is smaller, lossless and exact. Otherwise it is a finished file the page's own canvas wrote — for the PNG row as well as the WebP and JPEG ones, because the host's encoder leaves every row unfiltered for flat fill and a photograph is not flat, and because the pixels would cross as about twenty times the bytes of the file they come to.
+    ///
+    /// The `jpg` row is the one whose file is written over a painted canvas: JPEG carries no transparency and an unpainted one encodes as solid black, so what arrives is the picture on the page's own surface color.
     #[serde(rename = "exportPicture")]
     ExportPicture {
         format: String,

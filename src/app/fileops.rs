@@ -310,6 +310,7 @@ pub(crate) const PAGE_EXPORT_FORMATS: &[(&str, &[&str])] = &[
     ("Web page", &["html", "htm"]),
     ("PNG picture", &["png"]),
     ("WebP picture", &["webp"]),
+    ("JPEG picture", &["jpg", "jpeg"]),
 ];
 
 /// The rows *this* platform writes, which is the table above with anything it cannot make taken out.
@@ -900,6 +901,11 @@ pub(crate) const PICTURE_TOO_BIG: &str =
 #[cfg(target_os = "windows")]
 const WEBP_QUALITY: u32 = 82;
 
+/// The quality a JPEG page is written at. The 0.92 every other JPEG this app writes is written at, spelled the way each engine wants it: Windows takes a whole number out of a hundred and the Mac bitmap takes a fraction of one.
+///
+/// Named rather than left to whatever an engine defaults to. Measured in a running window, this web view's own default is this same number today — and a default is a number somebody else owns, which could move under an update with nothing in the tree recording that every file the app writes had moved with it.
+const JPEG_QUALITY_HUNDREDTHS: u32 = 92;
+
 /// How the web view's own engine is asked for one of the picture formats: the name it knows it by.
 ///
 /// The name and nothing else, because a quality is one platform's business — the Windows engine takes one for WebP and the Mac bitmap takes none — and a field only one of them can read is a field the other has to be told to ignore.
@@ -919,14 +925,21 @@ pub(crate) fn page_picture_format(extension: &str) -> Option<PictureFormat> {
         "webp" => Some(PictureFormat {
             engine_name: "webp",
         }),
+        // Both spellings, because a reader may type either and Windows keeps a typed ending where the chosen row permits it. On both platforms, unlike the WebP row above: this one is the format that every engine writes, the Mac bitmap included.
+        "jpg" | "jpeg" => Some(PictureFormat {
+            engine_name: "jpeg",
+        }),
         _ => None,
     }
 }
 
 /// How wide and tall a picture says it is, read off its own header.
 ///
-/// A PNG opens with its signature and the `IHDR` chunk it is required to carry first: four bytes of length, the name, then the two sizes. A WebP is a RIFF file whose `VP8X` chunk carries both sizes as three little-endian bytes each, holding one less than the real value. Anything else — a file with no bytes in it most of all — is not a picture, which is the answer an engine gives when a format cannot hold a page this size.
+/// A PNG opens with its signature and the `IHDR` chunk it is required to carry first: four bytes of length, the name, then the two sizes. A WebP is a RIFF file whose `VP8X` chunk carries both sizes as three little-endian bytes each, holding one less than the real value. A JPEG carries its two sizes in a frame header somewhere after a run of segments nobody here reads, so it is the one format that has to be walked. Anything else — a file with no bytes in it most of all — is not a picture, which is the answer an engine gives when a format cannot hold a page this size.
 pub(super) fn picture_pixel_size(bytes: &[u8]) -> Option<(u32, u32)> {
+    if bytes.len() >= 4 && bytes[0] == 0xff && bytes[1] == 0xd8 {
+        return jpeg_pixel_size(bytes);
+    }
     if bytes.len() >= 24 && &bytes[..8] == b"\x89PNG\r\n\x1a\n" && &bytes[12..16] == b"IHDR" {
         let width = u32::from_be_bytes(bytes[16..20].try_into().ok()?);
         let height = u32::from_be_bytes(bytes[20..24].try_into().ok()?);
@@ -944,6 +957,51 @@ pub(super) fn picture_pixel_size(bytes: &[u8]) -> Option<(u32, u32)> {
         }
         // A picture short enough for the plain header arrived, which is the question this answers; a second parser for its two sizes would be read by nothing.
         return Some((0, 0));
+    }
+    None
+}
+
+/// A JPEG's two sizes, off the frame header it carries somewhere after its opening marker.
+///
+/// The other two formats above put their sizes at a fixed offset and this one does not: a JPEG is a chain of segments — the thumbnail, the color profile, the quantization tables — and the frame header naming the picture's size sits after however many of them the encoder wrote. So the chain is walked, reading each segment's own length and stepping over it, until a `SOF` marker turns up.
+///
+/// Every marker in `C0`–`CF` is a frame header except three that share the range and are not: the Huffman tables, the arithmetic conditioning, and one the specification reserves. Those three carry a length like any other segment and are stepped over.
+///
+/// A chain that runs off the end, or one whose segment claims a length shorter than the two bytes the length itself takes, is not a picture — which is the same answer as a file with no bytes in it, and the answer that tells a reader a format could not hold their page.
+fn jpeg_pixel_size(bytes: &[u8]) -> Option<(u32, u32)> {
+    let mut at = 2;
+    while at + 1 < bytes.len() {
+        if bytes[at] != 0xff {
+            return None;
+        }
+        let marker = bytes[at + 1];
+        // A run of `ff` before a marker is padding an encoder is allowed to write, so only one of the pair is spent.
+        if marker == 0xff {
+            at += 1;
+            continue;
+        }
+        at += 2;
+        // The markers that stand alone: the two ends of the file, the restarts inside it, and the one-byte temporary.
+        if marker == 0x01 || (0xd0..=0xd9).contains(&marker) {
+            continue;
+        }
+        if at + 1 >= bytes.len() {
+            return None;
+        }
+        let length = usize::from(u16::from_be_bytes([bytes[at], bytes[at + 1]]));
+        if length < 2 {
+            return None;
+        }
+        if (0xc0..=0xcf).contains(&marker) && !matches!(marker, 0xc4 | 0xc8 | 0xcc) {
+            // Precision, then the height and the width — in that order, which is the one place a JPEG puts them the other way round from every table in this file.
+            if at + 6 >= bytes.len() {
+                return None;
+            }
+            let height = u32::from(u16::from_be_bytes([bytes[at + 3], bytes[at + 4]]));
+            let width = u32::from(u16::from_be_bytes([bytes[at + 5], bytes[at + 6]]));
+            return (width > 0 && height > 0).then_some((width, height));
+        }
+        at += length;
     }
     None
 }
@@ -968,9 +1026,10 @@ pub(crate) fn capture_page(
     use wry::WebViewExtWindows;
 
     let view = page.webview();
-    // The one format whose encoder takes a quality, asked for by name here rather than carried on the format: the other platform's encoder takes none, and a field it cannot read is one it has to be told to ignore.
+    // The two lossy formats, asked for by name here rather than carried on the format: what a quality is spelled as is the engine's business, and this call's is a whole number out of a hundred where the other platform's is a fraction of one.
     let quality = match format.engine_name {
         "webp" => format!(",\"quality\":{WEBP_QUALITY}"),
+        "jpeg" => format!(",\"quality\":{JPEG_QUALITY_HUNDREDTHS}"),
         _ => String::new(),
     };
     // The clip's own scale rides on the window's, so one over it is what brings a device pixel back to a CSS one.
@@ -1026,9 +1085,14 @@ pub(crate) fn capture_page(
     height: f64,
     format: &PictureFormat,
 ) -> Result<PageShot, String> {
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
     use objc2::{AllocAnyThread, MainThreadMarker};
-    use objc2_app_kit::{NSBitmapImageFileType, NSBitmapImageRep, NSImage};
-    use objc2_foundation::{NSData, NSDictionary, NSError, NSPoint, NSRect, NSSize};
+    use objc2_app_kit::{
+        NSBitmapImageFileType, NSBitmapImageRep, NSBitmapImageRepPropertyKey, NSImage,
+        NSImageCompressionFactor,
+    };
+    use objc2_foundation::{NSData, NSDictionary, NSError, NSNumber, NSPoint, NSRect, NSSize};
     use objc2_web_kit::WKPDFConfiguration;
     use std::sync::mpsc;
     use wry::WebViewExtMacOS;
@@ -1036,11 +1100,14 @@ pub(crate) fn capture_page(
     /// Long enough for a document of any length this app opens, short enough that a render which never lands does not take the window with it.
     const RENDER_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
 
-    // Asked before anything is rendered: this bitmap writes PNG and nothing else, so a format it cannot make is refused rather than written under the wrong ending. `page_picture_format` offers this platform no other row, and reading it here is what keeps the two answers one answer.
+    // Asked before anything is rendered: this bitmap writes PNG and JPEG and not WebP, so a format it cannot make is refused rather than written under the wrong ending. `page_picture_format` offers this platform the same two rows, and reading it here is what keeps the two answers one answer.
     let kind = match format.engine_name {
         "png" => NSBitmapImageFileType::PNG,
+        "jpeg" => NSBitmapImageFileType::JPEG,
         other => return Err(format!("a page is not written as a {other} here.")),
     };
+    // Whether this format takes a quality at all. PNG is lossless and takes none, so its dictionary stays the empty one this call has always passed.
+    let lossy = kind == NSBitmapImageFileType::JPEG;
     let main = MainThreadMarker::new()
         .ok_or_else(|| "a picture is rendered on the window's own thread".to_string())?;
     let view = page.webview();
@@ -1064,7 +1131,15 @@ pub(crate) fn capture_page(
             drawn.setSize(NSSize::new(width, height));
             let tiff = drawn.TIFFRepresentation()?;
             let bitmap = NSBitmapImageRep::imageRepWithData(&tiff)?;
-            unsafe { bitmap.representationUsingType_properties(kind, &NSDictionary::new()) }
+            // What a quality is spelled as here: a fraction of one, where the Windows call takes a whole number out of a hundred. Built where it is spent rather than carried in, so nothing crosses into the block but the one flag.
+            let how: Retained<NSDictionary<NSBitmapImageRepPropertyKey, AnyObject>> = if lossy {
+                let factor = NSNumber::new_f64(f64::from(JPEG_QUALITY_HUNDREDTHS) / 100.0);
+                let value: &AnyObject = &factor;
+                NSDictionary::from_slices(&[unsafe { NSImageCompressionFactor }], &[value])
+            } else {
+                NSDictionary::new()
+            };
+            unsafe { bitmap.representationUsingType_properties(kind, &how) }
         });
         let _ = answered.try_send(
             picture
@@ -1103,10 +1178,13 @@ pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &[&str])] = &[
 
 /// Every format a picture in a document can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first row, so PNG leads — a reader pressing Export on a picture wants a picture. The diagram's own table leads with Markdown, which makes this order a deliberate difference rather than a copy.
 ///
-/// Markdown asks `src/format.rs` for its spellings the way the diagram table does, so this window writes every ending the app opens. The pictures are not formats it knows, so they stay written out. JPEG is not here: [picture-and-page-export-as-jpg](../../../docs/features/reading/picture-and-page-export-as-jpg.md) owns that row.
+/// Markdown asks `src/format.rs` for its spellings the way the diagram table does, so this window writes every ending the app opens. The pictures are not formats it knows, so they stay written out.
+///
+/// The three pictures run together, JPEG under the two it is measured against: it is never the smaller file — the closest it comes to WebP is 1.4 times on a screenshot — so what its row wins is reach into a tool that takes a `.jpg` and nothing else.
 pub(crate) const PICTURE_EXPORT_FORMATS: &[(&str, &[&str])] = &[
     ("PNG image", &["png"]),
     ("WebP image", &["webp"]),
+    ("JPEG image", &["jpg", "jpeg"]),
     ("PDF document", &["pdf"]),
     ("Markdown", DocumentFormat::Markdown.extensions()),
 ];
@@ -1436,6 +1514,17 @@ fn picture_export_label(extension: &str) -> Option<&'static str> {
         .map(|(label, _)| *label)
 }
 
+/// Every spelling the row holding this ending permits.
+///
+/// The copy rule below asks this rather than comparing two endings as words: JPEG is written `jpg` and `jpeg`, so a `.jpeg` on disk asked for as a `.jpg` is the same picture in the same format and re-encoding it would lose quality to make a bigger file.
+fn picture_export_endings(extension: &str) -> &'static [&'static str] {
+    PICTURE_EXPORT_FORMATS
+        .iter()
+        .find(|(_, endings)| endings.contains(&extension))
+        .map(|(_, endings)| *endings)
+        .unwrap_or(&[])
+}
+
 /// Write a picture in the document out as a file of its own, in whichever row the reader picked.
 ///
 /// Nothing about the open document changes. An export is a file beside it.
@@ -1461,8 +1550,8 @@ pub(crate) fn export_picture(
     if format == "pdf" {
         return;
     }
-    // A source already in the format asked for is copied rather than re-encoded: the copy is smaller, lossless and exact, where a round trip through the page's canvas is none of the three. Measured on the one screenshot this tree has weighed, a canvas PNG came to 484 KB where the file on disk was 145 KB.
-    if picture_source_ending(source) == format {
+    // A source already in the format asked for is copied rather than re-encoded: the copy is smaller, lossless and exact, where a round trip through the page's canvas is none of the three. Measured on the one screenshot this tree has weighed, a canvas PNG came to 484 KB where the file on disk was 145 KB. Asked of the row rather than of the one word, so a `.jpeg` picked as a `.jpg` is the copy it is.
+    if picture_export_endings(format).contains(&picture_source_ending(source).as_str()) {
         match fs::copy(source, target) {
             Ok(_) => run_page_script(
                 webview,
@@ -1497,7 +1586,7 @@ pub(crate) fn export_picture(
     }
 }
 
-/// The format a picture on disk is already in, spelled the way the export rows spell it. `jfif` and `jpeg` are left alone: neither row here names them.
+/// The format a picture on disk is already in, spelled the way the export rows spell it. `jfif` is left alone: no row here names it, so a picture under that ending is re-encoded rather than copied.
 fn picture_source_ending(source: &Path) -> String {
     source
         .extension()

@@ -142,6 +142,7 @@ const PAGE_EXPORT_HINTS = {
   html: 'The page as it looks here, with its stylesheet and pictures in a folder beside it',
   png: 'The whole document as one picture, in the theme on screen',
   webp: 'The same picture, at about half the file — and only where it fits',
+  jpg: 'The same picture, for anything that will not take a WebP',
 };
 // The row every host has: a host that named none can still print, which is what Export has always done on a published site.
 const PAGE_EXPORT_FALLBACK = [{ id: 'pdf', label: 'PDF' }];

@@ -241,6 +241,47 @@ export function run() {
     }
   });
 
+  // The JPEG row, which is the one the host offers on both platforms and the one a reader picks when whatever they are handing the file to will not take a WebP. Driven rather than read: the menu is drawn from what the host injected, so a row with no words under it and a row that sends the wrong ending both look right in the source.
+  check('A Mac offered the JPEG row draws it last, with its own line, and pressing it asks for that ending', () => {
+    const sent = [];
+    const page = macPage({
+      ipc: { postMessage: (message) => sent.push(JSON.parse(message)) },
+      // The whole of what the desktop seeds today, in the order the save window offers it.
+      __leafPageExports: [
+        { id: 'pdf', label: 'PDF document' },
+        { id: 'html', label: 'Web page' },
+        { id: 'png', label: 'PNG picture' },
+        { id: 'webp', label: 'WebP picture' },
+        { id: 'jpg', label: 'JPEG picture' },
+      ],
+    });
+    const labels = macMenuRows(page);
+    if (labels[labels.length - 1] !== 'JPEG picture') {
+      throw new Error(`the menu ends with ${JSON.stringify(labels[labels.length - 1])} rather than with the row that goes under the pictures`);
+    }
+    // Every row this page has words for says what it is, and the menu carries them as the button's own title. A row drawn with nothing there is one a reader has to guess at, and JPEG is the row most worth explaining.
+    const surface = page.document.getElementById('appSurface');
+    const menu = surface.children.find((child) => String(child.className || '').includes('flow-menu'));
+    let jpeg = null;
+    (function walk(node) {
+      for (const child of node.children) {
+        const text = String(child.textContent || '').trim();
+        if (String(child.className || '').includes('flow-menu-item') && text.startsWith('JPEG picture')) jpeg = child;
+        else walk(child);
+      }
+    })(menu);
+    if (!jpeg) throw new Error('the JPEG row was drawn and cannot be found to press');
+    if (!String(jpeg.title || '').includes('WebP')) {
+      throw new Error(`the JPEG row carries no line saying what it is for: ${JSON.stringify(String(jpeg.title || ''))}`);
+    }
+    (jpeg.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+    const asked = sent.filter((one) => one.command === 'exportPdf').pop();
+    if (!asked) throw new Error('pressing the JPEG row asked nowhere for a file');
+    if (asked.format !== 'jpg') {
+      throw new Error(`pressing the JPEG row asked for ${JSON.stringify(asked.format)}, so the panel would be left the wrong row`);
+    }
+  });
+
   check('A host that names no rows still prints, and offers nothing it cannot write', () => {
     const sent = [];
     // A browser reading the published site: no save window, no disk, and `exportPdf` reaching `window.print()`. Its own seeded row is the one it can honestly answer.

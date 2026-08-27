@@ -150,6 +150,8 @@ objc2-foundation = { version = "0.3.2", default-features = false, features = [
     "NSObject",
     "NSString",
     "NSURL",
+    # The one number this binary hands Foundation: the quality a JPEG page is written at, which the bitmap takes as an `NSImageCompressionFactor` in the properties dictionary and will take as nothing else.
+    "NSValue",
 ] }
 
 [target.'cfg(windows)'.build-dependencies]

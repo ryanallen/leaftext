@@ -61,6 +61,7 @@ function openImageSheet(picture, opener) {
 const PICTURE_EXPORTS = [
   { id: 'png', endings: ['png'], label: 'PNG', hint: 'The picture, to paste anywhere' },
   { id: 'webp', endings: ['webp'], label: 'WebP', hint: 'The same picture, about half the file' },
+  { id: 'jpg', endings: ['jpg', 'jpeg'], label: 'JPEG', hint: 'For anything that will not take a WebP' },
   { id: 'pdf', endings: ['pdf'], label: 'PDF', hint: 'The picture on a page of its own' },
   // Every spelling `src/format.rs` names for Markdown, written out because the browser host injects no format list at all.
   { id: 'md', endings: ['md', 'markdown', 'mdown'], label: 'Markdown', hint: 'A document with the picture in an imgs folder beside it' },
@@ -170,17 +171,17 @@ function printPictureAsPdf(picture, path) {
 // WebP holds no more than this many pixels a side. Past it the canvas answers an empty URL rather than failing, so the refusal has to be ours.
 const PICTURE_WEBP_LIMIT = 16383;
 
-// The format a picture on disk is already in, read off its own address. The query the render stamps on is dropped first, and this is only ever compared against `png` and `webp` — the two rows that would otherwise re-encode a file that is already what was asked for.
+// The format a picture on disk is already in, read off its own address. The query the render stamps on is dropped first, and the answer is only ever held against a row's own endings — the three picture rows, each of which would otherwise re-encode a file that is already what was asked for.
 function pictureSourceEnding(picture) {
   const src = (picture.getAttribute('src') || '').split(/[?#]/)[0];
   const dot = src.lastIndexOf('.');
   return dot < 0 ? '' : src.slice(dot + 1).toLowerCase();
 }
 
-// The picture on a canvas, at its own pixels, which both conversion rows start from.
+// The picture on a canvas, at its own pixels, which every conversion row starts from. `background` is a color to fill before the picture is drawn, or nothing to leave the canvas as it came.
 //
 // Asked for again in anonymous cross-origin mode rather than drawn off the element on the page: the page's own origin is opaque, so the copy on screen taints the canvas and no pixel of it can be read back. The picture responder answers `*` for a picture and for nothing else, which is what makes this request succeed where it used to be blocked before it loaded.
-function pictureCanvas(picture) {
+function pictureCanvas(picture, background) {
   return new Promise((resolve, reject) => {
     const asked = new Image();
     asked.crossOrigin = 'anonymous';
@@ -193,7 +194,11 @@ function pictureCanvas(picture) {
         reject(new Error('This window cannot make a picture.'));
         return;
       }
-      // Nothing painted underneath: a picture that came with transparency keeps it, where a diagram has no page to sit on and needs one.
+      // Nothing painted underneath unless the row asked for it: a picture that came with transparency keeps it in PNG and WebP, and loses it to the page's own surface color in JPEG, which has none to keep.
+      if (background) {
+        ink.fillStyle = background;
+        ink.fillRect(0, 0, canvas.width, canvas.height);
+      }
       ink.drawImage(asked, 0, 0, canvas.width, canvas.height);
       resolve(canvas);
     };
@@ -202,13 +207,17 @@ function pictureCanvas(picture) {
   });
 }
 
-// The picture as a finished file in the format asked for. The canvas writes both, PNG included: the host's own encoder leaves every row unfiltered and reaches for a palette, and both of those are chosen against what a photograph is.
+// What a JPEG of a picture is written at. Named rather than left to the encoder's default, which is this same number today and could move under a web view update — quietly, under every file the app has already written. It is the diagram export's number too, so one quality covers every JPEG this app writes. Measured on a photograph: 659 KB here against 254 KB at 0.6, where the PNG of the same pixels is 7.8 MB.
+const PICTURE_JPEG_QUALITY = 0.92;
+
+// The picture as a finished file in the format asked for. The canvas writes all three, PNG included: the host's own encoder leaves every row unfiltered and reaches for a palette, and both of those are chosen against what a photograph is.
 async function pictureFileBase64(picture, type) {
-  const canvas = await pictureCanvas(picture);
+  // JPEG holds no alpha, and an unpainted canvas encodes as solid black rather than as white or as nothing — read back off a running window at `0, 0, 0, 255`. So a picture with transparency is drawn onto the page it was read on, and nothing is said about it: that is what a JPEG is everywhere, and the reader picked the format.
+  const canvas = await pictureCanvas(picture, type === 'image/jpeg' ? leafExportBackground() : null);
   if (type === 'image/webp' && (canvas.width > PICTURE_WEBP_LIMIT || canvas.height > PICTURE_WEBP_LIMIT)) {
     throw new Error('This picture is too big for WebP to hold. Export it as PNG instead.');
   }
-  const url = canvas.toDataURL(type);
+  const url = type === 'image/jpeg' ? canvas.toDataURL(type, PICTURE_JPEG_QUALITY) : canvas.toDataURL(type);
   // A canvas asked for a type it cannot write answers a PNG instead, so the type in the answer is the only thing that says a WebP was written rather than a PNG about to be saved under the wrong name. Second, so the too-wide case above keeps its own words.
   if (url.indexOf('data:' + type + ';') !== 0 && url.indexOf('data:' + type + ',') !== 0) {
     throw new Error('This window cannot write ' + type.slice(6).toUpperCase() + '. Export it as PNG instead.');
@@ -223,14 +232,16 @@ async function exportPictureAs(kind, picture, path) {
       printPictureAsPdf(picture, path);
       return;
     }
-    if (kind === 'png' || kind === 'webp') {
+    const row = PICTURE_EXPORTS.find((one) => one.id === kind);
+    if (kind === 'png' || kind === 'webp' || kind === 'jpg') {
       const source = picture.getAttribute('src') || '';
-      // Already this format, so nothing is drawn at all: the host copies the file, which is smaller, lossless and exact where a round trip through the canvas is none of the three.
-      if (pictureSourceEnding(picture) === kind) {
+      // Already this format, so nothing is drawn at all: the host copies the file, which is smaller, lossless and exact where a round trip through the canvas is none of the three. Held against every spelling the row permits, so a `.jpeg` picked as a `.jpg` is copied rather than re-encoded — which on a lossy source would lose quality to make a bigger file.
+      if (row.endings.includes(pictureSourceEnding(picture))) {
         send({ command: 'exportPicture', format: kind, path, source });
         return;
       }
-      const data = await pictureFileBase64(picture, 'image/' + kind);
+      // `jpg` is this app's word for the row and `jpeg` is the engine's for the type, which is the one place the two spellings differ.
+      const data = await pictureFileBase64(picture, kind === 'jpg' ? 'image/jpeg' : 'image/' + kind);
       send({ command: 'exportPicture', format: kind, path, source, data });
       return;
     }
