@@ -5,7 +5,7 @@
 //
 // `-DryRun` returns before the gesture driver loads an assembly, launches anything or reaches user32, so this is the one thing about it that a machine with no app built and no window open can check: that every verb parses, that an unknown one is refused, and that an attached run refuses the flags that would rewrite the owner's profile rather than ignoring them.
 //
-// It also reads that script itself for the half a dry run never reaches: that the throwaway profile is built from nothing on every run. That one is not a matter of taste — a profile carrying the last shot's vaults photographs them.
+// It also reads that script itself for the half a dry run never reaches: that the throwaway profile is built from nothing on every run. That one is not a matter of taste — a profile carrying the last shot's vaults photographs them. The profile is then entered for real against a throwaway work folder and its home folder read back, because a folder written under the wrong parent passes every read of the text and still leaves a save window opening on nothing.
 //
 // The motion probe needs a running copy, so what is read back here is its dry run: that it echoes the element, the trigger and the property it would watch, and that it refuses a run missing one of them rather than sampling something nobody named.
 //
@@ -13,7 +13,7 @@
 
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -256,6 +256,54 @@ for (const [who, caller] of [['the documentation shot', text], ['the probe launc
   }
 }
 
+// The one thing reading the script's text can never answer: a `New-Item` written under the wrong parent is still a `New-Item`, and the save window still opens on nothing. So the profile is dot-sourced in a shell of its own, entered against a throwaway work folder, and the folders under the home folder it reports are read back. Windows starts a save window on %USERPROFILE%\Desktop and puts a "Location is not available" error over it when that folder is missing, which is why no export a copy made through its own button ever landed where it was pointed. It stays empty on purpose: src/known_folders.rs makes a vault of every cloud folder it finds under the home folder, and the starving is what a probe copy is launched for.
+const profileWork = join(tmpdir(), `leaftext-profile-check-${process.pid}`);
+const profileName = basename(profileWork);
+rmSync(profileWork, { recursive: true, force: true });
+const entered = spawnSync(
+  exe,
+  [
+    '-NoProfile',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-Command',
+    [
+      `. '${profile}'`,
+      `$p = Enter-LeafProfile -Work '${profileWork}' -Name '${profileName}'`,
+      "Write-Output ('home=' + $p.Home)",
+      "Write-Output ('userprofile=' + $env:USERPROFILE)",
+      "Write-Output ('under=' + ((Get-ChildItem $p.Home -Force | Select-Object -ExpandProperty Name) -join ','))",
+      "$desktop = Join-Path $p.Home 'Desktop'",
+      "Write-Output ('desktop=' + (Test-Path $desktop))",
+      // Guarded, or a missing Desktop throws out of the shell and the run reads as a profile that could not be entered rather than one with nothing to open on.
+      "Write-Output ('empty=' + $(if (Test-Path $desktop) { @(Get-ChildItem $desktop -Force).Count -eq 0 } else { 'no folder' }))",
+      'Exit-LeafProfile $p.Before',
+    ].join('; '),
+  ],
+  { encoding: 'utf8' }
+);
+const enteredText = `${entered.stdout ?? ''}${entered.stderr ?? ''}`;
+rmSync(profileWork, { recursive: true, force: true });
+if (entered.status !== 0) {
+  problems.push(`the shared throwaway profile could not be entered at all:\n${enteredText}`);
+} else {
+  const said = new Map(
+    enteredText
+      .split(/\r?\n/)
+      .filter((line) => line.includes('='))
+      .map((line) => [line.slice(0, line.indexOf('=')).trim(), line.slice(line.indexOf('=') + 1).trim()])
+  );
+  const home = join(profileWork, 'home');
+  const under = (said.get('under') ?? '').split(',').filter(Boolean);
+  if (said.get('home') !== home) problems.push(`the throwaway profile's home folder is ${said.get('home')} rather than ${home}`);
+  if (said.get('userprofile') !== home) problems.push(`a copy launched against the throwaway profile has %USERPROFILE% at ${said.get('userprofile')} rather than its own home folder, so its save window opens somewhere nobody chose`);
+  if (said.get('desktop') !== 'True' || !under.includes('Desktop')) {
+    problems.push(`a fresh throwaway profile has no Desktop under its home folder, so every save window a copy opens comes up on a folder that is not there — it holds ${under.join(', ') || 'nothing'}`);
+  } else if (said.get('empty') !== 'True') {
+    problems.push('the throwaway profile seeds files into its Desktop, and anything a copy finds under its home folder it can register as a vault');
+  }
+}
+
 // A documentation shot has to leave the copy the owner is reading alone, which is what the account name above buys: the app names its instance slot and its ask pipe after %USERNAME%, so a copy launched under a name nobody else uses opens its own window and hears its own quit. The sweep staying away matters as much as the quit going out, so the refusal below is read for as well as the four shutdown steps.
 const SAFE_SHUTDOWN = [
   ['closes its own copy by asking rather than stopping it', /--ask '\{\\"ask\\":\\"quit\\"\}'/],
@@ -329,5 +377,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands in ${OFF_SCREEN_SHOT.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands in ${OFF_SCREEN_SHOT.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );
