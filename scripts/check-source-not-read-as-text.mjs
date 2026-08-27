@@ -4,7 +4,7 @@
 //   node scripts/check-source-not-read-as-text.mjs           fail on a test that reads Rust source as text
 //   node scripts/check-source-not-read-as-text.mjs --check   self-test the refusal, then check the suite
 //
-// A read is kept only where the subject cannot be a value at all — a web view, a native window, a `WindowBuilder` chain, a Mac arm nothing here compiles, or a crate the test tree cannot see. Each of those is one row of `ALLOWED` below, keyed on the exact assertion its test makes and carrying the reason beside it. Not a bare list of files, and not one shared constant: the constant this replaced was written to allow a read of `event_loop.rs`, that read went away, and it sat there quietly allowing a read of `window_cmds.rs` instead with nothing anywhere recording the change. A row that covers no read is a fault here, so the same drift stops the build.
+// A read is kept only where the subject cannot be a value at all — a web view, a native window, a `WindowBuilder` chain, a Mac arm nothing here compiles, or a crate the test tree cannot see. Each of those is one row of `ALLOWED` below, keyed on the exact assertion its test makes and carrying the reason beside it. A row that covers no read is a fault here: one shared allowance with nothing beside it goes on passing after the read it was written for is gone, and starts quietly guarding whatever else happens to make the same assertion.
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
