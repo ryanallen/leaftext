@@ -35,7 +35,7 @@ function Enter-LeafProfile {
   New-Item -ItemType Directory -Force -Path $config | Out-Null
   New-Item -ItemType Directory -Force -Path (Join-Path $local 'ryanallen\leaftext\data') | Out-Null
   New-Item -ItemType Directory -Force -Path $emptyHome | Out-Null
-  # A save window opens on this folder and errors when it is missing, which is why no export a copy made through its own button ever landed. Empty, and not a name src/known_folders.rs asks for, so it registers no vault.
+  # Windows opens a save window on this folder and errors over it when it is missing, so a copy cannot save an export through its own button. Empty, and not a name src/known_folders.rs asks for, so it registers no vault.
   New-Item -ItemType Directory -Force -Path (Join-Path $emptyHome 'Desktop') | Out-Null
 
   $before = [ordered]@{}

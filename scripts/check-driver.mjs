@@ -256,7 +256,7 @@ for (const [who, caller] of [['the documentation shot', text], ['the probe launc
   }
 }
 
-// The one thing reading the script's text can never answer: a `New-Item` written under the wrong parent is still a `New-Item`, and the save window still opens on nothing. So the profile is dot-sourced in a shell of its own, entered against a throwaway work folder, and the folders under the home folder it reports are read back. Windows starts a save window on %USERPROFILE%\Desktop and puts a "Location is not available" error over it when that folder is missing, which is why no export a copy made through its own button ever landed where it was pointed. It stays empty on purpose: src/known_folders.rs makes a vault of every cloud folder it finds under the home folder, and the starving is what a probe copy is launched for.
+// The one thing reading the script's text can never answer: a `New-Item` written under the wrong parent is still a `New-Item`, and the save window still opens on nothing. So the profile is dot-sourced in a shell of its own, entered against a throwaway work folder, and the folders under the home folder it reports are read back. Windows starts a save window on %USERPROFILE%\Desktop and puts a "Location is not available" error over it when that folder is missing, so a copy cannot save an export through its own button. It stays empty on purpose: src/known_folders.rs makes a vault of every cloud folder it finds under the home folder, and the starving is what a probe copy is launched for.
 const profileWork = join(tmpdir(), `leaftext-profile-check-${process.pid}`);
 const profileName = basename(profileWork);
 rmSync(profileWork, { recursive: true, force: true });
