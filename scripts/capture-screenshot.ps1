@@ -251,10 +251,7 @@ function Get-VisibleRect([IntPtr]$hwnd, $window) {
   return $frame
 }
 
-# Whether a window stands where nobody can see it. A copy a build launched to watch
-# something is started off every monitor, and the drawing call below needs neither
-# focus nor a place on screen — so pulling such a window forward would move the
-# keyboard off whatever the owner is typing in and buy the picture nothing.
+# Whether a window stands where nobody can see it. A copy a build launched is started off every monitor, and the drawing call below needs neither focus nor a place on screen, so pulling one forward would move the keyboard off whatever the owner is typing in and buy the picture nothing.
 function Test-OffEveryMonitor([IntPtr]$hwnd) {
   $at = New-Object LeafShot+RECT
   if (-not [LeafShot]::GetWindowRect($hwnd, [ref]$at)) { return $false }
@@ -576,11 +573,7 @@ try {
     # Refused rather than reported as done: SetForegroundWindow fails when the caller
     # is not already foreground, and a wheel notch then lands in whatever is. Clicks
     # and drags carry their own position, so they do not need this.
-    # A gesture is made at a point on the screen, and a point on no monitor is clamped onto
-    # the desktop — so a click meant for a copy nobody can see lands on whatever the owner
-    # has at that corner, and a wheel notch or a key press goes to whatever holds the
-    # keyboard. Refused rather than reported as made. The picture still comes out: the
-    # drawing call needs neither focus nor a place on screen.
+    # A point on no monitor is clamped onto the desktop, so a click meant for a copy nobody can see lands on whatever the owner has in that corner. Refused rather than reported as made; the picture still comes out, because the drawing call needs no place on screen.
     $gestures = @($plan | Where-Object { $_.Kind -ne 'wait' })
     if ($gestures.Count -and (Test-OffEveryMonitor $hwnd)) {
       throw ("The window sits on no monitor, so a $($gestures[0].Kind) step cannot reach it: a point off every " +
