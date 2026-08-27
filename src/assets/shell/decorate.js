@@ -231,8 +231,6 @@ function scheduleMermaidWarmPass() {
     mermaidWarmTimer = 0;
     // Their gesture comes first; the settle after their last wheel click calls back.
     if (readerScrolling) return;
-    // An export is already drawing the whole document, and a second pass into it would bump the generation that one is watching and cancel it. It calls back when it is done.
-    if (mermaidExportDrawing) return;
     const queue = mermaidWarmCandidates();
     if (queue.length) drawMermaidDiagrams(queue, true);
   }, MERMAID_WARM_SETTLE_MS);
@@ -244,37 +242,6 @@ function markMinimapWarming() {
   if (mermaidWarmCandidates().length) minimap.classList.add('is-loading');
   else minimap.classList.remove('is-loading');
 }
-// ---- drawing the whole document for an export -------------------------------
-// An export is one render rather than a scroll, so neither of the two things that hold the warm pass back applies to it: the cap that leaves a big document as boxes, and the recycler that hands a far drawing back. Both have to be stood down outright rather than merely stepped around — the recycler's own pass calls the drawing path again, which bumps the generation the batch loop checks every batch, and that is what stopped a pass over 220 diagrams at ten of them.
-let mermaidExportDrawing = 0;
-// Held from the moment an export starts drawing until the reader scrolls again. The save window stands open for as long as they take over it and the render reads the page after that, so a recycling pass anywhere in between puts far drawings back to boxes and prints the empty frames this was built to stop — measured: 20 of 220 went back inside half a second of the pass ending. Their next scroll is the first moment they are reading rather than exporting, and it is where the queue that built up is drained.
-let mermaidExportHolding = false;
-// Read off the element rather than out of the selector, so a box the page has already drawn is one this cannot ask for twice.
-function mermaidWaitingForExport() {
-  const body = app ? app.querySelector('.document-body') : null;
-  if (!body) return [];
-  return Array.from(body.querySelectorAll('pre.mermaid')).filter((diagram) => diagram.dataset.processed !== 'true'
-    && diagram.dataset.mermaidRender !== 'failed'
-    && diagram.dataset.diagramStage == null
-    && diagram.__mermaidSource != null);
-}
-// Rounds rather than one call: a theme change or a fresh render still bumps the generation and returns the pass part-way, so it is run again while it is still making progress and given up when a round draws nothing.
-async function drawEveryMermaidDiagram() {
-  mermaidExportDrawing += 1;
-  mermaidExportHolding = true;
-  try {
-    let waiting = mermaidWaitingForExport();
-    while (waiting.length) {
-      await drawMermaidDiagrams(waiting);
-      const left = mermaidWaitingForExport();
-      if (left.length >= waiting.length) return;
-      waiting = left;
-    }
-  } finally {
-    mermaidExportDrawing -= 1;
-  }
-}
-
 // The rail is a clone of the page, so a box the page has handed back clones as a blank — a document read once left the picture mostly empty boxes. The drawing is still in the memo, so the clone takes it from there. Done on the detached copy before it goes on screen, so nothing on the page is touched, and the box keeps the exact height it has in the document, which is what holds the thumbnail lined up with the real thing.
 function fillMermaidClone(preview) {
   for (const box of preview.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])')) {
@@ -305,7 +272,7 @@ function mermaidColumnWidthChanged() {
 }
 window.addEventListener('resize', mermaidColumnWidthChanged);
 
-// Restore what the memo has, queue the rest. Called with the diagrams near the reader, on open and on every scroll — and with the whole document behind it when the page is being warmed, which is the only pass a reader's gesture is allowed to stop. Hands back the drawing it started, so an export can wait for it.
+// Restore what the memo has, queue the rest. Called with the diagrams near the reader, on open and on every scroll — and with the whole document behind it when the page is being warmed, which is the only pass a reader's gesture is allowed to stop.
 function drawMermaidDiagrams(candidates, warming) {
   if (!candidates.length) {
     return;
@@ -335,7 +302,7 @@ function drawMermaidDiagrams(candidates, warming) {
   // Nearest the reader first, a few at a time. Sixty diagrams in one batch froze the window for five seconds, nothing painted until the last was done.
   diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));
   mermaidRenderGeneration += 1;
-  return drawMermaidBatches(diagrams, mermaidRenderGeneration, warming);
+  drawMermaidBatches(diagrams, mermaidRenderGeneration, warming);
 }
 
 // The height it drew to is worth keeping: a box refilled at that height moves nothing on the page. A `click A "…"` box is drawn as a real SVG anchor, and mermaid writes only `xlink:href` — which `documentLinkFor` does not match, so the click was the web view's and it navigated the whole app out of the app. Copying the target onto `href` hands the box to the reader's own link handlers.
@@ -496,8 +463,6 @@ function watchMermaidForRecycling(diagram) {
 }
 // What must keep its drawing however far away it is.
 function mermaidMayRecycle(diagram) {
-  // Whatever is far from the reader is on the paper all the same.
-  if (mermaidExportDrawing || mermaidExportHolding) return false;
   // A document the memos can hold keeps every drawing it makes, which is the whole of this: the empty box was the app's second-most-named fault and nothing on a page this size is worth it.
   if (!mermaidDocumentPastMemory()) return false;
   if (!diagram.isConnected || diagram.dataset.processed !== 'true') return false;
@@ -563,13 +528,9 @@ function scheduleMermaidPass() {
     mermaidDrainTimer = 0;
     // Still scrolling: drop the pass rather than set another timer. The settle after the last wheel click calls back.
     if (readerScrolling) return;
-    // The same stand-down the warm pass takes: a pass into a document an export is drawing bumps the generation that one is watching and cancels it part-way.
-    if (mermaidExportDrawing) return;
-    // Boxes back first: a recycled box holds its drawing's height, so only the drawings can move anything. The queue is left standing rather than dropped while an export is still to be rendered, so the reader's own next scroll is what drains it.
-    if (!mermaidExportHolding) {
-      for (const diagram of mermaidLeavingView) recycleMermaidDiagram(diagram);
-      mermaidLeavingView.clear();
-    }
+    // Boxes back first: a recycled box holds its drawing's height, so only the drawings can move anything.
+    for (const diagram of mermaidLeavingView) recycleMermaidDiagram(diagram);
+    mermaidLeavingView.clear();
     const queue = Array.from(mermaidWaitingNearby).filter((diagram) => diagram.isConnected
       && diagram.dataset.processed !== 'true'
       && diagram.dataset.mermaidRender !== 'failed');
@@ -579,15 +540,11 @@ function scheduleMermaidPass() {
 }
 // The gesture stopped, so anything held for it can go now. Only when something is actually waiting: a settle with an empty queue has nothing to draw.
 function readerScrollSettled() {
-  // They are reading again rather than exporting, so whatever the export was holding drawn can go back to boxes.
-  mermaidExportHolding = false;
   if (mermaidWaitingNearby.size || mermaidLeavingView.size) scheduleMermaidPass();
   scheduleMermaidWarmPass();
 }
 // A render replaces the document, so every box the old one was watching is gone.
 function forgetMermaidWatch() {
-  // A fresh document is not the one an export was holding drawings for.
-  mermaidExportHolding = false;
   if (mermaidViewObserver) {
     mermaidViewObserver.disconnect();
     mermaidViewObserver = null;
@@ -646,7 +603,7 @@ const MERMAID_WARM_REST_MS = 50;
 let mermaidRenderGeneration = 0;
 
 function drawMermaidBatches(diagrams, generation, warming) {
-  return loadMermaid()
+  loadMermaid()
     .then(async (mermaid) => {
       // A box is only as wide as mermaid measured its label, so measuring in the fallback face and painting in the theme's takes the last letter off every one of them. Wait for the faces the page has asked for before measuring.
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
