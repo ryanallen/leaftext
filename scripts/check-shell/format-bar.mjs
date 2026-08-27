@@ -645,9 +645,9 @@ export function run() {
     if (styled.textContent !== 'heavyleaning') throw new Error('folding a styled span lost its words');
   });
 
-  // Pressing a format button a second time takes the wrapper away and leaves the same words selected, so a third press lands on them again. It spends every name the fold does and asks the holder to join the words back up afterwards, and it had no check either.
+  // Pressing a format button a second time takes the wrapper away and leaves the same words selected, so a third press lands on them again. The order is the whole of it: the selection goes on while the phrase is still a run of its own, because the join afterwards keeps the first run and drops the rest — so a selection put on after it names a run that is gone, which is the throw that lost the phrase wherever words stood in front of it.
 
-  check('taking a format off keeps the words, drops the wrapper, and leaves the words selected', () => {
+  check('taking a format off selects the phrase before the runs are joined, in every sentence position', () => {
     const { unwrapSelectionAncestor } = booted;
     const wasSelection = booted.getSelection;
     try {
@@ -657,26 +657,61 @@ export function run() {
         removeAllRanges: () => ranges.splice(0, ranges.length),
         addRange: (range) => ranges.push(range),
       });
-      // A phrase that opens its paragraph. The shape with words in front of it throws in a real web view as well as here, and that fault is its own ticket: docs/fixes/editing/taking-a-format-off-loses-the-selection.md. It is left out rather than written down as correct.
-      const block = fakeElement('unwrap-block');
-      block.innerHTML = '<em>the words</em> after';
-      const wrapper = block.querySelector('em');
-      unwrapSelectionAncestor(wrapper);
-      if (block.querySelector('em')) throw new Error('the wrapper stayed after the format was taken off');
-      if (block.textContent !== 'the words after') throw new Error(`taking the format off lost words: ${JSON.stringify(block.textContent)}`);
-      // The holder joins the runs back up, so what is left is one run of words rather than two sitting side by side.
-      if (block.childNodes.length !== 1) throw new Error(`the holder was left holding ${block.childNodes.length} nodes rather than one run of words`);
-      // The words are still selected, across the place they were left standing in.
-      if (ranges.length !== 1) throw new Error('the words were not put back under a selection');
-      if (ranges[0].startContainer !== block || ranges[0].endContainer !== block) throw new Error('the selection was put back somewhere other than the holder the words are in');
-      if (ranges[0].startOffset !== 0 || ranges[0].endOffset !== 1) throw new Error(`the selection came back across ${ranges[0].startOffset} to ${ranges[0].endOffset}`);
-      // A wrapper holding a tag as well as words hands both over in the order they were written, and the tag between them is what stops the join swallowing the run the selection is put back across.
+      // The four places a phrase can sit in a sentence, each with where its own run stands in the holder at the moment the holder is asked to join the runs up.
+      const positions = [
+        { name: 'with words on both sides', markup: 'before<em>words</em>after', words: 'beforewordsafter', at: 1 },
+        { name: 'with words only in front', markup: 'before<em>words</em>', words: 'beforewords', at: 1 },
+        { name: 'with words only after', markup: '<em>words</em>after', words: 'wordsafter', at: 0 },
+        { name: 'with no words beside it', markup: '<em>words</em>', words: 'words', at: 0 },
+      ];
+      for (const position of positions) {
+        ranges.length = 0;
+        const block = fakeElement(`unwrap-${position.words}`);
+        block.innerHTML = position.markup;
+        // What the holder was holding when it was asked to join, kept rather than read afterwards: the stand-in range does not follow a boundary through a join, and a real browser moves both ranges onto the surviving run at the phrase's own character offsets.
+        const joinRuns = block.normalize.bind(block);
+        let onJoin = null;
+        block.normalize = () => {
+          const live = ranges[0];
+          onJoin = {
+            selected: ranges.length,
+            container: live && live.startContainer,
+            start: live && live.startOffset,
+            end: live && live.endOffset,
+            remembered: vm.runInContext('selectionToolbarRange', booted),
+            run: block.childNodes[position.at] && block.childNodes[position.at].nodeValue,
+          };
+          joinRuns();
+        };
+        unwrapSelectionAncestor(block.querySelector('em'));
+        if (!onJoin) throw new Error(`${position.name}: the holder was never asked to join the runs up`);
+        if (onJoin.selected !== 1) throw new Error(`${position.name}: the words were not selected before the join`);
+        if (onJoin.container !== block) throw new Error(`${position.name}: the selection went somewhere other than the holder the words are in`);
+        if (onJoin.start !== position.at || onJoin.end !== position.at + 1) throw new Error(`${position.name}: the selection came across ${onJoin.start} to ${onJoin.end} rather than the phrase alone`);
+        if (onJoin.run !== 'words') throw new Error(`${position.name}: the run the selection named held ${JSON.stringify(onJoin.run)} rather than the phrase`);
+        // The remembered copy the bar reads back is around the phrase too, so the press after this one lands on the same words rather than on nothing.
+        if (!onJoin.remembered) throw new Error(`${position.name}: nothing was remembered for the bar to read back`);
+        if (onJoin.remembered.startContainer !== block || onJoin.remembered.startOffset !== position.at || onJoin.remembered.endOffset !== position.at + 1) throw new Error(`${position.name}: the remembered copy was not around the phrase`);
+        // And the join still happens: the wrapper is gone, every word survives, and the holder is left with one run rather than three sitting side by side.
+        if (block.querySelector('em')) throw new Error(`${position.name}: the wrapper stayed after the format was taken off`);
+        if (block.textContent !== position.words) throw new Error(`${position.name}: taking the format off landed as ${JSON.stringify(block.textContent)}`);
+        if (block.childNodes.length !== 1) throw new Error(`${position.name}: the holder was left holding ${block.childNodes.length} nodes rather than one run of words`);
+      }
+      // A wrapper holding a tag as well as words hands both over in the order they were written, and the two ends bracket the pair rather than one of them.
       const mixed = fakeElement('unwrap-mixed');
       mixed.innerHTML = '<a href="#x">go <b>now</b></a>';
       unwrapSelectionAncestor(mixed.querySelector('a'));
       if (mixed.querySelector('a')) throw new Error('the link stayed after it was taken off');
       if (!mixed.querySelector('b') || mixed.textContent !== 'go now') throw new Error(`taking the link off landed as ${mixed.innerHTML}`);
       if (mixed.childNodes.length !== 2) throw new Error(`taking the link off left ${mixed.childNodes.length} nodes rather than the words and the tag`);
+      // A wrapper with nothing in it still gets the join, so the paragraph is not left holding the two runs the wrapper stood between.
+      ranges.length = 0;
+      const empty = fakeElement('unwrap-empty');
+      empty.innerHTML = 'before<em></em>after';
+      unwrapSelectionAncestor(empty.querySelector('em'));
+      if (empty.querySelector('em')) throw new Error('an empty wrapper stayed after the format was taken off');
+      if (empty.childNodes.length !== 1) throw new Error(`an empty wrapper left ${empty.childNodes.length} runs of words rather than one`);
+      if (ranges.length !== 0) throw new Error('an empty wrapper put a selection on nothing');
     } finally {
       booted.getSelection = wasSelection;
     }

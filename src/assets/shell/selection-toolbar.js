@@ -232,14 +232,16 @@ function unwrapSelectionAncestor(el) {
   const first = el.firstChild;
   const last = el.lastChild;
   el.replaceWith(...el.childNodes);
+  // Selected before the join, not after: joining keeps the first run of words and drops the rest, so words in front of the phrase swallow the very run these two ends name and putting a selection across it then throws. Both live ranges ride the join onto the surviving run at the phrase's own offsets.
+  if (selection && first) {
+    const range = document.createRange();
+    range.setStartBefore(first);
+    range.setEndAfter(last || first);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    selectionToolbarRange = range.cloneRange();
+  }
   if (parent) parent.normalize();
-  if (!selection || !first) return;
-  const range = document.createRange();
-  range.setStartBefore(first);
-  range.setEndAfter(last || first);
-  selection.removeAllRanges();
-  selection.addRange(range);
-  selectionToolbarRange = range.cloneRange();
 }
 
 function applyInlineFormat(format) {
