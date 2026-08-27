@@ -47,7 +47,7 @@ const LISTS = [
     ],
     looked: [
       ['src/markdown/images.rs', 'a picture named inside a mermaid box — `shot.png` is one example spelling in a comment about resolving a path, not a row of the export table'],
-      ['src/assets/shell/image-sheet.js', 'the picture export table, which shares every ending but the Markdown ones and is that list\'s own page copy'],
+      ['src/assets/shell/image-sheet.js', 'the picture export table, which names the same endings for a different subject and is that list\'s own page copy'],
       ['src/tests/images.rs', 'the eleven kinds of picture the reading view draws, which is what may be shown in a document rather than what anything may be written as'],
     ],
     pageSource: 'src/assets/shell/flow-export.js',
@@ -74,7 +74,7 @@ const LISTS = [
       'src/app/tests/export.rs',
     ],
     looked: [
-      ['src/assets/shell/flow-export.js', 'the diagram export table, which shares every ending but the Markdown ones and is that list\'s own page copy'],
+      ['src/assets/shell/flow-export.js', 'the diagram export table, which names the same endings for a different subject and is that list\'s own page copy'],
       ['src/markdown/images.rs', 'a picture named inside a mermaid box — `shot.png` is one example spelling in a comment about resolving a path, not a row of the export table'],
       ['src/tests/images.rs', 'the eleven kinds of picture the reading view draws, which is what may be shown in a document rather than what anything may be written as'],
     ],

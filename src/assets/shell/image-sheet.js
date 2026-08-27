@@ -207,7 +207,7 @@ function pictureCanvas(picture, background) {
   });
 }
 
-// What a JPEG of a picture is written at. Named rather than left to the encoder's default, which is this same number today and could move under a web view update — quietly, under every file the app has already written. It is the diagram export's number too, so one quality covers every JPEG this app writes. Measured on a photograph: 659 KB here against 254 KB at 0.6, where the PNG of the same pixels is 7.8 MB.
+// What a JPEG of a picture is written at, named rather than left to a default a web view update could move under every file already written. The diagram export's number too, so one quality covers every JPEG this app writes. Measured on a photograph: 659 KB here against 254 KB at 0.6, where the same pixels as a PNG are 7.8 MB.
 const PICTURE_JPEG_QUALITY = 0.92;
 
 // The picture as a finished file in the format asked for. The canvas writes all three, PNG included: the host's own encoder leaves every row unfiltered and reaches for a palette, and both of those are chosen against what a photograph is.
