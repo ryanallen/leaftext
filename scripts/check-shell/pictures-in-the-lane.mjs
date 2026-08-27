@@ -575,21 +575,13 @@ export function run() {
       },
     };
     const madeCanvas = { width: 0, height: 0, getContext: () => ink, toDataURL: (type) => 'data:' + type + ';base64,QUJD' };
-    const was = { create: booted.document.createElement, image: booted.Image };
+    const was = { create: booted.document.createElement };
     booted.document.createElement = (tag) => (String(tag) === 'canvas' ? madeCanvas : was.create(tag));
-    // The stand-in page has no Image of its own, and what the export does with one is make it, ask anonymously and wait: answering on the next turn is the whole of what a picture that loads does here.
-    booted.Image = class {
-      set src(address) {
-        this.__src = address;
-        Promise.resolve().then(() => this.onload && this.onload());
-      }
-      get src() {
-        return this.__src;
-      }
-    };
     booted.document.documentElement.style.setProperty('--lt-surface', '#101014');
     const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, naturalWidth: 40, naturalHeight: 30 });
     picture.currentSrc = 'leaf-image://local/imgs/logo.png?leaf-epoch=1';
+    // The page's own picture loads this, off the exact address the conversion asks for. A picture nobody registers takes that same picture's failure branch, which is the refusal the case below drives — so the load itself is decided here rather than by a stand-in that called every address good.
+    booted.__pictures.set(picture.currentSrc, { width: 64, height: 48 });
     try {
       await booted.pictureFileBase64(picture, 'image/jpeg');
       if (drawn.length !== 2 || drawn[0].what !== 'fill' || drawn[1].what !== 'picture') {
@@ -598,8 +590,12 @@ export function run() {
       if (drawn[0].color !== '#101014') {
         throw new Error(`a JPEG was painted onto ${JSON.stringify(drawn[0].color)} rather than onto the surface the reader was looking at`);
       }
-      if (drawn[0].width !== 40 || drawn[0].height !== 30) {
+      if (drawn[0].width !== 64 || drawn[0].height !== 48) {
         throw new Error('the paint under a JPEG does not cover the whole canvas, so the corners come out black');
+      }
+      // The picture that arrived, not the element it was read off: a picture in the lane is drawn at whatever width the lane gave it, and a file written at that width is a file the reader never asked to be shrunk.
+      if (madeCanvas.width !== 64 || madeCanvas.height !== 48) {
+        throw new Error(`the canvas was made ${madeCanvas.width}×${madeCanvas.height} rather than at the pixels the picture came back with`);
       }
       drawn.length = 0;
       for (const type of ['image/png', 'image/webp']) {
@@ -611,12 +607,56 @@ export function run() {
       }
     } finally {
       booted.document.createElement = was.create;
-      booted.Image = was.image;
+      // Gone with the case, or a later one asking for this address would be handed a picture this case decided for.
+      booted.__pictures.delete(picture.currentSrc);
       booted.document.documentElement.style.removeProperty('--lt-surface');
     }
   });
 
-  // The one thing the stand-in page cannot be asked at all: whether the pixels come back. It has no canvas, so what is held here is the request the export makes — anonymous cross-origin, which is the whole of what changed in the page, and a fresh request rather than the copy on screen, which is tainted and always will be.
+  // The other end of that same load, and the one a reader actually meets: a picture that does not come back. Nothing stands in for the failure — the page's own picture refuses an address nobody registered — and the whole row is driven, from the press to the path, because the two things that matter are what the reader is told and that no file is written under the name they just picked.
+  checkLendingTheWindow("a picture that will not load is refused in the reader's own words and writes no file", async () => {
+    const lane = fakeElement('p');
+    lane.tagName = 'P';
+    const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, alt: 'A photo' });
+    picture.setAttribute('src', 'leaf-image://local/imgs/nowhere.png?leaf-epoch=1');
+    // The address the conversion asks for, and the one address the answer map is deliberately not holding.
+    picture.currentSrc = 'leaf-image://local/imgs/nowhere.png?leaf-epoch=1';
+    picture.naturalWidth = 40;
+    picture.naturalHeight = 30;
+    lane.querySelector = (selector) => {
+      if (selector === ':scope > img') return picture;
+      if (selector === ':scope > .image-lane-corner') return lane.children.find((child) => child.className === 'image-lane-corner') || null;
+      return null;
+    };
+    booted.bindImageSheet({ querySelectorAll: () => [lane] });
+    const button = lane.children
+      .find((child) => child.className === 'image-lane-corner')
+      .children.find((child) => child.className === 'image-export-open');
+    const was = { send: booted.ipc.postMessage, toast: booted.leafToast };
+    const sent = [];
+    const said = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.leafToast = (words) => said.push(words);
+    try {
+      // A PNG asked for as a JPEG, so the row converts rather than asking the host to copy the file: the load is the first thing it does.
+      (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+      const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
+      if (!ask) throw new Error('pressing Export asked nowhere for a path');
+      booted.window.leafPicturePathPicked(ask.token, '/out/nowhere.jpg');
+      for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
+      if (sent.some((one) => one.command === 'exportPicture')) {
+        throw new Error('a picture that could not be read still sent a file for the host to write');
+      }
+      if (!said.includes('That picture could not be read, so nothing was written.')) {
+        throw new Error(`a picture that could not be read said: ${said.join(' / ') || 'nothing'}`);
+      }
+    } finally {
+      booted.ipc.postMessage = was.send;
+      booted.leafToast = was.toast;
+    }
+  });
+
+  // What the stand-in page still cannot be asked: whether the pixels come back. It has no canvas, so what is held here is the request the export makes — anonymous cross-origin, which is the whole of what changed in the page, and a fresh request rather than the copy on screen, which is tainted and always will be.
   check('a conversion asks for the picture again in anonymous cross-origin mode', () => {
     const fragment = readFileSync(join(root, 'src/assets/shell/image-sheet.js'), 'utf8');
     const draw = fragment.slice(fragment.indexOf('function pictureCanvas('), fragment.indexOf('async function pictureFileBase64('));
