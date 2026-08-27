@@ -62,12 +62,10 @@
 .table-lane > table {
   scroll-timeline: --lt-table-scroll inline;
 }
-/* The table's reading control is a second corner action beside the content, so it appears only when the table is being aimed at and leaves the page quiet otherwise. A widened picture wears the same control in the same corner — one shape, two blocks, so the pair of them is written once. */
+/* The table's reading control is a second corner action beside the content, so it appears only when the table is being aimed at and leaves the page quiet otherwise. A widened picture wears the same shape in the same corner — one shape, two blocks, so the pair of them is written once. */
 .table-sheet-open,
-.image-sheet-open {
-  position: absolute;
-  top: var(--lt-space-6);
-  right: var(--lt-space-6);
+.image-sheet-open,
+.image-export-open {
   z-index: 1;
   display: grid;
   place-items: center;
@@ -78,27 +76,47 @@
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
-  /* The arrow: a control is not a link. Written rather than left off, because both ride inside a block that says `cursor: text` when unlocked. */
+  /* The arrow: a control is not a link. Written rather than left off, because all of them ride inside a block that says `cursor: text` when unlocked. */
   cursor: default;
+}
+/* One control, so the table's own sits in the corner itself. */
+.table-sheet-open {
+  position: absolute;
+  top: var(--lt-space-6);
+  right: var(--lt-space-6);
+}
+/* A picture has two, so the corner is a row they sit in and the space between them is a gap rather than an offset somebody measured — the way the diagram's own pair sits. */
+.image-lane-corner {
+  position: absolute;
+  top: var(--lt-space-6);
+  right: var(--lt-space-6);
+  z-index: 1;
+  display: flex;
+  gap: var(--lt-space-6);
+}
+.table-sheet-open,
+.image-lane-corner {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--lt-duration-120) var(--lt-ease);
 }
 .table-sheet-open .lt-icon,
-.image-sheet-open .lt-icon {
+.image-sheet-open .lt-icon,
+.image-export-open .lt-icon {
   width: 16px;
   height: 16px;
 }
 .table-lane:hover .table-sheet-open,
 .table-sheet-open:focus-visible,
-.image-lane:hover .image-sheet-open,
-.image-sheet-open:focus-visible {
+.image-lane:hover .image-lane-corner,
+.image-lane-corner:focus-within {
   opacity: 1;
   pointer-events: auto;
 }
 /* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. */
 .table-sheet-open:hover,
-.image-sheet-open:hover {
+.image-sheet-open:hover,
+.image-export-open:hover {
   border-color: var(--lt-border-strong);
   background: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), var(--lt-surface-elevated);
   color: var(--lt-foreground);

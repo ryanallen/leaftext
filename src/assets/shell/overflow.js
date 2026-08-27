@@ -190,7 +190,7 @@ if (exportPdfButton) {
   });
 }
 // The app's own controls inside a rendered document: the code blocks' copy buttons, the picture's opener, and the diagram's tools, zoom strip and closer. Every one of them does nothing on somebody else's machine, so none of them travels.
-const PAGE_EXPORT_CONTROLS = '.code-copy, .image-sheet-open, .mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close';
+const PAGE_EXPORT_CONTROLS = '.code-copy, .image-lane-corner, .mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close';
 // The document as a page of its own: a copy of what is drawn, its controls taken out, wrapped in the ancestors every rule in the stylesheet is keyed on.
 //
 // The chain is not decoration — a body without it renders unstyled. It is written here rather than cloned off the page because two of the classes on screen must not travel: the shell's `has-minimap` and the layout's rail, which set and spend the column the rail stands in, and the export carries no rail for it to hold.

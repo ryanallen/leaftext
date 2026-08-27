@@ -36,21 +36,21 @@ use leaftext::{
     local_image_protocol_response, local_image_source_dir, markdown_image_insert_destination,
     markup_has_math, navigation_state_script, nearest_glossary_file, note_preview,
     open_error_state_script, opened_document_from_source_with_host, page_html_export_script,
-    pager_loaded_script, read_folder_listing, read_folder_note, read_source, read_source_head,
-    reading_mode_css, render_markdown_document, repo_name_for_vault, rgba_from_bmp, save_favorites,
-    save_recent_files, save_result_script, scroll_anchor_script, search_results_script,
-    set_git_identity, settings_file_path, settings_unreadable_script, source_payload_url,
-    source_updated_script, sync_vault_repo, task_entries, task_marker_offsets, today_or_utc,
-    unlock_reading_script, update_failed_script, update_progress_script, update_state_script,
-    vaults_script, webview_user_data_dir, workspace_only_script, workspace_reload_script,
-    workspace_state_script, workspace_switch_script, CloudFolder, CloudRoots, CorpusDocument,
-    DesktopHost, DocumentFormat, EditableDocument, Favorite, FavoriteKind, Favorites, FilterHints,
-    FolderListing, GitTooling, GraphScope, LeafHost, OpenedDocument, Query, RecentFiles,
-    ScrollAnchor, Session, SessionTab, Settings, SettingsLoad, SourceEncoding, SourceSpelling,
-    SourceText, TabSummary, TaskEntry, UpdateDownload, VaultCorpus, VaultRepo,
-    CORPUS_SLICE_DOCUMENTS, EXPORTED_PAGE_ASSETS_FOLDER, EXPORTED_PAGE_MATH_FONTS_FOLDER,
-    EXPORTED_PAGE_MATH_STYLESHEET, EXPORTED_PAGE_MINIMAP_SCRIPT, EXPORTED_PAGE_STYLESHEET,
-    KATEX_CSS, KATEX_FONTS, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    pager_loaded_script, picture_path_picked_script, read_folder_listing, read_folder_note,
+    read_source, read_source_head, reading_mode_css, render_markdown_document, repo_name_for_vault,
+    rgba_from_bmp, save_favorites, save_recent_files, save_result_script, scroll_anchor_script,
+    search_results_script, set_git_identity, settings_file_path, settings_unreadable_script,
+    source_payload_url, source_updated_script, sync_vault_repo, task_entries, task_marker_offsets,
+    today_or_utc, unlock_reading_script, update_failed_script, update_progress_script,
+    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
+    workspace_reload_script, workspace_state_script, workspace_switch_script, CloudFolder,
+    CloudRoots, CorpusDocument, DesktopHost, DocumentFormat, EditableDocument, Favorite,
+    FavoriteKind, Favorites, FilterHints, FolderListing, GitTooling, GraphScope, LeafHost,
+    OpenedDocument, Query, RecentFiles, ScrollAnchor, Session, SessionTab, Settings, SettingsLoad,
+    SourceEncoding, SourceSpelling, SourceText, TabSummary, TaskEntry, UpdateDownload, VaultCorpus,
+    VaultRepo, CORPUS_SLICE_DOCUMENTS, EXPORTED_PAGE_ASSETS_FOLDER,
+    EXPORTED_PAGE_MATH_FONTS_FOLDER, EXPORTED_PAGE_MATH_STYLESHEET, EXPORTED_PAGE_MINIMAP_SCRIPT,
+    EXPORTED_PAGE_STYLESHEET, KATEX_CSS, KATEX_FONTS, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -526,10 +526,15 @@ fn local_image_protocol_handler(
             request.uri().to_string().as_str(),
             source_dir.as_deref(),
         );
-        Response::builder()
+        let mut answer = Response::builder()
             .status(image.status)
             .header("Content-Type", image.content_type)
-            .header("Cache-Control", "no-store")
+            .header("Cache-Control", "no-store");
+        // Sent for one of the eleven kinds of picture the reading view draws and left off everything else, which is what keeps the page's read to pictures rather than to whatever file an address happens to name.
+        if !image.allow_origin.is_empty() {
+            answer = answer.header("Access-Control-Allow-Origin", image.allow_origin);
+        }
+        answer
             .body(Cow::Owned(image.body))
             .expect("local image protocol response builds")
     }
@@ -607,6 +612,12 @@ fn pick_save_path(current: &Path, format: Option<&str>) -> Option<PathBuf> {
 fn pick_diagram_path(stem: &str, format: Option<&str>) -> Option<PathBuf> {
     let offer = save_window_offer(DIAGRAM_EXPORT_FORMATS, format, stem);
     pick_export_path_titled("Export Diagram", &offer.name, &offer.filters)
+}
+
+/// Where an exported picture goes. The rows work the way the diagram window's do: with no format named the window carries every row the table holds and the page reads whatever the chosen name ends in, and with one it carries that row alone, because a Mac panel shows no format at all and the page has already asked.
+fn pick_picture_path(stem: &str, format: Option<&str>) -> Option<PathBuf> {
+    let offer = save_window_offer(PICTURE_EXPORT_FORMATS, format, stem);
+    pick_export_path_titled("Export Picture", &offer.name, &offer.filters)
 }
 
 /// A save window under the caller's own title, offering the formats it is handed. A reader saving the page as a PDF is not exporting a diagram, and the title bar is the only thing in that window that says which.

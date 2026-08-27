@@ -118,11 +118,16 @@ pub fn local_image_protocol_response(uri: &str, source_dir: Option<&Path>) -> Lo
     };
 
     match fs::read(&path) {
-        Ok(body) => LocalImageResponse {
-            status: 200,
-            content_type: local_image_mime_type(&path),
-            body,
-        },
+        Ok(body) => {
+            let content_type = local_image_mime_type(&path);
+            LocalImageResponse {
+                status: 200,
+                content_type,
+                // Only a picture the reading view draws may be read back by the page. This responder hands back whatever file the address names, so an unconditional `*` would let a script that got into the page read the bytes of any file on the disk; the type is what holds it to pictures, which the page can already cause to be drawn.
+                allow_origin: allow_origin_for(content_type),
+                body,
+            }
+        }
         Err(error) if error.kind() == io::ErrorKind::NotFound => empty_local_image_response(404),
         Err(error) if error.kind() == io::ErrorKind::PermissionDenied => {
             empty_local_image_response(403)
@@ -198,7 +203,17 @@ pub(crate) fn empty_local_image_response(status: u16) -> LocalImageResponse {
     LocalImageResponse {
         status,
         content_type: "text/plain; charset=utf-8",
+        allow_origin: "",
         body: Vec::new(),
+    }
+}
+
+/// Who may read one of these answers back. A picture the reading view draws is readable by the page, which is what lets a reader export one in a format the file is not already in; nothing else is, because nothing else is a picture.
+fn allow_origin_for(content_type: &str) -> &'static str {
+    if content_type.starts_with("image/") {
+        "*"
+    } else {
+        ""
     }
 }
 

@@ -528,6 +528,38 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         height: f64,
     },
+    /// Ask where a picture in the document goes, before anything is drawn or copied. `source` is the address the picture is drawn from, which the host resolves back to a file so the window can suggest that picture's own name. `format` is the one the reader has already picked, for the same reason `pickDiagramPath` carries one: a Mac panel shows no format at all, so the page asks there first and the window is left that one ending. The page keeps the picture against `token` and does the rest once the path comes back.
+    #[serde(rename = "pickPicturePath")]
+    PickPicturePath {
+        token: u64,
+        source: String,
+        #[serde(default)]
+        format: Option<String>,
+    },
+    /// Write a picture in the document out as a file of its own. `format` is `md`, `png` or `webp`; the `pdf` row never arrives here — it is printed by `printPicturePdf` instead. `source` is the address the picture is drawn from, which the host resolves back to the file on disk; `alt` is the words the note gave it, which only the `md` row writes down. `path` is where it goes, answered by `pickPicturePath` a moment earlier — the host opens no window of its own here.
+    ///
+    /// `data` is empty for `md`, which copies the file rather than encoding anything, and for a picture already in the format asked for, which the host copies byte for byte because that file is smaller, lossless and exact. Otherwise it is a finished file the page's own canvas wrote — for the PNG row as well as the WebP one, because the host's encoder leaves every row unfiltered for flat fill and a photograph is not flat, and because the pixels would cross as about twenty times the bytes of the file they come to.
+    #[serde(rename = "exportPicture")]
+    ExportPicture {
+        format: String,
+        source: String,
+        path: String,
+        #[serde(default)]
+        alt: String,
+        #[serde(default)]
+        data: String,
+    },
+    /// Print one picture onto a sheet of its own. `path` is where it goes, answered by `pickPicturePath` a moment earlier; `width` and `height` are the sheet's own CSS pixels, which is the picture's own size rather than the room the reader's lane had squeezed it into.
+    ///
+    /// Its own command rather than a fourth `exportPicture` format, for the reason `printDiagramPdf` is its own: that one carries finished bytes the page made, and a print carries none.
+    #[serde(rename = "printPicturePdf")]
+    PrintPicturePdf {
+        path: String,
+        #[serde(default)]
+        width: f64,
+        #[serde(default)]
+        height: f64,
+    },
     /// Write the page as it stands out as a file of its own. `format` is `pdf` or `png`; `width` and `height` are the page's own CSS pixels, which is how the host sizes one continuous page instead of chopping the document across sheets — only the page knows how tall it is. The stylesheet's `leaf-paper` class is what makes that page the whole document in its theme rather than one screen of app frame, and it is on a class rather than in a print block so the page can measure the sheet it is about to ask for. Nothing about the open document is read or written.
     #[serde(rename = "exportPdf")]
     ExportPdf {

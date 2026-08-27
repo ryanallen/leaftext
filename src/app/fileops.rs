@@ -1101,6 +1101,19 @@ pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &[&str])] = &[
     ("JPEG image", &["jpg", "jpeg"]),
 ];
 
+/// Every format a picture in a document can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first row, so PNG leads — a reader pressing Export on a picture wants a picture. The diagram's own table leads with Markdown, which makes this order a deliberate difference rather than a copy.
+///
+/// Markdown asks `src/format.rs` for its spellings the way the diagram table does, so this window writes every ending the app opens. The pictures are not formats it knows, so they stay written out. JPEG is not here: [picture-and-page-export-as-jpg](../../../docs/features/reading/picture-and-page-export-as-jpg.md) owns that row.
+pub(crate) const PICTURE_EXPORT_FORMATS: &[(&str, &[&str])] = &[
+    ("PNG image", &["png"]),
+    ("WebP image", &["webp"]),
+    ("PDF document", &["pdf"]),
+    ("Markdown", DocumentFormat::Markdown.extensions()),
+];
+
+/// The folder a Markdown picture export puts the picture in, beside the document it writes.
+pub(crate) const PICTURE_EXPORT_IMAGE_DIR: &str = "imgs";
+
 /// The words the save window shows for one of those endings.
 fn diagram_export_label(extension: &str) -> Option<&'static str> {
     DIAGRAM_EXPORT_FORMATS
@@ -1288,6 +1301,208 @@ pub(crate) fn print_diagram_pdf(webview: Option<&WebView>, target: &Path, width:
             &format!("Could not write {}: {error}", target.display()),
         ),
     }
+}
+
+/// The name a copied picture takes in the `imgs` folder: its own, or a numbered one beside it where that name is already there. `taken` answers for one name, so the whole of the decision can be tested without a disk.
+///
+/// Beside rather than over, because an export that quietly replaced somebody's file is the one mistake here nobody can undo. Overwriting is the cheaper code and the worse fault.
+pub(crate) fn free_picture_name(file_name: &str, taken: &dyn Fn(&str) -> bool) -> String {
+    if !taken(file_name) {
+        return file_name.to_string();
+    }
+    // The dot has to have something in front of it, or a dotfile would be numbered on its own name and lose it.
+    let (stem, ending) = match file_name.rfind('.') {
+        Some(at) if at > 0 => file_name.split_at(at),
+        _ => (file_name, ""),
+    };
+    let mut number = 2u32;
+    loop {
+        let candidate = format!("{stem}-{number}{ending}");
+        if !taken(&candidate) {
+            return candidate;
+        }
+        number += 1;
+    }
+}
+
+/// The words a picture carries, safe to sit inside `![...]`: a bracket of its own would close the label early, a backslash would escape whatever came next, and a line break would end the paragraph the picture is in.
+pub(crate) fn markdown_alt_text(alt: &str) -> String {
+    let mut written = String::with_capacity(alt.len());
+    for letter in alt.chars() {
+        match letter {
+            '[' | ']' | '\\' => {
+                written.push('\\');
+                written.push(letter);
+            }
+            '\n' | '\r' => written.push(' '),
+            _ => written.push(letter),
+        }
+    }
+    written.trim().to_string()
+}
+
+/// What a Markdown picture export writes: one line, the picture and the words the note gave it.
+pub(crate) fn picture_export_document(alt: &str, destination: &str) -> String {
+    format!(
+        "![{}]({destination})
+",
+        markdown_alt_text(alt)
+    )
+}
+
+/// Write a picture out as a Markdown document with the picture beside it: the document at `target`, an `imgs` folder next to it, and the file copied in under its own name.
+///
+/// Two files and a folder, which no other export here writes. Nothing is converted, so this row works for every kind of picture the reading view draws.
+///
+/// Nothing about the open document changes. An export is a file beside it.
+pub(crate) fn export_picture_markdown(
+    webview: Option<&WebView>,
+    target: &Path,
+    source: &Path,
+    alt: &str,
+) {
+    let Some(folder) = target.parent() else {
+        report_file_action_failure(webview, "That picture had nowhere to be written.");
+        return;
+    };
+    let images = folder.join(PICTURE_EXPORT_IMAGE_DIR);
+    if let Err(error) = fs::create_dir_all(&images) {
+        report_file_action_failure(
+            webview,
+            &format!("Could not make {}: {error}", images.display()),
+        );
+        return;
+    }
+    let file_name = source
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "picture".to_string());
+    let name = free_picture_name(&file_name, &|candidate| images.join(candidate).exists());
+    let copy = images.join(&name);
+    if let Err(error) = fs::copy(source, &copy) {
+        report_file_action_failure(
+            webview,
+            &format!("Could not write {}: {error}", copy.display()),
+        );
+        return;
+    }
+    // Asked of the same function the Insert box asks, so a name holding a space or a bracket is wrapped the way CommonMark wants it.
+    let destination = markdown_image_insert_destination(&copy, target);
+    match fs::write(target, picture_export_document(alt, &destination)) {
+        Ok(()) => run_page_script(
+            webview,
+            &file_written_notice_script(&target.display().to_string()),
+            "Failed to report a picture export",
+        ),
+        Err(error) => report_file_action_failure(
+            webview,
+            &format!("Could not write {}: {error}", target.display()),
+        ),
+    }
+}
+
+/// Print one picture onto a sheet of its own, at the path the save window already answered with.
+///
+/// The page put a copy of the picture in its print container at that picture's own pixel size and raised `leaf-paper-picture`, which takes everything else in the surface off the sheet — so this is the same render the page export runs, with one picture left standing. A picture taller than a sheet holds is divided by `sheet_inches`, the way a long document already is.
+///
+/// The page is told the moment the render is over, however it went: a print state left on is a window holding a bare picture where the reader's document was.
+///
+/// Nothing about the open document changes. The file is written beside it.
+pub(crate) fn print_picture_pdf(webview: Option<&WebView>, target: &Path, width: f64, height: f64) {
+    let outcome = write_page_pdf_at(webview, target, width, height);
+    run_page_script(
+        webview,
+        "window.leafPicturePrinted && window.leafPicturePrinted();",
+        "Failed to give the page back to the reader after a picture print",
+    );
+    match outcome {
+        Ok(()) => run_page_script(
+            webview,
+            &file_written_notice_script(&target.display().to_string()),
+            "Failed to report a picture print",
+        ),
+        Err(error) => report_file_action_failure(
+            webview,
+            &format!("Could not write {}: {error}", target.display()),
+        ),
+    }
+}
+
+/// The words the save window shows for one of the picture endings.
+fn picture_export_label(extension: &str) -> Option<&'static str> {
+    PICTURE_EXPORT_FORMATS
+        .iter()
+        .find(|(_, endings)| endings.contains(&extension))
+        .map(|(label, _)| *label)
+}
+
+/// Write a picture in the document out as a file of its own, in whichever row the reader picked.
+///
+/// Nothing about the open document changes. An export is a file beside it.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn export_picture(
+    webview: Option<&WebView>,
+    format: &str,
+    source: &Path,
+    target: &Path,
+    alt: &str,
+    data: &str,
+) {
+    // Asked of the one table first, so a format the save window never offered cannot reach a write below.
+    if picture_export_label(format).is_none() {
+        return;
+    }
+    // Every spelling of Markdown, asked of the one table: the row permits them all, so an arm naming one drops the rest through to a file nobody wrote and nothing said.
+    if DocumentFormat::Markdown.extensions().contains(&format) {
+        export_picture_markdown(webview, target, source, alt);
+        return;
+    }
+    // A PDF is rendered rather than encoded, so no bytes ever arrive here: `print_picture_pdf` is what writes that row, and falling through is what keeps a stray `exportPicture` naming that ending from writing raw bytes under it.
+    if format == "pdf" {
+        return;
+    }
+    // A source already in the format asked for is copied rather than re-encoded: the copy is smaller, lossless and exact, where a round trip through the page's canvas is none of the three. Measured on the one screenshot this tree has weighed, a canvas PNG came to 484 KB where the file on disk was 145 KB.
+    if picture_source_ending(source) == format {
+        match fs::copy(source, target) {
+            Ok(_) => run_page_script(
+                webview,
+                &file_written_notice_script(&target.display().to_string()),
+                "Failed to report a picture export",
+            ),
+            Err(error) => report_file_action_failure(
+                webview,
+                &format!("Could not write {}: {error}", target.display()),
+            ),
+        }
+        return;
+    }
+    // A finished file the page's own canvas wrote, for both rows. The host's PNG encoder writes every row unfiltered and reaches for a palette, both chosen because a diagram and a page of text are flat fill — a photograph is neither, and the pixels would cross as about twenty times the bytes of the file they came to.
+    match decode_base64(data) {
+        Some(bytes) if !bytes.is_empty() => match fs::write(target, &bytes) {
+            Ok(()) => run_page_script(
+                webview,
+                &file_written_notice_script(&target.display().to_string()),
+                "Failed to report a picture export",
+            ),
+            Err(error) => report_file_action_failure(
+                webview,
+                &format!("Could not write {}: {error}", target.display()),
+            ),
+        },
+        // A half-decoded picture is worse than none, so nothing is written.
+        _ => report_file_action_failure(
+            webview,
+            "That picture could not be read, so nothing was written.",
+        ),
+    }
+}
+
+/// The format a picture on disk is already in, spelled the way the export rows spell it. `jfif` and `jpeg` are left alone: neither row here names them.
+fn picture_source_ending(source: &Path) -> String {
+    source
+        .extension()
+        .map(|ending| ending.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_default()
 }
 
 /// Base64, undone. A PNG reaches the host as text because IPC carries a string, and this is the one place that turns it back into bytes. Whitespace is skipped and padding ends it; anything else is a refusal rather than a guess.

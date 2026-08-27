@@ -151,3 +151,16 @@ body.leaf-paper-diagram .diagram-print {
 body.leaf-paper-diagram .app-surface > :not(.diagram-print) {
   display: none;
 }
+/* A picture on a sheet of its own, the same trick with a picture in the box instead of a drawing. The copy is sized to the picture's own pixels, so the sheet the page measures is the picture at 1:1 rather than whatever the reader's lane had squeezed it to. */
+.picture-print {
+  display: none;
+}
+body.leaf-paper-picture .picture-print {
+  display: block;
+}
+body.leaf-paper-picture .app-surface > :not(.picture-print) {
+  display: none;
+}
+.picture-print img {
+  display: block;
+}

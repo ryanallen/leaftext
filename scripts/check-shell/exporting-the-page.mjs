@@ -46,7 +46,7 @@ export function run() {
     // A style of the document's own, one element down: mermaid writes the drawn box's height there, so a copy that shed its whole attribute must still shed only its own.
     '<div class="mermaid-view" style="height: 420px"></div>' +
     '<button class="code-copy"></button>' +
-    '<button class="image-sheet-open"></button>' +
+    '<div class="image-lane-corner"><button class="image-sheet-open"></button><button class="image-export-open"></button></div>' +
     '<div class="mermaid-tools"></div>' +
     '<div class="mermaid-zoom"></div>' +
     '</div>';
@@ -84,8 +84,8 @@ export function run() {
     if (!markup.includes('<pre class="mermaid" data-processed="true">')) {
       throw new Error(`a block lost what the renderer stamped on it: ${markup}`);
     }
-    // Four kinds of control, every one of which does nothing on somebody else's machine. The copy button is one per fenced block, which is the one an earlier reading missed.
-    for (const control of ['code-copy', 'image-sheet-open', 'mermaid-tools', 'mermaid-zoom']) {
+    // Four kinds of control, every one of which does nothing on somebody else's machine. The copy button is one per fenced block, which is the one an earlier reading missed; the picture s corner is a row, so both its buttons are named as well as the row that carries them.
+    for (const control of ['code-copy', 'image-lane-corner', 'image-sheet-open', 'image-export-open', 'mermaid-tools', 'mermaid-zoom']) {
       if (markup.includes(control)) throw new Error(`the export carried the app's own ${control}: ${markup}`);
     }
   });

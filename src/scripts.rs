@@ -500,6 +500,12 @@ pub fn diagram_path_picked_script(token: u64, path: &str) -> String {
     format!("window.leafDiagramPathPicked({token}, {path});")
 }
 
+/// Hand the page the path a picture is to be written to. `token` is the export that opened the window — the page reads the format off the path's own ending and does only that one, which is why nothing is drawn or copied before this answer arrives.
+pub fn picture_path_picked_script(token: u64, path: &str) -> String {
+    let path = serde_json::to_string(path).expect("path serializes");
+    format!("window.leafPicturePathPicked({token}, {path});")
+}
+
 /// Ask the page for the document it has already drawn, so it can be written out as a web page at `path`.
 ///
 /// The page is what cleans the markup, because the page is what knows which of its own elements are controls, and it is what holds the drawings' own stylesheet. It answers with `exportPageHtml`.

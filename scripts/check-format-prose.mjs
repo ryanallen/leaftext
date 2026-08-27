@@ -47,10 +47,39 @@ const LISTS = [
     ],
     looked: [
       ['src/markdown/images.rs', 'a picture named inside a mermaid box — `shot.png` is one example spelling in a comment about resolving a path, not a row of the export table'],
+      ['src/assets/shell/image-sheet.js', 'the picture export table, which shares three of these endings and is that list\'s own page copy'],
+      ['src/tests/images.rs', 'the eleven kinds of picture the reading view draws, which is what may be shown in a document rather than what anything may be written as'],
     ],
+    pageSource: 'src/assets/shell/flow-export.js',
     read: (formatSource) => ({
       actual: hostRows(read('src/app/fileops.rs'), formatSource),
       page: pageRows(read('src/assets/shell/flow-export.js')),
+    }),
+  },
+  {
+    name: 'the picture export formats',
+    source: 'src/app/fileops.rs',
+    what: '`PICTURE_EXPORT_FORMATS`',
+    rows: [
+      ['PNG image', ['png']],
+      ['WebP image', ['webp']],
+      ['PDF document', ['pdf']],
+      ['Markdown', ['md', 'markdown', 'mdown']],
+    ],
+    prose: [
+      'src/app/events.rs',
+      'src/main.rs',
+      'src/assets/shell/image-sheet.js',
+      'src/app/tests/export.rs',
+    ],
+    looked: [
+      ['src/assets/shell/flow-export.js', 'the diagram export table, which shares three of these endings and is that list\'s own page copy'],
+      ['src/markdown/images.rs', 'a picture named inside a mermaid box — `shot.png` is one example spelling in a comment about resolving a path, not a row of the export table'],
+    ],
+    pageSource: 'src/assets/shell/image-sheet.js',
+    read: (formatSource) => ({
+      actual: hostRows(read('src/app/fileops.rs'), formatSource, 'PICTURE_EXPORT_FORMATS'),
+      page: pageRows(read('src/assets/shell/image-sheet.js'), 'PICTURE_EXPORTS'),
     }),
   },
   {
@@ -92,9 +121,9 @@ const LISTS = [
   },
 ];
 
-/// The host's diagram export rows, read out of `src/app/fileops.rs`. A row's endings are either written out or asked of `src/format.rs`.
-export function hostRows(fileopsSource, formatSource) {
-  const table = fileopsSource.match(/const DIAGRAM_EXPORT_FORMATS[^=]*=\s*&\[([\s\S]*?)\n\];/);
+/// One of the host's export tables, read out of `src/app/fileops.rs` by name. A row's endings are either written out or asked of `src/format.rs`.
+export function hostRows(fileopsSource, formatSource, constant = 'DIAGRAM_EXPORT_FORMATS') {
+  const table = fileopsSource.match(new RegExp(`const ${constant}[^=]*=\\s*&\\[([\\s\\S]*?)\\n\\];`));
   if (!table) return null;
   const rows = [];
   for (const row of table[1].matchAll(/\(\s*"([^"]*)"\s*,\s*([^\n]+?)\s*\),/g)) {
@@ -113,9 +142,9 @@ export function hostRows(fileopsSource, formatSource) {
   return rows.length ? rows : null;
 }
 
-/// The page's copy of that list, read out of `src/assets/shell/flow-export.js`.
-export function pageRows(shellSource) {
-  const table = shellSource.match(/const DIAGRAM_EXPORTS = \[([\s\S]*?)\n\];/);
+/// The page's copy of one of those lists, read out of the fragment that draws its menu.
+export function pageRows(shellSource, constant = 'DIAGRAM_EXPORTS') {
+  const table = shellSource.match(new RegExp(`const ${constant} = \\[([\\s\\S]*?)\\n\\];`));
   if (!table) return null;
   const rows = [];
   for (const row of table[1].matchAll(/id:\s*'([^']*)'\s*,\s*endings:\s*\[([^\]]*)\]/g)) {
@@ -303,7 +332,7 @@ export function problems(readings) {
     }
     if (page === undefined) continue;
     if (!page) {
-      found.push(`src/assets/shell/flow-export.js — \`DIAGRAM_EXPORTS\` could not be read at all, so the page's copy was held to nothing`);
+      found.push(`${list.pageSource} — the page's copy of ${list.name} could not be read at all, so it was held to nothing`);
       continue;
     }
     const hostEndings = actual.map(([, endings]) => endings.join(','));
@@ -311,7 +340,7 @@ export function problems(readings) {
     if (hostEndings.join(' | ') !== pageEndings.join(' | ')) {
       found.push(`the page's copy of ${list.name} is not the host's: the Mac menu is drawn from one and the save window from the other, so a row in one and not the other is a format a reader can pick and not save, or save and never see offered.`);
       found.push(`  ${list.source}: ${hostEndings.join(' | ')}`);
-      found.push(`  src/assets/shell/flow-export.js: ${pageEndings.join(' | ')}`);
+      found.push(`  ${list.pageSource}: ${pageEndings.join(' | ')}`);
     }
   }
   return found;
@@ -327,6 +356,7 @@ const FIXTURE = {
   ],
   prose: ['b.rs'],
   looked: [['f.rs', 'a made-up reason']],
+  pageSource: 'a.js',
 };
 
 /// A second made-up list, with no page copy and a reading list of its own, so a failure is proved to hand over the files that describe the list that moved rather than every file the check knows.

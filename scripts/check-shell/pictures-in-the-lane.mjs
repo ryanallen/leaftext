@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { check, fakeElement, readingCss, record, root } from './shared.mjs';
+import { check, checkLendingTheWindow, fakeElement, readingCss, record, root } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -89,18 +89,48 @@ export function run() {
     }
     if (!fill[1].includes('var(--lt-wash-hover)')) throw new Error('the corner opener answers the pointer with something other than the one wash');
     // And the surface it is painted over is the one the button rests on, or the hover is a different color from the button.
-    const rest = css.slice(css.indexOf('.table-sheet-open,\n.image-sheet-open {'), css.indexOf('.table-sheet-open .lt-icon'));
+    const rest = css.slice(css.indexOf('.table-sheet-open,\n.image-sheet-open,\n.image-export-open {'), css.indexOf('.table-sheet-open .lt-icon'));
     if (!rest.includes('background: var(--lt-surface-elevated);')) {
       throw new Error('the opener no longer rests on the surface its hover is painted over');
+    }
+    if (!rule.includes('.image-export-open:hover')) throw new Error('the picture export button no longer shares the corner opener s hover');
+  });
+
+  // Two controls in one corner, so the corner is what is placed and what appears — a second button pinned at the same top and right would sit on top of the first.
+  check('a widened picture s two corner controls sit in a row and appear together', () => {
+    const css = readingCss();
+    const ruleBody = (selector) => {
+      const at = css.indexOf(selector);
+      if (at < 0) throw new Error(`no rule for ${selector}`);
+      return css.slice(at, css.indexOf('}', at));
+    };
+    const corner = ruleBody('.image-lane-corner {');
+    for (const declaration of ['position: absolute', 'display: flex', 'gap: var(--lt-space-6)']) {
+      if (!corner.includes(declaration)) throw new Error(`the picture corner is no longer a placed row: ${declaration}`);
+    }
+    // The buttons are laid out by the row, so one of them carrying its own corner would be back on top of the other.
+    const shape = ruleBody('.table-sheet-open,\n.image-sheet-open,\n.image-export-open {');
+    if (/position:\s*absolute/.test(shape)) throw new Error('a corner control places itself again, so the pair stack on one another');
+    // Held at the corner rather than at each button, or one of the two would be the only thing that ever showed.
+    const hidden = ruleBody('.table-sheet-open,\n.image-lane-corner {');
+    if (!/opacity:\s*0/.test(hidden)) throw new Error('the picture corner is drawn over the picture before the pointer asks for it');
+    const shown = ruleBody('.table-lane:hover .table-sheet-open,');
+    if (!shown.includes('.image-lane:hover .image-lane-corner') || !shown.includes('.image-lane-corner:focus-within')) {
+      throw new Error('pointing at a widened picture, or reaching its corner by keyboard, no longer reveals both controls');
     }
   });
 
   // The full-window picture is a reader and nothing else: it shows an element the page already holds, so no route from opening or closing it reaches the document buffer, and none of it needs a host.
   check('a full-window picture is safe to open and can never write', () => {
-    const fragment = readFileSync(join(root, 'src/assets/shell/image-sheet.js'), 'utf8');
+    const whole = readFileSync(join(root, 'src/assets/shell/image-sheet.js'), 'utf8');
     for (const part of ['function bindImageSheet(', 'function openImageSheet(', 'function closeImageSheet()', 'leafFocusForKeyboard(opener)']) {
-      if (!fragment.includes(part)) throw new Error(`the picture sheet lost: ${part}`);
+      if (!whole.includes(part)) throw new Error(`the picture sheet lost: ${part}`);
     }
+    // The sheet's own half of the fragment, which is everything above the export beside it: the export does talk to the host, and the claim here is about opening and closing a picture.
+    const split = whole.indexOf('// ---- taking a picture out of the document');
+    if (split < 0) throw new Error('the fragment no longer separates the full-window picture from the export beside it');
+    const fragment = whole.slice(0, split);
+    if (!fragment.includes('function openImageSheet(')) throw new Error('the full-window picture is no longer the first half of its fragment');
     if (/\b(?:send|sendEditCommand|ipc\.postMessage)\b/.test(fragment)) {
       throw new Error('opening or closing the picture sheet can still reach the document buffer');
     }
@@ -112,12 +142,12 @@ export function run() {
     if (/textContent\s*=/.test(fragment) || fragment.includes('createElement(\'header\')')) {
       throw new Error('the full-window picture grew words of its own');
     }
-    // Opening is reading, so the padlock is never asked; a marked missing picture has nothing behind the mark to show.
-    if (/readerEditingAllowed|documentLocked/.test(fragment)) {
-      throw new Error('opening a picture now waits on the padlock, and opening is reading');
+    // Opening is reading and an export writes a file beside the document, so neither half ever asks the padlock.
+    if (/readerEditingAllowed|documentLocked/.test(whole)) {
+      throw new Error('opening or exporting a picture now waits on the padlock, and neither one writes the document');
     }
-    if ((fragment.match(/imageMissing === 'true'/g) || []).length < 2) {
-      throw new Error('a marked missing picture can reach the full-window view, or still gets an opener');
+    if ((whole.match(/imageMissing === 'true'/g) || []).length < 2) {
+      throw new Error('a marked missing picture can reach the full-window view, or still gets a corner');
     }
     const lib = readFileSync(join(root, 'src/lib.rs'), 'utf8');
     const decorate = lib.indexOf('assets/shell/decorate.js');
@@ -194,38 +224,266 @@ export function run() {
     }
   });
 
-  // Which pictures get an opener, run rather than read: a marked missing one is holding our glyph over a transparent pixel, so there is nothing behind it to open.
-  check('a marked missing picture gets no opener', () => {
+  // Which pictures get a corner and what is in it, run rather than read: a marked missing one is holding our glyph over a transparent pixel, so there is nothing behind it to open or to write out, and a picture served from the web has no file on this disk for any of the export's four rows.
+  check('a widened picture on this disk draws both corner controls, a remote one draws only the opener, and a marked missing one draws none', () => {
     const paragraph = (picture) => {
       const block = fakeElement('p');
       block.tagName = 'P';
       block.querySelector = (selector) => {
         if (selector === ':scope > img') return picture;
-        if (selector === ':scope > .image-sheet-open') return block.children.find((child) => child.className === 'image-sheet-open') || null;
+        if (selector === ':scope > .image-lane-corner') return block.children.find((child) => child.className === 'image-lane-corner') || null;
         return null;
       };
       return block;
     };
-    const real = paragraph(Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {} }));
-    const missing = paragraph(Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: { imageMissing: 'true' } }));
+    const picture = (src, dataset = {}) => {
+      const img = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset });
+      img.setAttribute('src', src);
+      return img;
+    };
+    const real = paragraph(picture('leaf-image://local/imgs/shot.png'));
+    const remote = paragraph(picture('https://example.com/shot.png'));
+    const missing = paragraph(picture('leaf-image://local/imgs/gone.png', { imageMissing: 'true' }));
     const empty = paragraph(null);
-    booted.bindImageSheet({ querySelectorAll: () => [real, missing, empty] });
-    const openers = (block) => block.children.filter((child) => child.className === 'image-sheet-open').length;
-    if (openers(real) !== 1) throw new Error('a picture did not get its opener');
-    if (openers(missing)) throw new Error('a marked missing picture was given an opener');
-    if (openers(empty)) throw new Error('a paragraph with no picture in it was given an opener');
-    // Twice over the same page must not stack a second button on every picture.
+    booted.bindImageSheet({ querySelectorAll: () => [real, remote, missing, empty] });
+    const corner = (block) => block.children.filter((child) => child.className === 'image-lane-corner');
+    const controls = (block) => {
+      const row = corner(block);
+      return row.length === 1 ? row[0].children.map((child) => child.className) : [];
+    };
+    if (String(controls(real)) !== 'image-sheet-open,image-export-open') {
+      throw new Error(`a picture on this disk drew ${JSON.stringify(controls(real))} rather than the opener and the export`);
+    }
+    if (String(controls(remote)) !== 'image-sheet-open') {
+      throw new Error(`a picture served from the web drew ${JSON.stringify(controls(remote))}, and none of the export's rows can reach its file`);
+    }
+    if (corner(missing).length) throw new Error('a marked missing picture was given a corner');
+    if (corner(empty).length) throw new Error('a paragraph with no picture in it was given a corner');
+    // Twice over the same page must not stack a second corner on every picture.
     booted.bindImageSheet({ querySelectorAll: () => [real] });
-    if (openers(real) !== 1) throw new Error('a second pass stacked another opener on the same picture');
-    // The fetch fails after the page is decorated, so refusing at the bind is not enough on its own: the mark has to take back the lane and the opener the render already gave, and a picture that arrives later has to get both back.
+    if (corner(real).length !== 1) throw new Error('a second pass stacked another corner on the same picture');
+    // The fetch fails after the page is decorated, so refusing at the bind is not enough on its own: the mark has to take back the lane and the corner the render already gave, and a picture that arrives later has to get both back.
     const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
     const mark = decorate.slice(decorate.indexOf('function markMissingImage'), decorate.indexOf('function restoreMissingImage'));
-    for (const wanted of ["classList.remove('image-lane')", "':scope > .image-sheet-open'"]) {
+    for (const wanted of ["classList.remove('image-lane')", "':scope > .image-lane-corner'"]) {
       if (!mark.includes(wanted)) throw new Error(`the missing mark no longer takes back: ${wanted}`);
     }
     const refresh = decorate.slice(decorate.indexOf('window.leafRefreshImages'));
     if (!refresh.includes('laneWidePictures();') || !refresh.includes('bindImageSheet();')) {
       throw new Error('a picture that has arrived at last never gets its lane or its opener back');
+    }
+  });
+
+  // The sheet a picture is printed on. The shipped paper class does the opposite of what this needs on its own — it grows the surface to the whole document — so a print under it alone would be the note with the picture somewhere in it. The cascade decides this and the stand-in page has none, so the rules are read off the stylesheet the way the other CSS checks here are.
+  check('a printed picture is the only thing left on the sheet', () => {
+    if (!booted.document.getElementById('picturePrint')) throw new Error('the page has no container to print a picture in');
+    const css = readingCss();
+    // Anchored at the start of a line, so a rule under a wider selector cannot answer for one keyed on the container itself.
+    const rule = (selector, paint) => css.includes('\n' + selector + ' {' + '\n' + '  ' + paint + ';');
+    if (!rule('.picture-print', 'display: none')) throw new Error('the print container is not out of the layout until an export fills it');
+    if (!rule('body.leaf-paper-picture .picture-print', 'display: block')) throw new Error('the print state does not put the container on the sheet');
+    if (!rule('body.leaf-paper-picture .app-surface > :not(.picture-print)', 'display: none')) {
+      throw new Error('the print state leaves the app frame, the pane and the neighboring blocks on the sheet');
+    }
+  });
+
+  // The whole gesture, driven: press Export, answer the save window, and read what went to the host. A picture's four rows split two ways — three write a file and the PDF is rendered — so what is proved here is that the ending on the answered path is what picks between them, and that neither row ever runs the other's command.
+  check('the ending the reader saved under picks the row, and a PDF prints where Markdown copies', () => {
+    const lane = fakeElement('p');
+    lane.tagName = 'P';
+    const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, alt: 'The find bar' });
+    picture.setAttribute('src', 'leaf-image://local/imgs/find-bar.png');
+    picture.currentSrc = 'leaf-image://local/imgs/find-bar.png?leaf-epoch=3';
+    // The room the reader's lane had it in, which is not what a sheet is made to: the picture's own pixels are.
+    picture.getBoundingClientRect = () => ({ top: 0, left: 0, right: 700, bottom: 240, width: 700, height: 240 });
+    picture.naturalWidth = 1888;
+    picture.naturalHeight = 1940;
+    lane.querySelector = (selector) => {
+      if (selector === ':scope > img') return picture;
+      if (selector === ':scope > .image-lane-corner') return lane.children.find((child) => child.className === 'image-lane-corner') || null;
+      return null;
+    };
+    booted.bindImageSheet({ querySelectorAll: () => [lane] });
+    const corner = lane.children.find((child) => child.className === 'image-lane-corner');
+    const button = corner && corner.children.find((child) => child.className === 'image-export-open');
+    if (!button) throw new Error('a picture on this disk was left with no way out');
+
+    const was = { send: booted.ipc.postMessage, hold: booted.window.leafHoldAppearance, toast: booted.leafToast };
+    const sent = [];
+    const said = [];
+    const held = [];
+    const box = booted.document.getElementById('picturePrint');
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.window.leafHoldAppearance = (on) => held.push(on);
+    booted.leafToast = (words) => said.push(words);
+    const press = () => (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+    const answer = (path) => {
+      const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
+      if (!ask) throw new Error('pressing Export asked nowhere for a path');
+      if (ask.source !== 'leaf-image://local/imgs/find-bar.png') {
+        throw new Error(`the ask carried ${JSON.stringify(ask.source)} rather than the address the picture is drawn from`);
+      }
+      booted.window.leafPicturePathPicked(ask.token, path);
+    };
+    try {
+      press();
+      answer('/out/find-bar.md');
+      const copy = sent.filter((one) => one.command === 'exportPicture').pop();
+      if (!copy) throw new Error('a name ending in md wrote nothing at all');
+      if (copy.format !== 'md') throw new Error(`the Markdown row went out as ${JSON.stringify(copy.format)}`);
+      if (copy.path !== '/out/find-bar.md') throw new Error('the write carried a path the reader never gave');
+      if (copy.alt !== 'The find bar') throw new Error('the document would be written without the words the note gave the picture');
+      if (sent.some((one) => one.command === 'printPicturePdf')) throw new Error('the Markdown row printed a sheet as well as copying the file');
+
+      press();
+      answer('/out/find-bar.pdf');
+      const print = sent.filter((one) => one.command === 'printPicturePdf').pop();
+      if (said.length) throw new Error(`the PDF refused: ${said.join(' / ')}`);
+      if (!print) throw new Error('a name ending in pdf asked for no print at all');
+      // Nothing the page could have made: a PDF is rendered, so the row that carries bytes must never be the one that runs.
+      if (sent.filter((one) => one.command === 'exportPicture').length !== 1) {
+        throw new Error('a PDF went out as bytes the page made, which is a .pdf full of something else');
+      }
+      if (print.width !== 1888 || print.height !== 1940) {
+        throw new Error(`the sheet was asked for at ${print.width}x${print.height} rather than the picture's own 1888x1940`);
+      }
+      if (!box.children.length) throw new Error('the picture was never put anywhere the render could reach it');
+      if (!booted.document.body.classList.contains('leaf-paper-picture')) {
+        throw new Error('the sheet state was never raised, so the print would be the whole document with the picture somewhere in it');
+      }
+      if (String(held) !== 'true') throw new Error(`the appearance was held ${held.length} times: ${held.join(', ') || 'never'}`);
+
+      // The host has answered. The page is the reader's document again however the print went — a state left on is a window holding a bare picture.
+      booted.window.leafPicturePrinted();
+      if (booted.document.body.classList.contains('leaf-paper-picture')) throw new Error('the sheet state stayed on after the host answered');
+      if (box.children.length) throw new Error('the print container kept the picture after the host answered');
+      if (String(held) !== 'true,false') throw new Error(`the appearance hold was not let go exactly once: ${held.join(', ')}`);
+      booted.window.leafPicturePrinted();
+      if (String(held) !== 'true,false') throw new Error(`a second answer let the appearance hold go twice: ${held.join(', ')}`);
+
+      // An ending no row names writes nothing and says so, rather than falling into whichever arm happens to be first.
+      press();
+      answer('/out/find-bar.gif');
+      if (!said.length) throw new Error('a name ending in nothing the window offers wrote silently');
+      if (sent.filter((one) => one.command === 'exportPicture').length !== 1) throw new Error('an unoffered ending still wrote a file');
+    } finally {
+      booted.window.leafPicturePrinted();
+      booted.ipc.postMessage = was.send;
+      booted.window.leafHoldAppearance = was.hold;
+      booted.leafToast = was.toast;
+    }
+  });
+
+  // The two conversion rows, driven over a canvas of the check's own. Every way they break is silent — a PNG saved under a `.webp` name is still a file, and a picture past what the format holds comes back as an empty address rather than as a throw — so what is pressed here is the whole path from the button to what went to the host.
+  checkLendingTheWindow('a picture already in the format asked for is copied, and a conversion is the file the canvas wrote', async () => {
+    const lane = fakeElement('p');
+    lane.tagName = 'P';
+    const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, alt: 'A photo' });
+    picture.setAttribute('src', 'leaf-image://local/imgs/holiday.jpg?leaf-epoch=1');
+    picture.naturalWidth = 40;
+    picture.naturalHeight = 30;
+    lane.querySelector = (selector) => {
+      if (selector === ':scope > img') return picture;
+      if (selector === ':scope > .image-lane-corner') return lane.children.find((child) => child.className === 'image-lane-corner') || null;
+      return null;
+    };
+    booted.bindImageSheet({ querySelectorAll: () => [lane] });
+    const button = lane.children
+      .find((child) => child.className === 'image-lane-corner')
+      .children.find((child) => child.className === 'image-export-open');
+
+    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, canvas: booted.pictureCanvas };
+    const sent = [];
+    const said = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.leafToast = (words) => said.push(words);
+    // A canvas of the check's own: the stand-in page has none, and what is being read back is which type the export asked for and what it did with the answer.
+    let drawn = { width: 40, height: 30 };
+    let answers = (type) => 'data:' + type + ';base64,QUJD';
+    booted.pictureCanvas = async () => ({ width: drawn.width, height: drawn.height, toDataURL: (type) => answers(type) });
+    const press = () => (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+    const answer = (path) => {
+      const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
+      if (!ask) throw new Error('pressing Export asked nowhere for a path');
+      booted.window.leafPicturePathPicked(ask.token, path);
+    };
+    // The rows that convert are two awaits deep, so the turns have to be run out before what went to the host can be read.
+    const settle = async () => {
+      for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
+    };
+    const written = () => sent.filter((one) => one.command === 'exportPicture').pop();
+    try {
+      // A JPEG asked for as a PNG: a conversion, so the canvas writes the file and it travels as bytes.
+      press();
+      answer('/out/holiday.png');
+      await settle();
+      let file = written();
+      if (!file) throw new Error(`converting a JPEG to a PNG wrote nothing: ${said.join(' / ') || 'and said nothing either'}`);
+      if (file.format !== 'png' || !file.data) throw new Error('the conversion carried no file for the host to write');
+      if (file.data !== 'QUJD') throw new Error(`the host was handed ${JSON.stringify(file.data)} rather than what the canvas wrote`);
+
+      // A PNG asked for as a PNG: nothing is drawn at all, and the host is handed the address to copy the file off.
+      picture.setAttribute('src', 'leaf-image://local/imgs/holiday.png?leaf-epoch=1');
+      press();
+      answer('/out/copy.png');
+      await settle();
+      file = written();
+      if (file.data) throw new Error('a picture already in the format asked for was re-encoded rather than copied');
+      if (file.source !== 'leaf-image://local/imgs/holiday.png?leaf-epoch=1') {
+        throw new Error('the copy carried no address for the host to read the file off');
+      }
+
+      // A canvas answering with a PNG when it was asked for a WebP: saving that under a `.webp` name is a file nobody can open, so the type in the answer is what settles it.
+      picture.setAttribute('src', 'leaf-image://local/imgs/holiday.jpg?leaf-epoch=1');
+      answers = () => 'data:image/png;base64,QUJD';
+      let before = sent.length;
+      press();
+      answer('/out/holiday.webp');
+      await settle();
+      if (sent.length !== before + 1) throw new Error('a canvas that could not write WebP still wrote a file under that name');
+      if (!said.length) throw new Error('a canvas that could not write WebP said nothing about it');
+      said.length = 0;
+
+      // Past what the format holds, the canvas answers an empty address rather than failing, so the refusal has to be ours and it has to come before the encode.
+      answers = (type) => 'data:' + type + ';base64,QUJD';
+      drawn = { width: 16384, height: 30 };
+      before = sent.length;
+      press();
+      answer('/out/huge.webp');
+      await settle();
+      if (sent.length !== before + 1) throw new Error('a picture past what WebP holds still wrote a file');
+      if (!said.some((words) => /too big for WebP/.test(words))) {
+        throw new Error(`a picture past what WebP holds was refused with: ${said.join(' / ') || 'nothing'}`);
+      }
+
+      // And the same picture is fine as a PNG, which is what that refusal points a reader at.
+      press();
+      answer('/out/huge.png');
+      await settle();
+      if (written().format !== 'png') throw new Error('a picture too wide for WebP could not be written as a PNG either');
+    } finally {
+      booted.ipc.postMessage = was.send;
+      booted.leafToast = was.toast;
+      booted.pictureCanvas = was.canvas;
+    }
+  });
+
+  // The one thing the stand-in page cannot be asked at all: whether the pixels come back. It has no canvas, so what is held here is the request the export makes — anonymous cross-origin, which is the whole of what changed in the page, and a fresh request rather than the copy on screen, which is tainted and always will be.
+  check('a conversion asks for the picture again in anonymous cross-origin mode', () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/image-sheet.js'), 'utf8');
+    const draw = fragment.slice(fragment.indexOf('function pictureCanvas('), fragment.indexOf('async function pictureFileBase64('));
+    if (!draw) throw new Error('nothing in the fragment draws a picture for a conversion');
+    if (!/new Image\(\)/.test(draw)) {
+      throw new Error('the conversion draws the element on the page, whose canvas is tainted and can never be read back');
+    }
+    if (!/crossOrigin\s*=\s*'anonymous'/.test(draw)) {
+      throw new Error('the conversion no longer asks in anonymous cross-origin mode, so no pixel of the picture can be read back');
+    }
+    // The host half of the same pair: the header is sent for a picture and for nothing else.
+    const protocol = readFileSync(join(root, 'src/markdown/image_protocol.rs'), 'utf8');
+    const rule = protocol.slice(protocol.indexOf('fn allow_origin_for('), protocol.indexOf('/// True when `path` names a file'));
+    if (!rule.includes('content_type.starts_with("image/")')) {
+      throw new Error('the picture responder no longer holds its cross-origin header to the pictures the reading view draws');
     }
   });
 

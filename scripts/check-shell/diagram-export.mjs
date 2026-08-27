@@ -2,7 +2,7 @@
 
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, checkSettled, diagramStand, readingCss, record, runShell, source } from './shared.mjs';
+import { check, checkLendingTheWindow, diagramStand, readingCss, record, runShell, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -344,14 +344,8 @@ export function run() {
     }
   });
 
-  // The picture checks all lend the same globals — a canvas, an `Image`, `btoa` — so they run one after another. `checkSettled` starts every body at once, and two of these interleaved leave each one reading the other's window.
-  let pictureQueue = Promise.resolve();
-  const checkPicture = (name, run) => {
-    const mine = pictureQueue.then(run);
-    // Each waits for the one before to finish either way, and still reports its own failure as its own.
-    pictureQueue = mine.catch(() => {});
-    checkSettled(name, () => mine);
-  };
+  // The picture checks all lend the same globals — a canvas, an `Image`, `btoa` — so they run one after another, on the one queue every lending check shares. The picture export beside this one lends the same window, so a queue of this file's own would let the two interleave.
+  const checkPicture = checkLendingTheWindow;
 
   // A window that can draw one, which is where the three picture rows part: PNG hands the host raw pixels to encode, WebP and JPEG hand it a file the canvas already wrote. The stand-in page has no canvas at all, so one is lent for the length of the check.
   const withCanvas = (answer) => {

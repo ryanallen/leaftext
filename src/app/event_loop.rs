@@ -877,6 +877,23 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     width,
                     height,
                 } => editing_cmds::write_diagram_pdf(&reader, &path, width, height),
+                IpcCommand::PickPicturePath {
+                    token,
+                    source,
+                    format,
+                } => editing_cmds::pick_picture(&reader, token, &source, format.as_deref()),
+                IpcCommand::ExportPicture {
+                    format,
+                    source,
+                    path,
+                    alt,
+                    data,
+                } => editing_cmds::write_picture(&reader, &format, &source, &path, &alt, &data),
+                IpcCommand::PrintPicturePdf {
+                    path,
+                    width,
+                    height,
+                } => editing_cmds::write_picture_pdf(&reader, &path, width, height),
                 IpcCommand::ExportPdf {
                     format,
                     width,

@@ -1279,12 +1279,12 @@ function markMissingImage(img) {
   img.height = MISSING_IMAGE_SIZE;
   img.classList.add('lt-icon', 'lt-icon-missing-image');
   img.src = TRANSPARENT_PIXEL;
-  // The fetch fails after the page is decorated, so the lane and its opener are already on: take both off, because there is nothing behind the mark to open and nothing to widen it for.
+  // The fetch fails after the page is decorated, so the lane and its corner are already on: take both off, because there is nothing behind the mark to open, nothing to write out, and nothing to widen it for.
   const block = img.parentElement;
   if (!block || !block.classList.contains('image-lane')) return;
   block.classList.remove('image-lane');
-  const opener = block.querySelector(':scope > .image-sheet-open');
-  if (opener) opener.remove();
+  const corner = block.querySelector(':scope > .image-lane-corner');
+  if (corner) corner.remove();
 }
 // Point a marked image back at its own source, so the next stamp can try it again.
 function restoreMissingImage(img) {

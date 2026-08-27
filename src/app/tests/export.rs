@@ -1185,3 +1185,251 @@ fn a_document_taller_than_a_pdf_page_is_divided_into_equal_sheets() {
         );
     }
 }
+
+/// The picture export's own save window: the rows it offers and the name it suggests, on both platforms, since the window itself cannot be reached from here.
+///
+/// PNG leads on purpose, and that order is what a bare name becomes: Windows names a file with no ending off the first row, and a reader pressing Export on a picture wants a picture. The diagram's table leads with Markdown, so a copy of that order would be the wrong answer here.
+#[test]
+fn the_picture_save_window_leads_with_png_and_offers_what_the_host_writes() {
+    let unasked = save_window_offer(PICTURE_EXPORT_FORMATS, None, "picture-menu");
+    assert_eq!(
+        unasked.filters,
+        PICTURE_EXPORT_FORMATS.to_vec(),
+        "a window nobody was asked ahead of dropped a format Windows offers in its dropdown"
+    );
+    assert_eq!(
+        unasked.name, "picture-menu.png",
+        "a bare name is no longer built off the first row, which is the whole reason PNG leads"
+    );
+    assert_eq!(
+        PICTURE_EXPORT_FORMATS,
+        &[
+            ("PNG image", &["png"][..]),
+            ("WebP image", &["webp"][..]),
+            ("PDF document", &["pdf"][..]),
+            ("Markdown", DocumentFormat::Markdown.extensions()),
+        ],
+        "the picture window offers a format the host does not write, or lists them in an order that names a bare file wrongly"
+    );
+
+    // One row and a name already wearing its ending, which is the whole of what a Mac panel can work from.
+    for (label, endings) in PICTURE_EXPORT_FORMATS {
+        for asked in *endings {
+            for spelling in [asked.to_string(), asked.to_ascii_uppercase()] {
+                let picked = save_window_offer(PICTURE_EXPORT_FORMATS, Some(&spelling), "shot");
+                assert_eq!(
+                    picked.filters,
+                    vec![(*label, *endings)],
+                    "a Mac panel asked with {spelling} was left more than the one row the reader picked"
+                );
+                assert_eq!(
+                    picked.name,
+                    format!("shot.{}", endings[0]),
+                    "the reader picked {label} as {spelling} and the suggested name does not end in the row's first spelling"
+                );
+            }
+        }
+    }
+
+    // Nothing the table names, so every row stands: a window that offered nothing is one a reader cannot save from at all.
+    let unknown = save_window_offer(PICTURE_EXPORT_FORMATS, Some("gif"), "shot");
+    assert_eq!(unknown.filters, PICTURE_EXPORT_FORMATS.to_vec());
+    assert_eq!(unknown.name, "shot.png");
+}
+
+/// The name a copied picture takes in the `imgs` folder. An export that quietly replaced somebody's file is the one mistake here nobody can undo, so a taken name is written beside rather than over.
+#[test]
+fn a_picture_copied_into_imgs_is_written_beside_a_name_already_there() {
+    let free = |taken: &[&str], name: &str| {
+        let held: Vec<String> = taken.iter().map(|one| (*one).to_string()).collect();
+        free_picture_name(name, &|candidate| held.iter().any(|one| one == candidate))
+    };
+
+    assert_eq!(
+        free(&[], "shot.png"),
+        "shot.png",
+        "a free name was numbered"
+    );
+    assert_eq!(
+        free(&["shot.png"], "shot.png"),
+        "shot-2.png",
+        "a second export wrote over the first"
+    );
+    assert_eq!(
+        free(&["shot.png", "shot-2.png"], "shot.png"),
+        "shot-3.png",
+        "the number stops going up once one name beside it is taken"
+    );
+    // Two dots, so the number has to land before the last one rather than at the end of the whole name.
+    assert_eq!(
+        free(&["a.tar.gz"], "a.tar.gz"),
+        "a.tar-2.gz",
+        "a name with two dots was numbered past its ending"
+    );
+    // A dotfile is all ending and no stem, so numbering it on the dot would take its name away.
+    assert_eq!(free(&[".hidden"], ".hidden"), ".hidden-2");
+    assert_eq!(free(&["plain"], "plain"), "plain-2");
+}
+
+/// The one line a Markdown picture export writes, and the words it puts in the label.
+#[test]
+fn a_picture_document_carries_the_words_the_note_gave_it() {
+    assert_eq!(
+        picture_export_document("The find bar", "imgs/shot.png"),
+        "![The find bar](imgs/shot.png)\n"
+    );
+    assert_eq!(
+        picture_export_document("", "imgs/shot.png"),
+        "![](imgs/shot.png)\n"
+    );
+    // A bracket of its own would close the label early and leave the rest of the words loose in the document.
+    assert_eq!(
+        markdown_alt_text("Before [after] end"),
+        r"Before \[after\] end",
+        "a bracket in the words was left to close the label"
+    );
+    assert_eq!(
+        markdown_alt_text(r"a \ b"),
+        r"a \\ b",
+        "a backslash in the words was left to escape whatever came after it"
+    );
+    // A line break would end the paragraph the picture is in, so the picture and its words would come apart.
+    assert_eq!(markdown_alt_text("first\nsecond"), "first second");
+    assert_eq!(markdown_alt_text("first\r\nsecond"), "first  second");
+    assert_eq!(markdown_alt_text("  padded  "), "padded");
+}
+
+/// The whole of the Markdown row, on a real folder: the document, the `imgs` folder beside it, and the picture copied in — then a second export of the same picture, which must land beside the first rather than over it.
+#[test]
+fn a_markdown_picture_export_writes_the_document_the_folder_and_the_copy() {
+    let dir = std::env::temp_dir().join(format!("leaf-picture-export-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("the export folder is made");
+    let source = dir.join("shot.png");
+    std::fs::write(&source, b"the picture's own bytes").expect("the picture is written");
+
+    let out = dir.join("out");
+    std::fs::create_dir_all(&out).expect("the destination folder is made");
+    let target = out.join("keeping this.md");
+    export_picture_markdown(None, &target, &source, "The find bar");
+
+    let images = out.join(PICTURE_EXPORT_IMAGE_DIR);
+    assert!(
+        images.is_dir(),
+        "no imgs folder was made beside the document"
+    );
+    assert_eq!(
+        std::fs::read(images.join("shot.png")).expect("the copy is there"),
+        b"the picture's own bytes",
+        "the picture beside the document is not the file it was copied from"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&target).expect("the document is there"),
+        "![The find bar](imgs/shot.png)\n",
+        "the document does not hold the picture and the words the note gave it"
+    );
+
+    // Again, into the same folder: the first copy has to still be there afterwards.
+    let second = out.join("again.md");
+    export_picture_markdown(None, &second, &source, "The find bar");
+    assert_eq!(
+        std::fs::read(images.join("shot.png")).expect("the first copy is still there"),
+        b"the picture's own bytes",
+        "a second export wrote over the picture the first one put there"
+    );
+    assert_eq!(
+        std::fs::read(images.join("shot-2.png")).expect("the second copy is there"),
+        b"the picture's own bytes",
+        "the second export did not write its picture beside the first"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&second).expect("the second document is there"),
+        "![The find bar](imgs/shot-2.png)\n",
+        "the second document points at the first export's picture rather than its own"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// The PDF row is rendered by the host rather than encoded from anything the page sent, so the command that carries bytes must never write a file under that ending — a `.pdf` full of whatever else arrived is a file a reader cannot open and was told nothing about.
+///
+/// `print_picture_pdf` is what writes that row, and it needs a window, which is why what is held here is the other half: the bytes-carrying command leaves the path alone.
+#[test]
+fn a_picture_export_never_writes_a_pdf_or_a_format_the_window_never_offered() {
+    let dir = std::env::temp_dir().join(format!("leaf-picture-rows-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("the folder is made");
+    let source = dir.join("shot.png");
+    std::fs::write(&source, b"the picture's own bytes").expect("the picture is written");
+
+    for ending in ["pdf", "gif", "svg", "html", ""] {
+        let target = dir.join(format!("out.{ending}"));
+        export_picture(None, ending, &source, &target, "", "");
+        assert!(
+            !target.exists(),
+            "a picture export under .{ending} wrote a file the window never offered it under"
+        );
+    }
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// The two picture rows, on a real folder. A source already in the format asked for is copied rather than re-encoded — smaller, lossless and exact, where a round trip through the page's canvas is none of the three — and a conversion is the finished file the canvas wrote, written as it arrived.
+#[test]
+fn a_picture_already_in_the_format_asked_for_comes_out_byte_for_byte() {
+    let dir = std::env::temp_dir().join(format!("leaf-picture-rows-2-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("the folder is made");
+
+    // A real PNG's first bytes, so a file written from them reads as one.
+    let png = b"\x89PNG\r\n\x1a\nthe picture's own bytes".to_vec();
+    let source = dir.join("shot.png");
+    std::fs::write(&source, &png).expect("the picture is written");
+
+    // PNG out of a PNG: copied, and the data the page sent is not what lands.
+    let target = dir.join("out.png");
+    export_picture(None, "png", &source, &target, "", "bm90IHRoZSBmaWxl");
+    assert_eq!(
+        std::fs::read(&target).expect("the copy is there"),
+        png,
+        "a PNG exported as a PNG was re-encoded rather than copied, so it is a different file from the one on disk"
+    );
+
+    // The ending is read whatever case it is written in, or a `.PNG` would be re-encoded.
+    let shouted = dir.join("SHOT.PNG");
+    std::fs::write(&shouted, &png).expect("the picture is written");
+    let out = dir.join("out-shouted.png");
+    export_picture(None, "png", &shouted, &out, "", "bm90IHRoZSBmaWxl");
+    assert_eq!(std::fs::read(&out).expect("the copy is there"), png);
+
+    // WebP out of a PNG: a conversion, so what the canvas wrote is what is written.
+    let webp = b"RIFF\x24\x00\x00\x00WEBPVP8 ".to_vec();
+    let encoded = "UklGRiQAAABXRUJQVlA4IA==";
+    let converted = dir.join("out.webp");
+    export_picture(None, "webp", &source, &converted, "", encoded);
+    assert_eq!(
+        std::fs::read(&converted).expect("the converted file is there"),
+        webp,
+        "a converted picture is not the file the page's canvas wrote"
+    );
+    assert!(
+        std::fs::read(&converted).unwrap().starts_with(b"RIFF"),
+        "the file written under .webp does not read as a WebP"
+    );
+
+    // A payload that is not base64 at all: a half-decoded picture is worse than none, so nothing is written.
+    let broken = dir.join("broken.webp");
+    export_picture(None, "webp", &source, &broken, "", "not base64 *");
+    assert!(
+        !broken.exists(),
+        "a payload that did not decode still wrote a file nobody can open"
+    );
+    let empty = dir.join("empty.webp");
+    export_picture(None, "webp", &source, &empty, "", "");
+    assert!(
+        !empty.exists(),
+        "a conversion that made no bytes still wrote an empty file"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}

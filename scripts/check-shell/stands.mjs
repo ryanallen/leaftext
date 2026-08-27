@@ -3,8 +3,18 @@
 // Reached through `shared.mjs`, never imported by a subject file directly.
 
 import vm from 'node:vm';
+import { checkSettled } from './collector.mjs';
 import { FakeElement, fakeElement, matchingDescendants, runShell, VIEW_WIDTH } from './page.mjs';
 import { source } from './script.mjs';
+
+// One queue for every check that lends the booted window something of its own — a canvas, an `Image`, the send, the toast. `checkSettled` starts every body at once, and two of those interleaved leave each one reading the other's window. It lives here rather than in either subject because the diagram export and the picture export both lend the same globals, and a queue per file would let those two interleave with each other.
+let lendingQueue = Promise.resolve();
+export function checkLendingTheWindow(name, run) {
+  const mine = lendingQueue.then(run);
+  // Each waits for the one before to finish either way, and still reports its own failure as its own.
+  lendingQueue = mine.catch(() => {});
+  checkSettled(name, () => mine);
+}
 
 /** What `kind` watchers the record holds against `target`. */
 export function registrationsOn(watchers, kind, target) {

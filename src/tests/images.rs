@@ -840,3 +840,55 @@ fn a_served_site_asks_for_a_picture_beside_the_document_that_names_it() {
         "src=\"https://example.com/pic.png\"",
     );
 }
+
+/// Who may read one of these answers back — the one thing standing between a reader converting a picture and a script that got into the page reading every file on the disk.
+///
+/// The page is served with `with_html`, so its origin is opaque and every custom-scheme answer is cross-origin to it: without a header the page cannot read one pixel of a picture it is showing, which is why converting a JPEG to a PNG was impossible at all. This responder hands back whatever file the address names with no test that it is a picture, so the header is sent for the eleven kinds the reading view draws and left off everything else.
+#[test]
+fn only_a_picture_may_be_read_back_by_the_page() {
+    let dir = scratch_dir("image-allow-origin");
+    let markdown_path = dir.join("README.md");
+    let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
+
+    // Every kind the reading view draws, each answered with the header that lets the page read it.
+    for ending in [
+        "apng", "avif", "bmp", "gif", "ico", "jfif", "jpeg", "jpg", "png", "svg", "webp",
+    ] {
+        let name = format!("shot.{ending}");
+        fs::write(dir.join(&name), b"pretend picture").expect("the picture is written");
+        let answer = local_image_protocol_response(&local_img(&name), Some(&source_dir));
+        assert_eq!(answer.status, 200, "{name} was not served at all");
+        assert_eq!(
+            answer.allow_origin, "*",
+            "{name} is a picture the reading view draws and the page still cannot read it back"
+        );
+    }
+
+    // Everything else, which this responder will happily read off the disk and must never hand to the page.
+    for name in [
+        "secrets.env",
+        "id_rsa",
+        "notes.md",
+        "vault.db",
+        "archive.zip",
+        "noending",
+    ] {
+        fs::write(dir.join(name), b"not a picture").expect("the file is written");
+        let answer = local_image_protocol_response(&local_img(name), Some(&source_dir));
+        assert_eq!(answer.status, 200, "{name} was not served at all");
+        assert_eq!(
+            answer.allow_origin, "",
+            "{name} is not a picture and the page was told it may read its bytes"
+        );
+    }
+
+    // And nothing that failed says anything either: a 404 or a refusal is not a picture.
+    let missing = local_image_protocol_response(&local_img("gone.png"), Some(&source_dir));
+    assert_eq!(missing.status, 404);
+    assert_eq!(
+        missing.allow_origin, "",
+        "an answer with no picture behind it still invited the page to read it"
+    );
+
+    fs::remove_dir_all(&dir).expect("the folder is removed");
+}
