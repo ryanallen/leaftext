@@ -27,14 +27,9 @@ impl FileWatch {
             move |result: DebounceEventResult| {
                 if let Ok(events) = result {
                     for event in events {
-                        if is_git_bookkeeping(&event.path) {
-                            continue;
+                        if let Some(changed) = watched_change(event.path, &handler_reading_in) {
+                            let _ = proxy.send_event(UserEvent::FileChanged(changed));
                         }
-                        if is_generated_output(&event.path, &handler_reading_in) {
-                            continue;
-                        }
-                        let _ =
-                            proxy.send_event(UserEvent::FileChanged(plain_event_path(event.path)));
                     }
                 }
             },
@@ -180,6 +175,19 @@ pub(crate) fn is_generated_output(path: &Path, reading_in: &Arc<Mutex<Option<Pat
     !reading_in
         .and_then(|open| open.clone())
         .is_some_and(|open| plain.parent() == Some(open.as_path()))
+}
+
+/// What one event off the watcher becomes: the path to tell the loop about, or nothing where the change is git's own bookkeeping or something a machine wrote into a folder that says so.
+///
+/// The whole of the debouncer's decision, out where a test can ask it — the closure it is called from owns a proxy and a watcher and nothing here can build either. The translation happens here rather than in one consumer at a time, because every consumer of a change event compares plain paths.
+pub(crate) fn watched_change(
+    path: PathBuf,
+    reading_in: &Arc<Mutex<Option<PathBuf>>>,
+) -> Option<PathBuf> {
+    if is_git_bookkeeping(&path) || is_generated_output(&path, reading_in) {
+        return None;
+    }
+    Some(plain_event_path(path))
 }
 
 /// An event's path in the plain form the rest of the app compares against.

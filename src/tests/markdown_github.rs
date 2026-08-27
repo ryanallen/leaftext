@@ -387,19 +387,7 @@ fn a_document_button_wears_the_mark_its_braces_name() {
 fn every_mark_a_document_may_wear_has_a_row_in_the_icon_table() {
     // The list in the renderer and the table that generates the masks are two files, so a name added to one and not the other would reach the page as a class nothing draws.
     let table = include_str!("../../design/icons.md");
-    let events = include_str!("../markdown/events.rs");
-    let names = events
-        .split_once("const DOCUMENT_BUTTON_ICONS: &[&str] = &[")
-        .expect("the renderer names the marks a document may wear")
-        .1
-        .split_once("];")
-        .expect("that list ends")
-        .0;
-    let listed: Vec<&str> = names
-        .split(',')
-        .map(|name| name.trim().trim_matches('"'))
-        .filter(|name| !name.is_empty())
-        .collect();
+    let listed = crate::markdown::DOCUMENT_BUTTON_ICONS;
     assert!(!listed.is_empty(), "the list of marks is empty");
     for name in listed {
         assert!(

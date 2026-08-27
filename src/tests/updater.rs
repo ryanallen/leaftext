@@ -374,16 +374,35 @@ fn a_copy_updates_through_the_installer_that_put_it_there() {
     );
 
     // The value the EXE installer actually writes has to be the one this reads.
-    let plan = include_str!("../../installer/src/plan.rs");
-    assert!(plan.contains(r#"INSTALLED_BY_VALUE: &str = "InstalledBy""#));
-    assert!(plan.contains(r#"INSTALLED_BY_EXE: &str = "exe""#));
-    assert!(plan.contains(r#"APP_KEY: &str = r"Software\ryanallen\leaftext""#));
+    assert_eq!(installer_plan_string("INSTALLED_BY_VALUE"), "InstalledBy");
+    assert_eq!(installer_plan_string("INSTALLED_BY_EXE"), "exe");
+    assert_eq!(
+        installer_plan_string("APP_KEY"),
+        r"Software\ryanallen\leaftext"
+    );
+}
+
+/// One `pub const` string out of the EXE installer's plan, by name. The installer is a binary crate with no library target, so nothing here can `use` it — and the value is taken rather than the line asserted, because a read that takes a value panics loudly when the constant moves while a read that asserts a call passes happily when the constant is never used again. Raw and ordinary spellings both, since the plan writes a Windows key as a raw string.
+fn installer_plan_string(name: &str) -> &'static str {
+    // Held as source because the installer is a binary crate with no library target; the value is taken rather than the line asserted.
+    let after = include_str!("../../installer/src/plan.rs")
+        .split_once(&format!("pub const {name}: &str = "))
+        .unwrap_or_else(|| panic!("installer/src/plan.rs must name {name} once"))
+        .1;
+    let opened = after
+        .strip_prefix('r')
+        .unwrap_or(after)
+        .strip_prefix('"')
+        .unwrap_or_else(|| panic!("{name} must open with a string"));
+    opened
+        .split_once('"')
+        .unwrap_or_else(|| panic!("{name} must close"))
+        .0
 }
 
 #[test]
 fn the_installers_exit_codes_mean_what_the_installer_says_they_mean() {
     // The app reads a number off a program that has already gone silent, so the two sides have to agree on the list. This is the list, read out of the installer rather than remembered.
-    let exits = include_str!("../../installer/src/exit.rs");
     for (name, code) in [
         ("OK", 0),
         ("FAILED", 1),
@@ -391,11 +410,27 @@ fn the_installers_exit_codes_mean_what_the_installer_says_they_mean() {
         ("NO_PAYLOAD", 3),
         ("BAD_ARGUMENTS", 4),
     ] {
-        assert!(
-            exits.contains(&format!("pub const {name}: i32 = {code};")),
+        assert_eq!(
+            installer_exit_code(name),
+            code,
             "installer/src/exit.rs no longer says {name} is {code}"
         );
     }
+}
+
+/// One exit code out of the installer's own list, by name. Read as a value for the same reason its plan's strings are: the installer is a binary crate nothing here can `use`, and a read that parses the number fails when it moves rather than when its spelling changes.
+fn installer_exit_code(name: &str) -> i32 {
+    // Held as source for the same reason, and taken as a value the same way.
+    include_str!("../../installer/src/exit.rs")
+        .split_once(&format!("pub const {name}: i32 = "))
+        .unwrap_or_else(|| panic!("installer/src/exit.rs must name {name} once"))
+        .1
+        .split_once(';')
+        .unwrap_or_else(|| panic!("{name} must end"))
+        .0
+        .trim()
+        .parse()
+        .unwrap_or_else(|_| panic!("{name} must be a number"))
 }
 
 #[test]

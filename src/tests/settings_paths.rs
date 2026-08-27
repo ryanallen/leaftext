@@ -771,6 +771,7 @@ fn the_msi_opens_the_app_only_for_somebody_who_ran_the_install() {
 /// The two Windows installers produce one install, so they owe one first experience too — and each writes its half of it in its own language, which is why neither can read the other's. Both are read here: the EXE installer's rule that a silent run opens nothing, the MSI's condition saying the same, and the one path underneath both of them.
 #[test]
 fn both_windows_installers_open_the_app_they_installed_and_only_for_a_person() {
+    // Held as source because the installer is a binary crate with no library target, so nothing here can `use` it.
     let launch = include_str!("../../installer/src/launch.rs");
     assert!(
         launch.contains("if request.silent") && launch.contains("return None;"),
@@ -842,6 +843,7 @@ fn msi_launch_row(source: &str) -> (&str, &str) {
 
 /// The app's path under the install folder, out of the EXE installer's plan. It is one constant there, so reading it is what stops the MSI's own spelling drifting away from it.
 fn exe_installer_app_path() -> &'static str {
+    // Held as source because the installer is a binary crate with no library target; the value is taken rather than the line asserted.
     include_str!("../../installer/src/plan.rs")
         .split_once("pub const APP_RELATIVE_PATH: &str = r\"")
         .expect("installer/src/plan.rs must name the app once")
@@ -853,6 +855,7 @@ fn exe_installer_app_path() -> &'static str {
 
 /// The `EXTENSIONS` list out of the EXE installer's plan. Read rather than searched: that installer builds every registry key it writes from this one list, so the list is the claim.
 fn exe_installer_extensions() -> Vec<&'static str> {
+    // Held as source for the same reason, and taken as a value the same way.
     let plan = include_str!("../../installer/src/plan.rs");
     let table = plan
         .split_once("pub const EXTENSIONS: &[&str] = &[")

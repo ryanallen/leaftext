@@ -222,10 +222,39 @@ fn watcher_events_translate_back_to_plain_paths() {
 #[test]
 fn the_watcher_translates_at_its_own_boundary() {
     // Every consumer of a change event compares plain paths, so the translation has to happen where the event is born — not in one consumer at a time.
-    let source = include_str!("../watch.rs");
-    assert!(
-        source.contains("UserEvent::FileChanged(plain_event_path(event.path))"),
+    let nothing_open: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(None));
+    assert_eq!(
+        watched_change(PathBuf::from(r"\\?\C:\notes\mail.eml"), &nothing_open),
+        Some(PathBuf::from(r"C:\notes\mail.eml")),
         "the debouncer must translate event paths before sending them"
+    );
+
+    // And the two it refuses are refused here rather than in an arm: both cost the loop's whole tail, and one of them is the app answering its own write.
+    assert_eq!(
+        watched_change(PathBuf::from("/vault/.git/index"), &nothing_open),
+        None,
+        "git's own bookkeeping reached the loop"
+    );
+    assert_eq!(
+        watched_change(
+            PathBuf::from("/vault/site/node_modules/pkg/index.js"),
+            &nothing_open
+        ),
+        None,
+        "a machine's build output reached the loop"
+    );
+
+    // The document being read is the one exception, and it stays one at the boundary.
+    let reading_in: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(Some(PathBuf::from(
+        "/vault/site/node_modules/pkg",
+    ))));
+    assert_eq!(
+        watched_change(
+            PathBuf::from("/vault/site/node_modules/pkg/README.md"),
+            &reading_in
+        ),
+        Some(PathBuf::from("/vault/site/node_modules/pkg/README.md")),
+        "a README opened out of a generated folder stopped live-reloading"
     );
 }
 
@@ -405,4 +434,81 @@ changed
     edit.replace_range(2, 7, "Other");
     assert!(edit.is_dirty());
     assert!(!buffer_already_shows(Some(&edit), &contents));
+}
+
+#[test]
+fn only_a_document_that_moved_redraws_the_map() {
+    // A vault is a folder someone works in: the watcher reports `.git` writing an index, a saved image, a temp file coming and going. None of them can change the corpus, so none of them may reach the page as a fresh graph.
+    let mut state = VaultState::load(None);
+    state.root = Some(PathBuf::from("/vault"));
+    state.corpus = Some(Arc::new(VaultCorpus {
+        root: PathBuf::from("/vault"),
+        documents: vec![CorpusDocument {
+            path: "/vault/note.md".to_string(),
+            label: "note".to_string(),
+            aliases: Vec::new(),
+            text: "a talk on dharma".to_string(),
+        }],
+        truncated: false,
+        skipped: Vec::new(),
+    }));
+
+    // A path the vault's text does not cover is answered before anything is paid for: `Arc::make_mut` clones the whole vault's text when a worker is mid-build, so a worker holding it is what makes the cost visible.
+    let worker_holds = Arc::clone(state.corpus.as_ref().expect("the vault has text"));
+    for uninteresting in [
+        "/vault/.git/index",
+        "/elsewhere/note.md",
+        "/vault/picture.png",
+    ] {
+        assert!(
+            !patch_vault_corpus(&mut state, Path::new(uninteresting)),
+            "{uninteresting} moved the vault's text"
+        );
+        assert!(
+            Arc::ptr_eq(
+                &worker_holds,
+                state.corpus.as_ref().expect("the text is still held")
+            ),
+            "{uninteresting} cost a copy of the whole vault's text while a worker was reading it"
+        );
+    }
+
+    // And the answer it gives gates the redraw: the vault's text is a cache, so "nothing moved" means the map on screen cannot have changed.
+    state.last_graph = Some(PendingGraph {
+        document: None,
+        request: GraphRequest::default(),
+    });
+    assert!(
+        matches!(
+            corpus_change_redraw(&mut state, Path::new("/vault/.git/index"), true),
+            GraphRedraw::Nothing
+        ),
+        "a refresh that changed nothing reached the vault graph rebuild"
+    );
+
+    // A document's own map has no cache to compare against, so it cannot answer that question — but it still refuses to redraw for a path that is not a document at all, which is most of what the watcher reports.
+    state.last_graph = Some(PendingGraph {
+        document: Some(PathBuf::from("/vault/note.md")),
+        request: GraphRequest::default(),
+    });
+    assert!(
+        matches!(
+            corpus_change_redraw(&mut state, Path::new("/vault/.git/index"), true),
+            GraphRedraw::Nothing
+        ),
+        "a document map rebuilt for a path that is not a document"
+    );
+    assert!(
+        matches!(
+            corpus_change_redraw(&mut state, Path::new("/vault/other.md"), true),
+            GraphRedraw::Document { .. }
+        ),
+        "a document map stopped rebuilding for a document that could be in the picture"
+    );
+
+    // And a map nobody is looking at is never rebuilt, whatever moved.
+    assert!(matches!(
+        corpus_change_redraw(&mut state, Path::new("/vault/other.md"), false),
+        GraphRedraw::Nothing
+    ));
 }

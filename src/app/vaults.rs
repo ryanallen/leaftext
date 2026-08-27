@@ -231,13 +231,8 @@ pub(crate) fn change_vault_folder(
         return;
     }
     if state.active == id {
-        // Accepting the folder the vault already shows is the same slip as picking it again from scratch, so it is the same rule: asked before the root is overwritten.
-        let moved = pointing_here_is_a_move(state, id, Some(folder));
-        state.root = Some(folder.to_path_buf());
-        state.folder.clear();
-        if moved {
-            state.drop_corpus();
-        }
+        // Accepting the folder the vault already shows is the same slip as picking it again from scratch, so it is the same rule.
+        point_at_vault(state, id, Some(folder.to_path_buf()));
         request_folder(state, proxy, String::new());
     }
     push_vaults(webview, state);
@@ -296,15 +291,7 @@ fn apply_active_vault(
         .map(|vault| PathBuf::from(vault.root_path));
     // An id we cannot find a folder for is no vault at all. Keeping the two in step matters because the page is told the id and decides what to offer from it, while search and the graph need the folder — set one without the other and the interface offers a vault nothing can read.
     let active = if root.is_some() { id } else { 0 };
-    // Asked before either is overwritten, since the answer is about what is held against what is arriving.
-    let moved = pointing_here_is_a_move(state, active, root.as_deref());
-    state.root = root;
-    state.active = active;
-    // A new root, so the pane starts at the top of it rather than in a folder that belonged to whatever was showing before, and everything read under the old one is about somewhere else.
-    state.folder.clear();
-    if moved {
-        state.drop_corpus();
-    }
+    point_at_vault(state, active, root);
     push_vaults(webview, state);
     request_folder(state, proxy, String::new());
 }
@@ -480,19 +467,41 @@ pub(crate) fn deliver_graph(
     run_page_script(webview, &graph_script(&graph), "Failed to draw the graph");
 }
 
+/// What starting the one read needs: the folder to walk, the number every slice of it is stamped with, and the counter that number is read against. `None` where a read is already running or there is no vault.
+///
+/// The number is claimed here, once, so a slice can never be stamped with one the reader has already moved past — which would refuse every slice of every read and leave each vault empty with the whole suite still green. State alone and no worker, which is what lets a test ask it.
+pub(crate) struct CorpusRead {
+    pub(crate) root: PathBuf,
+    pub(crate) wanted: u64,
+    pub(crate) counter: WorkGeneration,
+}
+
+/// The read the open vault would start now, or nothing.
+pub(crate) fn corpus_read_to_start(state: &mut VaultState) -> Option<CorpusRead> {
+    if state.corpus_loading {
+        return None;
+    }
+    let root = state.root.clone()?;
+    state.corpus_loading = true;
+    Some(CorpusRead {
+        root,
+        wanted: state.corpus_read.claim(),
+        counter: state.corpus_read.clone(),
+    })
+}
+
 /// Start the one read, unless it is already running. The code view's typing help also calls this: its first ask under an unread vault starts the read.
 pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEvent>) {
-    if state.corpus_loading {
-        return;
-    }
-    let Some(root) = state.root.clone() else {
+    let Some(CorpusRead {
+        root,
+        wanted,
+        counter,
+    }) = corpus_read_to_start(state)
+    else {
         return;
     };
-    state.corpus_loading = true;
     // Its own thread rather than `off_loop`, because this worker answers many times: a slice of the vault every fifty documents, so the pane fills while the disk is still being read instead of after it.
     let proxy = proxy.clone();
-    let wanted = state.corpus_read.claim();
-    let counter = state.corpus_read.clone();
     thread::spawn(move || {
         let mut first = true;
         let overtaken = || !counter.is_current(wanted);
@@ -590,9 +599,54 @@ pub(crate) fn read_is_owed(state: &VaultState) -> bool {
         && (state.pending_search.is_some() || state.pending_graph.is_some())
 }
 
+/// Point the pane at a vault and say whether that left the folder it was in. Both ways of pointing at one — picking it from the menu, and moving the one on screen to another folder — ask this same question, and both must ask it before the root is overwritten, since the answer is about what is held against what is arriving.
+///
+/// A move clears the pane back to the top of the new root rather than a folder that belonged to whatever was showing before, and forgets the vault's text, which is about somewhere else. Re-picking the folder you are already in is not leaving it, so it keeps both. State alone and no worker, which is what lets a test ask it.
+pub(crate) fn point_at_vault(state: &mut VaultState, id: i64, root: Option<PathBuf>) -> bool {
+    let moved = pointing_here_is_a_move(state, id, root.as_deref());
+    state.root = root;
+    state.active = id;
+    state.folder.clear();
+    if moved {
+        state.drop_corpus();
+    }
+    moved
+}
+
 /// Whether pointing the pane at `id` and `root` moves it anywhere at all. A no means the vault's text is still about that same folder, so it is kept: re-picking the folder you are already in is not leaving it. State alone and no worker, which is what lets a test ask it.
 pub(crate) fn pointing_here_is_a_move(state: &VaultState, id: i64, root: Option<&Path>) -> bool {
     state.active != id || state.root.as_deref() != root
+}
+
+/// What one delivered slice leaves the loop to do.
+pub(crate) enum SliceWork {
+    /// The slice grew the vault's text, and this is what that leaves to do.
+    Absorbed(AbsorbedSlice),
+    /// The slice belonged to a vault nobody is in any more, and letting go of it freed the one read that anything asked since has been turned away by.
+    StartTheOwedRead,
+    /// A slice nobody is waiting on, with nobody waiting on the open vault either.
+    Nothing,
+}
+
+/// Grow the vault's text by one slice and say what that leaves to do — including the case the slice itself is worthless for: giving it up is what frees the read anything asked since the reader switched vaults has been sitting behind. State alone and no worker, which is what lets a test ask it.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn delivered_slice_work(
+    state: &mut VaultState,
+    root: &Path,
+    documents: Vec<CorpusDocument>,
+    truncated: bool,
+    skipped: Vec<String>,
+    first: bool,
+    last: bool,
+    wanted: u64,
+) -> SliceWork {
+    match absorb_corpus_slice(
+        state, root, documents, truncated, skipped, first, last, wanted,
+    ) {
+        Some(absorbed) => SliceWork::Absorbed(absorbed),
+        None if read_is_owed(state) => SliceWork::StartTheOwedRead,
+        None => SliceWork::Nothing,
+    }
 }
 
 /// A slice of the read landed. The vault's text grows by it, and anything parked on the read is answered again — so a search fills in while the rest of the vault is still being opened. Whatever it starts runs on a worker, not here.
@@ -607,14 +661,15 @@ pub(crate) fn deliver_corpus(
     last: bool,
     wanted: u64,
 ) -> Option<FilterHints> {
-    let Some(absorbed) = absorb_corpus_slice(
+    let absorbed = match delivered_slice_work(
         state, &root, documents, truncated, skipped, first, last, wanted,
-    ) else {
-        // The slice belonged to a vault nobody is in any more, and it is what let go of the one read. Anything asked for since the switch was turned away by that read and has been sitting there ever since, so this is where it gets its own.
-        if read_is_owed(state) {
+    ) {
+        SliceWork::Absorbed(absorbed) => absorbed,
+        SliceWork::StartTheOwedRead => {
             read_corpus(state, proxy);
+            return None;
         }
-        return None;
+        SliceWork::Nothing => return None,
     };
     if let Some(request) = absorbed.graph {
         build_vault_graph_off_thread(proxy, root, Arc::clone(&absorbed.corpus), request);
@@ -635,34 +690,73 @@ pub(crate) fn refresh_corpus_path(
     changed: &Path,
     graph_showing: bool,
 ) {
+    match corpus_change_redraw(state, changed, graph_showing) {
+        GraphRedraw::Vault {
+            root,
+            corpus,
+            request,
+        } => {
+            build_vault_graph_off_thread(proxy, root, corpus, request);
+        }
+        GraphRedraw::Document { seed, request } => {
+            build_document_graph_off_thread(proxy, seed, request);
+        }
+        GraphRedraw::Nothing => {}
+    }
+}
+
+/// What a changed file leaves the map to redraw.
+pub(crate) enum GraphRedraw {
+    /// The vault's text really moved, so the map drawn from it can have changed.
+    Vault {
+        root: PathBuf,
+        corpus: Arc<VaultCorpus>,
+        request: GraphRequest,
+    },
+    /// A document's own map, which has to be rebuilt to find out whether it changed.
+    Document {
+        seed: PathBuf,
+        request: GraphRequest,
+    },
+    Nothing,
+}
+
+/// Patch the vault's held text for one changed path and say what the map then owes. State alone and no worker, which is what lets a test ask it.
+pub(crate) fn corpus_change_redraw(
+    state: &mut VaultState,
+    changed: &Path,
+    graph_showing: bool,
+) -> GraphRedraw {
     let corpus_moved = patch_vault_corpus(state, changed);
     if !graph_showing {
-        return;
+        return GraphRedraw::Nothing;
     }
     let Some(pending) = state.last_graph.clone() else {
-        return;
+        return GraphRedraw::Nothing;
     };
     match graph_source(state, pending.document.as_deref()) {
         // The vault's text is a cache, so the cache is the thing to ask: unless patching it moved something, the map cannot have changed. A vault is a folder someone works in, and unasked, every unrelated write in it reaches the page as a fresh graph — which the page can only receive by tearing the map down.
-        Some(GraphSource::Vault(root)) => {
-            let Some(corpus) = state.corpus.clone().filter(|_| corpus_moved) else {
-                return;
-            };
-            build_vault_graph_off_thread(proxy, root, corpus, pending.request);
-        }
+        Some(GraphSource::Vault(root)) => match state.corpus.clone().filter(|_| corpus_moved) {
+            Some(corpus) => GraphRedraw::Vault {
+                root,
+                corpus,
+                request: pending.request,
+            },
+            None => GraphRedraw::Nothing,
+        },
         // A document's map holds no cache to compare against, so "did this change anything" cannot be answered here. Rebuild for any document that could be in the picture and let the page drop the redraw: it compares what arrives against what it is already drawing, and an identical graph never reaches the scene.
-        Some(GraphSource::Document(seed)) => {
-            if !crate::is_supported_document_path(changed) {
-                return;
+        Some(GraphSource::Document(seed)) if crate::is_supported_document_path(changed) => {
+            GraphRedraw::Document {
+                seed,
+                request: pending.request,
             }
-            build_document_graph_off_thread(proxy, seed, pending.request);
         }
-        None => {}
+        _ => GraphRedraw::Nothing,
     }
 }
 
 /// Bring the vault's held text up to date for one changed path, and say whether that actually moved anything.
-fn patch_vault_corpus(state: &mut VaultState, changed: &Path) -> bool {
+pub(crate) fn patch_vault_corpus(state: &mut VaultState, changed: &Path) -> bool {
     let Some(corpus) = state.corpus.as_mut() else {
         return false;
     };

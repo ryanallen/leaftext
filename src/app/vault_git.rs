@@ -122,13 +122,30 @@ pub(crate) fn refresh_vault_status(
     proxy: &EventLoopProxy<UserEvent>,
     id: i64,
 ) {
-    let Some((_name, root)) = vault_root(state, id) else {
+    let Some(root) = status_read_to_start(state, id) else {
         return;
     };
-    // One read per vault at a time — each is a thread and five git processes, so a burst of saves must not start one each.
-    if !state.may_read_status(id) {
-        return;
+    read_vault_status_off_loop(proxy, id, root);
+}
+
+/// The folder a status read would walk, or nothing where there is no such vault or one is already running for it. State alone and no worker, which is what lets a test ask it.
+///
+/// One read per vault at a time — each is a thread and five git processes, so a burst of saves must not start one each.
+pub(crate) fn status_read_to_start(state: &mut VaultState, id: i64) -> Option<PathBuf> {
+    let (_name, root) = vault_root(state, id)?;
+    state.may_read_status(id).then_some(root)
+}
+
+/// The folder the one repeat is owed against, once a status answer has reached the page — or nothing where nobody asked while the read was running.
+pub(crate) fn status_read_after_delivery(state: &mut VaultState, id: i64) -> Option<PathBuf> {
+    if !state.status_read_settled(id) {
+        return None;
     }
+    status_read_to_start(state, id)
+}
+
+/// Walk the folder on a worker and post what git says back to the loop.
+fn read_vault_status_off_loop(proxy: &EventLoopProxy<UserEvent>, id: i64, root: PathBuf) {
     off_loop(proxy, move || {
         let repo = inspect_vault_repo(&root);
         UserEvent::VaultStatusReady {
@@ -153,8 +170,8 @@ pub(crate) fn deliver_vault_status(
         &format!("window.leafSetVaultStatus({id}, {json});"),
         "Failed to update the vault status",
     );
-    if state.status_read_settled(id) {
-        refresh_vault_status(state, proxy, id);
+    if let Some(root) = status_read_after_delivery(state, id) {
+        read_vault_status_off_loop(proxy, id, root);
     }
 }
 

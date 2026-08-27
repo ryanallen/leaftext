@@ -80,6 +80,24 @@ fn a_stopped_read_s_last_slice_still_frees_the_next_vault_to_be_read() {
     );
 }
 
+/// A vault's held text, over the documents named.
+fn corpus_of(paths: &[&str]) -> VaultCorpus {
+    VaultCorpus {
+        root: PathBuf::from("/vault"),
+        documents: paths
+            .iter()
+            .map(|path| CorpusDocument {
+                path: path.to_string(),
+                label: "note".to_string(),
+                aliases: Vec::new(),
+                text: "a talk on dharma".to_string(),
+            })
+            .collect(),
+        truncated: false,
+        skipped: Vec::new(),
+    }
+}
+
 /// One document, as a slice of a read carries it.
 fn slice_document(name: &str) -> CorpusDocument {
     CorpusDocument {
@@ -344,31 +362,48 @@ fn re_picking_the_folder_the_pane_is_already_in_is_not_a_move() {
 
 #[test]
 fn both_ways_of_pointing_at_a_vault_ask_whether_the_folder_moved_first() {
-    // Both arms take an `EventLoopProxy` and nothing in this suite has one, so they are held as source the way the loop's own arms are.
-    let source = include_str!("../vaults.rs");
-    for arm in [
-        "fn apply_active_vault(",
-        "pub(crate) fn change_vault_folder(",
-    ] {
-        let at = source.find(arm).unwrap_or_else(|| {
-            panic!("{arm} is one of the two ways the pane is pointed at a vault")
-        });
-        let body = &source[at..source.len().min(at + 1500)];
-        let asked = body.find("pointing_here_is_a_move(").unwrap_or_else(|| {
-            panic!("{arm} forgets a vault's text without asking whether its folder moved")
-        });
-        let forgotten = body.find("state.drop_corpus();").unwrap_or_else(|| {
-            panic!("{arm} no longer forgets the text of a vault somebody really did leave")
-        });
-        assert!(
-            asked < forgotten,
-            "{arm} forgets the text first and asks whether the folder moved afterwards"
-        );
-        assert!(
-            body[asked..forgotten].contains("if moved {"),
-            "{arm} asks whether the folder moved and forgets the text whatever the answer"
-        );
-    }
+    // Both ways of pointing the pane at a vault run this, and both must ask whether the folder moved before the root is overwritten: asked afterwards, the answer is about what has already arrived and every switch keeps text belonging somewhere else.
+    let mut state = VaultState::load(None);
+    state.active = 7;
+    state.root = Some(PathBuf::from("/vault"));
+    state.folder = "/vault/notes".to_string();
+    state.corpus = Some(Arc::new(corpus_of(&["/vault/notes/one.md"])));
+
+    assert!(
+        point_at_vault(&mut state, 9, Some(PathBuf::from("/another-vault"))),
+        "switching to another vault kept text read under the one we left"
+    );
+    assert!(
+        state.corpus.is_none(),
+        "the vault's text is about somewhere else now"
+    );
+    assert!(
+        state.folder.is_empty(),
+        "the pane stayed in a folder of the vault we left"
+    );
+    assert_eq!(state.active, 9);
+    assert_eq!(state.root.as_deref(), Some(Path::new("/another-vault")));
+
+    // Accepting the folder a vault already shows is not leaving it, so its text stands.
+    state.corpus = Some(Arc::new(corpus_of(&["/another-vault/two.md"])));
+    assert!(
+        !point_at_vault(&mut state, 9, Some(PathBuf::from("/another-vault"))),
+        "re-picking the folder you are already in threw its text away"
+    );
+    assert!(
+        state.corpus.is_some(),
+        "the text of a vault nobody left was forgotten"
+    );
+
+    // Moving that vault to a folder it was not in, and going out to the whole library, are both real moves.
+    assert!(point_at_vault(
+        &mut state,
+        9,
+        Some(PathBuf::from("/moved-vault"))
+    ));
+    state.corpus = Some(Arc::new(corpus_of(&["/moved-vault/three.md"])));
+    assert!(point_at_vault(&mut state, 0, None));
+    assert!(state.corpus.is_none());
 }
 
 #[test]
@@ -401,45 +436,62 @@ fn nothing_is_owed_with_nobody_waiting() {
 
 #[test]
 fn giving_up_a_stale_slice_starts_the_read_the_open_vault_is_owed() {
-    // The arm takes an `EventLoopProxy` and nothing in this suite has one, so it is held as source the way the loop's own arms are.
-    let source = include_str!("../vaults.rs");
-    let at = source
-        .find("pub(crate) fn deliver_corpus(")
-        .expect("a slice of a read is delivered");
-    let body = &source[at..source.len().min(at + 1200)];
+    let left = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(left.clone());
+    state.corpus_loading = true;
+    let reading = state.corpus_read.claim();
 
-    assert!(
-        body.contains("if read_is_owed(state) {"),
-        "the arm that gives up a stale slice never asks whether the open vault is owed a read"
-    );
-    assert!(
-        body.contains("read_corpus(state, proxy);"),
-        "the arm that gives up a stale slice asks the question and then does nothing with the answer"
-    );
+    // The reader switches vaults and types straight away, so the query is parked behind the read they left.
+    state.drop_corpus();
+    state.root = Some(PathBuf::from("/another-vault"));
+    state.pending_search = Some(typed("dharma"));
+
+    // The abandoned read's last slice is worthless, and giving it up is what frees the one read — so the vault on screen gets its own here or waits for ever.
+    assert!(matches!(
+        delivered_slice_work(
+            &mut state,
+            &left,
+            Vec::new(),
+            false,
+            Vec::new(),
+            true,
+            true,
+            reading
+        ),
+        SliceWork::StartTheOwedRead
+    ));
 }
 
 #[test]
 fn every_slice_of_a_read_carries_the_one_number_that_read_claimed() {
-    // The read is a thread and a proxy, and nothing in this suite has either, so it is held as source the way the loop's own arms are. Nothing else can catch it: a number claimed again per slice would refuse every slice of every read and leave each vault empty, with the whole suite still green.
-    let source = include_str!("../vaults.rs");
-    let at = source
-        .find("pub(crate) fn read_corpus(")
-        .expect("the one read is started somewhere");
-    let body = &source[at..source.len().min(at + 1400)];
+    let mut state = VaultState::load(None);
+    state.root = Some(PathBuf::from("/vault"));
 
+    // The read claims its number once, here, and hands it to the worker that stamps every slice with it. A number claimed again per slice would refuse every slice of every read and leave each vault empty, with the whole suite still green.
+    let started = corpus_read_to_start(&mut state).expect("an unread vault starts its one read");
     assert!(
-        body.contains("let wanted = state.corpus_read.claim();"),
-        "the read no longer claims the number that says anybody is waiting for it"
+        started.counter.is_current(started.wanted),
+        "the read is stamped with a number the reader has already moved past"
     );
-    assert_eq!(
-        body.matches("claim()").count(),
-        1,
-        "the read claims more than once, so its own slices are stamped with numbers it has already moved past"
-    );
+    assert_eq!(started.root, PathBuf::from("/vault"));
+
+    // And it is one read at a time: a second ask while that one runs starts nothing.
     assert!(
-        body.contains("wanted,"),
-        "a slice goes out without saying which read sent it, so a vault left and come back to keeps the tail of the read it abandoned"
+        corpus_read_to_start(&mut state).is_none(),
+        "a second read of the same vault started beside the first"
     );
+
+    // Leaving the vault moves the number past what the running read carries, so its slices are refused rather than absorbed into the vault arrived at.
+    state.drop_corpus();
+    assert!(!started.counter.is_current(started.wanted));
+
+    // The next vault claims its own, and it is not the abandoned one.
+    state.root = Some(PathBuf::from("/another-vault"));
+    state.corpus_loading = false;
+    let next = corpus_read_to_start(&mut state).expect("the vault arrived at is read");
+    assert_ne!(next.wanted, started.wanted);
+    assert!(next.counter.is_current(next.wanted));
 }
 
 #[test]

@@ -106,46 +106,6 @@ fn a_redraw_of_the_same_map_is_not_a_redraw() {
 }
 
 #[test]
-fn only_a_document_that_moved_redraws_the_map() {
-    let source = include_str!("../app/vaults.rs");
-
-    // A vault is a folder someone works in: the watcher reports `.git` writing an index, a saved image, a temp file coming and going. None of them can change the corpus, so none of them may reach the page as a fresh graph.
-    let patch = source
-        .find("fn patch_vault_corpus(")
-        .expect("the watcher patches the corpus a file at a time");
-    let body = &source[patch..];
-    let covers = body
-        .find("if !corpus.covers(changed) {")
-        .expect("a path that is not a document is answered before anything is paid for");
-    let make_mut = body
-        .find("Arc::make_mut(corpus).refresh(changed)")
-        .expect("the corpus is patched through make_mut");
-    assert!(
-        covers < make_mut,
-        "the cheap check has to come before the clone make_mut may pay for"
-    );
-
-    // And the answer it gives gates the redraw: the vault's text is a cache, so "nothing moved" means the map on screen cannot have changed.
-    let refresh = source
-        .find("pub(crate) fn refresh_corpus_path(")
-        .expect("the watcher hands the changed path here");
-    let body = &source[refresh..];
-    assert!(
-        body.contains("let corpus_moved = patch_vault_corpus(state, changed);"),
-        "the redraw has to be decided by whether the patch moved anything"
-    );
-    assert!(
-        body.contains("state.corpus.clone().filter(|_| corpus_moved)"),
-        "a refresh that changed nothing must not reach the vault graph rebuild"
-    );
-    // A document's own map has no cache to compare against, so it cannot answer that question — but it still refuses to redraw for a path that is not a document at all, which is most of what the watcher reports.
-    assert!(
-        body.contains("if !crate::is_supported_document_path(changed) {"),
-        "a document map must not rebuild for a path that is not a document"
-    );
-}
-
-#[test]
 fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     let html = app_shell_page();
     let css = reading_mode_css();

@@ -2,7 +2,7 @@
 // A hand-written file above the tree's current edge is split before it becomes the next file nobody can read whole.
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -65,7 +65,8 @@ function assertDocumentedCeiling(guide) {
 }
 
 function liveEntries() {
-  const files = trackedFiles();
+  // A tracked path with nothing on disk is a file mid-rename, and the copy that matters is the one now sitting under the new name. Read the index and the working tree disagree here on purpose, so this reads what is there rather than throwing a stack trace at whoever renamed something.
+  const files = trackedFiles().filter((path) => existsSync(join(root, path)));
   const attributes = textAttributes(files);
   return files.map((path) => ({ path, textAttribute: attributes.get(path), text: readFileSync(join(root, path), 'utf8') }));
 }

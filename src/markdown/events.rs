@@ -81,7 +81,7 @@ fn event_leading_run(event: Option<&Event<'static>>, ch: char) -> usize {
 }
 
 /// The marks a document may wear inside a button, and the whole of them. Every entry owes a row in `design/icons.md`, or the page is asked for a mask nothing generates.
-const DOCUMENT_BUTTON_ICONS: &[&str] = &["apple", "windows"];
+pub(crate) const DOCUMENT_BUTTON_ICONS: &[&str] = &["apple", "windows"];
 
 /// The button wrapper on the tail of `out`: how many `{` it opens with, the mark it names, and how many characters of it to strip.
 ///

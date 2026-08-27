@@ -90,9 +90,52 @@ fn a_burst_of_saves_reads_a_vaults_git_state_once() {
     assert!(state.may_read_status(7));
     assert!(!state.status_read_settled(7));
 
-    // And the guard is what the refresh actually asks, rather than a bookkeeping pair nothing consults.
-    assert!(include_str!("../vault_git.rs").contains("if !state.may_read_status(id) {"));
-    assert!(include_str!("../vault_git.rs").contains("if state.status_read_settled(id) {"));
+    // And the guard is what the refresh actually asks, rather than a bookkeeping pair nothing consults. With no registry behind this state there is no vault to find a folder for, so every answer here is nothing — which is the refresh reaching the guard and stopping, and it does that whether the guard says yes or no.
+    let mut state = VaultState::load(None);
+    assert!(state.may_read_status(7));
+    assert_eq!(status_read_to_start(&mut state, 7), None);
+    assert_eq!(status_read_after_delivery(&mut state, 7), None);
+}
+
+#[test]
+fn a_vault_whose_folder_is_known_reads_it_once_per_burst() {
+    let dir = scratch_dir("a_vault_whose_folder_is_known_reads_it_once_per_burst");
+    let root = dir.join("vault");
+    fs::create_dir_all(&root).expect("test directory is created");
+    let mut state = VaultState::load(Some(&dir));
+    let id = add_vault(
+        state.conn.as_ref().expect("the registry opens"),
+        &root,
+        "vault",
+        VaultKind::Folder,
+    )
+    .expect("the vault is registered")
+    .id;
+
+    // The first save starts the read against the vault's own folder; the next ten find it running.
+    let first = status_read_to_start(&mut state, id).expect("the first save starts the read");
+    for _ in 0..10 {
+        assert_eq!(
+            status_read_to_start(&mut state, id),
+            None,
+            "a burst of saves started a git read each"
+        );
+    }
+
+    // The answer lands, and the one repeat everything waiting is owed reads the same folder.
+    assert_eq!(
+        status_read_after_delivery(&mut state, id),
+        Some(first),
+        "the repeat everything waiting is owed never started"
+    );
+    assert_eq!(
+        status_read_after_delivery(&mut state, id),
+        None,
+        "an answer nobody waited behind started another read"
+    );
+
+    drop(state);
+    fs::remove_dir_all(&dir).expect("test directory is removed");
 }
 
 #[test]

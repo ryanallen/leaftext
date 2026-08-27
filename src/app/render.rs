@@ -89,19 +89,21 @@ impl Reader {
         self.refresh_tab_strip();
     }
 
-    /// Point the favorite row at `from` at the file the picker handed back, save, and redraw. Unlike marking, the page cannot draw this ahead of the host: the path the row now holds is one only the dialog knows. A full render rather than a strip refresh, because only the start screen draws a favorite row — and it costs nothing there, where the render takes the home branch and reads no file.
+    /// Point the favorite row at `from` at the file the picker handed back, save, and redraw. Unlike marking, the page cannot draw this ahead of the host: the path the row now holds is one only the dialog knows.
     pub(crate) fn repoint_favorite(&mut self, from: &Path, to: &Path, vault_id: Option<i64>) {
-        if self.favorites.repoint(from, to, vault_id) {
+        if let TabDraw::Render(intent) =
+            repoint_favorite_draw(&mut self.favorites, from, to, vault_id)
+        {
             self.persist_favorites();
-            self.render(ScrollIntent::Preserve { code: None });
+            self.render(intent);
         }
     }
 
-    /// Move the favorite row for `path` so it sits before `before`, save, and redraw. A full render for the same reason as repointing, and here the drag needs it: the page clears the row's transform without moving the row, so this render is the only thing that draws the new order.
+    /// Move the favorite row for `path` so it sits before `before`, save, and redraw.
     pub(crate) fn move_favorite(&mut self, path: &Path, before: Option<&Path>) {
-        if self.favorites.move_before(path, before) {
+        if let TabDraw::Render(intent) = move_favorite_draw(&mut self.favorites, path, before) {
             self.persist_favorites();
-            self.render(ScrollIntent::Preserve { code: None });
+            self.render(intent);
         }
     }
 
@@ -334,7 +336,35 @@ impl Reader {
     }
 }
 
-/// Where the source editor goes when a tab showing source is re-rendered — one of the two answers a source-editor landing has. A restore carries the fraction it means and a reset says the top; an in-place change sends none on purpose, which is the page's cue to use the other answer and carry the fraction off the editor it is about to replace. A rename is the one in-place change that carries a fraction, because the path it moves is what makes the page refuse its own capture.
+/// Where the source editor goes when a tab showing source is re-rendered — one of the two answers a source-editor landing has. A restore carries the fraction it means and a reset says the top; an in-place change sends none on purpose, which is the page's cue to use the other answer and carry the fraction off the editor it is about to replace. A rename is the one in-place change that carries a fraction, because the path it moves is what makes the page refuse its own capture. What repointing a favorite row leaves to be drawn. A favorite row is only ever on the start screen, which the tab strip's own refresh does not draw, so the whole render is what draws it — and that costs nothing there, where the render takes the home branch and reads no file. A row that did not move draws nothing. State alone and no page, which is what lets a test ask it.
+pub(crate) fn repoint_favorite_draw(
+    favorites: &mut Favorites,
+    from: &Path,
+    to: &Path,
+    vault_id: Option<i64>,
+) -> TabDraw {
+    favorite_draw(favorites.repoint(from, to, vault_id))
+}
+
+/// What dragging a favorite row to a new place leaves to be drawn. The same answer as repointing, and here the drag needs it: the page clears the row's transform without moving the row, so this render is the only thing that draws the new order.
+pub(crate) fn move_favorite_draw(
+    favorites: &mut Favorites,
+    path: &Path,
+    before: Option<&Path>,
+) -> TabDraw {
+    favorite_draw(favorites.move_before(path, before))
+}
+
+/// The one answer both favorite moves give, kept in one place so neither can quietly fall back to the strip.
+fn favorite_draw(moved: bool) -> TabDraw {
+    if moved {
+        // The document on screen is untouched, so it keeps the place it was left at.
+        TabDraw::Render(ScrollIntent::Preserve { code: None })
+    } else {
+        TabDraw::Nothing
+    }
+}
+
 pub(crate) fn code_view_scroll(scroll: &ScrollIntent) -> Option<f64> {
     match scroll {
         ScrollIntent::Restore { code, .. } => *code,

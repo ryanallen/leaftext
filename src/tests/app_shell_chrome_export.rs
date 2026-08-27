@@ -20,6 +20,7 @@ fn the_theme_is_held_while_a_page_is_being_rendered_for_paper() {
         include_str!("../assets/shell/overflow.js"),
         "window.leafHoldAppearance(true)",
     );
+    // Held as source because this is the library's own test tree, which cannot name a module of the binary at all.
     let export = include_str!("../app/fileops.rs");
     assert_contains(
         export,

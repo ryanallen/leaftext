@@ -63,18 +63,49 @@ fn dragging_a_tab_redraws_the_strip_and_leaves_the_document_alone() {
 #[test]
 fn moving_a_favorite_row_needs_more_than_the_strip() {
     // The cheap path a tab drag now takes would stop these two drawing at all: a favorite row exists only on the start screen, which the strip refresh does not draw. The drag that moves a row clears its transform without moving the row, so this render is the only thing that draws the new order.
-    let source = include_str!("../render.rs");
-    for name in ["repoint_favorite", "move_favorite"] {
-        let body = source
-            .split(&format!("fn {name}("))
-            .nth(1)
-            .and_then(|rest| rest.split("\n    }").next())
-            .unwrap_or_else(|| panic!("the {name} body"));
-        assert!(
-            body.contains("self.render("),
-            "the start screen's own render is the only thing that draws a favorite row, so {name} keeps it"
-        );
+    let mut favorites = Favorites::default();
+    for path in ["/docs/a.md", "/docs/b.md"] {
+        favorites.add(Favorite {
+            vault_id: None,
+            path: PathBuf::from(path),
+            kind: FavoriteKind::Document,
+        });
     }
+
+    assert!(
+        matches!(
+            move_favorite_draw(
+                &mut favorites,
+                Path::new("/docs/b.md"),
+                Some(Path::new("/docs/a.md"))
+            ),
+            TabDraw::Render(_)
+        ),
+        "the start screen's own render is the only thing that draws a favorite row in its new place"
+    );
+    assert!(
+        matches!(
+            repoint_favorite_draw(
+                &mut favorites,
+                Path::new("/docs/a.md"),
+                Path::new("/docs/moved.md"),
+                None
+            ),
+            TabDraw::Render(_)
+        ),
+        "a favorite row pointed at another file is drawn by the same render"
+    );
+
+    // A row that did not move draws nothing at all, the same guard a tab drag landing where it started has.
+    assert!(matches!(
+        repoint_favorite_draw(
+            &mut favorites,
+            Path::new("/docs/never-marked.md"),
+            Path::new("/docs/moved.md"),
+            None
+        ),
+        TabDraw::Nothing
+    ));
 }
 
 #[test]

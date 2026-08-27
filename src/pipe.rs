@@ -257,16 +257,21 @@ where
     }
 }
 
+/// How long an ask waits on the window. Writing the page out as a file — a document or a picture of one — runs the render inside the loop, and a twenty-screen document takes longer than the ordinary wait, so both would come back reported as a stuck app.
+pub(crate) fn ask_wait(ask: &Ask) -> Duration {
+    match ask {
+        Ask::Export { .. } | Ask::Shot { .. } => EXPORT_TIMEOUT,
+        _ => REPLY_TIMEOUT,
+    }
+}
+
 /// Put the ask to the event loop and wait for the reply it fills in.
 ///
 /// This is [`crate::app::off_loop`] run backwards: that takes work off the window thread and posts the answer back as an event, this takes an answer off it.
 fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Value, String>> {
     let (reply, answers) = mpsc::sync_channel(1);
     // Read before the ask is spent building the event: an export is the one that takes real time on the loop.
-    let budget = match ask {
-        Ask::Export { .. } | Ask::Shot { .. } => EXPORT_TIMEOUT,
-        _ => REPLY_TIMEOUT,
-    };
+    let budget = ask_wait(&ask);
     let event = match ask {
         // The reader flag is answered above this, by a second ask through the page: the loop only ever builds the workspace half.
         Ask::State { .. } => UserEvent::PipeState { reply },

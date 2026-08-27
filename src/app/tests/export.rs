@@ -314,6 +314,7 @@ fn only_rendering_an_export_holds_the_page_s_appearance() {
 
 #[test]
 fn every_page_render_is_held_before_it_starts() {
+    // Held as source because both page writers take a `&WebView`, and nothing in this suite can build one.
     let file = include_str!("../fileops.rs");
     for (function, render) in [
         ("pub(crate) fn write_page_pdf_at", "write_page_pdf(page"),
@@ -345,6 +346,7 @@ fn every_page_render_is_held_before_it_starts() {
 
 #[test]
 fn page_export_rows_keep_their_output_bytes() {
+    // Held as source because `export_page` takes a `&WebView`, and nothing in this suite can build one.
     let file = include_str!("../fileops.rs");
     let export = file
         .split("pub(crate) fn export_page(")
@@ -386,6 +388,7 @@ fn page_export_rows_keep_their_output_bytes() {
 
 #[test]
 fn every_page_export_is_covered_only_while_its_work_runs() {
+    // Held as source because `export_page` takes a `&WebView`, and nothing in this suite can build one.
     let file = include_str!("../fileops.rs");
     let export = file
         .split("pub(crate) fn export_page(")
@@ -469,11 +472,13 @@ fn every_page_export_is_covered_only_while_its_work_runs() {
         "a failed picture render must uncover the reader before returning: {picture}"
     );
 
+    // Held as source because the cover is a native sheet raised on a window, and nothing in this suite can build one.
     let cover = include_str!("../export_cover.rs");
     assert!(
         cover.contains("impl Drop for ExportCover") && cover.contains("self.native.remove()"),
         "every early return must uncover the reader through the cover's drop: {cover}"
     );
+    // Held as source for that same window: the color reaches a platform call on the native sheet.
     let chrome = include_str!("../window_cmds.rs");
     assert!(
         chrome.contains("set_export_cover_color(r, g, b)"),
@@ -732,6 +737,8 @@ fn the_export_ask_carries_a_destination_and_the_size_the_page_measured() {
     ));
 
     // No dialog on the write path the ask runs, and the appearance held across it the way the button's own press holds it — a render emulates a light color scheme, and without the hold the file comes out in the light theme.
+    //
+    // Held as source because `write_page_pdf_at` takes a `&WebView`, and nothing in this suite can build one.
     let write = include_str!("../fileops.rs");
     let body = write
         .split("pub(crate) fn write_page_pdf_at")
@@ -754,15 +761,22 @@ fn the_export_ask_carries_a_destination_and_the_size_the_page_measured() {
     );
 
     // Its own wait. Two seconds is what every other ask gets, and a twenty-screen document takes longer than that to render — which is true of the picture the `shot` ask writes as well, so both share the arm.
-    let source = include_str!("../../pipe.rs");
-    let waits = source
-        .lines()
-        .find(|line| line.contains("=> EXPORT_TIMEOUT,"))
-        .expect("the arm that gives an export its own wait");
-    for ask in ["Ask::Export", "Ask::Shot"] {
+    let ordinary = pipe::ask_wait(&pipe::Ask::State { reader: false });
+    for writes_a_file in [
+        pipe::Ask::Export {
+            path: PathBuf::from("/out/page.pdf"),
+            width: 1280.0,
+            height: 5819.0,
+        },
+        pipe::Ask::Shot {
+            path: PathBuf::from("/out/page.png"),
+            width: 1280.0,
+            height: 5819.0,
+        },
+    ] {
         assert!(
-            waits.contains(ask),
-            "{ask} outlasts the ordinary wait, so it would be reported as a stuck app: {waits}"
+            pipe::ask_wait(&writes_a_file) > ordinary,
+            "{writes_a_file:?} outlasts the ordinary wait, so it would be reported as a stuck app"
         );
     }
 }
@@ -770,6 +784,7 @@ fn the_export_ask_carries_a_destination_and_the_size_the_page_measured() {
 /// What a Mac reader gets when they press Export and pick the PDF row. The arm is Mac code and nothing here compiles or runs it, so the proof is the source: the panel switched off, the chosen path named as where the job saves to, and the sheet the page measured spent rather than dropped. Read the same way as the ask above it, for the same reason.
 #[test]
 fn the_mac_export_switches_the_print_panel_off_and_saves_to_the_chosen_path() {
+    // Held as source because this is a Mac arm nothing here compiles, let alone runs.
     let write = include_str!("../fileops.rs");
     let body = write
         .split(
@@ -858,6 +873,8 @@ fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
     );
 
     // The open document is read for its name and nothing else: a chosen path and a page size are all the write needs, so the home screen exports too.
+    //
+    // Held as source because `export_page` takes a `&WebView`, and nothing in this suite can build one.
     let write = include_str!("../fileops.rs");
     let body = write
         .split("pub(crate) fn export_page(")

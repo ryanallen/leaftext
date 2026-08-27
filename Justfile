@@ -20,13 +20,13 @@ check-installer:
 test:
     cargo test
 
-# Fail on a test that holds an event-loop handler by reading `event_loop.rs` as a string.
-# The loop never returns, so that used to be the only way to reach an arm — and what such
-# a test holds is spelling: all ten of them passed with the behavior they named deleted.
-# One read is allowed, by the exact assertion it makes: the Windows resize reaches a window
-# library call no test can build a window for.
-check-loop-not-read-as-text:
-    node scripts/check-loop-not-read-as-text.mjs --check
+# Fail on a test that holds its subject by reading any `.rs` file as a string or as bytes.
+# What such a test holds is spelling: all ten of the event loop's passed with the behavior
+# they named deleted. Eighteen reads stay, one allowance row each, keyed on the exact
+# assertion and carrying the reason it cannot be a value — a web view, a native window, a
+# builder chain, a Mac arm nothing here compiles, or a crate the test tree cannot see.
+check-source-not-read-as-text:
+    node scripts/check-source-not-read-as-text.mjs --check
 
 # A stylesheet test reaches one rule through `rule_body`, which anchors its find to a line
 # start and refuses a selector opening two rules. Split by hand it carries neither guard,
@@ -525,7 +525,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-loop-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

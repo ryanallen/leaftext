@@ -27,6 +27,8 @@ fn startup_failure_message_identifies_webview_access_denied() {
 #[test]
 fn the_mac_window_is_the_app_bar_with_our_own_three_dots() {
     // Four builder calls make the Mac shell, and each alone is broken: without the fullsize content view the page starts below a gray strip, without the transparent bar the strip is still painted, without the hidden title "Leaftext" sits over the tabs, and without the buttons hidden Apple's dots sit on top of the three the page now draws. `with_decorations(false)` must never join them — tao overwrites every title-bar property when it is set, and the see-through strip goes with it.
+    //
+    // Held as source because a `WindowBuilder` chain is not a value: nothing here can build the window it makes, so the calls are the whole of the claim.
     let source = include_str!("../../main.rs");
     let mac_arm = source
         .split("#[cfg(target_os = \"macos\")]")
@@ -67,6 +69,8 @@ fn the_window_asks_for_no_platform_shadow_and_shows_what_is_behind_it() {
     // The app throws its own shadow — the dot lattice, over the outer strip of the page — so the platform's smooth one has to go and the window has to be see-through for the app's to land anywhere. Both halves, or the window has two shadows or none.
     //
     // `false` and not merely left out: tao's flag is on unless something says otherwise, so a build with the call removed keeps the halo, keeps the frame insets that make the window bigger than the page it holds, and keeps a hit test that finds only the top edge.
+    //
+    // Held as source for the same reason: a `WindowBuilder` chain is not a value.
     let source = include_str!("../../main.rs");
     let windows_arm = source
         .split("#[cfg(windows)]")
