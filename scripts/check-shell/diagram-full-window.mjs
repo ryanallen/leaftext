@@ -134,10 +134,6 @@ export function run() {
       element.innerHTML = drawn.includes('svg') ? `<svg id="${name}"></svg>` : '';
       element.dataset = { diagramWait: 'true' };
       element.children = [];
-      element.appendChild = (child) => {
-        element.children.push(child);
-        return child;
-      };
       // Only what mermaid really left behind answers: the error picture it draws into the block it failed on, and the drawing it leaves in every block it drew.
       element.querySelector = (selector) => (drawn.includes(String(selector)) ? fakeElement(String(selector)) : null);
       return element;

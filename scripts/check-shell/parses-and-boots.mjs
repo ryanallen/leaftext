@@ -351,23 +351,25 @@ export function run() {
     const first = document.createElement('div');
     const last = document.createElement('div');
     if (parent.append(first, 'between', last) !== undefined) throw new Error('append answered something; the platform answers nothing');
-    if (parent.children.length !== 3) throw new Error(`one call put ${parent.children.length} children in the parent`);
-    if (parent.children[0] !== first || parent.children[2] !== last) throw new Error('the children did not land in the order they were handed over');
+    if (parent.childNodes.length !== 3) throw new Error(`one call put ${parent.childNodes.length} nodes in the parent`);
+    if (parent.childNodes[0] !== first || parent.childNodes[2] !== last) throw new Error('the children did not land in the order they were handed over');
+    // The run of words is a node and not an element, so the element list beside it holds the two elements alone.
+    if (parent.children.length !== 2 || parent.children[0] !== first || parent.children[1] !== last) throw new Error('a run of words was listed as one of the container\u2019s elements');
     // The same node createTextNode answers, so a builder mixing a string with a created node reads back as one list of children.
     const made = document.createTextNode('between');
-    const written = parent.children[1];
+    const written = parent.childNodes[1];
     if (written.textContent !== made.textContent || written.tagName !== undefined) {
       throw new Error('a string among the children is not the text node createTextNode answers');
     }
     // A real move, the way appendChild is one: the app-bar fold takes a button out of one container and puts it in another.
     const elsewhere = fakeElement('appendMovedTo');
     elsewhere.append(first);
-    if (parent.children.includes(first)) throw new Error('a child moved by append is still listed in the parent that was holding it');
+    if (parent.childNodes.includes(first)) throw new Error('a child moved by append is still listed in the parent that was holding it');
     if (first.parentElement !== elsewhere) throw new Error('a child moved by append never reached the parent it was moved to');
     // The fragment the speed reader builds its words in is the same stand-in, so it takes them the same way.
     const fragment = document.createDocumentFragment();
     fragment.append(document.createElement('span'), ' ', document.createElement('span'));
-    if (fragment.children.length !== 3) throw new Error('the fragment the page builds in cannot take children in one call');
+    if (fragment.childNodes.length !== 3) throw new Error('the fragment the page builds in cannot take children in one call');
   });
 
   // ---- 2g. an emptied container is empty --------------------------------------
@@ -866,5 +868,89 @@ export function run() {
     if (row.children.length !== 2) throw new Error(`the holder came back with ${row.children.length} children rather than two`);
     if (row.innerHTML !== '<span class="lt-icon lt-icon-cloud"></span><span class="name">Notes</span>') throw new Error(`the swap landed out of place: ${row.innerHTML}`);
     if (glyph.parentElement !== null) throw new Error('the element that was written over still names a holder');
+  });
+
+  // ---- 2q. one node list, read under the name the page uses -------------------
+  //
+  // The page reads what a container is holding by `childNodes` and by its two ends, and a run of words counts as one of them: the selection toolbar's tag fold moves each child into a replacement until the first one is gone, so an end that skipped words would move the elements, drop the sentence, and read back as a fold that worked.
+
+  check('a container reads its nodes back under the name the page uses, words and elements told apart', () => {
+    const holder = fakeElement('node-list');
+    holder.innerHTML = 'before <span class="kept">a child</span> after';
+    if (holder.childNodes.length !== 3) throw new Error(`the container reads back ${holder.childNodes.length} nodes rather than three`);
+    // The element list beside it is elements alone, which is what it means in a browser and what the first-element name is read off.
+    if (holder.children.length !== 1 || holder.children[0].className !== 'kept') throw new Error('the element list beside the node list is not elements alone');
+    // Both names are the one array, so nothing can drift between them.
+    if (holder.childNodes !== holder.contents) throw new Error('the two names are two arrays, which is the drift this check exists to stop');
+    // Each node says what it is, because a walk over the list branches on exactly that.
+    const [first, middle, last] = holder.childNodes;
+    if (first.nodeType !== 3 || first.nodeValue !== 'before ') throw new Error(`the first run of words says ${first.nodeType} and ${JSON.stringify(first.nodeValue)}`);
+    if (middle.nodeType !== 1 || middle.tagName !== 'SPAN') throw new Error('the child element does not say it is an element');
+    if (last.nodeType !== 3 || last.textContent !== ' after') throw new Error('the last run of words is not a text node answering its words');
+    // The ends are the list's ends, runs of words included.
+    if (holder.firstChild !== first) throw new Error('the first node handed over is not the run of words the markup opened with');
+    if (holder.lastChild !== last) throw new Error('the last node handed over is not the run of words the markup ended with');
+    // They follow the list rather than being read once, which is what an assignment beside it would do.
+    holder.appendChild(fakeElement('node-list-added'));
+    if (holder.lastChild.id !== 'node-list-added') throw new Error('a node put on the end did not become the last one');
+    // A run of words the text write made is the same node the markup walker makes, so a container reads back the same way whichever way it was filled.
+    const written = fakeElement('node-list-text');
+    written.textContent = 'just words';
+    if (written.childNodes.length !== 1 || written.firstChild !== written.lastChild) throw new Error('a container written as text holds something other than one run of words');
+    if (written.firstChild.nodeType !== 3 || written.firstChild.nodeValue !== 'just words') throw new Error('the text write did not leave a run of words that says what it is');
+    if (written.children.length) throw new Error('the text write left a run of words in the element list');
+    // An emptied container answers nothing at either end, so a check pressing what a redraw took away finds nothing.
+    written.innerHTML = '';
+    if (written.childNodes.length || written.firstChild !== null || written.lastChild !== null) throw new Error('an emptied container still hands over what it was holding');
+  });
+
+  // ---- 2r. the two moves that are not moves -----------------------------------
+  //
+  // The tab drag settles a dragged tab into its slot with one and four fragments take an element off the page with the other, so a stub that hands the node back reads as a drop that worked while the strip is in the order it started.
+
+  check('a node moved to a place lands there, and a node swapped out leaves nothing of itself behind', () => {
+    const strip = fakeElement('move-strip');
+    const one = fakeElement('move-one');
+    const two = fakeElement('move-two');
+    const three = fakeElement('move-three');
+    strip.append(one, two, three);
+    if (strip.insertBefore(three, one) !== three) throw new Error('the move answered something other than the node it moved');
+    if (strip.children.map((tab) => tab.id).join(',') !== 'move-three,move-one,move-two') throw new Error(`the strip reads back ${strip.children.map((tab) => tab.id).join(',')}`);
+    if (strip.childNodes.length !== 3) throw new Error('the move left a copy of the tab it moved');
+    // Nothing as the reference is the end, which is what the platform does with it.
+    strip.insertBefore(three, null);
+    if (strip.lastChild !== three) throw new Error('a move with nothing as the reference did not go on the end');
+    // A tab taken from one strip reaches the other and stops being listed by the one that had it.
+    const elsewhere = fakeElement('move-elsewhere');
+    elsewhere.insertBefore(one, null);
+    if (strip.childNodes.includes(one)) throw new Error('a tab moved to another strip is still listed by the one it left');
+    if (one.parentElement !== elsewhere) throw new Error('a tab moved to another strip never named the strip it reached');
+    // A run of words is a place too, so a node moved in front of one lands in front of the words rather than on the end.
+    const worded = fakeElement('move-worded');
+    worded.innerHTML = 'lead words<b>bold</b>';
+    const put = fakeElement('move-put');
+    worded.insertBefore(put, worded.firstChild);
+    if (worded.firstChild !== put) throw new Error('a node moved in front of a run of words did not land in front of it');
+    if (worded.children[0] !== put) throw new Error('the element list does not put it in front of the element that was already there');
+
+    // The swap: what is handed over stands where the element stood, in order, and the element stops being held at all.
+    const holder = fakeElement('swap-holder');
+    holder.innerHTML = '<i>before</i><em>gone</em><i>after</i>';
+    const going = holder.querySelector('em');
+    const first = fakeElement('swap-first');
+    going.replaceWith(first, 'and words');
+    if (holder.children.map((el) => el.tagName + (el.id ? '#' + el.id : '')).join(',') !== 'I,DIV#swap-first,I') throw new Error(`the swap landed out of place: ${holder.children.map((el) => el.id || el.tagName).join(',')}`);
+    if (holder.textContent !== 'beforeand wordsafter') throw new Error(`the words landed out of place: ${JSON.stringify(holder.textContent)}`);
+    if (holder.childNodes.includes(going)) throw new Error('the element that was swapped out is still listed by its holder');
+    if (going.parentElement !== null) throw new Error('the element that was swapped out still names the holder that dropped it');
+    // Its own children are what an unwrap hands over, so the swap has to cope with taking them out of it on the way.
+    const wrapper = fakeElement('swap-wrapper');
+    const around = fakeElement('swap-around');
+    around.appendChild(wrapper);
+    wrapper.innerHTML = 'kept <b>words</b>';
+    wrapper.replaceWith(...wrapper.childNodes);
+    if (around.textContent !== 'kept words') throw new Error(`unwrapping lost the words: ${JSON.stringify(around.textContent)}`);
+    if (around.childNodes.includes(wrapper)) throw new Error('the wrapper stayed behind the words it was holding');
+    if (wrapper.childNodes.length) throw new Error('the wrapper kept a copy of the words it handed over');
   });
 }

@@ -622,4 +622,63 @@ export function run() {
       restTyping();
     }
   });
+
+  // A browser writes its own tags when the reader presses bold or strikethrough, and this app's serializer reads a different set — so the fold is what stands between what the browser made and what gets written to the file. It had no check of any kind: it walks a wrapper's nodes into a replacement and swaps the wrapper out, and the stand-in page could do neither.
+
+  check('the fold turns a browser\u2019s own tags into the ones the file is written with', () => {
+    const { normalizeInlineFormatting } = booted;
+    const block = fakeElement('fold-block');
+    block.innerHTML = 'keep <strike>struck</strike> and <u>underlined</u> and <s>also struck</s>';
+    normalizeInlineFormatting(block);
+    // Struck-through words keep their meaning under the tag the serializer reads, and the words inside come with the tag.
+    if (block.querySelectorAll('del').length !== 2) throw new Error(`the fold left ${block.querySelectorAll('del').length} tags the serializer reads rather than two`);
+    if (block.querySelector('strike') || block.querySelector('s')) throw new Error('a browser\u2019s own struck-through tag survived the fold');
+    // Underline has no Markdown, so it keeps only its words — and the words are what a fold that dropped them would lose silently.
+    if (block.querySelector('u')) throw new Error('the underline survived the fold');
+    if (block.textContent !== 'keep struck and underlined and also struck') throw new Error(`the fold lost words: ${JSON.stringify(block.textContent)}`);
+    if (block.querySelectorAll('del')[0].textContent !== 'struck') throw new Error('the words inside the first struck tag did not come with it');
+    // A browser writes the same three as a styled span too, and the fold reads those off the style rather than the tag.
+    const styled = fakeElement('fold-styled');
+    styled.innerHTML = '<span style="font-weight: bold">heavy</span><span style="font-style: italic">leaning</span>';
+    normalizeInlineFormatting(styled);
+    if (!styled.querySelector('strong') || !styled.querySelector('em')) throw new Error(`a styled span was not folded to its own tag: ${styled.innerHTML}`);
+    if (styled.textContent !== 'heavyleaning') throw new Error('folding a styled span lost its words');
+  });
+
+  // Pressing a format button a second time takes the wrapper away and leaves the same words selected, so a third press lands on them again. It spends every name the fold does and asks the holder to join the words back up afterwards, and it had no check either.
+
+  check('taking a format off keeps the words, drops the wrapper, and leaves the words selected', () => {
+    const { unwrapSelectionAncestor } = booted;
+    const wasSelection = booted.getSelection;
+    try {
+      const ranges = [];
+      booted.getSelection = () => ({
+        rangeCount: 1,
+        removeAllRanges: () => ranges.splice(0, ranges.length),
+        addRange: (range) => ranges.push(range),
+      });
+      // A phrase that opens its paragraph. The shape with words in front of it throws in a real web view as well as here, and that fault is its own ticket: docs/fixes/editing/taking-a-format-off-loses-the-selection.md. It is left out rather than written down as correct.
+      const block = fakeElement('unwrap-block');
+      block.innerHTML = '<em>the words</em> after';
+      const wrapper = block.querySelector('em');
+      unwrapSelectionAncestor(wrapper);
+      if (block.querySelector('em')) throw new Error('the wrapper stayed after the format was taken off');
+      if (block.textContent !== 'the words after') throw new Error(`taking the format off lost words: ${JSON.stringify(block.textContent)}`);
+      // The holder joins the runs back up, so what is left is one run of words rather than two sitting side by side.
+      if (block.childNodes.length !== 1) throw new Error(`the holder was left holding ${block.childNodes.length} nodes rather than one run of words`);
+      // The words are still selected, across the place they were left standing in.
+      if (ranges.length !== 1) throw new Error('the words were not put back under a selection');
+      if (ranges[0].startContainer !== block || ranges[0].endContainer !== block) throw new Error('the selection was put back somewhere other than the holder the words are in');
+      if (ranges[0].startOffset !== 0 || ranges[0].endOffset !== 1) throw new Error(`the selection came back across ${ranges[0].startOffset} to ${ranges[0].endOffset}`);
+      // A wrapper holding a tag as well as words hands both over in the order they were written, and the tag between them is what stops the join swallowing the run the selection is put back across.
+      const mixed = fakeElement('unwrap-mixed');
+      mixed.innerHTML = '<a href="#x">go <b>now</b></a>';
+      unwrapSelectionAncestor(mixed.querySelector('a'));
+      if (mixed.querySelector('a')) throw new Error('the link stayed after it was taken off');
+      if (!mixed.querySelector('b') || mixed.textContent !== 'go now') throw new Error(`taking the link off landed as ${mixed.innerHTML}`);
+      if (mixed.childNodes.length !== 2) throw new Error(`taking the link off left ${mixed.childNodes.length} nodes rather than the words and the tag`);
+    } finally {
+      booted.getSelection = wasSelection;
+    }
+  });
 }

@@ -20,6 +20,9 @@ function elementIds() {
 /** The page's own Element, so `target instanceof Element` answers the way it does in the app. */
 export class FakeElement {}
 
+/** A run of words, spelled the way a browser spells one and the way the checks' own `node` helper already spells one: it says it is text, it answers its value, and it answers its words. One maker, because a bare string cannot travel — handed to a move it lands in the element list and then throws assigning a holder onto a primitive, and the tag fold's `while (el.firstChild)` loop never ends. */
+export const textNode = (words) => ({ nodeType: 3, nodeValue: String(words), textContent: String(words), parentElement: null });
+
 /** Take a node out of whatever is holding it, so a move is a move rather than a second listing. */
 export function detachChild(child) {
   const parent = child && child.parentElement;
@@ -35,6 +38,25 @@ export function detachChild(child) {
   }
   // The holder is let go as well as dropped from its list, because "has it a parent" is how the page asks whether the thing it is closing is still standing: the diagram menu and the box its label is typed into both close that way, and a parent kept after the drop leaves each of those guards on one branch for ever. Every move assigns its new holder straight after this call, so a move is unharmed.
   child.parentElement = null;
+}
+
+/** Put nodes into a holder at one place, in the order they were handed over. The place is the written order's; where it sits in the element list beside it is counted rather than looked up, because a reference that is a run of words has no place of its own there and a lookup would answer "not there", which puts the node on the end. A place of -1 means the end of both. */
+function insertNodesAt(holder, spot, nodes) {
+  let at = spot < 0 ? -1 : holder.contents.slice(0, spot).filter((node) => node.nodeType !== 3).length;
+  let written = 0;
+  let child = 0;
+  for (const node of nodes) {
+    if (spot >= 0) holder.contents.splice(spot + written, 0, node);
+    else holder.contents.push(node);
+    written += 1;
+    // Two counters, each on its own list: a run of words joins the written order alone, so one counter across both would walk the element list past its own end.
+    if (node.nodeType !== 3) {
+      if (at >= 0) holder.children.splice(at + child, 0, node);
+      else holder.children.push(node);
+      child += 1;
+    }
+    node.parentElement = holder;
+  }
 }
 
 /** The selectors in a comma list, each trimmed and its spacing squeezed. Split only where the comma is the list's own: a comma inside `:is(...)` or a bracket separates selectors within one entry, and cutting there hands the matcher fragments that are not selectors at all. The same rule as `wearer_list` in `src/tests/app_shell_chrome_sheets.rs`, which splits the page's scrollbar-wearer list on the Rust side. */
@@ -161,7 +183,7 @@ export function matchingDescendants(el, selector) {
 
 /** What an element says: everything written inside it joined in the order it was written, each child asked the same question in turn. A guard asking a line whether it says anything reads an answer of "no, always" as itself having fired, so a panel the page really drew with a sentence in it has to come back with that sentence. */
 function composedText(node) {
-  return (node.contents || []).map((piece) => (typeof piece === 'string' ? piece : String(piece.textContent ?? ''))).join('');
+  return (node.contents || []).map((piece) => String(piece.textContent ?? '')).join('');
 }
 
 // The name a `data-` attribute is spelled with on the dataset, and back again. The two stores never meet, so every crossing goes through this pair.
@@ -195,7 +217,7 @@ const escapeValue = (text) => String(text).replace(/[&"\u00a0]/g, (char) => VALU
 
 /** What an element's markup says: its tag, what it is wearing, everything written inside it asked the same question in turn, then its closing tag. A void tag closes itself, so nothing written after it is written inside it. A run of words and an attribute value are each escaped on the way out the way a browser escapes them, and the walker reads the same spellings back in — so a round trip hands the same markup back, and a reader’s own words survive both crossings whatever characters are in them. */
 function composedMarkup(node) {
-  if (typeof node === 'string') return escapeRun(node);
+  if (node && node.nodeType === 3) return escapeRun(node.nodeValue);
   if (!node || !node.tagName) return String(node?.textContent ?? '');
   const name = String(node.tagName).toLowerCase();
   const wearing = attributeNames(node)
@@ -210,6 +232,8 @@ function composedMarkup(node) {
 
 /** A stand-in element: enough surface to be wired up, and inert when used. */
 export function fakeElement(id = '') {
+  // The one node list, reached by both names below. `childNodes` is this array itself rather than a second one kept in step, so the ends below cannot drift from what the moves write.
+  const contents = [];
   // The one place a class lives, reached by both names below. A browser has one, and two stores that never meet leave every guard asking whether an element wears a class the markup or a name write gave it answering no for ever.
   const classes = new Set();
   // Every element's, not only the ones the markup walker built: an element the page makes and then marks hidden from assistive technology drops that name silently otherwise, and the exported page's own check would read a document body wearing nothing. Names arrive here in the order they were given, which is the order the markup writes them back out in.
@@ -219,6 +243,8 @@ export function fakeElement(id = '') {
   const element = Object.assign(new FakeElement(), {
     id,
     tagName: 'DIV',
+    // What this node is, because a walk over the node list branches on exactly that — a list holding nodes that answer nothing about themselves is still half a list.
+    nodeType: 1,
     hidden: false,
     checked: false,
     disabled: false,
@@ -252,9 +278,9 @@ export function fakeElement(id = '') {
     },
     children: [],
     // What was written inside this element, in the order it was written: runs of words and child elements in one list. Two buckets joined one after the other would turn `<p>A <b>bold</b> word</p>` into `A wordbold`. Its own property, because neither name beside it would do — `children` is elements and nothing else in a browser, and `childNodes` is what eight checks rebind to hand-made text for a line being typed on.
-    contents: [],
-    // Every element has one, so a stand-in without it turns "this block is empty" into a crash in whatever walks it.
-    childNodes: [],
+    contents,
+    // The list's other name, and the one the page itself uses. The same array, held as a plain property: eight checks rebind this name to hand-made text for a line being typed on, and a rebind has to replace that one name on that one element without touching what the moves write.
+    childNodes: contents,
     parentElement: null,
     // Kept rather than swallowed, the way the document's and the window's are: a check raises a made-up event on an element and gets the page's own handler. What a link click sends is the page's own choice, and a dropped listener leaves nothing but the source text to read it off.
     listeners: new Map(),
@@ -271,27 +297,46 @@ export function fakeElement(id = '') {
     // Real moves, because moving a node is the whole of what the app-bar fold does: it takes buttons out of their containers and later puts each one back where it was standing. A stub that returns the child reads as "put back" while nothing moved.
     appendChild(child) {
       detachChild(child);
-      this.children.push(child);
+      // Everything joins the node list; only an element joins the element list beside it, or a run of words would come back as the first *element* a container is holding.
+      if (child.nodeType !== 3) this.children.push(child);
       this.contents.push(child);
       child.parentElement = this;
       return child;
     },
     prepend(child) {
       detachChild(child);
-      this.children.unshift(child);
+      if (child.nodeType !== 3) this.children.unshift(child);
       this.contents.unshift(child);
       child.parentElement = this;
       return child;
     },
     // Any number of children in one call, each through the move above, and nothing answered — the platform's own append. A string arrives as the same text node createTextNode answers, so a builder mixing the two forms reads back as one list of children.
     append(...children) {
-      for (const child of children) this.appendChild(typeof child === 'string' ? { textContent: child } : child);
+      for (const child of children) this.appendChild(typeof child === 'string' ? textNode(child) : child);
     },
     removeChild: (child) => {
       detachChild(child);
       return child;
     },
-    insertBefore: (child) => child,
+    // A real move to a place, because the tab drag settles a dragged tab into its slot with this one and a stub that hands the tab back reads as a drop that worked while the strip is in the order it started. The reference's place is read after the detach, so a node moved within the holder already lands where the reference is standing now.
+    insertBefore(child, reference) {
+      const node = typeof child === 'string' ? textNode(child) : child;
+      detachChild(node);
+      insertNodesAt(this, reference ? this.contents.indexOf(reference) : -1, [node]);
+      return node;
+    },
+    // The element swapped for what is handed over, at the place it was standing. Four fragments take an element off the page this way and the selection toolbar's two unwraps spend it twice, so a stand-in without it throws on the first line of each.
+    replaceWith(...nodes) {
+      const holder = this.parentElement;
+      if (!holder) return;
+      const made = nodes.map((one) => (typeof one === 'string' ? textNode(one) : one));
+      // Whatever is being put in leaves wherever it was standing first, which is usually inside this very element — so the place is read once they are gone.
+      for (const node of made) detachChild(node);
+      const spot = holder.contents.indexOf(this);
+      detachChild(this);
+      this.isConnected = false;
+      insertNodesAt(holder, spot, made);
+    },
     // A real removal, because a control taken out of the page is a control the rest of the shell has to cope with being gone: the published site takes the history strip out, and a stub that returned quietly would leave every later query still answering with it.
     remove() {
       detachChild(this);
@@ -331,6 +376,32 @@ export function fakeElement(id = '') {
     },
     hasAttribute(key) {
       return this.getAttribute(key) !== null;
+    },
+    // Adjacent runs of words become one and an empty one goes, each child asked the same thing in turn. The selection toolbar's unwrap asks the holder for this one line after it splices a wrapper's words in beside the words already standing there, so a stand-in without it throws before the selection is ever put back.
+    normalize() {
+      const kept = [];
+      for (const node of [...this.contents]) {
+        if (node.nodeType !== 3) {
+          kept.push(node);
+          continue;
+        }
+        if (!node.nodeValue) {
+          node.parentElement = null;
+          continue;
+        }
+        const before = kept[kept.length - 1];
+        if (before && before.nodeType === 3) {
+          before.nodeValue += node.nodeValue;
+          before.textContent = before.nodeValue;
+          node.parentElement = null;
+          continue;
+        }
+        kept.push(node);
+      }
+      // In place, because the node list is the array `childNodes` names and swapping a new one in would leave that name on the old one.
+      this.contents.length = 0;
+      this.contents.push(...kept);
+      for (const node of kept) if (node.nodeType !== 3 && node.normalize) node.normalize();
     },
     setPointerCapture() {},
     releasePointerCapture() {},
@@ -374,6 +445,17 @@ export function fakeElement(id = '') {
     configurable: true,
     enumerable: true,
   });
+  // The two ends of the node list, runs of words included — which is what the page means by them. The tag fold moves each child into a replacement until the first one is gone, so an end that skipped words would move the elements, leave the sentence behind, and read back as a fold that worked.
+  Object.defineProperty(element, 'firstChild', {
+    get: () => element.contents[0] || null,
+    configurable: true,
+    enumerable: true,
+  });
+  Object.defineProperty(element, 'lastChild', {
+    get: () => element.contents[element.contents.length - 1] || null,
+    configurable: true,
+    enumerable: true,
+  });
   // The first element this one is holding, and nothing when it holds none. The reading render takes a document's layout out of the surface through this name and hands it on, so a stand-in without it throws before the first decoration pass.
   Object.defineProperty(element, 'firstElementChild', {
     get: () => element.children[0] || null,
@@ -404,21 +486,18 @@ export function fakeElement(id = '') {
       get: () => (element.contents.length ? (name === 'textContent' ? composedText(element) : element.contents.map(composedMarkup).join('')) : held[name]),
       set: (value) => {
         held[name] = String(value ?? '');
-        // By this name and never childNodes: no move here writes that one, so it is not a child list — it is what eight checks rebind to hand-made text for a line being typed on. Each child leaves through the same detach a removal uses, so a whole redraw's worth of dropped children are not left naming the container that dropped them.
-        for (const child of [...element.children]) detachChild(child);
+        // Every node it was holding, words as well as elements: each leaves through the same detach a removal uses, so a whole redraw's worth of dropped children are not left naming the container that dropped them.
+        for (const child of [...element.contents]) detachChild(child);
         element.contents.length = 0;
         // The safe way a fragment puts a reader's own words on the page is to set the text rather than write markup, so the element has to hold them: a title set that way used to leave the markup saying `<span></span>`, and a check asking what the page says read an empty element however well the escapes worked.
         if (name === 'textContent') {
-          if (held[name]) element.contents.push(held[name]);
+          if (held[name]) element.appendChild(textNode(held[name]));
         }
         if (name === 'innerHTML') {
           // A redraw clears what the container said before, the way a browser's does: a container written with nothing in it answers with nothing rather than with its last text.
           held.textContent = '';
-          // Runs of words with no tag around them are text in a browser too, so `innerHTML = 'a line'` leaves the container saying `a line`.
-          for (const piece of elementsFromMarkup(held[name])) {
-            if (typeof piece === 'string') element.contents.push(piece);
-            else element.appendChild(piece);
-          }
+          // Runs of words with no tag around them are text in a browser too, so `innerHTML = 'a line'` leaves the container saying `a line`. One move for both kinds: it is what sorts a run of words from an element.
+          for (const piece of elementsFromMarkup(held[name])) element.appendChild(piece);
         }
       },
       configurable: true,
@@ -433,22 +512,9 @@ export function fakeElement(id = '') {
       const made = elementsFromMarkup(String(value ?? ''));
       if (!holder) return;
       const spot = holder.contents.indexOf(element);
-      const at = holder.children.indexOf(element);
       detachChild(element);
       element.isConnected = false;
-      // Two lists, each counted on its own: a run of words joins the written order alone, so one counter across both would walk the element list past its own end.
-      let written = 0;
-      let child = 0;
-      for (const piece of made) {
-        if (spot >= 0) holder.contents.splice(spot + written, 0, piece);
-        else holder.contents.push(piece);
-        written += 1;
-        if (typeof piece === 'string') continue;
-        if (at >= 0) holder.children.splice(at + child, 0, piece);
-        else holder.children.push(piece);
-        child += 1;
-        piece.parentElement = holder;
-      }
+      insertNodesAt(holder, spot, made);
     },
     configurable: true,
     enumerable: true,
@@ -479,7 +545,7 @@ function elementsFromMarkup(markup) {
   // The words between two tags belong to whatever tag is open around them, and the run is kept before the stack moves — so what was written before a closing tag is still inside the element it closes. What the markup spelled as an entity becomes the character it names, the way a browser reads one.
   const keepRun = (upto) => {
     const run = text.slice(after, upto);
-    if (run) open[open.length - 1].node.contents.push(readEscapes(run));
+    if (run) open[open.length - 1].node.appendChild(textNode(readEscapes(run)));
   };
   for (const tag of text.matchAll(MARKUP_TAGS)) {
     keepRun(tag.index);
@@ -503,7 +569,7 @@ function elementsFromMarkup(markup) {
   keepRun(text.length);
   // The whole of what was parsed, runs included, so the container this is written into says the words as well as holding the elements. One line in the file parses markup, so nothing else has to read this shape.
   const built = [...root.contents];
-  for (const child of root.children) child.parentElement = null;
+  for (const child of built) child.parentElement = null;
   root.children.length = 0;
   root.contents.length = 0;
   return built;
@@ -580,21 +646,35 @@ export function fakePage() {
       made.tagName = String(tag).toUpperCase();
       return made;
     },
-    createTextNode: (text) => ({ textContent: text }),
+    createTextNode: (text) => textNode(text),
     // Nothing is rendered here, so a walk over an element finds no nodes — which is what a walk over the fake page's empty elements would find.
     createTreeWalker: () => ({ nextNode: () => null }),
     createDocumentFragment: () => fakeElement('fragment'),
-    createRange: () => ({
-      setStart() {},
-      setEnd() {},
-      selectNodeContents() {},
-      getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0 }),
-      getClientRects: () => [],
-      cloneRange() {
-        return this;
-      },
-      collapse() {},
-    }),
+    createRange: () => {
+      // Where a selection was put back, kept rather than swallowed: the selection toolbar's unwrap leaves the words it kept selected so a second button press lands on the same ones, and a stub that dropped the two ends would let a check watching for that pass with nothing selected at all. A place is a holder and a spot in its node list, the way a browser records one.
+      const range = {
+        startContainer: null,
+        startOffset: 0,
+        endContainer: null,
+        endOffset: 0,
+        setStart() {},
+        setEnd() {},
+        setStartBefore(node) {
+          range.startContainer = node.parentElement;
+          range.startOffset = node.parentElement ? node.parentElement.childNodes.indexOf(node) : 0;
+        },
+        setEndAfter(node) {
+          range.endContainer = node.parentElement;
+          range.endOffset = node.parentElement ? node.parentElement.childNodes.indexOf(node) + 1 : 0;
+        },
+        selectNodeContents() {},
+        getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0 }),
+        getClientRects: () => [],
+        cloneRange: () => range,
+        collapse() {},
+      };
+      return range;
+    },
     // Kept rather than swallowed, so a check can raise a made-up event on the page and get the page's own handlers. Every fragment that watches the document is on this list, in the order they registered, which is the order the real page calls them in.
     listeners: new Map(),
     addEventListener(type, handler) {
