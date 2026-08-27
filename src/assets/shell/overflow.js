@@ -177,7 +177,7 @@ function sendPageExport(format) {
 }
 // Ask where the page goes, and in which format. Measuring raises and drops its own hold, so the save window opens over the page as the reader left it. `format` travels only where the reader has already been asked, and leaves the save window that one row to offer.
 //
-// Every diagram the page has not drawn yet is drawn first, because a box the reader never scrolled to prints as an empty frame the right size and the export is the one path where they cannot fix it by scrolling. The measurement comes after: the height sent is the sheet, and a diagram drawn after it is a diagram off the bottom. Nothing to draw is the ordinary case, and it sends where it always did rather than waiting a turn for a promise.
+// Every diagram the page has not drawn yet is drawn first, because a box the reader never scrolled to prints as an empty frame the right size and the export is the one path where they cannot fix it by scrolling. The measurement comes after: the height sent is the sheet, and a diagram drawn after it is a diagram off the bottom. Nothing to draw is the ordinary case, and that sends straight out rather than making the reader wait a turn for a promise that had nothing to keep.
 function askPageExport(format) {
   if (!mermaidWaitingForExport().length) {
     sendPageExport(format);

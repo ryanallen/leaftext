@@ -435,6 +435,28 @@ export function run() {
     }
   });
 
+
+  // The save window stands open for as long as the reader takes over it, and the host renders after that. A recycling pass anywhere in that stretch hands far drawings back as boxes and prints the empty frames the drawing was for — measured in a running copy: 20 of 220 went back inside half a second of the pass ending.
+  check('An export holds every drawing until the reader scrolls again', () => {
+    const page = runShell(source, { ipc: { postMessage: () => {} } });
+    const held = () => vm.runInContext('mermaidExportHolding', page);
+    const mayRecycle = vm.runInContext('mermaidMayRecycle', page);
+    try {
+      vm.runInContext('mermaidExportHolding = true;', page);
+      // Whatever the block itself says about being far away and rememberable, the export's hold answers first.
+      const drawn = fakeElement('');
+      drawn.className = 'mermaid';
+      drawn.dataset.processed = 'true';
+      drawn.__mermaidSource = 'flowchart one';
+      if (mayRecycle(drawn)) throw new Error('a drawing was handed back while an export was still to be rendered');
+      // The reader's own next scroll is the first moment they are reading rather than exporting, and it is what drops the hold.
+      vm.runInContext('readerScrollSettled();', page);
+      if (held()) throw new Error('the reader scrolled and the export was still holding every drawing');
+    } finally {
+      vm.runInContext('mermaidExportHolding = false;', page);
+    }
+  });
+
   check('The saved growl opens the file it names', () => {
     // Its own boot: the growl slot replaces itself, so a shared page carries whatever an earlier check left in it.
     const sent = [];
