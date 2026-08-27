@@ -196,7 +196,8 @@ A picked file is **never copied anywhere** — the picture stays where you keep 
 Highlight words in an unlocked Markdown page and a small bar appears over them.
 
 - **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off.
-- **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away.
+- **Taking a format off leaves the same words highlighted**, wherever the phrase sits in its sentence, so the bar goes on answering for them and a third press puts the format back. Nothing has to be highlighted again by hand.
+- **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away, and the words stay highlighted.
 - **Text**, a **bigger** and a **smaller** heading, and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.
 - These don't toggle — **a button with nowhere to go grays out**, so every press is a straight answer. **Text** is the way out of a heading or a quote, and grays out on body text.
 - The two **H**s are the same glyph at two sizes, and they move **one level per press**: `######` → `#####` → … → `#`. All six levels are reachable, so a document can carry as many `#` headings as you want. The bigger H grays out at `#` and the smaller at `######`.

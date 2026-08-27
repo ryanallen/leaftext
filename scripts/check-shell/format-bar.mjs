@@ -623,7 +623,7 @@ export function run() {
     }
   });
 
-  // A browser writes its own tags when the reader presses bold or strikethrough, and this app's serializer reads a different set — so the fold is what stands between what the browser made and what gets written to the file. It had no check of any kind: it walks a wrapper's nodes into a replacement and swaps the wrapper out, and the stand-in page could do neither.
+  // A browser writes its own tags when the reader presses bold or strikethrough, and this app's serializer reads a different set — so the fold is what stands between what the browser made and what gets written to the file. It walks a wrapper's nodes into a replacement and swaps the wrapper out, which the stand-in page has to be able to do.
 
   check('the fold turns a browser\u2019s own tags into the ones the file is written with', () => {
     const { normalizeInlineFormatting } = booted;
@@ -645,7 +645,7 @@ export function run() {
     if (styled.textContent !== 'heavyleaning') throw new Error('folding a styled span lost its words');
   });
 
-  // Pressing a format button a second time takes the wrapper away and leaves the same words selected, so a third press lands on them again. The order is the whole of it: the selection goes on while the phrase is still a run of its own, because the join afterwards keeps the first run and drops the rest — so a selection put on after it names a run that is gone, which is the throw that lost the phrase wherever words stood in front of it.
+  // Pressing a format button a second time takes the wrapper away and leaves the same words selected, so a third press lands on them again. The order is the whole of it: the selection goes on while the phrase is still a run of its own, because the join keeps the first run and drops the rest, so a selection put on after it names a run that is gone.
 
   check('taking a format off selects the phrase before the runs are joined, in every sentence position', () => {
     const { unwrapSelectionAncestor } = booted;
