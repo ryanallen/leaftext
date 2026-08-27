@@ -743,23 +743,42 @@ const HAIR_OF_PAPER: f64 = 4.0;
 /// How long a side of a PDF page can be. The format's own ceiling rather than anything chosen here, so a document taller than this cannot be one continuous page whatever the app asks for.
 const LONGEST_PAGE_INCHES: f64 = 200.0;
 
-/// The height of each sheet for a document `inches` tall: its own height where that fits on one page, and an equal share of it where it does not.
+/// The one page a document `inches` tall is written on: its own height at full size where the ceiling holds it, and the ceiling itself, with the whole document scaled down onto it, where it does not.
 ///
-/// Cut at the ceiling instead and a document a little past it is one full sheet followed by a mostly blank one, which is the blank paper a reader meets and cannot explain. Divided, every sheet is full and the last one ends at the last line.
+/// Dividing a taller document into equal sheets was tried, and drawings undid it: a drawing cannot be split across a cut the way text can, so every cut pushed the drawing under it whole onto the next sheet, each sheet ended short by one drawing, and the pushes added up to a fourth, nearly empty sheet under a three-sheet document. Scaled onto one page there is no cut for anything to straddle, and the page ends at the last line.
 ///
-/// Both desktops ask it. A Mac writes the answer as points and Windows as inches, which is the only difference between them.
-pub(super) fn sheet_inches(inches: f64) -> f64 {
-    let sheets = (inches / LONGEST_PAGE_INCHES).ceil().max(1.0);
-    // Rounded up to the hundredth the page size is written in. Rounded down instead, a sheet comes out a fraction of a pixel shorter than what is on it, and that fraction is a second, nearly empty page — which is most of what a reader sees as blank paper.
-    let sheet = (inches / sheets * 100.0).ceil() / 100.0;
-    sheet.clamp(1.0, LONGEST_PAGE_INCHES)
+/// Both desktops ask it. A Mac writes the height as points and Windows as inches, which is the only difference between them.
+pub(super) struct Paper {
+    /// How tall the page is, in inches.
+    pub(super) height: f64,
+    /// How much the document is shrunk to fit it: one at full size, less past the ceiling.
+    pub(super) scale: f64,
+}
+
+/// The smallest scale a renderer will print at; a document taller than that allows spills onto a second page rather than shrinking further.
+const SMALLEST_PRINT_SCALE: f64 = 0.1;
+
+pub(super) fn paper_for(inches: f64) -> Paper {
+    let inches = inches.max(1.0);
+    if inches <= LONGEST_PAGE_INCHES {
+        // Rounded up to the hundredth the page size is written in. Rounded down instead, the page comes out a fraction of a pixel shorter than what is on it, and that fraction is a second, nearly empty page — which is most of what a reader sees as blank paper.
+        let height = (inches * 100.0).ceil() / 100.0;
+        return Paper {
+            height: height.min(LONGEST_PAGE_INCHES),
+            scale: 1.0,
+        };
+    }
+    Paper {
+        height: LONGEST_PAGE_INCHES,
+        scale: (LONGEST_PAGE_INCHES / inches).max(SMALLEST_PRINT_SCALE),
+    }
 }
 
 /// Render the open page to a PDF at `target`, with no panel and on one continuous page.
 ///
 /// WebView2 has the call itself, off a later revision of its own interface, and `wry` hands back the raw one to ask for it. It renders asynchronously while the message loop is pumped, which is the same shape as the file dialog above: this thread waits, and the window stays alive.
 ///
-/// The page size is the document's own, so nothing is cut across a sheet boundary. The height is taken as the page gave it, with a hair added against rounding and nothing more: a proportional allowance was tried and on a document twenty screens tall it is most of a sheet of white below the last line.
+/// The page size is the document's own, so nothing is cut across a sheet boundary. The height is taken as the page gave it, with a hair added against rounding and nothing more: a proportional allowance was tried and on a document twenty screens tall it is most of a sheet of white below the last line. Past the ceiling the document is scaled onto one page rather than cut, and the page width shrinks with it, so the render lays the page out at the width the page measured itself at.
 #[cfg(target_os = "windows")]
 fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Result<(), String> {
     use webview2_com::Microsoft::Web::WebView2::Win32::{
@@ -780,13 +799,12 @@ fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Res
         .and_then(|environment| unsafe { environment.CreatePrintSettings() }.ok());
     if let Some(settings) = settings.as_ref() {
         let inches = |pixels: f64| (pixels / CSS_PIXELS_PER_INCH).clamp(1.0, LONGEST_PAGE_INCHES);
+        let paper = paper_for((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH);
         unsafe {
-            settings.SetPageWidth(inches(width)).ok();
-            settings
-                .SetPageHeight(sheet_inches((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH))
-                .ok();
-            // One to one, said out loud. Left alone, the renderer lays the page out at its own width and shrinks the result to fit the sheet — which is how a sheet sized for the document ends up a fifth of it in blank paper.
-            settings.SetScaleFactor(1.0).ok();
+            settings.SetPageWidth(inches(width) * paper.scale).ok();
+            settings.SetPageHeight(paper.height).ok();
+            // Said out loud: one to one under the ceiling, and past it the one scale that fits the whole document on the page. Left alone, the renderer lays the page out at its own width and shrinks the result to fit the sheet — which is how a sheet sized for the document ends up a fifth of it in blank paper.
+            settings.SetScaleFactor(paper.scale).ok();
             settings.SetMarginTop(0.0).ok();
             settings.SetMarginBottom(0.0).ok();
             settings.SetMarginLeft(0.0).ok();
@@ -836,18 +854,18 @@ fn write_page_pdf(page: &WebView, target: &Path, width: f64, height: f64) -> Res
     const POINTS_PER_INCH: f64 = 72.0;
 
     let inches = |pixels: f64| (pixels / CSS_PIXELS_PER_INCH).clamp(1.0, LONGEST_PAGE_INCHES);
-    let sheet = sheet_inches((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH);
+    let paper = paper_for((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH);
     let settings = NSPrintInfo::new();
     settings.setPaperSize(NSSize::new(
-        inches(width) * POINTS_PER_INCH,
-        sheet * POINTS_PER_INCH,
+        inches(width) * paper.scale * POINTS_PER_INCH,
+        paper.height * POINTS_PER_INCH,
     ));
     settings.setTopMargin(0.0);
     settings.setBottomMargin(0.0);
     settings.setLeftMargin(0.0);
     settings.setRightMargin(0.0);
-    // One to one, said out loud. Fitting shrinks the document onto the sheet, and the sheet is already the document's own size, so fitting is only ever blank paper under the last line.
-    settings.setScalingFactor(1.0);
+    // Said out loud: one to one under the ceiling, and past it the one scale that fits the whole document on the page. Fitting on its own shrinks the document onto a sheet that is already the document's own size, so it is only ever blank paper under the last line.
+    settings.setScalingFactor(paper.scale);
     let destination = NSURL::fileURLWithPath(&NSString::from_str(&target.to_string_lossy()));
     // The job saves rather than spools, and the file it saves to is the one the reader named in the dialog before any of this ran.
     unsafe {
@@ -1481,7 +1499,7 @@ pub(crate) fn export_picture_markdown(
 
 /// Print one picture onto a sheet of its own, at the path the save window already answered with.
 ///
-/// The page put a copy of the picture in its print container at that picture's own pixel size and raised `leaf-paper-picture`, which takes everything else in the surface off the sheet — so this is the same render the page export runs, with one picture left standing. A picture taller than a sheet holds is divided by `sheet_inches`, the way a long document already is.
+/// The page put a copy of the picture in its print container at that picture's own pixel size and raised `leaf-paper-picture`, which takes everything else in the surface off the sheet — so this is the same render the page export runs, with one picture left standing. A picture taller than the ceiling is scaled onto one page by `paper_for`, the way a long document already is.
 ///
 /// The page is told the moment the render is over, however it went: a print state left on is a window holding a bare picture where the reader's document was.
 ///

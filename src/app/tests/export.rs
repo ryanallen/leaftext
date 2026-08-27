@@ -820,18 +820,23 @@ fn write_page_pdf(",
         "an export must not scribble in the app's session-wide print settings: {body}"
     );
 
-    // The size the page measured, through the same sheet arithmetic Windows asks, written in the unit a Mac page size takes.
+    // The size the page measured, through the same paper arithmetic Windows asks, written in the unit a Mac page size takes — and the scale it answers is the one the operation prints at.
     assert!(
-        body.contains("sheet_inches((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH)"),
-        "both desktops divide a tall document the same way: {body}"
+        body.contains("paper_for((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH)"),
+        "both desktops fit a tall document onto one page the same way: {body}"
+    );
+    assert!(
+        body.contains("settings.setScalingFactor(paper.scale);"),
+        "a Mac must print at the scale the paper arithmetic answered: {body}"
     );
     assert!(
         body.contains("const POINTS_PER_INCH: f64 = 72.0;") && body.contains("* POINTS_PER_INCH"),
         "a Mac page size is points, and inches written there is a sheet a third of the size: {body}"
     );
+    // Never the panel's own fit: fitting the document onto its own sheet is the blank paper the Windows half spent rounds on, and the scale printed at is the paper arithmetic's alone.
     assert!(
-        body.contains("setScalingFactor(1.0)"),
-        "fitting the document onto its own sheet is the blank paper the Windows half spent rounds on: {body}"
+        !body.contains("setScalingFactor(1.0)") && !body.contains("setHorizontalPagination"),
+        "the scale is the paper arithmetic's, never a fixed one or the panel's fit: {body}"
     );
 
     // Nothing here can watch the operation finish, so the growl answers on the file.
@@ -906,21 +911,22 @@ fn export_pdf_carries_the_format_and_the_page_size_it_needs() {
         "the PDF render is laid out under the paper rules measured for it: {printed}"
     );
 
-    // The sheet is the height the page measured, plus a hair against rounding, divided into equal pages only where one page cannot hold it. A proportional allowance was tried and on a document twenty screens tall it is most of a sheet of white below the last line.
+    // The page is the height the page measured, plus a hair against rounding, and past the ceiling it is the ceiling with the document scaled onto it — never sheets, which a drawing cannot be split across. A proportional allowance was tried and on a document twenty screens tall it is most of a sheet of white below the last line.
     assert!(
-        write.contains(
-            ".SetPageHeight(sheet_inches((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH))"
-        ),
-        "the page height is taken as given rather than scaled"
+        write.contains("let paper = paper_for((height + HAIR_OF_PAPER) / CSS_PIXELS_PER_INCH);")
+            && write.contains(".SetPageHeight(paper.height)")
+            && write.contains(".SetScaleFactor(paper.scale)")
+            && write.contains(".SetPageWidth(inches(width) * paper.scale)"),
+        "the page height is taken as given, and past the ceiling the whole page shrinks with the document: {write}"
     );
     assert!(
         write.contains("const HAIR_OF_PAPER: f64 = 4.0;"),
         "the allowance is a pixel count rather than a share of the document"
     );
-    // Rounded up rather than down: a sheet a fraction shorter than what is laid out on it is a whole second page with almost nothing on it.
+    // Rounded up rather than down: a page a fraction shorter than what is laid out on it is a whole second page with almost nothing on it.
     assert!(
-        write.contains("let sheet = (inches / sheets * 100.0).ceil() / 100.0;"),
-        "the sheet is never rounded to less than the document needs"
+        write.contains("let height = (inches * 100.0).ceil() / 100.0;"),
+        "the page is never rounded to less than the document needs"
     );
 }
 
@@ -1252,28 +1258,43 @@ fn an_exported_page_carries_the_math_stylesheet_only_where_there_is_math() {
     );
 }
 
-/// The ceiling on a PDF page, and what a document past it comes out as. Cut at the ceiling, a document a little over is one full sheet and a mostly blank one — which is the blank paper a reader meets and cannot explain. Divided, every sheet is full and the last ends at the last line. Both desktops ask it, so both desktops run this.
+/// The ceiling on a PDF page, and what a document past it comes out as: one page the ceiling tall with the whole document scaled onto it. Divided into equal sheets, a drawing under each cut was pushed whole onto the next sheet and the pushes added up to a fourth, nearly empty sheet under a three-sheet document. Both desktops ask it, so both desktops run this.
 #[test]
-fn a_document_taller_than_a_pdf_page_is_divided_into_equal_sheets() {
-    use crate::app::fileops::sheet_inches;
+fn a_document_taller_than_a_pdf_page_is_scaled_onto_one_page() {
+    use crate::app::fileops::paper_for;
 
-    // Under the ceiling it is its own height, so one continuous page stays one continuous page.
-    assert_eq!(sheet_inches(60.0), 60.0);
-    assert_eq!(sheet_inches(200.0), 200.0);
+    // Under the ceiling it is its own height at full size, so one continuous page stays one continuous page.
+    let own = paper_for(60.0);
+    assert_eq!((own.height, own.scale), (60.0, 1.0));
+    let edge = paper_for(200.0);
+    assert_eq!((edge.height, edge.scale), (200.0, 1.0));
 
-    // A hair over, and the answer is two half sheets rather than a full one and a sliver.
-    assert_eq!(sheet_inches(202.0), 101.0);
-    // The document read on a running copy: 292 inches over a 200-inch ceiling.
-    assert_eq!(sheet_inches(292.0), 146.0);
-    // Nothing is ever asked for past the ceiling, whatever the arithmetic came to.
-    for tall in [1.0, 199.9, 200.1, 401.0, 100_000.0] {
-        let sheet = sheet_inches(tall);
-        assert!(sheet > 0.0 && sheet <= 200.0, "{tall} gave {sheet}");
-        // And every sheet holds its share: the pages multiply back to at least the document.
-        let sheets = (tall as f64 / sheet).ceil();
+    // A hair over, and the answer is the ceiling with the document shrunk a hair to fit it, never two sheets.
+    let hair = paper_for(202.0);
+    assert_eq!(hair.height, 200.0);
+    assert!((hair.scale - 200.0 / 202.0).abs() < 1e-9, "{}", hair.scale);
+    // The document read on a running copy: 434 inches over a 200-inch ceiling.
+    let read = paper_for(434.5);
+    assert_eq!(read.height, 200.0);
+    assert!((read.scale - 200.0 / 434.5).abs() < 1e-9, "{}", read.scale);
+    // Nothing is ever asked for past the ceiling, and the scaled document always fits the page it was given, down to the smallest scale a renderer prints at.
+    for tall in [1.0, 199.9, 200.1, 401.0, 1_999.0] {
+        let paper = paper_for(tall);
         assert!(
-            sheet * sheets >= tall - 0.001,
-            "{tall} over {sheets} sheets of {sheet}"
+            paper.height > 0.0 && paper.height <= 200.0,
+            "{tall} gave a page {} tall",
+            paper.height
+        );
+        assert!(
+            (0.1..=1.0).contains(&paper.scale),
+            "{tall} gave a scale of {}",
+            paper.scale
+        );
+        assert!(
+            tall * paper.scale <= paper.height + 0.01,
+            "{tall} scaled by {} does not fit {}",
+            paper.scale,
+            paper.height
         );
     }
 }
