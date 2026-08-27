@@ -344,13 +344,89 @@ export function run() {
     }
   });
 
-  // The picture checks all lend the same globals — a canvas, an `Image`, `btoa` — so they run one after another, on the one queue every lending check shares. The picture export beside this one lends the same window, so a queue of this file's own would let the two interleave.
+  // The step every picture row starts from, and the one that has no browser in it: the drawing becomes base64 on the page's own side. A label with an accent or an emoji in it is a byte longer than a character, so an encoder handed characters writes a file nothing can open — which is why the bytes go through the encoder rather than the text.
+  check('the drawing is encoded through its own bytes, so an accent and an emoji survive the round trip', () => {
+    const words = 'café 🌿 — <boîte>';
+    const encoded = booted.diagramBase64(words);
+    // Read back outside the page, because base64 is only ever right if something else can decode it.
+    const read = Buffer.from(encoded, 'base64').toString('utf8');
+    if (read !== words) throw new Error(`what came back was ${JSON.stringify(read)} rather than ${JSON.stringify(words)}`);
+    // One character per byte is the browser's own contract, and it is what the encoder would break by handing the text over whole.
+    if (encoded !== Buffer.from(words, 'utf8').toString('base64')) throw new Error(`the encoding is not the text's own bytes: ${encoded}`);
+  });
+
+  // The picture checks all lend the same globals — a canvas and an `Image` — so they run one after another, on the one queue every lending check shares. The picture export beside this one lends the same window, so a queue of this file's own would let the two interleave.
   const checkPicture = checkLendingTheWindow;
 
-  // A window that can draw one, which is where the three picture rows part: PNG hands the host raw pixels to encode, WebP and JPEG hand it a file the canvas already wrote. The stand-in page has no canvas at all, so one is lent for the length of the check.
-  const withCanvas = (answer) => {
+  // What mermaid hands back, shaped the way mermaid shapes it: a root carrying its own view box and a max width scaled to the reading column, nested groups, a label with an accent in it, and a definition block after the drawing. Only mermaid is stood in — everything the page then does to this is the page's own.
+  const MERMAID_DRAWING =
+    '<svg id="dleafFlowExport1" viewBox="0 0 200 100" width="200" height="100" style="max-width: 200px;">' +
+    '<g class="root"><rect class="label-container" x="5" y="6" width="60" height="30"></rect><text class="nodeLabel">café</text></g>' +
+    '<defs><linearGradient id="edge0"></linearGradient></defs>' +
+    '</svg>';
+
+  // Mermaid's own drawing step, stood in so the page's real rewrite runs over markup shaped like mermaid's.
+  const withMermaidDrawing = (drawn = MERMAID_DRAWING) => {
+    const was = booted.mermaid;
+    booted.mermaid = { initialize() {}, render: async () => ({ svg: drawn }) };
+    return () => {
+      if (was === undefined) delete booted.mermaid;
+      else booted.mermaid = was;
+    };
+  };
+
+  // The address the export loads the drawing from: its own bytes through its own encoder, which is exactly what the page hands the picture.
+  const drawingUrl = (svg) => 'data:image/svg+xml;base64,' + booted.diagramBase64(svg);
+
+  // The whole round trip, in one place: mermaid's markup in, the page's own parse, rewrite and serialize out.
+  const rewritten = async (drawn) => {
+    const putMermaid = withMermaidDrawing(drawn);
+    try {
+      return await booted.diagramDrawingSvg('flowchart TD\n  A --> B');
+    } finally {
+      putMermaid();
+    }
+  };
+
+  // The drawing rewrite is the last step nothing in the check could run: it parses mermaid's SVG, widens the view so the margin falls outside every box, and puts the page color behind the whole thing. Its own round trip, before the rows that spend it.
+  checkPicture('the drawing goes out with room around it, the page color behind it, and every shape where mermaid left it', async () => {
+    const surface = booted.document.documentElement;
+    surface.style.setProperty('--lt-surface', '#101418');
+    const out = await rewritten();
+    // The view widens and the drawing keeps its own coordinates, which is what puts the margin outside every box rather than moving anything.
+    if (!out.includes('viewBox="-24 -24 248 148"')) throw new Error(`the view box was not widened by the margin: ${out}`);
+    if (!out.includes('width="248"') || !out.includes('height="148"')) throw new Error(`the drawing was not grown to its new view: ${out}`);
+    // Mermaid scales its drawing down to the reading column; a picture at export size must not be scaled back.
+    if (!/style="max-width: none"/.test(out)) throw new Error(`the drawing kept a max width of its own: ${out}`);
+    // Before the original first child, or the page color is painted over the drawing rather than behind it.
+    const behind = out.indexOf('fill="#101418"');
+    if (behind < 0) throw new Error(`the page color was not painted behind the drawing: ${out}`);
+    if (behind > out.indexOf('class="root"')) throw new Error('the page color was painted over the drawing rather than behind it');
+    if (!out.includes('x="-24" y="-24" width="248" height="148"')) throw new Error(`the rectangle behind the drawing is not the whole of the new view: ${out}`);
+    // The reader's own drawing, unmoved: nested shapes at their own coordinates, an accent that survived both crossings, and a camel-cased XML tag left spelled the way mermaid wrote it.
+    if (!out.includes('<rect class="label-container" x="5" y="6" width="60" height="30">')) throw new Error(`a nested shape moved: ${out}`);
+    if (!out.includes('<text class="nodeLabel">café</text>')) throw new Error(`the label did not survive the round trip: ${out}`);
+    if (!out.includes('<linearGradient id="edge0">')) throw new Error(`an XML tag was respelled on the way out: ${out}`);
+  });
+
+  // The refusal the rewrite already carries, and the reason it carries it: half-editing somebody's drawing is worse than sending it as it came. Reachable only now that the parse is real.
+  checkPicture('a drawing the rewrite cannot read goes out exactly as mermaid wrote it', async () => {
+    for (const [why, drawn] of [
+      ['a root that is not a drawing at all', '<div><svg viewBox="0 0 200 100"></svg></div>'],
+      ['a view box with three numbers in it', '<svg viewBox="0 0 200"></svg>'],
+      ['a view box with no width', '<svg viewBox="0 0 0 100"></svg>'],
+      ['no view box at all', '<svg width="200" height="100"></svg>'],
+    ]) {
+      const out = await rewritten(drawn);
+      if (out !== drawn) throw new Error(`${why} came back rewritten: ${out}`);
+    }
+  });
+
+  // A window that can draw one, which is where the three picture rows part: PNG hands the host raw pixels to encode, WebP and JPEG hand it a file the canvas already wrote. The stand-in page has no canvas at all, so one is lent for the length of the check; the drawing is the page's own rewrite over mermaid's markup, and the picture is the page's own too, told how wide this case's drawing comes out.
+  const withCanvas = async (answer) => {
     const original = booted.document.createElement;
-    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, drawing: booted.diagramDrawingSvg, image: booted.Image, btoa: booted.btoa };
+    const putMermaid = withMermaidDrawing();
+    const was = { send: booted.ipc.postMessage, toast: booted.leafToast };
     const sent = [];
     const said = [];
     // Every encode the canvas was asked for, so a row refused before it reached one is told apart from a row that encoded and threw.
@@ -361,15 +437,9 @@ export function run() {
       if (one.command === 'exportDiagram' || one.command === 'pickDiagramPath') sent.push(one);
     };
     booted.leafToast = (words) => said.push(words);
-    booted.diagramDrawingSvg = async () => '<svg viewBox="0 0 200 100"></svg>';
-    booted.btoa = (binary) => Buffer.from(binary, 'binary').toString('base64');
-    booted.Image = class {
-      set src(unused) {
-        this.naturalWidth = answer.wide || 200;
-        this.naturalHeight = 100;
-        Promise.resolve().then(() => this.onload && this.onload());
-      }
-    };
+    // The address the export will load, read off the page's own rewrite rather than written down: a change to the rewrite moves the picture the export finds instead of leaving this case waiting on bytes nothing produces.
+    const url = drawingUrl(await booted.diagramDrawingSvg('flowchart TD\n  A --> B'));
+    booted.__pictures.set(url, { width: answer.wide || 200, height: 100 });
     booted.document.createElement = (tag) => {
       const made = original.call(booted.document, tag);
       if (String(tag).toLowerCase() === 'canvas') {
@@ -399,15 +469,14 @@ export function run() {
         booted.document.createElement = original;
         booted.ipc.postMessage = was.send;
         booted.leafToast = was.toast;
-        booted.diagramDrawingSvg = was.drawing;
-        booted.Image = was.image;
-        booted.btoa = was.btoa;
+        putMermaid();
+        booted.__pictures.delete(url);
       },
     };
   };
 
   checkPicture('the ending the reader chose is the one encoded, and WebP sends a finished file where PNG sends pixels', async () => {
-    const lent = withCanvas({});
+    const lent = await withCanvas({});
     const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
     try {
       const block = drawnDiagram('flowchart TD\n  W1 --> W2');
@@ -440,7 +509,7 @@ export function run() {
   // v1.24.0 measured it: a fifty-step left-to-right flowchart is 16,872 pixels across at export size, so this is a diagram somebody draws rather than a guard against the absurd. The canvas answers an empty URL rather than throwing, so a row that did not check would save a six-byte file.
   checkPicture('a drawing too big for WebP is refused out loud, and a window that cannot write one says so instead', async () => {
     for (const [answer, expected] of [[{ wide: 9000 }, /too big/i], [{ cannotWrite: true }, /cannot write WebP/i]]) {
-      const lent = withCanvas(answer);
+      const lent = await withCanvas(answer);
       const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
       try {
         const block = drawnDiagram('flowchart LR\n  W3 --> W4');
@@ -461,7 +530,7 @@ export function run() {
   // What has to hold is that the file really is a JPEG, at the quality the page names, and that both spellings of the ending reach it.
   checkPicture('a JPEG goes out as a finished JPEG, at the quality the page names, under either spelling of the ending', async () => {
     for (const ending of ['jpg', 'jpeg']) {
-      const lent = withCanvas({});
+      const lent = await withCanvas({});
       const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
       try {
         const block = drawnDiagram('flowchart TD\n  J1 --> J2');
@@ -488,7 +557,7 @@ export function run() {
 
   // Past 65,500 pixels a side — this window's ceiling, bisected on a running copy, not the format's own 65,535 — a canvas answers an empty URL rather than throwing, which is the trap the WebP guard was written for. With no guard of its own the type check catches it and says this window cannot write JPEG, which is the wrong thing to tell a reader.
   checkPicture('a drawing too big for JPEG is refused before anything is encoded, and points at the row that can still write it', async () => {
-    const lent = withCanvas({ wide: 40000 });
+    const lent = await withCanvas({ wide: 40000 });
     const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
     try {
       const block = drawnDiagram('flowchart LR\n  J3 --> J4');
@@ -508,7 +577,7 @@ export function run() {
   // The guard's own edge, which the check above cannot see: its 40,000 is past both the format's 65,535 and this window's 65,500, so it passes whichever number the constant carries. The lent canvas takes its size from the stand-in image doubled by the export's own scale, so 32,751 is 65,502 on the canvas — inside the thirty-five-pixel band where the format would take the drawing and this engine will not — and 32,750 is 65,500, the widest it writes.
   checkPicture('a drawing inside the band the format allows and this window will not encode is refused as too big, and one at the ceiling is written', async () => {
     const refuse = async (wide, expect) => {
-      const lent = withCanvas({ wide });
+      const lent = await withCanvas({ wide });
       const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
       try {
         const block = drawnDiagram(`flowchart LR
@@ -536,28 +605,15 @@ export function run() {
 
   // This window has no canvas, which is the branch the refusal is written for, so what is held is that it refuses out loud and writes nothing — a row failing quietly leaves a reader waiting on a Save dialog that never opens. The drawing step stands in: everything after it is what is under test.
   checkPicture('the picture refuses in a toast when the window cannot draw one, and sends nothing', async () => {
-    const surface = booted.document.getElementById('appSurface');
-    const was = {
-      send: booted.ipc.postMessage,
-      toast: booted.leafToast,
-      drawing: booted.diagramDrawingSvg,
-      image: booted.Image,
-      btoa: booted.btoa,
-    };
+    const putMermaid = withMermaidDrawing();
+    const was = { send: booted.ipc.postMessage, toast: booted.leafToast };
     const sent = [];
     const said = [];
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     booted.leafToast = (words) => said.push(words);
-    booted.diagramDrawingSvg = async () => '<svg viewBox="0 0 200 100"></svg>';
-    booted.btoa = (binary) => Buffer.from(binary, 'binary').toString('base64');
-    // The markup loads as a picture, so the refusal below is the canvas and nothing before it.
-    booted.Image = class {
-      set src(unused) {
-        this.naturalWidth = 200;
-        this.naturalHeight = 100;
-        Promise.resolve().then(() => this.onload && this.onload());
-      }
-    };
+    // The page's own rewrite, its own encoder and its own `Image` carry the drawing this far, so what refuses below is the canvas and nothing before it.
+    const url = drawingUrl(await booted.diagramDrawingSvg('flowchart TD\n  A --> B'));
+    booted.__pictures.set(url, { width: 200, height: 100 });
     try {
       const block = drawnDiagram('flowchart TD\n  N1 --> N2');
       booted.addMermaidControls(block);
@@ -566,12 +622,13 @@ export function run() {
       await settle(() => said.length || sent.some((one) => one.command === 'exportDiagram'));
       if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('a window that cannot draw a picture asked for a file anyway');
       if (said.length !== 1 || !/picture/i.test(said[0])) throw new Error(`it said ${said.join(' / ') || 'nothing'}`);
+      // The refusal is the canvas's, which means the picture before it really did load off the page's own map.
+      if (!/cannot make a picture/i.test(said[0])) throw new Error(`the refusal came from somewhere before the canvas: ${said[0]}`);
     } finally {
       booted.ipc.postMessage = was.send;
       booted.leafToast = was.toast;
-      booted.diagramDrawingSvg = was.drawing;
-      booted.Image = was.image;
-      booted.btoa = was.btoa;
+      putMermaid();
+      booted.__pictures.delete(url);
     }
   });
 

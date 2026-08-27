@@ -5,12 +5,13 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import {
   check,
-  checkSettled,
+  checkLendingTheWindow,
   diagramStand,
   fakeElement,
   names,
   record,
   root,
+  settle,
 } from './shared.mjs';
 
 export function run() {
@@ -127,7 +128,7 @@ export function run() {
   });
 
   // Diagrams are drawn three at a time, and mermaid keeps drawing after one of them throws — so the batch comes back with its error picture in the block it failed on and finished drawings in the rest. Marking all three cost two working diagrams their toolbar and their memo entry every time one broken diagram sat beside them.
-  checkSettled('a broken diagram is marked on its own, and the batch beside it finishes', async () => {
+  checkLendingTheWindow('a broken diagram is marked on its own, and the batch beside it finishes', async () => {
     const block = (name, drawn) => {
       const element = fakeElement(name);
       element.__mermaidSource = `flowchart TD\n  ${name} --> B`;
@@ -166,6 +167,58 @@ export function run() {
     again.innerHTML = '';
     booted.drawMermaidDiagrams([again]);
     if (again.innerHTML !== good.innerHTML) throw new Error('a diagram that drew fine left no memo entry');
+  });
+
+  // The other half of the same failure, and the one no check could reach until the page had a picture of its own: a URL mermaid cannot decode throws from inside its renderer, so the box is settled before mermaid reads the block. The page's `Image` answers off the check's own map here, which is what makes the real probe runnable — a private stand-in beside the assertion would only prove the imitation.
+  checkLendingTheWindow('a picture that will not load becomes our own mark before mermaid sees it, and the diagrams beside it keep their controls', async () => {
+    // Named for this check alone: the probe answers once per URL for the life of the page, and the memo below keeps a drawing per source, so a name shared with another check would be answered by whichever ran first.
+    const draws = 'https://leaf.test/pictures/probe-draws.png';
+    const dead = 'https://leaf.test/pictures/probe-dead.png';
+    booted.__pictures.set(draws, { width: 40, height: 40 });
+    booted.__pictures.set(dead, { loads: false });
+    const block = (source) => {
+      const element = fakeElement('');
+      element.className = 'mermaid';
+      element.__mermaidSource = source;
+      element.dataset.diagramWait = 'true';
+      return element;
+    };
+    const pictures = block(`flowchart TD\n  PA@{ img: "${draws}" } --> PB@{ img: "${dead}" }`);
+    const first = block('flowchart TD\n  PC --> PD');
+    const second = block('flowchart TD\n  PE --> PF');
+    // Every block draws, so what is under test is the source each one was handed rather than a batch recovering from a throw. What each block said is kept here, at the one moment mermaid would read it — the drawing written next takes its place.
+    booted.mermaid = {
+      registerIconPacks() {},
+      initialize() {},
+      run: ({ nodes }) => nodes.forEach((one) => {
+        one.__handed = one.textContent;
+        one.innerHTML = '<svg></svg>';
+      }),
+    };
+    try {
+      booted.drawMermaidDiagrams([pictures, first, second]);
+      await settle();
+    } finally {
+      delete booted.mermaid;
+      booted.__pictures.delete(draws);
+      booted.__pictures.delete(dead);
+    }
+
+    const handed = pictures.__handed;
+    if (!handed) throw new Error('mermaid was never handed a source at all');
+    // The picture that draws is left exactly as the reader typed it: a probe that failed everything would take this one down with the other.
+    if (!handed.includes(`img: "${draws}"`)) throw new Error(`the picture that loads was rewritten: ${handed}`);
+    // The one that will not load becomes an icon box, which is the one shape the page's own ink can paint our mark into.
+    if (handed.includes(dead)) throw new Error(`the picture that will not load still went to mermaid: ${handed}`);
+    if (!handed.includes('icon: "leaf:missing-image"')) throw new Error(`the dead picture was not replaced with our own mark: ${handed}`);
+    // The reader's own text is untouched — the source the editors open is what they typed, never what mermaid was handed.
+    if (!pictures.__mermaidSource.includes(dead)) throw new Error('the block’s own source was rewritten under the reader');
+
+    for (const [name, one] of [['the first', first], ['the second', second]]) {
+      if (one.dataset.mermaidRender === 'failed') throw new Error(`${name} diagram beside the pictures was marked failed`);
+      if (one.dataset.diagramWait) throw new Error(`${name} diagram beside the pictures never reached finish`);
+      if (!one.children.some((child) => String(child.className || '').includes('mermaid-view-controls'))) throw new Error(`${name} diagram beside the pictures got no corner controls`);
+    }
   });
 
   // The diagram's labels are set in the theme's body font, which theme.rs emits per family rather than the stylesheet.

@@ -190,6 +190,19 @@ function composedText(node) {
 const datasetName = (attribute) => String(attribute).slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 const datasetAttribute = (key) => 'data-' + String(key).replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase());
 
+// A style property's name on the element and in a declaration, and back again. The two spellings never meet, so every crossing goes through this pair.
+const styleProperty = (name) => String(name).replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase());
+
+/** Every declaration an element's style carries, in the order it was given them: what was set by property name first, then anything assigned straight onto the style by its own spelling. Both, because the page writes both — a custom property goes through `setProperty` and `style.maxWidth = 'none'` is a plain assignment — and markup that said only one of them would leave whichever the page used unsaid. */
+function styleDeclarations(node) {
+  const declared = new Map(node.__stores?.style ?? []);
+  for (const [name, value] of Object.entries(node.style || {})) {
+    if (typeof value === 'function') continue;
+    declared.set(styleProperty(name), String(value));
+  }
+  return [...declared].filter(([, value]) => value !== '');
+}
+
 /** What an element is wearing, in the order it was given it: every name the store recorded, then anything written straight onto the element afterwards. A class added by name and a `data-` written through the dataset never reach the store, so composing off the store alone would drop both. */
 function attributeNames(node) {
   const names = [...(node.__stores?.attributes?.keys() ?? [])];
@@ -203,6 +216,8 @@ function attributeNames(node) {
   if (node.className) add('class');
   if (node.hidden) add('hidden');
   for (const key of Object.keys(node.dataset || {})) add(datasetAttribute(key));
+  // A browser says an element's declarations back as a `style` attribute, and the diagram export's own drawing rides out on one: it widens the view and then tells the drawing not to scale itself back down.
+  if (node.__stores && styleDeclarations(node).length) add('style');
   return names;
 }
 
@@ -219,7 +234,8 @@ const escapeValue = (text) => String(text).replace(/[&"\u00a0]/g, (char) => VALU
 function composedMarkup(node) {
   if (node && node.nodeType === 3) return escapeRun(node.nodeValue);
   if (!node || !node.tagName) return String(node?.textContent ?? '');
-  const name = String(node.tagName).toLowerCase();
+  // A browser writes an HTML tag back lowercase and an XML one exactly as it was written. An element belongs to a parsed XML document only if something named that document as its owner, which is what tells the two apart here.
+  const name = node.ownerDocument ? String(node.tagName) : String(node.tagName).toLowerCase();
   const wearing = attributeNames(node)
     .map((key) => [key, node.getAttribute ? node.getAttribute(key) : null])
     .filter(([, value]) => value !== null)
@@ -368,6 +384,11 @@ export function fakeElement(id = '') {
       if (name === 'id') return this.id || null;
       if (name === 'class') return classes.size ? [...classes].join(' ') : attributes.has(name) ? '' : null;
       if (name === 'hidden') return this.hidden ? '' : null;
+      // Composed from the declarations rather than kept as a string, so what the markup says is what the element is actually wearing however it was written.
+      if (name === 'style') {
+        const declared = styleDeclarations(this);
+        return declared.length ? declared.map(([property, value]) => `${property}: ${value}`).join('; ') : attributes.has(name) ? attributes.get(name) : null;
+      }
       if (name.startsWith('data-')) {
         const held = datasetName(name);
         return held in this.dataset ? String(this.dataset[held]) : null;
@@ -536,8 +557,10 @@ const MARKUP_TAGS = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
 // A tag that closes itself, so nothing written after it is written inside it.
 const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 
-/** Everything a piece of markup declares, in the order it declares it: an element per tag, nested the way it nests them and wearing its tag, its id, its classes and its other attributes, and the runs of words between them. The page draws whole panels as one string and then reaches straight back into what it drew — the home screen wires its two buttons out of the markup two lines above them — so a container keeping only the string could answer none of it, and one keeping only the elements says nothing for every panel it holds. */
-function elementsFromMarkup(markup) {
+/** Everything a piece of markup declares, in the order it declares it: an element per tag, nested the way it nests them and wearing its tag, its id, its classes and its other attributes, and the runs of words between them. The page draws whole panels as one string and then reaches straight back into what it drew — the home screen wires its two buttons out of the markup two lines above them — so a container keeping only the string could answer none of it, and one keeping only the elements says nothing for every panel it holds.
+ *
+ * `xml` is the one difference between the two grammars this walker is asked to read: XML keeps a tag's own spelling and has no tag that closes itself by name. The diagram export turns on the drawing being an `svg` rather than an `SVG`, so a walker that folded case would send every drawing back out unedited. */
+function elementsFromMarkup(markup, xml = false) {
   const text = String(markup);
   const root = fakeElement('');
   const open = [{ name: '', node: root }];
@@ -559,12 +582,12 @@ function elementsFromMarkup(markup) {
       continue;
     }
     const node = fakeElement('');
-    node.tagName = name.toUpperCase();
+    node.tagName = xml ? rawName : name.toUpperCase();
     // Into the element's own store, the one every element has: a private map here left an element the page built afterwards dropping every name written onto it, and left the two kinds of element answering differently.
     for (const [, key, value] of attrs.matchAll(/([a-zA-Z_:][-\w:.]*)\s*=\s*"([^"]*)"/g)) node.setAttribute(key, readEscapes(value));
     if (/(^|\s)hidden(\s|=|$)/.test(attrs)) node.hidden = true;
     open[open.length - 1].node.appendChild(node);
-    if (!VOID_TAGS.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
+    if ((xml || !VOID_TAGS.has(name)) && !/\/\s*$/.test(attrs)) open.push({ name, node });
   }
   keepRun(text.length);
   // The whole of what was parsed, runs included, so the container this is written into says the words as well as holding the elements. One line in the file parses markup, so nothing else has to read this shape.
@@ -808,6 +831,8 @@ export function runShell(source, extras = {}) {
   const address = fakeAddress('https://leaf.test/', (type, event) => {
     for (const handler of [...(windowListeners.get(type) || [])]) handler(event);
   });
+  // Which pictures this page can load, and what each one does: the exact source a check registered, against `{ width, height, loads, decodes }`. Fresh with the page that owns it and put back after every check, so one check cannot decide a URL for the next. A source nobody registered fails, because a stand-in that called every picture good would let a guard asking whether one draws pass while never having drawn anything.
+  const pictures = new Map();
   const sandbox = {
     console: { log: noop, warn: noop, error: noop, debug: noop, info: noop },
     document,
@@ -859,9 +884,72 @@ export function runShell(source, extras = {}) {
     TextDecoder,
     URL,
     URLSearchParams,
+    // Node's own, under the browser's name and with the browser's contract: one character per byte in, base64 out. The diagram export encodes its drawing through this and reads it back nowhere, so a stand-in that answered anything at all would let a picture full of the wrong bytes pass.
+    btoa,
     Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 },
     NodeFilter: { SHOW_ELEMENT: 1, SHOW_TEXT: 4 },
     Element: FakeElement,
+    // The page's own picture, answered off the map above instead of off the network. Both live paths assign their handlers before the source and neither is written for an answer arriving on its own stack, so the answer is scheduled off it the way a browser's is. Loading and decoding are separate answers because the probe reads them separately: mermaid throws on the decode, which is the failure the whole probe exists for.
+    Image: class {
+      constructor() {
+        this.onload = null;
+        this.onerror = null;
+        this.naturalWidth = 0;
+        this.naturalHeight = 0;
+        this.__src = '';
+      }
+      get src() {
+        return this.__src;
+      }
+      set src(url) {
+        this.__src = String(url);
+        const answer = pictures.get(this.__src);
+        Promise.resolve().then(() => {
+          if (!answer || answer.loads === false) {
+            if (this.onerror) this.onerror();
+            return;
+          }
+          this.naturalWidth = answer.width || 0;
+          this.naturalHeight = answer.height || 0;
+          if (this.onload) this.onload();
+        });
+      }
+      decode() {
+        const answer = pictures.get(this.__src);
+        if (!answer || answer.loads === false || answer.decodes === false) return Promise.reject(new Error('this picture will not decode'));
+        return Promise.resolve();
+      }
+    },
+    // The answer map itself, so a check names the sources it is deciding for. Not the page's to read: nothing the app runs looks at this.
+    __pictures: pictures,
+    // The drawing's round trip, over the one markup walker and the one markup writer this file already has. A second grammar beside them would drift from the one every other check reads markup through, and the shape the diagram export needs is exactly the shape those two already handle: nested tags, attributes with their own spelling, and escaped text.
+    DOMParser: class {
+      parseFromString(text) {
+        // A document of its own, so the drawing is parsed beside the page rather than into it. Whatever named it owns every element under it, which is how the export reaches a maker for the rectangle it puts behind the drawing.
+        const parsed = {
+          createElementNS: (_namespace, tag) => {
+            const made = fakeElement('');
+            made.tagName = String(tag);
+            made.ownerDocument = parsed;
+            return made;
+          },
+        };
+        const built = elementsFromMarkup(String(text), true);
+        const own = (node) => {
+          node.ownerDocument = parsed;
+          for (const child of node.children || []) own(child);
+        };
+        for (const node of built) if (node.nodeType !== 3) own(node);
+        // The first element, the way a browser answers: text or a comment before the root is not the root.
+        parsed.documentElement = built.find((node) => node.nodeType !== 3) || null;
+        return parsed;
+      }
+    },
+    XMLSerializer: class {
+      serializeToString(node) {
+        return composedMarkup(node);
+      }
+    },
     // No cascade here, but a custom property set on the element itself does come back out of a real browser's computed style, and the page reads its own writes that way.
     getComputedStyle: (element) => ({ getPropertyValue: (name) => (element && element.style && typeof element.style.getPropertyValue === 'function' ? element.style.getPropertyValue(name) : ''), color: 'rgb(0, 0, 0)' }),
     // The one call both browser hosts answer Export PDF with. Counted rather than swallowed: the whole of that command is "did the page's own print reach the browser", so a stub that returned nothing would leave the arm proved only by not throwing.
