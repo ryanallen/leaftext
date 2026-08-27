@@ -141,10 +141,10 @@ const pattern = new RegExp(
   'gi'
 );
 
-// The tickets live in the plan tree, beside the app and outside this git repo, so the walk above never reached them — which is how a British spelling got into one. Only the live plans plus the index: `done/` and `canceled/` are history, not writing to fix, but the index describes them in words written now.
+// The tickets live in the plan tree, beside the app and outside this git repo, so the walk above never reached them. Live and held plans can still be built; `done/` and `canceled/` are history.
 //
 // `learn/` is the giveaway folder, and most of it is this repo's own writing handed to a reader who has never seen this workflow — which is the writing this rule was written for, since a stranger reads it as an example of how the tree writes. The two borrowed pages and the ten byte copies of skills are carved out in `SKIP_PATHS` above, each with the reason it cannot be corrected here.
-const TICKET_PATHS = ['README.md', 'PLAN.md', 'GLOSSARY.md', 'features', 'refactor', 'fixes', 'learn'];
+const TICKET_PATHS = ['README.md', 'PLAN.md', 'GLOSSARY.md', 'features', 'refactor', 'fixes', 'on-hold', 'learn'];
 
 /** Whether a path, written the way the walk below writes it, is prose this repo is allowed to respell. */
 function scanned(rel) {

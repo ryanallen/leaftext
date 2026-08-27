@@ -52,6 +52,7 @@ const PLAN_ROLES = [
   ['fixes', 'plan: something is wrong and this is the fix'],
   ['done', 'shipped, kept for the reasoning (with the retired running-order rows)'],
   ['canceled', 'decided against, kept for the reasoning'],
+  ['on-hold', 'parked by the owner, kept ready to return to the live list'],
   ['tests', 'a document to open in the app, not a plan'],
   ['learn/ticket-workflow-medium/skills', "giveaway: a byte copy of one of this repo's own skills — owes what its source owes, and is held to it by `check-learn-snapshots`"],
   ['learn/ticket-workflow-medium/sources/llm-wiki-karpathy-src.md', 'giveaway: borrowed writing, kept to read — nothing here may edit it, so it owes a role and nothing else'],

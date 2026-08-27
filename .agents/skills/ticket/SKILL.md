@@ -58,6 +58,7 @@ The ticket tree is `leaftext/docs/`, the folder beside the app — not `app/docs
 | `../docs/refactor/` | the app already does it; this changes how |
 | `../docs/fixes/` | something is wrong and this is the fix |
 | `../docs/refactor/workflow/` | a skill, a hook or a check — how the work gets done, rather than what the app does |
+| `../docs/on-hold/` | paused by the owner. [`/pm`](../pm/SKILL.md) moves work in and out and records the live folder it returns to |
 | `../docs/done/` | shipped. Move it here when the last box is ticked |
 | `../docs/canceled/` | decided against. Keep the reasoning |
 
@@ -67,7 +68,7 @@ Not sure between the first three? It is a **feature** if a user would notice it 
 
 The file name is kebab-case and names the thing, not the change: `highlight-annotate.md`, `search.md`, `update-system.md`.
 
-**A name already used under `../docs/done/` or `../docs/canceled/` is taken, whatever folder it sits in.** A ticket is named after the fault it fixes, so a fault that comes back wants the same name — and the shipped file keeps it, because it is the record of the first time. Name the live one after what is different about this time. `just check-plan` refuses the name, so choosing it here costs nothing and meeting it later costs every link to the ticket: [`/done`](../done/SKILL.md) moves the file into a folder that already holds the name, and on this checkout that writes over the older plan rather than refusing.
+**A name already used under `../docs/on-hold/`, `../docs/done/` or `../docs/canceled/` is taken, whatever folder it sits in.** Read the held ticket instead of planning it again; only the owner restores it. A shipped or canceled file keeps its name as the record of the first answer.
 
 ## The README — read it first, then keep it
 
@@ -76,7 +77,7 @@ The file name is kebab-case and names the thing, not the change: `highlight-anno
 **Then keep it.** Adding, renaming, or moving a ticket is not finished until the README matches, in the same edit:
 
 - A new ticket gets a row in the group it belongs to — or a new group if it starts one. The row says what the ticket is in the owner's words, not the file name again.
-- A ticket moved to `done/` or `canceled/` moves rows too, and the row changes from what it plans to **what it shipped, or why not**. A canceled row that does not say why is the row someone re-plans against.
+- A ticket moved to `on-hold/`, `done/` or `canceled/` moves rows too. A held row keeps its stage and return folder; the others say **what shipped, or why not**.
 - A ticket that replaces another says so in both rows, so nobody builds the old one.
 
 The README carries no change log. Git holds when a ticket moved; the outcomes worth keeping go in `AGENTS.md`, under the rules each paid for.

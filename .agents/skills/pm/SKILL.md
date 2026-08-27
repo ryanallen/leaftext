@@ -1,6 +1,6 @@
 ---
 name: pm
-description: Rank every live ticket into one running order and write it to ../docs/PLAN.md — what to build next, top to bottom, checking each ticket's status against the code rather than trusting it. Wrong today first, then dependencies, then cost; shipped rows live in ../docs/done/PLAN.md, moved there by /done, and refused ones in ../docs/canceled/PLAN.md, which this skill keeps by walking that folder. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
+description: Rank every live ticket into ../docs/PLAN.md and keep the shipped, canceled and on-hold folders true. Wrong today first, then dependencies, then cost; only the owner moves work on or off hold. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
 argument-hint: "[optional: a subject to rank within]"
 user-invocable: true
 ---
@@ -13,13 +13,15 @@ user-invocable: true
 
 [`../docs/canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) holds the refused ones — the third of the three, and the one nothing else writes. **Canceling is the owner's call and no skill's**, so there is no `/done` for it: a plan is moved into `../docs/canceled/` and this pass is what gives it a row, by walking that folder rather than by being told (step 9).
 
-**Never run git. Never edit a ticket's phases.** A ticket that is wrong is [`/design`](../design/SKILL.md)'s work; here it gets a tier 0 row and a corrected status. Outside the three rankings this pass edits only a ticket's row in [`../docs/README.md`](../../../../docs/README.md), a glossary row (step 6), and a track's step order where this pass proves it wrong (step 5). A ticket this pass finds unrankable or carrying two jobs is handed to [`/ticket`](../ticket/SKILL.md) to write or split (step 3), which is how a new file reaches the tree without this skill writing phases.
+[`../docs/on-hold/PLAN.md`](../../../../docs/on-hold/PLAN.md) holds work the owner has paused. It is outside the running order without being refused: the ticket keeps its stage and track, and its row records the live folder it returns to. **Only the owner's word moves a ticket in or out.** This pass performs that move, fixes every link to the ticket and rebuilds both lists.
+
+**Never run git. Never edit a ticket's phases.** A ticket that is wrong is [`/design`](../design/SKILL.md)'s work; here it gets a tier 0 row and a corrected status. Outside the four rankings this pass edits a ticket only to add or remove its on-hold note on the owner's word; it also edits the ticket's README row, a glossary row, and a track's step order where this pass proves it wrong.
 
 ## Ordered pass
 
 ### 1. Read every live ticket and index row
 
-Open the README, the three plan files, the tracks, the glossary and every live ticket before ranking.
+Open the README, the four plan files, the tracks, the glossary and every live and held ticket before ranking.
 
 ### 2. Re-derive every status
 
@@ -31,7 +33,7 @@ Apply the three tests in order and file anything that cannot honestly be ranked.
 
 ### 4. Put every row in its tier and sub-band
 
-Use the tier definitions and the phase count, with Hold changed only on the owner's word.
+Use the tier definitions and the phase count; held work is not a tier.
 
 ### 5. Rewrite the live table
 
@@ -49,11 +51,11 @@ Hold every ticket folder to the version class the release skill will read.
 
 Confirm every retired row remains inside the tier table it left.
 
-### 9. Rebuild the canceled plan
+### 9. Rebuild the canceled and on-hold plans
 
-Walk the canceled folder and write one refused row for every ticket there.
+Walk both folders and write one row for every ticket there.
 
-### 10. Rebuild derived cells and check all five files
+### 10. Rebuild derived cells and check all six files
 
 Bundle status and `Devs with`, stamp the ranking and run the plan checks.
 
@@ -68,7 +70,8 @@ Name only the host command that should run next and the fault it prevents.
 - [`../docs/TRACKS.md`](../../../../docs/TRACKS.md) — every subject order, and the source of every `Track` cell this pass writes. Read it before ranking, not after: a row is placed knowing which subject it belongs to, and a ticket whose subject has no track yet needs one written here in this same pass.
 - **Every ticket under `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, off the disk.** Those hold subject folders, so walk them rather than one level. A ticket the README missed still gets a row.
 - **Every file under `../docs/canceled/`, off the disk too.** That is the only way a refused plan is found: nothing announces one, and a ticket moved there with no row is a decision that exists nowhere anybody reads.
-- [`../docs/done/PLAN.md`](../../../../docs/done/PLAN.md) and [`../docs/canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) — rows already closed or refused are rows not to re-rank.
+- **Every file under `../docs/on-hold/`, off the disk too.** A held ticket stays out of the live ranking until the owner restores it, and the row here keeps the live folder it returns to.
+- [`../docs/done/PLAN.md`](../../../../docs/done/PLAN.md), [`../docs/canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) and [`../docs/on-hold/PLAN.md`](../../../../docs/on-hold/PLAN.md) — rows already closed, refused or parked are rows not to re-rank.
 
 ## 2. Re-derive every status
 
@@ -117,9 +120,8 @@ The tests pick the tier in that order, then run again inside it, which is what m
 | **2** | **The shared piece.** Two or more rows wait on it and it is smaller than they are, so it is built once here or several times below |
 | **3** | The features people would name, cheapest first — and the work behind them nobody would name: how the repo is built, and the published pages, where neither is wrong today, a shared piece, nor a big swing |
 | **4** | Big swings, each absorbing the time all of tiers 1 to 3 take together. **On its own size** — a small row behind one is put here by the blocker rule below, not by this definition |
-| **Hold** | **Parked by the owner.** Rows the owner has decided not to spend on yet, kept ranked with status and order intact — always the last band in the file, written `## Hold — parked by the owner` |
 
-Tier 0 comes first, because the list is only as good as the statuses under it. **Hold is the owner's, not this pass's**: a row moves in or out only on the owner's word, the pass keeps a parked row's status and order current where it sits, and a `fixes/` row there keeps its claim without being lifted back to tier 1 — `scripts/check-plan.mjs` allows exactly that and refuses it in any other band above 1. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days. A tier is an ordering, and a number beside it reads as a promise about a calendar nobody made.
+Tier 0 comes first, because the list is only as good as the statuses under it. **Held work has no tier or position**: move it to `../docs/on-hold/<subject>/`, move its README row under `## On hold`, keep its track step linked to the new path, and record its stage, return folder and the owner's reason in `../docs/on-hold/PLAN.md`. On restoration, reverse those moves and rank it from the rules rather than from its old position. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days.
 
 **No row sits in a tier above its own blocker.** It is the one rule that outranks the three tests: a shared piece behind a big swing goes with the swing, and a one-line row behind one stays behind it, because a row somebody cannot start is worse than a row somebody has to scroll to.
 
@@ -178,7 +180,7 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 - **`Devs with` is computed, never written.** It names the three highest-ranked live rows this one shares no file with, then the total in brackets where there are more, and `—` where there are none — read off each ticket's own [`## What it writes`](../../../../docs/GLOSSARY.md#footprint) section. **This pass does not derive it the way it derives `Blocks`**: a wait is a handful of rows across the whole tree and this is 153 set comparisons a row, 11,781 in all, which is not a pass anybody makes carefully twice. So the pass runs `just bundle-devs-with` after the rows are in their final order and reads the result rather than composing it, and `scripts/check-plan.mjs` refuses a cell the bundler would not have written, one naming a ticket that is not live, and one naming a row whose footprint it shares a file with.
 - **The order the two run in is the order they are written in.** The bundler orders every cell by position, so running it before the rows are settled writes 153 cells against the old numbering. Rank, then bundle, then read the file back.
 - **A track is `TRACKS.md`'s.** The `Track` cell says which step a row is and nothing more, and the ranking does not import the track's order — most steps are a preference the track says so about, and only a real block moves a row. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is one track, not two**, so a subject the ranking is carrying in three separate cells gets one written instead — and a ticket is a step of exactly one track, named in one cell, however many other tracks mention it in their prose.
-- **Every ticket under `refactor/workflow/` is a step of [`Process upkeep`](../../../../docs/TRACKS.md#process-upkeep), parked in the Hold band, and belongs nowhere else.** None of them changes what a reader of the app can meet, so none of them is ever tier 1 however wrong it is, or tier 2 or 3 however cheap: a workflow fault is not a fault in the app, and a build gate going quiet is not a document opening at the wrong line. They do not leave that band because a pass found one urgent — only the owner moves a row in or out of Hold. Filing one in a tier is the failure the owner has now named twice.
+- **Every parked workflow ticket is a step of [`Process upkeep`](../../../../docs/TRACKS.md#process-upkeep), under `on-hold/workflow/`, and belongs nowhere else.** None returns to the live list because a pass found one urgent — only the owner restores one.
 - **Off the list** — a sentence, with what would put it back. Off with a reason beats bottom of the list.
 - **The last line stamps the pass with the date and the time** — `**Last ranked 16 August 2026, 8:49pm.**`, then the three counts. The file is rewritten in place, so that stamp is the only thing telling a reader which pass they are holding, and a date alone cannot answer it on the one day it matters: rank twice in an afternoon and both stamps read the same. Take both off this machine's clock and write them as they come — it keeps Mountain Standard Time, which is what Arizona keeps all year, so there is no daylight saving to correct for and no zone to convert. `scripts/check-plan.mjs` refuses a stamp with no time on it. **Every other date this pass writes carries a time the same way** — a retired row's `Status` cell, a refused row's date — because a day is not an answer to when in a tree that fills one; `AGENTS.md` holds the rule and `just check-docs` refuses a date written from `2026-08-19` on with no time after it.
 
@@ -211,9 +213,18 @@ If a cell needs more words, the ticket is what needs them.
 - **The ticket keeps every word it had.** It gains a note at the top saying who canceled it and when — a canceled plan is not trimmed, and this file never becomes the only copy of the reasoning.
 - **A date it never recorded is a `—`**, not a guess.
 
-## 10. The five files know each other
+## The on-hold file
 
-The tree is read from whichever file somebody opens first, so each one names the rest: [the README](../../../../docs/README.md) says what every plan is, [`PLAN.md`](../../../../docs/PLAN.md) what is left, [`done/PLAN.md`](../../../../docs/done/PLAN.md) what shipped, [`canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) what was refused, and [`TRACKS.md`](../../../../docs/TRACKS.md) the subject orders cutting across the tiers — with [`GLOSSARY.md`](../../../../docs/GLOSSARY.md) holding the words all five are written in. Check the links each way in this pass: a ranking nobody can get to from the file they opened is one they plan against without.
+`../docs/on-hold/PLAN.md` is every plan the owner paused, grouped by subject. Its row keeps the stage already reached, the live folder it returns to, when the owner paused it and why. A held ticket is neither live nor refused, so it has no position and no tier.
+
+- **Only the owner moves one.** A ranking pass never parks work because it looks costly or restores it because it looks urgent.
+- **Move the file and every link.** The ticket goes to the matching subject folder under `on-hold/`; its track step stays in place and points at the new path.
+- **Keep the return kind.** The row records `features`, `refactor` or `fixes`, so restoring it does not guess which release class it had.
+- **A date the earlier Hold band never recorded is `—`.** The migration date is not the date the owner made the decision.
+
+## 10. The six files know each other
+
+The tree is read from whichever file somebody opens first, so each one names the rest: [the README](../../../../docs/README.md) says what every plan is, [`PLAN.md`](../../../../docs/PLAN.md) what is left, [`on-hold/PLAN.md`](../../../../docs/on-hold/PLAN.md) what is paused, [`done/PLAN.md`](../../../../docs/done/PLAN.md) what shipped, [`canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) what was refused, and [`TRACKS.md`](../../../../docs/TRACKS.md) the subject orders cutting across them — with [`GLOSSARY.md`](../../../../docs/GLOSSARY.md) holding the words all six are written in. Check the links each way in this pass.
 
 ## 11. Hand back
 
@@ -224,6 +235,7 @@ Say which rows moved and why, what tier 0 turned up, what is at the top now, and
 - `../docs/PLAN.md` — the live list. Read it for how short a row is allowed to be.
 - `../docs/done/PLAN.md` — the retired rows, with what each build found.
 - `../docs/canceled/PLAN.md` — the refused ones, with what killed each and what survived it.
+- `../docs/on-hold/PLAN.md` — the parked ones, with their stage, reason and return folder.
 - `../docs/README.md` — every ticket, one line each. Read first.
 - `../docs/GLOSSARY.md` — the words the ranking is written in.
 - `/ticket` writes them, `/design` fixes one this finds wrong, `/dev` builds the top row, `/git-release` ships it, `/done` retires its row.

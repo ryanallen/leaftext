@@ -26,8 +26,8 @@ const plans = planTree(root);
 // Every file in these is a ticket — none of them holds an index.
 const LIVE_PLANS = ['features', 'refactor', 'fixes'];
 
-// The shipped and refused half. Each folder's own PLAN.md is a record, not a ticket, so neither owns an index row.
-const ARCHIVED_PLANS = ['done', 'canceled'];
+// Work outside the live list. Each folder's own PLAN.md is a record, not a ticket, so none owns an index row.
+const ARCHIVED_PLANS = ['done', 'canceled', 'on-hold'];
 
 // The running order is a named document, so its name comes before its ranked work.
 const TITLE = '# Leaftext Plan Log';
@@ -107,7 +107,7 @@ function shapeProblems(text, tree) {
     if (!byTicket.has(ticket)) say('ticket', ticket, `${ticket} has no row, so nobody picks it up`);
   }
 
-  for (const [label, want] of [['Live', tree.live.size], ['Retired', tree.retired], ['Turned down', tree.turnedDown]]) {
+  for (const [label, want] of [['Live', tree.live.size], ['On hold', tree.held], ['Retired', tree.retired], ['Turned down', tree.turnedDown]]) {
     const said = count(text, label);
     if (said === null) say('count', label, `the foot of the file gives no ${label} count`);
     else if (said !== want) say('count', label, `the foot says ${label}: ${said}, and the tree holds ${want}`);
@@ -195,10 +195,13 @@ function shapeProblems(text, tree) {
     }
   }
 
-  // The folder is the one claim about a ticket a script can read. Tier 0 is allowed because it sits above tier 1, and Hold because parking a row is the owner's call.
+  // The folder is the one claim about a ticket a script can read. Tier 0 is allowed because it sits above tier 1.
   for (const row of rows) {
     if (row.ticket === null) continue;
-    if (row.tier === 'hold') continue;
+    if (row.tier === 'hold') {
+      say('hold band', row.ticket, `position ${row.position} sits in the old Hold band; parked work belongs under on-hold/ and outside the live ranking`);
+      continue;
+    }
     if (row.ticket.startsWith('fixes/') && row.tier > 1) {
       say('fixes tier', row.ticket, `position ${row.position} sits in tier ${row.tier}, and ${row.ticket} is filed under fixes/ — a claim to be wrong today, which is what tier 1 holds`);
     }
@@ -499,6 +502,33 @@ function shippedProblems(text) {
   return { problems, retired };
 }
 
+// The on-hold list is derived from the folder, so a moved ticket cannot disappear from the one place that records how it returns.
+function heldProblems(text, held) {
+  const problems = [];
+  const say = (subject, message) => problems.push({ rule: 'on-hold', subject, message });
+  const opening = text.split('\n').map((line) => line.trim()).find((line) => line !== '');
+  if (opening !== '# What is on hold, and why') say('title', 'the on-hold list does not open with `# What is on hold, and why`');
+  const owned = new Map();
+  for (const [at, line] of text.split('\n').entries()) {
+    if (!line.trim().startsWith('|')) continue;
+    const target = links(rowCells(line)[0] ?? '')[0];
+    if (!target || target.startsWith('../')) continue;
+    const ticket = `on-hold/${target}`;
+    if (!owned.has(ticket)) owned.set(ticket, []);
+    owned.get(ticket).push(at + 1);
+  }
+  for (const [ticket, lines] of owned) {
+    if (!held.has(ticket)) say(ticket, `lines ${lines.join(', ')} name ${ticket}, which is not in the on-hold folder`);
+    if (lines.length > 1) say(ticket, `${ticket} has ${lines.length} rows, at lines ${lines.join(', ')}`);
+  }
+  for (const ticket of held) {
+    if (!owned.has(ticket)) say(ticket, `${ticket} has no row, so its stage and return folder are missing`);
+  }
+  const said = count(text, 'On hold');
+  if (said !== held.size) say('count', `the foot says On hold: ${said ?? 'nothing'}, and the folder holds ${held.size}`);
+  return problems;
+}
+
 // The index next door is what every ticket skill says to read before writing a word. A ticket with two rows in it describes itself twice, and the older one describes the work as it was before it was designed; a ticket with none is invisible to the one pass that stops the tree planning the same thing twice. Three carried two.
 //
 // Only the first cell counts. A ticket is linked from other rows on purpose — what it replaces, what it rides on — so reading every link would fail on the cross-references the tree is built out of. The row a ticket owns is the one whose first cell opens the line.
@@ -513,7 +543,7 @@ function shippedProblems(text) {
 //
 // The live half is read by kind as well. Each of the three live headings names one, and a live row's first path segment is the kind it belongs under, so somebody opening the refactors heading to see what refactoring is queued meets every refactor rather than half of them: twelve sat in the subject tables under `## Live plans — features` and twelve in a flat table under the refactors one, two tickets out of the same folder filed apart. A subject heading is below a kind heading and leaves that answer in force.
 const LIVE_HEADING = '## Live plans';
-const ARCHIVED_HEADINGS = { done: '## Shipped', canceled: '## Decided against' };
+const ARCHIVED_HEADINGS = { done: '## Shipped', canceled: '## Decided against', 'on-hold': '## On hold' };
 const LIVE_KIND_HEADINGS = { features: '## Live plans — features', refactor: '## Live plans — refactors', fixes: '## Live plans — fixes' };
 
 function indexProblems(text, live, archived = new Set()) {
@@ -596,13 +626,13 @@ function nameProblems(live, archived) {
 const TABLE = '| # | Ticket | Status | Blocks | Blocked by | Why here |\n|---|---|---|---|---|---|\n';
 
 // `phases` is what the real run reads off each ticket. Left out, every ticket is three phases, which is the middle sub-band and the tree's own commonest row.
-function tree(live, retired = 0, turnedDown = 0, phases = null) {
+function tree(live, retired = 0, turnedDown = 0, phases = null, held = 0) {
   const counts = new Map();
   for (const path of live) {
     const n = phases ? phases[path] : 3;
     if (n) counts.set(path, n);
   }
-  return { live: new Set(live), retired, turnedDown, phases: counts };
+  return { live: new Set(live), retired, turnedDown, held, phases: counts };
 }
 
 // `plan(t, [3, row, row], ...)` — one entry per tier heading, each with its rows. An entry starting `###` is a sub-band heading, and the rows after it get their own table. It opens with the title every running order opens with, and the foot is written from the tree, so only a case testing one of those has to disagree with it.
@@ -625,7 +655,7 @@ function plan(t, ...tiers) {
     if (!open) out += TABLE;
     return out;
   });
-  return `${TITLE}\n\n${bands.join('\n')}\n## Off the list\n\n**Last ranked 9 August 2026, 4:07pm.** Live: ${t.live.size}. Retired: ${t.retired}. Turned down: ${t.turnedDown}.\n`;
+  return `${TITLE}\n\n${bands.join('\n')}\n## Off the list\n\n**Last ranked 9 August 2026, 4:07pm.** Live: ${t.live.size}. On hold: ${t.held}. Retired: ${t.retired}. Turned down: ${t.turnedDown}.\n`;
 }
 
 const PAIR = tree(['refactor/a/one.md', 'refactor/b/two.md']);
@@ -684,6 +714,8 @@ const CASES = [
     PAIR, ['position 2', 'position 3']],
   ['a count that disagrees with the tree is refused',
     plan(PAIR, [1, ONE], [3, TWO]).replace('Live: 2', 'Live: 3'), PAIR, ['count Live']],
+  ['an on-hold count that disagrees with the tree is refused',
+    plan(PAIR, [1, ONE], [3, TWO]).replace('On hold: 0', 'On hold: 1'), PAIR, ['count On hold']],
   ['a row above what it waits on is refused, sub-band heading and all',
     plan(PAIR, [3, MID_HEAD, '| 1 | [one](refactor/a/one.md) | Ready | — | [two](refactor/b/two.md) | first |', '| 2 | [two](refactor/b/two.md) | Ready | [one](refactor/a/one.md) | — | second |']),
     PAIR, ['depends refactor/b/two.md']],
@@ -727,7 +759,7 @@ const CASES = [
   ['words after the link still name the ticket',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) **phases 1–4** | Ready | — | — | first |'], [3, TWO]), PAIR, []],
   ['a row outside any tier heading is not a row',
-    `${TITLE}\n\n## Off the list\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 2. Retired: 0. Turned down: 0.\n`,
+    `${TITLE}\n\n## Off the list\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 2. On hold: 0. Retired: 0. Turned down: 0.\n`,
     PAIR, ['ticket refactor/a/one.md', 'ticket refactor/b/two.md']],
   ['a fixes ticket ranked below tier 1 is refused',
     plan(MIXED, [1, '| 1 | [two](refactor/b/two.md) | Ready | — | — | first |'], [3, '| 2 | [f](fixes/a/f.md) | Ready | — | — | second |']),
@@ -739,10 +771,8 @@ const CASES = [
   ['a features ticket in tier 1 is refused',
     plan(FEATURE, [1, FEATURE_ROW]), FEATURE, ['features tier features/b/g.md']],
   ['the same features ticket in tier 3 passes', plan(FEATURE, [3, FEATURE_ROW]), FEATURE, []],
-  ['a fixes ticket parked in the Hold band passes, because parking is the owner\'s call',
-    plan(FIX, ['hold', FIX_ROW]), FIX, []],
-  ['a row whose only home is the Hold band is still counted as ranked',
-    plan(PAIR, [1, ONE], ['hold', TWO]), PAIR, []],
+  ['the old Hold band is refused because parked work has its own folder',
+    plan(FIX, ['hold', FIX_ROW]), FIX, ['hold band fixes/a/f.md']],
   ['a title reached past blank lines still opens the file, so the rule reads the first line with something on it',
     `\n\n${plan(PAIR, [1, ONE], [3, TWO])}`, PAIR, []],
   ['a file opening on its first work table rather than its title is refused, and the line it opens on is named',
@@ -797,6 +827,14 @@ const SHIPPED_CASES = [
     `${SHIPPED_TITLE}\n\n## Retired from tier 1 — a band\n\n${SHIPPED_ONE}\n`, ['shipped reading/one.md'], 1],
   ['the count is the struck rows the walk found, wherever they sit',
     shipped([0, SHIPPED_ONE], [1, SHIPPED_TWO, SHIPPED_PIPES]), [], 3],
+];
+
+const HELD_SET = new Set(['on-hold/plugins/paused.md']);
+const HELD_FILE = '# What is on hold, and why\n\n| Ticket | Stage | Track | Return to | Put on hold | Why held |\n|---|---|---|---|---|---|\n| [paused](plugins/paused.md) | Ready | track | `features/plugins/` | — | later |\n\n**On hold: 1.**\n';
+const HELD_CASES = [
+  ['an on-hold row matching the folder passes', HELD_FILE, HELD_SET, []],
+  ['a held ticket with no row is refused', HELD_FILE.replace('| [paused](plugins/paused.md) | Ready | track | `features/plugins/` | — | later |\n', ''), HELD_SET, ['on-hold on-hold/plugins/paused.md']],
+  ['a row naming no held ticket is refused', HELD_FILE.replaceAll('paused', 'gone'), HELD_SET, ['on-hold on-hold/plugins/gone.md', 'on-hold on-hold/plugins/paused.md']],
 ];
 
 // `index(row, row)` — the index next door opens with its own title and one table of tickets, so the first row lands on line 5 and every row after it one line lower.
@@ -937,7 +975,7 @@ const NAME_CASES = [
 const TRACKED_TABLE = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |\n|---|---|---|---|---|---|---|---|\n';
 
 function tracked(...rows) {
-  return `${TITLE}\n\n## Tier 3 — a band\n\n${TRACKED_TABLE}${rows.map((r) => `${r}\n`).join('')}\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. Retired: 0. Turned down: 0.\n`;
+  return `${TITLE}\n\n## Tier 3 — a band\n\n${TRACKED_TABLE}${rows.map((r) => `${r}\n`).join('')}\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
 }
 
 const TRACKS_FILE = '# Tracks\n\n## A subject\n\n| step | Work |\n|---|---|\n| 1 | [one](refactor/a/one.md) |\n\n## Another subject\n\n| step | Work |\n|---|---|\n| 1 | [two](refactor/b/two.md) |\n';
@@ -949,7 +987,7 @@ const TRACK_UNLINKED = '| 1 | [one](refactor/a/one.md) | Ready | — | — | A s
 const TRACK_MISSING = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Nowhere](TRACKS.md#nowhere) step 1 | — | first |';
 const TRACK_WRONG = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Another subject](TRACKS.md#another-subject) step 1 | — | first |';
 // The same row without the seventh column: a running order that carries no Track column is outside the rule rather than failing every row of it.
-const TRACK_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. Retired: 0. Turned down: 0.\n`;
+const TRACK_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
 
 const TRACK_CASES = [
   ['a row naming a track the ticket is a step of passes', tracked(TRACK_ROW), []],
@@ -966,7 +1004,7 @@ const TRACK_CASES = [
 
 // The eighth column, read the same way. `tracked(...)` writes the header this column sits in, so a row here is a `Devs with` cell in the seventh place and `Why here` in the eighth.
 const DEVS_ROW = (cell) => `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | ${cell} | first |`;
-const DEVS_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. Retired: 0. Turned down: 0.\n`;
+const DEVS_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
 
 // The rule reads the cell's links against what is live, so the fixture's live set has to hold the tickets a passing cell names.
 const DEVS_LIVE = new Set(['refactor/a/one.md', 'refactor/b/two.md', 'refactor/b/three.md', 'a.md', 'b.md', 'c.md', 'd.md']);
@@ -1063,6 +1101,12 @@ function selfTest() {
     }
     if (read.retired !== count) fails.push(`${name}: counted ${read.retired} retired rows, want ${count}`);
   }
+  for (const [name, text, held, want] of HELD_CASES) {
+    const got = heldProblems(text, held).map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+  }
   for (const [name, text, live, want, said] of INDEX_CASES) {
     const found = indexProblems(text, live);
     const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
@@ -1146,6 +1190,7 @@ const shippedRead = shippedProblems(readFileSync(join(plans, 'done', 'PLAN.md'),
 const retired = shippedRead.retired;
 
 const turnedDown = [...archived].filter((f) => f.startsWith('canceled/')).length;
+const held = [...archived].filter((f) => f.startsWith('on-hold/')).length;
 
 // What a row costs: the slices its ticket ships in.
 const phases = new Map();
@@ -1156,8 +1201,9 @@ for (const ticket of live) {
 
 const text = readFileSync(join(plans, 'PLAN.md'), 'utf8');
 const problems = [
-  ...shapeProblems(text, { live, retired, turnedDown, phases }),
+  ...shapeProblems(text, { live, retired, turnedDown, held, phases }),
   ...shippedRead.problems,
+  ...heldProblems(readFileSync(join(plans, 'on-hold', 'PLAN.md'), 'utf8'), new Set([...archived].filter((file) => file.startsWith('on-hold/')))),
   ...trackProblems(text, readFileSync(join(plans, 'TRACKS.md'), 'utf8'), live),
   ...devsWithProblems(text, live, claimsInTree(plans)),
 ];
@@ -1193,4 +1239,4 @@ if (nameFails.length) {
 
 if (problems.length || indexFails.length || nameFails.length) process.exit(1);
 
-console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1 or parked in Hold, no feature in tier 1, a stamp naming the day and the time it was ranked, every row naming a track it is a step of in TRACKS.md, every Devs with cell the one the footprints give and every pair it names sharing no file and waiting on nothing, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} shipped or turned down, no live one taking a name the archived half already holds`);
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${held} on hold, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1, no feature in tier 1, a stamp naming the day and the time it was ranked, every row naming a track it is a step of in TRACKS.md, every Devs with cell the one the footprints give and every pair it names sharing no file and waiting on nothing, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} outside it, no live one taking a name the shipped, refused or held work already holds`);
