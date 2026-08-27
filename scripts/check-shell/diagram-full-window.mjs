@@ -169,7 +169,7 @@ export function run() {
     if (again.innerHTML !== good.innerHTML) throw new Error('a diagram that drew fine left no memo entry');
   });
 
-  // The other half of the same failure, and the one no check could reach until the page had a picture of its own: a URL mermaid cannot decode throws from inside its renderer, so the box is settled before mermaid reads the block. The page's `Image` answers off the check's own map here, which is what makes the real probe runnable — a private stand-in beside the assertion would only prove the imitation.
+  // The other half of the same failure: a URL mermaid cannot decode throws from inside its renderer, so the box is settled before mermaid reads the block. The page's own `Image` answers off the map this check writes, because a stand-in built beside the assertion would only ever prove the imitation.
   checkLendingTheWindow('a picture that will not load becomes our own mark before mermaid sees it, and the diagrams beside it keep their controls', async () => {
     // Named for this check alone: the probe answers once per URL for the life of the page, and the memo below keeps a drawing per source, so a name shared with another check would be answered by whichever ran first.
     const draws = 'https://leaf.test/pictures/probe-draws.png';

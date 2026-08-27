@@ -378,7 +378,6 @@ export function run() {
   // The address the export loads the drawing from: its own bytes through its own encoder, which is exactly what the page hands the picture.
   const drawingUrl = (svg) => 'data:image/svg+xml;base64,' + booted.diagramBase64(svg);
 
-  // The whole round trip, in one place: mermaid's markup in, the page's own parse, rewrite and serialize out.
   const rewritten = async (drawn) => {
     const putMermaid = withMermaidDrawing(drawn);
     try {
@@ -388,7 +387,7 @@ export function run() {
     }
   };
 
-  // The drawing rewrite is the last step nothing in the check could run: it parses mermaid's SVG, widens the view so the margin falls outside every box, and puts the page color behind the whole thing. Its own round trip, before the rows that spend it.
+  // The drawing every picture row starts from: mermaid's SVG parsed, the view widened so the margin falls outside every box, and the page color painted behind the whole thing. Held on its own here, because a row further down that refuses tells you nothing about which of those three went wrong.
   checkPicture('the drawing goes out with room around it, the page color behind it, and every shape where mermaid left it', async () => {
     const surface = booted.document.documentElement;
     surface.style.setProperty('--lt-surface', '#101418');
@@ -409,7 +408,7 @@ export function run() {
     if (!out.includes('<linearGradient id="edge0">')) throw new Error(`an XML tag was respelled on the way out: ${out}`);
   });
 
-  // The refusal the rewrite already carries, and the reason it carries it: half-editing somebody's drawing is worse than sending it as it came. Reachable only now that the parse is real.
+  // The refusal the rewrite carries, and the reason it carries it: half-editing somebody's drawing is worse than sending it as it came.
   checkPicture('a drawing the rewrite cannot read goes out exactly as mermaid wrote it', async () => {
     for (const [why, drawn] of [
       ['a root that is not a drawing at all', '<div><svg viewBox="0 0 200 100"></svg></div>'],
