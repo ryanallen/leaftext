@@ -140,6 +140,14 @@ body.leaf-paper :is(.docs-pager,
 .diagram-overlay) {
   display: none;
 }
+/* A drawn diagram lets the browser skip its own paint while it is off screen, and a picture export is a screenshot of the page beyond the window — so every drawing below the window came out an empty block. The rail met the same skip and answers it the same way. Important, because the skip is written on the block itself. */
+body.leaf-paper .document-body pre.mermaid {
+  content-visibility: visible !important;
+}
+/* The waiting ring is a control as much as the toolbar is: a box still waiting when the sheet is rendered prints its stalled spinner. The three conditions are the spinner rule's own, and the paper class on the body is what outweighs it, whatever order the stylesheet's parts are joined in. */
+body.leaf-paper .document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
+  content: none;
+}
 /* A diagram on a sheet of its own, which is the same render with one thing left standing. The container holds a copy of the drawing made for the export — never the one on screen, which carries whatever it has been zoomed and dragged to, and in the editor its selection ring and handles as well — and it is out of the layout until an export fills it, so a reader never sees it. */
 .diagram-print {
   display: none;

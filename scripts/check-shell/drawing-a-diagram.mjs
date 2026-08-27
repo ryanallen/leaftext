@@ -473,4 +473,33 @@ export function run() {
       booted.setTimeout = wasTimeout;
     }
   });
+
+  // The daylight mode re-applies the theme every time the window comes to the front, writing the same values back onto the root. A watcher that repaints on the write put every off-screen diagram back to a box nothing redrew until it was scrolled to, and an export pressed straight after switching windows printed those boxes as empty frames. So the watcher asks for the old value and repaints only on a value that changed — fired here both ways, so a rewrite that repaints and a change that does not both fail.
+  check('a theme attribute written back with the same value leaves every drawing standing, and a changed one repaints', () => {
+    const root = booted.document.documentElement;
+    const sweeps = booted.__watchers.filter((one) => one.target === root && (one.options.attributeFilter || []).includes('data-theme'));
+    if (sweeps.length !== 1) throw new Error(`${sweeps.length} watchers guard the theme attribute on the root`);
+    const [sweep] = sweeps;
+    if (!sweep.options.attributeOldValue) throw new Error('the theme watcher never asks for the old value, so it cannot tell a change from a rewrite');
+    const appEl = booted.document.getElementById('app');
+    const wasAll = appEl.querySelectorAll;
+    const drawn = {
+      dataset: { processed: 'true' },
+      style: { removeProperty(name) { delete this[name]; } },
+      isConnected: true,
+      __mermaidSource: 'flowchart TD\n  A --> B',
+      textContent: '<svg class="flowchart"></svg>',
+      querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ top: 9000, bottom: 9300, width: 400, height: 300 }),
+    };
+    appEl.querySelectorAll = (selector) => (String(selector).startsWith('pre.mermaid') ? [drawn] : wasAll.call(appEl, selector));
+    try {
+      sweep.callback([{ type: 'attributes', attributeName: 'data-theme', target: root, oldValue: root.getAttribute('data-theme') }]);
+      if (drawn.dataset.processed !== 'true') throw new Error('the theme written back with the same value put a drawn diagram back to a box');
+      sweep.callback([{ type: 'attributes', attributeName: 'data-theme', target: root, oldValue: 'a-theme-that-was-left' }]);
+      if (drawn.dataset.processed === 'true') throw new Error('a theme that really changed left a drawing painted in the old colors');
+    } finally {
+      appEl.querySelectorAll = wasAll;
+    }
+  });
 }

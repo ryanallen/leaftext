@@ -151,3 +151,24 @@ fn the_exported_pages_rail_is_placed_by_the_class_only_that_page_wears() {
         "the exported page's rail joined the list the paper state hides, which it wears for ever: {list}"
     );
 }
+
+/// What a picture export sees: the page beyond the window, as a screenshot. A drawn diagram lets the browser skip its own paint while it is off screen, so every drawing below the window came out an empty block; and a box still waiting when the sheet is rendered prints its stalled spinner. Both are answered under the paper class alone, so nothing here reaches a screen.
+#[test]
+fn the_paper_rules_paint_every_drawn_diagram_and_take_the_waiting_ring_off_the_sheet() {
+    let css = reading_mode_css();
+    // The rail's own answer to the same skip, keyed on the paper class: important, because the skip is written on the block itself.
+    assert_contains(
+        css,
+        "body.leaf-paper .document-body pre.mermaid {\n  content-visibility: visible !important;\n}",
+    );
+    // The three conditions are the spinner rule's own, so the paper class is what outweighs it whatever order the stylesheet's parts are joined in.
+    assert_contains(
+        css,
+        "body.leaf-paper .document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])::after {\n  content: none;\n}",
+    );
+    // Both rules are the paper's: a screen never wears the class, so a screen keeps its skip and its spinner.
+    assert!(
+        !css.contains("\n.document-body pre.mermaid {\n  content-visibility: visible !important;"),
+        "the paint skip was taken off every screen rather than off the paper alone"
+    );
+}

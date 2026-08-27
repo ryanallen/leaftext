@@ -49,9 +49,9 @@ impl NativeExportCover {
         use windows::Win32::Foundation::{HWND as WebViewHwnd, RECT as WebViewRect};
         use windows_sys::Win32::Foundation::RECT;
         use windows_sys::Win32::UI::WindowsAndMessaging::{
-            CreateWindowExW, GetWindowLongPtrW, RegisterClassW, SetWindowPos, CREATESTRUCTW,
-            GWLP_HINSTANCE, HWND_TOP, SWP_NOACTIVATE, SWP_SHOWWINDOW, WM_NCCREATE, WNDCLASSW,
-            WS_CHILD, WS_VISIBLE,
+            CreateWindowExW, GetWindowLongPtrW, RegisterClassW, SetLayeredWindowAttributes,
+            SetWindowPos, CREATESTRUCTW, GWLP_HINSTANCE, HWND_TOP, LWA_ALPHA, SWP_NOACTIVATE,
+            SWP_SHOWWINDOW, WM_NCCREATE, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_VISIBLE,
         };
         use wry::WebViewExtWindows;
 
@@ -113,9 +113,10 @@ impl NativeExportCover {
             RegisterClassW(&class);
         }
         let color_ref = u32::from(color.0) | (u32::from(color.1) << 8) | (u32::from(color.2) << 16);
+        // Layered, so the sheet is composited on a surface of its own. A plain child painted into the window's own surface, and the window is see-through, so destroying the child left its color standing in the strip around the page after every export. Alpha full: the sheet is a cover, not a tint.
         let window = unsafe {
             CreateWindowExW(
-                0,
+                WS_EX_LAYERED,
                 class_name.as_ptr(),
                 std::ptr::null(),
                 WS_CHILD | WS_VISIBLE,
@@ -133,6 +134,7 @@ impl NativeExportCover {
             return Err("the export cover could not be raised".to_string());
         }
         unsafe {
+            SetLayeredWindowAttributes(window, 0, 255, LWA_ALPHA);
             SetWindowPos(
                 window,
                 HWND_TOP,

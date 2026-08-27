@@ -488,6 +488,17 @@ export-web folder="":
 check-export-pictures:
     node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-export-pictures.mjs
 
+# Open a PDF the app wrote and say whether it printed drawings or waiting frames: a
+# diagram the page never drew goes onto the paper as its own source in invisible
+# ink, and this counts those lines sheet by sheet. Non-zero where there is one.
+read-export file:
+    node scripts/read-export.mjs {{ file }}
+
+# Prove that reader on two files it writes itself, so a phase about exporting is
+# ticked against the file a reader is handed and never against the page alone.
+check-read-export:
+    node scripts/read-export.mjs --check
+
 # The same export, served locally so it can be looked at — a page cannot fetch
 # its neighbors off file://. It serves the exported folder and nothing else.
 preview-web folder="":
@@ -529,7 +540,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

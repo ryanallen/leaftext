@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import {
   check,
+  checkSettled,
   fakeElement,
   record,
   runShell,
@@ -33,6 +34,125 @@ export function run() {
       if (asked[0].format !== '') throw new Error(`Export named ${asked[0].format} rather than leaving the save window every row to offer`);
       if (!(asked[0].height > 0) || !(asked[0].width > 0)) throw new Error(`the export carried no page size: ${JSON.stringify(asked[0])}`);
     } finally {
+      booted.window.ipc = ipc;
+      booted.renderReaderToolbar(false);
+    }
+  });
+
+  // A waiting diagram, standing in a document body in front of the reader, with its drawing already in the picture memo so the draw the export starts finishes without the renderer. Real elements, so the export reads the block the way it reads one on the page.
+  const WAITING_SOURCE = 'flowchart TD\n  A --> B';
+  const waitingDocument = () => {
+    const holder = fakeElement('');
+    holder.innerHTML = '<div class="document-body"><h1>Release notes</h1><pre class="mermaid">flowchart TD A --> B</pre></div>';
+    const body = holder.children[0];
+    const diagram = body.querySelectorAll('pre.mermaid')[0];
+    diagram.__mermaidSource = WAITING_SOURCE;
+    diagram.isConnected = true;
+    // The page has no cloneNode: the live body stands for its own copy, which is what lets the web page markup be read off the drawn state.
+    body.cloneNode = () => body;
+    return { body, diagram };
+  };
+  const standDocument = (body) => {
+    const reader = vm.runInContext('app', booted);
+    const wasQuery = reader.querySelector;
+    reader.querySelector = (selector) =>
+      String(selector) === '.document-body' ? body : wasQuery.call(reader, selector);
+    return () => {
+      reader.querySelector = wasQuery;
+    };
+  };
+  const rememberDrawing = () => {
+    const memo = vm.runInContext('mermaidRenderCache', booted);
+    memo.set(booted.mermaidCacheKey(WAITING_SOURCE), '<svg class="flowchart lt-mmd-0"></svg>');
+    return () => memo.delete(booted.mermaidCacheKey(WAITING_SOURCE));
+  };
+  // The page's own promise chain: the draw resolves, the finally runs, the send goes out.
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  // One press at a time. A settled check runs beside every other settled check, and two presses in flight read each other's stubs; a synchronous check is no answer either, because the hand-back after every one of those puts the page's values back while the press's own promise is still to land. So each of these waits for the one before it and settles the page before it hands over.
+  let pressInTurn = Promise.resolve();
+  const checkPressed = (name, run) => {
+    const mine = pressInTurn.then(run, run).then(settle);
+    pressInTurn = mine.catch(() => {});
+    checkSettled(name, () => mine);
+  };
+
+  // Four rounds shipped an export that measured and sent while the diagrams below the window were still boxes, and the boxes printed as empty frames the right size. So the press draws first and sends after, with the document spinner up for the wait — and a document with nothing waiting sends the way it always did, in the same turn as the press.
+  checkPressed('pressing Export with diagrams still waiting draws them before the measurement is sent, and with none waiting sends at once', async () => {
+    const sent = [];
+    const ipc = booted.window.ipc;
+    const { body, diagram } = waitingDocument();
+    const unstand = standDocument(body);
+    const forget = rememberDrawing();
+    const spinner = vm.runInContext('readerLoading', booted);
+    booted.window.ipc = { postMessage: (message) => sent.push({ ...JSON.parse(message), drawn: diagram.dataset.processed === 'true' }) };
+    try {
+      booted.renderReaderToolbar(true);
+      const button = booted.document.getElementById('exportPdfButton');
+      (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      if (sent.some((one) => one.command === 'exportPdf')) throw new Error('the export was sent in the same turn as the press while a diagram was still waiting to be drawn');
+      if (spinner && spinner.hidden !== false) throw new Error('the document spinner was not raised for the wait');
+      await settle();
+      const asked = sent.filter((one) => one.command === 'exportPdf');
+      if (asked.length !== 1) throw new Error(`the export was sent ${asked.length} times after the drawing finished`);
+      if (!asked[0].drawn) throw new Error('the measurement went out while the diagram was still a box');
+      if (!(asked[0].height > 0) || !(asked[0].width > 0)) throw new Error(`the export carried no page size: ${JSON.stringify(asked[0])}`);
+      if (spinner && spinner.hidden !== true) throw new Error('the document spinner was left up after the measurement went out');
+      if (vm.runInContext('mermaidExportDrawing', booted) !== 0) throw new Error('the export left its drawing pass counted as still running');
+      // The recycler stays off until the reader scrolls again: the save window is open and the render is still to come.
+      if (vm.runInContext('mermaidExportHolding', booted) !== true) throw new Error('the export dropped its hold on the recycler when the pass ended rather than at the reader’s next scroll');
+      booted.readerScrollSettled();
+      if (vm.runInContext('mermaidExportHolding', booted) !== false) throw new Error('the reader’s scroll settling did not end the export’s hold on the recycler');
+
+      // Nothing waiting now: the same press sends in the same turn.
+      sent.length = 0;
+      (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      const atOnce = sent.filter((one) => one.command === 'exportPdf');
+      if (atOnce.length !== 1) throw new Error(`with every diagram drawn, pressing Export sent ${atOnce.length} exports in the turn of the press`);
+    } finally {
+      forget();
+      unstand();
+      booted.window.ipc = ipc;
+      booted.renderReaderToolbar(false);
+    }
+  });
+
+  // A block the decorating pass has not reached yet has no recorded source, and the draw reads the source rather than the element — so Export pressed the moment a document opens has to give such a block its own text, or it is skipped and prints as a frame.
+  check('a diagram with no recorded source is drawn from its own text', () => {
+    const { body, diagram } = waitingDocument();
+    delete diagram.__mermaidSource;
+    const unstand = standDocument(body);
+    try {
+      const waiting = booted.mermaidWaitingForExport();
+      if (waiting.length !== 1) throw new Error(`${waiting.length} diagrams were found waiting where one was`);
+      if (diagram.__mermaidSource !== diagram.textContent) throw new Error(`the block was given ${JSON.stringify(diagram.__mermaidSource)} as its source rather than its own text`);
+      diagram.dataset.processed = 'true';
+      if (booted.mermaidWaitingForExport().length) throw new Error('a drawn diagram was counted as waiting');
+    } finally {
+      unstand();
+    }
+  });
+
+  // The Web page row hands over the document's own markup, and a box still waiting in it is a box on the exported page for good: nothing there will ever draw it. So the markup read after the press carries drawings and no waiting block.
+  checkPressed('the markup the exported web page is built from carries no diagram still waiting to be drawn', async () => {
+    const ipc = booted.window.ipc;
+    const { body, diagram } = waitingDocument();
+    const unstand = standDocument(body);
+    const forget = rememberDrawing();
+    booted.window.ipc = { postMessage: () => {} };
+    try {
+      booted.renderReaderToolbar(true);
+      const button = booted.document.getElementById('exportPdfButton');
+      (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
+      await settle();
+      if (diagram.dataset.processed !== 'true') throw new Error('pressing Export left the waiting diagram a box');
+      const markup = vm.runInContext('pageExportMarkup', booted)();
+      if (!markup.includes('<pre class="mermaid" data-processed="true">')) throw new Error(`the exported page carries a diagram still waiting to be drawn: ${markup}`);
+      if (!markup.includes('<svg class="flowchart lt-mmd-0">')) throw new Error(`the drawing did not reach the exported page: ${markup}`);
+      // The reader scrolls on, which is what lets the recycler back in after this press too.
+      booted.readerScrollSettled();
+    } finally {
+      forget();
+      unstand();
       booted.window.ipc = ipc;
       booted.renderReaderToolbar(false);
     }
