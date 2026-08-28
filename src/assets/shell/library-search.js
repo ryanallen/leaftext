@@ -25,7 +25,6 @@ function bindSearchHits() {
       pendingSearchJump = anchor || line ? { path, anchor, line } : null;
       // A hit is a place in the text, so it is worth leaving the map for; the anchor it carries has nothing to scroll to on a canvas.
       graphExitPending = true;
-      setNavigationDirection('forward');
       send({ command: 'openRecent', path });
     });
   });

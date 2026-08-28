@@ -206,7 +206,12 @@ body.is-library-settling .library-scroll {
 body.is-library-opening .library-header,
 body.is-library-opening .library-crumbs,
 body.is-library-opening .library-scroll {
-  animation: leaf-document-arrive var(--lt-duration-260) var(--lt-ease);
+  animation: leaf-library-open-arrive var(--lt-duration-260) var(--lt-ease);
+}
+@keyframes leaf-library-open-arrive {
+  from {
+    opacity: 0;
+  }
 }
 /* Except as a sheet, which is "closed" only to the grid — it is off-screen when shut, so there is nothing to bleed, and with these hidden it opened onto a blank band where the path and the search box belong. */
 .library-shell.library-narrow .library-header,
@@ -258,47 +263,6 @@ body.library-resizing button {
 }
 .library-tree {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
-}
-/* One cell, holding the folder on screen and — for the length of a move — a still copy of the one being left. The tree is not the pane's scroll box (.library-scroll is), so the arriving rows stay in flow and keep the pane's height while the copy lies over them. */
-.library-tree-stage {
-  display: grid;
-  grid-template-columns: 1fr;
-  position: relative;
-}
-.library-tree-layer {
-  grid-area: 1 / 1;
-  min-width: 0;
-}
-/* Which way the two travel: forward, into a folder, brings the new rows in from the right and takes the old ones out to the left, and back reverses both. One pair of curves for it — arriving settles hard, leaving accelerates away — and the sign of the travel is the only difference between the two directions. */
-.library-tree-stage[data-going] .library-tree-layer.is-arriving {
-  animation: leaf-library-tree-arrive var(--lt-duration-220) var(--lt-ease-decelerate) both;
-}
-/* The copy is lifted out of the grid's sizing, so the folder that arrived is what the pane's height is measured from however long the one being left was. */
-.library-tree-stage[data-going] .library-tree-layer.is-leaving {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  pointer-events: none;
-  animation: leaf-library-tree-leave var(--lt-duration-220) var(--lt-ease-accelerate) both;
-}
-.library-tree-stage[data-going='forward'] {
-  --library-tree-travel: 24%;
-}
-.library-tree-stage[data-going='back'] {
-  --library-tree-travel: -24%;
-}
-@keyframes leaf-library-tree-arrive {
-  from {
-    transform: translateX(var(--library-tree-travel));
-    opacity: 0;
-  }
-}
-@keyframes leaf-library-tree-leave {
-  to {
-    transform: translateX(calc(-1 * var(--library-tree-travel)));
-    opacity: 0;
-  }
 }
 .library-results {
   padding: 0 var(--lt-space-6) var(--lt-space-12);

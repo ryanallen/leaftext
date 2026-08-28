@@ -416,9 +416,8 @@ function realFolderPath(browsePath) {
 function libraryFolderHere() {
   return realFolderPath(libraryProjectPath);
 }
-// Enter a folder (or, from a crumb, step back out to one). '' is the top: the active vault's folder, or the drive roots. The host reads it and calls back — nothing is known about a folder here until it has been opened. `direction` is which way the move reads on screen — 'forward' going in, 'back' coming back out — and nothing at all for a move that is neither, which draws as it always did.
-function setLibraryFolder(path, direction) {
-  setNavigationDirection(direction || '');
+// Enter a folder (or, from a crumb, step back out to one). '' is the top: the active vault's folder, or the drive roots. The host reads it and calls back — nothing is known about a folder here until it has been opened.
+function setLibraryFolder(path) {
   libraryProjectPath = path || '';
   persistLibraryState();
   send({ command: 'getFolder', path: libraryProjectPath });
@@ -457,14 +456,11 @@ function bindLibraryRowPress(button, act) {
   });
 }
 function bindFolderEntryRow(button) {
-  // The way out and the way in are one button with one handler, so the direction is read off the row rather than written at the call.
-  const direction = button.classList.contains('library-nav-up') ? 'back' : 'forward';
-  bindLibraryRowPress(button, () => setLibraryFolder(button.dataset.navInto, direction));
+  // The way out and the way in are one button with one handler: both read the folder off the row.
+  bindLibraryRowPress(button, () => setLibraryFolder(button.dataset.navInto));
 }
 function bindLibraryFileRow(button) {
   bindLibraryRowPress(button, () => {
-    // A document opened from the pane is a step in, and the reader's own render is what spends the word — the pane only changes which row is marked.
-    setNavigationDirection('forward');
     send({ command: 'openRecent', path: button.dataset.openPath });
     // Picking a document is the sheet's whole purpose, so it gets out of the way — the page it just opened is behind it.
     closeLibrarySheet();
@@ -561,7 +557,7 @@ function fitLibraryCrumbs() {
 // The trail's folder links and its two menu buttons, wired after any rebuild.
 function bindCrumbTrailButtons(hidden) {
   libraryCrumbTrail.querySelectorAll('[data-crumb-path]').forEach((crumb) => {
-    crumb.addEventListener('click', () => setLibraryFolder(crumb.dataset.crumbPath, 'back'));
+    crumb.addEventListener('click', () => setLibraryFolder(crumb.dataset.crumbPath));
   });
   const more = libraryCrumbTrail.querySelector('[data-crumb-more]');
   if (more) {
@@ -616,7 +612,7 @@ function folderMenuItems(hidden) {
     label: segment.name,
     title: segment.path || segment.name,
     icon: FOLDER_ICON_SVG,
-    run: () => setLibraryFolder(segment.path, 'back'),
+    run: () => setLibraryFolder(segment.path),
   }));
 }
 // The switcher's rows: the whole library as it has always been, then every vault, then New vault…. The rows are told apart by id, so two vaults may share a name — and "Library" is that first row's label, not a reserved word.
@@ -1427,60 +1423,12 @@ function renderLibrarySearchability() {
 }
 // What the pane last drew, so a read that describes what is already on screen can leave it alone. Writing innerHTML destroys every row, and a row destroyed between a press and its release takes the click with it — the watcher re-reads this folder for any change under the vault, and most of those change nothing here.
 let libraryTreeHtml = null;
-// The folder the rows on screen belong to. Only a change of it is a change of place: a watcher re-read, a rename, a paste, a delete and a fresh selection all redraw the same folder, and none of them went anywhere.
-let libraryTreeFolder = null;
-// The tree that was on screen, and the way it is leaving, held between the rows being replaced and the copy going up over them. It waits because the rows are bound after they are written, and nothing may bind a row in a copy nobody can press.
-let libraryTreeLeaving = null;
-let libraryTreeLeavingWay = '';
-// How long a move is given before it is ended by hand, for a run nothing announced the end of — the pane's own toggle carries the same guard, and a copy left standing would cover the folder underneath it.
-const LIBRARY_SWAP_FALLBACK_MS = 500;
-let librarySwapTimer = 0;
-// Draw the rows, and say whether anything actually moved.
+// Draw the rows, and say whether anything actually changed.
 function setLibraryTreeHtml(html) {
   if (html === libraryTreeHtml) return false;
   libraryTreeHtml = html;
-  // Spent here whether or not there is anything to animate, so a word nobody could use cannot move the render after this one.
-  const direction = spendNavigationDirection();
-  const moved = libraryTreeFolder !== null && libraryTreeFolder !== libraryProjectPath;
-  const leaving = direction && moved ? libraryTree.querySelector('.library-tree-layer') : null;
-  // A move landing on top of one still running takes the older copy with it: this write throws the whole stage away.
-  libraryTreeLeaving = leaving ? leaving.cloneNode(true) : null;
-  libraryTreeLeavingWay = libraryTreeLeaving ? direction : '';
-  libraryTreeFolder = libraryProjectPath;
-  libraryTree.innerHTML = `<div class="library-tree-stage"><div class="library-tree-layer">${html}</div></div>`;
+  libraryTree.innerHTML = html;
   return true;
-}
-// Lay the folder being left over the one that arrived and slide the two apart. The copy is inert, takes no pointer and sits after the live rows, so every query for a row still answers with one that works; it goes when its own animation ends.
-function runLibraryTreeSwap() {
-  const copy = libraryTreeLeaving;
-  const way = libraryTreeLeavingWay;
-  libraryTreeLeaving = null;
-  libraryTreeLeavingWay = '';
-  window.clearTimeout(librarySwapTimer);
-  librarySwapTimer = 0;
-  if (!copy) return;
-  const stage = libraryTree.querySelector('.library-tree-stage');
-  const arriving = stage && stage.querySelector('.library-tree-layer');
-  if (!arriving) return;
-  stage.dataset.going = way;
-  arriving.classList.add('is-arriving');
-  copy.classList.add('is-leaving');
-  copy.inert = true;
-  copy.setAttribute('aria-hidden', 'true');
-  stage.appendChild(copy);
-  const settled = () => {
-    window.clearTimeout(librarySwapTimer);
-    librarySwapTimer = 0;
-    copy.remove();
-    arriving.classList.remove('is-arriving');
-    delete stage.dataset.going;
-  };
-  copy.addEventListener('animationend', (event) => {
-    // Animation events bubble, and a row inside the copy finishing one of its own must not end the move.
-    if (event.target !== copy) return;
-    settled();
-  });
-  librarySwapTimer = window.setTimeout(settled, LIBRARY_SWAP_FALLBACK_MS);
 }
 // How many files the folder holds that the app cannot open. Only this file writes it and only this file reads it, so it stays here rather than joining the shared state.
 let librarySkippedFiles = 0;
@@ -1528,8 +1476,6 @@ function renderLibrary() {
     : `<p class="library-empty">${escapeText(libraryEmptyText())}</p>`;
   if (!setLibraryTreeHtml(libraryIntroHtml() + renderProject(libraryEntries) + empty)) return false;
   bindLibraryRows();
-  // After the binding, never before it: the copy carries the same rows, and a listener on one of those is a press that goes nowhere.
-  runLibraryTreeSwap();
   return true;
 }
 // One folder, read off the disk by the host: where it is, the trail down to it, and its contents. This is the only thing that fills the pane.

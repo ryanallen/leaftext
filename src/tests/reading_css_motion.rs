@@ -458,9 +458,12 @@ fn the_normal_width_library_toggle_rides_the_motion_rail() {
     let fade_in = rule_body(css, "body.is-library-opening .library-header,");
     assert_contains(
         fade_in,
-        "animation: leaf-document-arrive var(--lt-duration-260) var(--lt-ease);",
+        "animation: leaf-library-open-arrive var(--lt-duration-260) var(--lt-ease);",
     );
     assert_contains(fade_in, "body.is-library-opening .library-scroll {");
+    // The pane owns that keyframe: the reader arrival fade it used to share is gone, so a name only the reader defined would animate nothing.
+    assert_contains(css, "@keyframes leaf-library-open-arrive {");
+    assert!(!css.contains("leaf-document-arrive"));
 
     // A grid item's min-width is its content, which would hold the shrinking track open; the pane itself still never clips, because the corner arc on its right edge is real geometry.
     assert_contains(rule_body(css, ".library-pane {"), "min-width: 0;");

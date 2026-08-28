@@ -426,9 +426,9 @@ export function run() {
     }
   });
 
-  // ---- 5c. the folder being left stays on screen long enough to leave ---------
+  // ---- 5c. a folder is one list, drawn in the frame the read is answered ------
   //
-  // A folder entered with no motion is a hard cut in one frame — two rows become fifteen with nothing on screen saying which way the reader went, and coming back out looks the same. So the rows are drawn in a one-cell stage and a still copy of the folder being left is laid over the one that arrived for the length of the move. The copy is where every risk is: it carries the same rows, so a listener on one of them is a press that sends the reader somewhere the pane no longer says.
+  // Going in used to draw a one-cell stage with a still copy of the folder being left laid over the one that arrived: two near-solid lists of names overlapped for the length of the move and neither could be read. So the rows go straight into the tree and one list is on screen at any moment, going in and coming back out alike.
 
   const libraryFolderPayload = (path, name, entries) => ({
     path,
@@ -437,89 +437,65 @@ export function run() {
     entries,
   });
 
-  check('entering a folder lays a still copy of the one being left over the one that arrived', () => {
+  check('going into a folder and stepping back out both leave one list on screen', () => {
     const tree = booted.document.getElementById('libraryTree');
-    const layers = () => tree.querySelectorAll('.library-tree-layer');
-    const stage = () => tree.querySelector('.library-tree-stage');
-
-    booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work', 'Work', [
+    // Every row the tree drew, whichever list it belongs to: two of these at once is the fault this check exists for.
+    const rows = () => tree.querySelectorAll('[data-folder-path], [data-open-path]');
+    const inWork = () => booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work', 'Work', [
       { kind: 'folder', name: 'notes', path: 'C:\Vaults\Work\notes' },
     ]));
-    if (layers().length !== 1) throw new Error(`a folder at rest drew ${layers().length} trees rather than one`);
+    const inNotes = () => booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work\notes', 'notes', [
+      { kind: 'file', name: 'A note.md', path: 'C:\Vaults\Work\notes\A note.md' },
+    ]));
 
-    // The row a reader presses, bound by the pane's own render. Which way it reads is taken off the row's class, so one handler serves the way in and the way back out — and the way out is drawn above the contents, which is why this asks for a child folder by name.
+    inWork();
+    if (tree.querySelector('.library-tree-stage')) throw new Error('the rows are still wrapped in a stage');
+    if (tree.querySelector('.library-tree-layer')) throw new Error('the rows are still wrapped in a layer');
+
+    // The row a reader presses, bound by the pane's own render.
     const row = tree.querySelector('[data-folder-path]');
     if (!row) throw new Error('the folder drew no row to enter it by');
     const press = (row.listeners.get('pointerdown') || [])[0];
     if (!press) throw new Error('a folder row does not listen for a press at all');
     press({ pointerType: 'mouse', button: 0 });
-
-    booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work\notes', 'notes', [
-      { kind: 'file', name: 'A note.md', path: 'C:\Vaults\Work\notes\A note.md' },
-    ]));
-    const both = layers();
-    if (both.length !== 2) throw new Error(`entering a folder left ${both.length} trees on screen rather than two`);
-    if (stage().dataset.going !== 'forward') throw new Error(`entering a folder read as ${stage().dataset.going}`);
-
-    // The live rows are first, so every query for a row still answers with one that works, and the copy is last, inert and out of a screen reader's way.
-    const [live, copy] = both;
-    if (live.classList.contains('is-leaving')) throw new Error('the copy was drawn in front of the live rows');
-    if (tree.querySelector('.library-tree-layer') !== live) throw new Error('a query for the tree answered with the copy');
-    if (!live.querySelector('[data-open-path]')) throw new Error('the folder that arrived drew none of its own rows');
-    if (!copy.classList.contains('is-leaving')) throw new Error('the copy is not marked as the one leaving');
-    if (copy.inert !== true) throw new Error('the copy still takes a press');
-    if (copy.getAttribute('aria-hidden') !== 'true') throw new Error('the copy is still read out');
-    // The whole reason it is a copy: it carries the folder's rows and not one listener of theirs.
-    const carried = copy.querySelectorAll('[data-folder-path]');
-    if (!carried.length) throw new Error('the copy carries none of the rows it is a copy of');
-    for (const held of carried) {
-      if (held.listeners.size) throw new Error('a row in the copy is still bound, so pressing it would send the reader somewhere the pane no longer says');
-    }
-
-    // Its own animation ends the move, and the copy goes.
-    for (const handler of copy.listeners.get('animationend') || []) handler({ target: copy });
-    if (layers().length !== 1) throw new Error(`the move ended with ${layers().length} trees still up`);
-    if (stage().dataset.going !== undefined) throw new Error('the stage is still wearing a direction at rest');
-    if (live.classList.contains('is-arriving')) throw new Error('the tree that arrived is still wearing the arrival');
-  });
-
-  check('coming back out reverses it, and a folder re-read moves nothing at all', () => {
-    const tree = booted.document.getElementById('libraryTree');
-    const layers = () => tree.querySelectorAll('.library-tree-layer');
-    const inNotes = () => booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work\notes', 'notes', [
-      { kind: 'file', name: 'A note.md', path: 'C:\Vaults\Work\notes\A note.md' },
-    ]));
-
     inNotes();
-    // The way out is the same handler, told apart by the row's own class.
+
+    // One list, its own rows, nothing left over from the folder before it and nothing marked as leaving.
+    const arrived = tree.querySelectorAll('[data-open-path]');
+    if (arrived.length !== 1) throw new Error(`the folder that arrived drew ${arrived.length} of its own rows rather than one`);
+    if (tree.querySelector('[data-folder-path]')) throw new Error('a row of the folder that was left is still on screen');
+    if (tree.querySelector('.is-leaving')) throw new Error('something is still marked as the copy leaving');
+    if (tree.querySelector('[aria-hidden="true"]')) throw new Error('an inert copy of the folder is still in the tree');
+    if (booted.document.body.dataset.going !== undefined) throw new Error('the page is wearing a direction');
+
+    // Stepping back out reads the same way: one list, no copy, no direction.
     const up = tree.querySelector('.library-nav-up');
     if (!up) throw new Error('a folder one level in drew no way back out');
     ((up.listeners.get('pointerdown') || [])[0])({ pointerType: 'mouse', button: 0 });
-    booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work', 'Work', [
-      { kind: 'folder', name: 'notes', path: 'C:\Vaults\Work\notes' },
-    ]));
-    if (layers().length !== 2) throw new Error('coming back out drew no copy of the folder being left');
-    if (tree.querySelector('.library-tree-stage').dataset.going !== 'back') throw new Error('coming back out read as going in');
-    const leaving = layers()[1];
-    for (const handler of leaving.listeners.get('animationend') || []) handler({ target: leaving });
+    inWork();
+    if (rows().length !== 1) throw new Error(`stepping back out left ${rows().length} rows on screen rather than one`);
+    if (tree.querySelector('[data-open-path]')) throw new Error('a row of the folder that was left survived the step out');
+    if (tree.querySelector('.is-leaving')) throw new Error('stepping back out drew a copy');
 
-    // What a watcher tick, a paste, a rename and a delete all arrive as: the same folder, drawn again. Nobody went anywhere, so nothing moves.
-    booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work', 'Work', [
-      { kind: 'folder', name: 'notes', path: 'C:\Vaults\Work\notes' },
-      { kind: 'file', name: 'PLAN.md', path: 'C:\Vaults\Work\PLAN.md' },
-    ]));
-    if (layers().length !== 1) throw new Error('a folder read again drew a copy of itself');
-
-    // And a second move landing before the first has finished leaves one live tree and one copy, because the redraw throws the whole stage away, older copy included.
-    const row = tree.querySelector('[data-folder-path]');
-    ((row.listeners.get('pointerdown') || [])[0])({ pointerType: 'mouse', button: 0 });
+    // And nothing is queued: a second move landing straight after the first still leaves one list, because there is no timer and no listener to end.
+    ((tree.querySelector('[data-folder-path]').listeners.get('pointerdown') || [])[0])({ pointerType: 'mouse', button: 0 });
     inNotes();
-    if (layers().length !== 2) throw new Error('entering a folder from the re-read drew no copy');
-    vm.runInContext("setNavigationDirection('forward')", booted);
     booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work\notes\older', 'older', [
       { kind: 'file', name: 'Old.md', path: 'C:\Vaults\Work\notes\older\Old.md' },
     ]));
-    if (layers().length !== 2) throw new Error(`a move landing on one still running left ${layers().length} trees on screen`);
-    if (!layers()[0].querySelector('[data-open-path]')) throw new Error('the tree left standing is not the live one');
+    if (rows().length !== 1) throw new Error(`a move landing on one still running left ${rows().length} rows on screen`);
+  });
+
+  check('a folder read again leaves the rows it already drew standing', () => {
+    const tree = booted.document.getElementById('libraryTree');
+    const same = () => booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work', 'Work', [
+      { kind: 'folder', name: 'notes', path: 'C:\Vaults\Work\notes' },
+    ]));
+
+    same();
+    const row = tree.querySelector('[data-folder-path]');
+    // What a watcher tick, a paste, a rename and a delete all arrive as: the same folder, drawn again. The rows must be the same elements, or a rebuild between a press and its release swallows the click.
+    same();
+    if (tree.querySelector('[data-folder-path]') !== row) throw new Error('an unchanged re-read replaced the row under the pointer');
   });
 }

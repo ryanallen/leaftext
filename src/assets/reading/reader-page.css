@@ -167,58 +167,8 @@
   /* Heading permalinks sit in the left gutter via negative positioning; clip stops them widening the horizontal scroll without making this a scroll container. */
   overflow-x: clip;
 }
-/* A document arriving, rather than appearing in one hard frame. An animation and not a transition: render-document.js takes the class off again on `animationend`, and a transition carried by a class removed after it is a transition removed with it. Opacity only — everything past the reveal measures this box, and a transform would also make it the containing block for anything fixed inside it. The fill mode is what makes Reduce Motion land it at full opacity on the first frame. */
-.reader-layout.is-arriving {
-  animation: leaf-document-arrive var(--lt-duration-160) var(--lt-ease-decelerate) both;
-}
-@keyframes leaf-document-arrive {
-  from {
-    opacity: 0;
-  }
-}
 .reader-layout-no-minimap {
   justify-items: center;
-}
-/* Two pages in one cell, for the length of a move: the one that arrived, and a still copy of the one being left. Only while the move runs — a page at rest is the plain block it has always been, so nothing about the reader at rest changes. Clipped sideways because the arriving page's travel was measured to widen the reader's own scroll, and a leftward one not to. */
-.reader-shell.is-swapping {
-  display: grid;
-  grid-template-columns: 1fr;
-  overflow-x: hidden;
-}
-.reader-shell.is-swapping > .reader-layout {
-  grid-area: 1 / 1;
-  min-width: 0;
-}
-/* Forward brings the new page in from the right and takes the old one out to the left; back reverses both, and the sign is the only difference. */
-.reader-shell.is-swapping[data-going='forward'] {
-  --reader-swap-travel: 12%;
-}
-.reader-shell.is-swapping[data-going='back'] {
-  --reader-swap-travel: -12%;
-}
-/* The one transform a reading layout ever wears, and it lasts only as long as the move. A transform makes this the containing block for anything fixed inside it, and it changes what the box says it is — which is why the render starts the move after every pass that measures the page, and why the two rules above are keyed on a state nothing at rest carries. A reading layout has no fixed or sticky descendant: the overlays that are fixed are children of .reader-shell beside it. */
-.reader-shell.is-swapping > .reader-layout.is-swapping-in {
-  animation: leaf-reader-arrive var(--lt-duration-220) var(--lt-ease-decelerate) both;
-}
-/* Held at the reader's own place by its offset, so the page going away carries the words they were reading out with it rather than snapping to its own top first. */
-.reader-shell.is-swapping > .reader-layout.is-leaving {
-  pointer-events: none;
-  animation: leaf-reader-leave var(--lt-duration-220) var(--lt-ease-accelerate) both;
-}
-@keyframes leaf-reader-arrive {
-  from {
-    transform: translateX(var(--reader-swap-travel));
-    opacity: 0;
-  }
-}
-@keyframes leaf-reader-leave {
-  from {
-    transform: translateY(var(--reader-leaving-offset));
-  }
-  to {
-    transform: translate(calc(-1 * var(--reader-swap-travel)), var(--reader-leaving-offset));
-    opacity: 0;
-  }
 }
 /* The growl. Rises into place rather than appearing, because something that appears in the corner of a page has already been half-missed by the time the eye gets there. */
 .app-toast {

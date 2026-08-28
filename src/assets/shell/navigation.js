@@ -3,8 +3,6 @@ function currentScrollAnchor() {
   return captureReaderScrollAnchor() || readerScrollAnchor || { section: null, block: 0, offsetY: 0 };
 }
 function sendNavigationCommand(command) {
-  // Which way the reader is going is the whole of what these two buttons mean, and it is the render drawing the answer that says it on screen.
-  setNavigationDirection(command === 'goBack' ? 'back' : 'forward');
   send({ command, scroll_anchor: currentScrollAnchor() });
 }
 // A native close cannot ask the page where it was, so a quiet reader scroll tells the host before it matters.

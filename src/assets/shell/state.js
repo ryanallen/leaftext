@@ -55,20 +55,6 @@ function libraryPaneIsMoving() {
   return LIBRARY_MOTION_CLASSES.some((name) => document.body.classList.contains(name));
 }
 
-// ---- which way the reader just went (library.js, library-search.js, navigation.js, render-document.js, context-menu.js)
-
-// `back`, `forward`, or nothing. Written by whatever sent the reader somewhere — a folder row, a crumb, a file row, a search hit, a document link, Back and Forward — and read by the render that draws where they landed, so the new place can arrive from the side they went and the old one leave the other way. One word for both halves of the screen: a gesture moves the pane or the reader, never both, and the render that draws first takes it.
-let navigationDirection = '';
-function setNavigationDirection(direction) {
-  navigationDirection = direction;
-}
-// Read it and clear it. Every render calls this, whether or not it has anything to animate: a word left standing would move the next render, which nobody asked to move.
-function spendNavigationDirection() {
-  const direction = navigationDirection;
-  navigationDirection = '';
-  return direction;
-}
-
 // ---- the platform (context-menu.js, glossary.js) ---------------------------
 
 // Which gesture belongs to which key: Ctrl+click is the right-click on a Mac, so the open-in-a-new-page modifier there is Cmd. Read by the menu and by the document-link handler that picks the modifier.

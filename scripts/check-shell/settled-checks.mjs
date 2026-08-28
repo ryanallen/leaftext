@@ -1,6 +1,6 @@
 // The order the checks themselves run in: one awaiting check at a time against the one booted page.
 
-import { check, checkSettled, settle } from './shared.mjs';
+import { check, checkSettled, createCollector, failures, settle } from './shared.mjs';
 
 export function run() {
   // ---- one awaiting check at a time -------------------------------------------
@@ -37,5 +37,28 @@ export function run() {
   check('a synchronous check finishes before any awaiting body starts', () => {
     if (ran.length) throw new Error(`${JSON.stringify(ran)} ran before this call, so an awaiting body registered above started inside the run rather than after it`);
     ran.push('sync');
+  });
+
+  checkSettled('a failed awaiting check does not lend its fault to the checks after it', async () => {
+    const isolated = createCollector();
+    const runFailures = failures.length;
+    const isolatedRan = [];
+
+    isolated.checkSettled('first', () => {
+      isolatedRan.push('first');
+      throw new Error('the real fault');
+    });
+    isolated.checkSettled('second', () => {
+      isolatedRan.push('second');
+      throw new Error('the second fault');
+    });
+    isolated.checkSettled('third', () => isolatedRan.push('third'));
+
+    await Promise.all(isolated.settled);
+    const order = isolatedRan.join(', ');
+    if (order !== 'first, second, third') throw new Error(`the isolated bodies ran ${order}, so a failed body stopped the queue behind it`);
+    const reported = isolated.failures.join(', ');
+    if (reported !== 'first: the real fault, second: the second fault') throw new Error(`the isolated collector reported ${reported}, so a fault landed under the wrong check name`);
+    if (failures.length !== runFailures) throw new Error('an isolated collector added its deliberate failure to the run report');
   });
 }

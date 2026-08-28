@@ -157,7 +157,7 @@ While the [library sheet](03-library.md#narrow-windows) is up it covers the page
 
 That second case is why Leaftext keeps scroll history separately from file history.
 
-**Which way you went shows.** Following a link brings the new page in from the right while a still picture of the one you left slides off to the left; Back and Forward reverse it, and the page you are leaving carries the words you were reading out with it rather than jumping to its own top first. Going into a folder in the [library](03-library.md#file-tree) pane reads the same way, and the row that steps back out reverses it. Only going somewhere moves: saving, an edit, a file changing on disk, the padlock and clicking a tab all draw as immediately as they always have. With Reduce Motion on, every one of those lands in a single frame.
+**Every destination arrives at once.** Following a link, pressing Back or Forward, and going into a folder in the [library](03-library.md#file-tree) pane all put the page or list on screen in the frame it is ready, at full strength, with nothing fading in and nothing sliding. So does everything else that redraws: saving, an edit, a file changing on disk, the padlock and clicking a tab.
 
 ### Restore
 
