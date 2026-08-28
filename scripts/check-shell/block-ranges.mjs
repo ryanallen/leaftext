@@ -319,7 +319,6 @@ export function run() {
   // A checkbox is bound by position: the page counts the boxes in the drawn document, pairs them one for one against the task list the front tab answered, and sends the Nth box's index back. So the binding is only right while exactly one drawn document stands inside the reader — and nothing in the page says so. Four elements wear `.document-body`, three of them outside the reader, and a table opened full-window builds a fourth inside it. That one lands after the drawn document, so the first is still the reader's own; it is right by the order of two appends and by nothing else. Get that order wrong and a tick is written into a file nobody was looking at, silently, because the count guard passes whenever the two documents hold the same number of tasks.
   check('the boxes a press arms are the drawn document inside the reader, not a second one standing beside it', () => {
     const appEl = booted.document.getElementById('app');
-    // The boxes answer their own body rather than the page's matcher: the stand-in reads `input[type="checkbox"]` as one long attribute name and finds nothing (`the-stand-in-page-cannot-read-an-attribute-with-a-value`). Which body the binding takes is the page's own query, and that is what is under test here, so it is left alone.
     const drawn = (count) => {
       const body = fakeElement('');
       body.className = 'document-body';
@@ -327,11 +326,10 @@ export function run() {
       for (let at = 0; at < count; at += 1) {
         const box = fakeElement('');
         box.tagName = 'INPUT';
+        box.setAttribute('type', 'checkbox');
         body.appendChild(box);
         boxes.push(box);
       }
-      const wasQuery = body.querySelectorAll;
-      body.querySelectorAll = (selector) => (String(selector) === 'input[type="checkbox"]' ? boxes : wasQuery.call(body, selector));
       return { body, boxes };
     };
     const armed = (boxes) => boxes.map((box) => box.dataset.taskIndex);

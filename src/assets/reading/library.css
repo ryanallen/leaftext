@@ -299,6 +299,66 @@ body.library-resizing {
 .library-results {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
 }
+/* The open document's headings, in the same box the file list and the search results use — one of the three shows at a time. */
+.library-outline {
+  padding: 0 var(--lt-space-6) var(--lt-space-12);
+}
+/* Not a row and not a button: one quiet line naming the list under it, with how long the document is at its right. */
+.library-outline-note {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-6);
+  padding: var(--lt-space-4) var(--lt-space-6) var(--lt-space-6);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10);
+}
+.library-outline-count {
+  flex: none;
+}
+/* A heading, drawn as the file rows beside it are drawn — one full-width target, stepped in by how deep the section sits. */
+.library-outline-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  width: 100%;
+  text-align: left;
+  padding: var(--lt-space-4) var(--lt-space-6);
+  padding-left: calc(var(--lt-space-6) + var(--library-outline-depth, 0) * var(--lt-space-12));
+  margin-bottom: var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.library-outline-row:hover {
+  background: var(--lt-wash-hover);
+}
+/* The section being read, with the treatment the file list gives the open file: it outranks hover, so it holds while the pointer is somewhere else. */
+.library-outline-row.is-selected,
+.library-outline-row.is-selected:hover {
+  background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
+}
+/* How far in each level sits. Measured from the shallowest heading the document has, so a note written entirely in `##` starts flush. */
+.library-outline-depth-0 {
+  --library-outline-depth: 0;
+}
+.library-outline-depth-1 {
+  --library-outline-depth: 1;
+}
+.library-outline-depth-2 {
+  --library-outline-depth: 2;
+}
+.library-outline-depth-3 {
+  --library-outline-depth: 3;
+}
+.library-outline-depth-4 {
+  --library-outline-depth: 4;
+}
+.library-outline-depth-5 {
+  --library-outline-depth: 5;
+}
 /* Said once to a reader who has never made a vault, at the top of the list and inside it — so no band moves and nothing is covered. A box rather than a bubble: this has to stand until a folder has been picked, and a bubble is gone the moment a pointer reaches what it points at. */
 .library-intro {
   margin: var(--lt-space-6) 0 var(--lt-space-12);

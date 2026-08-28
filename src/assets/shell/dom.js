@@ -61,6 +61,7 @@ const librarySearch = document.getElementById('librarySearch');
 const librarySearchClear = document.getElementById('librarySearchClear');
 const librarySyncButton = document.getElementById('librarySyncButton');
 const librarySearchResults = document.getElementById('librarySearchResults');
+const libraryOutline = document.getElementById('libraryOutline');
 const filterMenu = document.getElementById('filterMenu');
 // The update bell and its panel. Absent from the bar until there is something to install; the updater un-hides the whole menu.
 const updateMenu = document.getElementById('updateMenu');

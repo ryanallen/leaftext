@@ -230,38 +230,62 @@ fn only_going_somewhere_moves_the_page_and_every_way_of_going_says_which_way() {
 }
 
 #[test]
-fn app_shell_builds_collapsed_heading_outline_under_the_title() {
+fn app_shell_draws_the_documents_headings_in_the_library_pane() {
     let html = app_shell_page();
 
-    // The builder exists, is wired into the render pipeline, and the line count skips the outline's own link-only entries rather than counting them.
-    assert_contains(&html, "function buildDocumentOutline() {");
-    assert_contains(&html, "buildDocumentOutline();");
-    assert_contains(&html, "if (target.closest('.document-outline')) return;");
-    // A title plus at least one section, inserted just under the title.
-    assert_contains(&html, "if (headings.length < 2) return;");
-    assert_contains(&html, "title.insertAdjacentElement('afterend', details);");
-    // Collapsed <details> with an "Outline" summary, entries nested as a bulleted list (numbers overflow the panel on deep documents) that links each heading by its slug id.
-    assert_contains(&html, "details.className = 'document-outline';");
-    assert_contains(&html, "summaryLabel.textContent = 'Outline';");
-    assert_contains(&html, "const rootList = document.createElement('ul');");
-    assert!(!html.contains("const rootList = document.createElement('ol');"));
-    assert_contains(&html, "link.className = 'document-outline-link';");
-    assert_contains(&html, "link.href = '#' + encodeURIComponent(h.id);");
-    // The summary carries how long the document is — counted, not stamped onto every block on the way to the total.
-    assert_contains(&html, "summaryCount.className = 'document-outline-count';");
-    assert_contains(&html, "function documentLineCount(body) {");
-    assert_contains(&html, "`(${formatCount(documentLineCount(body))} lines)`");
-    // The (potentially ~25k-entry) list is built lazily, only when the reader first expands the outline — not at every document render.
-    assert_contains(&html, "function populateDocumentOutline(details, rest) {");
-    assert_contains(&html, "details.addEventListener('toggle', () => {");
+    // The walk that reads the headings is apart from whatever draws them: a title plus at least one section, each row carrying its level, its words and the id a jump lands on.
+    assert_contains(&html, "function documentOutlineHeadings(body) {");
+    assert_contains(&html, "function collectDocumentOutlineRows(body) {");
+    assert_contains(&html, "if (headings.length < 2) return [];");
+    assert_contains(&html, "if (!h.id) h.id = 'section-' + (i + 1);");
     assert_contains(
         &html,
-        "if (details.open) populateDocumentOutline(details, rest);",
+        "return rest.map((h) => ({ level: Number(h.tagName.slice(1)) || 1, text: readOutlineHeadingText(h), id: h.id }));",
     );
-    // The outline never opens on its own — closed until the reader expands it.
-    assert!(!html.contains("details.open = true"));
-    // The label and the line-count suffix are both present.
-    assert_contains(&html, "summaryLabel.textContent = 'Outline';");
+    // Read on every render and handed on, so a document with no headings clears what the last one left.
+    assert_contains(&html, "function publishDocumentOutline() {");
+    assert_contains(&html, "publishDocumentOutline();");
+    assert_contains(
+        &html,
+        "setDocumentOutlineRows(body ? collectDocumentOutlineRows(body) : []);",
+    );
+
+    // The pane draws them, in the box it already swaps the file list for.
+    assert_contains(&html, "function renderLibraryOutline() {");
+    assert_contains(&html, "library-outline-row library-outline-depth-${depth}");
+    assert_contains(&html, "data-outline-section=");
+    // The line naming the list carries how long the document is — counted, not stamped onto every block on the way to the total.
+    assert_contains(&html, "function documentLineCount(body) {");
+    assert_contains(&html, "${formatCount(openDocumentLineCount())} lines");
+    assert_contains(&html, "On this page");
+    // One decision over three lists, in a fixed order, rather than a `hidden` written per list.
+    assert_contains(&html, "function renderLibraryLists() {");
+    assert_contains(
+        &html,
+        "const outlining = !searching && libraryOutlineShowing();",
+    );
+    assert_contains(&html, "libraryTree.hidden = searching || outlining;");
+    // Building the rows is layout, so it waits for the frame after the document paints.
+    assert_contains(
+        &html,
+        "libraryOutlineFrame = window.requestAnimationFrame(() => {",
+    );
+
+    // Nothing is drawn between a title and its first sentence any more: the box, its lazy populate and its summary are gone.
+    for absent in [
+        "buildDocumentOutline",
+        "populateDocumentOutline",
+        "details.className = 'document-outline'",
+        "insertAdjacentElement('afterend', details)",
+        "summaryLabel.textContent = 'Outline'",
+        "document-outline-count",
+        "if (target.closest('.document-outline')) return;",
+    ] {
+        assert!(
+            !html.contains(absent),
+            "the outline is out of the page; found {absent}"
+        );
+    }
 }
 
 // Both views open the first line at the same height by different means — scroll origin in one, padding in the other — so the number lives in two files and has to agree, and has to clear the top edge fade that 16px of padding left it inside.

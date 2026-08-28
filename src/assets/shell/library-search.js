@@ -30,11 +30,10 @@ function bindSearchHits() {
     });
   });
 }
-// Swap between the tree and the search results. A non-empty query shows the results pane (loading, error, no-results, or the ranked hits); an empty query puts the file list back exactly as it was.
+// Fill the results list, and let the pane decide which of its three lists is showing. A non-empty query shows the results (loading, error, no-results, or the ranked hits); an empty one puts back whatever was standing, exactly as it was.
 function renderLibrarySearch() {
   const active = !!librarySearchQuery;
-  librarySearchResults.hidden = !active;
-  libraryTree.hidden = active;
+  renderLibraryLists();
   if (!active) {
     librarySearchResults.innerHTML = '';
     return;

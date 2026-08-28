@@ -143,12 +143,10 @@ export function run() {
     for (let at = 0; at < 2; at += 1) {
       const box = fakeElement('');
       box.tagName = 'INPUT';
+      box.setAttribute('type', 'checkbox');
       body.appendChild(box);
       boxes.push(box);
     }
-    // The stand-in reads `input[type="checkbox"]` as one long attribute name and finds nothing, so the boxes answer for their own body — see the binding check above, which says the same.
-    const wasQuery = body.querySelectorAll;
-    body.querySelectorAll = (selector) => (String(selector) === 'input[type="checkbox"]' ? boxes : wasQuery.call(body, selector));
     // A click, as the browser makes it: the tick is drawn first and the listener runs with it already on.
     const press = (box) => {
       box.checked = !box.checked;

@@ -39,7 +39,6 @@ function attachMarkdownBlockRanges(body, blocks, source) {
   const src = typeof source === 'string' ? source : '';
   // Reader-injected, non-source elements to skip while walking.
   const isInjected = (el) =>
-    el.classList.contains('document-outline') ||
     el.classList.contains('docs-pager') ||
     el.classList.contains('docs-pager-loading') ||
     el.classList.contains('frontmatter');

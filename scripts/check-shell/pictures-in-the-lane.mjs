@@ -229,11 +229,7 @@ export function run() {
     const paragraph = (picture) => {
       const block = fakeElement('p');
       block.tagName = 'P';
-      block.querySelector = (selector) => {
-        if (selector === ':scope > img') return picture;
-        if (selector === ':scope > .image-lane-corner') return block.children.find((child) => child.className === 'image-lane-corner') || null;
-        return null;
-      };
+      if (picture) block.appendChild(picture);
       return block;
     };
     const picture = (src, dataset = {}) => {
@@ -298,11 +294,7 @@ export function run() {
     picture.getBoundingClientRect = () => ({ top: 0, left: 0, right: 700, bottom: 240, width: 700, height: 240 });
     picture.naturalWidth = 1888;
     picture.naturalHeight = 1940;
-    lane.querySelector = (selector) => {
-      if (selector === ':scope > img') return picture;
-      if (selector === ':scope > .image-lane-corner') return lane.children.find((child) => child.className === 'image-lane-corner') || null;
-      return null;
-    };
+    lane.appendChild(picture);
     booted.bindImageSheet({ querySelectorAll: () => [lane] });
     const corner = lane.children.find((child) => child.className === 'image-lane-corner');
     const button = corner && corner.children.find((child) => child.className === 'image-export-open');
@@ -382,11 +374,7 @@ export function run() {
     picture.setAttribute('src', 'leaf-image://local/imgs/holiday.jpg?leaf-epoch=1');
     picture.naturalWidth = 40;
     picture.naturalHeight = 30;
-    lane.querySelector = (selector) => {
-      if (selector === ':scope > img') return picture;
-      if (selector === ':scope > .image-lane-corner') return lane.children.find((child) => child.className === 'image-lane-corner') || null;
-      return null;
-    };
+    lane.appendChild(picture);
     booted.bindImageSheet({ querySelectorAll: () => [lane] });
     const button = lane.children
       .find((child) => child.className === 'image-lane-corner')

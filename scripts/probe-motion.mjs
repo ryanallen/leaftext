@@ -12,6 +12,7 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readProbeReply } from './probe-motion-output.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // cmd.exe hands the quotes around an argument through rather than stripping them, so anything quoted in the Justfile arrives still wearing them.
@@ -52,15 +53,12 @@ function ask(request) {
   const run = spawnSync(process.execPath, [join(root, 'scripts/mcp-leaftext.mjs'), '--ask', JSON.stringify(request)], {
     encoding: 'utf8',
   });
-  const text = `${run.stdout ?? ''}${run.stderr ?? ''}`.trim();
-  let reply;
-  try {
-    reply = JSON.parse(text);
-  } catch {
-    fail(text || 'the app said nothing');
-  }
-  if (!reply.ok) fail(reply.error);
-  return reply.answer;
+  // The reply is on the output stream and the note saying which copy answered is on the error stream. Joining them made every answer from a copy `just probe-copy` launched unreadable, which is every run this tool exists for.
+  const said = readProbeReply(run.stdout, run.stderr);
+  if (said.unreadable) fail(said.unreadable);
+  if (said.note) console.error(`probe: ${said.note}`);
+  if (said.refusal) fail(said.refusal);
+  return said.answer;
 }
 
 function fail(reason) {

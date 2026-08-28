@@ -685,6 +685,69 @@ export function run() {
     if (flagged.querySelectorAll('[name]').length) throw new Error('an attribute the markup did not declare was found');
   });
 
+  check('an attribute value names only the element carrying that value', () => {
+    const holder = fakeElement('valued-attributes');
+    holder.innerHTML = '<input type="checkbox" data-block-kind="table"><input type="text" data-block-kind="note"><div contenteditable=""></div>';
+    const [checkbox, text, empty] = holder.children;
+    if (holder.querySelector('input[type="checkbox"]') !== checkbox) throw new Error('a quoted attribute value did not find its element');
+    if (holder.querySelector("input[type='text']") !== text) throw new Error('a single-quoted attribute value did not find its element');
+    if (holder.querySelector('input[type=button]') !== null) throw new Error('an attribute value found an element carrying another value');
+    if (holder.querySelector('[data-block-kind="table"]') !== checkbox) throw new Error('a data- attribute value did not find its element');
+    if (holder.querySelector('[data-block-kind="card"]') !== null) throw new Error('a data- attribute value found an element carrying another value');
+    if (holder.querySelector('[contenteditable=""]') !== empty) throw new Error('an empty attribute value did not find the empty attribute');
+    if (holder.querySelector('[type=""]') !== null) throw new Error('an empty attribute value found a nonempty attribute');
+  });
+
+  check('a bare attribute name still answers for every value', () => {
+    const holder = fakeElement('bare-attributes');
+    holder.innerHTML = '<input type="checkbox" data-block-kind="table"><input type="text" data-block-kind="note">';
+    if (holder.querySelectorAll('[type]').length !== 2) throw new Error('a bare attribute name stopped answering for one value');
+    if (holder.querySelectorAll('[data-block-kind]').length !== 2) throw new Error('a bare data- attribute name stopped answering for one value');
+  });
+
+  check('a drawn diagram is refused by the selector for an undrawn diagram', () => {
+    const holder = fakeElement('diagram-state');
+    holder.innerHTML = '<pre class="mermaid" data-processed="true">drawn</pre><pre class="mermaid">waiting</pre>';
+    const found = holder.querySelectorAll('pre.mermaid:not([data-processed="true"])');
+    if (found.length !== 1 || found[0] !== holder.children[1]) throw new Error('the undrawn-diagram selector answered for a diagram already drawn');
+  });
+
+  check('an unsupported attribute operator fails with the selector named', () => {
+    const holder = fakeElement('attribute-operators');
+    holder.innerHTML = '<input type="checkbox">';
+    for (const operator of ['~=', '|=', '^=', '$=', '*=']) {
+      const selector = `[type${operator}"checkbox"]`;
+      let message = '';
+      try {
+        holder.querySelector(selector);
+      } catch (error) {
+        message = String(error && error.message);
+      }
+      if (!message.includes(selector)) throw new Error(`${operator} did not fail with its selector named`);
+    }
+  });
+
+  check('a scoped table query answers only its head row', () => {
+    const holder = fakeElement('scoped-table');
+    holder.innerHTML = '<table><thead><tr class="head"><th>Name</th></tr></thead><tbody><tr class="body"><td>Leaftext</td></tr></tbody></table>';
+    const table = holder.children[0];
+    const found = table.querySelectorAll(':scope > thead > tr');
+    if (found.length !== 1 || !found[0].classList.contains('head')) throw new Error('the scoped table query did not answer with only the head row');
+  });
+
+  check('scope belongs to the element the query was asked of', () => {
+    const holder = fakeElement('scope-owner');
+    holder.innerHTML = '<section><div class="group"><p class="leaf">one</p></div></section>';
+    const section = holder.children[0];
+    const group = section.children[0];
+    const leaf = group.children[0];
+    if (section.querySelector(':scope > .leaf') !== null) throw new Error('a query answered scope as a nested element rather than the element asked');
+    if (group.querySelector(':scope > .leaf') !== leaf) throw new Error('the same markup did not answer against its own scope');
+    if (!group.matches(':scope')) throw new Error('an element did not answer its own scope through matches');
+    if (leaf.closest(':scope') !== leaf) throw new Error('a nearest walk did not keep the element it was asked of as scope');
+    if (leaf.closest(':hover') !== null) throw new Error('an unmodeled pseudo-class started answering');
+  });
+
   // ---- 2o. one node against one whole selector --------------------------------
   //
   // The page has one guard that asks a box what it is rather than being told: whether the pointer resting near an edge is on that box's own scrollbar gutter, which is what raises the bar so it can be grabbed. It asks with the list of boxes that wear one, and that list spends a refusal, a child step, a descendant step and an either-of list — none of which a matcher reading a class, a bare attribute or a tag can answer. Worse than a no: comparing a tag to everything before the first space reads `pre > code` as `pre`, so every code block's holder answers yes to a wearer it is not.

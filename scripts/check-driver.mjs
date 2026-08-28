@@ -16,6 +16,7 @@ import { spawnSync } from 'node:child_process';
 import { basename, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { readProbeReply } from './probe-motion-output.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const script = join(root, 'scripts/capture-screenshot.ps1');
@@ -124,6 +125,53 @@ for (const [what, args] of [
   ['a sampling window that is not a number', ['.lt-bottom-sheet', 'go()', '--for', 'soon']],
 ]) {
   if (dryProbe(args).ok) problems.push(`the motion probe accepted a run with ${what}`);
+}
+
+// The half of the motion probe that lives past its dry run: reading one wrapper result. The reply is on the output stream and the note saying which copy answered is on the error stream, and joining them turned every answer from a copy `just probe-copy` launched into unreadable text — a valid reply with an English sentence after it is not JSON, so the probe stopped before its first frame and printed both pieces as though the app had answered badly. The reader the command really uses is imported rather than driven through the command, because the command needs a copy of the app up and this is the seam that does not.
+const NOTE = "answered by the probe copy launched under leaftext-probe-default, not by the one running as someone — 'just probe-close' hands it back";
+const READER = [
+  [
+    'hand back the app answer when a copy note sits beside a valid reply',
+    () => {
+      const said = readProbeReply('{"ok":true,"answer":{"threw":null}}', NOTE);
+      return said.answer && said.answer.threw === null ? null : `it came back as ${JSON.stringify(said)}`;
+    },
+  ],
+  [
+    'keep that note to hand rather than swallowing it, so a run still says which window it is watching',
+    () => {
+      const said = readProbeReply('{"ok":true,"answer":42}', NOTE);
+      return said.note === NOTE ? null : `the note came back as ${JSON.stringify(said.note)}`;
+    },
+  ],
+  [
+    'refuse output with nothing in it, and name the note in the refusal',
+    () => {
+      const said = readProbeReply('', NOTE);
+      if (!said.unreadable) return `it took nothing as an answer: ${JSON.stringify(said)}`;
+      return said.unreadable.includes(NOTE) ? null : `the refusal does not name the note: ${said.unreadable}`;
+    },
+  ],
+  [
+    'refuse output that is not a reply at all, and name the note in the refusal',
+    () => {
+      const said = readProbeReply('the pipe closed', NOTE);
+      if (!said.unreadable) return `it read a sentence as a reply: ${JSON.stringify(said)}`;
+      return said.unreadable.includes(NOTE) ? null : `the refusal does not name the note: ${said.unreadable}`;
+    },
+  ],
+  [
+    "leave an app refusal a refusal in the app's own words",
+    () => {
+      const said = readProbeReply('{"ok":false,"error":"nothing is listening on that pipe"}', NOTE);
+      if (said.refusal !== 'nothing is listening on that pipe') return `the refusal came back as ${JSON.stringify(said)}`;
+      return said.note === NOTE ? null : `the note came back as ${JSON.stringify(said.note)}`;
+    },
+  ],
+];
+for (const [what, read] of READER) {
+  const wrong = read();
+  if (wrong) problems.push(`the motion probe cannot ${what}: ${wrong}`);
 }
 
 const exe = shell();
@@ -477,5 +525,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways and cancels exactly that box by its whole title in ${DISMISS.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways and cancels exactly that box by its whole title in ${DISMISS.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, keeps the app's reply and the note naming which copy answered apart in ${READER.length} ways, and ${webSaid}`
 );

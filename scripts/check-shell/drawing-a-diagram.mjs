@@ -134,19 +134,23 @@ export function run() {
         delete this[name === 'min-height' ? 'minHeight' : name];
       },
     });
-    const diagram = (source) => ({
-      dataset: {},
-      style: styleStand(),
-      isConnected: true,
-      __mermaidSource: source,
-      querySelectorAll: () => [],
-      getBoundingClientRect: () => ({ top: 0, bottom: 220, width: 400, height: 220 }),
-    });
+    const diagram = (source) => {
+      const node = fakeElement('warmDiagram');
+      node.tagName = 'PRE';
+      node.className = 'mermaid';
+      node.style = styleStand();
+      node.__mermaidSource = source;
+      node.getBoundingClientRect = () => ({ top: 0, bottom: 220, width: 400, height: 220 });
+      return node;
+    };
     // The reading column at 640px, which is where these heights are measured.
-    const bodyOf = (held) => ({
-      getBoundingClientRect: () => ({ left: 0, top: 0, right: 640, bottom: 900, width: 640, height: 900 }),
-      querySelectorAll: (selector) => (String(selector).includes(':not(') ? held.filter((d) => d.dataset.processed !== 'true') : held),
-    });
+    const bodyOf = (held) => {
+      const body = fakeElement('warmDiagramBody');
+      body.className = 'document-body';
+      body.getBoundingClientRect = () => ({ left: 0, top: 0, right: 640, bottom: 900, width: 640, height: 900 });
+      held.forEach((one) => body.appendChild(one));
+      return body;
+    };
     const stand = (held) => {
       const body = bodyOf(held);
       appEl.querySelector = (selector) => (String(selector) === '.document-body' ? body : wasQuery.call(appEl, selector));

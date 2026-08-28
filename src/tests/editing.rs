@@ -325,12 +325,11 @@ fn the_reading_view_has_no_gutter_line_numbers() {
         );
     }
 
-    // What the numbers were nice for survives: the outline still reports how long the document is. Counted rather than stamped onto every block.
+    // What the numbers were nice for survives: the line above the pane's headings still reports how long the document is. Counted rather than stamped onto every block.
     assert!(html.contains("function documentLineCount(body)"));
     assert!(html.contains("const DOCUMENT_LINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
-    assert!(html
-        .contains("summaryCount.textContent = `(${formatCount(documentLineCount(body))} lines)`;"));
-    // Link-only outline entries and footnote definitions are not body lines.
+    assert!(html.contains("${formatCount(openDocumentLineCount())} lines"));
+    // Link-only navigation entries and footnote definitions are not body lines.
     assert!(html.contains("function isNavOutlineItem(el)"));
     assert!(html.contains("target.classList.contains('footnote-definition')"));
     // Headings keep their slug ids, so the TOC and #slug deep links still resolve.

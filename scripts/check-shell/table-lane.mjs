@@ -359,7 +359,15 @@ export function run() {
     const standInTable = () => {
       const table = fakeElement('checkedTable');
       table.tagName = 'TABLE';
-      table.querySelector = (selector) => (String(selector) === ':scope > thead > tr > th' ? fakeElement('checkedTableHeading') : null);
+      const head = fakeElement('checkedTableHead');
+      head.tagName = 'THEAD';
+      const row = fakeElement('checkedTableRow');
+      row.tagName = 'TR';
+      const heading = fakeElement('checkedTableHeading');
+      heading.tagName = 'TH';
+      row.appendChild(heading);
+      head.appendChild(row);
+      table.appendChild(head);
       table.cloneNode = () => fakeElement('checkedTableCopy');
       return table;
     };
@@ -418,11 +426,12 @@ export function run() {
     const handlers = booted.document.getElementById('app').listeners.get('wheel') || [];
     const handler = handlers.at(-1);
     if (!handler || handlers.length < 2) throw new Error('the table or Mermaid wheel listener was not bound');
-    const table = { scrollLeft: 20, scrollWidth: 400, clientWidth: 100 };
-    const lane = { querySelector: (selector) => (selector === ':scope > table' ? table : null) };
-    const target = {
-      closest: (selector) => (selector === '.table-lane' ? lane : null),
-    };
+    const table = Object.assign(fakeElement('wheelTable'), { tagName: 'TABLE', scrollLeft: 20, scrollWidth: 400, clientWidth: 100 });
+    const lane = fakeElement('wheelLane');
+    lane.className = 'table-lane';
+    lane.appendChild(table);
+    const target = fakeElement('wheelTarget');
+    lane.appendChild(target);
     const wheel = (changes = {}) => {
       let prevented = false;
       return {
@@ -466,14 +475,14 @@ export function run() {
     table.scrollWidth = 400;
     table.scrollLeft = 20;
     const diagram = fakeElement('diagram');
-    diagram.dataset = {};
-    diagram.querySelector = () => fakeElement('svg');
-    const diagramTarget = {
-      closest: (selector) => {
-        if (selector === 'pre.mermaid[data-processed="true"]') return diagram;
-        return selector === '.table-lane' ? lane : null;
-      },
-    };
+    diagram.tagName = 'PRE';
+    diagram.className = 'mermaid';
+    diagram.dataset.processed = 'true';
+    const svg = fakeElement('diagramSvg');
+    svg.tagName = 'SVG';
+    diagram.appendChild(svg);
+    lane.appendChild(diagram);
+    const diagramTarget = diagram;
     const mermaid = wheel({ target: diagramTarget, deltaY: -45 });
     handlers.forEach((bound) => bound(mermaid));
     if (table.scrollLeft !== 20 || !mermaid.prevented() || diagram.__mermaidView?.zoom <= 1) {

@@ -3763,6 +3763,66 @@ body.library-resizing {
 .library-results {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
 }
+/* The open document's headings, in the same box the file list and the search results use — one of the three shows at a time. */
+.library-outline {
+  padding: 0 var(--lt-space-6) var(--lt-space-12);
+}
+/* Not a row and not a button: one quiet line naming the list under it, with how long the document is at its right. */
+.library-outline-note {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-6);
+  padding: var(--lt-space-4) var(--lt-space-6) var(--lt-space-6);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10);
+}
+.library-outline-count {
+  flex: none;
+}
+/* A heading, drawn as the file rows beside it are drawn — one full-width target, stepped in by how deep the section sits. */
+.library-outline-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  width: 100%;
+  text-align: left;
+  padding: var(--lt-space-4) var(--lt-space-6);
+  padding-left: calc(var(--lt-space-6) + var(--library-outline-depth, 0) * var(--lt-space-12));
+  margin-bottom: var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.library-outline-row:hover {
+  background: var(--lt-wash-hover);
+}
+/* The section being read, with the treatment the file list gives the open file: it outranks hover, so it holds while the pointer is somewhere else. */
+.library-outline-row.is-selected,
+.library-outline-row.is-selected:hover {
+  background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
+}
+/* How far in each level sits. Measured from the shallowest heading the document has, so a note written entirely in `##` starts flush. */
+.library-outline-depth-0 {
+  --library-outline-depth: 0;
+}
+.library-outline-depth-1 {
+  --library-outline-depth: 1;
+}
+.library-outline-depth-2 {
+  --library-outline-depth: 2;
+}
+.library-outline-depth-3 {
+  --library-outline-depth: 3;
+}
+.library-outline-depth-4 {
+  --library-outline-depth: 4;
+}
+.library-outline-depth-5 {
+  --library-outline-depth: 5;
+}
 /* Said once to a reader who has never made a vault, at the top of the list and inside it — so no band moves and nothing is covered. A box rather than a bubble: this has to stand until a folder has been picked, and a bubble is gone the moment a pointer reaches what it points at. */
 .library-intro {
   margin: var(--lt-space-6) 0 var(--lt-space-12);
@@ -5366,7 +5426,7 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body strong {
   font-weight: var(--lt-weight-600);
 }
-/* Outline: a collapsed <details> built from the headings, dropped in under the title (see buildDocumentOutline). Closed by default. */
+/* Outline: a collapsed <details> built from the headings, dropped in under the title. The published sites' — `site/outline.js` builds it, and this stylesheet is what they are served. The app draws its own headings in the library pane instead. */
 .document-body .document-outline {
   margin: 1.5em 0;
   border: var(--lt-stroke-1) solid var(--lt-border);
@@ -9992,7 +10052,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js</span></header>
-<div class="stage"><div class="library-pane" style="position:static;width:240px;height:132px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div></div></div>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:236px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">131 lines</span></div><button type="button" class="library-outline-row library-outline-depth-0 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-1"><span class="library-file-label">One nested under it</span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Folder swap stage</h3><code class="built">.library-tree-stage</code><span class="built">library.js</span></header>
@@ -10027,8 +10087,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><aside class="document-minimap" style="height:120px"><div class="document-minimap-track"><div class="document-minimap-viewport"></div></div></aside></div>
 </section>
 <section class="part">
-<header><h3>Outline</h3><code class="built">.document-outline</code><span class="built">decorate.js, reading-blocks.js</span></header>
-<div class="stage"><div class="document-body"><div class="document-outline"><div class="document-outline-title">On this page</div><a class="document-outline-link" href="#">A heading</a></div></div></div>
+<header><h3>Outline</h3><code class="built">.document-outline</code><span class="built">site/outline.js, on the published sites</span></header>
+<div class="stage"><div class="document-body"><details class="document-outline" open><summary class="document-outline-summary"><span>Outline</span><span class="document-outline-count">(131 lines)</span></summary><ul><li><a class="document-outline-link" href="#">A heading</a></li></ul></details></div></div>
 </section>
 <section class="part">
 <header><h3>Pager</h3><code class="built">.docs-pager</code><span class="built">library.js, reading-blocks.js</span></header>

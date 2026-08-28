@@ -271,6 +271,8 @@ function revealSelectedInLibrary() {
 // Mark `path` the library's current file and ask the next render to reveal it. null (home screen) just clears the highlight, leaving the browse position.
 function followFileInLibrary(path, focus, forceRefresh) {
   librarySelectedPath = path || null;
+  // A document opened is the pane following it into its own headings; the home screen has none to follow into.
+  libraryOutlineOpen = !!path;
   libraryRevealPending = !!path;
   // Going to a file can move the pane's root, and that is true in either view — the graph's scope is the vault, so it follows the document too.
   if (libraryRevealPending) revealSelectedInLibrary();
@@ -309,6 +311,100 @@ function renderProject(entries) {
     }
   }
   return `<div class="library-project">${rows.join('')}</div>`;
+}
+// ---- the open document's headings, in the pane's one box --------------------
+
+// Whether the pane is following the open document rather than the folder it sits in. Set when a document opens, cleared by the outline's own back row — the one way back to the files.
+let libraryOutlineOpen = false;
+// The frame the outline is waiting on. Building the rows and measuring them is layout: 5ms at sixty headings and 329ms at the app's own worst case, which is not a cost a document open may carry.
+let libraryOutlineFrame = 0;
+// Whether the outline is what the box should be holding at all. A document with fewer than two headings has none, so the files stay.
+function libraryOutlineShowing() {
+  return libraryOutlineOpen && readDocumentOutlineRows().length > 0;
+}
+// Which of the pane's three lists is showing, decided in one place: a live search query wins, then the open document's headings, then the folder's files. A `hidden` written per list independently is how two of them end up on screen at once.
+function renderLibraryLists() {
+  const searching = !!librarySearchQuery;
+  const outlining = !searching && libraryOutlineShowing();
+  librarySearchResults.hidden = !searching;
+  libraryOutline.hidden = !outlining;
+  libraryTree.hidden = searching || outlining;
+}
+// Draw the headings on the frame after the document has painted, never inside its render.
+function scheduleLibraryOutline() {
+  if (libraryOutlineFrame) return;
+  libraryOutlineFrame = window.requestAnimationFrame(() => {
+    libraryOutlineFrame = 0;
+    renderLibraryOutline();
+  });
+}
+// The folder the back row returns to, by the name the reader last saw at the end of the trail.
+function libraryOutlineFolderName() {
+  const here = libraryChain[libraryChain.length - 1];
+  return (here && here.name) || libraryRootLabel();
+}
+// The row above the headings: the pane's own back row, pointing at the file list rather than at a folder.
+function outlineBackRowHtml() {
+  const name = libraryOutlineFolderName();
+  const label = `Back to ${name}`;
+  return `<button type="button" class="library-nav-folder library-nav-up" data-close-outline="1" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}">${BACK_ARROW_SVG}<span class="library-file-label">${escapeText(name)}</span></button>`;
+}
+// One heading. Its step in is measured from the shallowest heading this document has rather than from `h1`, so a note whose sections are all `##` is not drawn indented under nothing.
+function outlineRowHtml(row, shallowest, current) {
+  const depth = Math.min(Math.max(row.level - shallowest, 0), 5);
+  const selected = current ? ' is-selected' : '';
+  const aria = current ? ' aria-current="true"' : '';
+  return `<button type="button" class="library-outline-row library-outline-depth-${depth}${selected}"${aria} data-outline-section="${escapeAttr(row.id)}" title="${escapeAttr(row.text)}"><span class="library-file-label">${escapeText(row.text)}</span></button>`;
+}
+function renderLibraryOutline() {
+  const rows = readDocumentOutlineRows();
+  if (!libraryOutlineShowing()) {
+    libraryOutline.innerHTML = '';
+    renderLibraryLists();
+    return;
+  }
+  const shallowest = rows.reduce((least, row) => Math.min(least, row.level), rows[0].level);
+  const current = readerSectionAboveTopEdge();
+  // Not a row and not a button: one quiet line naming what the list below it is, carrying the only statement in the app of how long a document is.
+  const note = `<div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">${formatCount(openDocumentLineCount())} lines</span></div>`;
+  libraryOutline.innerHTML = `<div class="library-project">${outlineBackRowHtml()}${note}${rows.map((row) => outlineRowHtml(row, shallowest, row.id === current)).join('')}</div>`;
+  bindLibraryOutlineRows();
+  renderLibraryLists();
+}
+function bindLibraryOutlineRows() {
+  const back = libraryOutline.querySelector('[data-close-outline]');
+  if (back) {
+    bindLibraryRowPress(back, () => {
+      libraryOutlineOpen = false;
+      renderLibraryLists();
+    });
+  }
+  for (const button of libraryOutline.querySelectorAll('[data-outline-section]')) {
+    // The jump the document's own heading links already make, so a section is reached one way and the host learns no new command.
+    bindLibraryRowPress(button, () => {
+      send({ command: 'openLink', href: '#' + encodeURIComponent(button.dataset.outlineSection), scroll_anchor: currentScrollAnchor() });
+    });
+  }
+}
+// The folder the back row names arrives from the host after the document does, so the row is drawn before there is a folder to name. Only its label is put right: rebuilding the rows for it would pay the whole list's layout a second time.
+function refreshLibraryOutlineBackRow() {
+  const back = libraryOutline.querySelector('[data-close-outline]');
+  if (!back) return;
+  const name = libraryOutlineFolderName();
+  back.setAttribute('title', `Back to ${name}`);
+  back.setAttribute('aria-label', `Back to ${name}`);
+  const label = back.querySelector('.library-file-label');
+  if (label) label.textContent = name;
+}
+// Move the mark to the row for the section being read. A class moved rather than the list redrawn: the rows only change when the document does.
+function lightLibraryOutlineSection(section) {
+  if (libraryOutline.hidden) return;
+  for (const row of libraryOutline.querySelectorAll('.library-outline-row')) {
+    const mine = row.dataset.outlineSection === section;
+    row.classList.toggle('is-selected', mine);
+    if (mine) row.setAttribute('aria-current', 'true');
+    else row.removeAttribute('aria-current');
+  }
 }
 // A browse path as somewhere on disk. Inside a vault the top level is browsed as '' — a stand-in the host resolves — but paste and drop need a real folder, so that resolves to the vault's own root. Outside a vault the top is the list of drive roots, which is not a folder, and stays empty.
 function realFolderPath(browsePath) {
@@ -1421,6 +1517,8 @@ function renderLibrary() {
   renderLibraryVaultSwitch();
   renderLibrarySearchability();
   renderLibraryCrumbs(libraryChain);
+  renderLibraryLists();
+  refreshLibraryOutlineBackRow();
   if (libraryError) {
     return setLibraryTreeHtml(`<p class="library-empty">${escapeText(libraryError.message || '')}</p>`);
   }

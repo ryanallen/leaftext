@@ -96,23 +96,41 @@ function compoundPieces(one) {
   return pieces;
 }
 
-/** Whether one node answers one piece of a compound. An attribute is asked for by name alone — a `data-` name of `dataset`, where both the markup walker and a check setting one by hand write it, and anything else of the element's own attributes. A tag is the whole piece, since everything that is not one has already been split off: comparing a tag to everything before the first space called a `pre` a `pre > code`. */
-function matchesPiece(node, piece) {
+/** The name and optional value inside one attribute bracket, with either quote style taken off the value. */
+function attributeParts(piece, selector) {
+  const inside = piece.slice(1, piece.endsWith(']') ? -1 : undefined).trim();
+  const split = inside.indexOf('=');
+  if (split === -1) return { name: inside, value: null };
+  const before = inside.slice(0, split).trimEnd();
+  if ('~|^$*'.includes(before.slice(-1))) throw new Error(`unsupported selector operator in "${selector}"`);
+  const name = before.trim();
+  let value = inside.slice(split + 1).trim();
+  if (value.length >= 2 && ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))) {
+    value = value.slice(1, -1);
+  }
+  return { name, value };
+}
+
+/** Whether one node answers one piece of a compound. An attribute is asked for by name alone or compared with the value it carries. A tag is the whole piece, since everything that is not one has already been split off: comparing a tag to everything before the first space called a `pre` a `pre > code`. */
+function matchesPiece(node, piece, selector, scope) {
   if (piece.startsWith('.')) return !!(node.classList && node.classList.contains(piece.slice(1)));
   if (piece.startsWith('[')) {
-    const name = piece.slice(1, piece.endsWith(']') ? -1 : undefined).trim();
-    if (!name.startsWith('data-')) return !!(node.hasAttribute && node.hasAttribute(name));
+    const { name, value } = attributeParts(piece, selector);
+    if (!name.startsWith('data-')) {
+      if (value !== null) return !!node.getAttribute && node.getAttribute(name) === value;
+      return !!(node.hasAttribute && node.hasAttribute(name));
+    }
     const key = name.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-    return !!node.dataset && node.dataset[key] !== undefined;
+    if (!node.dataset || node.dataset[key] === undefined) return false;
+    return value === null || String(node.dataset[key]) === value;
   }
   if (piece.startsWith(':')) {
     const open = piece.indexOf('(');
-    // A pseudo-class with no brackets is a state nothing here models, and answering yes to one is the single answer this matcher exists to stop.
-    if (open === -1) return false;
+    if (open === -1) return piece === ':scope' && node === scope;
     const inside = selectorParts(piece.slice(open + 1, piece.endsWith(')') ? -1 : undefined));
     const name = piece.slice(1, open);
-    if (name === 'not') return inside.every((want) => !matchesSelector(node, want));
-    if (name === 'is' || name === 'where') return inside.some((want) => matchesSelector(node, want));
+    if (name === 'not') return inside.every((want) => !matchesSelector(node, want, scope));
+    if (name === 'is' || name === 'where') return inside.some((want) => matchesSelector(node, want, scope));
     return false;
   }
   if (piece === '*') return true;
@@ -120,9 +138,9 @@ function matchesPiece(node, piece) {
 }
 
 /** Whether one node answers one whole compound: every piece of it, on the same node. */
-function matchesCompound(node, one) {
+function matchesCompound(node, one, selector, scope) {
   const pieces = compoundPieces(one);
-  return pieces.length > 0 && pieces.every((piece) => matchesPiece(node, piece));
+  return pieces.length > 0 && pieces.every((piece) => matchesPiece(node, piece, selector, scope));
 }
 
 /** One selector's steps, each with the combinator leading into it — a space for a descendant, `>` for a child, and nothing on the first. Split at the selector's own level, so a space inside `:is(...)` or a bracket names no step. */
@@ -150,35 +168,35 @@ function selectorSteps(one) {
 }
 
 /** Whether the holders above a node answer the steps before it: a child step asks the one holder, a descendant step asks every holder up to the top. */
-function matchesAbove(node, steps, combinator) {
+function matchesAbove(node, steps, combinator, selector, scope) {
   if (!steps.length) return true;
   const step = steps[steps.length - 1];
   const rest = steps.slice(0, -1);
   if (combinator === '>') {
     const holder = node.parentElement;
-    return !!holder && matchesCompound(holder, step.compound) && matchesAbove(holder, rest, step.combinator);
+    return !!holder && matchesCompound(holder, step.compound, selector, scope) && matchesAbove(holder, rest, step.combinator, selector, scope);
   }
   for (let holder = node.parentElement; holder; holder = holder.parentElement) {
-    if (matchesCompound(holder, step.compound) && matchesAbove(holder, rest, step.combinator)) return true;
+    if (matchesCompound(holder, step.compound, selector, scope) && matchesAbove(holder, rest, step.combinator, selector, scope)) return true;
   }
   return false;
 }
 
 /** Whether one node answers one selector, the holders above it included. Asked walking down a subtree, walking up from a node, and by an element about itself, so a query, a `closest` and a `matches` cannot disagree about what a selector means. */
-function matchesSelector(node, one) {
+function matchesSelector(node, one, scope) {
   const selector = String(one).trim().replace(/\s+/g, ' ');
   if (!selector) return false;
   const steps = selectorSteps(selector);
   const last = steps[steps.length - 1];
-  if (!last || !matchesCompound(node, last.compound)) return false;
-  return matchesAbove(node, steps.slice(0, -1), last.combinator);
+  if (!last || !matchesCompound(node, last.compound, selector, scope)) return false;
+  return matchesAbove(node, steps.slice(0, -1), last.combinator, selector, scope);
 }
 
 /** What an element's own subtree answers a query with, in document order: a comma list of tags, classes and attributes. One matcher behind every stand-in element, so nothing is ever told it is holding something it has not got — a guard asking a line whether it carries a picture reads an answer of "yes, always" as itself having fired. */
 export function matchingDescendants(el, selector) {
   const wants = selectorParts(selector);
   const walk = (from) => (from.children || []).flatMap((child) => [child, ...walk(child)]);
-  return walk(el).filter((child) => wants.some((one) => matchesSelector(child, one)));
+  return walk(el).filter((child) => wants.some((one) => matchesSelector(child, one, el)));
 }
 
 /** What an element says: everything written inside it joined in the order it was written, each child asked the same question in turn. A guard asking a line whether it says anything reads an answer of "no, always" as itself having fired, so a panel the page really drew with a sentence in it has to come back with that sentence. */
@@ -446,12 +464,12 @@ export function fakeElement(id = '') {
     closest: (selector) => {
       const wants = selectorParts(selector);
       for (let node = element; node; node = node.parentElement) {
-        if (wants.some((one) => matchesSelector(node, one))) return node;
+        if (wants.some((one) => matchesSelector(node, one, element))) return node;
       }
       return null;
     },
     // The one guard in the front end that asks a box what it is rather than being told: whether the pointer near an edge is on that box's own scrollbar gutter. An answer of no for ever leaves that branch unreachable.
-    matches: (selector) => selectorParts(selector).some((one) => matchesSelector(element, one)),
+    matches: (selector) => selectorParts(selector).some((one) => matchesSelector(element, one, element)),
     contains: () => false,
     // Its own children and nothing else, so an element holding nothing says so.
     querySelector: (selector) => matchingDescendants(element, selector)[0] || null,

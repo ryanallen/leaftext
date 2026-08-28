@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import {
   check,
+  fakeElement,
   record,
   source,
 } from './shared.mjs';
@@ -207,17 +208,26 @@ export function run() {
       querySelector: () => (checked === undefined ? null : { checked }),
     });
     const row = (...cells) => {
-      const tr = { children: cells };
+      const tr = { tagName: 'TR', children: cells };
       cells.forEach((one) => {
         one.parentElement = tr;
       });
       return tr;
     };
-    const table = (head, ...body) => ({
-      dataset: { blockKind: 'table' },
-      querySelector: (selector) => (selector === ':scope > thead > tr' ? head : null),
-      querySelectorAll: (selector) => (selector === ':scope > tbody > tr' ? body : []),
-    });
+    const table = (head, ...body) => {
+      const drawn = fakeElement('cell-change-table');
+      drawn.tagName = 'TABLE';
+      drawn.dataset.blockKind = 'table';
+      const thead = fakeElement('cell-change-head');
+      thead.tagName = 'THEAD';
+      thead.appendChild(head);
+      const tbody = fakeElement('cell-change-body');
+      tbody.tagName = 'TBODY';
+      body.forEach((one) => tbody.appendChild(one));
+      drawn.appendChild(thead);
+      drawn.appendChild(tbody);
+      return drawn;
+    };
     const same = (got, want) => {
       if (JSON.stringify(got) !== JSON.stringify(want)) {
         throw new Error(`got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`);

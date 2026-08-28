@@ -276,7 +276,7 @@
 .document-body strong {
   font-weight: var(--lt-weight-600);
 }
-/* Outline: a collapsed <details> built from the headings, dropped in under the title (see buildDocumentOutline). Closed by default. */
+/* Outline: a collapsed <details> built from the headings, dropped in under the title. The published sites' — `site/outline.js` builds it, and this stylesheet is what they are served. The app draws its own headings in the library pane instead. */
 .document-body .document-outline {
   margin: 1.5em 0;
   border: var(--lt-stroke-1) solid var(--lt-border);

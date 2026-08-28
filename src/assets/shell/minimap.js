@@ -445,6 +445,26 @@ function refreshReaderScrollAnchor() {
     return;
   }
   readerScrollAnchor = captureReaderScrollAnchor();
+  announceReaderSection();
+}
+// The heading the reader's top edge is under, as its id — null above the first one, and null in a document with no headings. Published rather than worked out: it is the answer the binary search above already reached on its way to placing the reader, so anything that wants to show where somebody is reading costs nothing per scroll.
+function readerSectionAboveTopEdge() {
+  return readerScrollAnchor ? readerScrollAnchor.section : null;
+}
+// What was last said. Undefined until the first answer, so a document opening above its own first heading still says its null once.
+let readerSectionSaid;
+// Say which section the reader is in, where it has changed since the last time. A scroll within one section says nothing, which is most scrolls.
+function announceReaderSection() {
+  const section = readerSectionAboveTopEdge();
+  if (section === readerSectionSaid) {
+    return;
+  }
+  readerSectionSaid = section;
+  lightLibraryOutlineSection(section);
+}
+// Forget what was said, so the next announcement lands however the anchor compares. A fresh document is the case: its first section can be the same id the last document's was.
+function forgetReaderSection() {
+  readerSectionSaid = undefined;
 }
 function captureReaderScrollAnchor() {
   const source = app.querySelector('.document-body');

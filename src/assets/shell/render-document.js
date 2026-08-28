@@ -694,7 +694,7 @@ function renderState() {
     bindImageSheet();
     decorateBlockquoteLines();
     markLinksThatGoNowhere();
-    buildDocumentOutline();
+    publishDocumentOutline();
     decorateCodeBlocks();
     bindBorrowedTitleRename();
     // Only on arrival: a re-render after a commit or a live reload would growl again about a note the reader was already told about.

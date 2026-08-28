@@ -31,6 +31,17 @@ function leafExportBackground() {
   return (style.getPropertyValue('--lt-surface') || '').trim() || '#ffffff';
 }
 
+// ---- the sections of the open document (decorate.js, library.js) ----------
+
+// The open document's headings under its title, as plain rows: `{ level, text, id }` in document order, and empty for a document that is a title and no more. Written by the heading walk in decorate.js as a document renders, read by whatever draws them — which is two fragments, so neither one owns it.
+let documentOutlineRows = [];
+function setDocumentOutlineRows(rows) {
+  documentOutlineRows = Array.isArray(rows) ? rows : [];
+}
+function readDocumentOutlineRows() {
+  return documentOutlineRows;
+}
+
 // ---- what the pane's trail calls its root (library.js, speed-reader.js) ----
 
 // The name the host gives the whole root. A published site sends its own, because a site is one folder and that folder has a name; the desktop sends none, where the leftmost crumb is the vault you are standing in or the word for the whole library. Written by the folder payload in library.js, read by libraryRootLabel() in speed-reader.js.

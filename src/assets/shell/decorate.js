@@ -1209,81 +1209,47 @@ function isNavOutlineItem(el) {
   el.querySelectorAll('a').forEach((a) => { linkText += a.textContent || ''; });
   return text === linkText.replace(/\s+/g, '');
 }
+// How long the open document is, in body blocks, for whatever is showing it. Zero where there is no document.
+function openDocumentLineCount() {
+  const body = app ? app.querySelector('.document-body') : null;
+  return body ? documentLineCount(body) : 0;
+}
 // How long the document is, in body blocks. Counted rather than stamped — the total is all anyone reads, so numbering 50,000 blocks to reach it buys nothing.
 function documentLineCount(body) {
   let lines = 0;
   body.querySelectorAll(DOCUMENT_LINE_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
-    // The generated outline is navigation, not body content.
-    if (target.closest('.document-outline')) return;
     if (isNavOutlineItem(target)) return;
     lines += 1;
   });
   return lines;
 }
-// Build a collapsed "Outline" from the headings and insert it under the title (mirrors site/outline.js). A DOM pass over the <h1>–<h6>, nesting entries as a bulleted list in a closed <details>. Run before bindDocumentLinks.
-function buildDocumentOutline() {
-  const body = app.querySelector('.document-body');
-  if (!body) return;
-  const existing = body.querySelector(':scope > .document-outline');
-  if (existing) existing.remove();
-  const headings = Array.from(body.querySelectorAll('h1, h2, h3, h4, h5, h6')).filter(
-    (h) => !h.closest('.document-outline') && !h.closest('.footnotes') && !h.closest('.tei-front')
+// The headings an outline is made of, in document order and the title first: everything the document says minus the footnotes and the TEI front matter, neither of which is a section a reader jumps to.
+function documentOutlineHeadings(body) {
+  if (!body) return [];
+  return Array.from(body.querySelectorAll('h1, h2, h3, h4, h5, h6')).filter(
+    (h) => !h.closest('.footnotes') && !h.closest('.tei-front')
   );
-  if (headings.length < 2) return;
-  const title = headings[0];
+}
+// What a heading says, without the footnote markers, which are a number in the middle of a jump list.
+function readOutlineHeadingText(h) {
+  const clone = h.cloneNode(true);
+  clone.querySelectorAll('.footnote-ref').forEach((n) => n.remove());
+  return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+}
+// The document's sections as plain rows — `{ level, text, id }` under the title, in document order — and nothing at all for a document that is a title and no more. Apart from the drawing because more than one thing draws them; it also stamps `section-N` on any heading with no id, so the anchors exist whoever draws.
+function collectDocumentOutlineRows(body) {
+  const headings = documentOutlineHeadings(body);
+  if (headings.length < 2) return [];
   const rest = headings.slice(1);
   rest.forEach((h, i) => { if (!h.id) h.id = 'section-' + (i + 1); });
-  const details = document.createElement('details');
-  details.className = 'document-outline';
-  const summary = document.createElement('summary');
-  summary.className = 'document-outline-summary';
-  const summaryLabel = document.createElement('span');
-  summaryLabel.textContent = 'Outline';
-  summary.appendChild(summaryLabel);
-  // Counted before the outline is inserted, so the outline never counts itself.
-  const summaryCount = document.createElement('span');
-  summaryCount.className = 'document-outline-count';
-  summaryCount.textContent = `(${formatCount(documentLineCount(body))} lines)`;
-  summary.appendChild(summaryCount);
-  details.appendChild(summary);
-  // The entry list can be enormous (one <li> per heading), so build it only when the outline first opens. bindDocumentLinks is delegated, so entry jumps wire up with no rebinding.
-  details.addEventListener('toggle', () => {
-    if (details.open) populateDocumentOutline(details, rest);
-  });
-  title.insertAdjacentElement('afterend', details);
+  return rest.map((h) => ({ level: Number(h.tagName.slice(1)) || 1, text: readOutlineHeadingText(h), id: h.id }));
 }
-function populateDocumentOutline(details, rest) {
-  if (details.dataset.outlinePopulated === 'true') return;
-  details.dataset.outlinePopulated = 'true';
-  const readHeadingText = (h) => {
-    const clone = h.cloneNode(true);
-    clone.querySelectorAll('.footnote-ref').forEach((n) => n.remove());
-    return (clone.textContent || '').replace(/\s+/g, ' ').trim();
-  };
-  const rootList = document.createElement('ul');
-  const stack = [{ level: 0, list: rootList }];
-  rest.forEach((h) => {
-    const level = Number(h.tagName.slice(1)) || 1;
-    while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
-    const parent = stack[stack.length - 1];
-    let container = parent.list;
-    if (parent.level !== 0) {
-      const lastLi = parent.list.lastElementChild;
-      let sub = lastLi ? lastLi.querySelector(':scope > ul') : null;
-      if (!sub) { sub = document.createElement('ul'); (lastLi || parent.list).appendChild(sub); }
-      container = sub;
-    }
-    const li = document.createElement('li');
-    const link = document.createElement('a');
-    link.className = 'document-outline-link';
-    link.href = '#' + encodeURIComponent(h.id);
-    link.textContent = readHeadingText(h) || h.id;
-    li.appendChild(link);
-    container.appendChild(li);
-    stack.push({ level, list: container });
-  });
-  details.appendChild(rootList);
+// Read the open document's sections and hand them to whatever draws them, which is the library pane. Run before bindDocumentLinks, and on every render — a document with none clears what the last one left.
+function publishDocumentOutline() {
+  const body = app.querySelector('.document-body');
+  setDocumentOutlineRows(body ? collectDocumentOutlineRows(body) : []);
+  scheduleLibraryOutline();
 }
 // The host serves local images over leaf-image://, which arrives as http://leaf-image.local/ where custom protocols are restricted.
 const LOCAL_IMAGE_SRC_PREFIXES = ['leaf-image://', 'http://leaf-image.', 'https://leaf-image.'];
