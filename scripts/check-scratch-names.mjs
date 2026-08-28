@@ -210,7 +210,15 @@ export function clockAlone(source, text) {
   return values.every((value) => CLOCK.test(resolved(value, text)));
 }
 
+/// The head of a helper in either language: a Rust function taking one string, and a JavaScript one taking one argument.
+const HELPER_HEAD = {
+  rust: /\bfn\s+(\w+)\s*\(\s*(\w+)\s*:\s*&str\s*\)/g,
+  javascript: /\bfunction\s+(\w+)\s*\(\s*(\w+)\s*\)\s*\{/g,
+};
+
 /// Every function that hands out a scratch folder under a word: it takes one string and its body builds a scratch path, or passes the word on to one that does. Found in two passes, because a per-subject helper is one line over the shared one and the shared one has to be known first.
+///
+/// Both languages go in one set, because the folder two of them collide in does not know which made it: the Rust `scratch_dir` builds `leaf-{label}-{pid}-{n}`, whose head is empty, so a JavaScript helper spelling `` `leaf-${word}-${process.pid}` `` builds the same folder for the same word and a list per language could not see it.
 ///
 /// A wrapper that passes its own word through unchanged is not a namespace of its own — its calls belong to the helper it wraps, or `filtered_vault("empty")` and `corpus_dir("empty")` would read as two words and name one folder.
 export function helpers(files) {
@@ -220,12 +228,14 @@ export function helpers(files) {
   while (grew) {
     grew = false;
     for (const { path, text } of files) {
-      for (const at of text.matchAll(/\bfn\s+(\w+)\s*\(\s*(\w+)\s*:\s*&str\s*\)/g)) {
+      const javascript = /\.m[jt]s$/.test(path);
+      for (const at of text.matchAll(javascript ? HELPER_HEAD.javascript : HELPER_HEAD.rust)) {
         const [, name, param] = at;
         if (found.has(name)) continue;
-        const body = functionBody(text, name);
+        const body = bracedBody(text, at.index);
         if (body === null) continue;
-        const direct = scratchPaths(body).some(({ source }) => unique(source));
+        // A JavaScript helper claims exactly the bodies `pathBuilders` steps around — this run's own id in the folder itself — so a one-argument function is read by one rule or the other and never both.
+        const direct = scratchPaths(body).some(({ source }) => (javascript ? OWN_RUN.test(source) : unique(source)));
         const passes = [...found.keys()].find((known) => new RegExp(`\\b${known}\\s*\\(`).test(body));
         if (!direct && !passes) continue;
         // A word handed straight on lands in the wrapped helper's namespace; a word built into a new prefix starts one.
@@ -244,9 +254,16 @@ export function helpers(files) {
   return found;
 }
 
+/// The two spellings of a folder's head: Rust's `"leaf-corpus-{tag}"` and JavaScript's `` `leaf-site-boot-${process.pid}` ``.
+const HEAD = [
+  /"(leaf-)?([a-z0-9]+(?:-[a-z0-9]+)*?)?-?\{/,
+  /`(leaf-)?([a-z0-9]+(?:-[a-z0-9]+)*?)?-?\$\{/,
+];
+
 /// The fixed head of the folder a helper builds — `corpus` out of `leaf-corpus-{tag}`. Null where the body names no literal at all, which is a helper this check cannot hold and says so.
 export function prefixOf(body) {
-  const literal = /"(leaf-)?([a-z0-9]+(?:-[a-z0-9]+)*?)?-?\{/.exec(body);
+  // Whichever spelling comes first, so a body carrying both is read as it is written rather than by which pattern was tried first.
+  const literal = HEAD.map((head) => head.exec(body)).filter(Boolean).sort((a, b) => a.index - b.index)[0];
   if (!literal) return null;
   if (literal[2]) return literal[2];
   // `leaf-{label}` is a head of nothing on purpose: the word is the whole name. No head at all is a helper whose words cannot be told apart.
@@ -261,10 +278,13 @@ export function words(files, found) {
       // A wrapper's word is spelled by the helper it hands it to, or the two ways of asking for one folder would read as two.
       const owner = helper.under ?? name;
       const prefix = found.get(owner)?.prefix;
-      for (const at of text.matchAll(new RegExp(`\\b${name}\\s*\\(\\s*"([^"]*)"`, 'g'))) {
+      // The three ways a word is written down: Rust's double quote, and JavaScript's single quote or backtick. A backtick carrying a value is not a word at all, so it is left to the caller's own name to be unique.
+      const written = new RegExp(`\\b${name}\\s*\\(\\s*(?:"([^"]*)"|'([^']*)'|\`([^\`$]*)\`)`, 'g');
+      for (const at of text.matchAll(written)) {
+        const word = at[1] ?? at[2] ?? at[3];
         out.push({
           helper: owner,
-          word: prefix ? `${prefix}-${at[1]}` : at[1],
+          word: prefix ? `${prefix}-${word}` : word,
           path,
           line: text.slice(0, at.index).split('\n').length,
         });
@@ -343,6 +363,16 @@ const HELPERS = [
   'fn corpus(tag: &str) -> PathBuf { shared(&format!("corpus-{tag}")) }',
   'fn clouds(tag: &str) -> PathBuf { shared(&format!("clouds-{tag}")) }',
   'fn filtered(tag: &str) -> PathBuf { corpus(tag) }',
+].join('\n');
+
+/// Made-up scratch helpers written in JavaScript, in the shape the site-boot check has: one word per test, and this run's own id in the folder itself, which is what leaves the word the only thing telling two folders apart.
+const JS_HELPERS = [
+  'function boot(word) {',
+  '  return join(tmpdir(), `leaf-boot-${process.pid}-${word}`);',
+  '}',
+  'function docs(word) {',
+  '  return join(tmpdir(), `leaf-docs-${process.pid}-${word}`);',
+  '}',
 ].join('\n');
 
 /// A made-up path builder in the shape the gates have: one argument, and the interpolation that hides a caller's fixed name.
@@ -424,6 +454,18 @@ const CASES = [
     [{ path: 'a.mjs', text: BUILDER }, { path: 'b.mjs', text: "const p = record('aaaa-1111');" }], [], 1],
   ['a builder naming this run itself is outside this rule, because its argument is a word rather than the name',
     [{ path: 'a.mjs', text: "function per(word) {\n  return join(tmpdir(), `leaf-per-${process.pid}-${word}`);\n}\nconst p = per('missing-one');" }], [], 0],
+
+  // Which test, in the other language: the word rule reads a JavaScript helper the way it reads a Rust one, and both sit in one set.
+  ['two calls to one JavaScript helper carrying one word are refused',
+    [{ path: 'a.mjs', text: `${JS_HELPERS}\nconst one = boot('empty');\nconst two = boot(\`empty\`);` }], [], 1],
+  ['the same word under two JavaScript helpers passes, because their folders differ',
+    [{ path: 'a.mjs', text: `${JS_HELPERS}\nconst one = boot('empty');\nconst two = docs('empty');` }], [], 0],
+  ['two calls to one JavaScript helper in two files are the same folder',
+    [{ path: 'a.mjs', text: `${JS_HELPERS}\nconst one = boot('empty');` },
+     { path: 'b.mjs', text: "const two = boot('empty');" }], [], 1],
+  ['a Rust helper and a JavaScript one building one head are refused, because the folder does not know which made it',
+    [{ path: 'a.rs', text: 'fn boot_dir(word: &str) -> PathBuf { std::env::temp_dir().join(format!("leaf-boot-{word}-{}", std::process::id())) }' },
+     { path: 'b.mjs', text: JS_HELPERS }], [], 1],
 ];
 
 const testFails = [];

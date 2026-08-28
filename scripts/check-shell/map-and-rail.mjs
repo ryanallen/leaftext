@@ -7,7 +7,6 @@ import {
   VIEW_WIDTH,
   check,
   fakeElement,
-  node,
   pageMarkup,
   record,
   root,
@@ -216,11 +215,43 @@ export function run() {
 
   // Why that guard cannot be keyed on the reading body: the clone is made with cloneNode, so it carries the class it was cloned from, and stripping takes ids, textareas and links off it and never a class.
   check('the thumbnail carries the reading body class, so that class cannot tell it from the page', () => {
-    const body = node('div', { className: 'document-body', children: [node('details', { className: 'document-outline' })] });
+    const body = fakeElement();
+    body.className = 'document-body';
+    body.innerHTML = '<details class="document-outline"></details>';
     const clone = body.cloneNode();
     booted.stripMinimapClone(clone);
     if (!clone.classList.contains('document-body')) throw new Error('the clone lost the reading body class, so this proves nothing');
     if (!clone.classList.contains('document-minimap-preview')) throw new Error('the clone is not marked as the rail’s own');
+  });
+
+  // The whole of the thumbnail is what the copy kept: a shallow copy of the reading body for the wrapper, a deep copy of each row put into it. Nothing had ever read one back — until the stand-in page could really copy, a check here was handed its own copy and proved that instead.
+  check('the thumbnail is the reading body’s own wrapper holding a deep copy of each row in the window', () => {
+    const body = fakeElement('minimap-source');
+    body.className = 'document-body';
+    body.setAttribute('data-doc-kind', 'markdown');
+    body.innerHTML = [
+      '<h1 data-block-kind="heading">A title</h1>',
+      '<p data-block-kind="paragraph">First words.</p>',
+      '<pre class="mermaid" data-language="mermaid">flowchart TD</pre>',
+      '<p data-block-kind="paragraph">Last words.</p>',
+    ].join('');
+    if (booted.minimapWindowRows(body).length !== 4) throw new Error('the rows a window slices are not the body’s own blocks');
+
+    // A window over the middle two rows: those rows and nothing else, in the order the document has them.
+    const windowed = booted.buildWindowedMinimapClone(body, 1, 2);
+    if (windowed === body) throw new Error('the thumbnail is the reading body itself rather than a copy of it');
+    if (windowed.children.length !== 2) throw new Error(`the window holds ${windowed.children.length} rows rather than the two it names`);
+    if (windowed.textContent !== 'First words.flowchart TD') throw new Error(`the window says ${JSON.stringify(windowed.textContent)}`);
+    // The wrapper is a shallow copy, so it wears the body's own classes and attributes — which is what makes every `.document-body x` rule match inside the rail.
+    if (!windowed.classList.contains('document-body')) throw new Error('the wrapper did not keep the reading body class every rule inside the rail is keyed on');
+    if (windowed.dataset.docKind !== 'markdown') throw new Error('the wrapper dropped a data- attribute the reading body was wearing');
+    // A block carrying a data- attribute arrives still wearing it, which is how a diagram the page handed back is found in the copy at all.
+    const diagram = windowed.children[1];
+    if (diagram.dataset.language !== 'mermaid' || !diagram.classList.contains('mermaid')) throw new Error('a copied block arrived without what it was wearing');
+    // The window is its own, so nothing it does reaches the page it was copied from.
+    if (body.children.length !== 4) throw new Error('slicing a window took rows out of the document');
+    if (windowed.style.paddingTop !== '0' || windowed.style.paddingBottom !== '0') throw new Error('the window kept the layer’s own padding, which belongs at the start of the document rather than at the start of a window into the middle of it');
+    if (body.style.paddingTop === '0') throw new Error('the window’s padding was written onto the reading body itself');
   });
 
   // The other listener that hears the document change watches the reading view's own body, and the clone lands in the rail beside it — so a landing clone was never something that watcher could see, and the toggle guard above is the only thing standing between the rail and its own thumbnail. Both halves are where the markup puts them, which is what this holds.

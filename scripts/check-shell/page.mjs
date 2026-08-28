@@ -527,6 +527,24 @@ export function fakeElement(id = '') {
     configurable: true,
     enumerable: true,
   });
+  // The element either side of this one in its holder's element list, and nothing at each end of the run or when nothing is holding it. Written as getters over the same list every move already keeps, so a block put in front of another steps to it straight away. Five checks used to hand in a sibling that was null for ever, which is the answer that lets a walk pass having taken no step at all: the entry walker, the gutter's fallback and the delete caret all read these names and all three read back an answer the app never gives.
+  const siblingAt = (step) => {
+    const holder = element.parentElement;
+    if (!holder) return null;
+    const at = holder.children.indexOf(element);
+    if (at < 0) return null;
+    return holder.children[at + step] || null;
+  };
+  Object.defineProperty(element, 'nextElementSibling', {
+    get: () => siblingAt(1),
+    configurable: true,
+    enumerable: true,
+  });
+  Object.defineProperty(element, 'previousElementSibling', {
+    get: () => siblingAt(-1),
+    configurable: true,
+    enumerable: true,
+  });
   // The set's other name, and the one the markup walker and 105 lines of the front end write. Reading joins it, writing replaces it — so a class arriving either way is found either way, and the spelling that comes back is the set's rather than the string's.
   Object.defineProperty(element, 'className', {
     get: () => [...classes].join(' '),

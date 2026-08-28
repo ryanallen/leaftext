@@ -436,9 +436,6 @@ export function run() {
     const parsed = booted.document.createElement('div');
     parsed.innerHTML = previewSectionHtml;
     const note = parsed.querySelector('article');
-    note.children.forEach((el, i) => {
-      el.nextElementSibling = note.children[i + 1] || null;
-    });
     booted.__previewProbeRoot = parsed;
     booted.__previewProbeHtml = previewSectionHtml;
     vm.runInContext('linkPreviewParsedRoot = __previewProbeRoot; linkPreviewParsedHtml = __previewProbeHtml;', booted);

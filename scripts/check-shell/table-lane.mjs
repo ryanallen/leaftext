@@ -61,7 +61,7 @@ export function run() {
       throw new Error('the floor sits on the full-window table headings too, so it widens a column that already reads correctly');
     }
     // The theme's link color and a glossary word's dotted underline are both written behind `.document-body`, so the copy reads as the web view's stock blue-purple until the grid holding it wears that class.
-    const held = booted.tableSheetGrid({ cloneNode: () => ({ classList: { add() {} }, removeAttribute() {}, querySelectorAll: () => [] }) });
+    const held = booted.tableSheetGrid(fakeElement('themeProbeTable'));
     const worn = String(held.className || '').split(/\s+/).filter(Boolean);
     for (const name of ['table-sheet-grid', 'document-body']) {
       if (!worn.includes(name)) throw new Error(`the full-window table's grid is not drawn as ${name}, so its links leave the theme`);
@@ -193,15 +193,6 @@ export function run() {
     const html = blocks.join('');
     const parsed = booted.document.createElement('div');
     parsed.innerHTML = html;
-    // The stand-in page has neither of these and the entry walker uses both: it clones the heading, then every block after it until the next heading of the same rank.
-    parsed.children.forEach((el, i) => {
-      el.cloneNode = () => {
-        const one = booted.document.createElement('div');
-        one.innerHTML = blocks[i];
-        return one.children[0];
-      };
-      el.nextElementSibling = parsed.children[i + 1] || null;
-    });
     try {
       booted.__glossaryProbeRoot = parsed;
       booted.__glossaryProbeHtml = html;
@@ -368,7 +359,6 @@ export function run() {
       row.appendChild(heading);
       head.appendChild(row);
       table.appendChild(head);
-      table.cloneNode = () => fakeElement('checkedTableCopy');
       return table;
     };
     const opener = fakeElement('checkedTableOpener');

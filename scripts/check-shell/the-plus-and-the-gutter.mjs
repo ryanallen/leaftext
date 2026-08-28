@@ -1430,4 +1430,53 @@ export function run() {
       );
     }
   });
+
+  // The gap between two settled blocks is worked off the gutter's own list of occupants. A blank line waiting for its first keystroke is not on that list — it has no height, and the list keeps only what takes up room — so the space under it is found by stepping the page instead: past every block of no height, then on to one that has an offset in the buffer to write at. Until the stand-in page could really step, nothing could read this walk back at all, and a check handing in stock elements would have walked to the end of the run and read nothing, which is a check passing on nothing.
+  check('the space under a blank line is walked to across a block of no height and on to one with a range', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const layout = standUpReadingLayout();
+    const body = layout.querySelector('.document-body');
+    const was = { unlocked: read('readingUnlocked'), held: [...body.children] };
+    // Room, or none: the list of occupants keeps only what takes up room, so a block of no height is invisible to it and has to be stepped past on the page.
+    const block = (id, { top, bottom, start, end }) => {
+      const el = booted.document.createElement('div');
+      el.id = id;
+      if (start != null) {
+        el.dataset.srcStart = String(start);
+        el.dataset.srcEnd = String(end);
+      }
+      el.getBoundingClientRect = () => ({ top, bottom, left: 0, right: 600, width: 600, height: bottom - top });
+      body.appendChild(el);
+      return el;
+    };
+    try {
+      read('readingUnlocked = true; blockGutterGap = null;');
+      booted.bindBlockControls();
+      const typedOn = block('walk-typed-on', { top: 100, bottom: 100, start: 0, end: 0 });
+      const noHeight = block('walk-no-height', { top: 140, bottom: 140, start: 8, end: 20 });
+      const decoration = block('walk-decoration', { top: 140, bottom: 180 });
+      const written = block('walk-written', { top: 180, bottom: 220, start: 30, end: 44 });
+      // The blank line and the block of no height are both off the list, which is what puts this walk on the page rather than on the list.
+      const occupants = booted.blockGutterOccupants().map((el) => el.id);
+      if (occupants.includes('walk-typed-on') || occupants.includes('walk-no-height')) throw new Error(`a block of no height is on the gutter's list: ${occupants.join(',')}`);
+
+      booted.aimBlockGutterBelow(typedOn);
+      const gap = read('blockGutterGap');
+      if (!gap) throw new Error('the space under the line being typed in was never found');
+      if (gap.above !== typedOn || gap.after !== typedOn) throw new Error('the space was not measured off the line being typed in');
+      // The walk steps past the block of no height and stops at the first one that takes up room.
+      if (gap.below !== decoration) throw new Error(`the space below was found as ${gap.below ? gap.below.id : 'nothing'} rather than the first block with room under it`);
+      // It goes on past that one, because a block the page drew has no offset in the buffer to write a new line at.
+      if (gap.before !== written) throw new Error(`the new line would be written beside ${gap.before ? gap.before.id : 'nothing'} rather than the nearest block with a range`);
+
+      // Nothing under the line at all is nothing under it, rather than the walk running off the end and answering something.
+      const alone = block('walk-alone', { top: 300, bottom: 300, start: 60, end: 60 });
+      booted.aimBlockGutterBelow(alone);
+      const end = read('blockGutterGap');
+      if (end.below !== null || end.before !== null) throw new Error('the walk off the end of the document answered a block that is not there');
+    } finally {
+      for (const child of [...body.children]) if (!was.held.includes(child)) child.remove();
+      read(`readingUnlocked = ${JSON.stringify(was.unlocked)}; blockGutterGap = null;`);
+    }
+  });
 }

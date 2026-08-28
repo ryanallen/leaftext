@@ -147,8 +147,6 @@ export function typingStand(booted) {
       dataset: { blockKind: kind, srcStart: String(start), srcEnd: String(end) },
       childNodes: [{ nodeType: 3, nodeValue: typed }],
       textContent: typed,
-      previousElementSibling: null,
-      nextElementSibling: null,
       __editingActive: true,
       __editBaseline: baseline,
       __innerSpan: innerSpan,
@@ -270,7 +268,8 @@ export const node = (tag, options = {}) => {
   };
   el.querySelector = (selector) => matchingDescendants(el, selector)[0] || null;
   el.querySelectorAll = (selector) => matchingDescendants(el, selector);
-  el.cloneNode = () => node(tag, { ...options, children: (options.children || []).map((child) => (typeof child === 'string' ? child : child.cloneNode())) });
+  // A copy takes the word it was given, the way the platform's does: asked for a shallow one it holds nothing, so a check reading what a shallow copy kept is reading its own answer rather than a deep copy wearing the name.
+  el.cloneNode = (deep = false) => node(tag, { ...options, children: deep ? (options.children || []).map((child) => (typeof child === 'string' ? child : child.cloneNode(true))) : [] });
   kids.forEach((child) => {
     if (child.nodeType !== 1) return;
     child.remove = () => {

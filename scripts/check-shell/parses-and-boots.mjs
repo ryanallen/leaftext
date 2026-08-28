@@ -1066,4 +1066,114 @@ export function run() {
     }
     if (!said.includes('inthemiddle')) throw new Error(`a word the page does not know was taken rather than refused: ${said || 'nothing was thrown'}`);
   });
+
+  // ---- 2t. a step to the block either side ------------------------------------
+  //
+  // The glossary entry walks to the next heading of its own rank, the block gutter walks past a block of no height to the one below a blank line, and the caret a delete leaves behind is placed off the block above and the block below. All three read these two names, and a stand-in answering `undefined` lets every one of those walks end before its first step without throwing — a check that can only pass.
+
+  check('a block steps to the element either side of it and stops at each end of the run', () => {
+    const holder = fakeElement('step-holder');
+    holder.innerHTML = '<h2 id="step-one">One</h2><p id="step-two">Two</p><p id="step-three">Three</p>';
+    const [one, two, three] = holder.children;
+    if (one.nextElementSibling !== two || two.nextElementSibling !== three) throw new Error('a block does not step to the one after it');
+    if (three.previousElementSibling !== two || two.previousElementSibling !== one) throw new Error('a block does not step back to the one before it');
+    // Nothing at either end, so a walk stops rather than running off the list.
+    if (one.previousElementSibling !== null) throw new Error('the first block in the run answered something before it');
+    if (three.nextElementSibling !== null) throw new Error('the last block in the run answered something after it');
+    // The whole walk, which is what the entry and the gutter actually make.
+    const walked = [];
+    for (let node = one; node; node = node.nextElementSibling) walked.push(node.id);
+    if (walked.join(',') !== 'step-one,step-two,step-three') throw new Error(`the walk forward read ${walked.join(',') || 'nothing'}`);
+    const back = [];
+    for (let node = three; node; node = node.previousElementSibling) back.push(node.id);
+    if (back.join(',') !== 'step-three,step-two,step-one') throw new Error(`the walk back read ${back.join(',') || 'nothing'}`);
+    // Runs of words between the blocks are not steps, because the element list is elements alone and that is what these two names read.
+    const worded = fakeElement('step-worded');
+    worded.innerHTML = '<p id="step-worded-first">First</p>between<p id="step-worded-last">Last</p>';
+    if (worded.children[0].nextElementSibling !== worded.children[1]) throw new Error('a run of words between two blocks was stepped onto');
+    // They follow the list rather than being read once, so a block put in front of another steps to it straight away.
+    const put = fakeElement('step-put');
+    holder.insertBefore(put, two);
+    if (one.nextElementSibling !== put || two.previousElementSibling !== put) throw new Error('a block placed between two others is not stepped to');
+  });
+
+  check('a block taken out of its holder steps to nothing either way', () => {
+    const holder = fakeElement('loose-holder');
+    holder.innerHTML = '<p id="loose-one">One</p><p id="loose-two">Two</p><p id="loose-three">Three</p>';
+    const [one, two, three] = holder.children;
+    two.remove();
+    if (two.nextElementSibling !== null || two.previousElementSibling !== null) throw new Error('a block taken out of its holder still steps to the siblings it used to have');
+    // What is left closes over the gap, which is what the gutter's walk is reading.
+    if (one.nextElementSibling !== three || three.previousElementSibling !== one) throw new Error('the blocks left behind did not close over the one that went');
+    // A block that was never in a holder at all, which is how the gutter's own checks build theirs.
+    const never = fakeElement('loose-never');
+    if (never.nextElementSibling !== null || never.previousElementSibling !== null) throw new Error('a block standing in no holder answered a sibling');
+  });
+
+  // ---- 2u. a copy that is really a copy ---------------------------------------
+  //
+  // Four surfaces are nothing but what a copy kept: the rail's thumbnail is a shallow copy of the reading body with a deep copy of each row put into it, the full-window table is a deep copy of one table, the exported page is a deep copy of the reading body, and a block dragged in the gutter is dragged by a copy of itself. What a shallow copy keeps is the browser's answer rather than a cheaper one — every attribute and no children — because a stand-in giving a different answer from the page is one no check can trust.
+
+  check('a copy wears what the original wears, deep holds what it held, and shallow holds nothing', () => {
+    const holder = fakeElement('copy-holder');
+    holder.className = 'document-body reading';
+    holder.setAttribute('data-doc-kind', 'markdown');
+    holder.style.setProperty('--lt-copy-width', '40px');
+    holder.innerHTML = '<h2 id="copy-head" class="block" data-block-kind="heading">A heading</h2><p data-block-kind="paragraph">Words <b>and bold</b>.</p>';
+
+    // The shallow copy: every attribute, and nothing inside it.
+    const shallow = holder.cloneNode(false);
+    if (shallow.children.length || shallow.childNodes.length) throw new Error(`the shallow copy came back holding ${shallow.childNodes.length} nodes`);
+    if (shallow.className !== 'document-body reading') throw new Error(`the shallow copy is wearing ${JSON.stringify(shallow.className)}`);
+    if (shallow.id !== 'copy-holder') throw new Error('the shallow copy dropped the id it was copied from');
+    if (shallow.dataset.docKind !== 'markdown') throw new Error('the shallow copy dropped a data- attribute, which is what the rail reads a block back by');
+    if (shallow.getAttribute('style') !== '--lt-copy-width: 40px') throw new Error(`the shallow copy is styled ${JSON.stringify(shallow.getAttribute('style'))}`);
+    // Nothing is holding it, the way a browser's clone names no holder until something appends it.
+    if (shallow.parentElement !== null || shallow.parentNode !== null) throw new Error('the copy named a holder');
+    // Asked for nothing at all is a shallow copy, which is what the rail asks for.
+    if (holder.cloneNode().childNodes.length) throw new Error('a copy asked for with no word came back holding what it was copied from');
+
+    // The deep copy: the runs of words as well as the child elements, however deep they go.
+    const deep = holder.cloneNode(true);
+    if (deep.children.length !== 2) throw new Error(`the deep copy holds ${deep.children.length} blocks rather than two`);
+    if (deep.textContent !== 'A headingWords and bold.') throw new Error(`the deep copy says ${JSON.stringify(deep.textContent)}`);
+    const head = deep.children[0];
+    if (head.tagName !== 'H2' || head.id !== 'copy-head') throw new Error('the copied heading is not the heading');
+    if (head.dataset.blockKind !== 'heading' || !head.classList.contains('block')) throw new Error('a copied block dropped what it was wearing');
+    // The nesting survives, so a copy of a block holding a run of words and a child element still says both in order.
+    if (deep.children[1].querySelector('b')?.textContent !== 'and bold') throw new Error('the copy lost a child inside a child');
+    // The copy is a stand-in element like any other, so everything a caller reaches for afterwards answers.
+    if (typeof deep.querySelectorAll !== 'function' || typeof deep.closest !== 'function') throw new Error('the copy is not a page element and cannot be asked anything');
+
+    // A copy carries none of the original's listeners, the way a browser's does not.
+    let heard = 0;
+    holder.addEventListener('click', () => {
+      heard += 1;
+    });
+    const quiet = holder.cloneNode(true);
+    if (quiet.listeners.size) throw new Error('the copy came back wired to what the original was wired to');
+    if (heard) throw new Error('making a copy fired the original’s handler');
+  });
+
+  check('a copy is a different node, and its markup reads back', () => {
+    const page = fakeElement('copy-page');
+    page.innerHTML = '<article class="document-body"><p id="copy-row">A row</p></article>';
+    const body = page.querySelector('article');
+    const copy = body.cloneNode(true);
+    if (copy === body) throw new Error('the copy is the element it was copied from');
+    // Moving the copy leaves the original where it was, which is the whole reason the export works on one.
+    const elsewhere = fakeElement('copy-elsewhere');
+    elsewhere.appendChild(copy);
+    if (page.children[0] !== body) throw new Error('moving the copy moved the original');
+    if (body.parentElement !== page) throw new Error('the original stopped naming its holder when its copy was moved');
+    if (copy.parentElement !== elsewhere) throw new Error('the copy never named the holder it reached');
+    // Its children are its own, so a change inside the copy is not a change inside the original.
+    copy.querySelector('p').textContent = 'A changed row';
+    if (body.textContent !== 'A row') throw new Error(`changing the copy changed the original, which now says ${JSON.stringify(body.textContent)}`);
+
+    // The export reads its copy back through this name, so a copy that cannot say its own markup is a copy the export cannot use.
+    const said = body.cloneNode(true).outerHTML;
+    if (said !== '<article class="document-body"><p id="copy-row">A row</p></article>') throw new Error(`the copy says its markup as ${said}`);
+    if (body.cloneNode(false).outerHTML !== '<article class="document-body"></article>') throw new Error(`the shallow copy says its markup as ${body.cloneNode(false).outerHTML}`);
+  });
 }

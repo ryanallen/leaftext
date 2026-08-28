@@ -48,8 +48,6 @@ export function run() {
     const diagram = body.querySelectorAll('pre.mermaid')[0];
     diagram.__mermaidSource = WAITING_SOURCE;
     diagram.isConnected = true;
-    // The page has no cloneNode: the live body stands for its own copy, which is what lets the web page markup be read off the drawn state.
-    body.cloneNode = () => body;
     return { body, diagram };
   };
   const standDocument = (body) => {
@@ -203,10 +201,7 @@ export function run() {
   const drawnDocument = () => {
     const holder = fakeElement('');
     holder.innerHTML = DRAWN_DOCUMENT_MARKUP;
-    const body = holder.children[0];
-    // The one piece still handed in: the page has no `cloneNode` yet. A second element built from the same markup is what a copy is, so the live one and the copy the export works on are two things the way they are on the page.
-    body.cloneNode = () => drawnDocument();
-    return body;
+    return holder.children[0];
   };
 
   // Stand the drawn document in front of the reader element, and hand back whatever the export made of it. A caller that wants to read the live element afterwards passes its own.
