@@ -345,7 +345,7 @@ export function run() {
 
   // ---- a right press asks, and does not edit ----------------------------------
   //
-  // The press that opens a block onto its raw source answered every mouse button and canceled the event, so a right-click swapped the block for its Markdown before the menu's handler ran — and the picture the gesture was aimed at was gone by then. Read by raising both events in the order the web view raises them, because the menu is only right if the block is still drawn when it arrives.
+  // The press that opens a block onto its raw source answers only the left button: cancel a right press and the block swaps to its Markdown before the menu's handler runs, so the picture the gesture was aimed at is gone by then. Read by raising both events in the order the web view raises them, because the menu is only right if the block is still drawn when it arrives.
 
   /** A code block on a reader page, stamped with the bytes it covers and wired the way the render wires one. */
   function codeBlockOn(start, end) {
