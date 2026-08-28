@@ -6,8 +6,8 @@
 #   pwsh scripts/capture-screenshot.ps1 -DismissBox 'Location is not available'
 #
 # `-DismissBox` takes no picture and no steps. It is the way past the refusal a second
-# modal box earns: it cancels that one box by its exact title with Escape, and says so
-# only once it has gone.
+# modal box earns: that one box, canceled by its exact title with Escape, said only once
+# it has gone.
 #
 # Unattached is the documentation shot: it launches its own copy under an account
 # name of its own, against a throwaway profile at a pinned size and theme,
@@ -121,11 +121,8 @@ param(
   [int]$StepMs = 900,
   # Drive the copy that is already running instead of launching one.
   [switch]$Attach,
-  # Cancel one box standing over the window being driven, named by the exact title
-  # the refusal above printed, and stop. This is the way past that refusal: a second
-  # modal box keeps the keyboard while its owner still takes the foreground, so a key
-  # step is refused and there is otherwise nothing to run. Escape is the only key it
-  # sends and the title has to match exactly, so it can neither press a warning's
+  # Cancel one box standing over the window being driven, by the exact title the refusal
+  # printed, and stop. Escape only and an exact title, so it can neither press a warning's
   # default button nor cancel a box that merely happened to be there.
   [string]$DismissBox = '',
   # Read the -Do list back and stop. Launches nothing, writes nothing, and never
@@ -376,13 +373,11 @@ function Find-Attached {
 
 # ---- canceling one box standing over the driven window ----------------------
 
-# The way past the refusal below, and the only place here that sends a key at a window
-# that is not the app's own. Every guard is about sending it at exactly the box the
-# reader named: no box, or one wearing another title, is refused rather than canceled;
-# Escape is the only key, because a default button accepts a warning instead of backing
-# out of it; and it is said to have worked only once that same box has gone, since a
-# dismissal reporting success while the box is still up sends the build straight back
-# into the wall it was trying to leave.
+# The only place here that sends a key at a window that is not the app's own, so every
+# guard is about sending it at exactly the box the reader named. Escape alone, because a
+# default button accepts the warning instead of backing out of it; and success is said
+# only once that same box has gone, since saying it while the box is still up sends the
+# build back into the wall it was leaving.
 if ($dismissing) {
   $running = Find-Attached
   $hwnd = $running.MainWindowHandle
