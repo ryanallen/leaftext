@@ -60,7 +60,7 @@ flowchart LR
 | Area | What it does |
 | --- | --- |
 | Main reader | Shows the rendered Markdown, [XML](01-features/01-rendering.md#xml), [JSON/YAML](01-features/01-rendering.md#data-files-json-and-yaml), or [email](01-features/01-rendering.md#email-eml) |
-| Outline | The document's headings in the library pane, labeled with the document's line count, for jumping to a section |
+| Outline | The document's headings in the library pane, sized by level and labeled with how many there are, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
 | Pager | Previous / Next at the foot, where a folder is joined by `README.md` files |
 

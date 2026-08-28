@@ -329,7 +329,7 @@ fn app_shell_draws_the_documents_headings_in_the_library_pane() {
     // The line naming the list counts the headings it is drawing, read off the rows it already has rather than off the document under them.
     assert_contains(&html, "${formatCount(rows.length)} headings");
     assert_contains(&html, "On this page");
-    // The block counter the line used to carry is gone, so the number cannot drift back to document length.
+    // None of the block counter's four names may come back, or the number drifts to document length.
     for absent in [
         "DOCUMENT_LINE_SELECTOR",
         "openDocumentLineCount",

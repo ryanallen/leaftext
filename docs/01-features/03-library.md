@@ -24,6 +24,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
 | [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, with a sync button in its own header — and a repository can be [cloned](#clone-a-repository) into a new vault |
 | [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
+| [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
@@ -98,7 +99,7 @@ Each call reads exactly one directory, so nothing below what you opened is ever 
 Opening a document swaps the file list for that document's [outline](02-navigation.md#outline) — its headings, in order, indented by level, with the one you are reading lit as you scroll. Clicking a row jumps to that heading.
 
 - A back row above the list wears the folder's name and puts the files back, the same way the row above a folder listing steps out of it.
-- Under that row, **On this page** names the list and the document's length sits at its right.
+- Under that row, **On this page** names the list, with how many headings it holds at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
 - Typing in the [search box](#search) replaces the outline with the results; clearing the box brings it back.
 - A document with only a title, or none, has no outline, so the files stay where they are.
 
@@ -141,6 +142,27 @@ Reveal and Properties map to each OS:
 
 - Windows: Explorer; the file Properties dialog.
 - macOS: Finder; Get Info, which brings Finder to the front so its window is the one you are looking at.
+
+### Right-click a picture
+
+![The right-click menu open over a picture in a document: Open picture, then Copy picture and Copy path, then Reveal file and Properties](../../imgs/picture-menu.png)
+
+A picture kept on your own disk answers for itself. Right-click one in the page and the menu is about the picture, not the note around it:
+
+| Action | What it does |
+| --- | --- |
+| Open picture | Opens it on the whole window, the same view the expand button over a picture opens — including a picture sitting inside a sentence, which has no button of its own |
+| Copy picture | Puts the picture itself on the clipboard, as pixels to paste into a message or a document. Every kind the page can draw copies, because what crosses is a PNG the page's own drawing wrote |
+| Copy path | Copies the picture's full path as text |
+| Reveal file | Shows the picture in your OS file manager, sitting where it is kept |
+| Properties | Opens the OS file-properties view for the picture |
+| Delete picture | Takes the picture out of the document. Only while the [padlock](07-editing.md) is open, and only for a picture on a line of its own |
+
+- **Delete picture leaves the file alone.** It removes the picture from the note, as one press of undo, and nothing is written until you save. The picture on your disk is untouched.
+- **A picture inside a sentence has no Delete row.** The only piece of source it belongs to is the sentence around it, so removing it would take the words with it.
+- **A picture already open on the whole window** keeps Copy picture, Copy path, Reveal file and Properties, and loses the two rows that have nowhere left to go.
+- **A picture from the web, one written into the document as data, and one Leaftext cannot find** get no picture menu, because none of these rows has a file to act on.
+- **A picture wrapped in a link** keeps the link's own menu, because the link is what a click on it opens.
 
 Where either window will not open, a message in the bottom-right corner says so, so the menu item never just appears to do nothing. **Cut, Copy and Copy path say so the same way.** A clipboard another program is holding open is an ordinary thing for a machine to be doing, and a copy that did not happen is otherwise only discovered at a paste in another app, minutes later, with nothing to connect it back.
 

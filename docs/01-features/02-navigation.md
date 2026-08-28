@@ -10,7 +10,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | --- | --- |
 | [Tabs](#tabs) | Open multiple documents at once |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
-| [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with the document's line count |
+| [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you leave sliding out the way you came |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it — or stays drawn the whole time, where your machine is set to always show scrollbars |
@@ -247,12 +247,13 @@ In the rendered view a replace is written to the file's source, not to the page.
 
 ### Outline
 
-![The library pane holding the open document's headings: the back row naming its folder, an On this page line with the document's length at its right, and the heading rows indented by level with the one being read lit](../../imgs/outline.png)
+![The library pane holding the open document's headings: the back row naming its folder, an On this page line with the heading count at its right, and the heading rows indented by level and stepping down in size, with the one being read lit](../../imgs/outline.png)
 
 Open a document and the [library pane](03-library.md) swaps its file list for that document's **Outline** — its headings, in order, indented by level, with the one you are reading lit. The lit row moves as you scroll, so the pane says where you are as well as what is there.
 
 - Above the list, a back row wearing the folder's name puts the files back.
-- Under it, **On this page** names the list, with the document's total length at its right — **312 lines** — counting the body blocks: paragraphs, headings, list items, quotes, code blocks, tables. Footnote definitions are not body, so they do not count.
+- Under it, **On this page** names the list, with how many headings are in it at its right — **23 headings** — counted off the rows drawn below, so the number and the list can never disagree.
+- **The levels look like levels.** The shallowest headings read largest and boldest; each level in is a step smaller and lighter, and from the third level in they sit in the page's quieter ink. So the shape of a document shows in the type as well as in the indenting, which matters most in a narrow pane where the indents run out.
 - Clicking a row jumps to that heading, and the jump joins scroll history, so Back returns to where you were reading.
 - Typing in the pane's [search box](03-library.md#search) replaces the outline with the results; clearing the box brings it back.
 - It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), [JSON or YAML](01-rendering.md#data-files-json-and-yaml), and [email](01-rendering.md#email-eml).

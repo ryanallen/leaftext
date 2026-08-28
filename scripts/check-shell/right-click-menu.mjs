@@ -183,7 +183,7 @@ export function run() {
       if (rows.join(' | ') !== PICTURE_ROWS.join(' | ')) {
         throw new Error(`a picture answered with ${JSON.stringify(rows)} rather than its own rows`);
       }
-      // The row that used to be here is the whole reason for the branch: the page's own list can bin the open note off a click aimed at a picture.
+      // Why the branch exists at all: the page's own list can bin the open note off a click aimed at a picture.
       if (rows.some((row) => row.startsWith('Delete'))) throw new Error('a locked picture still offers a Delete');
     } finally {
       booted.hideContextMenu();

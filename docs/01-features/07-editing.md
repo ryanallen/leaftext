@@ -190,6 +190,8 @@ The image button does not write a placeholder path for you to correct. It asks:
 
 A picked file is **never copied anywhere** — the picture stays where you keep it. What goes into the document is where it already is: written relative to the document when it sits under the same folder, so the pair survive being moved or shared together, and as a full path when it does not. A path holding a space or a bracket is written in Markdown's `<…>` form, so it cannot end early.
 
+**Taking a picture out again is a right-click on the picture.** While the padlock is open, a picture on a line of its own carries a **Delete picture** row: it removes the picture from the document as one press of undo, writes nothing until you save, and leaves the picture on your disk exactly where it is. A picture inside a sentence has no such row, because the only piece of source it belongs to is the sentence around it. See [Picture actions](03-library.md#right-click-a-picture).
+
 ### The format bar
 
 ![A few highlighted words in a paragraph with the format bar floating above them: bold, italic, strikethrough, code and link, then the text, bigger heading, smaller heading and quote buttons, with one lit up and one grayed out](../../imgs/format-bar.png)

@@ -325,7 +325,7 @@ fn the_reading_view_has_no_gutter_line_numbers() {
         );
     }
 
-    // The line above the pane's headings says how many headings are listed, not how long the document is: nothing walks the rendered blocks for a total any more.
+    // The line above the pane's headings counts the headings listed, and nothing walks the rendered blocks for a total.
     assert!(html.contains("${formatCount(rows.length)} headings"));
     for absent in [
         "documentLineCount",
