@@ -366,6 +366,28 @@ fn a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot() {
         (".reader-subtool {", "box-shadow"),
         // A diagram box's + handle shows with the box it belongs to, so its fill is named beside that reveal.
         (".flow-bud {", "background-color"),
+        // The three families that answer a pointer with a lift: the shorthand that times the shadow is what takes the shared fade away from them.
+        (".theme-button,
+.open-button,
+.new-button,
+.export-button {", "background-color"),
+        (".theme-button,
+.open-button,
+.new-button,
+.export-button {", "border-color"),
+        (".theme-button,
+.open-button,
+.new-button,
+.export-button {", "color"),
+        (".library-file,
+.library-nav-folder {", "background-color"),
+        (".library-file,
+.library-nav-folder {", "border-color"),
+        (".library-file,
+.library-nav-folder {", "color"),
+        (".document-body a.leaf-md-button {", "background-color"),
+        (".document-body a.leaf-md-button {", "border-color"),
+        (".document-body a.leaf-md-button {", "color"),
     ] {
         assert_contains(
             rule_body(css, selector),
@@ -609,5 +631,54 @@ fn the_focus_ring_is_the_keyboards_and_the_mouse_takes_it_off_every_control() {
         kinds(ring_selector),
         named_sorted,
         "the mouse rule and the ring rule name different controls, so one of them is drawn on something the other never touches"
+    );
+}
+
+#[test]
+fn a_pointed_at_control_lifts_and_nothing_that_means_something_does() {
+    // A hover used to be color alone. Three families answer with the raised shadow as well, and two of them round to the pill; what the pill and the lift must never reach is a state that already means something — the open file, and a button whose link goes nowhere and is drawn as words.
+    let css = reading_mode_css();
+
+    // The 32px chips lift and keep their corner: a pill on a square is a circle, a different control rather than an emphasis.
+    let chips = rule_body(
+        css,
+        ".theme-button:hover,\n.open-button:hover,\n.new-button:hover,\n.export-button:hover {",
+    );
+    assert_contains(chips, "box-shadow: var(--lt-shadow-raised);");
+    assert!(
+        !chips.contains("border-radius"),
+        "a 32px chip rounded to the pill is a circle: {chips}"
+    );
+
+    // A row and a document button have a width to round, so both take the pill with the lift.
+    for selector in [
+        ".library-file:hover,\n.library-nav-folder:hover {",
+        ".document-body a.leaf-md-button:hover {",
+    ] {
+        let body = rule_body(css, selector);
+        assert_contains(body, "border-radius: var(--lt-radius-pill);");
+        assert_contains(body, "box-shadow: var(--lt-shadow-raised);");
+    }
+
+    // The open file is already saying something with its tint, so it keeps its rectangle under the pointer rather than saying two things at once.
+    let selected = rule_body(
+        css,
+        ".library-file.is-selected,\n.library-file.is-selected:hover {",
+    );
+    assert_contains(selected, "border-radius: var(--lt-radius-md);");
+    assert_contains(selected, "box-shadow: none;");
+
+    // A brace-wrapped button with nothing behind it is words in a sentence. It gives up its border, corner and fill in its own rule, and that rule has to take the lift back too — it sits later at the same weight as the hover handing one out.
+    let nowhere = rule_body(css, ".document-body a.leaf-md-button.link-goes-nowhere {");
+    assert_contains(nowhere, "box-shadow: none;");
+    let at_hover = css
+        .find(".document-body a.leaf-md-button:hover {")
+        .expect("the document button's hover rule");
+    let at_nowhere = css
+        .find(".document-body a.leaf-md-button.link-goes-nowhere {")
+        .expect("the stripped button's rule");
+    assert!(
+        at_nowhere > at_hover,
+        "the two weigh the same, so the one taking the lift back has to come second"
     );
 }

@@ -3389,7 +3389,11 @@ button {
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
+  /* The lift is timed here, and the three colors are re-named beside it: a `transition` shorthand replaces the file's shared hover fade outright, whatever its weight, so a rule adding a fourth property has to hand the other three back. */
+  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
+/* The chip keeps its 8px corner: a pill on a 32px square is a circle, which reads as a different control rather than as an emphasis. */
 .theme-button:hover,
 .open-button:hover,
 .new-button:hover,
@@ -3397,6 +3401,20 @@ button {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
+  box-shadow: var(--lt-shadow-raised);
+}
+/* The drawing answers with the chip rather than sitting still inside it. On its own element, so the 32px box does not move and the bar does not reflow, and one pixel because the fill is already the loud half of the answer. A mask swap is the other way to make an icon answer and cannot be used: it does not interpolate, so it would land in one frame beside a fill that fades. Timed on the four chips rather than on every icon button, so an icon that does not move carries no clock. */
+.theme-button .lt-icon,
+.open-button .lt-icon,
+.new-button .lt-icon,
+.export-button .lt-icon {
+  transition: transform var(--lt-duration-120) var(--lt-ease);
+}
+.theme-button:hover .lt-icon,
+.open-button:hover .lt-icon,
+.new-button:hover .lt-icon,
+.export-button:hover .lt-icon {
+  transform: translateY(-1px);
 }
 /* Unsaved-edits dot on a tab, sharing the close button's corner. In the row it is 13px of content that vanishes on the tab's own hover, so a modified tab shrinks and its label jumps the moment you point at it. */
 .tab-dirty-dot {
@@ -4307,15 +4325,22 @@ body.library-resizing {
   background: transparent;
   color: inherit;
   font: inherit;
+  /* The lift is timed here, and the three colors are re-named beside it: a `transition` shorthand replaces the file's shared hover fade outright, whatever its weight, so a rule adding a fourth property has to hand the other three back. The corner is not in the list on purpose — a row is 23px tall, so every radius over 11.5px draws as the same pill and the shape is finished inside the first frame at any duration. */
+  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
 .library-file:hover,
 .library-nav-folder:hover {
   background: var(--lt-wash-hover);
+  border-radius: var(--lt-radius-pill);
+  box-shadow: var(--lt-shadow-raised);
 }
-/* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere. */
+/* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere — and holding its rectangle too, because the tint says which file is open and a row that also lifts and rounds under the pointer says two things at once. */
 .library-file.is-selected,
 .library-file.is-selected:hover {
   background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
+  border-radius: var(--lt-radius-md);
+  box-shadow: none;
 }
 /* The leaf mark before Markdown file names. Same inline glyph as the header logomark, so it tracks the theme's primary color instead of a baked-in one. */
 .library-file > .lt-icon {
@@ -4330,6 +4355,15 @@ body.library-resizing {
   width: 14px;
   height: 14px;
   color: var(--lt-muted-foreground);
+}
+/* The mark at the head of the row leans the way the row opens, on its own element so the label does not move and the row does not reflow. Two pixels across a six-pixel gap: enough to read as an answer, short of closing the gap. The row's own `transition` above does not reach a child, so the clock is written here — and below the leaf's own rule rather than above it, because the suite reads that leaf's color out of the first rule in the compiled sheet spelled `.library-file > .lt-icon` and this one would answer instead. */
+.library-file > .lt-icon,
+.library-nav-folder .library-folder-icon {
+  transition: transform var(--lt-duration-120) var(--lt-ease);
+}
+.library-file:hover > .lt-icon,
+.library-nav-folder:hover .library-folder-icon {
+  transform: translateX(2px);
 }
 .library-file-label {
   /* Fill the row so the fade lands on empty space until the name overflows; without flex:1 the label hugs its text and the mask clips every name. */
@@ -5374,11 +5408,17 @@ body:has(#readerToolbar:not([hidden])) {
   text-decoration: none;
   /* The arrow, because a reader reads the drawing and this is drawn as a button. Written rather than left off: an anchor's hand is the browser's own, so nothing here would take it away. */
   cursor: default;
+  /* The lift is timed here, and the three colors are re-named beside it: a `transition` shorthand replaces the file's shared hover fade outright, whatever its weight, so a rule adding a fourth property has to hand the other three back. The corner is not in the list on purpose — every radius over half the button's height draws as the same pill, so the shape is finished inside the first frame at any duration. */
+  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
+/* The corner and the lift are on the base rule alone, so the outline and ghost variants below take them by having the same box rather than by writing them again. */
 .document-body a.leaf-md-button:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
+  border-radius: var(--lt-radius-pill);
+  box-shadow: var(--lt-shadow-raised);
   text-decoration: none;
 }
 /* Outline, from `{{[Label](url)}}`: an outline at rest that fills on hover. */
@@ -5416,6 +5456,8 @@ body:has(#readerToolbar:not([hidden])) {
   border: none;
   border-radius: 0;
   background: none;
+  /* The hover above hands out a lift, and this is the one place it must be taken back: these are words in a sentence, and a shadow under them is a button nobody can press. */
+  box-shadow: none;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;

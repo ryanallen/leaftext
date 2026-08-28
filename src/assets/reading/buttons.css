@@ -55,7 +55,11 @@ button {
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
+  /* The lift is timed here, and the three colors are re-named beside it: a `transition` shorthand replaces the file's shared hover fade outright, whatever its weight, so a rule adding a fourth property has to hand the other three back. */
+  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
+/* The chip keeps its 8px corner: a pill on a 32px square is a circle, which reads as a different control rather than as an emphasis. */
 .theme-button:hover,
 .open-button:hover,
 .new-button:hover,
@@ -63,6 +67,20 @@ button {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
+  box-shadow: var(--lt-shadow-raised);
+}
+/* The drawing answers with the chip rather than sitting still inside it. On its own element, so the 32px box does not move and the bar does not reflow, and one pixel because the fill is already the loud half of the answer. A mask swap is the other way to make an icon answer and cannot be used: it does not interpolate, so it would land in one frame beside a fill that fades. Timed on the four chips rather than on every icon button, so an icon that does not move carries no clock. */
+.theme-button .lt-icon,
+.open-button .lt-icon,
+.new-button .lt-icon,
+.export-button .lt-icon {
+  transition: transform var(--lt-duration-120) var(--lt-ease);
+}
+.theme-button:hover .lt-icon,
+.open-button:hover .lt-icon,
+.new-button:hover .lt-icon,
+.export-button:hover .lt-icon {
+  transform: translateY(-1px);
 }
 /* Unsaved-edits dot on a tab, sharing the close button's corner. In the row it is 13px of content that vanishes on the tab's own hover, so a modified tab shrinks and its label jumps the moment you point at it. */
 .tab-dirty-dot {

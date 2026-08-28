@@ -224,11 +224,17 @@
   text-decoration: none;
   /* The arrow, because a reader reads the drawing and this is drawn as a button. Written rather than left off: an anchor's hand is the browser's own, so nothing here would take it away. */
   cursor: default;
+  /* The lift is timed here, and the three colors are re-named beside it: a `transition` shorthand replaces the file's shared hover fade outright, whatever its weight, so a rule adding a fourth property has to hand the other three back. The corner is not in the list on purpose — every radius over half the button's height draws as the same pill, so the shape is finished inside the first frame at any duration. */
+  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
+/* The corner and the lift are on the base rule alone, so the outline and ghost variants below take them by having the same box rather than by writing them again. */
 .document-body a.leaf-md-button:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
+  border-radius: var(--lt-radius-pill);
+  box-shadow: var(--lt-shadow-raised);
   text-decoration: none;
 }
 /* Outline, from `{{[Label](url)}}`: an outline at rest that fills on hover. */
@@ -266,6 +272,8 @@
   border: none;
   border-radius: 0;
   background: none;
+  /* The hover above hands out a lift, and this is the one place it must be taken back: these are words in a sentence, and a shadow under them is a button nobody can press. */
+  box-shadow: none;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
