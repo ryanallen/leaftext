@@ -294,6 +294,25 @@ fn the_file_list_starts_with_a_way_back_out() {
             .contains("color: var(--lt-foreground);")
     );
 
+    // The pane sizes that arrow in one place. A second rule restating the size reads as an exception the pane does not make, so the back row's own arrow selector must open no rule at all.
+    let shared = rule_bodies(&css, ".library-folder-icon {");
+    assert_eq!(
+        shared.len(),
+        1,
+        "one rule sizes the arrow, got {}",
+        shared.len()
+    );
+    for declaration in ["width: 14px;", "height: 14px;"] {
+        assert!(
+            shared[0].contains(declaration),
+            "the shared glyph rule writes {declaration}"
+        );
+    }
+    assert!(
+        rule_bodies(&css, ".library-nav-up .library-folder-icon {").is_empty(),
+        "the back row restates the size the shared rule already gives it"
+    );
+
     // It goes to the folder above, or to the root from one level in. There is nothing above the top, so no row there — leaving a vault is the switcher's job.
     assert!(html.contains("function libraryParentCrumb()"));
     assert!(html.contains("if (!libraryChain.length) return null;"));

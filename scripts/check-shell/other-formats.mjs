@@ -719,7 +719,7 @@ ${run}
       const press = (heading.listeners.get('pointerdown') || [])[0];
       if (!press) throw new Error('the title heading answers a press with nothing');
 
-      press({ target: null, preventDefault() {} });
+      press({ target: null, button: 0, preventDefault() {} });
       if (heading.dataset.editingSource !== 'true') throw new Error('pressing the title heading opened no editor');
       // The drawn title is whitespace-collapsed and entity-decoded; what opens is the file's own bytes, quotes and all, exactly as a press on a field opens them.
       if (heading.textContent !== value) {

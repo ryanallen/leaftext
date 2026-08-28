@@ -359,12 +359,12 @@ export function run() {
 
       // The row the fold opens by is the one press on a block that already means something: it opens the fold, and the editor stays out of it.
       const row = { closest: (selector) => (selector === 'summary' ? {} : null) };
-      press({ target: row, preventDefault() {} });
+      press({ target: row, button: 0, preventDefault() {} });
       if (comment.dataset.editingSource === 'true') {
         throw new Error('pressing the fold’s own row opened the editor instead of the fold');
       }
 
-      press({ target: null, preventDefault() {} });
+      press({ target: null, button: 0, preventDefault() {} });
       if (comment.dataset.editingSource !== 'true') throw new Error('pressing a comment opened no editor');
       if (comment.textContent !== '<!-- note -->') {
         throw new Error(`the comment opened on ${JSON.stringify(comment.textContent)}`);
@@ -388,7 +388,7 @@ export function run() {
       wireSourceEditable(element);
       const press = (element.listeners.get('pointerdown') || [])[0];
       if (!press) throw new Error('a block answers a press with nothing');
-      press({ target: null, preventDefault() {} });
+      press({ target: null, button: 0, preventDefault() {} });
     };
     try {
       booted.leafToast = (message) => said.push(message);

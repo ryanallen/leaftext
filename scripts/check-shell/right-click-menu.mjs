@@ -343,6 +343,94 @@ export function run() {
     });
   });
 
+  // ---- a right press asks, and does not edit ----------------------------------
+  //
+  // The press that opens a block onto its raw source answered every mouse button and canceled the event, so a right-click swapped the block for its Markdown before the menu's handler ran — and the picture the gesture was aimed at was gone by then. Read by raising both events in the order the web view raises them, because the menu is only right if the block is still drawn when it arrives.
+
+  /** A code block on a reader page, stamped with the bytes it covers and wired the way the render wires one. */
+  function codeBlockOn(start, end) {
+    const layout = fakeElement('menuFenceLayout');
+    layout.classList.add('reader-layout');
+    const body = fakeElement('menuFenceBody');
+    body.classList.add('document-body');
+    layout.appendChild(body);
+    const block = fakeElement('menuFence');
+    block.tagName = 'PRE';
+    block.dataset.srcStart = String(start);
+    block.dataset.srcEnd = String(end);
+    block.dataset.blockKind = 'code_block';
+    body.appendChild(block);
+    return block;
+  }
+
+  /** Press `target` with the button named, the way the web view does, and answer whether the block opened its source. */
+  function pressOn(block, target, button) {
+    const press = (block.listeners.get('pointerdown') || [])[0];
+    if (!press) throw new Error('the block answers a press with nothing');
+    press({ target, button, preventDefault() {} });
+    return block.dataset.editingSource === 'true';
+  }
+
+  const LANE_SOURCE = 'x'.repeat(40) + '![Shot](imgs/shot.png)'.padEnd(40, ' ') + '\n\nAfter.\n';
+  const FENCE_SOURCE = '# Note\n\n```\ncode\n```\n';
+
+  check('a right press on a picture leaves it a picture and answers with its own menu', () => {
+    whileUnlocked(LANE_SOURCE, () => {
+      const picture = pictureOn({ lane: true });
+      const block = picture.parentElement;
+      booted.wireSourceEditable(block);
+      try {
+        if (pressOn(block, picture, 2)) {
+          throw new Error('a right press swapped the picture for its Markdown, so the menu opens over a line of text');
+        }
+        if (!rightClick(picture)) throw new Error('the right-click on a picture was left to the web view');
+        const rows = openRows();
+        if (rows.join(' | ') !== [...PICTURE_ROWS, 'Delete picture'].join(' | ')) {
+          throw new Error(`a right-clicked picture answered with ${JSON.stringify(rows)} rather than its own rows`);
+        }
+      } finally {
+        booted.hideContextMenu();
+      }
+    });
+  });
+
+  check('a right press on a code block leaves it drawn and answers with the page’s own menu', () => {
+    const was = vm.runInContext('currentState', booted);
+    booted.__menuState = { tabs: [{ path: 'notes/first.md' }], active: 0 };
+    try {
+      vm.runInContext('currentState = __menuState;', booted);
+      // The fence runs from the opener to the newline closing it, which is what a render stamps a code block with.
+      const block = codeBlockOn(8, 20);
+      booted.wireSourceEditable(block);
+      if (pressOn(block, block, 2)) throw new Error('a right press opened the code block’s source, so no menu comes up at all');
+      if (!rightClick(block)) throw new Error('the right-click on a code block was left to the web view');
+      const rows = openRows();
+      if (rows.join(' | ') !== 'Favorite | Copy path | Reveal file | Properties | Delete') {
+        throw new Error(`a right-clicked code block answered with ${JSON.stringify(rows)} rather than the page’s own rows`);
+      }
+    } finally {
+      booted.hideContextMenu();
+      booted.__menuWas = was;
+      vm.runInContext('currentState = __menuWas;', booted);
+      delete booted.__menuWas;
+      delete booted.__menuState;
+    }
+  });
+
+  check('a left press still opens either block’s source, so the guard did not take the editor with it', () => {
+    whileUnlocked(LANE_SOURCE, () => {
+      const picture = pictureOn({ lane: true });
+      const block = picture.parentElement;
+      booted.wireSourceEditable(block);
+      if (!pressOn(block, picture, 0)) throw new Error('a left press on a picture no longer opens its Markdown');
+    });
+    whileUnlocked(FENCE_SOURCE, () => {
+      const block = codeBlockOn(8, 20);
+      booted.wireSourceEditable(block);
+      if (!pressOn(block, block, 0)) throw new Error('a left press on a code block no longer opens its source');
+    });
+  });
+
   check('Delete picture takes the paragraph out in one splice and leaves the picture file alone', () => {
     const wasSend = booted.ipc.postMessage;
     const sent = [];

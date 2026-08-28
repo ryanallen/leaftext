@@ -1468,6 +1468,8 @@ function wireSourceEditable(el) {
   });
   el.addEventListener('pointerdown', (event) => {
     if (el.dataset.editingSource === 'true') return;
+    // A right press asks a question, so it must reach the browser as one: cancel it here and the block swaps to its source before the menu runs, leaving the picture the gesture was aimed at gone. Same test the in-place press makes.
+    if (event.button !== 0) return;
     // Let a link click navigate; source editing starts from a click on any non-link part of the block.
     if (event.target && event.target.closest && event.target.closest('a')) return;
     // A press on a fold's own row opens the fold. It is the one press on a block that already means something, and swallowing it would leave a box nothing can open.

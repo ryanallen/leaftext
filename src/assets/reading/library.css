@@ -867,10 +867,6 @@ body.library-resizing {
 .library-nav-folder.library-nav-up:hover {
   color: var(--lt-foreground);
 }
-.library-nav-up .library-folder-icon {
-  width: 14px;
-  height: 14px;
-}
 /* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere — and holding its rectangle too, because the tint says which file is open and a row that also lifts and rounds under the pointer says two things at once. */
 .library-file.is-selected,
 .library-file.is-selected:hover {
