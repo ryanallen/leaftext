@@ -263,7 +263,50 @@ fn the_file_list_starts_with_a_way_back_out() {
     assert!(html.contains("const parent = libraryParentCrumb();"));
     assert!(html.contains("if (parent) rows.push(upRowHtml(parent));"));
     assert!(html.contains(r#"class="library-nav-folder library-nav-up""#));
-    assert!(css.contains(".library-nav-up {"));
+
+    // Both classes in the selector, and the block below the hover rule: the folder rows' block ties on weight and used to erase all five of these, and the hover pill above would curve the restored hairline up at both ends into a bowl.
+    let rows = css
+        .find(
+            ".library-file,
+.library-nav-folder {",
+        )
+        .expect("the folder rows share one block");
+    let rows_end = rows
+        + css[rows..]
+            .find('}')
+            .expect("the folder rows' block closes");
+    assert!(
+        css[rows..rows_end].contains("border: 0;"),
+        "the folder rows' block is what clears the back row's hairline, so the order below matters"
+    );
+    let hover = css
+        .find(
+            ".library-file:hover,
+.library-nav-folder:hover {",
+        )
+        .expect("the rows share one hover rule");
+    let back = css
+        .find(".library-nav-folder.library-nav-up {")
+        .expect("the back row's rule names both of its classes");
+    assert!(rows < back && hover < back);
+
+    let body_start = back + ".library-nav-folder.library-nav-up {".len();
+    let body_end = body_start
+        + css[body_start..]
+            .find('}')
+            .expect("the back row's rule closes");
+    let body = &css[body_start..body_end];
+    for declaration in [
+        "color: var(--lt-muted-foreground);",
+        "margin-bottom: var(--lt-space-6);",
+        "padding-bottom: var(--lt-space-6);",
+        "border-bottom: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-border) 60%, transparent);",
+        "border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;",
+    ] {
+        assert!(body.contains(declaration), "the back row's own rule writes {declaration}");
+    }
+    // Full-strength ink under the pointer, which needs the third class to outrank the shared hover rule's own color.
+    assert!(css.contains(".library-nav-folder.library-nav-up:hover {"));
 
     // It goes to the folder above, or to the root from one level in. There is nothing above the top, so no row there — leaving a vault is the switcher's job.
     assert!(html.contains("function libraryParentCrumb()"));

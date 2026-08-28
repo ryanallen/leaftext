@@ -697,20 +697,24 @@ export function fakePage() {
   for (const id of elementIds()) if (!byId.has(id)) byId.set(id, fakeElement(id));
   // Only what the page really has gets an answer. An id the markup does not declare returns null, the way it would in the app. An element taken out of the page stops answering, the way it does in a browser: a query only finds what is still in the document.
   const standing = (node) => (node && node.isConnected !== false ? node : null);
-  // The page as it stands, not an index filled at boot: most of what carries a class is drawn while the app runs — the growl, the menus, the sheets, the rename box — and an index cannot hold what the markup never named. Everything hangs off the app surface, which carries `app-surface` itself, so the walk starts at the surface rather than at its children. First match in document order, which is what querySelector means.
-  const wearing = (node, name) => {
+  // The page as it stands, not an index filled at boot: most of what the page holds is drawn while the app runs — the growl, the menus, the sheets, the rename box — and an index cannot hold what the markup never named. Everything hangs off the app surface, which carries `app-surface` and its own id, so the walk starts at the surface rather than at its children. First match in document order, which is what querySelector means. One walk behind the class lookup and both id lookups, so the page and an element it holds cannot disagree about what a name finds.
+  const firstInPage = (node, accepts) => {
     if (!standing(node)) return null;
-    if (String(node.className || '').split(/\s+/).includes(name)) return node;
+    if (accepts(node)) return node;
     for (const child of node.children || []) {
-      const found = wearing(child, name);
+      const found = firstInPage(child, accepts);
       if (found) return found;
     }
     return null;
   };
+  const fromSurface = (accepts) => firstInPage(byId.get('appSurface'), accepts);
+  // Read off the element rather than out of the index, so an id the page changed or took away answers the way it does in a browser without a second copy to keep in step.
+  const carryingId = (id) => fromSurface((node) => node.id === id);
+  const wearing = (name) => fromSurface((node) => String(node.className || '').split(/\s+/).includes(name));
   const find = (selector) => {
     const one = String(selector).trim();
-    if (one.startsWith('#')) return standing(byId.get(one.slice(1)));
-    if (/^\.[A-Za-z0-9_-]+$/.test(one)) return wearing(byId.get('appSurface'), one.slice(1));
+    if (one.startsWith('#')) return carryingId(one.slice(1));
+    if (/^\.[A-Za-z0-9_-]+$/.test(one)) return wearing(one.slice(1));
     return null;
   };
   const document = {
@@ -722,7 +726,7 @@ export function fakePage() {
     body: fakeElement('body'),
     head: fakeElement('head'),
     // Unknown ids answer null, exactly as the real page does — so code that guards on a missing element is exercised, not papered over. An id taken out of the page is one of them.
-    getElementById: (id) => standing(byId.get(id)),
+    getElementById: (id) => carryingId(String(id)),
     querySelector: find,
     // Nothing is loaded at boot, so a list query is legitimately empty.
     querySelectorAll: () => [],

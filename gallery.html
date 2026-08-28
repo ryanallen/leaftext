@@ -4295,21 +4295,6 @@ body.library-resizing {
   color: color-mix(in srgb, var(--lt-muted-foreground) 60%, transparent);
   font-size: var(--lt-text-10);
 }
-/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. */
-.library-nav-up {
-  color: var(--lt-muted-foreground);
-  margin-bottom: var(--lt-space-6);
-  padding-bottom: var(--lt-space-6);
-  border-bottom: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-border) 60%, transparent);
-  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
-}
-.library-nav-up:hover {
-  color: var(--lt-foreground);
-}
-.library-nav-up .library-folder-icon {
-  width: 14px;
-  height: 14px;
-}
 .library-file,
 .library-nav-folder {
   display: flex;
@@ -4334,6 +4319,21 @@ body.library-resizing {
   background: var(--lt-wash-hover);
   border-radius: var(--lt-radius-pill);
   box-shadow: var(--lt-shadow-raised);
+}
+/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. Both classes and this position are load-bearing: the rows block ties on weight, and the hover pill above would curve the hairline up at both ends into a bowl. */
+.library-nav-folder.library-nav-up {
+  color: var(--lt-muted-foreground);
+  margin-bottom: var(--lt-space-6);
+  padding-bottom: var(--lt-space-6);
+  border-bottom: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-border) 60%, transparent);
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
+}
+.library-nav-folder.library-nav-up:hover {
+  color: var(--lt-foreground);
+}
+.library-nav-up .library-folder-icon {
+  width: 14px;
+  height: 14px;
 }
 /* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere — and holding its rectangle too, because the tint says which file is open and a row that also lifts and rounds under the pointer says two things at once. */
 .library-file.is-selected,

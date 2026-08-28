@@ -517,7 +517,51 @@ export function run() {
     if (page.document.querySelector('.probe-nested')) throw new Error('an element taken out of the page is still found by its class');
   });
 
-  // ---- 2j. an element answers about its own children --------------------------
+  // ---- 2j. an id query finds what the page drew ------------------------------
+  //
+  // A page answering an id off an index filled at boot says null for every control the app draws — a growl, a menu, a sheet, the rename box — while the thing is standing on the surface, and says it without anything throwing. Worse, the element it hangs under answers the same `#name` it does, so the same question means two things depending on which side of the page it is asked from and a check moved one line changes its answer.
+
+  check('the stand-in page finds an id the page drew, follows it when it changes and loses it when it goes', () => {
+    // Its own boot rather than the shared one: the query reads the page as it stands, so anything an earlier check left standing on the shared surface would answer here.
+    const page = runShell(source);
+    const surface = page.document.getElementById('appSurface');
+    // The walk starts at the surface and checks it before its children, so the root's own id still answers.
+    if (!surface) throw new Error('the app surface is not found by its own id');
+    if (page.document.querySelector('#appSurface') !== surface) throw new Error('the page query and the id lookup disagree about the app surface');
+    // An id the markup declares below the surface, answering with the page's own element every time — two fragments asking for the same container have to get the same one.
+    const bar = page.document.getElementById('appBar');
+    if (!bar || bar !== page.document.querySelector('#appBar')) throw new Error('an id the markup declares stopped answering, or answered twice with different elements');
+    // Nothing is standing under this name before anything draws it, from either side of the page.
+    if (page.document.getElementById('probeDrawn') || page.document.querySelector('#probeDrawn') || surface.querySelector('#probeDrawn')) {
+      throw new Error('an id nothing has drawn was already answering');
+    }
+    const drawn = page.document.createElement('div');
+    drawn.id = 'probeDrawn';
+    bar.appendChild(drawn);
+    // The three lookups that mean the same thing in a browser: the page's two and the holder's own.
+    if (page.document.getElementById('probeDrawn') !== drawn) throw new Error('an element drawn after boot is not found by its id');
+    if (page.document.querySelector('#probeDrawn') !== drawn) throw new Error('the page query does not find an id the element lookup finds');
+    if (surface.querySelector('#probeDrawn') !== drawn) throw new Error('the holder and the page disagree about an id drawn after boot');
+    // The boot index is the harness snapshot and the walk's root handle, not the answer: nothing drawn since boot joins it.
+    if (page.document.__elements.get('appSurface') !== surface) throw new Error('the boot index lost its handle on the app surface');
+    if (page.document.__elements.has('probeDrawn')) throw new Error('an element drawn after boot was written into the boot snapshot');
+    // Renamed on the element the way the page renames one, read off the element rather than out of a second copy.
+    drawn.setAttribute('id', 'probeRenamed');
+    if (page.document.getElementById('probeDrawn') || page.document.querySelector('#probeDrawn')) throw new Error('the old id still answers after the element was renamed');
+    if (page.document.getElementById('probeRenamed') !== drawn) throw new Error('the new id does not answer after the element was renamed');
+    if (page.document.querySelector('#probeRenamed') !== drawn) throw new Error('the page query does not follow an id change');
+    // Marked gone by hand while still listed in its holder, which is how several checks retire a line: refused, the same as the class lookup refuses one.
+    drawn.isConnected = false;
+    if (page.document.getElementById('probeRenamed') || page.document.querySelector('#probeRenamed')) throw new Error('an element marked gone is still found by its id');
+    drawn.isConnected = true;
+    drawn.remove();
+    if (page.document.getElementById('probeRenamed') || page.document.querySelector('#probeRenamed')) throw new Error('an element taken out of the page is still found by its id');
+    if (surface.querySelector('#probeRenamed')) throw new Error('the holder still answers for an element taken out of the page');
+    // The declared ids are untouched by the walk that drew and dropped one.
+    if (page.document.getElementById('appBar') !== bar) throw new Error('a declared id stopped answering after an element was drawn and taken out');
+  });
+
+  // ---- 2k. an element answers about its own children --------------------------
   //
   // An element answering any query with a fresh element is never holding nothing, so a guard written as "refuse this if the line is carrying a picture, a table or a rule" can only ever be told it is — and every check wanting the other answer has to switch the query off in the line above the press. That is a guard stuck on one branch and a workaround somebody writes on purpose.
 
@@ -551,7 +595,7 @@ export function run() {
     if (drawn.querySelectorAll('span')[1] !== written) throw new Error('the list query answered out of the order the children stand in');
   });
 
-  // ---- 2k. one class, reached by either name ----------------------------------
+  // ---- 2l. one class, reached by either name ----------------------------------
   //
   // A browser keeps a class in one place. Two stores that never meet mean a class put on through the list is invisible to the name and a class written by name is invisible to the list — so eight guards asking an element whether it wears a class the markup, a rendered document or a name write gave it are told no for ever, and every check that needs the other answer hand-rolls an element beside the press.
 
@@ -581,7 +625,7 @@ export function run() {
     if (!surface.classList.contains('app-surface')) throw new Error(`a class the markup declared does not reach the list: ${surface.className}`);
   });
 
-  // ---- 2l. the words come with the markup -------------------------------------
+  // ---- 2m. the words come with the markup -------------------------------------
   //
   // The page draws whole panels as one string and reaches straight back into what it drew, so the words between the tags have to come with the elements. A container that held only the elements says nothing for every panel alike, which is an answer that is always the same in the direction that reads as a guard having fired: `blockIsEmpty` calls a line empty on its text alone, so every panel the page really drew with a sentence in it would pass the emptiness test.
 
@@ -618,7 +662,7 @@ export function run() {
     if (drawn.textContent !== '') throw new Error(`a redrawn container still says ${JSON.stringify(drawn.textContent)}`);
   });
 
-  // ---- 2m. an element hands over the first thing it is holding ----------------
+  // ---- 2n. an element hands over the first thing it is holding ----------------
   //
   // The reading render draws a document as one string and takes the layout it just drew back out of the surface by this name, then hands it to the pass that asks a document's fields for a growl. A stand-in without the name hands over nothing, and that pass throws on the first line of it — so the whole render is unreachable without this.
 
@@ -647,7 +691,7 @@ export function run() {
     if (moving.firstElementChild !== null) throw new Error('a redrawn container still hands over what it used to hold');
   });
 
-  // ---- 2n. an attribute the markup declared is something a query can find -----
+  // ---- 2o. an attribute the markup declared is something a query can find -----
   //
   // A rendered block carries where it starts in the source as an attribute, and both landings that put a returning reader back where they were ask for it: the render asks the document body for every block carrying one, and the source button asks the element under the reader for its nearest. A matcher that reads a tag and a class and nothing else answers the first with an empty list and the second with null for ever — so the landing falls through to the top of the document and the toggle arms nothing, on every run, with no way to see it.
 
@@ -768,7 +812,7 @@ export function run() {
     if (leaf.closest(':hover') !== null) throw new Error('an unmodeled pseudo-class started answering');
   });
 
-  // ---- 2o. one node against one whole selector --------------------------------
+  // ---- 2p. one node against one whole selector --------------------------------
   //
   // The page has one guard that asks a box what it is rather than being told: whether the pointer resting near an edge is on that box's own scrollbar gutter, which is what raises the bar so it can be grabbed. It asks with the list of boxes that wear one, and that list spends a refusal, a child step, a descendant step and an either-of list — none of which a matcher reading a class, a bare attribute or a tag can answer. Worse than a no: comparing a tag to everything before the first space reads `pre > code` as `pre`, so every code block's holder answers yes to a wearer it is not.
 
@@ -807,7 +851,7 @@ export function run() {
     if (holder.querySelectorAll('pre > code').length) throw new Error('the query down answered a code block holder for what is inside it');
   });
 
-  // ---- 2p. an element says its own markup -------------------------------------
+  // ---- 2q. an element says its own markup -------------------------------------
   //
   // Five fragments reach for an element's markup: the page exported as one file, the ghost carrying a dragged row, the card's section lift, the two memos that keep what was drawn, and the vault glyph, which writes one. An element that answered with the string somebody last assigned could say none of them — the drawing memo is read after a shared sheet has been lifted out of the picture and a class put on it, which is the one moment the written string cannot describe.
 
@@ -953,7 +997,7 @@ export function run() {
     if (glyph.parentElement !== null) throw new Error('the element that was written over still names a holder');
   });
 
-  // ---- 2q. one node list, read under the name the page uses -------------------
+  // ---- 2r. one node list, read under the name the page uses -------------------
   //
   // The page reads what a container is holding by `childNodes` and by its two ends, and a run of words counts as one of them: the selection toolbar's tag fold moves each child into a replacement until the first one is gone, so an end that skipped words would move the elements, drop the sentence, and read back as a fold that worked.
 
@@ -987,7 +1031,7 @@ export function run() {
     if (written.childNodes.length || written.firstChild !== null || written.lastChild !== null) throw new Error('an emptied container still hands over what it was holding');
   });
 
-  // ---- 2r. the two moves that are not moves -----------------------------------
+  // ---- 2s. the two moves that are not moves -----------------------------------
   //
   // The tab drag settles a dragged tab into its slot with one and four fragments take an element off the page with the other, so a stub that hands the node back reads as a drop that worked while the strip is in the order it started.
 
@@ -1037,7 +1081,7 @@ export function run() {
     if (wrapper.childNodes.length) throw new Error('the wrapper kept a copy of the words it handed over');
   });
 
-  // ---- 2s. a node placed beside another --------------------------------------
+  // ---- 2t. a node placed beside another --------------------------------------
   //
   // The plus above a block and Enter under one both put the new line into the page this way, and the word is the only difference between them. Without the name the stand-in throws before either path can be booted at all, and a stub keeping the block in a variable proves a block was built rather than where it landed.
 
@@ -1087,7 +1131,7 @@ export function run() {
     if (!said.includes('inthemiddle')) throw new Error(`a word the page does not know was taken rather than refused: ${said || 'nothing was thrown'}`);
   });
 
-  // ---- 2t. a step to the block either side ------------------------------------
+  // ---- 2u. a step to the block either side ------------------------------------
   //
   // The glossary entry walks to the next heading of its own rank, the block gutter walks past a block of no height to the one below a blank line, and the caret a delete leaves behind is placed off the block above and the block below. All three read these two names, and a stand-in answering `undefined` lets every one of those walks end before its first step without throwing — a check that can only pass.
 
@@ -1130,7 +1174,7 @@ export function run() {
     if (never.nextElementSibling !== null || never.previousElementSibling !== null) throw new Error('a block standing in no holder answered a sibling');
   });
 
-  // ---- 2u. a copy that is really a copy ---------------------------------------
+  // ---- 2v. a copy that is really a copy ---------------------------------------
   //
   // Four surfaces are nothing but what a copy kept: the rail's thumbnail is a shallow copy of the reading body with a deep copy of each row put into it, the full-window table is a deep copy of one table, the exported page is a deep copy of the reading body, and a block dragged in the gutter is dragged by a copy of itself. What a shallow copy keeps is the browser's answer rather than a cheaper one — every attribute and no children — because a stand-in giving a different answer from the page is one no check can trust.
 

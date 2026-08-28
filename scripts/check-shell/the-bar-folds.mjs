@@ -67,9 +67,10 @@ export function run() {
       // A hidden item is skipped by the fold, so the menu is the rest in the same order with nothing empty left at its foot. Both platforms draw these three now, so this is the update bell's case rather than the Mac's — it is only ever there when there is something to install.
       const controls = booted.document.getElementById('windowControls');
       controls.hidden = true;
-      // Stand in for the unfold: the fake page's containers were empty when the fragment recorded them, so the real refit's first step has nothing to move back out.
+      // Stand in for the unfold: the fake page's containers were empty when the fragment recorded them, so the real refit's first step has nothing to move back out. The handles come out of the page first: the page answers off what it is holding, and an element the panel has stopped listing is standing nowhere it can be reached from.
+      const stranded = [controls, booted.document.getElementById('backButton'), booted.document.getElementById('forwardButton')];
       inside.length = 0;
-      for (const el of [controls, booted.document.getElementById('backButton'), booted.document.getElementById('forwardButton')]) el.parentElement = null;
+      for (const el of stranded) el.parentElement = null;
       booted.refitAppBar();
       const withoutControls = inside.map((el) => el.id);
       controls.hidden = false;
