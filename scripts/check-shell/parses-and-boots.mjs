@@ -1019,7 +1019,7 @@ export function run() {
 
   // ---- 2s. a node placed beside another --------------------------------------
   //
-  // The plus above a block and Enter under one both put the new line into the page this way, and the word is the only difference between them. Without the name the stand-in throws before either path can be booted at all, so each check had to hand in a stub that kept the block in a variable and put it nowhere — which proves a block was built rather than where it landed.
+  // The plus above a block and Enter under one both put the new line into the page this way, and the word is the only difference between them. Without the name the stand-in throws before either path can be booted at all, and a stub keeping the block in a variable proves a block was built rather than where it landed.
 
   check('a node placed beside another lands where a browser puts it', () => {
     const holder = fakeElement('beside-holder');
