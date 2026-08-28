@@ -86,14 +86,14 @@ export function run() {
     context.__frames.drain();
     const sent = [];
     context.ipc = { postMessage: (text) => sent.push(JSON.parse(text)) };
-    // Part way down, with the third block at the top edge.
+    // Part way down, with the third block up under the app bar and the fourth crossing the line the document is read from.
     app.scrollTop = 250;
     context.toggleCodeView();
     const read = (name) => vm.runInContext(name, context);
     if (read('pendingViewLandingPath') !== path) throw new Error(`the landing was stamped with ${JSON.stringify(read('pendingViewLandingPath'))} rather than the document it was taken from`);
     if (read('viewHandoff.readerScrollTop') !== 250) throw new Error(`the reader's pixel was written down as ${read('viewHandoff.readerScrollTop')}`);
     if (read('pendingViewAtTop') !== false) throw new Error('a reader part way down a document was recorded as sitting at the top');
-    if (read('pendingCodeViewSrcOffset') !== 90) throw new Error(`the source view was sent to ${read('pendingCodeViewSrcOffset')} rather than the block at the top of the reading view`);
+    if (read('pendingCodeViewSrcOffset') !== 150) throw new Error(`the source view was sent to ${read('pendingCodeViewSrcOffset')} rather than the block being read at the top of the reading view`);
     if (!sent.some((one) => one.command === 'enterCodeView')) throw new Error(`the press asked the host for nothing: ${JSON.stringify(sent)}`);
 
     // From the very top there is no block to align on, so the other view is told to land flush at its own top.

@@ -57,7 +57,7 @@ export function run() {
 
   // ---- 2. the section you are reading ---------------------------------------
   //
-  // The reader's own anchor already names the heading above the top edge on every scroll settle. This is that answer being said out loud, and the entry for it being marked.
+  // The reader's own anchor already names the heading the line a document is read from is under, on every scroll settle. This is that answer being said out loud, and the entry for it being marked.
 
   // The blocks a reader anchors to, laid out one under the other and following the scroll the way a browser's boxes do. Every one of them, because the binary search over them takes their document order for the order of their boxes.
   const layOutAnchorBlocks = (page, tall) => {
@@ -83,10 +83,10 @@ export function run() {
   const sectionAfterScrollingTo = (page, top) => {
     page.app.scrollTop = top;
     page.context.refreshReaderScrollAnchor();
-    return page.context.readerSectionAboveTopEdge();
+    return page.context.readerSectionAtReadingLine();
   };
 
-  check('the reader says which section its top edge is under, and says none above the first', () => {
+  check('the reader says which section the line it reads from is under, and says none above the first', () => {
     const page = threeSections();
     layOutAnchorBlocks(page, 400);
 
@@ -95,6 +95,20 @@ export function run() {
       const said = sectionAfterScrollingTo(page, top);
       if (said !== want) throw new Error(`scrolled to ${top} the reader named "${said}" rather than "${want}"`);
     }
+  });
+
+  // The app bar covers the strip between the reader shell's own top edge and the line a document is read from, so a block ending in there has already left the page. Boxes given one by one rather than laid flush, because a flush layout can never put a block inside that strip and so can never fail.
+  check('a block ending under the app bar does not name its section while the heading below it is being read', () => {
+    const page = threeSections();
+    const boxes = [[-400, 0], [0, 40], [40, 70], [70, 120], [120, 520], [520, 560], [560, 960]];
+    page.body.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr').forEach((block, at) => {
+      const [top, bottom] = boxes[at];
+      block.getBoundingClientRect = () => ({ left: 0, top, right: 800, bottom, width: 800, height: bottom - top });
+    });
+
+    page.context.refreshReaderScrollAnchor();
+    const said = page.context.readerSectionAtReadingLine();
+    if (said !== 'two') throw new Error(`with "One"'s last paragraph ending under the app bar and "Two" on screen, the reader named "${said}"`);
   });
 
   check('a scroll that stays inside one section says nothing a second time', () => {

@@ -5347,16 +5347,15 @@ body:has(#readerToolbar:not([hidden])) {
   text-decoration: none;
   /* The hand, because a reader reads the drawing and this is drawn as a button. Written rather than left off: it is the same answer the shared button rule gives every native button. */
   cursor: pointer;
-  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. The corner is left out: every radius over half the button's height draws as the same pill, so the shape is finished inside the first frame at any duration. */
+  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. */
   transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
-/* The corner and the lift are on the base rule alone, so the outline and ghost variants below take them by having the same box rather than by writing them again. */
+/* The lift is on the base rule alone, so the outline and ghost variants below take it by having the same box rather than by writing it again. No corner here: the button a reader aimed at keeps the shape it was aimed at. */
 .document-body a.leaf-md-button:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
-  border-radius: var(--lt-radius-pill);
   box-shadow: var(--lt-shadow-raised);
   text-decoration: none;
 }

@@ -447,15 +447,15 @@ function refreshReaderScrollAnchor() {
   readerScrollAnchor = captureReaderScrollAnchor();
   announceReaderSection();
 }
-// The heading the reader's top edge is under, as its id — null above the first one, and null in a document with no headings. Published rather than worked out: it is the answer the binary search above already reached on its way to placing the reader, so anything that wants to show where somebody is reading costs nothing per scroll.
-function readerSectionAboveTopEdge() {
+// The heading the line a document is read from is under, as its id — null above the first one, and null in a document with no headings. Published rather than worked out: it is the answer the binary search above already reached on its way to placing the reader, so anything that wants to show where somebody is reading costs nothing per scroll.
+function readerSectionAtReadingLine() {
   return readerScrollAnchor ? readerScrollAnchor.section : null;
 }
 // What was last said. Undefined until the first answer, so a document opening above its own first heading still says its null once.
 let readerSectionSaid;
 // Say which section the reader is in, where it has changed since the last time. A scroll within one section says nothing, which is most scrolls.
 function announceReaderSection() {
-  const section = readerSectionAboveTopEdge();
+  const section = readerSectionAtReadingLine();
   if (section === readerSectionSaid) {
     return;
   }
@@ -477,7 +477,8 @@ function captureReaderScrollAnchor() {
     return null;
   }
   const shellRect = app.getBoundingClientRect();
-  const topEdge = shellRect.top + 1;
+  // Where reading starts, not where the shell does: the app bar covers the strip between them, so a block ending in there has left the page and would otherwise name the section the reader can no longer see.
+  const topEdge = shellRect.top + READER_CONTENT_TOP_GAP;
   let lo = 0;
   let hi = blocks.length - 1;
   let targetIndex = blocks.length - 1;

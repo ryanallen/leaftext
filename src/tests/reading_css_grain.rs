@@ -675,7 +675,7 @@ fn the_focus_ring_is_the_keyboards_and_the_mouse_takes_it_off_every_control() {
 
 #[test]
 fn a_pointed_at_control_lifts_and_nothing_that_means_something_does() {
-    // Three families answer a pointer with the raised shadow as well as color, and two of them round to the pill. What neither may reach is a state that already means something: the open file, and a button whose link goes nowhere and is drawn as words.
+    // Three families answer a pointer with the raised shadow as well as color, and only a library row rounds to the pill. What none of them may reach is a state that already means something: the open file, and a button whose link goes nowhere and is drawn as words.
     let css = reading_mode_css();
 
     // The 32px chips lift and keep their corner: a pill on a square is a circle, a different control rather than an emphasis.
@@ -689,15 +689,20 @@ fn a_pointed_at_control_lifts_and_nothing_that_means_something_does() {
         "a 32px chip rounded to the pill is a circle: {chips}"
     );
 
-    // A row and a document button have a width to round, so both take the pill with the lift.
-    for selector in [
-        ".library-file:hover,\n.library-nav-folder:hover {",
-        ".document-body a.leaf-md-button:hover {",
-    ] {
-        let body = rule_body(css, selector);
-        assert_contains(body, "border-radius: var(--lt-radius-pill);");
-        assert_contains(body, "box-shadow: var(--lt-shadow-raised);");
-    }
+    // A library row is a whole strip a pointer sweeps, so it rounds to the pill with the lift.
+    let row = rule_body(css, ".library-file:hover,\n.library-nav-folder:hover {");
+    assert_contains(row, "border-radius: var(--lt-radius-pill);");
+    assert_contains(row, "box-shadow: var(--lt-shadow-raised);");
+
+    // A document button is aimed at, so it lifts and keeps the medium corner it was aimed at rather than becoming a pill under the pointer.
+    let button = rule_body(css, ".document-body a.leaf-md-button {");
+    assert_contains(button, "border-radius: var(--lt-radius-md);");
+    let button_hover = rule_body(css, ".document-body a.leaf-md-button:hover {");
+    assert_contains(button_hover, "box-shadow: var(--lt-shadow-raised);");
+    assert!(
+        !button_hover.contains("border-radius"),
+        "a button that changes shape under the pointer is a different button than the one aimed at: {button_hover}"
+    );
 
     // The open file is already saying something with its tint, so it keeps its rectangle under the pointer rather than saying two things at once.
     let selected = rule_body(
