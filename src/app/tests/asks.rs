@@ -873,6 +873,237 @@ fn the_pipes_refusals_name_the_file_and_the_operating_systems_words_and_write_no
 }
 
 #[test]
+fn a_gesture_ask_parses_into_the_verb_it_names_and_refuses_one_it_does_not_know() {
+    // Through the pipe's own front door, because the kind rides flattened inside the ask and a parse proved on the enum alone would miss that seam.
+    let landed = std::sync::Mutex::new(None);
+    let reply = pipe::answer(
+        r#"{"ask":"gesture","kind":"wheel","x":900,"y":700,"notches":-8}"#,
+        |ask| {
+            if let pipe::Ask::Gesture { gesture } = ask {
+                *landed.lock().expect("the verb") = Some(gesture);
+            }
+            Some(Ok(serde_json::json!({ "played": "wheel" })))
+        },
+    );
+    let reply: serde_json::Value = serde_json::from_str(&reply.text).expect("a JSON reply");
+    assert_eq!(reply["ok"], true);
+    assert_eq!(
+        landed.lock().expect("the verb").take(),
+        Some(Gesture::Wheel {
+            x: 900.0,
+            y: 700.0,
+            notches: -8
+        })
+    );
+
+    // A drag written without a pace walks the driver's own unpaced walk, so a step list already in the tree means the same thing here.
+    let landed = std::sync::Mutex::new(None);
+    pipe::answer(
+        r#"{"ask":"gesture","kind":"drag","x1":1,"y1":2,"x2":3,"y2":4}"#,
+        |ask| {
+            if let pipe::Ask::Gesture { gesture } = ask {
+                *landed.lock().expect("the verb") = Some(gesture);
+            }
+            Some(Ok(serde_json::json!(null)))
+        },
+    );
+    assert_eq!(
+        landed.lock().expect("the verb").take(),
+        Some(Gesture::Drag {
+            x1: 1.0,
+            y1: 2.0,
+            x2: 3.0,
+            y2: 4.0,
+            moves: 12,
+            gap: 25
+        })
+    );
+
+    // A verb nobody wrote never reaches the window, and the refusal names what can be asked.
+    let asked = std::sync::atomic::AtomicUsize::new(0);
+    let reply = pipe::answer(r#"{"ask":"gesture","kind":"wiggle","x":1,"y":2}"#, |_| {
+        asked.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Some(Ok(serde_json::json!(null)))
+    });
+    assert_eq!(asked.load(std::sync::atomic::Ordering::SeqCst), 0);
+    let reply: serde_json::Value = serde_json::from_str(&reply.text).expect("a JSON reply");
+    assert_eq!(reply["ok"], false);
+    assert!(
+        reply["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("not an ask this app knows"),
+        "{reply}"
+    );
+}
+
+#[test]
+fn a_gesture_carries_picture_pixels_and_the_walk_speaks_in_the_pages() {
+    // The one conversion, at the scale this machine really runs at: the picture is the client rectangle, 1,620 across where the page is 1,080.
+    assert_eq!(gesture_ask::to_page(1620.0, 1.5), 1080.0);
+    assert_eq!(gesture_ask::to_page(0.0, 1.5), 0.0);
+
+    // And the walk's own steps are already converted, so no later hand touches a coordinate.
+    let walk =
+        gesture_ask::steps_for(&Gesture::Click { x: 900.0, y: 600.0 }, 1.5).expect("a click walks");
+    assert_eq!(walk.label, "click");
+    let press: serde_json::Value = serde_json::from_str(&walk.steps[1]).expect("a parameter block");
+    assert_eq!(press["type"], "mousePressed");
+    assert_eq!(press["x"], 600.0);
+    assert_eq!(press["y"], 400.0);
+    assert_eq!(press["button"], "left");
+    assert_eq!(press["clickCount"], 1);
+    let release: serde_json::Value =
+        serde_json::from_str(&walk.steps[2]).expect("a parameter block");
+    assert_eq!(release["type"], "mouseReleased");
+}
+
+#[test]
+fn a_wheel_walks_one_notch_at_a_time_with_the_signs_a_mouse_wheel_has() {
+    // Negative notches scroll down, and the protocol's delta is signed the other way up — measured: a positive delta moved a page from 0 to 800.
+    let walk = gesture_ask::steps_for(
+        &Gesture::Wheel {
+            x: 300.0,
+            y: 300.0,
+            notches: -8,
+        },
+        1.0,
+    )
+    .expect("a wheel walks");
+    assert_eq!(walk.steps.len(), 8);
+    let notch: serde_json::Value = serde_json::from_str(&walk.steps[0]).expect("a parameter block");
+    assert_eq!(notch["type"], "mouseWheel");
+    assert_eq!(notch["deltaY"], 100.0);
+    let up = gesture_ask::steps_for(
+        &Gesture::Wheel {
+            x: 300.0,
+            y: 300.0,
+            notches: 2,
+        },
+        1.0,
+    )
+    .expect("a wheel walks");
+    let notch: serde_json::Value = serde_json::from_str(&up.steps[0]).expect("a parameter block");
+    assert_eq!(notch["deltaY"], -100.0);
+
+    assert!(
+        gesture_ask::steps_for(
+            &Gesture::Wheel {
+                x: 1.0,
+                y: 1.0,
+                notches: 0
+            },
+            1.0
+        )
+        .is_err(),
+        "a wheel of no notches moves nothing and must say so"
+    );
+}
+
+#[test]
+fn a_drag_walks_at_the_pace_it_was_given_and_a_hold_keeps_the_button_down() {
+    let walk = gesture_ask::steps_for(
+        &Gesture::Drag {
+            x1: 0.0,
+            y1: 0.0,
+            x2: 100.0,
+            y2: 0.0,
+            moves: 4,
+            gap: 8,
+        },
+        1.0,
+    )
+    .expect("a drag walks");
+    // A lead move, the press, the moves, the release — and the endpoint is walked to, not teleported to.
+    assert_eq!(walk.steps.len(), 7);
+    assert_eq!(walk.gap_ms, 8);
+    let mid: serde_json::Value = serde_json::from_str(&walk.steps[3]).expect("a parameter block");
+    assert_eq!(mid["type"], "mouseMoved");
+    assert_eq!(mid["x"], 50.0);
+    assert_eq!(mid["buttons"], 1, "the button rides every move of a drag");
+    let last: serde_json::Value =
+        serde_json::from_str(walk.steps.last().expect("a last step")).expect("a parameter block");
+    assert_eq!(last["type"], "mouseReleased");
+
+    // A hold is the same walk without the release, and its own release verb ends it where the shot found it.
+    let held = gesture_ask::steps_for(
+        &Gesture::Hold {
+            x1: 0.0,
+            y1: 0.0,
+            x2: 100.0,
+            y2: 0.0,
+            moves: 4,
+            gap: 8,
+        },
+        1.0,
+    )
+    .expect("a hold walks");
+    assert_eq!(held.steps.len(), 6);
+    let last: serde_json::Value =
+        serde_json::from_str(held.steps.last().expect("a last step")).expect("a parameter block");
+    assert_eq!(last["type"], "mouseMoved");
+    let release = gesture_ask::steps_for(&Gesture::Release { x: 100.0, y: 0.0 }, 1.0)
+        .expect("a release walks");
+    assert_eq!(release.steps.len(), 1);
+
+    // The pipe's wait stretches with the walk, so a drag at a hand's pace is not reported as a stuck app.
+    let paced = Gesture::Drag {
+        x1: 0.0,
+        y1: 0.0,
+        x2: 100.0,
+        y2: 0.0,
+        moves: 250,
+        gap: 8,
+    };
+    assert_eq!(paced.walk(), std::time::Duration::from_millis(2016));
+    assert!(
+        pipe::ask_wait(&pipe::Ask::Gesture {
+            gesture: paced.clone()
+        }) > std::time::Duration::from_millis(2016),
+        "the wait must outlast the walk it carries"
+    );
+
+    // The driver's own refusals, made here too: no moves is a press and a teleport, no gap is faster than a gesture means anything, and a walk past the ceiling would hold the pointer for half a minute.
+    for wrong in [
+        Gesture::Drag {
+            x1: 0.0,
+            y1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            moves: 0,
+            gap: 8,
+        },
+        Gesture::Drag {
+            x1: 0.0,
+            y1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            moves: 4,
+            gap: 0,
+        },
+        Gesture::Hold {
+            x1: 0.0,
+            y1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            moves: 60_000,
+            gap: 1_000,
+        },
+    ] {
+        assert!(gesture_ask::steps_for(&wrong, 1.0).is_err(), "{wrong:?}");
+    }
+}
+
+#[test]
+fn a_key_through_the_gesture_ask_is_refused_with_eval_named() {
+    // Half-translating the driver's key spelling into the protocol's is a table nothing needs, so the refusal points at the door that is open.
+    for keys in [Gesture::Type, Gesture::Key] {
+        let refusal = gesture_ask::steps_for(&keys, 1.0).expect_err("keys are not played here");
+        assert!(refusal.contains("eval"), "{refusal}");
+    }
+}
+
+#[test]
 fn the_wrapper_carries_the_script_through_and_marks_the_window_after_it() {
     // The two things that would break the answer if they were wrong: the caller's line must arrive untouched, and the mark must be a declaration rather than an assignment, because an assignment is the last expression in the block and would be handed back in place of the answer.
     let wrapped = eval_ask::wrapped_script("1+1 // a trailing comment", 7);

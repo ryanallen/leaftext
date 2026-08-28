@@ -126,6 +126,13 @@ pub(crate) enum UserEvent {
         height: f64,
         reply: PipeReply,
     },
+    /// Somebody on the ask pipe wants a pointer gesture played into the page over the web view's own developer protocol — the route that needs no cursor, no focus and no place on screen, which is what reaches a copy standing off every monitor.
+    PipeGesture { gesture: Gesture, reply: PipeReply },
+    /// One step of that gesture's walk, posted by its pacing thread: the protocol call must be made from the loop thread, and a paced drag walked there would hold the loop for its whole length. `done` rides the last step — the reply, and the answer it carries once the engine takes the step.
+    PipeGestureStep {
+        params: String,
+        done: Option<(PipeReply, serde_json::Value)>,
+    },
     /// Somebody on the ask pipe wants the app closed. This one only answers that the loop heard: closing here would end the process with the reply still in the pipe, where it is thrown away.
     PipeQuit { reply: PipeReply },
     /// Close now — the pipe thread saying the asker has taken its answer. The second half of `PipeQuit`, and the only thing that closes the app on its behalf.

@@ -43,7 +43,9 @@ function askApp(request) {
   return new Promise((resolve, reject) => {
     const socket = net.connect(address());
     let reply = '';
-    socket.setTimeout(10_000);
+    // A gesture's walk is paced on purpose, so its wait stretches with the walk it names — the same stretch the app's own pipe gives it. Every other ask keeps the ten seconds.
+    const walk = request.ask === 'gesture' ? ((request.moves ?? 12) + 2) * (request.gap ?? 25) : 0;
+    socket.setTimeout(10_000 + walk);
     socket.on('connect', () => {
       const text = JSON.stringify(request);
       // A Windows named pipe has no half-close: ending the socket closes the whole handle, and the reply lands on a pipe with nobody at this end. The server there reads one message and does not wait for EOF. A Unix socket does wait for it, so there the write has to be the last thing.
@@ -223,6 +225,32 @@ const TOOLS = [
       width: Number(args.width ?? 0),
       height: Number(args.height ?? 0),
     }),
+  },
+  {
+    name: 'leaftext_gesture',
+    description:
+      "Play one pointer gesture into the page — a wheel, click, right-click, move, drag, or a hold and its release — through the web view's own developer protocol, which needs no cursor, no focus and no place on screen. This is how a copy standing off every monitor is scrolled or dragged; the page sees a trusted event. Coordinates are pixels in the picture leaftext_shot writes; the app divides by the window's scale, so a pixel read off the last photograph is the pixel it looks like. A wheel takes x, y and notches, negative scrolling down the way a mouse wheel's sign does. A drag takes x1,y1,x2,y2 and optionally moves and gap; written without the pace it walks twelve moves twenty-five milliseconds apart, and a hand's speed is about 250 moves 8 ms apart. hold is a drag that keeps the button down so a shot can catch the gesture in flight, and release ends it at x,y. Keys are not played here: leaftext_eval presses anything a shortcut reaches. Windows only — the protocol is the web view's, and only the Windows web view has one.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: {
+          type: 'string',
+          enum: ['move', 'click', 'rclick', 'wheel', 'drag', 'hold', 'release'],
+          description: 'Which gesture to play',
+        },
+        x: { type: 'number', description: 'Picture pixels; move, click, rclick, wheel and release take x and y' },
+        y: { type: 'number' },
+        notches: { type: 'number', description: 'Wheel only: notches to turn, negative scrolls down' },
+        x1: { type: 'number', description: 'Drag and hold: where the button goes down' },
+        y1: { type: 'number' },
+        x2: { type: 'number', description: 'Drag and hold: where the walk ends' },
+        y2: { type: 'number' },
+        moves: { type: 'number', description: 'Drag and hold: how many moves the walk takes (default 12)' },
+        gap: { type: 'number', description: 'Drag and hold: milliseconds between moves (default 25)' },
+      },
+      required: ['kind'],
+    },
+    ask: (args) => ({ ask: 'gesture', ...args }),
   },
   {
     name: 'leaftext_idle',

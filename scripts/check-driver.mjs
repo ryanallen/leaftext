@@ -167,6 +167,24 @@ if (!all.text.includes(`${VERBS.length} steps`)) {
 if (!all.text.includes('not the invisible resize border')) {
   problems.push('a dry run does not say which rectangle it would photograph and offset steps by');
 }
+
+// Which of the two routes each verb takes against a window standing on no monitor, read back from the same dry run: a pointer step is played into the page through the gesture ask, a key step is refused with eval named, and a wait runs where it is.
+const OFF_ROUTE = {
+  move: 'the gesture ask', click: 'the gesture ask', rclick: 'the gesture ask',
+  drag: 'the gesture ask', hold: 'the gesture ask', scroll: 'the gesture ask',
+  type: 'refused; eval does keys', key: 'refused; eval does keys', wait: null,
+};
+for (const [step, said] of VERBS) {
+  const kind = step.split(':')[0];
+  const line = all.text.split(/\r?\n/).find((printed) => printed.includes(said)) ?? '';
+  const route = OFF_ROUTE[kind];
+  if (route && !line.includes(`off screen: ${route === 'the gesture ask' ? 'played into the page through the gesture ask' : route}`)) {
+    problems.push(`${step} does not say its route against a window on no monitor: ${line || 'no line printed'}`);
+  }
+  if (!route && line.includes('off screen')) {
+    problems.push(`${step} claims an off-screen route and runs where it is: ${line}`);
+  }
+}
 // The point of the mode: it stops before it does anything.
 if (existsSync(out)) problems.push('a dry run wrote a file, so it did more than read the list');
 
@@ -348,13 +366,16 @@ for (const [what, pattern] of LAUNCHER) {
   if (!pattern.test(launcherText)) problems.push(`the probe launcher no longer knows how to ${what}`);
 }
 
-// The photograph's own half of the same promise. A copy off every monitor is drawn with PrintWindow, which needs neither focus nor a place on screen — so pulling it forward first would hand the keyboard back to a window the owner cannot see, at the one moment a build most wants a picture. A window on a monitor is pulled forward exactly as it was.
+// The photograph's own half of the same promise. A copy off every monitor is drawn with PrintWindow, which needs neither focus nor a place on screen — so pulling it forward first would hand the keyboard back to a window the owner cannot see, at the one moment a build most wants a picture. A window on a monitor is pulled forward and driven through the mouse exactly as it was; one nobody can see takes its pointer steps through the app's own gesture ask instead, because a point off every screen is clamped onto the desktop and the gesture would land on whatever the owner has there.
 const OFF_SCREEN_SHOT = [
   ['ask whether the window it is about to drive stands on any monitor', /function Test-OffEveryMonitor/],
   ['skip pulling such a window forward rather than taking the keyboard off what the owner is reading', /if \(Test-OffEveryMonitor \$hwnd\) \{[\s\S]*?Write-Output[\s\S]*?return/],
   ['still pull a window on a monitor forward, so a documentation shot is unchanged', /return\s+\}\s+\[void\]\[LeafShot\]::SetForegroundWindow\(\$hwnd\)/],
-  ['refuse a gesture against such a window rather than clamping it onto the desktop and clicking whatever the owner has there', /\$gestures\.Count -and \(Test-OffEveryMonitor \$hwnd\)/],
-  ['say what to reach the page with instead, so a refused gesture is not a dead end', /just ask eval/],
+  ['play a pointer step against such a window into the page through the gesture ask rather than clamping it onto the desktop', /\$offScreen -and \$step\.Kind -ne 'wait'\) \{ Step-PointerAsk/],
+  ['drive a window on a monitor through the mouse exactly as before', /else \{ Step-Pointer \$step \(\$vis\.Left \+ \$app\.X\) \(\$vis\.Top \+ \$app\.Y\) \}/],
+  ['read the gesture reply back, so a refused one fails the run rather than reporting a step nobody made', /if \(-not \$said\.ok\) \{ throw "the gesture ask was refused/],
+  ['refuse a key step against such a window with the way through named, so it is not a dead end', /needs the keyboard[\s\S]*?just ask eval/],
+  ['release a button the ask route left down, so a failed run cannot leave the page mid-drag', /if \(\$heldAsk\) \{ try \{ Send-GestureAsk/],
 ];
 for (const [what, pattern] of OFF_SCREEN_SHOT) {
   if (!pattern.test(text)) problems.push(`the photograph no longer knows how to ${what}`);
@@ -406,5 +427,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands in ${OFF_SCREEN_SHOT.length} ways, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );

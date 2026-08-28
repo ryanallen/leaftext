@@ -474,6 +474,16 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     let _ = reply.try_send(Err("there is no window to run it in".to_string()));
                 }
             },
+            // The gesture walks on a thread of its own and lands back here one step at a time, because the protocol call must be made from this thread and a paced drag made here would hold the loop for the walk.
+            Event::UserEvent(UserEvent::PipeGesture { gesture, reply }) => match reader.page() {
+                Some(_) => gesture_ask::run(&proxy, reader.window.scale_factor(), &gesture, reply),
+                None => {
+                    let _ = reply.try_send(Err("there is no window to play it in".to_string()));
+                }
+            },
+            Event::UserEvent(UserEvent::PipeGestureStep { params, done }) => {
+                gesture_ask::step(reader.page(), &params, done)
+            }
             Event::UserEvent(UserEvent::FromPage(command)) => match command {
                 IpcCommand::Open => file_cmds::open(&mut reader),
                 IpcCommand::NewDocument => file_cmds::new_document(&mut reader),

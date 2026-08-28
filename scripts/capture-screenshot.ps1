@@ -99,6 +99,9 @@ param(
   #     is 12 moves 25 ms apart, which is about thirty a second
   #   scroll:X,Y,NOTCHES (negative scrolls down)
   #   type:text  key:{ESC}   wait:MS
+  # Against a window standing on no monitor the pointer steps are played into the
+  # page through the app's own gesture ask; type and key are refused there, and
+  # `just ask eval` does keys.
   [string[]]$Do = @(),
   # The same steps as one string, separated by spaces. `just drive` passes them this
   # way through scripts/drive.mjs: a step has commas in it, and PowerShell splits an
@@ -146,7 +149,9 @@ function Read-Step([string]$step) {
       'type' { "type $arg" }
       'key' { "press $arg" }
     }
-    return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = @(); Said = $said }
+    # Which route the step takes against a window standing on no monitor, carried here so the dry run reads the routing back without a window.
+    $route = if ($kind -eq 'wait') { '' } else { ' (off screen: refused; eval does keys)' }
+    return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = @(); Said = $said; OffScreen = $route }
   }
   if (-not $STEP_ARITY.ContainsKey($kind)) { throw "unknown -Do step: $step" }
   if ([string]::IsNullOrEmpty($arg)) { throw "$kind needs $(Say-Counts $kind) numbers after the colon: $step" }
@@ -175,7 +180,7 @@ function Read-Step([string]$step) {
     'hold' { "drag from $($n[0]),$($n[1]) to $($n[2]),$($n[3])$walk and hold the button down, $(if ($paced) { 'photographed where the walk stops' } else { 'photographed after the settle' })" }
     'scroll' { "scroll $($n[2]) notches at $($n[0]),$($n[1])" }
   }
-  return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = $n; Said = $said; Moves = $moves; GapMs = $gap; Paced = $paced }
+  return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = $n; Said = $said; Moves = $moves; GapMs = $gap; Paced = $paced; OffScreen = ' (off screen: played into the page through the gesture ask)' }
 }
 
 # Every flag that shapes the throwaway profile. An attached run is inspecting the
@@ -200,7 +205,7 @@ $plan = @($asked | ForEach-Object { Read-Step $_ })
 if ($DryRun) {
   $whose = if ($Attach) { 'the running copy' } else { 'a fresh copy' }
   Write-Output "$($plan.Count) steps against $whose"
-  foreach ($step in $plan) { Write-Output "  $($step.Said)" }
+  foreach ($step in $plan) { Write-Output "  $($step.Said)$($step.OffScreen)" }
   # Which rectangle a coordinate is in, and which one the picture is, said out loud: they are the same one, and getting that wrong is invisible until a click lands 11 px off.
   Write-Output 'photographing the client rectangle, not the invisible resize border around it'
   return
@@ -535,6 +540,39 @@ function Wait-Gap([int]$ms) {
   while ($clock.Elapsed.TotalMilliseconds -lt $ms) { }
 }
 
+# One gesture ask down the copy's own pipe, through the wrapper that already knows which copy a build launched. The reply is read back so a refused gesture fails the run rather than reporting a step nobody made.
+function Send-GestureAsk([hashtable]$gesture) {
+  $json = $gesture | ConvertTo-Json -Compress
+  # Windows PowerShell hands a native command its arguments without escaping the quotes inside them, so the JSON's own are escaped by hand or node reads {y:720,ask:gesture}.
+  $arg = $json -replace '"', '\"'
+  # The wrapper says which copy answered on its error stream, and under Stop this shell turns any stderr line into a thrown error — so that stream is dropped under Continue for the one call, and the exit code is what says whether the ask landed.
+  $before = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { $reply = & node (Join-Path $PSScriptRoot 'mcp-leaftext.mjs') --ask $arg 2>$null }
+  finally { $ErrorActionPreference = $before }
+  if ($LASTEXITCODE -ne 0 -or -not $reply) { throw "the copy did not answer the gesture ask $json" }
+  $said = "$reply" | ConvertFrom-Json
+  if (-not $said.ok) { throw "the gesture ask was refused: $($said.error)" }
+}
+
+# A pointer step against a window standing on no monitor, played into the page over the app's own gesture ask: no cursor, no focus and no place on screen. The coordinate sent is the picture's pixel plus the band the app holds itself off the window by, because the ask speaks in the client rectangle's pixels and the picture is the app's box inside it.
+function Step-PointerAsk($step, [int]$appX, [int]$appY) {
+  $n = $step.Numbers
+  switch ($step.Kind) {
+    'move' { Send-GestureAsk @{ ask = 'gesture'; kind = 'move'; x = $appX + $n[0]; y = $appY + $n[1] } }
+    'click' { Send-GestureAsk @{ ask = 'gesture'; kind = 'click'; x = $appX + $n[0]; y = $appY + $n[1] } }
+    'rclick' { Send-GestureAsk @{ ask = 'gesture'; kind = 'rclick'; x = $appX + $n[0]; y = $appY + $n[1] } }
+    'scroll' { Send-GestureAsk @{ ask = 'gesture'; kind = 'wheel'; x = $appX + $n[0]; y = $appY + $n[1]; notches = $n[2] } }
+    { $_ -in 'drag', 'hold' } {
+      $gesture = @{ ask = 'gesture'; kind = $step.Kind; x1 = $appX + $n[0]; y1 = $appY + $n[1]; x2 = $appX + $n[2]; y2 = $appY + $n[3] }
+      if ($step.Paced) { $gesture.moves = $step.Moves; $gesture.gap = $step.GapMs }
+      Send-GestureAsk $gesture
+      # The page's button stays down for the shot, and the finally block below releases it the same way it was pressed.
+      if ($step.Kind -eq 'hold') { $script:heldAsk = @{ x = $appX + $n[2]; y = $appY + $n[3] } }
+    }
+  }
+}
+
 function Step-Pointer($step, [int]$left, [int]$top) {
   $n = $step.Numbers
   switch ($step.Kind) {
@@ -591,6 +629,8 @@ function Step-Pointer($step, [int]$left, [int]$top) {
 
 $proc = $null
 $buttonDown = $false
+$heldAsk = $null
+$offScreen = $false
 try {
   if ($Attach) {
     $hwnd = $running.MainWindowHandle
@@ -601,23 +641,28 @@ try {
     # Refused rather than reported as done: SetForegroundWindow fails when the caller
     # is not already foreground, and a wheel notch then lands in whatever is. Clicks
     # and drags carry their own position, so they do not need this.
-    # A point on no monitor is clamped onto the desktop, so a click meant for a copy nobody can see lands on whatever the owner has in that corner. Refused rather than reported as made; the picture still comes out, because the drawing call needs no place on screen.
+    # A point on no monitor is clamped onto the desktop, so a mouse gesture cannot reach a copy nobody can see. A pointer step is played into the page through the app's own gesture ask instead — no cursor, no focus and no place on screen — while a key step is refused, because the ask carries no keys.
     $gestures = @($plan | Where-Object { $_.Kind -ne 'wait' })
-    if ($gestures.Count -and (Test-OffEveryMonitor $hwnd)) {
-      throw ("The window sits on no monitor, so a $($gestures[0].Kind) step cannot reach it: a point off every " +
-        'screen is clamped onto the desktop and the gesture lands on whatever the owner has there. Ask the page ' +
-        "to do it with 'just ask eval', which needs no focus and no place, or run this with no steps for the picture alone.")
+    $offScreen = [bool]($gestures.Count -and (Test-OffEveryMonitor $hwnd))
+    if ($offScreen) {
+      $keys = @($plan | Where-Object { $_.Kind -in 'type', 'key' })
+      if ($keys.Count) {
+        throw ("The window sits on no monitor and a $($keys[0].Kind) step needs the keyboard, which no gesture ask carries. " +
+          "Ask the page to do it with 'just ask eval', which needs no focus and no place on screen.")
+      }
     }
-    $needsFocus = @($plan | Where-Object { $_.Kind -in 'scroll', 'type', 'key' })
-    # Before the foreground reading, because that reading passes here: the box's owner is genuinely in front and the box has the keyboard, so without this a driven save reports every key as sent and leaves the file name field untouched.
-    $box = Find-BoxOver $hwnd $running.Id
-    if ($needsFocus.Count -and $box) {
-      throw ("A box titled `"$box`" stands over the window being driven and keeps the keyboard, so a " +
-        "$($needsFocus[0].Kind) step would go nowhere and be reported as made. Deal with that box first.")
-    }
-    if ($needsFocus.Count -and [LeafShot]::GetForegroundWindow() -ne $hwnd) {
-      throw ("Windows would not bring the app's window forward, and a $($needsFocus[0].Kind) step " +
-        'goes to whatever has focus. Click the window once and run this again.')
+    else {
+      $needsFocus = @($plan | Where-Object { $_.Kind -in 'scroll', 'type', 'key' })
+      # Before the foreground reading, because that reading passes here: the box's owner is genuinely in front and the box has the keyboard, so without this a driven save reports every key as sent and leaves the file name field untouched.
+      $box = Find-BoxOver $hwnd $running.Id
+      if ($needsFocus.Count -and $box) {
+        throw ("A box titled `"$box`" stands over the window being driven and keeps the keyboard, so a " +
+          "$($needsFocus[0].Kind) step would go nowhere and be reported as made. Deal with that box first.")
+      }
+      if ($needsFocus.Count -and [LeafShot]::GetForegroundWindow() -ne $hwnd) {
+        throw ("Windows would not bring the app's window forward, and a $($needsFocus[0].Kind) step " +
+          'goes to whatever has focus. Click the window once and run this again.')
+      }
     }
   }
   else {
@@ -661,7 +706,8 @@ try {
   $probe.Dispose()
 
   foreach ($step in $plan) {
-    Step-Pointer $step ($vis.Left + $app.X) ($vis.Top + $app.Y)
+    if ($offScreen -and $step.Kind -ne 'wait') { Step-PointerAsk $step $app.X $app.Y }
+    else { Step-Pointer $step ($vis.Left + $app.X) ($vis.Top + $app.Y) }
     # A hold written with a gap wants the gesture while it is still moving, so it skips
     # the settle: settling first photographs one that stopped moving nearly a second
     # ago. A hold written the old way keeps it, and so do the shots taken with one.
@@ -711,6 +757,8 @@ try {
 }
 finally {
   if ($buttonDown) { [LeafShot]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) }
+  # The ask route's held button is the page's, released the way it was pressed — best effort, so a failure here cannot bury the error that got here.
+  if ($heldAsk) { try { Send-GestureAsk @{ ask = 'gesture'; kind = 'release'; x = $heldAsk.x; y = $heldAsk.y } } catch {} }
   # Only the copy this script launched, and asked rather than stopped. An attached
   # run has no copy of its own, so it leaves the owner's app up.
   Stop-ShotCopy $proc

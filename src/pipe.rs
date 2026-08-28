@@ -4,7 +4,7 @@
 //!
 //! One ask in, one reply out, both JSON, then the connection closes. A named pipe on Windows and a Unix socket elsewhere; neither needs a crate, and neither is reachable from outside this account.
 
-use crate::app::UserEvent;
+use crate::app::{Gesture, UserEvent};
 use crate::journal;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -102,6 +102,12 @@ pub(crate) enum Ask {
         width: f64,
         height: f64,
     },
+    /// Play one pointer gesture into the page over the web view's own developer protocol — no cursor, no focus and no place on screen, which is what reaches a copy standing off every monitor. Coordinates are the picture's own pixels; the app divides by the window's scale. `type` and `key` are refused with `eval` named, because every shortcut already goes through it.
+    #[serde(rename = "gesture")]
+    Gesture {
+        #[serde(flatten)]
+        gesture: Gesture,
+    },
     /// Wait for the page to finish rendering, then answer. What a driven pass asks instead of guessing a sleep: guessing costs three seconds a command for a render that takes a fraction of that.
     #[serde(rename = "idle")]
     Idle,
@@ -169,6 +175,7 @@ where
                  \"expect\":\"the fingerprint doc answered\"}}, \
                  {{\"ask\":\"export\",\"path\":\"page.pdf\",\"width\":1280,\"height\":5819}}, \
                  {{\"ask\":\"shot\",\"path\":\"page.png\",\"width\":1136,\"height\":29719}}, \
+                 {{\"ask\":\"gesture\",\"kind\":\"wheel\",\"x\":900,\"y\":700,\"notches\":-8}}, \
                  {{\"ask\":\"idle\"}}, \
                  {{\"ask\":\"version\"}}, {{\"ask\":\"quit\"}}"
             ))
@@ -261,6 +268,8 @@ where
 pub(crate) fn ask_wait(ask: &Ask) -> Duration {
     match ask {
         Ask::Export { .. } | Ask::Shot { .. } => EXPORT_TIMEOUT,
+        // The walk is paced on purpose, so the wait stretches with it: a drag at a hand's speed is two seconds of walking before the reply can land.
+        Ask::Gesture { gesture } => REPLY_TIMEOUT + gesture.walk(),
         _ => REPLY_TIMEOUT,
     }
 }
@@ -326,6 +335,7 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
             height,
             reply,
         },
+        Ask::Gesture { gesture } => UserEvent::PipeGesture { gesture, reply },
         // Whether the loop heard, and nothing else: the closing itself is [`UserEvent::PipeCloseNow`], sent after the reply is out.
         Ask::Quit => UserEvent::PipeQuit { reply },
         // Answered before this is reached.
