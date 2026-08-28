@@ -224,7 +224,7 @@ export function run() {
     if (!clone.classList.contains('document-minimap-preview')) throw new Error('the clone is not marked as the rail’s own');
   });
 
-  // The whole of the thumbnail is what the copy kept: a shallow copy of the reading body for the wrapper, a deep copy of each row put into it. Nothing had ever read one back — until the stand-in page could really copy, a check here was handed its own copy and proved that instead.
+  // The whole of the thumbnail is what the copy kept: a shallow copy of the reading body for the wrapper, a deep copy of each row put into it. So the body here is a page element rather than a stand of its own, or the shallow copy comes back deep and the check proves its own helper.
   check('the thumbnail is the reading body’s own wrapper holding a deep copy of each row in the window', () => {
     const body = fakeElement('minimap-source');
     body.className = 'document-body';

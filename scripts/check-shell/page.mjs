@@ -527,7 +527,7 @@ export function fakeElement(id = '') {
     configurable: true,
     enumerable: true,
   });
-  // The element either side of this one in its holder's element list, and nothing at each end of the run or when nothing is holding it. Written as getters over the same list every move already keeps, so a block put in front of another steps to it straight away. Five checks used to hand in a sibling that was null for ever, which is the answer that lets a walk pass having taken no step at all: the entry walker, the gutter's fallback and the delete caret all read these names and all three read back an answer the app never gives.
+  // The element either side of this one in its holder's element list, and nothing at each end of the run or when nothing is holding it. Getters over the same list every move already keeps, so a block put in front of another steps to it straight away. A sibling that is null for ever lets a walk pass having taken no step at all, and the entry walker, the gutter's fallback and the delete caret all read these two names.
   const siblingAt = (step) => {
     const holder = element.parentElement;
     if (!holder) return null;

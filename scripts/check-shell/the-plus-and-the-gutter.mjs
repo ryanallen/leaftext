@@ -1431,7 +1431,7 @@ export function run() {
     }
   });
 
-  // The gap between two settled blocks is worked off the gutter's own list of occupants. A blank line waiting for its first keystroke is not on that list — it has no height, and the list keeps only what takes up room — so the space under it is found by stepping the page instead: past every block of no height, then on to one that has an offset in the buffer to write at. Until the stand-in page could really step, nothing could read this walk back at all, and a check handing in stock elements would have walked to the end of the run and read nothing, which is a check passing on nothing.
+  // The gap between two settled blocks is worked off the gutter's own list of occupants. A blank line waiting for its first keystroke is not on that list — it has no height, and the list keeps only what takes up room — so the space under it is found by stepping the page instead: past every block of no height, then on to one that has an offset in the buffer to write at. The blocks are given real rectangles here, because every stock one is zero and a walk over those runs to the end and reads nothing, which is a check passing on nothing.
   check('the space under a blank line is walked to across a block of no height and on to one with a range', () => {
     const read = (expression) => vm.runInContext(expression, booted);
     const layout = standUpReadingLayout();
