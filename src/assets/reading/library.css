@@ -824,7 +824,7 @@ body.library-resizing button {
   border-radius: var(--lt-radius-pill);
   box-shadow: var(--lt-shadow-raised);
 }
-/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. Both classes and this position are load-bearing: the rows block ties on weight, and the hover pill above would curve the hairline up at both ends into a bowl — which is what also takes back the hover lift, since a row fixed above a divider that rises off the pane reads as a card laid over it. */
+/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. Both classes and this position are load-bearing: the rows block ties on weight, and the hover pill above would curve the hairline up at both ends into a bowl. The hover lift is taken back here too: a row fixed above the divider reads as a card laid over it if it rises off the pane. */
 .library-nav-folder.library-nav-up {
   color: var(--lt-muted-foreground);
   box-shadow: none;
