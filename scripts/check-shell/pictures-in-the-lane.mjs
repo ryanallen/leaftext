@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, checkLendingTheWindow, fakeElement, readingCss, record, root } from './shared.mjs';
+import { check, checkSettled, fakeElement, readingCss, record, root } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -412,7 +412,7 @@ export function run() {
   });
 
   // Copy is the only row that puts a picture on the clipboard, and it does it for every kind the reading view can draw — which is the whole reason it goes through the page's own canvas rather than a decoder on the other side. Driven over a canvas of the check's own, because the way it would break is silent: a source the encoder cannot read comes back as a throw nobody sees, and the reader is left thinking the picture was copied.
-  checkLendingTheWindow('every kind of picture copies through the one PNG encoder, and an encode that fails is said on the page', async () => {
+  checkSettled('every kind of picture copies through the one PNG encoder, and an encode that fails is said on the page', async () => {
     const was = { send: booted.ipc.postMessage, toast: booted.leafToast, canvas: booted.pictureCanvas };
     const sent = [];
     const said = [];
@@ -464,7 +464,7 @@ export function run() {
   });
 
   // The two conversion rows, driven over a canvas of the check's own. Every way they break is silent — a PNG saved under a `.webp` name is still a file, and a picture past what the format holds comes back as an empty address rather than as a throw — so what is pressed here is the whole path from the button to what went to the host.
-  checkLendingTheWindow('a picture already in the format asked for is copied, and a conversion is the file the canvas wrote', async () => {
+  checkSettled('a picture already in the format asked for is copied, and a conversion is the file the canvas wrote', async () => {
     const lane = fakeElement('p');
     lane.tagName = 'P';
     const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, alt: 'A photo' });
@@ -554,7 +554,7 @@ export function run() {
   });
 
   // The JPEG row, driven the same way. It is the third picture in the run and the only one whose format has two spellings, so what is pressed here is what the canvas was asked for and what the row does with a picture already wearing either name.
-  checkLendingTheWindow('the JPEG row is third among the pictures, asks the canvas once at 0.92, and copies a picture already in the format', async () => {
+  checkSettled('the JPEG row is third among the pictures, asks the canvas once at 0.92, and copies a picture already in the format', async () => {
     const lane = fakeElement('p');
     lane.tagName = 'P';
     const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, alt: 'A photo' });
@@ -648,7 +648,7 @@ export function run() {
   });
 
   // What a JPEG does to a picture that came with transparency, driven over the drawing itself rather than over a canvas standing in for it. Every way this breaks is silent: an unpainted canvas encodes as solid black rather than failing, read back off a running window at `0, 0, 0, 255`, so a logo with alpha would come out on a black rectangle and nothing would say so.
-  checkLendingTheWindow('a JPEG is drawn onto the surface color the reader was looking at, and the lossless rows are not', async () => {
+  checkSettled('a JPEG is drawn onto the surface color the reader was looking at, and the lossless rows are not', async () => {
     const drawn = [];
     const ink = {
       fillStyle: '',
@@ -699,7 +699,7 @@ export function run() {
   });
 
   // The other end of that same load, and the one a reader meets: a picture that does not come back. Nothing stands in for the failure, and the whole row is driven from the press to the path, because what matters is that the reader is told and that no file is written under the name they just picked.
-  checkLendingTheWindow("a picture that will not load is refused in the reader's own words and writes no file", async () => {
+  checkSettled("a picture that will not load is refused in the reader's own words and writes no file", async () => {
     const lane = fakeElement('p');
     lane.tagName = 'P';
     const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {}, alt: 'A photo' });

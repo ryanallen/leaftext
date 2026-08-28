@@ -4,6 +4,7 @@
 
 import { failures, names, record, settled } from './check-shell/shared.mjs';
 import { run as runParsesAndBoots } from './check-shell/parses-and-boots.mjs';
+import { run as runSettledChecks } from './check-shell/settled-checks.mjs';
 import { run as runTheFolderAndTheList } from './check-shell/the-folder-and-the-list.mjs';
 import { run as runBlockRanges } from './check-shell/block-ranges.mjs';
 import { run as runLinksAndPreviews } from './check-shell/links-and-previews.mjs';
@@ -50,6 +51,7 @@ import { run as runTheOutlineInThePane } from './check-shell/the-outline-in-the-
 // Every subject, in the order it was written in. The boot comes first: it fills the record the rest read.
 
 runParsesAndBoots();
+runSettledChecks();
 runTheFolderAndTheList();
 runBlockRanges();
 runLinksAndPreviews();

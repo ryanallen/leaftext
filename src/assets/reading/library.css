@@ -236,6 +236,10 @@ body.library-resizing {
   user-select: none;
   -webkit-user-select: none;
 }
+/* The lock has to name the buttons as well, now that a button writes its own hand: a pointer that turned into a hand every time the drag crossed a control would read as the drag having let go. */
+body.library-resizing button {
+  cursor: col-resize;
+}
 .library-scroll {
   /* Scroll container filling the pane. Top padding clears the app bar, the breadcrumb band, and the search row, so the list starts below all three but scrolls up under their blur.
 

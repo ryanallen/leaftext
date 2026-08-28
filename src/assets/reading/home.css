@@ -393,6 +393,10 @@ body.is-home-row-dragging {
   cursor: grabbing;
   user-select: none;
 }
+/* The lock has to name the buttons as well, now that a button writes its own hand: a pointer that turned into a hand every time the drag crossed a control would read as the drag having let go. */
+body.is-home-row-dragging button {
+  cursor: grabbing;
+}
 body.is-home-row-dragging .home-list-scroll li {
   transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
 }

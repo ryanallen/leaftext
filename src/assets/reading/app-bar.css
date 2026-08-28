@@ -149,6 +149,9 @@
 .tab-active:last-child {
   margin-right: 0;
 }
+.tab-dragging .tab-label {
+  cursor: grabbing;
+}
 .tab-dragging {
   position: relative;
   z-index: 2;
@@ -198,7 +201,9 @@
   right: calc(-1 * var(--tab-flare));
   background: radial-gradient(circle at 100% 0, var(--tab-flare-arc));
 }
+/* The whole tab drags by its name, so the label keeps the grab the tab wears; the mark and the close beside it are presses and take the hand. */
 .tab-label {
+  cursor: grab;
   flex: 1;
   min-width: 0;
   max-width: 124px;

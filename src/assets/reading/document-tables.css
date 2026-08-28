@@ -76,8 +76,6 @@
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
-  /* The arrow: a control is not a link. Written rather than left off, because all of them ride inside a block that says `cursor: text` when unlocked. */
-  cursor: default;
 }
 /* One control, so the table's own sits in the corner itself. */
 .table-sheet-open {

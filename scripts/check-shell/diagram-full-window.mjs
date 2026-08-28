@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import {
   check,
-  checkLendingTheWindow,
+  checkSettled,
   diagramStand,
   fakeElement,
   names,
@@ -128,7 +128,7 @@ export function run() {
   });
 
   // Diagrams are drawn three at a time, and mermaid keeps drawing after one of them throws — so the batch comes back with its error picture in the block it failed on and finished drawings in the rest. Marking all three cost two working diagrams their toolbar and their memo entry every time one broken diagram sat beside them.
-  checkLendingTheWindow('a broken diagram is marked on its own, and the batch beside it finishes', async () => {
+  checkSettled('a broken diagram is marked on its own, and the batch beside it finishes', async () => {
     const block = (name, drawn) => {
       const element = fakeElement(name);
       element.__mermaidSource = `flowchart TD\n  ${name} --> B`;
@@ -170,7 +170,7 @@ export function run() {
   });
 
   // The other half of the same failure: a URL mermaid cannot decode throws from inside its renderer, so the box is settled before mermaid reads the block. The page's own `Image` answers off the map this check writes, because a stand-in built beside the assertion would only ever prove the imitation.
-  checkLendingTheWindow('a picture that will not load becomes our own mark before mermaid sees it, and the diagrams beside it keep their controls', async () => {
+  checkSettled('a picture that will not load becomes our own mark before mermaid sees it, and the diagrams beside it keep their controls', async () => {
     // Named for this check alone: the probe answers once per URL for the life of the page, and the memo below keeps a drawing per source, so a name shared with another check would be answered by whichever ran first.
     const draws = 'https://leaf.test/pictures/probe-draws.png';
     const dead = 'https://leaf.test/pictures/probe-dead.png';

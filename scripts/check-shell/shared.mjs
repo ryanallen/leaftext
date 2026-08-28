@@ -12,4 +12,4 @@ export { names, record, root, source } from './script.mjs';
 export { detachChild, FakeElement, fakeElement, fakePage, matchingDescendants, pageMarkup, pageSnapshot, runShell, selectorParts, topLevelNames, VIEW_HEIGHT, VIEW_WIDTH, writeOnlyNames } from './page.mjs';
 
 // The helpers and stands more than one subject reaches for.
-export { bootReading, checkLendingTheWindow, diagramStand, homeStand, node, noopPost, registrationsOn, renderReadingDocument, settle, siteBoot, standInState, typingStand } from './stands.mjs';
+export { bootReading, diagramStand, homeStand, node, noopPost, registrationsOn, renderReadingDocument, settle, siteBoot, standInState, typingStand } from './stands.mjs';

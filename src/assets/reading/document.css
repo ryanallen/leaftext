@@ -222,8 +222,8 @@
   /* An atomic inline box keeps a vertical margin, so a run of buttons that wraps has room between its lines rather than two fills meeting. None on the left, so the first button stays on the text column. */
   margin: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) 0;
   text-decoration: none;
-  /* The arrow, because a reader reads the drawing and this is drawn as a button. Written rather than left off: an anchor's hand is the browser's own, so nothing here would take it away. */
-  cursor: default;
+  /* The hand, because a reader reads the drawing and this is drawn as a button. Written rather than left off: it is the same answer the shared button rule gives every native button. */
+  cursor: pointer;
   /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. The corner is left out: every radius over half the button's height draws as the same pill, so the shape is finished inside the first frame at any duration. */
   transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);

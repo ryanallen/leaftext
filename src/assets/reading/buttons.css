@@ -18,6 +18,8 @@
   }
 }
 button {
+  /* The hand, on the element rather than on each control's own rule, so a button added later says it can be pressed without anybody remembering to write it. Weak on purpose: a single-class rule still wins, which is what leaves a control whose gesture is a drag or a draw wearing its own shape. */
+  cursor: pointer;
   border: var(--lt-stroke-1) solid var(--lt-primary);
   border-radius: var(--lt-radius-md);
   background: var(--lt-primary);

@@ -191,8 +191,6 @@
   border-radius: var(--lt-radius-md);
   background: color-mix(in srgb, var(--lt-editor-code-background) 65%, transparent);
   color: var(--lt-muted-foreground);
-  /* The arrow: a control is not a link. Written rather than left off, because a code block is always source-editable and unlocked it says `cursor: text`. */
-  cursor: default;
   opacity: var(--lt-opacity-50);
   transition: opacity var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease), background var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease);
@@ -277,6 +275,11 @@
 }
 .document-body pre.mermaid[data-processed="true"].is-panning,
 .diagram-stage.is-panning {
+  cursor: grabbing;
+}
+/* The lock has to name the buttons as well, now that a button writes its own hand: a pointer that turned into a hand every time the drag crossed a control would read as the drag having let go. */
+.document-body pre.mermaid[data-processed="true"].is-panning button,
+.diagram-stage.is-panning button {
   cursor: grabbing;
 }
 /* A diagram swapped for its source is a code block again. The rules above center it, tighten its padding and print it in the preview ink, and they outrank .leaf-editing-source — so without this the mermaid sits centered in a diagram's cell rather than reading as the source it now is. */

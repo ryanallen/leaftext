@@ -2,7 +2,7 @@
 
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, checkLendingTheWindow, diagramStand, readingCss, record, runShell, source } from './shared.mjs';
+import { check, checkSettled, diagramStand, readingCss, record, runShell, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -355,9 +355,6 @@ export function run() {
     if (encoded !== Buffer.from(words, 'utf8').toString('base64')) throw new Error(`the encoding is not the text's own bytes: ${encoded}`);
   });
 
-  // The picture checks all lend the same globals — a canvas and an `Image` — so they run one after another, on the one queue every lending check shares. The picture export beside this one lends the same window, so a queue of this file's own would let the two interleave.
-  const checkPicture = checkLendingTheWindow;
-
   // What mermaid hands back, shaped the way mermaid shapes it: a root carrying its own view box and a max width scaled to the reading column, nested groups, a label with an accent in it, and a definition block after the drawing. Only mermaid is stood in — everything the page then does to this is the page's own.
   const MERMAID_DRAWING =
     '<svg id="dleafFlowExport1" viewBox="0 0 200 100" width="200" height="100" style="max-width: 200px;">' +
@@ -388,7 +385,7 @@ export function run() {
   };
 
   // The drawing every picture row starts from: mermaid's SVG parsed, the view widened so the margin falls outside every box, and the page color painted behind the whole thing. Held on its own here, because a row further down that refuses tells you nothing about which of those three went wrong.
-  checkPicture('the drawing goes out with room around it, the page color behind it, and every shape where mermaid left it', async () => {
+  checkSettled('the drawing goes out with room around it, the page color behind it, and every shape where mermaid left it', async () => {
     const surface = booted.document.documentElement;
     surface.style.setProperty('--lt-surface', '#101418');
     const out = await rewritten();
@@ -409,7 +406,7 @@ export function run() {
   });
 
   // The refusal the rewrite carries, and the reason it carries it: half-editing somebody's drawing is worse than sending it as it came.
-  checkPicture('a drawing the rewrite cannot read goes out exactly as mermaid wrote it', async () => {
+  checkSettled('a drawing the rewrite cannot read goes out exactly as mermaid wrote it', async () => {
     for (const [why, drawn] of [
       ['a root that is not a drawing at all', '<div><svg viewBox="0 0 200 100"></svg></div>'],
       ['a view box with three numbers in it', '<svg viewBox="0 0 200"></svg>'],
@@ -474,7 +471,7 @@ export function run() {
     };
   };
 
-  checkPicture('the ending the reader chose is the one encoded, and WebP sends a finished file where PNG sends pixels', async () => {
+  checkSettled('the ending the reader chose is the one encoded, and WebP sends a finished file where PNG sends pixels', async () => {
     const lent = await withCanvas({});
     const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
     try {
@@ -506,7 +503,7 @@ export function run() {
   });
 
   // v1.24.0 measured it: a fifty-step left-to-right flowchart is 16,872 pixels across at export size, so this is a diagram somebody draws rather than a guard against the absurd. The canvas answers an empty URL rather than throwing, so a row that did not check would save a six-byte file.
-  checkPicture('a drawing too big for WebP is refused out loud, and a window that cannot write one says so instead', async () => {
+  checkSettled('a drawing too big for WebP is refused out loud, and a window that cannot write one says so instead', async () => {
     for (const [answer, expected] of [[{ wide: 9000 }, /too big/i], [{ cannotWrite: true }, /cannot write WebP/i]]) {
       const lent = await withCanvas(answer);
       const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
@@ -527,7 +524,7 @@ export function run() {
   });
 
   // What has to hold is that the file really is a JPEG, at the quality the page names, and that both spellings of the ending reach it.
-  checkPicture('a JPEG goes out as a finished JPEG, at the quality the page names, under either spelling of the ending', async () => {
+  checkSettled('a JPEG goes out as a finished JPEG, at the quality the page names, under either spelling of the ending', async () => {
     for (const ending of ['jpg', 'jpeg']) {
       const lent = await withCanvas({});
       const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
@@ -555,7 +552,7 @@ export function run() {
   });
 
   // Past 65,500 pixels a side — this window's ceiling, bisected on a running copy, not the format's own 65,535 — a canvas answers an empty URL rather than throwing, which is the trap the WebP guard was written for. With no guard of its own the type check catches it and says this window cannot write JPEG, which is the wrong thing to tell a reader.
-  checkPicture('a drawing too big for JPEG is refused before anything is encoded, and points at the row that can still write it', async () => {
+  checkSettled('a drawing too big for JPEG is refused before anything is encoded, and points at the row that can still write it', async () => {
     const lent = await withCanvas({ wide: 40000 });
     const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
     try {
@@ -574,7 +571,7 @@ export function run() {
   });
 
   // The guard's own edge, which the check above cannot see: its 40,000 is past both the format's 65,535 and this window's 65,500, so it passes whichever number the constant carries. The lent canvas takes its size from the stand-in image doubled by the export's own scale, so 32,751 is 65,502 on the canvas — inside the thirty-five-pixel band where the format would take the drawing and this engine will not — and 32,750 is 65,500, the widest it writes.
-  checkPicture('a drawing inside the band the format allows and this window will not encode is refused as too big, and one at the ceiling is written', async () => {
+  checkSettled('a drawing inside the band the format allows and this window will not encode is refused as too big, and one at the ceiling is written', async () => {
     const refuse = async (wide, expect) => {
       const lent = await withCanvas({ wide });
       const written = () => lent.sent.filter((one) => one.command === 'exportDiagram');
@@ -603,7 +600,7 @@ export function run() {
   });
 
   // This window has no canvas, which is the branch the refusal is written for, so what is held is that it refuses out loud and writes nothing — a row failing quietly leaves a reader waiting on a Save dialog that never opens. The drawing step stands in: everything after it is what is under test.
-  checkPicture('the picture refuses in a toast when the window cannot draw one, and sends nothing', async () => {
+  checkSettled('the picture refuses in a toast when the window cannot draw one, and sends nothing', async () => {
     const putMermaid = withMermaidDrawing();
     const was = { send: booted.ipc.postMessage, toast: booted.leafToast };
     const sent = [];
@@ -672,7 +669,7 @@ export function run() {
     };
   };
 
-  checkPicture('a PDF prints the drawing on a sheet of its own, at the drawing’s size and not the box around it', async () => {
+  checkSettled('a PDF prints the drawing on a sheet of its own, at the drawing’s size and not the box around it', async () => {
     const lent = withPrintedDiagram({ width: 268, height: 108 });
     try {
       const block = drawnDiagram('flowchart TD\n  P1 --> P2');
@@ -704,7 +701,7 @@ export function run() {
   });
 
   // The three rows that ship all draw the diagram again on purpose, and the PDF has the most to lose by not: a zoomed diagram is absolutely placed inside a box of fixed height, so what is on screen is cropped to that box and a sheet made to it prints the piece somebody happened to be looking at.
-  checkPicture('a zoomed and dragged diagram still prints the whole drawing', async () => {
+  checkSettled('a zoomed and dragged diagram still prints the whole drawing', async () => {
     const lent = withPrintedDiagram({ width: 268, height: 108 });
     try {
       const block = drawnDiagram('flowchart TD\n  Z1 --> Z2');

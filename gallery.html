@@ -2744,6 +2744,9 @@ body.mac-frame.is-fullscreen::before {
 .tab-active:last-child {
   margin-right: 0;
 }
+.tab-dragging .tab-label {
+  cursor: grabbing;
+}
 .tab-dragging {
   position: relative;
   z-index: 2;
@@ -2793,7 +2796,9 @@ body.mac-frame.is-fullscreen::before {
   right: calc(-1 * var(--tab-flare));
   background: radial-gradient(circle at 100% 0, var(--tab-flare-arc));
 }
+/* The whole tab drags by its name, so the label keeps the grab the tab wears; the mark and the close beside it are presses and take the hand. */
 .tab-label {
+  cursor: grab;
   flex: 1;
   min-width: 0;
   max-width: 124px;
@@ -3352,6 +3357,8 @@ body.mac-frame.is-fullscreen .window-controls {
   }
 }
 button {
+  /* The hand, on the element rather than on each control's own rule, so a button added later says it can be pressed without anybody remembering to write it. Weak on purpose: a single-class rule still wins, which is what leaves a control whose gesture is a drag or a draw wearing its own shape. */
+  cursor: pointer;
   border: var(--lt-stroke-1) solid var(--lt-primary);
   border-radius: var(--lt-radius-md);
   background: var(--lt-primary);
@@ -3717,6 +3724,10 @@ body.library-resizing {
   cursor: col-resize;
   user-select: none;
   -webkit-user-select: none;
+}
+/* The lock has to name the buttons as well, now that a button writes its own hand: a pointer that turned into a hand every time the drag crossed a control would read as the drag having let go. */
+body.library-resizing button {
+  cursor: col-resize;
 }
 .library-scroll {
   /* Scroll container filling the pane. Top padding clears the app bar, the breadcrumb band, and the search row, so the list starts below all three but scrolls up under their blur.
@@ -5420,8 +5431,8 @@ body:has(#readerToolbar:not([hidden])) {
   /* An atomic inline box keeps a vertical margin, so a run of buttons that wraps has room between its lines rather than two fills meeting. None on the left, so the first button stays on the text column. */
   margin: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) 0;
   text-decoration: none;
-  /* The arrow, because a reader reads the drawing and this is drawn as a button. Written rather than left off: an anchor's hand is the browser's own, so nothing here would take it away. */
-  cursor: default;
+  /* The hand, because a reader reads the drawing and this is drawn as a button. Written rather than left off: it is the same answer the shared button rule gives every native button. */
+  cursor: pointer;
   /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. The corner is left out: every radius over half the button's height draws as the same pill, so the shape is finished inside the first frame at any duration. */
   transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
@@ -5976,6 +5987,10 @@ body.is-block-dragging {
   cursor: grabbing;
   user-select: none;
 }
+/* The lock has to name the buttons as well, now that a button writes its own hand: a pointer that turned into a hand every time the drag crossed a control would read as the drag having let go. */
+body.is-block-dragging button {
+  cursor: grabbing;
+}
 body.is-block-dragging .document-body [data-src-start] {
   /* Emphasized: a block stays where it is on the page and steps aside, so both ends of the move are at rest. */
   transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
@@ -6319,8 +6334,6 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-md);
   background: color-mix(in srgb, var(--lt-editor-code-background) 65%, transparent);
   color: var(--lt-muted-foreground);
-  /* The arrow: a control is not a link. Written rather than left off, because a code block is always source-editable and unlocked it says `cursor: text`. */
-  cursor: default;
   opacity: var(--lt-opacity-50);
   transition: opacity var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease), background var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease);
@@ -6405,6 +6418,11 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .document-body pre.mermaid[data-processed="true"].is-panning,
 .diagram-stage.is-panning {
+  cursor: grabbing;
+}
+/* The lock has to name the buttons as well, now that a button writes its own hand: a pointer that turned into a hand every time the drag crossed a control would read as the drag having let go. */
+.document-body pre.mermaid[data-processed="true"].is-panning button,
+.diagram-stage.is-panning button {
   cursor: grabbing;
 }
 /* A diagram swapped for its source is a code block again. The rules above center it, tighten its padding and print it in the preview ink, and they outrank .leaf-editing-source — so without this the mermaid sits centered in a diagram's cell rather than reading as the source it now is. */
@@ -6708,8 +6726,6 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
-  /* The arrow: a control is not a link. Written rather than left off, because all of them ride inside a block that says `cursor: text` when unlocked. */
-  cursor: default;
 }
 /* One control, so the table's own sits in the corner itself. */
 .table-sheet-open {
@@ -7576,6 +7592,10 @@ body.is-block-dragging .document-body [data-src-start] {
 body.is-home-row-dragging {
   cursor: grabbing;
   user-select: none;
+}
+/* The lock has to name the buttons as well, now that a button writes its own hand: a pointer that turned into a hand every time the drag crossed a control would read as the drag having let go. */
+body.is-home-row-dragging button {
+  cursor: grabbing;
 }
 body.is-home-row-dragging .home-list-scroll li {
   transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);

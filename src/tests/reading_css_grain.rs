@@ -113,37 +113,75 @@ fn every_hover_fills_with_the_one_wash() {
 }
 
 #[test]
-fn the_hand_is_left_to_links_alone() {
-    // The arrow is what a desktop control shows; the hand says "this goes somewhere else". A plain link takes the hand from the browser with no rule at all, so every rule that writes one has to sit on something drawn as a link — otherwise the next control brings it back and the hand marks nothing again.
+fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
+    // The hand says "this can be pressed", so every enabled button wears it and the shared `button` rule is where it is written — a control added later takes it without anybody remembering. The rule is deliberately weak: a single-class rule still beats it, which is what leaves a control whose gesture is a drag or a draw wearing its own shape.
     let css = reading_mode_css();
 
-    // The last compound of the selector names an anchor: `a`, `a[href]`, `a:not(...)`.
-    let names_an_anchor = |selector: &str| {
-        selector.split_whitespace().last().is_some_and(|last| {
-            last.strip_prefix('a').is_some_and(|rest| {
-                !rest.starts_with(|c: char| c.is_alphanumeric() || c == '-' || c == '_')
-            })
-        })
-    };
+    assert_contains(rule_body(&css, "button {"), "cursor: pointer;");
+    // A control that cannot be pressed says so, and its rule outranks the shared one.
+    assert_contains(rule_body(&css, "button:disabled {"), "cursor: default;");
+    // A document button is an anchor drawn as a button, so it is written rather than left to the browser.
+    assert_contains(
+        rule_body(&css, ".document-body a.leaf-md-button {"),
+        "cursor: pointer;",
+    );
 
-    let mut cut = 0usize;
-    while let Some(found) = css[cut..].find("cursor: pointer") {
-        let at = cut + found;
-        cut = at + 1;
-        // The selector this declaration sits under: back past the rule's own brace, then back to the end of whatever came before it.
-        let open = css[..at].rfind('{').expect("the rule opens");
-        let start = css[..open].rfind(['}', '/']).map_or(0, |i| i + 1);
-        let selector = css[start..open].trim();
-        // A button can be drawn as a plain link, and then the hand is right on it. What says so is the link color, in the same rule that writes the hand — asked rather than listed, so the next one is held without anybody remembering.
-        let close = css[at..].find('}').map_or(css.len(), |i| at + i);
-        let painted_as_a_link = css[open..close].contains("color: var(--lt-link)");
+    // The arrows that used to sit on native buttons are gone, or they would outrank the shared rule and the hand would stop at whichever control wrote one.
+    for selector in [
+        ".document-body pre > .code-copy {",
+        ".table-sheet-open,
+.image-sheet-open,",
+    ] {
         assert!(
-            names_an_anchor(selector) || painted_as_a_link,
-            "only something drawn as a link may write the hand, and `{selector}` is not"
+            !rule_body(&css, selector).contains("cursor: default"),
+            "`{selector}` is a button, so it may not write the arrow back"
         );
     }
 
-    // And no fragment may hand one out from the script either: the map draws its nodes on a canvas, where a cursor is a property on the shape rather than a rule.
+    // What is not a button keeps the shape its own gesture asks for. A summary and a task checkbox are not buttons and keep the arrow; the drag, draw, resize and text shapes stay where they were.
+    assert_contains(
+        rule_body(&css, ".document-body summary {"),
+        "cursor: default;",
+    );
+    assert_contains(
+        rule_body(
+            &css,
+            ".document-body input[type=\"checkbox\"]:not([disabled]) {",
+        ),
+        "cursor: default;",
+    );
+    assert_contains(rule_body(&css, ".flow-bud {"), "cursor: crosshair;");
+    assert_contains(rule_body(&css, ".flow-edge-end {"), "cursor: crosshair;");
+    assert_contains(
+        rule_body(&css, ".block-gutter .block-grip {"),
+        "cursor: grab;",
+    );
+    assert_contains(rule_body(&css, ".library-divider {"), "cursor: col-resize;");
+    assert_contains(
+        rule_body(&css, ".document-body .leaf-editable {"),
+        "cursor: text;",
+    );
+
+    // A tab drags by its name, so the label keeps the grab; the mark and the close beside it are presses and take the hand from the shared rule.
+    assert_contains(rule_body(&css, ".tab-label {"), "cursor: grab;");
+    assert_contains(
+        rule_body(&css, ".tab-dragging .tab-label {"),
+        "cursor: grabbing;",
+    );
+
+    // And a drag that locks the whole window has to name the buttons too, or the pointer turns into a hand every time it crosses one and the drag reads as having let go.
+    for selector in [
+        "body.library-resizing button {",
+        "body.is-home-row-dragging button {",
+        "body.is-block-dragging button {",
+    ] {
+        assert!(
+            css.contains(selector),
+            "`{selector}` holds the drag shape over the controls it passes"
+        );
+    }
+
+    // And no fragment may hand a cursor out from the script either: the map draws its nodes on a canvas, where a cursor is a property on the shape rather than a rule.
     assert!(
         !app_shell_script().contains("'pointer'") && !app_shell_script().contains("\"pointer\""),
         "the front end must not set a pointer cursor"

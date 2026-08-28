@@ -18,13 +18,15 @@ export const check = (name, run) => {
   }
 };
 // For a check that has to let the page's own promises settle before it can look. Its failure lands in the same list, and the report at the foot waits for every one of them.
+//
+// One queue for all of them, in the order they registered. Every subject shares one booted page, and a body that pauses hands that page to whichever other body was waiting — so a check that opened a menu once made a check three files away fail on state the menu had taken down. Chained, each body owns the page from its first line to its last and puts back whatever it moved. The synchronous checks above cannot be interrupted at all and finish before this queue starts, because a promise body waits for the current call stack.
 export const settled = [];
+let settlingQueue = Promise.resolve();
 export const checkSettled = (name, run) => {
-  settled.push(
-    Promise.resolve()
-      .then(run)
-      .catch((error) => failures.push(`${name}: ${error && error.message ? error.message : error}`)),
-  );
+  const mine = settlingQueue.then(run);
+  // The next body starts whether this one passed or failed, and still reports its own failure under its own name.
+  settlingQueue = mine.catch(() => {});
+  settled.push(mine.catch((error) => failures.push(`${name}: ${error && error.message ? error.message : error}`)));
 };
 
 // The app stylesheet the way the browser is handed it: every part of it, joined in cascade order. Read here rather than in a subject file, so a part added to the sheet reaches every check at once.
