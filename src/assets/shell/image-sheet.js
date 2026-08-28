@@ -225,6 +225,15 @@ async function pictureFileBase64(picture, type) {
   return url.slice(url.indexOf(',') + 1);
 }
 
+// The picture on the clipboard as pixels rather than as a file to paste somewhere. The desktop page cannot finish it — it is not a secure context, so there is no `ClipboardItem` and no `navigator.clipboard` — so what crosses to the host is the same PNG the export rows write. One encoder for every kind of picture the reading view draws: a decoder on the other side would fail according to the picture's own source format, and the app displays eleven of them.
+async function copyPicture(picture) {
+  try {
+    send({ command: 'copyImage', data: await pictureFileBase64(picture, 'image/png') });
+  } catch (error) {
+    leafToast((error && error.message) || 'That picture could not be copied.', 'error');
+  }
+}
+
 // The one format the reader named, handed to the host with the path it already answered with.
 async function exportPictureAs(kind, picture, path) {
   try {

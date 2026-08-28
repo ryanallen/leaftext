@@ -38,6 +38,8 @@ pub(crate) enum UserEvent {
     CloudFoldersReady { folders: Vec<CloudFolder> },
     /// A file Copy or Cut finished on the worker that waited on the clipboard helper. Nothing is said when it worked — the paste is its own proof — so only `error` has anywhere to go, and `cut` decides which of the two the sentence names.
     FileClipboardDone { cut: bool, error: Option<String> },
+    /// A picture Copy finished on the worker that waited on the same helper. Nothing is said when it worked, for the same reason: the paste is the proof.
+    PictureClipboardDone { error: Option<String> },
     /// A clone finished. `folder` is where it landed, so the loop can register it as a vault; `error` is what to say instead when it failed.
     VaultCloneDone {
         folder: PathBuf,
@@ -228,6 +230,18 @@ pub(crate) enum IpcCommand {
     UndoDelete { path: PathBuf },
     #[serde(rename = "showProperties")]
     ShowProperties { path: PathBuf },
+    /// The three file rows of a picture's own right-click menu. `src` is the address the picture is drawn from, which the host resolves back to a file against the document in front — the page holds no path for a picture and could not send one. A picture served from anywhere but this disk resolves to nothing, which is why the page draws none of these rows over one.
+    #[serde(rename = "revealImage")]
+    RevealImage { src: String },
+    #[serde(rename = "copyImagePath")]
+    CopyImagePath { src: String },
+    #[serde(rename = "showImageProperties")]
+    ShowImageProperties { src: String },
+    /// The picture itself on the clipboard, as pixels rather than as a file to paste somewhere. `data` is a finished PNG the page's own canvas wrote, base64'd because IPC carries a string — the same encoder the picture export uses, so every kind of picture the reading view can draw copies rather than only the ones a decoder here would have known.
+    ///
+    /// The page cannot finish this itself: the desktop page is not a secure context, so it has neither `navigator.clipboard` nor `ClipboardItem`.
+    #[serde(rename = "copyImage")]
+    CopyImage { data: String },
     #[serde(rename = "closeTab")]
     CloseTab { index: usize },
     #[serde(rename = "switchTab")]

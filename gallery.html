@@ -3785,7 +3785,7 @@ body.library-resizing {
 .library-outline {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
 }
-/* Not a row and not a button: one quiet line naming the list under it, with how long the document is at its right. */
+/* Not a row and not a button: one quiet line naming the list under it, with how many headings it holds at its right. */
 .library-outline-note {
   display: flex;
   align-items: baseline;
@@ -3822,24 +3822,42 @@ body.library-resizing {
 .library-outline-row.is-selected:hover {
   background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
 }
-/* How far in each level sits. Measured from the shallowest heading the document has, so a note written entirely in `##` starts flush. */
+/* How far in each level sits, and how strongly it reads. Depth is measured from the shallowest heading the document has, so a note written entirely in `##` starts flush; the type steps down with it, so the structure reads without counting the indents. The two shallowest levels keep the body ink and stay fully legible; from the third in, the quiet ink lets a deep row recede. */
 .library-outline-depth-0 {
   --library-outline-depth: 0;
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-600);
+  color: var(--lt-markdown-foreground);
 }
 .library-outline-depth-1 {
   --library-outline-depth: 1;
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-500);
+  color: var(--lt-markdown-foreground);
 }
 .library-outline-depth-2 {
   --library-outline-depth: 2;
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-400);
+  color: var(--lt-muted-foreground);
 }
 .library-outline-depth-3 {
   --library-outline-depth: 3;
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-400);
+  color: var(--lt-muted-foreground);
 }
 .library-outline-depth-4 {
   --library-outline-depth: 4;
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-400);
+  color: var(--lt-muted-foreground);
 }
 .library-outline-depth-5 {
   --library-outline-depth: 5;
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-400);
+  color: var(--lt-muted-foreground);
 }
 /* Said once to a reader who has never made a vault, at the top of the list and inside it — so no band moves and nothing is covered. A box rather than a bubble: this has to stand until a folder has been picked, and a bubble is gone the moment a pointer reaches what it points at. */
 .library-intro {
@@ -10094,7 +10112,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js</span></header>
-<div class="stage"><div class="library-pane" style="position:static;width:240px;height:236px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">131 lines</span></div><button type="button" class="library-outline-row library-outline-depth-0 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-1"><span class="library-file-label">One nested under it</span></button></div></div></div>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:280px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">4 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-1"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Folder swap stage</h3><code class="built">.library-tree-stage</code><span class="built">library.js</span></header>

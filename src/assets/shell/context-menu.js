@@ -11,6 +11,9 @@ let contextMenuTargetKind = 'file';
 let contextMenuLink = null;
 // The words that were highlighted when this menu opened. Saved rather than reread at the moment Copy runs, because opening a menu for the keyboard moves the focus and can collapse the selection out from under it.
 let contextMenuSelectionText = '';
+// The picture that was right-clicked, and whether it was the copy already open on the whole window. Held rather than found again when a row runs: pressing a row takes the menu down first.
+let contextMenuPicture = null;
+let contextMenuPictureFullWindow = false;
 const CONTEXT_MENU_ITEMS = [
   { action: 'open', label: 'Open' },
   { action: 'favorite', label: 'Favorite' },
@@ -49,6 +52,40 @@ const LINK_MENU_ITEMS = [
   { action: 'revealLink', label: 'Reveal file', fileBehind: true },
   { action: 'copyLinkPath', label: 'Copy path', fileBehind: true },
 ];
+// A picture in the document being read, or the copy of it already open on the whole window. `inThePage` rows want somewhere left to open the picture, so they drop off once it is already open.
+const PICTURE_MENU_ITEMS = [
+  { action: 'openPicture', label: 'Open picture', inThePage: true },
+  'separator',
+  { action: 'copyPicture', label: 'Copy picture' },
+  { action: 'copyImagePath', label: 'Copy path' },
+  'separator',
+  { action: 'revealImage', label: 'Reveal file' },
+  { action: 'showImageProperties', label: isMacPlatform ? 'Get Info' : 'Properties' },
+  'separator',
+  { action: 'deletePicture', label: 'Delete picture', danger: true, unlockedLane: true },
+];
+// The paragraph the picture can be taken out of, or nothing. Three things have to hold: the padlock is open, the picture is in the page rather than already on the whole window, and it sits alone in its own paragraph — an inline picture's only source range is the sentence around it, so deleting that would take the words with it. The padlock is asked here, inside the gesture, rather than while this fragment loads: the fragment holding it loads after this one.
+function contextMenuPictureLane() {
+  if (!contextMenuPicture || contextMenuPictureFullWindow || !readerEditingAllowed()) return null;
+  const block = contextMenuPicture.parentElement;
+  return block && block.classList.contains('image-lane') ? block : null;
+}
+// The picture taken out of the document, with its file left where it is: the padlock grants document editing, not file deletion. One splice over the paragraph's whole source range, so it is one press of undo and nothing reaches the disk until the reader saves.
+function deletePictureFromDocument(picture) {
+  const block = picture && picture.parentElement;
+  if (!block || !block.classList.contains('image-lane')) return;
+  const start = Number(block.dataset.srcStart);
+  const end = Number(block.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+  const span = blockDeleteRange(currentDocumentSource, start, end);
+  sendBlockSplice(block, span.start, span.end, '');
+}
+// Whether a right-clicked picture gets a menu of its own. Every row wants the file behind it, and a remote address, a data URL and the mark standing in for a picture that would not load have none.
+function pictureMenuTarget(picture) {
+  if (!picture || picture.dataset.imageMissing === 'true') return false;
+  if (!isLocalImageSrc(picture.getAttribute('src') || '')) return false;
+  return !!(picture.closest('.reader-layout') || picture.closest('.image-sheet-overlay'));
+}
 // The words highlighted in the rendered document, exactly as selected, or nothing — a selection reaching outside it, or over a body standing behind another view, is not what a reader means by copy. The copy key reads this too, so the two gestures cannot disagree about which words go on the clipboard.
 function selectionTextInReadingView() {
   const selection = window.getSelection();
@@ -81,10 +118,12 @@ function hideContextMenu() {
   contextMenuPath = null;
   contextMenuLink = null;
   contextMenuSelectionText = '';
+  contextMenuPicture = null;
+  contextMenuPictureFullWindow = false;
 }
 // What Cut or Copy last put down, so Paste has something to act on. The page holds it because the page is where it was chosen; it is not the system clipboard, so pasting here moves what you cut *here*, and a file copied in Explorer is not it.
 let libraryTransfer = null;
-function runContextAction(action, path, link, selected) {
+function runContextAction(action, path, link, selected, picture) {
   switch (action) {
     case 'open': setNavigationDirection('forward'); send({ command: 'openRecent', path }); break;
     // What was saved when the menu opened, unaltered.
@@ -96,6 +135,14 @@ function runContextAction(action, path, link, selected) {
     case 'copyLinkText': if (link) copyPlainText((link.textContent || '').trim()); break;
     case 'revealLink': send({ command: 'revealLink', href: path }); break;
     case 'copyLinkPath': send({ command: 'copyLinkPath', href: path }); break;
+    // The picture rows carry its address as their path, the way the link rows carry the href: the host turns it back into a file, and the page cannot.
+    case 'openPicture': if (picture) openImageSheet(picture); break;
+    // The pixels of the element the menu was opened on, never whatever the page is showing.
+    case 'copyPicture': if (picture) copyPicture(picture); break;
+    case 'deletePicture': deletePictureFromDocument(picture); break;
+    case 'copyImagePath': send({ command: 'copyImagePath', src: path }); break;
+    case 'revealImage': send({ command: 'revealImage', src: path }); break;
+    case 'showImageProperties': send({ command: 'showImageProperties', src: path }); break;
     case 'openFolder': setLibraryFolder(path, 'forward'); break;
     case 'cut':
       libraryTransfer = { path, cut: true };
@@ -140,6 +187,16 @@ function contextMenuEntries() {
         if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath);
         return !entry.pageOnly || isAnotherPageHref(contextMenuPath);
       }).map(labelForLinkEntry)
+    );
+  }
+  if (contextMenuTargetKind === 'picture') {
+    return tidySeparators(
+      PICTURE_MENU_ITEMS.filter((entry) => {
+        if (entry === 'separator') return true;
+        if (entry.inThePage) return !contextMenuPictureFullWindow;
+        if (entry.unlockedLane) return !!contextMenuPictureLane();
+        return true;
+      })
     );
   }
   const entries = contextMenuTargetKind === 'file'
@@ -207,8 +264,9 @@ function buildContextMenu() {
       const path = contextMenuPath;
       const link = contextMenuLink;
       const selected = contextMenuSelectionText;
+      const picture = contextMenuPicture;
       hideContextMenu();
-      if (path) runContextAction(entry.action, path, link, selected);
+      if (path) runContextAction(entry.action, path, link, selected, picture);
     });
     contextMenu.appendChild(item);
   }
@@ -217,7 +275,7 @@ function buildContextMenu() {
 function clampContextMenu(x, y) {
   leafPlaceFloating(contextMenu, x, y);
 }
-function showContextMenu(x, y, path, kind, link) {
+function showContextMenu(x, y, path, kind, link, picture) {
   // An empty path is the library's own top — the drive roots, or a vault's folder seen from outside it — which is not a folder anything can be pasted into. A folder row inside it still is, and still has its menu.
   if (!path) {
     return;
@@ -226,6 +284,9 @@ function showContextMenu(x, y, path, kind, link) {
   contextMenuTargetKind = kind || 'file';
   contextMenuLink = link || null;
   contextMenuSelectionText = contextMenuTargetKind === 'page' ? selectionTextInReadingView() : '';
+  contextMenuPicture = contextMenuTargetKind === 'picture' ? picture || null : null;
+  // Asked as the menu opens: closing the full-window view removes the overlay, so a row asking later would find nothing above the picture.
+  contextMenuPictureFullWindow = !!(contextMenuPicture && contextMenuPicture.closest('.image-sheet-overlay'));
   // Nothing to offer — an empty pane with nothing cut — so no empty box either.
   if (!contextMenuEntries().some((entry) => entry !== 'separator')) {
     return;
@@ -243,6 +304,13 @@ document.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     const href = (documentLink.getAttribute('href') || '').trim();
     showContextMenu(event.clientX, event.clientY, href, 'link', documentLink);
+    return;
+  }
+  // A picture next, above every branch below, because those answer for the note it sits in: Reveal opened the note's folder and Delete offered to bin the note, on a click aimed at a picture. Both surfaces a reader meets one on are caught — in the page, and open on the whole window.
+  const picture = event.target.closest('img');
+  if (picture && !event.target.closest('[contenteditable="true"]') && pictureMenuTarget(picture)) {
+    event.preventDefault();
+    showContextMenu(event.clientX, event.clientY, picture.getAttribute('src') || '', 'picture', null, picture);
     return;
   }
   // Closest wins, so a folder row inside the pane beats the pane itself, and the pane only answers where no row did — which is exactly the empty space below the last row.

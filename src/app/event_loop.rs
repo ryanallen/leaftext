@@ -309,6 +309,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     );
                 }
             }
+            Event::UserEvent(UserEvent::PictureClipboardDone { error }) => {
+                if let Some(error) = error {
+                    eprintln!("{error}");
+                    report_file_action_failure(
+                        reader.page(),
+                        "the picture could not be copied — try again",
+                    );
+                }
+            }
             Event::UserEvent(UserEvent::VaultCloneDone { folder, error }) => {
                 deliver_vault_clone(folder, error, &mut vault_state, &proxy, reader.page());
             }
@@ -516,6 +525,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     file_cmds::undo_delete(&reader, &mut last_delete, &path)
                 }
                 IpcCommand::ShowProperties { path } => file_cmds::properties(&reader, &path),
+                IpcCommand::RevealImage { src } => file_cmds::reveal_picture(&reader, &src),
+                IpcCommand::CopyImagePath { src } => file_cmds::copy_picture_path(&reader, &src),
+                IpcCommand::ShowImageProperties { src } => {
+                    file_cmds::picture_properties(&reader, &src)
+                }
+                IpcCommand::CopyImage { data } => picture_clipboard::copy(&proxy, data),
                 IpcCommand::CloseTab { index } => {
                     match close_tab_draw(&mut reader.workspace, index) {
                         TabDraw::Strip => reader.refresh_tab_strip(),

@@ -16,6 +16,7 @@ mod glossary;
 mod history;
 mod link_preview;
 mod links;
+mod picture_clipboard;
 mod pipe_asks;
 mod render;
 mod update_flow;

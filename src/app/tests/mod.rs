@@ -17,6 +17,7 @@ mod history;
 mod link_preview;
 mod links;
 mod log;
+mod picture_clipboard;
 mod platform;
 mod remote;
 mod session;

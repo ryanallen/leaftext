@@ -230,6 +230,78 @@ fn only_going_somewhere_moves_the_page_and_every_way_of_going_says_which_way() {
 }
 
 #[test]
+fn the_outline_draws_a_shallower_heading_more_strongly_than_the_ones_under_it() {
+    let css = reading_mode_css();
+
+    // Every depth the pane can draw has a size, a weight and an ink of its own, so no level falls back to whatever the pane happened to inherit.
+    let mut scale = Vec::new();
+    for depth in 0..=5 {
+        let selector = format!(".library-outline-depth-{depth} {{");
+        let block = css
+            .split_once(&selector)
+            .unwrap_or_else(|| panic!("the stylesheet has no rule for outline depth {depth}"))
+            .1
+            .split_once('}')
+            .expect("the depth rule closes")
+            .0;
+        let size = [
+            "--lt-text-14",
+            "--lt-text-13",
+            "--lt-text-12",
+            "--lt-text-11",
+        ]
+        .iter()
+        .position(|token| block.contains(token))
+        .unwrap_or_else(|| panic!("outline depth {depth} takes no text size from the scale"));
+        let weight = ["--lt-weight-600", "--lt-weight-500", "--lt-weight-400"]
+            .iter()
+            .position(|token| block.contains(token))
+            .unwrap_or_else(|| panic!("outline depth {depth} takes no weight from the scale"));
+        let quiet = if block.contains("--lt-muted-foreground") {
+            1
+        } else if block.contains("--lt-markdown-foreground") {
+            0
+        } else {
+            panic!("outline depth {depth} takes neither the body ink nor the quiet one");
+        };
+        scale.push((size, weight, quiet));
+    }
+
+    // Reading down the list, nothing ever gets louder: a heading nested under another is the same strength or weaker, never stronger.
+    for depth in 1..scale.len() {
+        let (size, weight, quiet) = scale[depth];
+        let (above_size, above_weight, above_quiet) = scale[depth - 1];
+        assert!(
+            size >= above_size && weight >= above_weight && quiet >= above_quiet,
+            "outline depth {depth} reads more strongly than the level it is nested under"
+        );
+    }
+    // And the shallowest is genuinely stronger than the deepest, so the hierarchy is visible and not just consistent.
+    assert!(
+        scale[0] < scale[scale.len() - 1],
+        "the shallowest heading reads no more strongly than the deepest"
+    );
+
+    // The gallery's own sample shows the scale, so a look at it answers what a nested heading does without opening a document.
+    let components = include_str!("../../design/components.md");
+    let sample = components
+        .lines()
+        .find(|line| line.starts_with("| Library pane |"))
+        .expect("components.md has a Library pane row");
+    assert!(
+        sample.contains("headings</span>"),
+        "the pane sample still counts something other than headings"
+    );
+    let drawn = (0..=5)
+        .filter(|depth| sample.contains(&format!("library-outline-depth-{depth}")))
+        .count();
+    assert!(
+        drawn > 1,
+        "the pane sample draws {drawn} outline level(s), so the gallery cannot show the scale"
+    );
+}
+
+#[test]
 fn app_shell_draws_the_documents_headings_in_the_library_pane() {
     let html = app_shell_page();
 
@@ -254,10 +326,21 @@ fn app_shell_draws_the_documents_headings_in_the_library_pane() {
     assert_contains(&html, "function renderLibraryOutline() {");
     assert_contains(&html, "library-outline-row library-outline-depth-${depth}");
     assert_contains(&html, "data-outline-section=");
-    // The line naming the list carries how long the document is — counted, not stamped onto every block on the way to the total.
-    assert_contains(&html, "function documentLineCount(body) {");
-    assert_contains(&html, "${formatCount(openDocumentLineCount())} lines");
+    // The line naming the list counts the headings it is drawing, read off the rows it already has rather than off the document under them.
+    assert_contains(&html, "${formatCount(rows.length)} headings");
     assert_contains(&html, "On this page");
+    // The block counter the line used to carry is gone, so the number cannot drift back to document length.
+    for absent in [
+        "DOCUMENT_LINE_SELECTOR",
+        "openDocumentLineCount",
+        "documentLineCount",
+        "isNavOutlineItem",
+    ] {
+        assert!(
+            !html.contains(absent),
+            "the outline counts headings, not blocks; found {absent}"
+        );
+    }
     // One decision over three lists, in a fixed order, rather than a `hidden` written per list.
     assert_contains(&html, "function renderLibraryLists() {");
     assert_contains(

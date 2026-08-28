@@ -124,6 +124,10 @@ export function run() {
     leaves('B\n', 0, 1, ''); // the only block leaves an empty buffer
     leaves('A\n\n\n\nB', 0, 1, 'B'); // an extra blank line somebody left goes with it
     leaves('# T\n\ncafé 😀\n\nZ', 5, 16, '# T\n\nZ'); // multi-byte, where the offsets matter
+    // The shape the picture menu's own Delete hands over: a paragraph holding nothing but a picture, which is the only kind of picture that row is offered on.
+    leaves('# T\n\n![Shot](imgs/shot.png)\n\nZ', 5, 27, '# T\n\nZ');
+    leaves('![Shot](imgs/shot.png)\n\nZ', 0, 22, 'Z'); // the picture the note opens with
+    leaves('Z\n\n![Shot](imgs/shot.png)\n', 3, 25, 'Z'); // and the picture it ends with
 
     // And the commit itself: what reaches the host.
     const posted = [];

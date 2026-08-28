@@ -216,3 +216,45 @@ pub(crate) fn properties(reader: &Reader, path: &Path) {
         report_file_action_failure(reader.page(), "the information window could not be opened");
     }
 }
+
+/// The file a picture in a document is drawn from, resolved back off the address the page sent. A picture served from anywhere but this disk answers nothing, which is what leaves a remote one with no file rows at all.
+///
+/// Split from the document in front so the resolution can be read on its own: the page holds no path for a picture, so what the right-click menu sends is an address, and which folder it is relative to is the open document's answer.
+pub(crate) fn picture_file_for(document: Option<&Path>, source: &str) -> Option<PathBuf> {
+    let folder = local_image_source_dir(document?)?;
+    local_image_protocol_path(source, &folder)
+}
+
+/// The same, against the document in front. The menu's three picture rows and the picture export all ask this one question of one address, so there is one answer to it.
+pub(crate) fn picture_source_path(reader: &Reader, source: &str) -> Option<PathBuf> {
+    picture_file_for(reader.workspace.active_path(), source)
+}
+
+/// The picture's own file shown where it sits, rather than the note holding it.
+pub(crate) fn reveal_picture(reader: &Reader, source: &str) {
+    match picture_source_path(reader, source) {
+        Some(file) => reveal(reader, &file),
+        None => report_missing_picture_file(reader),
+    }
+}
+
+/// The picture's own path on the clipboard as text, rather than the note's.
+pub(crate) fn copy_picture_path(reader: &Reader, source: &str) {
+    match picture_source_path(reader, source) {
+        Some(file) => copy_path(reader, &file),
+        None => report_missing_picture_file(reader),
+    }
+}
+
+/// The platform's own information window for the picture, rather than for the note holding it.
+pub(crate) fn picture_properties(reader: &Reader, source: &str) {
+    match picture_source_path(reader, source) {
+        Some(file) => properties(reader, &file),
+        None => report_missing_picture_file(reader),
+    }
+}
+
+/// What the three picture rows say when the address names no file here. The page draws them only over a picture on this disk, so reaching this means the document moved out from under an open menu — and silence there reads as a row that does nothing.
+fn report_missing_picture_file(reader: &Reader) {
+    report_file_action_failure(reader.page(), "that picture is not a file on this machine");
+}

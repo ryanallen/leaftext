@@ -1164,16 +1164,9 @@ pub(crate) fn write_diagram_pdf(reader: &Reader, path: &str, width: f64, height:
     print_diagram_pdf(reader.page(), Path::new(path), width, height);
 }
 
-/// The file a picture in the document is drawn from, resolved back off the address the page sent. A picture served from anywhere but this disk answers nothing, which is what leaves a remote picture with no export at all.
-fn picture_source_path(reader: &Reader, source: &str) -> Option<PathBuf> {
-    let document = reader.workspace.active_path()?;
-    let folder = local_image_source_dir(document)?;
-    local_image_protocol_path(source, &folder)
-}
-
 /// Where a picture goes, asked before anything is drawn or copied. The window blocks this thread, like Open's does. The picture's own file is what names the file it suggests; nothing about the open document is read or written.
 pub(crate) fn pick_picture(reader: &Reader, token: u64, source: &str, format: Option<&str>) {
-    let Some(file) = picture_source_path(reader, source) else {
+    let Some(file) = file_cmds::picture_source_path(reader, source) else {
         return;
     };
     let stem = file
@@ -1199,7 +1192,7 @@ pub(crate) fn write_picture(
     alt: &str,
     data: &str,
 ) {
-    let Some(file) = picture_source_path(reader, source) else {
+    let Some(file) = file_cmds::picture_source_path(reader, source) else {
         return;
     };
     export_picture(reader.page(), format, &file, Path::new(path), alt, data);

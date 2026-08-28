@@ -155,10 +155,26 @@ export function run() {
 
     const note = page.outline.querySelector('.library-outline-note');
     if (!note || !note.textContent.includes('On this page')) throw new Error(`the line above the headings says: ${note && note.textContent}`);
-    if (!/\d+ lines/.test(note.textContent)) throw new Error(`the line above the headings carries no length: ${note.textContent}`);
+    // Three headings over seven body blocks, so a count read off the document rather than off the rows says seven and is caught here.
+    if (!note.textContent.includes('3 headings')) throw new Error(`the line above the headings counts: ${note.textContent}`);
 
     const said = outlineRowsOf(page).join(' | ');
     if (said !== '0:One | 1:Two * | 0:Three') throw new Error(`the pane drew: ${said}`);
+  });
+
+  check('the line above the headings counts the headings and not the document', () => {
+    // The body is the same seven blocks either way, so a number that moves with the rows is reading the rows.
+    const three = paneShowingAnOutline();
+    if (!three.outline.querySelector('.library-outline-count').textContent.includes('3 headings')) throw new Error(`three headings drew: ${three.outline.querySelector('.library-outline-count').textContent}`);
+
+    const five = paneShowingAnOutline([
+      { level: 2, text: 'One', id: 'one' },
+      { level: 3, text: 'Two', id: 'two' },
+      { level: 4, text: 'Three', id: 'three' },
+      { level: 3, text: 'Four', id: 'four' },
+      { level: 2, text: 'Five', id: 'five' },
+    ]);
+    if (!five.outline.querySelector('.library-outline-count').textContent.includes('5 headings')) throw new Error(`five headings drew: ${five.outline.querySelector('.library-outline-count').textContent}`);
   });
 
   check('the pane shows one list at a time, and a live query outranks the outline', () => {

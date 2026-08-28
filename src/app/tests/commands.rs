@@ -113,3 +113,40 @@ fn the_app_bar_sends_a_drag_and_a_maximize_under_the_names_the_page_uses() {
         Ok(IpcCommand::WindowToggleMaximize)
     ));
 }
+
+#[test]
+fn a_pictures_own_file_rows_arrive_under_the_names_the_page_sends() {
+    // Each of the three carries an address rather than a path, and nothing on this enum refuses an unknown field — so a field spelled differently on the two sides would arrive empty, resolve to nothing, and leave every row of the picture's menu saying the picture is not a file on this machine.
+    const SRC: &str = "leaf-image://local/imgs/shot.png?leaf-epoch=3";
+    for (sent, name) in [
+        (
+            format!(r#"{{"command":"revealImage","src":"{SRC}"}}"#),
+            "revealImage",
+        ),
+        (
+            format!(r#"{{"command":"copyImagePath","src":"{SRC}"}}"#),
+            "copyImagePath",
+        ),
+        (
+            format!(r#"{{"command":"showImageProperties","src":"{SRC}"}}"#),
+            "showImageProperties",
+        ),
+    ] {
+        let carried = match serde_json::from_str::<IpcCommand>(&sent) {
+            Ok(IpcCommand::RevealImage { src })
+            | Ok(IpcCommand::CopyImagePath { src })
+            | Ok(IpcCommand::ShowImageProperties { src }) => src,
+            other => panic!("{name} did not arrive: {other:?}"),
+        };
+        assert_eq!(carried, SRC, "{name} lost the address the page sent");
+    }
+}
+
+#[test]
+fn a_copied_picture_arrives_under_the_name_the_page_sends() {
+    // The whole picture crosses as one string, so a payload field spelled differently on the two sides would arrive empty and every Copy picture would put nothing on the clipboard while the page said it had worked.
+    match serde_json::from_str::<IpcCommand>(r#"{"command":"copyImage","data":"UE5HDQo="}"#) {
+        Ok(IpcCommand::CopyImage { data }) => assert_eq!(data, "UE5HDQo="),
+        other => panic!("the picture copy did not arrive: {other:?}"),
+    }
+}

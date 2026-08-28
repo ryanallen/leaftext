@@ -325,13 +325,19 @@ fn the_reading_view_has_no_gutter_line_numbers() {
         );
     }
 
-    // How long the document is, is reported by the line above the pane's headings. Counted rather than stamped onto every block.
-    assert!(html.contains("function documentLineCount(body)"));
-    assert!(html.contains("const DOCUMENT_LINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
-    assert!(html.contains("${formatCount(openDocumentLineCount())} lines"));
-    // Link-only navigation entries and footnote definitions are not body lines.
-    assert!(html.contains("function isNavOutlineItem(el)"));
-    assert!(html.contains("target.classList.contains('footnote-definition')"));
+    // The line above the pane's headings says how many headings are listed, not how long the document is: nothing walks the rendered blocks for a total any more.
+    assert!(html.contains("${formatCount(rows.length)} headings"));
+    for absent in [
+        "documentLineCount",
+        "DOCUMENT_LINE_SELECTOR",
+        "openDocumentLineCount",
+        "isNavOutlineItem",
+    ] {
+        assert!(
+            !html.contains(absent),
+            "the reading view counts no lines; found {absent}"
+        );
+    }
     // Headings keep their slug ids, so the TOC and #slug deep links still resolve.
     assert!(html.contains("if (!h.id) h.id = 'section-' + (i + 1);"));
 }

@@ -1198,32 +1198,6 @@ function decorateCodeBlocks() {
     pre.appendChild(button);
   });
 }
-// The body blocks the outline counts as "lines". `pre:not(.mermaid)` excludes diagrams, which are one figure however many lines of source drew them.
-const DOCUMENT_LINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]';
-// A list item that is purely a link (or links) is a table-of-contents / navigation entry, not body content, so it doesn't count.
-function isNavOutlineItem(el) {
-  if (el.tagName !== 'LI') return false;
-  const text = (el.textContent || '').replace(/\s+/g, '');
-  if (!text) return false;
-  let linkText = '';
-  el.querySelectorAll('a').forEach((a) => { linkText += a.textContent || ''; });
-  return text === linkText.replace(/\s+/g, '');
-}
-// How long the open document is, in body blocks, for whatever is showing it. Zero where there is no document.
-function openDocumentLineCount() {
-  const body = app ? app.querySelector('.document-body') : null;
-  return body ? documentLineCount(body) : 0;
-}
-// How long the document is, in body blocks. Counted rather than stamped — the total is all anyone reads, so numbering 50,000 blocks to reach it buys nothing.
-function documentLineCount(body) {
-  let lines = 0;
-  body.querySelectorAll(DOCUMENT_LINE_SELECTOR).forEach((target) => {
-    if (target.classList.contains('footnote-definition')) return;
-    if (isNavOutlineItem(target)) return;
-    lines += 1;
-  });
-  return lines;
-}
 // The headings an outline is made of, in document order and the title first: everything the document says minus the footnotes and the TEI front matter, neither of which is a section a reader jumps to.
 function documentOutlineHeadings(body) {
   if (!body) return [];

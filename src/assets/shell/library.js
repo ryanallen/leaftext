@@ -365,8 +365,8 @@ function renderLibraryOutline() {
   }
   const shallowest = rows.reduce((least, row) => Math.min(least, row.level), rows[0].level);
   const current = readerSectionAboveTopEdge();
-  // Not a row and not a button: one quiet line naming what the list below it is, carrying the only statement in the app of how long a document is.
-  const note = `<div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">${formatCount(openDocumentLineCount())} lines</span></div>`;
+  // Not a row and not a button: one quiet line naming what the list below it is, and how many headings it holds — read off the rows already collected, so the number cannot disagree with the list under it.
+  const note = `<div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">${formatCount(rows.length)} headings</span></div>`;
   libraryOutline.innerHTML = `<div class="library-project">${outlineBackRowHtml()}${note}${rows.map((row) => outlineRowHtml(row, shallowest, row.id === current)).join('')}</div>`;
   bindLibraryOutlineRows();
   renderLibraryLists();

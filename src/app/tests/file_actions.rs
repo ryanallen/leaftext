@@ -353,3 +353,30 @@ fn a_folder_moves_with_everything_in_it() {
 
     let _ = fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn a_pictures_own_file_is_resolved_against_the_document_it_is_drawn_in() {
+    // The page holds no path for a picture — a right-click row sends the address the render drew it from — so which folder that address stands against is the open document's answer and nobody else's. Lexical, so no folder needs to exist for the seam to be read.
+    let docs = PathBuf::from("C:").join("Notes").join("docs");
+    let note = docs.join("note.md");
+    let picture = docs.join("imgs").join("shot.png");
+
+    assert_eq!(
+        file_cmds::picture_file_for(Some(&note), "leaf-image://local/imgs/shot.png"),
+        Some(picture.clone()),
+    );
+    // The stamp every render puts on so a file replaced on disk is not served from the cache names no folder of its own.
+    assert_eq!(
+        file_cmds::picture_file_for(Some(&note), "leaf-image://local/imgs/shot.png?leaf-epoch=7"),
+        Some(picture),
+    );
+    // With nothing open there is no folder to stand the address against, and a picture served from the web is no file here at all. Both are why the menu draws none of the three file rows over one.
+    assert_eq!(
+        file_cmds::picture_file_for(None, "leaf-image://local/imgs/shot.png"),
+        None,
+    );
+    assert_eq!(
+        file_cmds::picture_file_for(Some(&note), "https://example.com/shot.png"),
+        None,
+    );
+}

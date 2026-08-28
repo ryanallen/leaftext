@@ -2,6 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import vm from 'node:vm';
 import { check, checkLendingTheWindow, fakeElement, readingCss, record, root } from './shared.mjs';
 
 export function run() {
@@ -224,6 +225,50 @@ export function run() {
     }
   });
 
+  // The one picture no gesture could open big: the corner is hung on a paragraph holding a picture and nothing else, so a picture written inside a sentence had no opener anywhere. The menu is what closes that, and only running it says so — the corner and the menu are two fragments apart and neither one names the gap.
+  check('a picture written inside a sentence gets no corner and is opened big from its own menu', () => {
+    const app = booted.document.getElementById('app');
+    const held = app.children.slice();
+    const layout = fakeElement('inlinePictureLayout');
+    layout.classList.add('reader-layout');
+    const body = fakeElement('inlinePictureBody');
+    body.classList.add('document-body');
+    layout.appendChild(body);
+    const block = fakeElement('inlinePictureBlock');
+    block.tagName = 'P';
+    block.textContent = 'watch this ';
+    body.appendChild(block);
+    const picture = Object.assign(fakeElement('inlinePicture'), { tagName: 'IMG', dataset: {} });
+    picture.setAttribute('src', 'leaf-image://local/imgs/inline.png');
+    picture.currentSrc = 'leaf-image://local/imgs/inline.png';
+    block.appendChild(picture);
+    try {
+      // The two passes a render makes over the page, in that order: neither one reaches a picture sharing its paragraph with words.
+      booted.laneWidePictures({ querySelector: (selector) => (selector === '.document-body' ? body : null) });
+      booted.bindImageSheet(layout);
+      if (block.classList.contains('image-lane')) throw new Error('a picture in a sentence was widened to the lane');
+      if (block.children.some((child) => String(child.className || '') === 'image-lane-corner')) {
+        throw new Error('a picture in a sentence grew a corner, so this is no longer the picture nothing could open');
+      }
+      const event = { target: picture, clientX: 300, clientY: 300, preventDefault() {} };
+      for (const handler of booted.document.listeners.get('contextmenu') || []) handler(event);
+      const menu = vm.runInContext('contextMenu', booted);
+      const open = menu.children.find((child) => String(child.textContent || '') === 'Open picture');
+      if (!open) throw new Error('the picture nothing else can open big offers no Open picture');
+      (open.listeners.get('click') || []).forEach((handler) => handler({}));
+      booted.__frames.drain();
+      const overlay = app.children.find((child) => !held.includes(child) && String(child.className || '').includes('image-sheet-overlay'));
+      if (!overlay) throw new Error('Open picture put no full-window picture on the page');
+      const shown = overlay.children[0];
+      if (shown.src !== 'leaf-image://local/imgs/inline.png') {
+        throw new Error(`the full-window view opened on ${JSON.stringify(shown.src)} rather than the picture that was right-clicked`);
+      }
+    } finally {
+      booted.hideContextMenu();
+      for (const child of app.children.slice()) if (!held.includes(child)) child.remove();
+    }
+  });
+
   // Which pictures get a corner and what is in it, run rather than read: a marked missing one is holding our glyph over a transparent pixel, so there is nothing behind it to open or to write out, and a picture served from the web has no file on this disk for any of the export's four rows.
   check('a widened picture on this disk draws both corner controls, a remote one draws only the opener, and a marked missing one draws none', () => {
     const paragraph = (picture) => {
@@ -363,6 +408,58 @@ export function run() {
       booted.ipc.postMessage = was.send;
       booted.window.leafHoldAppearance = was.hold;
       booted.leafToast = was.toast;
+    }
+  });
+
+  // Copy is the only row that puts a picture on the clipboard, and it does it for every kind the reading view can draw — which is the whole reason it goes through the page's own canvas rather than a decoder on the other side. Driven over a canvas of the check's own, because the way it would break is silent: a source the encoder cannot read comes back as a throw nobody sees, and the reader is left thinking the picture was copied.
+  checkLendingTheWindow('every kind of picture copies through the one PNG encoder, and an encode that fails is said on the page', async () => {
+    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, canvas: booted.pictureCanvas };
+    const sent = [];
+    const said = [];
+    const asked = [];
+    const settle = async () => {
+      for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
+    };
+    try {
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.leafToast = (words) => said.push(words);
+      booted.pictureCanvas = async (picture, background) => {
+        asked.push({ src: picture.getAttribute('src'), background });
+        return { width: 8, height: 8, toDataURL: (type) => 'data:' + type + ';base64,UE5H' };
+      };
+      // The four the app draws that a decoder written against a picture's own bytes would have had to learn separately.
+      for (const ending of ['png', 'svg', 'webp', 'avif']) {
+        const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {} });
+        picture.setAttribute('src', `leaf-image://local/imgs/shot.${ending}`);
+        await booted.copyPicture(picture);
+      }
+      await settle();
+      const copied = sent.filter((one) => one.command === 'copyImage');
+      if (copied.length !== 4) throw new Error(`4 kinds of picture made ${copied.length} copies: ${said.join(' / ') || 'and said nothing'}`);
+      if (copied.some((one) => one.data !== 'UE5H')) throw new Error('a copy carried something other than what the canvas wrote');
+      // PNG holds transparency, so nothing is painted under any of them — a copy on the page's own surface color would flatten a cutout every reader expects back.
+      if (asked.some((one) => one.background)) throw new Error('a picture was drawn onto a color before it was copied');
+      if (asked.map((one) => one.src.split('.').pop()).join() !== 'png,svg,webp,avif') {
+        throw new Error(`the encoder saw ${JSON.stringify(asked.map((one) => one.src))}`);
+      }
+
+      // A source the canvas cannot read: the row says so where the reader is looking, rather than leaving them holding a clipboard that never changed.
+      sent.length = 0;
+      booted.pictureCanvas = async () => {
+        throw new Error('That picture could not be read, so nothing was written.');
+      };
+      const broken = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {} });
+      broken.setAttribute('src', 'leaf-image://local/imgs/broken.png');
+      await booted.copyPicture(broken);
+      await settle();
+      if (sent.some((one) => one.command === 'copyImage')) throw new Error('a picture that could not be read was still sent to the clipboard');
+      if (!said.some((words) => String(words).includes('could not be read'))) {
+        throw new Error(`a failed encode said ${JSON.stringify(said)} on the page`);
+      }
+    } finally {
+      booted.ipc.postMessage = was.send;
+      booted.leafToast = was.toast;
+      booted.pictureCanvas = was.canvas;
     }
   });
 
