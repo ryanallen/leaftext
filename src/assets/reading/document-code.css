@@ -277,7 +277,7 @@
 .diagram-stage.is-panning {
   cursor: grabbing;
 }
-/* The lock has to name the buttons as well, now that a button writes its own hand: a pointer that turned into a hand every time the drag crossed a control would read as the drag having let go. */
+/* The lock names the buttons as well: a button writes its own hand, and a pointer turning into a hand each time the drag crossed a control reads as the drag having let go. */
 .document-body pre.mermaid[data-processed="true"].is-panning button,
 .diagram-stage.is-panning button {
   cursor: grabbing;

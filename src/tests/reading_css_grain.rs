@@ -174,6 +174,7 @@ fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
         "body.library-resizing button {",
         "body.is-home-row-dragging button {",
         "body.is-block-dragging button {",
+        ".diagram-stage.is-panning button {",
     ] {
         assert!(
             css.contains(selector),
