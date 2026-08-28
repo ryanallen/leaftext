@@ -455,9 +455,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          # Two releases stand at a time: this one and the one before it. Every download address and the updater resolve through the latest release, so a repository holding only the newest has nothing complete to serve while the next release builds. The list comes back newest first, so the one to keep is the first entry that is not this job's own — the other job may already have put this tag at the top.
           current="${DIST_TAG}"
-          gh release list --limit 100 --json tagName --jq '.[].tagName' | while IFS= read -r old; do
-            if [ "${old}" != "${current}" ]; then
+          others=$(gh release list --limit 100 --order desc --json tagName --jq '.[].tagName' | grep -v "^${current}$")
+          previous=$(printf '%s\n' "${others}" | head -n 1)
+          printf '%s\n' "${others}" | while IFS= read -r old; do
+            if [ -n "${old}" ] && [ "${old}" != "${previous}" ]; then
               gh release delete "${old}" --yes --cleanup-tag || true
             fi
           done

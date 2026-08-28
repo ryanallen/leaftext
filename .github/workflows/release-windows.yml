@@ -112,11 +112,14 @@ jobs:
             $PSNativeCommandUseErrorActionPreference = $false
           }
 
+          # Two releases stand at a time: this one and the one before it. Every download address and the updater resolve through the latest release, so a repository holding only the newest has nothing complete to serve while the next release builds. The list comes back newest first, so the one to keep is the first entry that is not this job's own — the other job may already have put this tag at the top.
           $current = $env:DIST_TAG
-          $stale = gh release list --limit 100 --json tagName |
+          $others = @(gh release list --limit 100 --order desc --json tagName |
             ConvertFrom-Json |
             ForEach-Object { $_.tagName } |
-            Where-Object { $_ -ne $current }
+            Where-Object { $_ -ne $current })
+          $previous = if ($others.Count) { $others[0] } else { $null }
+          $stale = @($others | Where-Object { $_ -ne $previous })
 
           if ($stale) {
             foreach ($old in $stale) {

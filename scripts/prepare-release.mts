@@ -123,12 +123,34 @@ function assertTagDoesNotExist(host: ReleaseHost, tag: string): void {
   }
 }
 
-// Exactly one tag exists at a time, here and on GitHub: the build prunes older releases when it publishes, so a tag left behind comes back on the next push carrying tags — and a push carrying more than three makes no push event at all, which starts no build while the tag sits there looking shipped. The remote delete is allowed to fail: a tag the build already pruned is not there to remove.
-function retireOldTags(host: ReleaseHost, keep: string): void {
+const CANNOT_NAME_PUBLISHED = "GitHub would not say which release is published, and a published release's tag may not be deleted on a guess. No tag was touched: release again once `gh release list` answers.";
+
+// Every download address the project publishes resolves through the latest release, and so does the updater — so the tag of the release people are downloading may not go before the new release exists. It is read from GitHub rather than sorted out of the tag list: a build that failed leaves a higher tag with no release under it, and version order would keep that one and delete the complete release underneath it. An answer that cannot be read stops the release before a tag is deleted. No releases at all is an answer rather than a failure — the first release of a repository has no fallback to keep.
+function newestPublishedTag(host: ReleaseHost): string {
+  const asked = host.run("gh", ["release", "list", "--limit", "1", "--order", "desc", "--exclude-drafts", "--json", "tagName"], { capture: true });
+  if (asked.status !== 0) {
+    throw new Error(CANNOT_NAME_PUBLISHED);
+  }
+  let listed: unknown;
+  try {
+    listed = JSON.parse(asked.stdout);
+  } catch {
+    throw new Error(CANNOT_NAME_PUBLISHED);
+  }
+  if (!Array.isArray(listed)) {
+    throw new Error(CANNOT_NAME_PUBLISHED);
+  }
+  const newest = listed[0] as { tagName?: string } | undefined;
+  return newest?.tagName?.trim() ?? "";
+}
+
+// Two tags exist at a time, here and on GitHub: the new one, and the tag of the release people download while the new one builds. Everything else goes, because a tag left behind comes back on the next push carrying tags — and a push carrying more than three makes no push event at all, which starts no build while the tag sits there looking shipped. The remote delete is allowed to fail: a tag the build already pruned is not there to remove.
+function retireOldTags(host: ReleaseHost, keep: string[]): void {
+  const kept = new Set(keep.filter(Boolean));
   const others = required(host, "git", ["tag", "-l"], { capture: true })
     .split("\n")
     .map((line) => line.trim())
-    .filter((name) => name && name !== keep);
+    .filter((name) => name && !kept.has(name));
   if (!others.length) {
     return;
   }
@@ -239,10 +261,12 @@ export function prepareRelease(version: string, message: string, options: Releas
     required(host, "just", ["verify"], { env: { ...process.env, [PLAN_ROOT_ENV]: root } });
     // After the gate, before anything is written: a stop here spends nothing.
     assertMacHalfCompiles(host);
+    // Which release people are downloading right now, asked before anything is deleted: the new release does not exist until its build publishes, so this tag is the only complete download for the whole of that build and a failed build leaves it standing.
+    const published = newestPublishedTag(host);
     // Read again, because the gate compiles and a compile rewrites `Cargo.lock` with the package's own version in it: staging the earlier list commits a bump whose lockfile still names the version before it, and both release builds pass `--locked`, so they die on their first command with the tag already up and nothing published under it. v1.15.4 went out that way. The gate is the only thing between the two reads, and every file it writes into this checkout is one the release is supposed to carry.
     const staging = ownedChanges(host.changedPaths(), options.paths);
     // Only now: a gate that stops here leaves the last released tag exactly where it was.
-    retireOldTags(host, tag);
+    retireOldTags(host, [tag, published]);
     host.withPrivateIndex((env) => {
       required(host, "git", ["add", "--", ...staging], { env });
       required(host, "git", releaseCommit, { env });
@@ -281,6 +305,8 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
       // A tag nobody has yet, and a clean tree.
       if (args[0] === "rev-parse" && args.includes("--verify")) return { status: 1, stdout: "" };
       if (args[0] === "ls-remote") return { status: 1, stdout: "" };
+      // One release published, which is the state every release but the first meets. A case about the answer supplies its own.
+      if (command === "gh" && args[0] === "release") return { status: 0, stdout: JSON.stringify([{ tagName: "v1.0.0" }]) };
       return { status: 0, stdout: "" };
     },
     enterRepoRoot: () => {
@@ -379,7 +405,10 @@ function selfTest(): void {
   }
 
   // A release that passes, in the order it is documented in: gate, then the old tags, then the commit, the tag, main, and the tag on its own.
-  const clean = fixture((_command, args) => (args[0] === "tag" && args[1] === "-l" ? { status: 0, stdout: "v1.0.0\nv1.1.0\n" } : null));
+  const clean = fixture((command, args) => {
+    if (command === "gh" && args[0] === "release") return { status: 0, stdout: JSON.stringify([{ tagName: "v1.1.0" }]) };
+    return args[0] === "tag" && args[1] === "-l" ? { status: 0, stdout: "v1.0.0\nv1.1.0\n" } : null;
+  });
   const tag = prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: clean.host });
   if (tag !== "v1.2.3") fails.push(`a passing release answered ${tag} rather than its tag`);
   const at = (want: string) => clean.calls.findIndex((call) => call.includes(want));
@@ -388,6 +417,7 @@ function selfTest(): void {
     ["the plan tree was copied", clean.calls.indexOf("snapshot taken")],
     ["the check suite ran", clean.calls.indexOf("just verify")],
     ["the Mac half's newest completed answer was read", at("gh run list --workflow validate-macos.yml")],
+    ["the release people are downloading was named", at("gh release list")],
     ["the tree was read again, now the gate has written its lockfile into it", clean.calls.lastIndexOf("changed paths read")],
     ["the old tags went", at("git tag -d")],
     ["the changed paths were staged", at("git add --")],
@@ -416,6 +446,54 @@ function selfTest(): void {
   if (clean.calls.some((call) => /^git add (-A|--all|\.)(\s|$)/.test(call))) fails.push("a release staged the whole tree rather than the paths it read");
   // The commit says which version and which work, so the history answers what each release brought without opening it.
   if (!clean.calls.includes("git -c commit.gpgsign=false commit --no-gpg-sign -m Release v1.2.3: The find bar ships")) fails.push("a release commit did not carry the version and the name of the work");
+
+  // The release people are downloading keeps its tag through the build, and everything else goes. The tag list here is the state a failed build leaves: a published v1.1.0, the v1.0.0 before it, and a v1.3.0 nobody ever published.
+  const kept = fixture((command, args) => {
+    if (command === "gh" && args[0] === "release") return { status: 0, stdout: JSON.stringify([{ tagName: "v1.1.0" }]) };
+    return args[0] === "tag" && args[1] === "-l" ? { status: 0, stdout: "v1.0.0\nv1.1.0\nv1.3.0\n" } : null;
+  });
+  prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: kept.host });
+  const deletedHere = kept.calls.find((call) => call.startsWith("git tag -d")) ?? "";
+  const deletedThere = kept.calls.find((call) => call.includes("push origin --delete")) ?? "";
+  for (const [where, call] of [["locally", deletedHere], ["on the remote", deletedThere]] as Array<[string, string]>) {
+    if (!call) {
+      fails.push(`a release deleted no tag ${where}, so the tag list grows until a push carrying more than three of them starts no build at all`);
+      continue;
+    }
+    if (/\bv1\.1\.0\b/.test(call)) fails.push(`the published release's tag went ${where} before the new release existed, and every download address and the updater resolve through the latest release`);
+    if (!/\bv1\.0\.0\b/.test(call)) fails.push(`the tag before the published one was kept ${where}, and only two tags may exist at a time`);
+    // Version order would have kept this one and deleted the complete release underneath it, which is why the published release is read rather than sorted for.
+    if (!/\bv1\.3\.0\b/.test(call)) fails.push(`a newer tag left by a failed build was kept ${where}, so the release chose its fallback by version rather than by what is published`);
+  }
+
+  // GitHub unable to name the published release: nothing is deleted, committed or pushed. Guessing here is what the only published download costs.
+  const unreadable: Array<[string, CommandResult]> = [
+    ["GitHub refusing the request", { status: 1, stdout: "" }],
+    ["an answer nobody can read", { status: 0, stdout: "<html>502</html>" }],
+    ["an answer that is not a list", { status: 0, stdout: "{}" }],
+  ];
+  for (const [state, said] of unreadable) {
+    const blind = fixture((command, args) => (command === "gh" && args[0] === "release" ? said : null));
+    const blindFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: blind.host }));
+    if (!blindFailed.includes("which release is published")) fails.push(`${state} did not stop the release: ${blindFailed || "it passed"}`);
+    for (const call of blind.calls) {
+      if (isTagWork(call)) fails.push(`${state} still ran ${call}`);
+    }
+    if (blind.calls.some((call) => call.startsWith("git tag -l"))) fails.push(`${state} still read the tag list, so the deletion was one answer away`);
+    if (!blind.calls.includes("snapshot removed")) fails.push(`${state} left the plan copy behind`);
+  }
+
+  // A repository with nothing published yet: an empty list is an answer, not a failure, so the first release goes on and keeps only its own tag.
+  const first = fixture((command, args) => {
+    if (command === "gh" && args[0] === "release") return { status: 0, stdout: "[]" };
+    return args[0] === "tag" && args[1] === "-l" ? { status: 0, stdout: "v1.0.0\n" } : null;
+  });
+  const firstStopped = refused(() => {
+    const answered = prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: first.host });
+    if (answered !== "v1.2.3") throw new Error(`it answered ${answered}`);
+  });
+  if (firstStopped) fails.push(`a repository with no published release stopped its release: ${firstStopped}`);
+  if (!first.calls.includes("git tag -d v1.0.0")) fails.push("a repository with no published release kept a tag with no release under it");
 
   // The landing that goes first: the tree onto main in three writes, and nothing else at all.
   const landed = fixture();
@@ -520,6 +598,7 @@ function selfTest(): void {
   if (broken.calls.some((call) => call.includes("tag -d") || call.includes("--delete"))) fails.push("a failed gate took down the last released tag");
   if (!broken.calls.includes("snapshot removed")) fails.push("a failed gate left its copy of the plan tree behind");
   if (broken.calls.some((call) => call.startsWith("gh run list"))) fails.push("a failed gate still asked GitHub for the Mac answer, which only a passed gate spends");
+  if (broken.calls.some((call) => call.startsWith("gh release list"))) fails.push("a failed gate still asked which release is published, and a gate that stops deletes no tag to need it");
 
   // A red Mac check on main: the release stops after the gate with nothing written, naming the failed run, so the tag is never the first reader of a Mac arm again.
   const macRed = fixture((command, args) =>
@@ -554,6 +633,7 @@ function selfTest(): void {
   }
 
   if (landed.calls.some((call) => call.startsWith("gh run list"))) fails.push("a landing asked GitHub for the Mac answer, and a landing is not a release");
+  if (landed.calls.some((call) => call.startsWith("gh release list"))) fails.push("a landing asked which release is published, and a landing deletes no tag");
 
   // Nothing the release does may outlive the plan copy the gate read: the old path was two processes, and the push in the second one had no copy behind it at all.
   const outside = clean.calls.indexOf("snapshot removed");
@@ -591,7 +671,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts only this pass's named paths on main, using an index of its own so another session's staged work stays out, reaching no gate, no plan copy and no tag, and writing nothing when its owned set is clean; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean owned set and again after the gate, with both readings filtered through the same path list and the release commit using that private index too; the old tags go only after the gate passes; the newest completed Mac answer on main is read after the gate and a failed one stops the release naming its run before any tag work, while GitHub silent or no run yet stops nothing; a failed gate, a moving tree, a clean owned set or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty owned set an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
+  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts only this pass's named paths on main, using an index of its own so another session's staged work stays out, reaching no gate, no plan copy and no tag, and writing nothing when its owned set is clean; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean owned set and again after the gate, with both readings filtered through the same path list and the release commit using that private index too; the old tags go only after the gate passes, keeping the new tag and the tag of the release people are downloading while a newer tag left by a failed build goes with the rest, and a GitHub that cannot name the published release stops everything rather than guessing, while a repository with nothing published carries on; the newest completed Mac answer on main is read after the gate and a failed one stops the release naming its run before any tag work, while GitHub silent or no run yet stops nothing; a failed gate, a moving tree, a clean owned set or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty owned set an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
 }
 
 function isMainModule(): boolean {

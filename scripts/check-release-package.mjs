@@ -145,9 +145,30 @@ for (const [name, waits] of waited) {
   }
 }
 
+// Two releases stand at a time, and the second one is the whole point: every download address and the updater resolve through the latest release, so a repository holding only the newest has nothing complete to serve while the next release builds. Both jobs race, so both need the rule — the one finishing second would undo it on its own. It is read as text because the copies are two shells, and what must agree is which two survive rather than how each shell spells it.
+for (const [name, text] of jobs) {
+  const from = text.indexOf('name: Delete old releases');
+  if (from < 0) continue;
+  const step = text.slice(from);
+  const ordered = step.indexOf('--order desc');
+  const previous = step.indexOf('previous');
+  const deletes = step.indexOf('gh release delete');
+  if (ordered < 0) {
+    problems.push(`${name} reads the releases in whatever order GitHub answers in, so the one it keeps is not reliably the one before this`);
+  }
+  if (previous < 0) {
+    problems.push(`${name} keeps only the release it just published, so the next build has nothing complete behind it while it runs`);
+  } else if (deletes >= 0 && previous > deletes) {
+    problems.push(`${name} works out which release to keep after it has started deleting`);
+  }
+  if (!step.includes('DIST_TAG')) {
+    problems.push(`${name} does not hold on to the release it just published`);
+  }
+}
+
 if (problems.length) {
   console.error('the release workflows cannot be trusted to find the app:');
   for (const problem of problems) console.error(`  ${problem}`);
   process.exit(1);
 }
-console.log(`release: ${packages.length} packages in the tree, the workflows name the one that carries the app, one command finishes a stranded tag on both of them without writing anything, and both jobs retry the making of the release with the upload for the same widening five minutes, name that command when they give up, and delete no older release until their own has published`);
+console.log(`release: ${packages.length} packages in the tree, the workflows name the one that carries the app, one command finishes a stranded tag on both of them without writing anything, and both jobs retry the making of the release with the upload for the same widening five minutes, name that command when they give up, delete no older release until their own has published, and keep the one before it as well, chosen newest-first from the list they already fetch`);
