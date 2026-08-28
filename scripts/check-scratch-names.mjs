@@ -11,6 +11,8 @@
 //
 // Four temp paths are fixed on purpose and one more is never written, so the rule cannot simply refuse all of them. Each carries a row below with the reason, and a row that matches nothing fails too — a list of exceptions nobody prunes is how a rule stops being read.
 //
+// The last half is where the name came from. A function that builds a scratch path out of its one argument carries the interpolation itself, so the rule above reads the builder and never the caller: two gate self-tests handed theirs `aaaaaaaa-1111-1111-1111-111111111111` and wrote over each other's record on a clean tree. So a fixed name handed to such a builder is refused, followed one hop through the local `const` that bound it. An empty name, or none at all, is the builder's own answer and is left alone, and a builder handed its folder as well is somebody else's parent to keep unique.
+//
 // The rules are proved on made-up files before the real tree is opened, so a matcher that quietly stops matching fails the build instead of passing everything.
 
 import { readFileSync, readdirSync } from 'node:fs';
@@ -114,11 +116,15 @@ export function resolved(value, text) {
   return value;
 }
 
-/// The body of a named function, braces matched, or null where the file has none.
+/// The body of a named Rust function, braces matched, or null where the file has none.
 export function functionBody(text, name) {
   const at = new RegExp(`\\bfn\\s+${name}\\s*\\(`).exec(text);
-  if (!at) return null;
-  const open = text.indexOf('{', at.index);
+  return at ? bracedBody(text, at.index) : null;
+}
+
+/// The braced block opening at or after a point, braces matched, or null where none closes.
+export function bracedBody(text, from) {
+  const open = text.indexOf('{', from);
   if (open === -1) return null;
   let depth = 0;
   for (let i = open; i < text.length; i++) {
@@ -127,6 +133,72 @@ export function functionBody(text, name) {
       depth--;
       if (depth === 0) return text.slice(open + 1, i);
     }
+  }
+  return null;
+}
+
+/// What a builder puts in a name to own its own run, whatever it was handed.
+const OWN_RUN = /process\.pid|mkdtemp/;
+
+/// Every JavaScript function whose one argument is the whole of a scratch name: the builder carries the interpolation, so the fixed-name rule reads it and the caller's fixed string goes unseen. A function handed its folder as well builds nothing here — that parent is the caller's to keep unique, which is how a name under a folder the OS made stays outside this. Nor does a builder putting this run's own id in the name itself: what it takes is a word telling one test from another, which is the helper rule's to hold.
+export function pathBuilders(files) {
+  const found = new Map();
+  for (const { path, text } of files) {
+    if (!/\.m[jt]s$/.test(path)) continue;
+    for (const at of text.matchAll(/\bfunction\s+(\w+)\s*\(\s*\w+\s*\)\s*\{/g)) {
+      const body = bracedBody(text, at.index);
+      if (body === null) continue;
+      const paths = scratchPaths(body);
+      if (!paths.length || paths.some(({ source }) => OWN_RUN.test(source))) continue;
+      found.set(at[1], path);
+    }
+  }
+  return found;
+}
+
+/// What one call hands over, or null where it hands over anything but a single thing.
+export function callArgument(text, from) {
+  let depth = 0;
+  let piece = '';
+  for (let i = from; i < text.length; i++) {
+    const ch = text[i];
+    if ('([{'.includes(ch)) {
+      depth += 1;
+      if (depth === 1) continue;
+    } else if (')]}'.includes(ch)) {
+      depth -= 1;
+      if (depth === 0) return piece;
+    } else if (ch === ',' && depth === 1) return null;
+    piece += ch;
+  }
+  return null;
+}
+
+/// Every call to one of those builders, with the one thing it was handed. The definition itself is not a call, and a name is looked for across every file, because a builder is exported and called from the file beside it.
+export function builderCalls(files, builders) {
+  const out = [];
+  for (const { path, text } of files) {
+    for (const name of builders.keys()) {
+      for (const at of text.matchAll(new RegExp(`\\b${name}\\s*\\(`, 'g'))) {
+        if (/\bfunction\s+$/.test(text.slice(0, at.index))) continue;
+        const argument = callArgument(text, at.index + at[0].length - 1);
+        if (argument === null) continue;
+        out.push({ path, text, name, argument: argument.trim(), line: text.slice(0, at.index).split('\n').length });
+      }
+    }
+  }
+  return out;
+}
+
+/// The fixed name a call hands a builder, or null where it hands one this run owns, an empty one, or nothing at all. One hop through the `const` that bound it, the way a clock is followed through its `let`.
+export function fixedName(written, text) {
+  const value = written.trim();
+  if (!value || unique(value)) return null;
+  const literal = /^(['"`])([\s\S]*)\1$/.exec(value);
+  if (literal) return literal[2] ? value : null;
+  if (/^\w+$/.test(value)) {
+    const bound = new RegExp(`const\\s+${value}\\s*=([^;\\n]*)`).exec(text);
+    if (bound) return fixedName(bound[1], '');
   }
   return null;
 }
@@ -243,6 +315,13 @@ export function problems(files, rows) {
     prefixes.set(helper.prefix, name);
   }
 
+  const builders = pathBuilders(files);
+  for (const call of builderCalls(files, builders)) {
+    const fixed = fixedName(call.argument, call.text);
+    if (!fixed) continue;
+    found.push(`${call.path}:${call.line} hands ${call.name} the fixed name ${fixed}, and ${call.name} builds a scratch path out of it — two runs at once are one file with two writers. Put this run's own in it (\`process.pid\`)`);
+  }
+
   const seen = new Map();
   for (const call of words(files, scratchHelpers)) {
     const key = `${call.helper} ${call.word}`;
@@ -264,6 +343,13 @@ const HELPERS = [
   'fn corpus(tag: &str) -> PathBuf { shared(&format!("corpus-{tag}")) }',
   'fn clouds(tag: &str) -> PathBuf { shared(&format!("clouds-{tag}")) }',
   'fn filtered(tag: &str) -> PathBuf { corpus(tag) }',
+].join('\n');
+
+/// A made-up path builder in the shape the gates have: one argument, and the interpolation that hides a caller's fixed name.
+const BUILDER = [
+  'function record(session) {',
+  '  return join(tmpdir(), session ? `leaf-record-${session}.json` : \'leaf-record.json\');',
+  '}',
 ].join('\n');
 
 const CASES = [
@@ -320,6 +406,24 @@ const CASES = [
   ['a builder of fixed names is not a scratch helper, so its words are nobody\'s',
     [{ path: 'a.rs', text: 'fn fixture(name: &str) -> PathBuf { std::env::temp_dir().join("leaf-fixtures").join(name) }\nfn one() { fixture("a.md"); }\nfn two() { fixture("a.md"); }' }],
     [['a.rs', 'leaf-fixtures', 'never written']], 0],
+
+  // Where the name came from, because the builder holds the interpolation and the caller's fixed string is what two gates shared.
+  ['a fixed name handed to a scratch path builder is refused',
+    [{ path: 'a.mjs', text: `${BUILDER}\nconst p = record('aaaa-1111');` }], [], 1],
+  ['a fixed name bound above the call is refused too',
+    [{ path: 'a.mjs', text: `${BUILDER}\nconst ONE = 'aaaa-1111';\nconst p = record(ONE);` }], [], 1],
+  ['a name carrying this run\'s own id passes',
+    [{ path: 'a.mjs', text: `${BUILDER}\nconst ONE = \`selftest-\${process.pid}-one\`;\nconst p = record(ONE);` }], [], 0],
+  ['an empty name is the builder\'s own answer, not a fixed one',
+    [{ path: 'a.mjs', text: `${BUILDER}\nconst p = record('');` }], [], 0],
+  ['no argument at all is that same answer',
+    [{ path: 'a.mjs', text: `${BUILDER}\nconst p = record();` }], [], 0],
+  ['a builder handed the folder as well is outside this rule, because the OS made that parent',
+    [{ path: 'a.mjs', text: "function under(tag, dir = mkdtempSync(join(tmpdir(), 'leaf-'))) { return join(dir, `leaf-${tag}.json`); }\nconst p = under('aaaa-1111');" }], [], 0],
+  ['a caller in another file is read too',
+    [{ path: 'a.mjs', text: BUILDER }, { path: 'b.mjs', text: "const p = record('aaaa-1111');" }], [], 1],
+  ['a builder naming this run itself is outside this rule, because its argument is a word rather than the name',
+    [{ path: 'a.mjs', text: "function per(word) {\n  return join(tmpdir(), `leaf-per-${process.pid}-${word}`);\n}\nconst p = per('missing-one');" }], [], 0],
 ];
 
 const testFails = [];

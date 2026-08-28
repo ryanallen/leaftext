@@ -1016,4 +1016,54 @@ export function run() {
     if (around.childNodes.includes(wrapper)) throw new Error('the wrapper stayed behind the words it was holding');
     if (wrapper.childNodes.length) throw new Error('the wrapper kept a copy of the words it handed over');
   });
+
+  // ---- 2s. a node placed beside another --------------------------------------
+  //
+  // The plus above a block and Enter under one both put the new line into the page this way, and the word is the only difference between them. Without the name the stand-in throws before either path can be booted at all, so each check had to hand in a stub that kept the block in a variable and put it nowhere — which proves a block was built rather than where it landed.
+
+  check('a node placed beside another lands where a browser puts it', () => {
+    const holder = fakeElement('beside-holder');
+    const first = fakeElement('beside-first');
+    const last = fakeElement('beside-last');
+    holder.append(first, last);
+    const above = fakeElement('beside-above');
+    if (first.insertAdjacentElement('beforebegin', above) !== above) throw new Error('the placement answered something other than the node it placed');
+    const under = fakeElement('beside-under');
+    first.insertAdjacentElement('afterend', under);
+    if (holder.children.map((el) => el.id).join(',') !== 'beside-above,beside-first,beside-under,beside-last') {
+      throw new Error(`the holder reads back ${holder.children.map((el) => el.id).join(',')}`);
+    }
+    // The two inside words, at the front of the reference and on the end of it.
+    const inFront = fakeElement('beside-in-front');
+    const onEnd = fakeElement('beside-on-end');
+    first.insertAdjacentElement('beforeend', onEnd);
+    first.insertAdjacentElement('afterbegin', inFront);
+    if (first.children.map((el) => el.id).join(',') !== 'beside-in-front,beside-on-end') {
+      throw new Error(`the reference is holding ${first.children.map((el) => el.id).join(',')}`);
+    }
+    // The word is read whatever it is spelled in, the way a browser reads it.
+    const shouted = fakeElement('beside-shouted');
+    last.insertAdjacentElement('afterEnd', shouted);
+    if (holder.lastChild !== shouted) throw new Error('a word spelled the platform’s own way was not read');
+    // A real move, so a node taken from inside the reference leaves it rather than standing in both places.
+    onEnd.insertAdjacentElement('beforebegin', inFront);
+    if (first.children.map((el) => el.id).join(',') !== 'beside-in-front,beside-on-end') throw new Error('a node moved beside a sibling did not stay in the order it was moved to');
+    first.insertAdjacentElement('afterend', onEnd);
+    if (first.childNodes.includes(onEnd)) throw new Error('a node moved out of the reference is still listed inside it');
+    if (onEnd.parentElement !== holder) throw new Error('a node moved out of the reference never named the holder it reached');
+    // Nothing is beside a node standing in no holder, which is the answer a browser gives and the one the gutter checks need, since they build their blocks holderless.
+    const loose = fakeElement('beside-loose');
+    const refused = fakeElement('beside-refused');
+    if (loose.insertAdjacentElement('beforebegin', refused) !== null) throw new Error('a reference with no holder answered something other than nothing');
+    if (loose.insertAdjacentElement('afterend', refused) !== null) throw new Error('a reference with no holder answered something other than nothing');
+    if (refused.parentElement !== null) throw new Error('a node handed to a reference with no holder was placed somewhere anyway');
+    // A word the page does not know throws, because a placement that quietly did nothing would read as one that worked.
+    let said = '';
+    try {
+      first.insertAdjacentElement('inthemiddle', fakeElement('beside-unknown'));
+    } catch (error) {
+      said = String(error);
+    }
+    if (!said.includes('inthemiddle')) throw new Error(`a word the page does not know was taken rather than refused: ${said || 'nothing was thrown'}`);
+  });
 }

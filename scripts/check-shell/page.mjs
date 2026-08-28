@@ -359,6 +359,26 @@ export function fakeElement(id = '') {
       insertNodesAt(this, reference ? this.contents.indexOf(reference) : -1, [node]);
       return node;
     },
+    // The four words over the move above, because the plus above a block and Enter under one both place the new line this way and a stand-in without the name throws before a check can read the page back. `beforebegin` and `afterend` land in the reference's holder, at its spot and one past it; `afterbegin` and `beforeend` land inside the reference. The holder's spot is read after the detach, the way insertBefore reads it, so a node moved within that holder lands where the reference is standing now.
+    insertAdjacentElement(where, node) {
+      const word = String(where).toLowerCase();
+      if (word === 'afterbegin') {
+        this.prepend(node);
+        return node;
+      }
+      if (word === 'beforeend') return this.appendChild(node);
+      // A browser throws on a fifth word, and a stand-in that placed nothing quietly would let a check pass over a placement that never happened.
+      if (word !== 'beforebegin' && word !== 'afterend') {
+        throw new SyntaxError(`Failed to execute 'insertAdjacentElement' on 'Element': The value provided ('${where}') is not one of 'beforeBegin', 'afterBegin', 'beforeEnd', or 'afterEnd'.`);
+      }
+      const holder = this.parentElement;
+      // Nothing standing in a page has anything beside it, which is the answer a browser gives and the one the gutter's checks need, since they build their blocks holderless.
+      if (!holder) return null;
+      detachChild(node);
+      const spot = holder.contents.indexOf(this);
+      insertNodesAt(holder, word === 'afterend' ? spot + 1 : spot, [node]);
+      return node;
+    },
     // The element swapped for what is handed over, at the place it was standing. Four fragments take an element off the page this way and the selection toolbar's two unwraps spend it twice, so a stand-in without it throws on the first line of each.
     replaceWith(...nodes) {
       const holder = this.parentElement;

@@ -659,7 +659,7 @@ export function run() {
     }
   });
 
-  /** A note on the page with a block of it standing in, holding the source range the gutter reads and recording whatever gets placed beside it. Everything sent while `run` works is handed back. */
+  /** A note on the page with a block of it standing in, holding the source range the gutter reads. Every block stands in one holder, so a line opened beside one really lands there and the check reads the page order back rather than a word a stub kept. Everything sent while `run` works is handed back. */
   function noteGutter(source, run) {
     const read = (expression) => vm.runInContext(expression, booted);
     const was = {
@@ -672,17 +672,18 @@ export function run() {
     read(
       `currentDocumentFormat = 'markdown'; currentDocumentSource = ${JSON.stringify(source)}; pendingCaret = null;`,
     );
+    const holder = fakeElement('documentBody');
     const block = (start, end) => {
       const el = fakeElement('p');
       el.dataset = { blockKind: 'paragraph', srcStart: String(start), srcEnd: String(end) };
-      el.insertAdjacentElement = (where, node) => {
-        el.placed = { where, node };
-        return node;
-      };
+      holder.appendChild(el);
       return el;
     };
+    // What is standing on either side of a block, so a check asks where the new line landed rather than which word was said.
+    const above = (el) => holder.children[holder.children.indexOf(el) - 1] || null;
+    const below = (el) => holder.children[holder.children.indexOf(el) + 1] || null;
     try {
-      run({ block, sent, option: (id) => booted.blockInsertOptions(null).find((one) => one.id === id), caret: () => read('pendingCaret') });
+      run({ block, holder, above, below, sent, option: (id) => booted.blockInsertOptions(null).find((one) => one.id === id), caret: () => read('pendingCaret') });
     } finally {
       booted.ipc.postMessage = was.send;
       read(
@@ -695,28 +696,25 @@ export function run() {
   // The two ways into everything above: the space between two blocks, and the plus pressed on a line that is already empty. Each opens a line of the kind the option names and writes nothing, so the reader can still change their mind — and where the line goes decides which side of it the blank line is written on.
   check('the plus in the gap and the plus on an empty line each open the kind it names, and write nothing', () => {
     const note = '# Title\n\nA paragraph.\n';
-    noteGutter(note, ({ block, sent, option }) => {
-      // Under a block: the line opens after it, at the end of its source.
-      const above = block(9, 21);
-      booted.runGapInsert({ after: above, before: null }, option('heading'));
-      if (!above.placed || above.placed.where !== 'afterend') {
-        throw new Error(`the gap under a block opened ${JSON.stringify(above.placed && above.placed.where)}`);
+    noteGutter(note, ({ block, above: standingAbove, below: standingBelow, sent, option }) => {
+      // Under a block: the line opens after it, at the end of its source — read off the holder the two share, so a line that asked correctly and landed elsewhere is caught.
+      const pressed = block(9, 21);
+      booted.runGapInsert({ after: pressed, before: null }, option('heading'));
+      const opened = standingBelow(pressed);
+      if (!opened) throw new Error('the gap under a block left nothing standing after it');
+      if (opened.dataset.srcStart !== '21') {
+        throw new Error(`the line opened at ${opened.dataset.srcStart}`);
       }
-      if (above.placed.node.dataset.srcStart !== '21') {
-        throw new Error(`the line opened at ${above.placed.node.dataset.srcStart}`);
-      }
-      if (above.placed.node.dataset.placeholder !== 'Name this part...') {
-        throw new Error(`the gap opened a ${JSON.stringify(above.placed.node.dataset.placeholder)}`);
+      if (opened.dataset.placeholder !== 'Name this part...') {
+        throw new Error(`the gap opened a ${JSON.stringify(opened.dataset.placeholder)}`);
       }
       if (sent.length) throw new Error(`opening a line in the gap wrote ${JSON.stringify(sent)}`);
 
       // Above the first block there is nothing to hang a blank line off, so the break goes after the new line instead of before it.
       const first = block(0, 7);
       booted.runGapInsert({ after: null, before: first }, option('quote'));
-      if (!first.placed || first.placed.where !== 'beforebegin') {
-        throw new Error(`the gap over the first block opened ${JSON.stringify(first.placed && first.placed.where)}`);
-      }
-      const line = first.placed.node;
+      const line = standingAbove(first);
+      if (!line) throw new Error('the gap over the first block left nothing standing before it');
       line.textContent = 'Someone else said this';
       line.childNodes = [{ nodeType: 3, nodeValue: 'Someone else said this' }];
       for (const handler of line.listeners.get('keydown') || []) handler({ key: 'Enter', preventDefault() {} });
@@ -730,12 +728,13 @@ export function run() {
     });
 
     // The plus on a line that is already in the file and has nothing on it: the same opener, aimed at that line's own offset.
-    noteGutter('# Title\n\n\n\nA paragraph.\n', ({ block, sent, option }) => {
+    noteGutter('# Title\n\n\n\nA paragraph.\n', ({ block, above, sent, option }) => {
       const empty = block(9, 9);
       booted.runBlockInsert(empty, option('list'));
-      if (!empty.placed) throw new Error('the plus on an empty line opened nothing');
-      if (empty.placed.node.children[0].dataset.placeholder !== 'First of a list...') {
-        throw new Error(`the plus on an empty line opened ${JSON.stringify(empty.placed.node.children[0].dataset.placeholder)}`);
+      const opened = above(empty);
+      if (!opened) throw new Error('the plus on an empty line left nothing standing before it');
+      if (opened.children[0].dataset.placeholder !== 'First of a list...') {
+        throw new Error(`the plus on an empty line opened ${JSON.stringify(opened.children[0].dataset.placeholder)}`);
       }
       if (sent.length) throw new Error(`the plus on an empty line wrote ${JSON.stringify(sent)}`);
     });
@@ -752,7 +751,7 @@ export function run() {
       divider: { text: '\n\n---', caret: null },
     };
     for (const [id, want] of Object.entries(wants)) {
-      noteGutter(note, ({ block, sent, option, caret }) => {
+      noteGutter(note, ({ block, holder, sent, option, caret }) => {
         const above = block(9, end);
         booted.runGapInsert({ after: above, before: null }, option(id));
         const edits = sent.filter((one) => one.command === 'editBlock');
@@ -764,7 +763,7 @@ export function run() {
           throw new Error(`the ${id} landed at ${edits[0].start}..${edits[0].end}`);
         }
         // The source is the whole of what these options are, so nothing is opened to type in beside it.
-        if (above.placed) throw new Error(`the ${id} opened a line as well as writing one`);
+        if (holder.children.length !== 1) throw new Error(`the ${id} opened a line as well as writing one`);
         const asked = caret();
         if (want.caret === null ? !!asked : !asked || asked.srcStart !== want.caret) {
           throw new Error(`the ${id} asked for a caret at ${JSON.stringify(asked)}`);
@@ -1250,7 +1249,7 @@ export function run() {
   // The top space gets a clickable line like any other, so it may not be refused for having no block to write after, and the line's own placing may not reach for a block above that is not there. It is measured from the span's own top, and its click opens a line above the first block through the same opener the plus uses, writing nothing until something is typed in it.
   check('clicking the space above the first block opens a line above it, and writes nothing until it is typed in', () => {
     const read = (expression) => vm.runInContext(expression, booted);
-    noteGutter('# Title\n\nA paragraph.\n', ({ block, sent }) => {
+    noteGutter('# Title\n\nA paragraph.\n', ({ block, above, sent }) => {
       const first = block(0, 7);
       first.getBoundingClientRect = () => ({ top: 100, bottom: 140, left: 0, right: 0, width: 600, height: 40 });
       standUpReadingLayout();
@@ -1262,9 +1261,7 @@ export function run() {
         throw new Error(`the line was laid at ${line.style.top} for ${line.style.height}`);
       }
       for (const handler of line.listeners.get('mousedown') || []) handler({ preventDefault() {} });
-      if (!first.placed || first.placed.where !== 'beforebegin') {
-        throw new Error(`clicking the top space opened ${JSON.stringify(first.placed && first.placed.where)}`);
-      }
+      if (!above(first)) throw new Error('clicking the top space left nothing standing above the first block');
       if (sent.length) throw new Error(`clicking the top space wrote ${JSON.stringify(sent)}`);
       read('closeBlockGapLine()');
     });

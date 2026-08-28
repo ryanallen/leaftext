@@ -11,7 +11,7 @@
 //
 // The record lives in the OS temp folder and is deleted every message, so it never grows and never reaches a context window.
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -140,31 +140,36 @@ function selfTest() {
   if (codeIn('<!-- keycode: LEAF-0001 -->') !== 'LEAF-0001') fails.push('codeIn: missed a code');
   if (codeIn('no code here') !== null) fails.push('codeIn: invented a code');
 
+  // Every made-up session below belongs to this check run. Borrowing the live session, or a fixed made-up one, let two gates running at once write over each other's record and each report a fault the tree did not have.
+  const TURN = `selftest-${process.pid}-turn`;
+  const ONE = `selftest-${process.pid}-one`;
+  const TWO = `selftest-${process.pid}-two`;
+  for (const session of [TURN, ONE, TWO]) {
+    if (!recordPath(session).includes(String(process.pid))) fails.push(`${session} names a record two check runs would share`);
+  }
+  // Read-only on purpose: the production fallback is one file for the whole machine, so a self-test that wrote there would be the collision it is checking for.
+  if (!recordPath('').endsWith('leaftext-keycode.json')) fails.push('no session id did not fall back to the one file');
+
   // The whole cycle, because the part that would hurt is a turn that owes nothing by accident.
-  const kept = existsSync(recordPath()) ? readFileSync(recordPath(), 'utf8') : null;
   try {
-    open([ALWAYS]);
-    if (outstanding(read()).length !== 1) fails.push('a fresh turn owed nothing');
-    if (typeof read()?.startedAt !== 'number') fails.push('a fresh turn carries no start stamp');
-    const record = read();
+    open([ALWAYS], TURN);
+    if (outstanding(read(TURN)).length !== 1) fails.push('a fresh turn owed nothing');
+    if (typeof read(TURN)?.startedAt !== 'number') fails.push('a fresh turn carries no start stamp');
+    const record = read(TURN);
     record.reported = { [ALWAYS]: 'LEAF-WRONG' };
-    writeFileSync(recordPath(), JSON.stringify(record) + '\n');
-    if (!outstanding(read())[0]?.includes('not its keycode')) fails.push('a wrong code was accepted');
+    writeFileSync(recordPath(TURN), JSON.stringify(record) + '\n');
+    if (!outstanding(read(TURN))[0]?.includes('not its keycode')) fails.push('a wrong code was accepted');
     record.reported = { [ALWAYS]: codeOf(ALWAYS) };
-    writeFileSync(recordPath(), JSON.stringify(record) + '\n');
-    if (outstanding(read()).length) fails.push('the right code was refused');
-    close();
-    if (outstanding(read()).length) fails.push('a closed turn still owes something');
+    writeFileSync(recordPath(TURN), JSON.stringify(record) + '\n');
+    if (outstanding(read(TURN)).length) fails.push('the right code was refused');
+    close(TURN);
+    if (outstanding(read(TURN)).length) fails.push('a closed turn still owes something');
   } finally {
-    if (kept === null) close();
-    else writeFileSync(recordPath(), kept);
+    close(TURN);
   }
 
   // The same cycle twice over, under two session ids: a second agent starting a message must not wipe what the first has already reported.
-  const ONE = 'aaaaaaaa-1111-1111-1111-111111111111';
-  const TWO = 'bbbbbbbb-2222-2222-2222-222222222222';
   if (recordPath(ONE) === recordPath(TWO)) fails.push('two sessions share one record file');
-  if (!recordPath('').endsWith('leaftext-keycode.json')) fails.push('no session id did not fall back to the one file');
   try {
     open([ALWAYS], ONE);
     const mine = read(ONE);

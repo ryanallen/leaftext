@@ -162,9 +162,14 @@ function selfTest() {
   if (!/not work/i.test(drawn)) fails.push('render: the list does not say it is not a work list');
 
   // The whole cycle, under two session ids, because a second agent starting a message must not take the list the first is halfway through — the fault two-agents-at-once already paid for.
-  const ONE = 'aaaaaaaa-1111-1111-1111-111111111111';
-  const TWO = 'bbbbbbbb-2222-2222-2222-222222222222';
+  //
+  // Both belong to this check run: under fixed made-up names, two gates running at once wrote and removed the same two lists and each reported a fault the tree did not have.
+  const ONE = `selftest-${process.pid}-one`;
+  const TWO = `selftest-${process.pid}-two`;
   if (listPath(ONE) === listPath(TWO)) fails.push('two sessions share one list');
+  for (const session of [ONE, TWO]) {
+    if (!listPath(session).includes(String(process.pid))) fails.push(`${session} names a list two check runs would share`);
+  }
   try {
     if (!write('/check it', ONE)) fails.push('write: a message naming a skill wrote no list');
     const left = pending(ONE);
