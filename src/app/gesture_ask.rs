@@ -103,6 +103,8 @@ pub(crate) fn to_page(picture: f64, scale: f64) -> f64 {
 
 /// The walk a gesture plays: the protocol calls in order, the gap between them, and the word the answer says was played.
 #[derive(Debug)]
+// Only the Windows route plays a walk. The other build still shapes one, so a bad ask is refused for what it is rather than for the platform, and then throws it away.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 pub(crate) struct Walk {
     pub(crate) label: &'static str,
     pub(crate) steps: Vec<String>,

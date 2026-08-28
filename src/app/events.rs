@@ -129,6 +129,8 @@ pub(crate) enum UserEvent {
     /// Somebody on the ask pipe wants a pointer gesture played into the page over the web view's own developer protocol — the route that needs no cursor, no focus and no place on screen, which is what reaches a copy standing off every monitor.
     PipeGesture { gesture: Gesture, reply: PipeReply },
     /// One step of that gesture's walk, posted by its pacing thread: the protocol call must be made from the loop thread, and a paced drag walked there would hold the loop for its whole length. `done` rides the last step — the reply, and the answer it carries once the engine takes the step.
+    // Only the Windows route posts one; the arm stays on both so the loop's vocabulary is one list rather than two.
+    #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
     PipeGestureStep {
         params: String,
         done: Option<(PipeReply, serde_json::Value)>,
