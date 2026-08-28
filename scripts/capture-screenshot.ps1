@@ -221,11 +221,33 @@ public class LeafShot {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
+  [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, UIntPtr extra);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr param);
+  [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder text, int max);
+  [DllImport("user32.dll")] public static extern int GetWindowThreadProcessId(IntPtr h, out int pid);
+  public delegate bool EnumProc(IntPtr h, IntPtr param);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
   [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
+  // The title of a visible window of this process owned by the one being driven, or null. GW_OWNER is 4. Enumerated rather than asked for: a dialog is not reachable from its owner, only the other way round.
+  public static string BoxOver(IntPtr owner, int processId) {
+    string found = null;
+    EnumWindows(delegate(IntPtr h, IntPtr ignored) {
+      if (h == owner || !IsWindowVisible(h) || GetWindow(h, 4) != owner) return true;
+      int pid;
+      GetWindowThreadProcessId(h, out pid);
+      if (pid != processId) return true;
+      var title = new System.Text.StringBuilder(512);
+      GetWindowText(h, title, title.Capacity);
+      found = title.ToString();
+      return false;
+    }, IntPtr.Zero);
+    return found;
+  }
 }
 '@
 
@@ -259,6 +281,11 @@ function Test-OffEveryMonitor([IntPtr]$hwnd) {
     if ($screen.Bounds.Contains($at.Left, $at.Top)) { return $false }
   }
   return $true
+}
+
+# A box standing over the window about to be driven, by its title, or nothing. This is the one state the foreground reading cannot see: Windows lets a dialog's owner take the foreground while the dialog keeps the keyboard, so GetForegroundWindow, GetLastActivePopup and GetGUIThreadInfo all answer the owner and every key sent to it is swallowed and reported as made.
+function Find-BoxOver([IntPtr]$hwnd, [int]$processId) {
+  [LeafShot]::BoxOver($hwnd, $processId)
 }
 
 function Take-Foreground([IntPtr]$hwnd, [int]$processId) {
@@ -445,7 +472,8 @@ function Capture-Window([IntPtr]$hwnd, $rect, $vis) {
   # the screen is the fallback. It copies the visible frame into the same place
   # the crop below takes it from, so it takes no strip of the desktop with it.
   if (-not $drawn -or $bmp.GetPixel([int]($ww / 2), [int]($wh / 2)).A -eq 0) {
-    Write-Output 'PrintWindow came back empty; copying from the screen instead'
+    # Said out of band on purpose: this function returns the bitmap, so a Write-Output here joins it and the caller binds an array where a picture was expected.
+    Write-Host 'PrintWindow came back empty; copying from the screen instead'
     $gfx.CopyFromScreen($vis.Left, $vis.Top, $offX, $offY, (New-Object System.Drawing.Size $w, $h))
   }
   $gfx.Dispose()
@@ -581,6 +609,12 @@ try {
         "to do it with 'just ask eval', which needs no focus and no place, or run this with no steps for the picture alone.")
     }
     $needsFocus = @($plan | Where-Object { $_.Kind -in 'scroll', 'type', 'key' })
+    # Before the foreground reading, because that reading passes here: the box's owner is genuinely in front and the box has the keyboard, which is how a driven save once reported every key as sent and left the file name field untouched.
+    $box = Find-BoxOver $hwnd $running.Id
+    if ($needsFocus.Count -and $box) {
+      throw ("A box titled `"$box`" stands over the window being driven and keeps the keyboard, so a " +
+        "$($needsFocus[0].Kind) step would go nowhere and be reported as made. Deal with that box first.")
+    }
     if ($needsFocus.Count -and [LeafShot]::GetForegroundWindow() -ne $hwnd) {
       throw ("Windows would not bring the app's window forward, and a $($needsFocus[0].Kind) step " +
         'goes to whatever has focus. Click the window once and run this again.')
@@ -632,6 +666,12 @@ try {
     # the settle: settling first photographs one that stopped moving nearly a second
     # ago. A hold written the old way keeps it, and so do the shots taken with one.
     if ($step.Kind -ne 'hold' -or -not $step.Paced) { Start-Sleep -Milliseconds $StepMs }
+  }
+
+  # A step list that finishes a save window closes the window it was driving, and a photograph of a handle that is gone comes back as no picture at all. Said and stopped here, because the file those steps wrote is written either way and the alternative is a run that dies naming a type it could not convert.
+  if (-not [LeafShot]::IsWindow($hwnd)) {
+    Write-Output 'the window being driven closed while the steps ran, so there is no picture of it; whatever the steps wrote is written'
+    return
   }
 
   $bmp = Capture-Window $hwnd $rect $vis

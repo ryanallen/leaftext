@@ -360,6 +360,35 @@ for (const [what, pattern] of OFF_SCREEN_SHOT) {
   if (!pattern.test(text)) problems.push(`the photograph no longer knows how to ${what}`);
 }
 
+// A step list that finishes a save window closes the window it was driving, which is the one run a live probe here cannot make: it needs a real window and a real dialog. So the two halves are read instead, the way the browser driver's hidden-page branch is. Capture-Window returns the picture, so a word on its own pipeline joins the return and the caller binds an array where a bitmap was expected — which is how a run that had already written a 4,259,190-byte PDF ended by naming a type it could not convert.
+const capture = text.slice(text.indexOf('function Capture-Window'));
+const captureBody = capture.slice(0, capture.indexOf('\nfunction ', 1));
+// The comment beside the fix names the call it exists to keep out, so the reading is of the code alone.
+const captureCode = captureBody.split('\n').filter((line) => !line.trimStart().startsWith('#')).join('\n');
+if (/Write-Output/.test(captureCode)) {
+  problems.push('the photograph writes a word onto its own return value, so the caller binds an array where the picture should be');
+}
+// The one state the foreground reading cannot see. A dialog's owner takes the foreground while the dialog keeps the keyboard, so GetForegroundWindow, GetLastActivePopup and GetGUIThreadInfo all answer the owner — every reading the driver can take says the driven window is in front, every key goes into the box, and the run reports the steps as made. Read rather than driven, because it needs a real window with a real modal box over it.
+const BOX_OVER = [
+  ['ask whether a box stands over the window it is about to drive', /function Find-BoxOver/],
+  ['walk the windows for a visible one this process owns from the driven window', /public static string BoxOver\(IntPtr owner, int processId\)/],
+  ['refuse a key, type or scroll step while such a box is up', /if \(\$needsFocus\.Count -and \$box\) \{/],
+  ['name the box in the refusal, so the reader knows what to deal with', /A box titled `"\$box`" stands over the window being driven/],
+  ['ask before the foreground reading, which passes on this state', /\$box = Find-BoxOver \$hwnd \$running\.Id[\s\S]*?GetForegroundWindow\(\) -ne \$hwnd/],
+];
+for (const [what, pattern] of BOX_OVER) {
+  if (!pattern.test(text)) problems.push(`an attached run no longer ${what}`);
+}
+
+const CLOSED_WINDOW = [
+  ['ask whether the window it drove is still there before photographing it', /IsWindow\(\$hwnd\)/],
+  ['say a window that has gone in its own words rather than photographing a handle nobody holds', /closed while the steps ran/],
+  ['have that reading at all', /public static extern bool IsWindow/],
+];
+for (const [what, pattern] of CLOSED_WINDOW) {
+  if (!pattern.test(text)) problems.push(`a driven save no longer ${what}`);
+}
+
 // Only a copy the launcher started is off screen. The documentation shot's copy is photographed as a window on a monitor, and a copy the owner opens carries no startup place at all — which is what keeps the app's no-keyboard rule from ever firing on one of theirs.
 if (/STARTF_USEPOSITION/.test(text)) {
   problems.push('the documentation shot starts its copy off screen, and a published picture is a picture of a window on a monitor');
@@ -377,5 +406,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands in ${OFF_SCREEN_SHOT.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands in ${OFF_SCREEN_SHOT.length} ways, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );
