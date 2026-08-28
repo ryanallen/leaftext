@@ -240,11 +240,42 @@ else if (!attached.text.includes('the running copy')) {
   problems.push('an attached dry run does not say it is driving the copy that is already open');
 }
 
+/** A dry dismissal, down the road `just dismiss-box` really takes: one title, no -Out, no picture. */
+function dryDismiss(title) {
+  const run = spawnSync(
+    exe,
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-DryRun', '-DismissBox', title],
+    { encoding: 'utf8' }
+  );
+  return { text: `${run.stdout ?? ''}${run.stderr ?? ''}`, ok: run.status === 0 };
+}
+
+// A title with spaces in it is the ordinary case — "Location is not available" is the box that was watched — and a title that arrives split is a dismissal that cancels nothing while reading as the box having moved. No -Out either: a dismissal takes no picture, so demanding somewhere to write one would be a file nobody wants.
+const dismissal = dryDismiss('Location is not available');
+if (!dismissal.ok) problems.push(`a dry dismissal was refused:\n${dismissal.text}`);
+else {
+  if (!dismissal.text.includes('cancel the box titled "Location is not available"')) {
+    problems.push(`a dry dismissal did not read its title back whole:\n${dismissal.text}`);
+  }
+  if (!dismissal.text.includes('Escape rather than a default button')) {
+    problems.push('a dry dismissal does not say it presses Escape rather than a default button');
+  }
+}
+const unnamed = dryDismiss('');
+if (unnamed.ok) problems.push('a dismissal naming no box was not refused, so it fell through to something else');
+const both = spawnSync(
+  exe,
+  ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-DryRun', '-DismissBox', 'A box', '-Steps', 'click:1,2'],
+  { encoding: 'utf8' }
+);
+if (both.status === 0) problems.push('a dismissal took a step list as well, so a run could cancel a box and then drive past what raised it');
+
 // Every file the shot profile is made of, written or removed on every unattached run. The recent list was already like this — the app appends to it as it opens files — and the vault registry has the same fault for the same reason: the app registers a cloud folder as a vault at every launch, so a database reused across a batch photographs whatever the earlier shots found.
 const text = readFileSync(script, 'utf8');
 const profileText = readFileSync(profile, 'utf8');
 const launcherText = readFileSync(launcher, 'utf8');
 const wrapperText = readFileSync(wrapper, 'utf8');
+const driveText = readFileSync(join(root, 'scripts/drive.mjs'), 'utf8');
 const PROFILE = [
   ["settings.json", /Out-File -FilePath \(Join-Path \$config 'settings\.json'\)/],
   ['recent-files.json', /Out-File -FilePath \(Join-Path \$config 'recent-files\.json'\)/],
@@ -392,13 +423,32 @@ if (/Write-Output/.test(captureCode)) {
 // The one state the foreground reading cannot see. A dialog's owner takes the foreground while the dialog keeps the keyboard, so GetForegroundWindow, GetLastActivePopup and GetGUIThreadInfo all answer the owner — every reading the driver can take says the driven window is in front, every key goes into the box, and the run reports the steps as made. Read rather than driven, because it needs a real window with a real modal box over it.
 const BOX_OVER = [
   ['ask whether a box stands over the window it is about to drive', /function Find-BoxOver/],
-  ['walk the windows for a visible one this process owns from the driven window', /public static string BoxOver\(IntPtr owner, int processId\)/],
+  ['walk the windows for a visible one this process owns from the driven window', /public static IntPtr BoxWindowOver\(IntPtr owner, int processId\)/],
   ['refuse a key, type or scroll step while such a box is up', /if \(\$needsFocus\.Count -and \$box\) \{/],
   ['name the box in the refusal, so the reader knows what to deal with', /A box titled `"\$box`" stands over the window being driven/],
   ['ask before the foreground reading, which passes on this state', /\$box = Find-BoxOver \$hwnd \$running\.Id[\s\S]*?GetForegroundWindow\(\) -ne \$hwnd/],
 ];
 for (const [what, pattern] of BOX_OVER) {
   if (!pattern.test(text)) problems.push(`an attached run no longer ${what}`);
+}
+
+// The way out of that refusal, which without one is a wall: the box has the keyboard, every key step is refused, and the reader is left writing a throwaway script to find and cancel it. Read rather than driven for the same reason the refusal is — it needs a real window with a real modal box over it — and every reading here is about sending Escape at exactly the box that was named rather than at whatever else happens to be up.
+const DISMISS = [
+  ['name the command that cancels it in the refusal, rather than saying only that it is there', /just dismiss-box `"\$box`"/],
+  ['take the handle of the box beside its title, so there is something to bring forward and something to watch go away', /function Find-BoxWindow/],
+  ['refuse when no box is there at all, rather than sending a key into the app', /nothing to cancel/],
+  ['refuse a box wearing a title that is not the one that was named', /if \(\$box\.Title -ne \$DismissBox\)/],
+  ['refuse rather than press when Windows will not bring that box forward', /would not bring the box titled `"\$DismissBox`" forward/],
+  ['send Escape and nothing else, so it can never accept the warning it meant to back out of', /SendKeys\]::SendWait\('\{ESC\}'\)/],
+  ['say it worked only once that same box has gone', /Escape went to the box titled `"\$DismissBox`" and it is still there/],
+  ['refuse a dismissal that names no box, so it cannot fall through into a photograph', /a dismissal needs the exact title of the box to cancel/],
+];
+for (const [what, pattern] of DISMISS) {
+  if (!pattern.test(text)) problems.push(`the driver no longer knows how to ${what}`);
+}
+// Every word of the title has to arrive as one title. `just` interpolates without quotes and cmd hands each word on separately, so a title joined back the wrong way cancels nothing and reads as the box having moved.
+if (!/rest\.join\(' '\)/.test(driveText)) {
+  problems.push('the drive command no longer carries every word of a multiword box title through as one title');
 }
 
 const CLOSED_WINDOW = [
@@ -427,5 +477,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways and cancels exactly that box by its whole title in ${DISMISS.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, and ${webSaid}`
 );

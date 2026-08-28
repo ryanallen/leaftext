@@ -3,6 +3,11 @@
 #   pwsh scripts/capture-screenshot.ps1 -Doc <file> -Out <out.bmp> [-Width 1000] [-Height 799]
 #   pwsh scripts/capture-screenshot.ps1 -Attach -Do 'scroll:500,400,-8' -Out <out.png>
 #   pwsh scripts/capture-screenshot.ps1 -DryRun -Do 'click:20,20' -Out <ignored>
+#   pwsh scripts/capture-screenshot.ps1 -DismissBox 'Location is not available'
+#
+# `-DismissBox` takes no picture and no steps. It is the way past the refusal a second
+# modal box earns: it cancels that one box by its exact title with Escape, and says so
+# only once it has gone.
 #
 # Unattached is the documentation shot: it launches its own copy under an account
 # name of its own, against a throwaway profile at a pinned size and theme,
@@ -69,7 +74,8 @@
 param(
   # Empty opens the no-file home screen.
   [string]$Doc = '',
-  [Parameter(Mandatory = $true)][string]$Out,
+  # Where the picture goes. Every run that photographs needs one; a dismissal takes no picture and so takes no -Out.
+  [string]$Out = '',
   [int]$Width = 1000,
   [int]$Height = 799,
   [string]$ThemeFamily = 'fern',
@@ -115,6 +121,13 @@ param(
   [int]$StepMs = 900,
   # Drive the copy that is already running instead of launching one.
   [switch]$Attach,
+  # Cancel one box standing over the window being driven, named by the exact title
+  # the refusal above printed, and stop. This is the way past that refusal: a second
+  # modal box keeps the keyboard while its owner still takes the foreground, so a key
+  # step is refused and there is otherwise nothing to run. Escape is the only key it
+  # sends and the title has to match exactly, so it can neither press a warning's
+  # default button nor cancel a box that merely happened to be there.
+  [string]$DismissBox = '',
   # Read the -Do list back and stop. Launches nothing, writes nothing, and never
   # reaches user32, so it runs in `just verify` on a machine with no app built.
   [switch]$DryRun,
@@ -202,7 +215,28 @@ if ($Attach) {
 $asked = @($Do) + @($Steps.Split(@(' ', "`t"), [System.StringSplitOptions]::RemoveEmptyEntries))
 $plan = @($asked | ForEach-Object { Read-Step $_ })
 
+# The flag being present is the route, not the flag holding something: an empty title is a
+# dismissal nobody named a box for, and refusing it here is what keeps this from falling
+# through into a photograph of the window the box is standing over.
+$dismissing = $PSBoundParameters.ContainsKey('DismissBox')
+if ($dismissing) {
+  if (-not $DismissBox) {
+    throw 'a dismissal needs the exact title of the box to cancel, the one the refusal printed: just dismiss-box "Location is not available"'
+  }
+  if ($asked.Count) {
+    throw 'a dismissal cancels one box and takes no steps; run the step list again once it is gone'
+  }
+}
+elseif (-not $Out) {
+  throw '-Out is where the picture goes, and every run but a dismissal takes one'
+}
+
 if ($DryRun) {
+  if ($dismissing) {
+    Write-Output "would cancel the box titled `"$DismissBox`" standing over the copy that is already open"
+    Write-Output 'pressing Escape rather than a default button, and only while that exact title is the box that is there'
+    return
+  }
   $whose = if ($Attach) { 'the running copy' } else { 'a fresh copy' }
   Write-Output "$($plan.Count) steps against $whose"
   foreach ($step in $plan) { Write-Output "  $($step.Said)$($step.OffScreen)" }
@@ -238,20 +272,28 @@ public class LeafShot {
   public delegate bool EnumProc(IntPtr h, IntPtr param);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
   [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
-  // The title of a visible window of this process owned by the one being driven, or null. GW_OWNER is 4. Enumerated rather than asked for: a dialog is not reachable from its owner, only the other way round.
+  // The title of a visible window of this process owned by the one being driven, or null.
   public static string BoxOver(IntPtr owner, int processId) {
-    string found = null;
+    IntPtr box = BoxWindowOver(owner, processId);
+    return box == IntPtr.Zero ? null : TitleOf(box);
+  }
+  // The same window as a handle, which is what canceling one needs: something to bring forward, and something to watch go away. GW_OWNER is 4. Enumerated rather than asked for: a dialog is not reachable from its owner, only the other way round.
+  public static IntPtr BoxWindowOver(IntPtr owner, int processId) {
+    IntPtr found = IntPtr.Zero;
     EnumWindows(delegate(IntPtr h, IntPtr ignored) {
       if (h == owner || !IsWindowVisible(h) || GetWindow(h, 4) != owner) return true;
       int pid;
       GetWindowThreadProcessId(h, out pid);
       if (pid != processId) return true;
-      var title = new System.Text.StringBuilder(512);
-      GetWindowText(h, title, title.Capacity);
-      found = title.ToString();
+      found = h;
       return false;
     }, IntPtr.Zero);
     return found;
+  }
+  public static string TitleOf(IntPtr h) {
+    var title = new System.Text.StringBuilder(512);
+    GetWindowText(h, title, title.Capacity);
+    return title.ToString();
   }
 }
 '@
@@ -293,6 +335,13 @@ function Find-BoxOver([IntPtr]$hwnd, [int]$processId) {
   [LeafShot]::BoxOver($hwnd, $processId)
 }
 
+# The same box with its handle beside its title. Canceling one needs both: a handle to bring forward and to watch stop being a window, and the title to hold against the one the reader named.
+function Find-BoxWindow([IntPtr]$hwnd, [int]$processId) {
+  $handle = [LeafShot]::BoxWindowOver($hwnd, $processId)
+  if ($handle -eq [IntPtr]::Zero) { return $null }
+  return [pscustomobject]@{ Handle = $handle; Title = [LeafShot]::TitleOf($handle) }
+}
+
 function Take-Foreground([IntPtr]$hwnd, [int]$processId) {
   if (Test-OffEveryMonitor $hwnd) {
     Write-Output 'the window sits on no monitor, so it is photographed where it stands rather than pulled in front of whatever the owner is reading'
@@ -323,6 +372,50 @@ function Find-Attached {
   if ($ours.Count -gt 1) { throw "$($ours.Count) copies built from this checkout are running with a window; -Attach cannot tell which one you meant" }
   if ($copies.Count -gt 1) { throw "$($copies.Count) copies are running with a window and none was built from this checkout; -Attach cannot tell which one you meant" }
   return $copies[0]
+}
+
+# ---- canceling one box standing over the driven window ----------------------
+
+# The way past the refusal below, and the only place here that sends a key at a window
+# that is not the app's own. Every guard is about sending it at exactly the box the
+# reader named: no box, or one wearing another title, is refused rather than canceled;
+# Escape is the only key, because a default button accepts a warning instead of backing
+# out of it; and it is said to have worked only once that same box has gone, since a
+# dismissal reporting success while the box is still up sends the build straight back
+# into the wall it was trying to leave.
+if ($dismissing) {
+  $running = Find-Attached
+  $hwnd = $running.MainWindowHandle
+  $box = Find-BoxWindow $hwnd $running.Id
+  if (-not $box) {
+    throw "no box stands over the window being driven, so there is nothing to cancel; run the step list again"
+  }
+  if ($box.Title -ne $DismissBox) {
+    throw "the box over the window being driven is titled `"$($box.Title)`", not `"$DismissBox`", so nothing was pressed"
+  }
+  # This box and no other, and only once Windows says it really is in front: a key sent while something else has focus goes into whatever the owner is typing in.
+  [void][LeafShot]::SetForegroundWindow($box.Handle)
+  if ([LeafShot]::GetForegroundWindow() -ne $box.Handle) {
+    try { (New-Object -ComObject WScript.Shell).AppActivate($running.Id) | Out-Null } catch {}
+    Start-Sleep -Milliseconds 200
+    [void][LeafShot]::SetForegroundWindow($box.Handle)
+  }
+  if ([LeafShot]::GetForegroundWindow() -ne $box.Handle) {
+    throw "Windows would not bring the box titled `"$DismissBox`" forward, so nothing was pressed; click it once and press Escape"
+  }
+  [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+  foreach ($t in 1..20) {
+    Start-Sleep -Milliseconds 100
+    if (-not [LeafShot]::IsWindow($box.Handle)) { break }
+    $still = Find-BoxWindow $hwnd $running.Id
+    if (-not $still -or $still.Handle -ne $box.Handle) { break }
+  }
+  $still = if ([LeafShot]::IsWindow($box.Handle)) { Find-BoxWindow $hwnd $running.Id } else { $null }
+  if ($still -and $still.Handle -eq $box.Handle) {
+    throw "Escape went to the box titled `"$DismissBox`" and it is still there, so the window is still not drivable"
+  }
+  Write-Output "canceled the box titled `"$DismissBox`"; run the step list again"
+  return
 }
 
 if ($Attach) {
@@ -657,7 +750,8 @@ try {
       $box = Find-BoxOver $hwnd $running.Id
       if ($needsFocus.Count -and $box) {
         throw ("A box titled `"$box`" stands over the window being driven and keeps the keyboard, so a " +
-          "$($needsFocus[0].Kind) step would go nowhere and be reported as made. Deal with that box first.")
+          "$($needsFocus[0].Kind) step would go nowhere and be reported as made. Cancel it with " +
+          "just dismiss-box `"$box`" and run this again.")
       }
       if ($needsFocus.Count -and [LeafShot]::GetForegroundWindow() -ne $hwnd) {
         throw ("Windows would not bring the app's window forward, and a $($needsFocus[0].Kind) step " +

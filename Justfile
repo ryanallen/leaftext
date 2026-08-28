@@ -376,6 +376,16 @@ mcp:
 drive out *steps:
     node scripts/drive.mjs {{ out }} {{ steps }}
 
+# Cancel one box standing over the window `just drive` is driving, by the exact title
+# its refusal printed, and stop. That refusal is otherwise a dead end: a second modal
+# box keeps the keyboard while its owner still takes the foreground, so every key step
+# is refused and there is nothing to run. Escape is the only key sent and the title has
+# to match, so it can neither press a warning's default button nor cancel a box that
+# merely happened to be there.
+#   just dismiss-box "Location is not available"
+dismiss-box *title:
+    node scripts/drive.mjs --dismiss {{ title }}
+
 # Launch a copy of the app beside the one the owner is reading and leave it up, so
 # a change can be watched in a real window without taking their place, their tabs
 # or whatever they were mid-way through. It runs under an account name and a
