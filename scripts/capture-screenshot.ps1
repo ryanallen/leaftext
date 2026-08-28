@@ -609,7 +609,7 @@ try {
         "to do it with 'just ask eval', which needs no focus and no place, or run this with no steps for the picture alone.")
     }
     $needsFocus = @($plan | Where-Object { $_.Kind -in 'scroll', 'type', 'key' })
-    # Before the foreground reading, because that reading passes here: the box's owner is genuinely in front and the box has the keyboard, which is how a driven save once reported every key as sent and left the file name field untouched.
+    # Before the foreground reading, because that reading passes here: the box's owner is genuinely in front and the box has the keyboard, so without this a driven save reports every key as sent and leaves the file name field untouched.
     $box = Find-BoxOver $hwnd $running.Id
     if ($needsFocus.Count -and $box) {
       throw ("A box titled `"$box`" stands over the window being driven and keeps the keyboard, so a " +
