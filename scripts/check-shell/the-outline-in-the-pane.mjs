@@ -57,7 +57,7 @@ export function run() {
 
   // ---- 2. the section you are reading ---------------------------------------
   //
-  // The reader's own anchor already names the heading the line a document is read from is under, on every scroll settle. This is that answer being said out loud, and the entry for it being marked.
+  // The reader's own anchor already names the section the line a document is read from falls in, on every scroll settle. This is that answer being said out loud, and the entry for it being marked.
 
   // The blocks a reader anchors to, laid out one under the other and following the scroll the way a browser's boxes do. Every one of them, because the binary search over them takes their document order for the order of their boxes.
   const layOutAnchorBlocks = (page, tall) => {

@@ -447,7 +447,7 @@ function refreshReaderScrollAnchor() {
   readerScrollAnchor = captureReaderScrollAnchor();
   announceReaderSection();
 }
-// The heading the line a document is read from is under, as its id — null above the first one, and null in a document with no headings. Published rather than worked out: it is the answer the binary search above already reached on its way to placing the reader, so anything that wants to show where somebody is reading costs nothing per scroll.
+// The section the line a document is read from falls in, as its heading id — null above the first one, and null in a document with no headings. Published rather than worked out: it is the answer the binary search above already reached on its way to placing the reader, so anything that wants to show where somebody is reading costs nothing per scroll.
 function readerSectionAtReadingLine() {
   return readerScrollAnchor ? readerScrollAnchor.section : null;
 }

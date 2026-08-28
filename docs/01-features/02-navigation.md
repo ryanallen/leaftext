@@ -22,7 +22,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, the opening of a linked note, and a glossary term's whole entry |
 | [The pointer](#the-pointer) | The arrow stays the arrow over every control, and turns into the hand only over a link |
-| [What a control does under the pointer](#what-a-control-does-under-the-pointer) | The buttons at the top right, the file rows in the pane and a button written into a document answer with their color, their shape and a hair of lift, over the same beat |
+| [What a control does under the pointer](#what-a-control-does-under-the-pointer) | The buttons at the top right, the file rows in the pane and a button written into a document answer with their color and a hair of lift, over the same beat; a file row rounds its ends too, and a document button keeps the shape you aimed at |
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the page's own dot texture under the pointer |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
@@ -254,7 +254,7 @@ Open a document and the [library pane](03-library.md) swaps its file list for th
 - Above the list, a back row wearing the folder's name puts the files back.
 - Under it, **On this page** names the list, with how many headings are in it at its right — **23 headings** — counted off the rows drawn below, so the number and the list can never disagree.
 - **The levels look like levels.** The shallowest headings read largest and boldest; each level in is a step smaller and lighter, and from the third level in they sit in the page's quieter ink. So the shape of a document shows in the type as well as in the indenting, which matters most in a narrow pane where the indents run out.
-- Clicking a row jumps to that heading, and the jump joins scroll history, so Back returns to where you were reading.
+- Clicking a row jumps to that heading, and the jump joins scroll history, so Back returns to where you were reading. The row you clicked is the row that lights, with its heading still on screen — the lit row is read from the line a document is read from, under the app bar, rather than from the top edge of the reader behind it.
 - Typing in the pane's [search box](03-library.md#search) replaces the outline with the results; clearing the box brings it back.
 - It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), [JSON or YAML](01-rendering.md#data-files-json-and-yaml), and [email](01-rendering.md#email-eml).
 - It appears whenever a document has a title plus at least one more heading; a document with only a title leaves the file list showing.
@@ -310,11 +310,11 @@ The pointer keeps the arrow over everything you can press — buttons, tabs, men
 
 ### What a control does under the pointer
 
-Point at one of the icon buttons at the top right of the bar, at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The color arrives over a beat, as it does on every control in the app; on these three the shape and the height answer with it. A file row and a document button round their ends fully while the pointer is on them, and all three lift a hair off the surface they sit on, which reads on the light themes and is nearly invisible on the dark ones. The mark at the head of a file row leans a little the way the row opens, and the drawing inside a bar button rises with the button; the label and the box never move, so nothing beside them shifts and no row changes height.
+Point at one of the icon buttons at the top right of the bar, at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The color arrives over a beat, as it does on every control in the app, and the height answers with it. A file row rounds its ends fully while the pointer is on it, and all three lift a hair off the surface they sit on, which reads on the light themes and is nearly invisible on the dark ones. The mark at the head of a file row leans a little the way the row opens, and the drawing inside a bar button rises with the button; the label and the box never move, so nothing beside them shifts and no row changes height.
 
-The corner is the one part that arrives at once rather than over the beat: there is nothing between a slightly rounded end and a fully rounded one for the eye to watch on a control this size. Everything else — the fill, the ink, the edge, the lift and the drawing — travels together and reverses the moment the pointer leaves. With [Reduce Motion](05-settings.md#reduce-motion) on, all of it arrives in one frame.
+A file row's corner is the one part that arrives at once rather than over the beat: there is nothing between a slightly rounded end and a fully rounded one for the eye to watch on a control that size. Everything else — the fill, the ink, the edge, the lift and the drawing — travels together and reverses the moment the pointer leaves. With [Reduce Motion](05-settings.md#reduce-motion) on, all of it arrives in one frame.
 
-The response stops there. The file you have open keeps its own tint and its own shape while you point at it, so what is open still reads as open; a document button whose link goes nowhere is drawn as words rather than as a button and takes no lift; and the keyboard's own ring is unchanged.
+The response stops there. A document button keeps the corner it rests at, so the thing you aimed at is the thing under the pointer; the file you have open keeps its own tint and its own shape while you point at it, so what is open still reads as open; a document button whose link goes nowhere is drawn as words rather than as a button and takes no lift; and the keyboard's own ring is unchanged.
 
 ### Opening a link in a new page
 
