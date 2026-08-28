@@ -428,7 +428,7 @@ export function run() {
 
   // ---- 5c. a folder is one list, drawn in the frame the read is answered ------
   //
-  // Going in used to draw a one-cell stage with a still copy of the folder being left laid over the one that arrived: two near-solid lists of names overlapped for the length of the move and neither could be read. So the rows go straight into the tree and one list is on screen at any moment, going in and coming back out alike.
+  // Two lists of names overlapping cannot be read, so the rows go straight into the tree and one list is on screen at any moment, going in and coming back out alike.
 
   const libraryFolderPayload = (path, name, entries) => ({
     path,

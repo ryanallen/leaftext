@@ -195,13 +195,13 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 Leaftext follows your system's Reduce Motion setting. There is no control for it here, because the switch already exists in Windows Settings (Accessibility → Visual effects → Animation effects) and macOS System Settings (Accessibility → Display → Reduce motion), and it updates live — no restart.
 
-With it on, nothing in the app slides, rises or fades. Panels, sheets, menus, the find bar, the tab strip and a document opening all arrive in place, and a control you point at takes its highlight in one frame. Three things carry on, because stopping them would say something untrue:
+With it on, nothing in the app slides, rises or fades. Panels, sheets, menus, the find bar and the tab strip all arrive in place, and a control you point at takes its highlight in one frame. Three things carry on, because stopping them would say something untrue:
 
 - **Spinners keep turning, more slowly.** A still spinner reads as a hang, and the app is still working.
 - **A [wide table](01-rendering.md#tables)'s edge marks stay.** They only move when you scroll the table, so they follow your hand rather than a clock.
 - **A loading placeholder stays dim.** At full strength the gray bars read as text that has finished loading.
 
-With it off, a panel arriving slows as it lands and one leaving is gone quicker, a document you open fades in, and a button, row or link you point at lights up over about a tenth of a second and goes dark the same way. Committing an edit does not re-fade the page you are on.
+With it off, a panel arriving slows as it lands and one leaving is gone quicker, and a button, row or link you point at lights up over about a tenth of a second and goes dark the same way. A document or folder you open is on screen at once either way — see [every destination arrives at once](02-navigation.md#history).
 
 ## Journal
 

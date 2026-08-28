@@ -11,7 +11,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Tabs](#tabs) | Open multiple documents at once |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
-| [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you leave sliding out the way you came |
+| [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you arrive at on screen at once |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it — or stays drawn the whole time, where your machine is set to always show scrollbars |
 | [Live reload](#reload) | Reload a changed file without losing your place |

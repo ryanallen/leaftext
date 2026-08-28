@@ -106,7 +106,7 @@ export function run() {
 
   // ---- 4d. every way of opening a page draws one page and queues nothing -----
   //
-  // The reader used to lay a still copy of the page being left over the one that arrived and slide the two apart, which delayed every destination and moved a document after its bytes were ready. Now the write that draws the new page is the whole of it: one layer, at full strength, with no clone, no direction and nothing waiting to be cleaned up afterwards.
+  // A copy of the page being left laid over the one arriving delays every destination and moves a document after its bytes are ready, so the write that draws the new page is the whole of it: one layer, at full strength, with no clone, no direction and nothing waiting to be cleaned up afterwards.
 
   const oneLayerOnly = (app, how) => {
     const layers = app.querySelectorAll('.reader-layout');
