@@ -22,6 +22,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, the opening of a linked note, and a glossary term's whole entry |
 | [The pointer](#the-pointer) | The arrow stays the arrow over every control, and turns into the hand only over a link |
+| [What a control does under the pointer](#what-a-control-does-under-the-pointer) | The buttons at the top right, the file rows in the pane and a button written into a document answer with their color, their shape and a hair of lift, over the same beat |
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the page's own dot texture under the pointer |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
@@ -305,6 +306,14 @@ A link naming something your machine would **run** rather than open — a progra
 ### The pointer
 
 The pointer keeps the arrow over everything you can press — buttons, tabs, menu rows, files in the [library](03-library.md#browsing) pane, the steps of the folder path, the window's own three dots. It turns into the hand only over a link in the document you are reading, so the shape says one thing: this goes somewhere else. Every other shape still does its own work — the caret over words you can [type in](07-editing.md#inline-editing-the-reading-view), the open hand over a block you can drag, the double arrow over a [column edge](01-rendering.md#tables) you can widen, the cross over a picture you are cropping.
+
+### What a control does under the pointer
+
+Point at one of the icon buttons at the top right of the bar, at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The color arrives over a beat, as it does on every control in the app; on these three the shape and the height answer with it. A file row and a document button round their ends fully while the pointer is on them, and all three lift a hair off the surface they sit on, which reads on the light themes and is nearly invisible on the dark ones. The mark at the head of a file row leans a little the way the row opens, and the drawing inside a bar button rises with the button; the label and the box never move, so nothing beside them shifts and no row changes height.
+
+The corner is the one part that arrives at once rather than over the beat: there is nothing between a slightly rounded end and a fully rounded one for the eye to watch on a control this size. Everything else — the fill, the ink, the edge, the lift and the drawing — travels together and reverses the moment the pointer leaves. With [Reduce Motion](05-settings.md#reduce-motion) on, all of it arrives in one frame.
+
+The response stops there. The file you have open keeps its own tint and its own shape while you point at it, so what is open still reads as open; a document button whose link goes nowhere is drawn as words rather than as a button and takes no lift; and the keyboard's own ring is unchanged.
 
 ### Opening a link in a new page
 

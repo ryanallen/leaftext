@@ -226,6 +226,8 @@ This one is a Leaftext addition, not standard Markdown. Wrap an ordinary inline 
 
 {[Ghost](https://github.com/ryanallen/leaftext)} {{[Outline](https://github.com/ryanallen/leaftext)}} {{{[Filled](https://github.com/ryanallen/leaftext)}}}
 
+**All three answer the pointer the same way**, whatever they look like at rest: the fill arrives over a beat, the ends round fully, and the button lifts a hair off the page — see [what a control does under the pointer](02-navigation.md#what-a-control-does-under-the-pointer). A button whose link goes nowhere is not a button at all, so it takes none of that.
+
 Each is just a normal `[label](url)` link with braces around the whole thing. The wrapper is braces only — brackets are link syntax, so `[[Label](url)]` is a plain link between two square brackets, not a button. The braces must balance: `{{…}` is prose and stays as written. The label may hold inline formatting, and the button follows a link like any other (external URLs open in your browser, relative `.md` paths open in the reader). Written inside code the wrapper stays literal, so this page can show the syntax without turning it into a button. Several buttons written on one line keep room between them at any width, so a pair that stands side by side on a wide page and stacks on a narrow one reads as two buttons either way.
 
 **A button can wear a mark.** Name one inside the braces, before the label, and it is drawn at the front of the button in the button's own color:

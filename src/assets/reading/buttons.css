@@ -55,7 +55,7 @@ button {
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
-  /* The lift is timed here, and the three colors are re-named beside it: a `transition` shorthand replaces the file's shared hover fade outright, whatever its weight, so a rule adding a fourth property has to hand the other three back. */
+  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. */
   transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
@@ -69,7 +69,7 @@ button {
   color: var(--lt-primary-foreground);
   box-shadow: var(--lt-shadow-raised);
 }
-/* The drawing answers with the chip rather than sitting still inside it. On its own element, so the 32px box does not move and the bar does not reflow, and one pixel because the fill is already the loud half of the answer. A mask swap is the other way to make an icon answer and cannot be used: it does not interpolate, so it would land in one frame beside a fill that fades. Timed on the four chips rather than on every icon button, so an icon that does not move carries no clock. */
+/* The drawing answers with the chip, on its own element so the 32px box does not move. One pixel, because the fill is already the loud half. Never a mask swap instead: a mask does not interpolate, so it would land in one frame beside a fill that fades. */
 .theme-button .lt-icon,
 .open-button .lt-icon,
 .new-button .lt-icon,

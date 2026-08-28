@@ -636,7 +636,7 @@ fn the_focus_ring_is_the_keyboards_and_the_mouse_takes_it_off_every_control() {
 
 #[test]
 fn a_pointed_at_control_lifts_and_nothing_that_means_something_does() {
-    // A hover used to be color alone. Three families answer with the raised shadow as well, and two of them round to the pill; what the pill and the lift must never reach is a state that already means something — the open file, and a button whose link goes nowhere and is drawn as words.
+    // Three families answer a pointer with the raised shadow as well as color, and two of them round to the pill. What neither may reach is a state that already means something: the open file, and a button whose link goes nowhere and is drawn as words.
     let css = reading_mode_css();
 
     // The 32px chips lift and keep their corner: a pill on a square is a circle, a different control rather than an emphasis.

@@ -843,7 +843,7 @@ body.library-resizing {
   background: transparent;
   color: inherit;
   font: inherit;
-  /* The lift is timed here, and the three colors are re-named beside it: a `transition` shorthand replaces the file's shared hover fade outright, whatever its weight, so a rule adding a fourth property has to hand the other three back. The corner is not in the list on purpose — a row is 23px tall, so every radius over 11.5px draws as the same pill and the shape is finished inside the first frame at any duration. */
+  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. The corner is left out: a row is 23px tall, so every radius over 11.5px draws as the same pill and the shape is finished inside the first frame at any duration. */
   transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
@@ -874,7 +874,7 @@ body.library-resizing {
   height: 14px;
   color: var(--lt-muted-foreground);
 }
-/* The mark at the head of the row leans the way the row opens, on its own element so the label does not move and the row does not reflow. Two pixels across a six-pixel gap: enough to read as an answer, short of closing the gap. The row's own `transition` above does not reach a child, so the clock is written here — and below the leaf's own rule rather than above it, because the suite reads that leaf's color out of the first rule in the compiled sheet spelled `.library-file > .lt-icon` and this one would answer instead. */
+/* The mark leans the way the row opens, on its own element so the label does not move: two pixels across a six-pixel gap. Below the leaf's own rule rather than above it, because the suite reads the leaf's color out of the first rule spelled `.library-file > .lt-icon` and this one would answer instead. */
 .library-file > .lt-icon,
 .library-nav-folder .library-folder-icon {
   transition: transform var(--lt-duration-120) var(--lt-ease);
