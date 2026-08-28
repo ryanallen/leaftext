@@ -679,7 +679,7 @@ export function run() {
     }
   });
 
-  // A page one line long is a real page, and the row under the preview used to be the only counted sentence in the app that already read right.
+  // A page one line long is a real page, so the row under the preview counts its one line in the singular.
   check('the card counts one line in the singular and two in the plural', () => {
     try {
       vm.runInContext('activeHoverToken += 1; pendingLineTokens.clear(); lineCountCache.clear();', booted);

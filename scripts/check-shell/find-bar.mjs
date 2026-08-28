@@ -104,7 +104,7 @@ export function run() {
     booted.setCodeUnlocked(false);
   });
 
-  // The replace goes through and one match is left behind, so the growl says which. One left behind used to read "1 matches are".
+  // The replace goes through and one match is left behind, so the growl says which, and one left behind reads "1 match is" rather than "1 matches are".
   check('a replace that left matches behind counts them in the singular and the plural', () => {
     const growls = [];
     const wasToast = booted.leafToast;

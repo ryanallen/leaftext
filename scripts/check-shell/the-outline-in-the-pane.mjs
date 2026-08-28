@@ -176,7 +176,7 @@ export function run() {
     ]);
     if (!five.outline.querySelector('.library-outline-count').textContent.includes('5 headings')) throw new Error(`five headings drew: ${five.outline.querySelector('.library-outline-count').textContent}`);
 
-    // A note whose title carries one section is the ordinary case, and it used to read "1 headings".
+    // A note whose title carries one section is the ordinary case, so it is where "1 headings" would be read.
     const one = paneShowingAnOutline([{ level: 2, text: 'One', id: 'one' }]);
     const said = one.outline.querySelector('.library-outline-count').textContent;
     if (!said.includes('1 heading')) throw new Error(`one heading drew: ${said}`);

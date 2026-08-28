@@ -1095,7 +1095,7 @@ function formatCount(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number.toLocaleString('en-US') : String(value);
 }
-// The one place a counted sentence chooses its word, so "1 results" cannot come back. Whole labels, because the pair is sometimes "match is" against "matches are".
+// The one place a counted sentence chooses its word, so a count of one never reads as a plural. Whole labels, because the pair is sometimes "match is" against "matches are".
 function formatCountLabel(value, singular, plural) {
   return `${formatCount(value)} ${Number(value) === 1 ? singular : plural}`;
 }

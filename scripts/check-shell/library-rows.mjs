@@ -243,7 +243,7 @@ export function run() {
     if (clean.includes('title=')) throw new Error('a vault with nothing left out still carried a title');
   });
 
-  // Somebody who searched a vault for a phrase only one note holds reads the line above their one row, and "1 results" is the first thing it says.
+  // Somebody who searched a vault for a phrase only one note holds reads the line above their one row, so that line is where "1 results" would be the first thing they see.
   check('a count of one reads in the singular, and a cut list counts its files the same way', () => {
     showingLibrarySearch();
     const countLine = () => (searchPane().innerHTML.match(/<p class="library-results-count"[^>]*>.*?<\/p>/) || [''])[0];
