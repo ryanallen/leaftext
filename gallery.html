@@ -3719,6 +3719,47 @@ body.library-resizing {
 .library-tree {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
 }
+/* One cell, holding the folder on screen and — for the length of a move — a still copy of the one being left. The tree is not the pane's scroll box (.library-scroll is), so the arriving rows stay in flow and keep the pane's height while the copy lies over them. */
+.library-tree-stage {
+  display: grid;
+  grid-template-columns: 1fr;
+  position: relative;
+}
+.library-tree-layer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+/* Which way the two travel: forward, into a folder, brings the new rows in from the right and takes the old ones out to the left, and back reverses both. One pair of curves for it — arriving settles hard, leaving accelerates away — and the sign of the travel is the only difference between the two directions. */
+.library-tree-stage[data-going] .library-tree-layer.is-arriving {
+  animation: leaf-library-tree-arrive var(--lt-duration-220) var(--lt-ease-decelerate) both;
+}
+/* The copy is lifted out of the grid's sizing, so the folder that arrived is what the pane's height is measured from however long the one being left was. */
+.library-tree-stage[data-going] .library-tree-layer.is-leaving {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  animation: leaf-library-tree-leave var(--lt-duration-220) var(--lt-ease-accelerate) both;
+}
+.library-tree-stage[data-going='forward'] {
+  --library-tree-travel: 24%;
+}
+.library-tree-stage[data-going='back'] {
+  --library-tree-travel: -24%;
+}
+@keyframes leaf-library-tree-arrive {
+  from {
+    transform: translateX(var(--library-tree-travel));
+    opacity: 0;
+  }
+}
+@keyframes leaf-library-tree-leave {
+  to {
+    transform: translateX(calc(-1 * var(--library-tree-travel)));
+    opacity: 0;
+  }
+}
 .library-results {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
 }
@@ -4883,6 +4924,47 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .reader-layout-no-minimap {
   justify-items: center;
+}
+/* Two pages in one cell, for the length of a move: the one that arrived, and a still copy of the one being left. Only while the move runs — a page at rest is the plain block it has always been, so nothing about the reader at rest changes. Clipped sideways because the arriving page's travel was measured to widen the reader's own scroll, and a leftward one not to. */
+.reader-shell.is-swapping {
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow-x: hidden;
+}
+.reader-shell.is-swapping > .reader-layout {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+/* Forward brings the new page in from the right and takes the old one out to the left; back reverses both, and the sign is the only difference. */
+.reader-shell.is-swapping[data-going='forward'] {
+  --reader-swap-travel: 12%;
+}
+.reader-shell.is-swapping[data-going='back'] {
+  --reader-swap-travel: -12%;
+}
+/* The one transform a reading layout ever wears, and it lasts only as long as the move. A transform makes this the containing block for anything fixed inside it, and it changes what the box says it is — which is why the render starts the move after every pass that measures the page, and why the two rules above are keyed on a state nothing at rest carries. A reading layout has no fixed or sticky descendant: the overlays that are fixed are children of .reader-shell beside it. */
+.reader-shell.is-swapping > .reader-layout.is-swapping-in {
+  animation: leaf-reader-arrive var(--lt-duration-220) var(--lt-ease-decelerate) both;
+}
+/* Held at the reader's own place by its offset, so the page going away carries the words they were reading out with it rather than snapping to its own top first. */
+.reader-shell.is-swapping > .reader-layout.is-leaving {
+  pointer-events: none;
+  animation: leaf-reader-leave var(--lt-duration-220) var(--lt-ease-accelerate) both;
+}
+@keyframes leaf-reader-arrive {
+  from {
+    transform: translateX(var(--reader-swap-travel));
+    opacity: 0;
+  }
+}
+@keyframes leaf-reader-leave {
+  from {
+    transform: translateY(var(--reader-leaving-offset));
+  }
+  to {
+    transform: translate(calc(-1 * var(--reader-swap-travel)), var(--reader-leaving-offset));
+    opacity: 0;
+  }
 }
 /* The growl. Rises into place rather than appearing, because something that appears in the corner of a page has already been half-missed by the time the eye gets there. */
 .app-toast {
@@ -7680,7 +7762,7 @@ body.is-home-row-dragging .home-list-scroll li {
   right: 10px;
   z-index: 1;
 }
-/* The app's one scrollbar, worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and the five boxes a document brings. Those five are named as a selector rather than given a class because they come out of Markdown with nowhere to carry one; where the markup is ours the box takes .leaf-scroll. Every wearer is in all nine rules and not only the six that paint: the three on the box carry the thumb's color and inset, so a box in half of them reserves a gutter and never draws in it. `.table-lane > table` is redundant under the document selector and stays, named as a wearer by the test that walks this block. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
+/* The app's one scrollbar, worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and the five boxes a document brings. Those five are named as a selector rather than given a class because they come out of Markdown with nowhere to carry one; where the markup is ours the box takes .leaf-scroll. Every wearer is in all ten rules and not only the six that paint: the three on the box carry the thumb's color and inset, so a box in half of them reserves a gutter and never draws in it. `.table-lane > table` is redundant under the document selector and stays, named as a wearer by the test that walks this block. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
 .leaf-scroll::-webkit-scrollbar,
 .library-scroll::-webkit-scrollbar,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar,
@@ -7738,6 +7820,14 @@ body.is-home-row-dragging .home-list-scroll li {
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
   --lt-scroll-thumb-inset: var(--lt-stroke-2);
   transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+/* Somebody who told their operating system to always show scrollbars gets every bar painted at rest. The flag is stamped on the surface from the platform's own preference, so the app asks nobody: a bar that is gone until you scroll is a target you have to already know is there. Painted, not thickened — the pointer's 10px grabber stays a hover answer, because a bar permanently at its widest takes room from the page for exactly the reader who turned this on. So this sets the color and nothing else, and the inset still comes from the resting and pointing rules above. Last of the four on purpose, and the extra class on the surface outranks all three either way. The railed reader is not a wearer here any more than it is up there: the picture down its side is the same control doing the same job. */
+.app-surface.is-scrollbars-always .leaf-scroll,
+.app-surface.is-scrollbars-always .library-scroll,
+.app-surface.is-scrollbars-always .reader-shell:not(.has-minimap),
+.app-surface.is-scrollbars-always .table-lane > table,
+.app-surface.is-scrollbars-always .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
 }
 /* What fades is that property, not an opacity: a scrollbar pseudo has no box of its own to fade. It also means the bar's width is reserved whether or not the thumb is painted, so nothing on the page moves when one appears. */
 .leaf-scroll::-webkit-scrollbar-thumb,
@@ -9431,7 +9521,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 71 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 72 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -9453,7 +9543,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>163</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>63</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>71</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>72</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -9823,7 +9913,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">71 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">72 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -9903,6 +9993,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js</span></header>
 <div class="stage"><div class="library-pane" style="position:static;width:240px;height:132px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Folder swap stage</h3><code class="built">.library-tree-stage</code><span class="built">library.js</span></header>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:96px"><div class="library-tree"><div class="library-tree-stage"><div class="library-tree-layer"><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">The folder arrived at</span></button></div><div class="library-tree-layer"><button type="button" class="library-file"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A still copy of the one left</span></button></div></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Library search</h3><code class="built">.library-search-clear</code><span class="built">app-shell.html, driven by library-search.js</span></header>

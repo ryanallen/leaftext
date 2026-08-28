@@ -32,7 +32,12 @@ fn a_document_fades_in_when_it_is_a_different_document() {
     // The class goes on at the reveal, not before it: the document is decorated hidden, and everything past that line measures the page.
     assert_contains(
         &html,
-        "if (readerLayout) {\n      readerLayout.style.removeProperty('display');\n      if (arriving) fadeDocumentIn(readerLayout);\n    }",
+        "if (readerLayout) {\n      readerLayout.style.removeProperty('display');",
+    );
+    // A page sliding in from one side carries its own opacity, so it is not faded as well.
+    assert_contains(
+        &html,
+        "if (arriving && !leavingCopy) fadeDocumentIn(readerLayout);",
     );
     // A fresh open and a tab switch fade; committing an inline edit re-renders the same path and does not.
     assert_contains(
@@ -77,6 +82,151 @@ fn a_document_fades_in_when_it_is_a_different_document() {
         css,
         "animation: leaf-document-arrive var(--lt-duration-160) var(--lt-ease-decelerate) both;",
     );
+}
+
+#[test]
+fn the_page_being_left_slides_out_while_the_new_one_arrives() {
+    let html = app_shell_page();
+    let css = reading_mode_css();
+    let swap = "function startReaderSwap(arriving, copy, direction, leftAt) {";
+
+    // A copy, taken before the write that throws the live page away. A clone carries no listener, no editing binding and no observer, which is the whole reason that write can afford to be as blunt as it is.
+    assert_contains(
+        &html,
+        "const leavingCopy = moving ? outgoing.cloneNode(true) : null;",
+    );
+    assert_contains(&html, "const leftAt = moving ? app.scrollTop : 0;");
+    // Mounted after the live layer in the page, so the fifty single-element queries that ask for the document all keep answering with the one that works.
+    assert_in(&html, swap, "app.appendChild(copy);");
+    assert_in(&html, swap, "copy.inert = true;");
+    assert_in(&html, swap, "copy.setAttribute('aria-hidden', 'true');");
+    // Held where the reader left it, so the page going away carries the words they were reading out with it.
+    assert_in(
+        &html,
+        swap,
+        "copy.style.setProperty('--reader-leaving-offset', `${-leftAt}px`);",
+    );
+    // Last of all, after every pass that measures the page: a transform changes what an element says its box is.
+    assert_contains(
+        &html,
+        "if (leavingCopy && readerLayout) startReaderSwap(readerLayout, leavingCopy, going, leftAt);",
+    );
+    // Nothing the landing scrolls into view may shove the reader sideways while both pages are traveling.
+    assert_in(&html, swap, "if (app.scrollLeft) app.scrollLeft = 0;");
+    // The copy's own animation ends the move, and a run nothing announced the end of is ended by hand.
+    assert_in(
+        &html,
+        swap,
+        "copy.addEventListener('animationend', (event) => {",
+    );
+    assert!(html.contains("const READER_SWAP_FALLBACK_MS = 500;"));
+    assert_in(
+        &html,
+        swap,
+        "readerSwapTimer = window.setTimeout(settled, READER_SWAP_FALLBACK_MS);",
+    );
+    // Every render takes a move down first, so a second one landing on one still running drops the older copy rather than leaving two pages up.
+    assert_contains(
+        &html,
+        "const going = spendNavigationDirection();\n  endReaderSwap();",
+    );
+    assert_in(
+        &html,
+        "function endReaderSwap() {",
+        "readerSwapCopy.remove();",
+    );
+    assert_in(
+        &html,
+        "function endReaderSwap() {",
+        "app.classList.remove('is-swapping');",
+    );
+    assert_in(
+        &html,
+        "function endReaderSwap() {",
+        "delete app.dataset.going;",
+    );
+    // The rail belongs to the page it names: while a still copy of the last one is on screen it must not already be the new one's.
+    assert_contains(
+        &html,
+        "readerLayout.style.removeProperty('display');\n      // With the page it names, never before it: while a still copy of the last page is on screen the rail beside it belongs to that page, not to the one arriving behind it.\n      setMinimapMarkup(minimapHtml);",
+    );
+
+    // One cell holds both, and only while the move runs — a page at rest is the plain block it has always been.
+    let swapping = rule_body(css, ".reader-shell.is-swapping {");
+    assert!(swapping.contains("display: grid;"));
+    assert!(swapping.contains("grid-template-columns: 1fr;"));
+    // The arriving page's rightward travel was measured to widen the reader's own scroll.
+    assert!(swapping.contains("overflow-x: hidden;"));
+    assert!(
+        rule_body(css, ".reader-shell.is-swapping > .reader-layout {")
+            .contains("grid-area: 1 / 1;")
+    );
+    // Arriving settles hard, leaving accelerates away, and the sign of the travel is the only difference between the two directions.
+    assert!(rule_body(
+        css,
+        ".reader-shell.is-swapping > .reader-layout.is-swapping-in {"
+    )
+    .contains(
+        "animation: leaf-reader-arrive var(--lt-duration-220) var(--lt-ease-decelerate) both;"
+    ));
+    let leaving = rule_body(
+        css,
+        ".reader-shell.is-swapping > .reader-layout.is-leaving {",
+    );
+    assert!(leaving.contains("pointer-events: none;"));
+    assert!(leaving.contains(
+        "animation: leaf-reader-leave var(--lt-duration-220) var(--lt-ease-accelerate) both;"
+    ));
+    assert!(
+        rule_body(css, ".reader-shell.is-swapping[data-going='forward'] {")
+            .contains("--reader-swap-travel: 12%;")
+    );
+    assert!(
+        rule_body(css, ".reader-shell.is-swapping[data-going='back'] {")
+            .contains("--reader-swap-travel: -12%;")
+    );
+    // The copy travels sideways from where the reader left it, never from its own top.
+    assert!(css.contains("@keyframes leaf-reader-leave {\n  from {\n    transform: translateY(var(--reader-leaving-offset));"));
+    assert!(css.contains("@keyframes leaf-reader-arrive {"));
+}
+
+#[test]
+fn only_going_somewhere_moves_the_page_and_every_way_of_going_says_which_way() {
+    let html = app_shell_page();
+
+    // The word somebody spent is the whole gate: only a press that sends the reader somewhere writes one, so an edit commit, a save, a watcher tick, the padlock and a tab click all stay exactly as immediate as they were, with nothing new deciding it. And the page has to change, or a jump inside the document already open would move it.
+    assert_contains(
+        &html,
+        "const moving = going && arriving && outgoing && !readerOffScreen();",
+    );
+    assert_contains(
+        &html,
+        "const arriving = renderedPath !== lastRenderedDocumentPath;",
+    );
+    // Not the open path's own flag. A tab switch clears it, and Back and Forward across two documents come back on that same path — so a move gated on it would leave the reader's own Back the one gesture that never moved.
+    assert!(!html.contains("resetReaderScrollOnNextRender && outgoing"));
+
+    // Back and Forward are the two the reader presses by name.
+    assert_contains(
+        &html,
+        "setNavigationDirection(command === 'goBack' ? 'back' : 'forward');",
+    );
+    // And every other press that puts a different document on screen says so too, or one way in would sit still while the rest moved.
+    assert_in(
+        &html,
+        "function bindSearchHits() {",
+        "setNavigationDirection('forward');",
+    );
+    assert_contains(
+        &html,
+        "setNavigationDirection('forward');\n      send({ command: 'openRecent', path: button.dataset.path });",
+    );
+    assert_contains(
+        &html,
+        "case 'open': setNavigationDirection('forward'); send({ command: 'openRecent', path }); break;",
+    );
+    // A document link is a step in. A page opened behind is not: nothing on screen changes, so a word written for it would move whatever render came next.
+    assert_contains(&html, "if (!newPage) setNavigationDirection('forward');");
 }
 
 #[test]

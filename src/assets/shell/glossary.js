@@ -120,6 +120,7 @@ makeSheetDraggable(glossarySheet, glossarySheet.querySelector('.leaf-sheet-grip'
 glossaryFullLink.addEventListener('click', (event) => {
   event.preventDefault();
   dismissGlossary();
+  setNavigationDirection('forward');
   send({ command: 'openLink', href: glossaryHrefBase, scroll_anchor: currentScrollAnchor() });
 });
 glossarySheetBody.addEventListener('click', (event) => {
@@ -135,6 +136,7 @@ glossarySheetBody.addEventListener('click', (event) => {
     return;
   }
   dismissGlossary();
+  setNavigationDirection('forward');
   send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor() });
 });
 const linkHoverTip = document.createElement('div');
@@ -807,7 +809,12 @@ function sendDocumentLink(link, newPage) {
     return;
   }
   // As written, never the form the browser resolved: a site is one page, so a resolved href names a document at the top of it rather than one beside the document being read. Both hosts resolve a written href against the open document.
-  const away = () => send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });
+  //
+  // Following a link is a step in. A page opened behind is not: nothing on screen changes, so a word written for it would move whatever render came next.
+  const away = () => {
+    if (!newPage) setNavigationDirection('forward');
+    send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });
+  };
   // Resolving the path is what puts a program one click away, so a link naming one asks first — in the box the app already asks before it deletes a file.
   if (linkRunsAProgram(rawHref)) {
     openConfirm(`Run “${fileBaseName(strippedHref(rawHref))}”?`, 'This link starts a program rather than opening a document. Only run it if you trust where this file came from.', 'Run', away);

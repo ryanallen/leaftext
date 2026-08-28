@@ -7,6 +7,8 @@ import {
   fakeElement,
   record,
   root,
+  runShell,
+  source,
 } from './shared.mjs';
 
 export function run() {
@@ -205,6 +207,25 @@ export function run() {
     if (!gutter(sized(fenced))) throw new Error('a code block inside the document body was refused by the descendant step that names it');
     if (gutter(sized(doc.children[1]))) throw new Error('a code block with no document body above it answered a descendant step');
     if (!gutter(sized(fenced.children[0]))) throw new Error('the code inside a fenced block was refused by the entry that names it');
+  });
+
+  // The one bar the reader never has to find. The host reads their operating system's own accessibility answer at launch and injects it, and the page's whole part is a flag on the surface — which is where the stylesheet's pinning rule is keyed. Booted three times, because what has to be proved is the absence as much as the presence: a page that stamped it whatever the global said would leave every reader with a bar they turned off years ago.
+  check('the surface wears the always-on flag when the platform said so, and never when it did not', () => {
+    const wearing = (extras) => {
+      const page = runShell(source, extras);
+      return page.document.getElementById('appSurface').classList.contains('is-scrollbars-always');
+    };
+
+    if (!wearing({ __leafScrollbarsAlways: true })) {
+      throw new Error('the reader asked their system for a bar that stays and the page stamped nothing');
+    }
+    if (wearing({ __leafScrollbarsAlways: false })) {
+      throw new Error('the reader left the preference off and every bar in the app was pinned on anyway');
+    }
+    // Missing is a published page, an exported page and every browser host: no init script runs there, so the flag is simply not defined and both must behave exactly as they do today.
+    if (wearing({})) {
+      throw new Error('a page carrying no injected globals at all pinned every bar on');
+    }
   });
 
   // The stand-in page takes document listeners and drops them, so the registration cannot be reached through it. Read off the fragment instead, the way the canvas's own listeners are.

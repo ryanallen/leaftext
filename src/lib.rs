@@ -158,7 +158,7 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/reading-blocks.js"),
     include_str!("assets/shell/dom-to-markdown.js"),
     include_str!("assets/shell/reading-edits.js"),
-    // The one part of a table that is in no part of the file: its column heading. Beside the cells' own edit path because the same ranges decide it, and its own file because reading-edits.js is at the ceiling a hand-written file is held to.
+    // The one part of a table that is in no part of the file: its column heading. Here because the same ranges the cells above are wired from are what decide it.
     include_str!("assets/shell/xml-table-heading.js"),
     // The field block at the top of a note, beside the reading view's other edit path: it needs the padlock and `send`, and reading-edits.js calls into it once a document has rendered.
     include_str!("assets/shell/frontmatter-fields.js"),

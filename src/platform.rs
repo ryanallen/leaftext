@@ -39,6 +39,29 @@ pub fn require_https(url: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Whether the reader has told their operating system to always show scrollbars, off the raw value each platform stores it in.
+///
+/// One mapping for both spellings rather than one inside each platform half: a mapping written inside a half is a mapping no test on the other machine can reach, and the Mac's three words would go unread here until a release. The two spellings cannot collide — Windows writes a number, macOS writes one of `Always`, `WhenScrolling` and `Automatic`.
+///
+/// `None` is nothing written at all, which on both platforms is the default: a bar that hides. So is anything unrecognized, because a value neither platform documents is not a reader asking for anything.
+pub fn scrollbars_always_shown_from(value: Option<&str>) -> bool {
+    matches!(value, Some("0") | Some("Always"))
+}
+
+/// The same answer, read off this machine.
+///
+/// Read once, at launch, and never watched: neither platform sends the page an event for it and no media query fires, so a change made while the app is up is followed the next time it opens. Somebody who needs the bar sets this once, system-wide, long before they open a reader.
+pub fn scrollbars_always_shown() -> bool {
+    #[cfg(windows)]
+    {
+        scrollbars_always_shown_from(windows_impl::always_show_scrollbars_value().as_deref())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        scrollbars_always_shown_from(macos_impl::always_show_scrollbars_value().as_deref())
+    }
+}
+
 /// Stream an HTTPS GET to `sink`, one chunk at a time.
 pub fn download_to(
     url: &str,
@@ -1012,6 +1035,31 @@ mod windows_impl {
         (!text.is_empty()).then(|| String::from_utf16_lossy(&text))
     }
 
+    /// The always-show-scrollbars preference as Windows stores it, spelled for `scrollbars_always_shown_from`: a DWORD under the accessibility key, `0` for a bar that stays and `1` for one that hides. `None` means nothing has written it, which is the default. Watched on this machine: writing `0` here makes Windows' own `UISettings.AutoHideScrollBars` report `False`, and removing it makes it report `True` again.
+    pub fn always_show_scrollbars_value() -> Option<String> {
+        use windows_sys::Win32::Foundation::ERROR_SUCCESS;
+        use windows_sys::Win32::System::Registry::{
+            RegGetValueW, HKEY_CURRENT_USER, RRF_RT_REG_DWORD,
+        };
+
+        let key = wide(r"Control Panel\Accessibility");
+        let name = wide("DynamicScrollbars");
+        let mut value: u32 = 0;
+        let mut bytes = std::mem::size_of_val(&value) as u32;
+        let read = unsafe {
+            RegGetValueW(
+                HKEY_CURRENT_USER,
+                key.as_ptr(),
+                name.as_ptr(),
+                RRF_RT_REG_DWORD,
+                ptr::null_mut(),
+                std::ptr::addr_of_mut!(value).cast(),
+                &mut bytes,
+            )
+        };
+        (read == ERROR_SUCCESS).then(|| value.to_string())
+    }
+
     /// Clipboard format id for UTF-16 text, and the file-operation constants. Spelled out rather than imported so a windows-sys bump that reshuffles module paths can't break the build over a constant.
     const CF_UNICODETEXT: u32 = 13;
     const FO_DELETE: u32 = 3;
@@ -1167,6 +1215,15 @@ mod macos_impl {
 
     /// The line that separates the response headers from what a caller asked for, written by the config below so the two can be told apart in one stream.
     const HEADER_END: &str = "\r\n\r\n";
+
+    /// The always-show-scrollbars preference as macOS stores it, spelled for `scrollbars_always_shown_from`: `AppleShowScrollBars` in the global domain, one of `Always`, `WhenScrolling` and `Automatic`. `None` means nothing has written it, which is the default. The standard defaults search the global domain, so this is the same answer the rest of the system reads.
+    pub fn always_show_scrollbars_value() -> Option<String> {
+        use objc2_foundation::{NSString, NSUserDefaults};
+
+        let defaults = NSUserDefaults::standardUserDefaults();
+        let key = NSString::from_str("AppleShowScrollBars");
+        defaults.stringForKey(&key).map(|value| value.to_string())
+    }
 
     /// A value going into a `curl` config file. Its parser takes backslash escapes inside double quotes, and nothing else may reach it: an unescaped quote would end the value early and turn the rest of a document into options.
     fn config_value(value: &str) -> String {

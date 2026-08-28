@@ -39,16 +39,16 @@ use leaftext::{
     pager_loaded_script, picture_path_picked_script, read_folder_listing, read_folder_note,
     read_source, read_source_head, reading_mode_css, render_markdown_document, repo_name_for_vault,
     rgba_from_bmp, save_favorites, save_recent_files, save_result_script, scroll_anchor_script,
-    search_results_script, set_git_identity, settings_file_path, settings_unreadable_script,
-    source_payload_url, source_updated_script, sync_vault_repo, task_entries, task_marker_offsets,
-    today_or_utc, unlock_reading_script, update_failed_script, update_progress_script,
-    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
-    workspace_reload_script, workspace_state_script, workspace_switch_script, CloudFolder,
-    CloudRoots, CorpusDocument, DesktopHost, DocumentFormat, EditableDocument, Favorite,
-    FavoriteKind, Favorites, FilterHints, FolderListing, GitTooling, GraphScope, LeafHost,
-    OpenedDocument, Query, RecentFiles, ScrollAnchor, Session, SessionTab, Settings, SettingsLoad,
-    SourceEncoding, SourceSpelling, SourceText, TabSummary, TaskEntry, UpdateDownload, VaultCorpus,
-    VaultRepo, CORPUS_SLICE_DOCUMENTS, EXPORTED_PAGE_ASSETS_FOLDER,
+    scrollbars_always_script, search_results_script, set_git_identity, settings_file_path,
+    settings_unreadable_script, source_payload_url, source_updated_script, sync_vault_repo,
+    task_entries, task_marker_offsets, today_or_utc, unlock_reading_script, update_failed_script,
+    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
+    workspace_only_script, workspace_reload_script, workspace_state_script,
+    workspace_switch_script, CloudFolder, CloudRoots, CorpusDocument, DesktopHost, DocumentFormat,
+    EditableDocument, Favorite, FavoriteKind, Favorites, FilterHints, FolderListing, GitTooling,
+    GraphScope, LeafHost, OpenedDocument, Query, RecentFiles, ScrollAnchor, Session, SessionTab,
+    Settings, SettingsLoad, SourceEncoding, SourceSpelling, SourceText, TabSummary, TaskEntry,
+    UpdateDownload, VaultCorpus, VaultRepo, CORPUS_SLICE_DOCUMENTS, EXPORTED_PAGE_ASSETS_FOLDER,
     EXPORTED_PAGE_MATH_FONTS_FOLDER, EXPORTED_PAGE_MATH_STYLESHEET, EXPORTED_PAGE_MINIMAP_SCRIPT,
     EXPORTED_PAGE_STYLESHEET, KATEX_CSS, KATEX_FONTS, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
@@ -387,6 +387,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_html(app_shell_html())
         .with_initialization_script(initial_settings_script(&settings))
         .with_initialization_script(settings_unreadable_script(settings_unreadable))
+        // The operating system's own accessibility answer, not one of the app's switches, so it is read here at launch rather than persisted.
+        .with_initialization_script(scrollbars_always_script(platform::scrollbars_always_shown()))
         .with_initialization_script(update_failed_script(apply_outcome.as_ref()))
         .with_initialization_script(initial_vaults_script(
             &vault_state.vaults(),

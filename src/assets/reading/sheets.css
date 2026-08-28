@@ -234,7 +234,7 @@
   right: 10px;
   z-index: 1;
 }
-/* The app's one scrollbar, worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and the five boxes a document brings. Those five are named as a selector rather than given a class because they come out of Markdown with nowhere to carry one; where the markup is ours the box takes .leaf-scroll. Every wearer is in all nine rules and not only the six that paint: the three on the box carry the thumb's color and inset, so a box in half of them reserves a gutter and never draws in it. `.table-lane > table` is redundant under the document selector and stays, named as a wearer by the test that walks this block. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
+/* The app's one scrollbar, worn by everything that draws one: the reader with no minimap, the library pane, any box marked .leaf-scroll, and the five boxes a document brings. Those five are named as a selector rather than given a class because they come out of Markdown with nowhere to carry one; where the markup is ours the box takes .leaf-scroll. Every wearer is in all ten rules and not only the six that paint: the three on the box carry the thumb's color and inset, so a box in half of them reserves a gutter and never draws in it. `.table-lane > table` is redundant under the document selector and stays, named as a wearer by the test that walks this block. Never set `scrollbar-width` on any of them: in Chromium either standard scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
 .leaf-scroll::-webkit-scrollbar,
 .library-scroll::-webkit-scrollbar,
 .reader-shell:not(.has-minimap)::-webkit-scrollbar,
@@ -292,6 +292,14 @@
   --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
   --lt-scroll-thumb-inset: var(--lt-stroke-2);
   transition: --lt-scroll-thumb var(--lt-duration-200) var(--lt-ease-decelerate), --lt-scroll-thumb-inset var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+/* Somebody who told their operating system to always show scrollbars gets every bar painted at rest. The flag is stamped on the surface from the platform's own preference, so the app asks nobody: a bar that is gone until you scroll is a target you have to already know is there. Painted, not thickened — the pointer's 10px grabber stays a hover answer, because a bar permanently at its widest takes room from the page for exactly the reader who turned this on. So this sets the color and nothing else, and the inset still comes from the resting and pointing rules above. Last of the four on purpose, and the extra class on the surface outranks all three either way. The railed reader is not a wearer here any more than it is up there: the picture down its side is the same control doing the same job. */
+.app-surface.is-scrollbars-always .leaf-scroll,
+.app-surface.is-scrollbars-always .library-scroll,
+.app-surface.is-scrollbars-always .reader-shell:not(.has-minimap),
+.app-surface.is-scrollbars-always .table-lane > table,
+.app-surface.is-scrollbars-always .document-body :is(pre, pre > code, .math-display, .frontmatter, table) {
+  --lt-scroll-thumb: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
 }
 /* What fades is that property, not an opacity: a scrollbar pseudo has no box of its own to fade. It also means the bar's width is reserved whether or not the thumb is painted, so nothing on the page moves when one appears. */
 .leaf-scroll::-webkit-scrollbar-thumb,

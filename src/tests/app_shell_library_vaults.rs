@@ -567,7 +567,7 @@ fn the_open_switcher_lights_the_vault_name_beside_it() {
     );
 
     // The name is still a place: clicking it enters that folder, and nothing about it opens the menu.
-    assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath)"));
+    assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath, 'back')"));
 }
 
 #[test]

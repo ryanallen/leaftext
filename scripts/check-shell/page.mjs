@@ -353,6 +353,12 @@ export function fakeElement(id = '') {
       this.isConnected = false;
       insertNodesAt(holder, spot, made);
     },
+    // A copy, rebuilt out of the markup this element says back. That is what a browser's clone amounts to for everything a check can ask about, and it is why the copy carries no listener and none of the properties the page wrote onto a node — which is the whole reason the front end reaches for one: the pane lays a still copy of the folder it is leaving over the one that arrived, and a copy that could be pressed would send a reader somewhere the rows no longer say.
+    cloneNode(deep = false) {
+      const made = elementsFromMarkup(composedMarkup(this))[0] || null;
+      if (made && !deep) made.innerHTML = '';
+      return made;
+    },
     // A real removal, because a control taken out of the page is a control the rest of the shell has to cope with being gone: the published site takes the history strip out, and a stub that returned quietly would leave every later query still answering with it.
     remove() {
       detachChild(this);

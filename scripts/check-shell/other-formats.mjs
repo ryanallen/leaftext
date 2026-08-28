@@ -332,7 +332,7 @@ ${run}
     cell.textContent = 'one, two';
     const one = spanFor('<tag>one</tag>', 'one');
     const two = spanFor('<tag>two</tag>', 'two');
-    // The stand-in page answers a selector with everything it holds, which cannot tell the pass that asks for a cell from the one that asks for anything in a table. So this stub honors a leading tag name: `td[data-cell-start]` finds the cell and neither span.
+    // The stand-in page answers every selector with everything it holds, so a stub that ignored the selector would pass whether the pass asked for a cell or for anything in a table.
     const nodes = [cell, one, two];
     const body = {
       querySelectorAll: (selector) => {

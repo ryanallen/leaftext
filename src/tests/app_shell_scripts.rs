@@ -223,6 +223,25 @@ fn initial_settings_script_defines_camelcase_global() {
     );
 }
 
+/// The operating system's own accessibility answer, always emitted so the page never reads an undefined flag, and its own global rather than a field on the settings above — the app keeps no copy of somebody else's answer.
+#[test]
+fn the_scrollbars_always_flag_is_its_own_global_and_is_always_emitted() {
+    assert_eq!(
+        scrollbars_always_script(true),
+        "window.__leafScrollbarsAlways = true;"
+    );
+    assert_eq!(
+        scrollbars_always_script(false),
+        "window.__leafScrollbarsAlways = false;"
+    );
+
+    // Never one of the persisted switches: a copy in settings.json outlives the reader changing their mind.
+    assert!(
+        !initial_settings_script(&Settings::default()).contains("crollbars"),
+        "the platform's answer is being persisted as one of the app's own switches"
+    );
+}
+
 #[test]
 fn initial_version_script_exposes_the_package_version() {
     // The frontend's update check reads window.__leafVersion to compare against the latest GitHub release, so it must carry the built package version.

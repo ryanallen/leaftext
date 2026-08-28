@@ -86,7 +86,7 @@ function hideContextMenu() {
 let libraryTransfer = null;
 function runContextAction(action, path, link, selected) {
   switch (action) {
-    case 'open': send({ command: 'openRecent', path }); break;
+    case 'open': setNavigationDirection('forward'); send({ command: 'openRecent', path }); break;
     // What was saved when the menu opened, unaltered.
     case 'copySelection': copyPlainText(selected); break;
     case 'openLink': if (link) sendDocumentLink(link, false); break;
@@ -96,7 +96,7 @@ function runContextAction(action, path, link, selected) {
     case 'copyLinkText': if (link) copyPlainText((link.textContent || '').trim()); break;
     case 'revealLink': send({ command: 'revealLink', href: path }); break;
     case 'copyLinkPath': send({ command: 'copyLinkPath', href: path }); break;
-    case 'openFolder': setLibraryFolder(path); break;
+    case 'openFolder': setLibraryFolder(path, 'forward'); break;
     case 'cut':
       libraryTransfer = { path, cut: true };
       send({ command: 'copyFile', path, cut: true });

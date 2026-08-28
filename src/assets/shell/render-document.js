@@ -261,7 +261,7 @@ function homeListsMarkup(state) {
 // A favorite folder is not a document: it opens the library pane at that folder, which is the one place a folder can be looked at.
 function openHomeFolder(path) {
   if (libraryIsClosed()) toggleLibrary();
-  setLibraryFolder(path);
+  setLibraryFolder(path, 'forward');
 }
 // Every row in a home list, wherever it is drawn. Rebound on each render because the screen is rebuilt whole, and again for the sheet's own copy of the same rows.
 function bindHomeRows(root) {
@@ -291,6 +291,7 @@ function bindHomeRows(root) {
         openHomeFolder(button.dataset.path);
         return;
       }
+      setNavigationDirection('forward');
       send({ command: 'openRecent', path: button.dataset.path });
     });
   });
@@ -588,8 +589,66 @@ function runHeldReadingLanding() {
   heldReadingLandingPath = null;
   runReadingLanding(path);
 }
+// The page being left, while it is leaving. Only this fragment touches them, so they stay here rather than joining the shared state. `var` for the reason at the top of this file: theme.js runs renderState() as it loads, which takes any move down before it draws, and a `let` is in its dead zone until the line declaring it runs — so even reading one would throw.
+var readerSwapCopy = null;
+var readerSwapTimer = 0;
+var readerSwapHoldsSideways = null;
+// How long a move is given before it is ended by hand, for a run nothing announced the end of. A copy left standing would cover the page the reader is trying to read.
+const READER_SWAP_FALLBACK_MS = 500;
+// Take the move down, whatever state it is in. Every render calls this first, so a second move landing on one still running drops the older copy rather than leaving two pages on screen.
+function endReaderSwap() {
+  window.clearTimeout(readerSwapTimer);
+  readerSwapTimer = 0;
+  if (readerSwapHoldsSideways) {
+    app.removeEventListener('scroll', readerSwapHoldsSideways);
+    readerSwapHoldsSideways = null;
+  }
+  if (readerSwapCopy) {
+    readerSwapCopy.remove();
+    readerSwapCopy = null;
+  }
+  app.classList.remove('is-swapping');
+  delete app.dataset.going;
+}
+// Lay a still copy of the page being left over the one that arrived and slide the two apart. Both take one cell of the reader's own scroll box, which was measured to leave its scroll height and both widths exactly as they were; the copy is inert, takes no pointer and sits after the live layer, so the fifty places that ask for the document keep finding the one that works.
+//
+// Last thing in the render, after every pass that measures the page: a transform changes what an element says its box is, so a caret placed or a rail measured against a page part way through its travel would land where the page is going rather than where it is.
+function startReaderSwap(arriving, copy, direction, leftAt) {
+  readerSwapCopy = copy;
+  copy.classList.add('is-leaving');
+  // Held where the reader left it, so the page going away carries the words they were reading out with it rather than snapping to its own top first.
+  copy.style.setProperty('--reader-leaving-offset', `${-leftAt}px`);
+  copy.inert = true;
+  copy.setAttribute('aria-hidden', 'true');
+  arriving.classList.add('is-swapping-in');
+  app.dataset.going = direction;
+  app.classList.add('is-swapping');
+  app.appendChild(copy);
+  // The landing runs on the next frame and can scroll: with both pages traveling sideways, anything it scrolls into view would shove the reader across.
+  readerSwapHoldsSideways = () => {
+    if (app.scrollLeft) app.scrollLeft = 0;
+  };
+  app.addEventListener('scroll', readerSwapHoldsSideways);
+  const settled = () => {
+    if (readerSwapCopy !== copy) return;
+    arriving.classList.remove('is-swapping-in');
+    endReaderSwap();
+    // Measured again now the page is where it is going to stay, or the rail's box keeps whatever it read part way through the travel until the reader scrolls.
+    refreshReaderScrollAnchor();
+    updateMinimapViewport();
+  };
+  copy.addEventListener('animationend', (event) => {
+    // Animation events bubble, and a copy of a whole document carries plenty of its own.
+    if (event.target !== copy) return;
+    settled();
+  });
+  readerSwapTimer = window.setTimeout(settled, READER_SWAP_FALLBACK_MS);
+}
 function renderState() {
   const state = currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
+  // Spent on every render, whether or not this one has anywhere to go, so a word nobody could use cannot move the render after it.
+  const going = spendNavigationDirection();
+  endReaderSwap();
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   cancelReaderScrollSettle();
@@ -614,10 +673,15 @@ function renderState() {
     // Carry the scroll origin onto the fresh body — losing it shifts the layout by the origin and the anchor restore lands off by exactly that.
     const previousBody = app.querySelector('.document-body');
     const previousScrollOrigin = previousBody ? previousBody.style.getPropertyValue('--reader-scroll-origin') : '';
+    // The word somebody spent is the gate, and nothing else is. Only a press that sends the reader somewhere writes one, so an edit commit, a save, a watcher tick, the padlock and a tab click all render exactly as immediately as they do today without being told to. Watched in a running copy: Back and Forward across two documents come back on the same path a tab click does, so gating on the open path's own flag — which is what the plan asked for — left the reader's own Back the one gesture that never moved. And the page has to change: a jump inside the document it is already on is not a change of place. Under the map there is nothing on screen to move at all.
+    const outgoing = app.querySelector('.reader-layout');
+    const moving = going && arriving && outgoing && !readerOffScreen();
+    // A copy, not the live view: it carries no listener, no editing binding and no observer, which is the whole reason the write below can afford to throw the real one away.
+    const leavingCopy = moving ? outgoing.cloneNode(true) : null;
+    const leftAt = moving ? app.scrollTop : 0;
     // Hidden, then revealed already decorated: mutating a laid-out document makes every insertion invalidate everything after it. None of the passes below read geometry, so having none yet costs nothing.
     app.innerHTML = `<div class="${layoutClass}" style="display:none">${state.document.html}</div>`;
     const readerLayout = app.firstElementChild;
-    setMinimapMarkup(minimapHtml);
     if (previousScrollOrigin) {
       const freshBody = app.querySelector('.document-body');
       if (freshBody) freshBody.style.setProperty('--reader-scroll-origin', previousScrollOrigin);
@@ -641,7 +705,10 @@ function renderState() {
     // One style pass and one layout, for the finished document.
     if (readerLayout) {
       readerLayout.style.removeProperty('display');
-      if (arriving) fadeDocumentIn(readerLayout);
+      // With the page it names, never before it: while a still copy of the last page is on screen the rail beside it belongs to that page, not to the one arriving behind it.
+      setMinimapMarkup(minimapHtml);
+      // The slide carries its own opacity, so a page that is moving is not also faded in.
+      if (arriving && !leavingCopy) fadeDocumentIn(readerLayout);
     }
     // Past this line the document has geometry, so anything that measures it, or renders by measuring text, or wants focus, is safe.
     placeDeferredReadingCaret();
@@ -658,6 +725,8 @@ function renderState() {
     if (readerOffScreen()) heldReadingLandingPath = renderedPath;
     else runReadingLanding(renderedPath);
     updateEditingChrome();
+    // Last, so the landing above owned the scroll before either page started traveling.
+    if (leavingCopy && readerLayout) startReaderSwap(readerLayout, leavingCopy, going, leftAt);
     return;
   }
   resetReaderScrollOnNextRender = false;

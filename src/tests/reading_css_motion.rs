@@ -532,13 +532,14 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
         ".table-lane > table",
         ".document-body :is(pre, pre > code, .math-display, .frontmatter, table)",
     ];
-    // The block is nine rules and every wearer is in all of them, named here by the first selector of each. Six paint the bar; the three in the middle sit on the box and are the only place the thumb's color and inset come from, so a wearer in the pseudo rules alone reserves a 14px gutter and never draws anything in it — `--lt-scroll-thumb` is registered with an initial value of `transparent`, which looks exactly like the work not having been done.
-    const RULES: [&str; 9] = [
+    // The block is ten rules and every wearer is in all of them, named here by the first selector of each. Six paint the bar; the four in the middle sit on the box and are the only place the thumb's color and inset come from, so a wearer in the pseudo rules alone reserves a 14px gutter and never draws anything in it — `--lt-scroll-thumb` is registered with an initial value of `transparent`, which looks exactly like the work not having been done.
+    const RULES: [&str; 10] = [
         ".leaf-scroll::-webkit-scrollbar,",
         ".leaf-scroll::-webkit-scrollbar-track,",
         ".leaf-scroll,",
         ".leaf-scroll.is-scrolling,",
         ".leaf-scroll.is-pointing,",
+        ".app-surface.is-scrollbars-always .leaf-scroll,",
         ".leaf-scroll::-webkit-scrollbar-thumb,",
         ".leaf-scroll::-webkit-scrollbar-thumb:vertical,",
         ".leaf-scroll::-webkit-scrollbar-thumb:horizontal,",
@@ -653,6 +654,32 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
     assert!(
         rule_at(&css, ".leaf-scroll.is-pointing,") > rule_at(&css, ".leaf-scroll.is-scrolling,"),
         "a box that is scrolling as well as pointed at loses the thickening it was aimed at"
+    );
+
+    // Somebody who told their operating system to always show scrollbars has the raised ink held at rest instead. The flag rides the surface, so the extra class outranks all three rules above whatever the order; it is written after them anyway, because a reader of this block should not have to count classes to know which one wins.
+    const PINNED: &str = ".app-surface.is-scrollbars-always .leaf-scroll,";
+    let pinned = rule_body(&css, PINNED);
+    assert_contains(pinned, "--lt-scroll-thumb: color-mix(");
+    assert!(
+        rule_at(&css, PINNED) > rule_at(&css, ".leaf-scroll.is-pointing,"),
+        "the always-on bar is written before the rules it has to beat"
+    );
+    // Painted, not pinned thick: the 10px grabber stays the pointer's answer, or a bar held at its widest takes room from the page for exactly the reader who asked to see it.
+    assert!(
+        !pinned.contains("--lt-scroll-thumb-inset:"),
+        "the always-on bar sits at its widest all the time"
+    );
+    for wearer in WEARERS {
+        assert!(
+            pinned.contains(&format!(".app-surface.is-scrollbars-always {wearer}")),
+            "{wearer} keeps fading while every other bar is held, so the preference reaches some of the app"
+        );
+    }
+    // The reader with the picture down its side draws no bar at all, and this is not the rule that gives it one: two of the same control in the same place helps nobody.
+    assert_eq!(
+        pinned.matches(".reader-shell").count(),
+        1,
+        "the railed reader wears the always-on bar, so it draws the picture and a bar down the same edge"
     );
 
     // The pane's own fade declares a transition on the same element from a more specific rule, so it is pinned here: a later edit that drops it would take the pane's opacity ramp with it.

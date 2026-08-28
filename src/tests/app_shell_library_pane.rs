@@ -490,7 +490,7 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(html.contains("libraryChain = Array.isArray(next.chain) ? next.chain : [];"));
 
     // Every crumb but the last walks back out to that folder; the last is where you are. A deep path elides its middle rather than overflowing the pane.
-    assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath)"));
+    assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath, 'back')"));
     assert!(html.contains(r#"class="library-crumb is-current" aria-current="true""#));
     // How much of the path shows is measured against the band, so widening the pane reveals more crumbs; a resize refits.
     assert!(html.contains("function fitLibraryCrumbs()"));
@@ -504,7 +504,7 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     // What didn't fit hides behind a "…" button that opens a menu of those folders; picking one enters it.
     assert!(html.contains("data-crumb-more=\"1\""));
     assert!(html.contains("function showCrumbMenu(button, items)"));
-    assert!(html.contains("run: () => setLibraryFolder(segment.path),"));
+    assert!(html.contains("run: () => setLibraryFolder(segment.path, 'back'),"));
     assert!(css.contains(".crumb-menu {"));
     // A fit that would draw the same crumbs at the same width leaves the DOM alone, or a watcher tick would rebuild the trail under an open "…" menu.
     assert!(html.contains("function crumbFitKey(segments)"));
@@ -519,8 +519,9 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(html.contains("button.leafPressEntered = true;\n    act();"));
     // The click that completes a press the helper already handled is the only one suppressed; a stable row must not act twice and a keyboard click must never be ignored.
     assert!(html.contains("if (button.leafPressEntered) {\n      button.leafPressEntered = false;\n      return;\n    }\n    act();"));
-    assert!(html
-        .contains("bindLibraryRowPress(button, () => setLibraryFolder(button.dataset.navInto));"));
+    assert!(html.contains(
+        "bindLibraryRowPress(button, () => setLibraryFolder(button.dataset.navInto, direction));"
+    ));
     assert!(html.contains("send({ command: 'openRecent', path: button.dataset.openPath });"));
     // And a read describing what is already drawn leaves those rows standing, so an unchanged re-read cannot take one out from under a press in the first place.
     assert!(html.contains("if (html === libraryTreeHtml) return false;"));
@@ -535,6 +536,109 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert_icon(&html, "graph");
     // Active, it swaps to the bolder drawing rather than thickening a stroke a mask does not have.
     assert!(reading_mode_css().contains("--lt-icon-graph-heavy:"));
+}
+
+#[test]
+fn entering_a_folder_slides_the_one_being_left_out_of_the_pane() {
+    let html = app_shell_page();
+    let css = reading_mode_css();
+
+    // One word, in the fragment shared state lives in, so the row that was pressed and the render that draws the result do not have to know about each other. Spent on the way out, so a word nobody could use cannot move the render after this one.
+    assert!(html.contains("let navigationDirection = '';"));
+    assert!(html.contains("function setNavigationDirection(direction) {"));
+    assert!(html.contains(
+        "function spendNavigationDirection() {\n  const direction = navigationDirection;\n  navigationDirection = '';\n  return direction;\n}"
+    ));
+    assert!(html.contains("  const direction = spendNavigationDirection();"));
+
+    // Going in and coming back out are told apart at the row, not at the call: one handler serves the child row and the way out, and the up row is the one carrying its own class.
+    assert!(html.contains(
+        "function setLibraryFolder(path, direction) {\n  setNavigationDirection(direction || '');"
+    ));
+    assert!(html.contains(
+        "const direction = button.classList.contains('library-nav-up') ? 'back' : 'forward';"
+    ));
+    assert!(html.contains(
+        "bindLibraryRowPress(button, () => setLibraryFolder(button.dataset.navInto, direction));"
+    ));
+    // A crumb and the folders the "…" swallowed are both a step back out.
+    assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath, 'back')"));
+    assert!(html.contains("run: () => setLibraryFolder(segment.path, 'back'),"));
+    // A document opened from the pane is a step in; the reader's own render is what spends that word.
+    assert!(html.contains("setNavigationDirection('forward');\n    send({ command: 'openRecent', path: button.dataset.openPath });"));
+    // And so is a folder opened from the right-click menu or from a favorite on the start screen.
+    assert!(html.contains("case 'openFolder': setLibraryFolder(path, 'forward'); break;"));
+    assert!(html
+        .contains("if (libraryIsClosed()) toggleLibrary();\n  setLibraryFolder(path, 'forward');"));
+    // Leaving a vault is not a step in either direction: a different root writes no word at all.
+    assert!(html.contains("if (id === activeVaultId) {\n    setLibraryFolder('');"));
+
+    // Only a change of folder is a change of place. A watcher tick, a paste, a rename, a delete and a fresh selection all redraw the same folder, and every one of them stays as immediate as it is today.
+    assert!(html.contains("let libraryTreeFolder = null;"));
+    assert!(html.contains(
+        "const moved = libraryTreeFolder !== null && libraryTreeFolder !== libraryProjectPath;"
+    ));
+    assert!(html.contains(
+        "const leaving = direction && moved ? libraryTree.querySelector('.library-tree-layer') : null;"
+    ));
+    assert!(html.contains("window.leafRefreshLibraryFolder = () => {\n  send({ command: 'getFolder', path: libraryProjectPath });"));
+    assert!(!html.contains("window.leafRefreshLibraryFolder = () => {\n  setNavigationDirection("));
+
+    // The rows are wrapped in one grid cell, and the copy is a clone: it carries no listener, so nothing of the old folder survives into the new one.
+    assert!(html.contains(
+        r#"libraryTree.innerHTML = `<div class="library-tree-stage"><div class="library-tree-layer">${html}</div></div>`;"#
+    ));
+    assert!(html.contains("libraryTreeLeaving = leaving ? leaving.cloneNode(true) : null;"));
+    // Mounted after the rows are bound and after the live layer in the page, so every query for a row still answers with one that works, and it takes neither the pointer nor a screen reader.
+    assert!(html.contains("bindLibraryRows();\n  // After the binding, never before it: the copy carries the same rows, and a listener on one of those is a press that goes nowhere.\n  runLibraryTreeSwap();"));
+    let swap = "function runLibraryTreeSwap() {";
+    assert_in(&html, swap, "copy.inert = true;");
+    assert_in(&html, swap, "copy.setAttribute('aria-hidden', 'true');");
+    assert_in(&html, swap, "stage.appendChild(copy);");
+    // A second press mid-move leaves one live tree: the write above throws the whole stage away, older copy included.
+    assert_in(&html, swap, "stage.dataset.going = way;");
+    assert_in(&html, swap, "copy.remove();");
+    assert_in(&html, swap, "arriving.classList.remove('is-arriving');");
+    assert_in(&html, swap, "delete stage.dataset.going;");
+    // The copy's own animation ends the move; a row inside it finishing one of its own must not.
+    assert_in(
+        &html,
+        swap,
+        "copy.addEventListener('animationend', (event) => {",
+    );
+    assert_in(&html, swap, "if (event.target !== copy) return;");
+    // And a run nothing announced the end of is ended by hand, or the copy would sit over the folder for good.
+    assert!(html.contains("const LIBRARY_SWAP_FALLBACK_MS = 500;"));
+    assert_in(
+        &html,
+        swap,
+        "librarySwapTimer = window.setTimeout(settled, LIBRARY_SWAP_FALLBACK_MS);",
+    );
+
+    // One cell holds both, and the copy is lifted out of the grid's sizing so the folder that arrived is what the pane's height is measured from.
+    let stage = rule_body(css, ".library-tree-stage {");
+    assert!(stage.contains("display: grid;"));
+    assert!(stage.contains("grid-template-columns: 1fr;"));
+    assert!(rule_body(css, ".library-tree-layer {").contains("grid-area: 1 / 1;"));
+    let leaving = rule_body(
+        css,
+        ".library-tree-stage[data-going] .library-tree-layer.is-leaving {",
+    );
+    assert!(leaving.contains("position: absolute;"));
+    assert!(leaving.contains("pointer-events: none;"));
+    // Arriving settles hard, leaving accelerates away, and the sign of the travel is the only difference between the two directions.
+    assert!(css.contains("animation: leaf-library-tree-arrive var(--lt-duration-220) var(--lt-ease-decelerate) both;"));
+    assert!(leaving.contains(
+        "animation: leaf-library-tree-leave var(--lt-duration-220) var(--lt-ease-accelerate) both;"
+    ));
+    assert!(
+        rule_body(css, ".library-tree-stage[data-going='forward'] {")
+            .contains("--library-tree-travel: 24%;")
+    );
+    assert!(rule_body(css, ".library-tree-stage[data-going='back'] {")
+        .contains("--library-tree-travel: -24%;"));
+    assert!(css.contains("@keyframes leaf-library-tree-arrive {"));
+    assert!(css.contains("@keyframes leaf-library-tree-leave {"));
 }
 
 #[test]

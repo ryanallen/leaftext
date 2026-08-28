@@ -70,6 +70,13 @@ pub fn settings_unreadable_script(unreadable: bool) -> String {
     format!("window.__leafSettingsUnreadable = {unreadable};")
 }
 
+/// Whether the reader told their operating system to always show scrollbars, as `window.__leafScrollbarsAlways`; the page stamps a flag on the surface when it is true. Always emitted, so the flag is never undefined.
+///
+/// Its own global rather than a field on `Settings`: the answer belongs to the operating system, so writing it into `settings.json` would keep a second copy of it that goes stale the moment somebody changes their mind. A published page and an exported one carry no init scripts at all, so neither ever sees this and both behave as they do today.
+pub fn scrollbars_always_script(always: bool) -> String {
+    format!("window.__leafScrollbarsAlways = {always};")
+}
+
 /// The last install attempt when it failed, as `window.__leafUpdateFailed`: the version it was installing and the applier's own words. `null` for a success and for nothing recorded, and always emitted so the flag is never undefined.
 ///
 /// An init script rather than a message, because the launch reads the record before the event loop starts and there is no page yet to send one to — the same crossing `settings_unreadable_script` makes. The success case is filtered here rather than at the launch so a test can call it; nothing can call into `run_app`.

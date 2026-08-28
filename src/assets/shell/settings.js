@@ -56,6 +56,10 @@ function pickHomeMessage() {
 let homeMessage = pickHomeMessage();
 // UI toggles are persisted by the host, injected as window.__leafSettings before any page script (the app shell's opaque origin can't use localStorage). We seed from them synchronously here and report every change back so it can save them.
 const LEAF_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
+// The reader's own operating system already answers whether scrollbars always show, so the app asks nobody: the host reads it at launch and injects it as window.__leafScrollbarsAlways. Never one of the switches above — a copy of somebody else's answer in settings.json goes stale the moment they change their mind. The flag rides the surface, where one stylesheet rule pins every bar in the app painted. A published page and an exported one carry no injected globals at all, so both stay as they are.
+if (window.__leafScrollbarsAlways === true) {
+  appSurface.classList.add('is-scrollbars-always');
+}
 // The minimap is not a choice any more, so this only ever holds true. It stays a switch because the rail still comes and goes with the document, and everything that draws it asks here.
 let minimapEnabled = true;
 const minimapListeners = new Set();

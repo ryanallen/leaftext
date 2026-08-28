@@ -387,9 +387,12 @@ fn leaving_the_map_for_a_document_shows_the_spinner() {
     // A search hit navigates out of the map, and the map deliberately holds until the document is ready rather than flashing the file you were on. The wait is a whole document being read, so with the spinner suppressed the map just sits there looking frozen.
     let html = app_shell_page();
 
-    // The gesture arms the exit before the request goes out.
-    assert!(html
-        .contains("      graphExitPending = true;\n      send({ command: 'openRecent', path });"));
+    // The gesture arms the exit, and says which way the reader is going, before the request goes out.
+    assert!(html.contains(
+        "      graphExitPending = true;
+      setNavigationDirection('forward');
+      send({ command: 'openRecent', path });"
+    ));
     assert!(html.contains("const READER_LOADING_COMMANDS = new Set(['openRecent']);"));
 
     // So the spinner is only withheld while the map is staying up.

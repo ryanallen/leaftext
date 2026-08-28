@@ -103,4 +103,68 @@ export function run() {
     if (read('pendingViewAtTop') !== true) throw new Error('a reader at the top of the document was not recorded as being there');
     if (read('pendingCodeViewSrcOffset') !== 0) throw new Error(`the top of the document took the offset ${read('pendingCodeViewSrcOffset')}`);
   });
+
+  // ---- 4d. the page being left stays on screen long enough to leave -----------
+  //
+  // Following a link used to show the old page not at all: the write that draws the new one takes the old one with it in the same frame, so nothing on screen said which way the reader had gone and Back looked exactly like going on. A still copy of the page being left is laid over the one that arrived now, in one cell of the reader's own scroll box. Everything worth checking is about the copy: that it is a copy, that it is behind the live page in every query, and that it goes.
+
+  check('going somewhere lays a still copy of the page being left over the one that arrived', () => {
+    const { context, app } = bootReading({ path: 'C:\Notes\first.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }] });
+    context.__frames.drain();
+    const layers = () => app.querySelectorAll('.reader-layout');
+    if (layers().length !== 1) throw new Error(`a page at rest drew ${layers().length} layers rather than one`);
+    const restingScrollHeight = app.scrollHeight;
+
+    // Part way down the page they are leaving, so the copy has something to hold still.
+    app.scrollTop = 240;
+    vm.runInContext("setNavigationDirection('forward')", context);
+    renderReadingDocument(context, { path: 'C:\Notes\second.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }, { srcStart: 90 }] });
+    const both = layers();
+    if (both.length !== 2) throw new Error(`following a link left ${both.length} layers on screen rather than two`);
+    if (app.dataset.going !== 'forward') throw new Error(`the move read as ${app.dataset.going}`);
+    if (!String(app.className).includes('is-swapping')) throw new Error('the reader is not wearing the move');
+    // Both in one cell, which was measured to leave the reader's own scroll exactly as it was.
+    if (app.scrollHeight !== restingScrollHeight) throw new Error(`two pages took the reader's scroll from ${restingScrollHeight} to ${app.scrollHeight}`);
+    // The page that arrived owns the scroll from the frame it lands, and the copy riding over it changes nothing about where that is.
+    context.__frames.drain();
+    if (app.scrollTop !== 0) throw new Error(`the page that arrived came to rest at ${app.scrollTop} rather than at its own top`);
+
+    // The live page is first, so every single-element query for the document still answers with the one that works; the copy is last, inert and out of a screen reader's way.
+    const [live, copy] = both;
+    if (live.classList.contains('is-leaving')) throw new Error('the copy was drawn in front of the live page');
+    if (app.querySelector('.reader-layout') !== live) throw new Error('a query for the layout answered with the copy');
+    if (app.querySelector('.document-body') !== live.querySelector('.document-body')) throw new Error("a query for the document's body answered with the copy's");
+    if (live.querySelector('.document-body').children.length !== 3) throw new Error('the page that arrived is not the one that was opened');
+    if (copy.querySelector('.document-body').children.length !== 2) throw new Error('the copy is not of the page that was left');
+    if (!copy.classList.contains('is-leaving')) throw new Error('the copy is not marked as the one leaving');
+    if (copy.inert !== true) throw new Error('the copy still takes a press');
+    if (copy.getAttribute('aria-hidden') !== 'true') throw new Error('the copy is still read out');
+    // Held where the reader left it, so the page going away carries the words they were reading out with it.
+    if (copy.style.getPropertyValue('--reader-leaving-offset') !== '-240px') throw new Error(`the copy was held at ${copy.style.getPropertyValue('--reader-leaving-offset')} rather than where the reader was`);
+
+    // Its own animation ends the move, and everything it put up comes off.
+    for (const handler of copy.listeners.get('animationend') || []) handler({ target: copy });
+    if (layers().length !== 1) throw new Error(`the move ended with ${layers().length} layers still up`);
+    if (String(app.className).includes('is-swapping')) throw new Error('the reader is still wearing the move at rest');
+    if (app.dataset.going !== undefined) throw new Error('the reader is still wearing a direction at rest');
+    if (live.classList.contains('is-swapping-in')) throw new Error('the page that arrived is still wearing its travel');
+  });
+
+  check('a render nobody navigated to leaves the page exactly where it is', () => {
+    const { context, app } = bootReading({ path: 'C:\Notes\held.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }] });
+    context.__frames.drain();
+    const layers = () => app.querySelectorAll('.reader-layout');
+
+    // A live reload: the same document, re-read off the disk. Nobody went anywhere.
+    context.window.leafReloadDocument(vm.runInContext('currentState', context));
+    if (layers().length !== 1) throw new Error('a live reload drew a copy of the page it was re-reading');
+
+    // A word standing with no move to spend it on is spent all the same, so it cannot move the render after this one.
+    vm.runInContext("setNavigationDirection('forward')", context);
+    context.window.leafReloadDocument(vm.runInContext('currentState', context));
+    if (layers().length !== 1) throw new Error('a live reload spent a word it had no business spending');
+    if (vm.runInContext('navigationDirection', context) !== '') throw new Error('a word nobody could use was left standing for the next render');
+    renderReadingDocument(context, { path: 'C:\Notes\next.md', blocks: [{ srcStart: 0 }] });
+    if (layers().length !== 1) throw new Error('an open with no direction behind it moved the page anyway');
+  });
 }

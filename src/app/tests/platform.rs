@@ -72,3 +72,29 @@ fn a_launch_answers_to_the_names_every_installed_copy_already_uses() {
         assert_ne!(name("rwall"), name("someone-else"));
     }
 }
+
+/// Both platforms' spellings of the always-show-scrollbars preference, read by one mapping so the Mac's three words are read here rather than first on a release machine. Nothing written means the default, which on both is a bar that hides.
+#[test]
+fn the_always_show_scrollbars_preference_is_read_off_either_platforms_own_spelling() {
+    use crate::platform::scrollbars_always_shown_from;
+
+    // Windows stores it upside down: 0 is the bar that stays.
+    assert!(scrollbars_always_shown_from(Some("0")));
+    assert!(!scrollbars_always_shown_from(Some("1")));
+
+    // macOS stores one of three words, and only one of them asks for the bar.
+    assert!(scrollbars_always_shown_from(Some("Always")));
+    assert!(!scrollbars_always_shown_from(Some("WhenScrolling")));
+    assert!(!scrollbars_always_shown_from(Some("Automatic")));
+
+    // Nobody has said anything, which is every machine out of the box.
+    assert!(!scrollbars_always_shown_from(None));
+
+    // Anything else is not a reader asking for a bar: an empty value, a word neither platform documents, and the right word spelled the wrong way.
+    for value in ["", "always", "ALWAYS", "2", "true", "yes", " Always"] {
+        assert!(
+            !scrollbars_always_shown_from(Some(value)),
+            "{value:?} pinned every bar in the app on"
+        );
+    }
+}
