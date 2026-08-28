@@ -434,7 +434,7 @@ function isSaveKey(event) {
 // The block a keystroke landed in, or null. A cell of a table is a surface of its own, so it is asked before the table around it — otherwise typing in a cell reads as the table's and the press steps back a committed edit instead.
 function editableBlockAt(target) {
   return target && target.closest
-    ? target.closest('td[data-cell-start].leaf-editable, [data-src-start].leaf-editable')
+    ? target.closest('[data-cell-start].leaf-editable, [data-src-start].leaf-editable')
     : null;
 }
 

@@ -404,15 +404,13 @@ struct Cell {
     key: String,
     /// The column heading this cell would give its column.
     label: String,
-    /// The rendered value.
-    html: String,
+    /// One rendered value per element folded into this cell, each beside the range of the element its words came from, opening tag to closing tag. None where the words are nobody's own bytes, as an attribute value is. Drawn joined by `, `.
+    parts: Vec<(String, Option<(usize, usize)>)>,
     /// Plain-text length, for deciding whether the run reads as a table.
     chars: usize,
-    /// The one element this cell's words came from, opening tag to closing tag. None where the words are nobody's own bytes: an attribute value, or two elements folded into one string.
-    range: Option<(usize, usize)>,
 }
 
-/// The cells of one record: its attributes first, then its leaf children. Repeated child names fold into a single comma-joined cell.
+/// The cells of one record: its attributes first, then its leaf children. Repeated child names fold into one cell holding a part per element.
 fn row_cells<'a>(node: Node<'a, 'a>) -> Vec<Cell> {
     let mut cells: Vec<Cell> = Vec::new();
     let mut push = |name: &str, text: &str, range: Option<(usize, usize)>| {
@@ -421,18 +419,15 @@ fn row_cells<'a>(node: Node<'a, 'a>) -> Vec<Cell> {
         let html = linkify(text);
         match cells.iter_mut().find(|cell| cell.key == key) {
             Some(cell) => {
-                cell.html.push_str(", ");
-                cell.html.push_str(&html);
+                // A second element under the same name is its own part, not more words in this one: the separator between them is the renderer's and belongs to neither, so each keeps its own range and stays typable.
+                cell.parts.push((html, range));
                 cell.chars += chars + 2;
-                // Two elements drawn as one string, joined by a separator the file has not got: no splice can name it.
-                cell.range = None;
             }
             None => cells.push(Cell {
                 key,
                 label: friendly_label(name),
-                html,
+                parts: vec![(html, range)],
                 chars,
-                range,
             }),
         }
     };
@@ -501,6 +496,30 @@ fn table_group<'a>(
     Some((end, columns))
 }
 
+/// One `<td>`. The range sits on whatever element holds exactly one XML element's words: the cell itself where it was drawn from one element, and a span of its own per element where several folded into it — so the `, ` between them sits in no span and answers a press with nothing, which is what it is.
+fn cell_html(cell: Option<&Cell>) -> String {
+    // Never the names a block is found by: four separate things read `data-src-start`, and a cell answering to one would be offered a drag handle and a plus.
+    let stamp = |range: Option<(usize, usize)>| match range {
+        Some((start, end)) => format!(" data-cell-start=\"{start}\" data-cell-end=\"{end}\""),
+        None => String::new(),
+    };
+    let Some(cell) = cell else {
+        return "<td></td>".to_string();
+    };
+    if let [(value, range)] = cell.parts.as_slice() {
+        return format!("<td{}>{value}</td>", stamp(*range));
+    }
+    let parts: Vec<String> = cell
+        .parts
+        .iter()
+        .map(|(value, range)| match range {
+            Some(_) => format!("<span{}>{value}</span>", stamp(*range)),
+            None => value.clone(),
+        })
+        .collect();
+    format!("<td>{}</td>", parts.join(", "))
+}
+
 /// Render a run of records as one table, one row per record.
 fn render_table<'a>(rows: &[Node<'a, 'a>], columns: &[(String, String)], ctx: &mut XmlCtx) {
     let (Some(first), Some(last)) = (rows.first(), rows.last()) else {
@@ -518,15 +537,7 @@ fn render_table<'a>(rows: &[Node<'a, 'a>], columns: &[(String, String)], ctx: &m
         html.push_str("<tr>");
         for (key, _) in columns {
             let cell = cells.iter().find(|cell| &cell.key == key);
-            let value = cell.map(|cell| cell.html.as_str()).unwrap_or("");
-            // Never the names a block is found by: four separate things read `data-src-start`, and a cell answering to one would be offered a drag handle and a plus.
-            let stamp = match cell.and_then(|cell| cell.range) {
-                Some((start, end)) => {
-                    format!(" data-cell-start=\"{start}\" data-cell-end=\"{end}\"")
-                }
-                None => String::new(),
-            };
-            html.push_str(&format!("<td{stamp}>{value}</td>"));
+            html.push_str(&cell_html(cell));
         }
         html.push_str("</tr>\n");
     }

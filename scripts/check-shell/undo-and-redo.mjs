@@ -250,6 +250,27 @@ export function run() {
         throw new Error('Monaco lost its own undo');
       }
       vm.runInContext('codeViewActive = false;', booted);
+      // A value of a cell holding two is a span, not a cell, and its typing is the page's to take back exactly as a cell's is. The walk asks for the range rather than for a `td`, or a folded value would hand Ctrl+Z to the web view one letter a press.
+      const value = Object.assign(new FakeElement(), {
+        nodeType: 1,
+        tagName: 'SPAN',
+        dataset: { cellStart: '10', cellEnd: '25' },
+        classList: { contains: (name) => name === 'leaf-editable' },
+        getAttribute: (name) => (name === 'contenteditable' ? 'true' : null),
+      });
+      // A span answers a part of the list that names no tag, and it is open for typing: `td[data-cell-start]` is a cell's, and this is not a cell.
+      value.closest = (selector) => {
+        const parts = String(selector)
+          .split(',')
+          .map((part) => part.trim());
+        const wanted = parts.some(
+          (part) => part.startsWith('[data-cell-start]') || part.startsWith('[contenteditable'),
+        );
+        return wanted ? value : null;
+      };
+      if (nativeUndoOwnsKey(value)) {
+        throw new Error('one value of a folded cell handed the key back to the web view, one letter a press');
+      }
       // A field box sits inside no editable block, so the walk finds none and it keeps the browser's own.
       const field = Object.assign(new FakeElement(), {
         nodeType: 1,

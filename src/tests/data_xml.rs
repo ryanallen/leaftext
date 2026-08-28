@@ -252,16 +252,21 @@ const CELL_STAMP_XML: &str = r#"<urlset>
 
 /// Every `<td>` of the first table in `html`, as its opening tag.
 fn table_cell_tags(html: &str) -> Vec<&str> {
+    table_tags(html, "<td")
+}
+
+/// Every opening tag in the first table of `html` starting with `mark`.
+fn table_tags<'a>(html: &'a str, mark: &str) -> Vec<&'a str> {
     let table = &html[html.find("<table").expect("a table")..];
     table
-        .match_indices("<td")
-        .map(|(at, _)| &table[at..at + table[at..].find('>').expect("a closed cell") + 1])
+        .match_indices(mark)
+        .map(|(at, _)| &table[at..at + table[at..].find('>').expect("a closed tag") + 1])
         .collect()
 }
 
 #[test]
 fn a_table_cell_carries_the_bytes_of_the_element_it_was_drawn_from() {
-    // Typing in a cell rests on the cell naming one element's own range. A cell drawn from an attribute, folded from two elements, or invented because the record was short of that column is nobody's bytes, so it names none and keeps the raw editor the whole table has today.
+    // Typing in a cell rests on something naming one element's own range. A cell drawn from an attribute, or invented because the record was short of that column, is nobody's bytes and names none. A cell two elements folded into names none either — each of them is a span of its own inside it, and the separator between them belongs to neither.
     let (_title, html) = render_xml_body(CELL_STAMP_XML);
 
     let tags = table_cell_tags(&html);
@@ -277,10 +282,23 @@ fn a_table_cell_carries_the_bytes_of_the_element_it_was_drawn_from() {
         vec![false, true, true, false, false, true, false, true],
         "{tags:?}"
     );
+    // The folded cell's two elements, each on a span of its own, and the separator on neither.
+    let spans = table_tags(&html, "<span");
+    assert_eq!(spans.len(), 2, "{html}");
+    assert!(
+        spans.iter().all(|tag| tag.contains("data-cell-start")),
+        "{spans:?}"
+    );
+    assert_contains(&html, "<td><span data-cell-start=");
+    assert_contains(&html, "</span>, <span data-cell-start=");
     // And never the names a block is found by, or the gutter would offer a cell a drag handle.
     assert!(
         !tags.iter().any(|tag| tag.contains("data-src-start")),
         "{tags:?}"
+    );
+    assert!(
+        !spans.iter().any(|tag| tag.contains("data-src-start")),
+        "{spans:?}"
     );
 }
 
@@ -294,7 +312,10 @@ fn a_table_cells_range_slices_out_its_whole_element() {
         tag[from..from + tag[from..].find('"')?].parse().ok()
     };
     let mut sliced: Vec<&str> = Vec::new();
-    for tag in table_cell_tags(&html) {
+    // Every stamp in the table, wherever it sits: on the cell where one element drew it, and on a span each where several folded into one cell.
+    let mut tags = table_cell_tags(&html);
+    tags.extend(table_tags(&html, "<span"));
+    for tag in tags {
         let (Some(start), Some(end)) = (
             offset(tag, "data-cell-start=\""),
             offset(tag, "data-cell-end=\""),
@@ -310,6 +331,8 @@ fn a_table_cells_range_slices_out_its_whole_element() {
             "<lastmod>2026-07-24</lastmod>",
             "<loc>https://leaftext.com/docs/</loc>",
             "<tag>three</tag>",
+            "<tag>one</tag>",
+            "<tag>two</tag>",
         ],
     );
 }

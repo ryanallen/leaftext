@@ -307,69 +307,309 @@ export function run() {
     }
   });
 
-  // A table is the one block whose shape is the reading, so nothing a reader presses may take the grid away and leave the markup of every record in its place. The parts of it that can be typed on answer for themselves; every other press says where the file's own text is instead.
-  check('an XML table keeps its shape when a press lands where nothing can be typed', () => {
-    const { bindEditableBlocks } = booted;
+  // Several elements under one name fold into one cell, and the separator between them is the renderer's rather than the file's. So the range sits on a span each rather than on the cell, and each span is one element's own bytes exactly as a single-element cell is — which is what lets a reader correct one of two tags without the other, or any other record, moving.
+  check('one value of a folded XML cell writes its own element and leaves the rest of the file alone', () => {
+    const { xmlCellTypeableInPlace, bindEditableBlocks, commitBlockEdit } = booted;
     const read = (expression) => vm.runInContext(expression, booted);
+    // The two tags are not next to each other: an element's range is absolute, so what stands between them never mattered.
     const run =
-      '<url><loc>https://leaftext.com/</loc><tag>one</tag></url>\n' +
-      '<url><loc>https://leaftext.com/docs/</loc><tag>two</tag><tag>three</tag></url>';
-    const source = `<urlset>\n${run}\n</urlset>\n`;
-    const cell = (id, element, drawn) => {
+      '<url><loc>https://leaftext.com/</loc><tag>one</tag><lastmod>2026-07-24</lastmod><tag>two</tag></url>';
+    const source = `<urlset>
+${run}
+</urlset>
+`;
+    const spanFor = (element, drawn) => {
       const at = source.indexOf(element);
-      const el = fakeElement(id);
-      el.tagName = 'TD';
+      if (at < 0) throw new Error(`the fixture has no ${element}`);
+      const el = fakeElement(drawn);
+      el.tagName = 'SPAN';
       el.dataset = { cellStart: String(at), cellEnd: String(at + element.length) };
       el.textContent = drawn;
       return el;
     };
+    const cell = fakeElement('folded');
+    cell.tagName = 'TD';
+    cell.textContent = 'one, two';
+    const one = spanFor('<tag>one</tag>', 'one');
+    const two = spanFor('<tag>two</tag>', 'two');
+    // The stand-in page answers a selector with everything it holds, which cannot tell the pass that asks for a cell from the one that asks for anything in a table. So this stub honors a leading tag name: `td[data-cell-start]` finds the cell and neither span.
+    const nodes = [cell, one, two];
+    const body = {
+      querySelectorAll: (selector) => {
+        // A tag name only counts where it abuts the bracket: `td[…]` names a tag, `table [… ]` names anything inside one.
+        const upTo = selector.slice(0, selector.indexOf('['));
+        const tag = upTo.endsWith(' ') ? '' : upTo;
+        return tag ? nodes.filter((node) => node.tagName.toLowerCase() === tag) : nodes;
+      },
+    };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const wasIpc = booted.ipc;
+    const posted = [];
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+
+      // The separator is in the cell and in no span, so the cell itself is nobody's bytes and stays shut.
+      if (xmlCellTypeableInPlace(cell)) throw new Error('the cell holding both values opened for typing');
+      for (const span of [one, two]) {
+        const proved = xmlCellTypeableInPlace(span);
+        if (!proved) throw new Error(`the span drawn from <tag>${span.textContent}</tag> could not be typed on`);
+        if (source.slice(proved.start, proved.end) !== span.textContent) {
+          throw new Error('the span a folded value commits through is not its own words');
+        }
+      }
+
+      // The pass has to reach a span inside a cell, not only a cell: it asks anything in a table carrying the range.
+      bindEditableBlocks('xml');
+      for (const span of [one, two]) {
+        if (!span.listeners.has('pointerup') || !span.__innerSpan) {
+          throw new Error('a folded value was not opened for typing');
+        }
+        if (!span.classList.contains('leaf-editable')) {
+          throw new Error('a folded value was left out of the editable pass');
+        }
+      }
+      if (cell.listeners.has('pointerup') || cell.classList.contains('leaf-editable')) {
+        throw new Error('the cell around two values was wired for typing anyway');
+      }
+
+      one.__editBaseline = 'one';
+      commitBlockEdit(one, 'first');
+      const edit = posted.find((message) => message.command === 'editBlock');
+      if (!edit) throw new Error('typing in one value of a folded cell wrote nothing');
+      const after = source.slice(0, edit.start) + edit.text + source.slice(edit.end);
+      if (!after.includes('<tag>first</tag>')) throw new Error('the value was not written');
+      if (!after.includes('<tag>two</tag>')) throw new Error('the other value of the same cell moved');
+      if (after.replace('first', 'one') !== source) {
+        throw new Error('writing one value of a folded cell moved something else in the file');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // A stand-in table: the heading row and the cells in reading order, answering the three questions the wiring pass and a heading ask of one. A cell drawn from one element carries the range itself; one drawn from several carries none and holds a span each.
+  const xmlTable = (source, run, heads, rows) => {
+    const spanFor = (element, tag) => {
+      const at = source.indexOf(element);
+      if (at < 0) throw new Error(`the fixture has no ${element}`);
+      const el = fakeElement(element);
+      el.tagName = tag;
+      el.dataset = { cellStart: String(at), cellEnd: String(at + element.length) };
+      el.textContent = element.slice(element.indexOf('>') + 1, element.lastIndexOf('</'));
+      return el;
+    };
     const table = fakeElement('table');
+    table.tagName = 'TABLE';
     table.dataset = {
       blockKind: 'table',
       srcStart: String(source.indexOf(run)),
       srcEnd: String(source.indexOf(run) + run.length),
     };
-    const proved = cell('proved', '<loc>https://leaftext.com/</loc>', 'https://leaftext.com/');
-    const folded = cell('folded', '<tag>two</tag>', 'two, three');
-    const body = { querySelectorAll: () => [table, proved, folded] };
+    const ths = heads.map((label) => {
+      const th = fakeElement(`th:${label}`);
+      th.tagName = 'TH';
+      th.textContent = label;
+      th.closest = (selector) => (selector === 'table' ? table : null);
+      return th;
+    });
+    const tds = [];
+    const spans = [];
+    for (const row of rows) {
+      for (const parts of row) {
+        const td = fakeElement('td');
+        td.tagName = 'TD';
+        td.dataset = {};
+        td.querySelectorAll = () => [];
+        if (parts.length === 1) {
+          const only = spanFor(parts[0], 'TD');
+          td.dataset = only.dataset;
+        } else if (parts.length > 1) {
+          const held = parts.map((element) => spanFor(element, 'SPAN'));
+          td.querySelectorAll = () => held;
+          spans.push(...held);
+        }
+        // What the page drew: each element's own words, and where several folded into one cell the separator the renderer put between them.
+        td.textContent = parts.map((element) => element.slice(element.indexOf('>') + 1, element.lastIndexOf('</'))).join(', ');
+        tds.push(td);
+      }
+    }
+    table.querySelectorAll = (selector) => (selector === 'th' ? ths : selector === 'td' ? tds : []);
+    const body = {
+      querySelectorAll: (selector) => {
+        if (selector === 'table th') return ths;
+        if (selector.includes('data-cell-start')) return [...tds, ...spans];
+        if (selector.includes('data-src-start')) return [table];
+        return [];
+      },
+    };
+    return { table, ths, tds, spans, body };
+  };
+
+  // Stand the page's document up around one table and hand the block back, with everything put back afterwards however the check ends.
+  const overXmlTable = (source, built, work) => {
+    const read = (expression) => vm.runInContext(expression, booted);
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
     const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
     const wasToast = booted.leafToast;
+    const wasIpc = booted.ipc;
     const said = [];
+    const posted = [];
     try {
       read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
-      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      inApp.querySelector = (selector) => (selector === '.document-body' ? built.body : wasQuery(selector));
       booted.leafToast = (words) => said.push(words);
-      bindEditableBlocks('xml');
-
-      if (!proved.listeners.has('pointerup')) throw new Error('a cell of its own element was not opened for typing');
-      if (!proved.__innerSpan) throw new Error('the cell carries no span for its commit to splice');
-      if (!proved.classList.contains('leaf-editable')) throw new Error('a proved cell was left out of the editable pass');
-      if (folded.listeners.has('pointerup') || folded.__innerSpan || folded.classList.contains('leaf-editable')) {
-        throw new Error('a cell holding two elements was wired for typing anyway');
-      }
-      // The names a block is found by stay a block's, or the gutter would offer a cell a drag handle and a plus.
-      if (proved.dataset.srcStart != null || proved.dataset.srcEnd != null) {
-        throw new Error('a cell answers to the names a block is found by');
-      }
-
-      // Nothing may swap the grid for its own markup, so the table is never handed the raw-source editor.
-      if (typeof table.__startSourceEdit === 'function' || table.classList.contains('leaf-editable')) {
-        throw new Error('a table was wired to open as its own text');
-      }
-      // And nothing may answer a press with a message either: a strip growling at somebody who pressed a heading is a locked door with a sign on it, not a page. Opening those is xml-table-heading-and-joined-cells.
-      if (table.listeners.size) {
-        throw new Error(`a table answers a press with ${[...table.listeners.keys()].join(', ')}`);
-      }
-      if (said.length) throw new Error(`the page said ${JSON.stringify(said)} while drawing a table`);
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+      booted.bindEditableBlocks('xml');
+      work({ said, posted });
     } finally {
+      booted.ipc = wasIpc;
       booted.leafToast = wasToast;
       inApp.querySelector = wasQuery;
       read(
         `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
       );
     }
+  };
+
+  // A table is the one block whose shape is the reading, so nothing a reader presses may take the grid away and leave the markup of every record in its place. The parts of it that can be typed on answer for themselves — a cell of its own element, a value of a folded cell on a span of its own, and a heading over a column with an element to rename — and the table itself still answers a press with nothing and says nothing.
+  check('an XML table keeps its shape when a press lands where nothing can be typed', () => {
+    const run =
+      '<url id="a"><loc>https://leaftext.com/</loc><tag>one</tag></url>\n' +
+      '<url id="b"><loc>https://leaftext.com/docs/</loc><tag>two</tag><tag>three</tag></url>';
+    const source = `<urlset>\n${run}\n</urlset>\n`;
+    const built = xmlTable(
+      source,
+      run,
+      ['ID', 'URL', 'Tag'],
+      [
+        [[], ['<loc>https://leaftext.com/</loc>'], ['<tag>one</tag>']],
+        [[], ['<loc>https://leaftext.com/docs/</loc>'], ['<tag>two</tag>', '<tag>three</tag>']],
+      ],
+    );
+    const { table, ths, tds, spans } = built;
+    overXmlTable(source, built, ({ said }) => {
+      const proved = tds[1];
+      const folded = tds[5];
+      if (!proved.listeners.has('pointerup')) throw new Error('a cell of its own element was not opened for typing');
+      if (!proved.__innerSpan) throw new Error('the cell carries no span for its commit to splice');
+      if (!proved.classList.contains('leaf-editable')) throw new Error('a proved cell was left out of the editable pass');
+      // The cell around two values is nobody's bytes; each value inside it is its own.
+      if (folded.listeners.has('pointerup') || folded.__innerSpan || folded.classList.contains('leaf-editable')) {
+        throw new Error('a cell holding two elements was wired for typing anyway');
+      }
+      for (const value of spans) {
+        if (!value.listeners.has('pointerup') || !value.__innerSpan) {
+          throw new Error('a value of a folded cell was not opened for typing');
+        }
+      }
+      // The names a block is found by stay a block's, or the gutter would offer a cell a drag handle and a plus.
+      if (proved.dataset.srcStart != null || proved.dataset.srcEnd != null) {
+        throw new Error('a cell answers to the names a block is found by');
+      }
+
+      // A heading over a column with an element behind it opens onto the tag; the one over the column drawn from a value inside a tag has nothing to rename and stays shut.
+      if (ths[0].listeners.has('pointerup') || ths[0].classList.contains('leaf-editable')) {
+        throw new Error('a heading over a column drawn from an attribute was wired for typing');
+      }
+      for (const th of [ths[1], ths[2]]) {
+        if (!th.listeners.has('pointerup')) throw new Error(`the heading ${th.textContent} was not opened for typing`);
+        if (!th.classList.contains('leaf-editable')) throw new Error(`the heading ${th.textContent} was left out of the editable pass`);
+      }
+
+      // Nothing may swap the grid for its own markup, so the table is never handed the raw-source editor.
+      if (typeof table.__startSourceEdit === 'function' || table.classList.contains('leaf-editable')) {
+        throw new Error('a table was wired to open as its own text');
+      }
+      // And nothing may answer a press with a message either: a strip growling at somebody who pressed a heading is a locked door with a sign on it, not a page.
+      if (table.listeners.size) {
+        throw new Error(`a table answers a press with ${[...table.listeners.keys()].join(', ')}`);
+      }
+      if (said.length) throw new Error(`the page said ${JSON.stringify(said)} while drawing a table`);
+    });
+  });
+
+  // A heading is in no part of the file, so pressing one puts the tag the file holds under the caret and committing renames that element in every record of the run. One splice over the run's own bytes, so one press of undo takes the whole rename back and every byte the reader did not rename comes back as it was.
+  check('renaming an XML column writes every record of the run and nothing else', () => {
+    const run =
+      '<url><loc>https://leaftext.com/</loc><tag>one</tag>  <!-- kept --></url>\n' +
+      '<url><loc>https://leaftext.com/docs/</loc><tag>two</tag><tag>three</tag></url>\n' +
+      '<url><loc>https://leaftext.com/about/</loc></url>';
+    const source = `<urlset>\n${run}\n</urlset>\n`;
+    const built = xmlTable(
+      source,
+      run,
+      ['URL', 'Tag'],
+      [
+        [['<loc>https://leaftext.com/</loc>'], ['<tag>one</tag>']],
+        [['<loc>https://leaftext.com/docs/</loc>'], ['<tag>two</tag>', '<tag>three</tag>']],
+        [['<loc>https://leaftext.com/about/</loc>'], []],
+      ],
+    );
+    overXmlTable(source, built, ({ posted, said }) => {
+      const heading = built.ths[1];
+      heading.listeners.get('pointerup').forEach((listen) => listen({ button: 0 }));
+      // The words under the caret are the tag the file holds, never the label the lookup made — that lookup does not invert and a heading with a space in it is no XML name.
+      if (heading.textContent !== 'tag') throw new Error(`the heading opened onto ${heading.textContent}`);
+
+      heading.textContent = 'label';
+      heading.listeners.get('focusout').forEach((listen) => listen({}));
+      // The label the column was drawn with is back on the page; the file is what changed.
+      if (heading.textContent !== 'Tag') throw new Error(`the heading kept ${heading.textContent} after its commit`);
+
+      const edits = posted.filter((message) => message.command === 'editBlock');
+      if (edits.length !== 1) throw new Error(`renaming a column sent ${edits.length} edits, so undo would take more than one press`);
+      const after = source.slice(0, edits[0].start) + edits[0].text + source.slice(edits[0].end);
+      for (const element of ['<label>one</label>', '<label>two</label>', '<label>three</label>']) {
+        if (!after.includes(element)) throw new Error(`the rename missed ${element}`);
+      }
+      // The record with no element of that name contributed no range, so nothing of it moved — and neither did the comment, the spacing or any other tag.
+      if (!after.includes('<url><loc>https://leaftext.com/about/</loc></url>')) {
+        throw new Error('a record with no element of that name was rewritten anyway');
+      }
+      if (after.split('label').length - 1 !== 6) throw new Error('the rename wrote a name somewhere it was not asked to');
+      if (after.replace(/label/g, 'tag') !== source) throw new Error('renaming a column moved something else in the file');
+      if (said.length) throw new Error(`the page said ${JSON.stringify(said)} for a rename it accepted`);
+    });
+  });
+
+  // Half the file's own grammar is what an element may be called, and the page is where a reader finds out. A name the file could not hold is refused where it was typed, and nothing goes out.
+  check('an XML column refuses a name no element could carry, and writes nothing', () => {
+    const run = '<url><loc>https://leaftext.com/</loc></url>\n<url><loc>https://leaftext.com/docs/</loc></url>';
+    const source = `<urlset>\n${run}\n</urlset>\n`;
+    const built = xmlTable(
+      source,
+      run,
+      ['URL'],
+      [[['<loc>https://leaftext.com/</loc>']], [['<loc>https://leaftext.com/docs/</loc>']]],
+    );
+    overXmlTable(source, built, ({ posted, said }) => {
+      const heading = built.ths[0];
+      heading.listeners.get('pointerup').forEach((listen) => listen({ button: 0 }));
+      heading.textContent = 'web address';
+      heading.listeners.get('focusout').forEach((listen) => listen({}));
+      if (posted.some((message) => message.command === 'editBlock')) {
+        throw new Error('a name no element could carry was written into the file');
+      }
+      if (!said.length) throw new Error('a refused name was refused in silence');
+      if (heading.textContent !== 'URL') throw new Error('a refused name was left on the page');
+
+      // And leaving a heading on the name it opened with is not an edit at all.
+      heading.listeners.get('pointerup').forEach((listen) => listen({ button: 0 }));
+      heading.listeners.get('focusout').forEach((listen) => listen({}));
+      if (posted.some((message) => message.command === 'editBlock')) {
+        throw new Error('opening a heading and leaving it alone wrote to the file');
+      }
+      if (said.length !== 1) throw new Error(`the page said ${JSON.stringify(said)} for a heading nobody typed in`);
+    });
   });
 
   // The gutter's drag handle reorders a block and its plus inserts beside one; a cell is neither. That is the whole reason a cell carries names of its own rather than a block's, and the way it stays true is that the gutter never learns the cell's.

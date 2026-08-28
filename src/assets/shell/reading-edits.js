@@ -1550,21 +1550,23 @@ function bindEditableBlocks(format) {
       if (innerSpan) el.__innerSpan = innerSpan;
       wysiwygBlocks.push(el);
     } else if (format === 'xml' && kind === 'table') {
-      // A table is the one block whose shape is the reading: swapping the grid for the markup of every record takes the page away from somebody who pressed one word. So it takes no listener at all, and never a message saying why — its cells type where they can, and opening the heading and the joined cells is xml-table-heading-and-joined-cells.
+      // A table is the one block whose shape is the reading: swapping the grid for the markup of every record takes the page away from somebody who pressed one word. So it takes no listener at all, and never a message saying why. What answers a press is what was pressed — a cell where its words are one element's own bytes, a value of a folded cell on a span of its own, and a heading over a column that has an element to rename.
     } else if (Number.isFinite(Number(el.dataset.srcStart)) && Number.isFinite(Number(el.dataset.srcEnd))) {
       // A block with an unusable range gets neither the class nor a listener; wireSourceEditable's own guard would drop it anyway.
       sourceBlocks.push(el);
     }
   });
-  // A cell of a table is drawn from one leaf element, so it can answer the same question — but nothing walks a cell, because the pass above walks the names a block is found by. So the cells get a pass of their own, and the ones that cannot be proved are left to the table's own press to answer.
+  // A cell of a table is drawn from one leaf element, so it can answer the same question — but nothing walks a cell, because the pass above walks the names a block is found by. So the cells get a pass of their own, and the ones that cannot be proved are left to the table's own press to answer. The question is asked of anything in a table carrying the range rather than of a cell: where several elements folded into one cell, each is a span of its own and the cell carries no range at all.
   if (format === 'xml') {
-    body.querySelectorAll('td[data-cell-start]').forEach((el) => {
+    body.querySelectorAll('table [data-cell-start]').forEach((el) => {
       if (el.dataset.cellStart == null) return;
       const cellSpan = xmlCellTypeableInPlace(el);
       if (!cellSpan) return;
       el.__innerSpan = cellSpan;
       wysiwygBlocks.push(el);
     });
+    // And the headings, decided by the same ranges: one that stands over a column with an element behind it opens onto the tag rather than onto the label it was drawn with.
+    wireXmlTableHeadings(body);
   }
   wysiwygBlocks.forEach(markMarkdownEditable);
   wysiwygBlocks.forEach((el) => el.classList.add('leaf-editable'));
