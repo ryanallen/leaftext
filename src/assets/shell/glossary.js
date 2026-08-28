@@ -180,7 +180,7 @@ function recordLinkHoverPoint(event) {
   linkHoverClientY = event.clientY;
 }
 function formatLineCount(n) {
-  return formatCount(n) + ' ' + (n === 1 ? 'line' : 'lines');
+  return formatCountLabel(n, 'line', 'lines');
 }
 function setLinkHoverLines(count) {
   const text = typeof count === 'number' && count >= 0 ? formatLineCount(count) : '';

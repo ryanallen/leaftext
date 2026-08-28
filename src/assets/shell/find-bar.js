@@ -494,7 +494,7 @@ function replaceInReading(all) {
   sendEditCommand({ command: 'editBlock', start: 0, end: total, text: next });
   if (refused) {
     leafToast(
-      `${refused} ${refused === 1 ? 'match is' : 'matches are'} split by formatting — replace those in the source view.`
+      `${formatCountLabel(refused, 'match is', 'matches are')} split by formatting — replace those in the source view.`
     );
   }
 }

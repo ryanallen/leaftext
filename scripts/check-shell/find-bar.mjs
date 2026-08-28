@@ -104,6 +104,43 @@ export function run() {
     booted.setCodeUnlocked(false);
   });
 
+  // The replace goes through and one match is left behind, so the growl says which. One left behind used to read "1 matches are".
+  check('a replace that left matches behind counts them in the singular and the plural', () => {
+    const growls = [];
+    const wasToast = booted.leafToast;
+    const wasSend = booted.ipc;
+    booted.leafToast = (message) => growls.push(message);
+    booted.ipc = { postMessage: () => {} };
+    booted.setReadingUnlocked(true);
+    booted.window.leafBlocksResynced({ source: 'The dharma talk.\n' });
+    try {
+      // The blocks and the rewrite stand in, so the growl under test is the shipped sentence rather than a copy of it.
+      vm.runInContext('__wasGroups = findRenderedGroups; __wasRewrite = findRewriteBlock;', booted);
+      const refusing = (left) => {
+        growls.length = 0;
+        booted.__left = left;
+        vm.runInContext(
+          `currentDocumentFormat = 'markdown';
+           findMatches = [{}];
+           findCurrent = 0;
+           findRenderedGroups = () => [{ start: 0, end: 4, ranks: [0] }, { start: 4, end: 8, ranks: new Array(__left).fill(0) }];
+           findRewriteBlock = (group) => (group.start === 0 ? 'Kept' : null);
+           replaceInReading(true);`,
+          booted
+        );
+        return growls.join(' | ');
+      };
+      if (!refusing(1).includes('1 match is split by formatting')) throw new Error(`one left behind said: ${refusing(1)}`);
+      if (!refusing(2).includes('2 matches are split by formatting')) throw new Error(`two left behind said: ${refusing(2)}`);
+    } finally {
+      vm.runInContext('findRenderedGroups = __wasGroups; findRewriteBlock = __wasRewrite; findMatches = []; findCurrent = -1;', booted);
+      delete booted.__left;
+      booted.setReadingUnlocked(false);
+      booted.leafToast = wasToast;
+      booted.ipc = wasSend;
+    }
+  });
+
   // Carets in a read-only editor are a set of cursors every keystroke then growls at, so the button asks the padlock before it places any. And the modifier that adds one by hand is ours, not the editor's default Alt — Alt is the menu key here.
   check('a cursor on every match asks the padlock first, and Ctrl adds one by hand', () => {
     const { findSelectAllOccurrences } = booted;

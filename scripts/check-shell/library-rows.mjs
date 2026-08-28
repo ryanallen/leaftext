@@ -149,7 +149,7 @@ export function run() {
 
     booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
     if (waitingMarks() !== 0) throw new Error('the answer left the waiting mark turning');
-    if (!searchPane().innerHTML.includes('1 results')) throw new Error('the answer did not count its rows');
+    if (!searchPane().innerHTML.includes('1 result')) throw new Error('the answer did not count its rows');
   });
 
   check('a search run over an older query’s rows marks them instead of leaving them silent', () => {
@@ -160,7 +160,7 @@ export function run() {
     vm.runInContext("runLibrarySearch('drafts')", booted);
     if (waitingMarks() !== 1) throw new Error(`a re-search over drawn rows showed ${waitingMarks()} waiting marks`);
     if (!searchPane().innerHTML.includes('library-hit')) throw new Error('a re-search threw away the rows it had');
-    if (searchPane().innerHTML.includes('1 results')) throw new Error('a re-search counted the last query’s rows as this one’s answer');
+    if (searchPane().innerHTML.includes('1 result')) throw new Error('a re-search counted the last query’s rows as this one’s answer');
 
     booted.leafSetSearchResults({ query: 'drafts', hits: [], truncated: false });
     if (waitingMarks() !== 0) throw new Error('an empty answer left the waiting mark turning');
@@ -172,7 +172,7 @@ export function run() {
     // A vault read in slices answers the same query several times, each ranking everything it has read so far — so the second answer can put a better match above a row somebody is already reaching for.
     booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('First')], truncated: false, partial: true });
     if (waitingMarks() !== 1) throw new Error('rows still arriving cleared the waiting mark');
-    if (!searchPane().innerHTML.includes('1 results so far')) throw new Error('a part-read vault counted its rows as the whole answer');
+    if (!searchPane().innerHTML.includes('1 result so far')) throw new Error('a part-read vault counted its rows as the whole answer');
 
     booted.leafSetSearchResults({
       query: 'draft',
@@ -223,7 +223,7 @@ export function run() {
     if (!drawn.includes('app/target, site/node_modules')) {
       throw new Error('the count line did not carry the folder names');
     }
-    if (!drawn.includes('1 results')) throw new Error('the clause replaced the count instead of joining it');
+    if (!drawn.includes('1 result')) throw new Error('the clause replaced the count instead of joining it');
 
     // One folder reads as one, not as "1 folders".
     booted.leafSetSearchResults({
@@ -241,6 +241,31 @@ export function run() {
     const clean = countLine();
     if (clean.includes('generated files')) throw new Error('a vault that was read whole still said something was left out');
     if (clean.includes('title=')) throw new Error('a vault with nothing left out still carried a title');
+  });
+
+  // Somebody who searched a vault for a phrase only one note holds reads the line above their one row, and "1 results" is the first thing it says.
+  check('a count of one reads in the singular, and a cut list counts its files the same way', () => {
+    showingLibrarySearch();
+    const countLine = () => (searchPane().innerHTML.match(/<p class="library-results-count"[^>]*>.*?<\/p>/) || [''])[0];
+
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
+    if (!countLine().includes('1 result')) throw new Error(`one hit was not counted: ${countLine()}`);
+    if (countLine().includes('1 results')) throw new Error('one hit was counted in the plural');
+
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note'), searchHit('Another')], truncated: false });
+    if (!countLine().includes('2 results')) throw new Error(`two hits were not counted in the plural: ${countLine()}`);
+
+    // A cut list says what it was cut to in files, and one file is one file.
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: true });
+    if (!countLine().includes('in the first 1 file')) throw new Error(`a cut list from one file was not counted: ${countLine()}`);
+    if (countLine().includes('1 files')) throw new Error('a cut list from one file counted it in the plural');
+
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('A note'), searchHit('Another')],
+      truncated: true,
+    });
+    if (!countLine().includes('in the first 2 files')) throw new Error(`a cut list from two files was not counted: ${countLine()}`);
   });
 
   check('a search that fails clears the waiting mark with its message', () => {

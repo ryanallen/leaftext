@@ -74,18 +74,17 @@ function searchCountHtml(hits) {
 // A row is a match and one file can hold three, so a cut list says what it was cut to in files, counted off the rows rather than kept as a second copy of the host's cap. While the vault is still being read, both counts say so: the cap is over what has been read, not over the vault.
 function searchCountText(hits) {
   if (!librarySearchTruncated) {
-    return `${formatCount(hits.length)} results${librarySearchPartial ? ' so far' : ''}${skippedClause()}`;
+    return `${formatCountLabel(hits.length, 'result', 'results')}${librarySearchPartial ? ' so far' : ''}${skippedClause()}`;
   }
   const files = new Set(hits.map((hit) => (hit && hit.absPath) || '')).size;
   const read = librarySearchPartial ? ' read so far' : '';
-  return `${formatCount(hits.length)} results in the first ${formatCount(files)} files${read}${skippedClause()}`;
+  return `${formatCountLabel(hits.length, 'result', 'results')} in the first ${formatCountLabel(files, 'file', 'files')}${read}${skippedClause()}`;
 }
 // Joined to the sentence that already says what was cut, because a vault that read three quarters of itself and said nothing is the worse bug of the two.
 function skippedClause() {
   const count = librarySearchSkipped.length;
   if (!count) return '';
-  const folders = count === 1 ? 'folder' : 'folders';
-  return ` · ${formatCount(count)} ${folders} of generated files not read`;
+  return ` · ${formatCountLabel(count, 'folder', 'folders')} of generated files not read`;
 }
 // What the box made of what was typed. A plain word query says nothing — it would only repeat the field back — so this appears the moment there is syntax in it, and names a field the vault has never set rather than leaving an empty list to be read as "nothing matches".
 function searchNoteHtml() {

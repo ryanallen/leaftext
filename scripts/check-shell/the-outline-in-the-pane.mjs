@@ -175,6 +175,12 @@ export function run() {
       { level: 2, text: 'Five', id: 'five' },
     ]);
     if (!five.outline.querySelector('.library-outline-count').textContent.includes('5 headings')) throw new Error(`five headings drew: ${five.outline.querySelector('.library-outline-count').textContent}`);
+
+    // A note whose title carries one section is the ordinary case, and it used to read "1 headings".
+    const one = paneShowingAnOutline([{ level: 2, text: 'One', id: 'one' }]);
+    const said = one.outline.querySelector('.library-outline-count').textContent;
+    if (!said.includes('1 heading')) throw new Error(`one heading drew: ${said}`);
+    if (said.includes('1 headings')) throw new Error('one heading was counted in the plural');
   });
 
   check('the pane shows one list at a time, and a live query outranks the outline', () => {

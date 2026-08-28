@@ -679,6 +679,22 @@ export function run() {
     }
   });
 
+  // A page one line long is a real page, and the row under the preview used to be the only counted sentence in the app that already read right.
+  check('the card counts one line in the singular and two in the plural', () => {
+    try {
+      vm.runInContext('activeHoverToken += 1; pendingLineTokens.clear(); lineCountCache.clear();', booted);
+      const token = vm.runInContext('activeHoverToken', booted);
+      const said = (lines) => {
+        booted.window.leafLineCount(token, lines);
+        return vm.runInContext('linkHoverTipLines.textContent', booted);
+      };
+      if (said(1) !== '1 line') throw new Error(`a page of one line reads: ${said(1)}`);
+      if (said(2) !== '2 lines') throw new Error(`a page of two lines reads: ${said(2)}`);
+    } finally {
+      vm.runInContext('hideLinkHoverTip(); activeHoverLink = null; pendingLineTokens.clear(); lineCountCache.clear();', booted);
+    }
+  });
+
   // The running order links at a hundred and forty-two sections of one page. What is kept per address is that address's own section, so those links hold a hundred and forty-two sections rather than that many copies of the page.
   check('a preview remembers the section its address named, not the file it was cut from', () => {
     try {
