@@ -175,6 +175,8 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\.markdown\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.mdown' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.mdown\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.mdc' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.mdc\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.xml' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.xml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.json' Type='string' Value='LeafText.Document'/>
@@ -197,6 +199,7 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.md' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.markdown' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mdown' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mdc' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.xml' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.json' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.yaml' Type='string' Value=''/>
@@ -213,6 +216,7 @@
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.md' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.markdown' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mdown' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mdc' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.xml' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.json' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.yaml' Type='string' Value='LeafText.Document'/>
