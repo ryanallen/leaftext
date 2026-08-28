@@ -111,7 +111,7 @@ function attributeParts(piece, selector) {
   return { name, value };
 }
 
-/** Whether one node answers one piece of a compound. An id is asked of the element's own id, an attribute for by name alone or compared with the value it carries. A tag is the whole piece, since everything that is not one has already been split off: comparing a tag to everything before the first space called a `pre` a `pre > code`. */
+/** Whether one node answers one piece of a compound. An id is asked of the element's own id, an attribute by name alone or compared with the value it carries. A tag is the whole piece, since everything that is not one has already been split off: comparing a tag to everything before the first space called a `pre` a `pre > code`. */
 function matchesPiece(node, piece, selector, scope) {
   if (piece.startsWith('.')) return !!(node.classList && node.classList.contains(piece.slice(1)));
   if (piece.startsWith('#')) return !!node.id && String(node.id) === piece.slice(1);
