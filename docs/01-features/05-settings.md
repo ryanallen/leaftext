@@ -172,8 +172,9 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 - The window reopens at the size it had when it last closed, and maximized if it was maximized
 - Saved as `window_width` and `window_height` (in logical, DPI-independent pixels) plus `window_maximized`
-- The size is stored separately from the maximized state, so un-maximizing returns to the windowed dimensions rather than the full-screen ones
+- The size is stored separately from the maximized state, so un-maximizing returns to the windowed dimensions rather than the maximized ones
 - Window position is not restored — only the size and maximized state
+- [Full screen](06-themes.md#macos) is not saved: macOS owns the spaces it puts a full-screen window in, and restoring it is that system's rather than Leaftext's
 
 ### Unsaved edits
 

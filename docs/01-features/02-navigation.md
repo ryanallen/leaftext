@@ -141,7 +141,7 @@ Tabs are never squeezed to make space for the toolbar. As the strip fills — or
 
 Both halves of that matter on a small window. Closing your last document empties the tab strip, and an empty strip has nothing to run out of — so the bar is measured on its own account as well, and the window's own close, minimize and maximize buttons stay drawn inside the window with the chevron holding whatever will not fit beside them.
 
-The menu reads in its own order, not the order things folded into it: Back, Forward, Themes, Open, New, then the window buttons at the foot. So the controls you open it for are at the top, and close is not the first thing under the pointer. On a Mac that means the three dots stack at the bottom with zoom above and close at the very foot — the reverse of how they read across the bar, since stacked they run top to bottom.
+The menu reads in its own order, not the order things folded into it: Back, Forward, Themes, Open, New, then the window buttons at the foot. So the controls you open it for are at the top, and close is not the first thing under the pointer. On a Mac that means the three dots stack at the bottom with the green one above and close at the very foot — the reverse of how they read across the bar, since stacked they run top to bottom.
 
 While the [library sheet](03-library.md#narrow-windows) is up it covers the page, so the tab strip goes with it.
 

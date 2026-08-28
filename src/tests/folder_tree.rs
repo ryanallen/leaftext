@@ -300,7 +300,7 @@ fn the_file_list_starts_with_a_way_back_out() {
             .contains("color: var(--lt-foreground);")
     );
 
-    // The arrow sits above the folder rows and takes the same box they do, so the shared icon rule is the only thing that sizes it. The action treatment it also wears carries the muted ink and nothing about size: a width or a height there is what made this row the odd one in the list.
+    // The arrow sits above the folder rows and takes the same box they do, so the shared icon rule is the only thing that sizes it. The action treatment it also wears carries the muted ink and nothing about size: a width or a height there makes this row the odd one in the list.
     let icon = rule_bodies(&css, ".lt-icon {");
     assert_eq!(
         icon.len(),
@@ -335,7 +335,7 @@ fn the_file_list_starts_with_a_way_back_out() {
         rule_bodies(&css, ".library-nav-up .library-action-icon {").is_empty(),
         "the back row restates the size the shared rule already gives it"
     );
-    // The menu that holds the same three marks keeps its own smaller box, so removing the size above did not take that one with it.
+    // The menu that holds the same three marks keeps its own smaller box, which the rule above does not reach.
     assert!(
         rule_body(&css, ".crumb-menu-item .library-action-icon {").contains("width: 15px;"),
         "the crumb menu still overrides the shared icon box"
