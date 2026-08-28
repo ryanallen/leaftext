@@ -37,7 +37,9 @@ pub use assets::{
     LOCAL_ASSET_PROTOCOL,
 };
 mod format;
-pub use format::{all_document_extensions, is_supported_document_path, DocumentFormat};
+pub use format::{
+    all_document_extensions, is_supported_document_path, DocumentFormat, MARKDOWN_EXPORT_EXTENSIONS,
+};
 mod folder_tree;
 pub use folder_tree::{read_folder_listing, FolderCrumb, FolderListing};
 mod known_folders;

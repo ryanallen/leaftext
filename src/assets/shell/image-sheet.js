@@ -63,7 +63,7 @@ const PICTURE_EXPORTS = [
   { id: 'webp', endings: ['webp'], label: 'WebP', hint: 'The same picture, about half the file' },
   { id: 'jpg', endings: ['jpg', 'jpeg'], label: 'JPEG', hint: 'For anything that will not take a WebP' },
   { id: 'pdf', endings: ['pdf'], label: 'PDF', hint: 'The picture on a page of its own' },
-  // Every spelling `src/format.rs` names for Markdown, written out because the browser host injects no format list at all.
+  // Every spelling `src/format.rs` lets an export write, written out because the browser host injects no format list at all. Shorter than the endings the app opens: `.mdc` is a Cursor rule, and this window writes an ordinary document with no frontmatter.
   { id: 'md', endings: ['md', 'markdown', 'mdown'], label: 'Markdown', hint: 'A document with the picture in an imgs folder beside it' },
 ];
 

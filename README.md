@@ -256,7 +256,7 @@ If a small box says **the system administrator has set policies to prevent this 
 
 ### Opening files with it
 
-Installing registers Leaftext for every extension it reads — `.md`, `.markdown`, `.mdown`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, `.mhtml` — so those files carry the leaf icon. An extension another app already owns keeps its app until you say otherwise. **[File associations →](docs/02-installation.md#file-associations)**
+Installing registers Leaftext for every extension it reads — `.md`, `.markdown`, `.mdown`, `.mdc`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, `.mhtml` — so those files carry the leaf icon. An extension another app already owns keeps its app until you say otherwise. **[File associations →](docs/02-installation.md#file-associations)**
 
 ## Learn it
 

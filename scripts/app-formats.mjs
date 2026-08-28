@@ -49,6 +49,16 @@ export function documentExtensions(source, variant) {
   return row ? row[1] : null;
 }
 
+/** The spellings a named `&[&str]` constant in `src/format.rs` holds — `MARKDOWN_EXPORT_EXTENSIONS`, the endings an export may write, which is a shorter list than Markdown reads. Throws, naming the constant, rather than answering with less than it holds. */
+export function namedExtensions(source, name) {
+  const written = new RegExp(`const ${name}: &\\[&str\\] = &\\[([^\\]]*)\\]`).exec(source);
+  if (!written) throw new Error(`could not find \`${name}\` in src/format.rs`);
+  const spellings = [...written[1].matchAll(/"([^"]*)"/g)].map((one) => one[1]);
+  if (!spellings.length) throw new Error(`\`${name}\` names no extension`);
+  if (spellings.some((one) => !one)) throw new Error(`\`${name}\` holds an empty extension`);
+  return spellings;
+}
+
 /** Every extension the app reads, in format order, off `src/format.rs`. */
 export function appExtensions(root) {
   return documentRows(readFileSync(join(root, 'src/format.rs'), 'utf8')).flatMap(([, spellings]) => spellings);
@@ -77,6 +87,11 @@ impl DocumentFormat {
 }
 `;
 
+const WELL_FORMED_EXPORTS = `
+// The endings an export may write, which is not every ending the app reads.
+pub const MARKDOWN_EXPORT_EXTENSIONS: &[&str] = &["md", "markdown"];
+${WELL_FORMED}`;
+
 const spell = (rows) => rows.map(([variant, endings]) => `${variant}(${endings.join(' ')})`).join(' ');
 
 /// What the reader has to answer and what it has to refuse, on made-up tables rather than on the tree's — a reader proved only against the file it reads passes on the day that file moves. A row is `[name, source, want]` for an answer spelled out, and `[name, source, words, 'refuses']` for a refusal that has to carry those words.
@@ -93,9 +108,29 @@ const CASES = [
   ['a file with no extensions function', WELL_FORMED.replace('fn extensions(self)', 'fn endings(self)'), 'could not find `fn extensions(self)`', 'refuses'],
 ];
 
+/// The same, for the named constant beside the table. A row is `[name, source, want]` for an answer spelled out, and `[name, source, words, 'refuses']` for a refusal that has to carry those words.
+const NAMED_CASES = [
+  ['a well-formed constant, with a comment above it naming no ending', WELL_FORMED_EXPORTS, 'md markdown'],
+  ['a constant that is not there at all', WELL_FORMED, 'could not find `MARKDOWN_EXPORT_EXTENSIONS`', 'refuses'],
+  ['a constant naming no ending', WELL_FORMED_EXPORTS.replace('&["md", "markdown"]', '&[]'), 'names no extension', 'refuses'],
+  ['a constant holding an empty ending', WELL_FORMED_EXPORTS.replace('&["md", "markdown"]', '&["md", ""]'), 'holds an empty extension', 'refuses'],
+];
+
 /** What is wrong with the reader, on the made-up tables above. Empty when every one of them is answered or refused the way it has to be. */
 export function selfTest() {
   const failed = [];
+  for (const [name, source, want, how] of NAMED_CASES) {
+    const refusal = how === 'refuses';
+    let got;
+    try {
+      got = namedExtensions(source, 'MARKDOWN_EXPORT_EXTENSIONS').join(' ');
+      if (refusal) failed.push(`${name}: answered ${got} where it had to refuse, naming ${JSON.stringify(want)}`);
+      else if (got !== want) failed.push(`${name}: answered ${got}, wanted ${want}`);
+    } catch (error) {
+      if (!refusal) failed.push(`${name}: refused with ${JSON.stringify(error.message)} where it had to answer ${want}`);
+      else if (!error.message.includes(want)) failed.push(`${name}: refused with ${JSON.stringify(error.message)}, which does not name ${JSON.stringify(want)}`);
+    }
+  }
   for (const [name, source, want, how] of CASES) {
     const refusal = how === 'refuses';
     let got;
@@ -120,5 +155,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === join(process.argv[1]))
   }
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
   const rows = documentRows(readFileSync(join(root, 'src/format.rs'), 'utf8'));
-  console.log(`app formats: ok (${CASES.length} made-up tables answered or refused, and src/format.rs reads as ${spell(rows)})`);
+  const source = readFileSync(join(root, 'src/format.rs'), 'utf8');
+  const exports = namedExtensions(source, 'MARKDOWN_EXPORT_EXTENSIONS');
+  console.log(`app formats: ok (${CASES.length + NAMED_CASES.length} made-up tables answered or refused, src/format.rs reads as ${spell(rows)}, and an export may write ${exports.join(' ')})`);
 }

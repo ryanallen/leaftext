@@ -507,8 +507,8 @@ flowchart TD
   A --> B
 ```
 ";
-    // Every spelling `src/format.rs` names for Markdown, not just the one the page sends: the row permits them all, so any of them reaching here has to write the text rather than fall through to nothing.
-    for spelling in DocumentFormat::Markdown.extensions() {
+    // Every spelling `src/format.rs` lets an export write, not just the one the page sends: the row permits them all, so any of them reaching here has to write the text rather than fall through to nothing.
+    for spelling in MARKDOWN_EXPORT_EXTENSIONS {
         assert_eq!(
             written(spelling, text, 0, 0),
             Some(text.as_bytes().to_vec()),
@@ -565,7 +565,7 @@ flowchart TD
     assert_eq!(
         DIAGRAM_EXPORT_FORMATS,
         &[
-            ("Markdown", DocumentFormat::Markdown.extensions()),
+            ("Markdown", MARKDOWN_EXPORT_EXTENSIONS),
             ("PNG image", &["png"][..]),
             ("WebP image", &["webp"][..]),
             ("PDF document", &["pdf"][..]),
@@ -584,6 +584,19 @@ flowchart TD
             );
         }
     }
+
+    // `.mdc` is a Cursor rule: the app opens one, and this window writes an ordinary document with no frontmatter, so it is not a name anything here may come out under.
+    assert!(
+        !MARKDOWN_EXPORT_EXTENSIONS.contains(&"mdc"),
+        "an export offers .mdc, which names a Cursor rule over a file that is not one"
+    );
+    assert!(
+        matches!(
+            diagram_export_file("mdc", text, 0, 0),
+            DiagramExportFile::Unoffered
+        ),
+        "a diagram saved as .mdc wrote a Cursor rule the reader never asked for"
+    );
 }
 
 /// A save window opens with rows and a suggested name, and the window itself cannot be reached from here — so this is the whole of what is decided before one opens.
@@ -613,13 +626,13 @@ fn save_window_offers_one_format_once_the_reader_has_picked_one() {
         "the reader picked WebP and the name still says something else"
     );
 
-    // Every spelling of Markdown names the row, asked of the shipped table rather than one written here, and the name still comes out under the canonical one — the ending the panel appends is the first permitted type, not whatever was asked with.
-    for spelling in DocumentFormat::Markdown.extensions() {
+    // Every spelling an export may write names the row, asked of the shipped table rather than one written here, and the name still comes out under the canonical one — the ending the panel appends is the first permitted type, not whatever was asked with.
+    for spelling in MARKDOWN_EXPORT_EXTENSIONS {
         for asked in [spelling.to_string(), spelling.to_ascii_uppercase()] {
             let spelled = save_window_offer(DIAGRAM_EXPORT_FORMATS, Some(&asked), "Untitled");
             assert_eq!(
                 spelled.filters,
-                vec![("Markdown", DocumentFormat::Markdown.extensions())],
+                vec![("Markdown", MARKDOWN_EXPORT_EXTENSIONS)],
                 "a Mac panel asked with {asked} was left more than the one row the reader picked"
             );
             assert_eq!(
@@ -1321,7 +1334,7 @@ fn the_picture_save_window_leads_with_png_and_offers_what_the_host_writes() {
             ("WebP image", &["webp"][..]),
             ("JPEG image", &["jpg", "jpeg"][..]),
             ("PDF document", &["pdf"][..]),
-            ("Markdown", DocumentFormat::Markdown.extensions()),
+            ("Markdown", MARKDOWN_EXPORT_EXTENSIONS),
         ],
         "the picture window offers a format the host does not write, or lists them in an order that names a bare file wrongly"
     );
@@ -1476,7 +1489,15 @@ fn a_picture_export_never_writes_a_pdf_or_a_format_the_window_never_offered() {
     let source = dir.join("shot.png");
     std::fs::write(&source, b"the picture's own bytes").expect("the picture is written");
 
-    for ending in ["pdf", "gif", "svg", "html", ""] {
+    // `.mdc` beside the rest: the app opens a Cursor rule, and this window writes no frontmatter, so it is offered under neither table.
+    for (_, endings) in PICTURE_EXPORT_FORMATS {
+        assert!(
+            !endings.contains(&"mdc"),
+            "the picture window offers .mdc, which names a Cursor rule over a file that is not one"
+        );
+    }
+
+    for ending in ["pdf", "gif", "svg", "html", "mdc", ""] {
         let target = dir.join(format!("out.{ending}"));
         export_picture(None, ending, &source, &target, "", "");
         assert!(

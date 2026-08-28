@@ -1185,9 +1185,9 @@ pub(super) enum DiagramExportFile {
 
 /// Every format a diagram can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first, so the order is load-bearing. `diagram_export_file` below reads the same table, which is why a format lives here and nowhere else — the PDF included, which is printed rather than encoded and answers `Printed` there.
 ///
-/// Markdown asks `src/format.rs` for its spellings instead of naming one, so this window writes every ending the app opens. The pictures are not formats it knows, so they stay written out.
+/// Markdown asks `src/format.rs` for the spellings an export may write instead of naming them here. That is a shorter list than the app reads: `.mdc` opens as Markdown and is never written as one. The pictures are not formats it knows, so they stay written out.
 pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &[&str])] = &[
-    ("Markdown", DocumentFormat::Markdown.extensions()),
+    ("Markdown", MARKDOWN_EXPORT_EXTENSIONS),
     ("PNG image", &["png"]),
     ("WebP image", &["webp"]),
     ("PDF document", &["pdf"]),
@@ -1196,7 +1196,7 @@ pub(crate) const DIAGRAM_EXPORT_FORMATS: &[(&str, &[&str])] = &[
 
 /// Every format a picture in a document can be written as: the words the save window shows, and the endings they name. Windows names a file with no ending off the first row, so PNG leads — a reader pressing Export on a picture wants a picture. The diagram's own table leads with Markdown, which makes this order a deliberate difference rather than a copy.
 ///
-/// Markdown asks `src/format.rs` for its spellings the way the diagram table does, so this window writes every ending the app opens. The pictures are not formats it knows, so they stay written out.
+/// Markdown asks `src/format.rs` for the spellings an export may write the way the diagram table does, which is a shorter list than the app reads. The pictures are not formats it knows, so they stay written out.
 ///
 /// The three pictures run together, JPEG under the two it is measured against: it is never the smaller file — the closest it comes to WebP is 1.4 times on a screenshot — so what its row wins is reach into a tool that takes a `.jpg` and nothing else.
 pub(crate) const PICTURE_EXPORT_FORMATS: &[(&str, &[&str])] = &[
@@ -1204,7 +1204,7 @@ pub(crate) const PICTURE_EXPORT_FORMATS: &[(&str, &[&str])] = &[
     ("WebP image", &["webp"]),
     ("JPEG image", &["jpg", "jpeg"]),
     ("PDF document", &["pdf"]),
-    ("Markdown", DocumentFormat::Markdown.extensions()),
+    ("Markdown", MARKDOWN_EXPORT_EXTENSIONS),
 ];
 
 /// The folder a Markdown picture export puts the picture in, beside the document it writes.
@@ -1313,8 +1313,8 @@ pub(super) fn diagram_export_file(
     if diagram_export_label(format).is_none() {
         return DiagramExportFile::Unoffered;
     }
-    // Every spelling of Markdown, asked of the one table: the row permits them all, so an arm naming one drops the rest through to a file nobody wrote and nothing said.
-    if DocumentFormat::Markdown.extensions().contains(&format) {
+    // Every spelling this window offers, asked of the one table: the row permits them all, so an arm naming one drops the rest through to a file nobody wrote and nothing said.
+    if MARKDOWN_EXPORT_EXTENSIONS.contains(&format) {
         return DiagramExportFile::Write(data.as_bytes().to_vec());
     }
     let bytes = match format {
@@ -1559,8 +1559,8 @@ pub(crate) fn export_picture(
     if picture_export_label(format).is_none() {
         return;
     }
-    // Every spelling of Markdown, asked of the one table: the row permits them all, so an arm naming one drops the rest through to a file nobody wrote and nothing said.
-    if DocumentFormat::Markdown.extensions().contains(&format) {
+    // Every spelling this window offers, asked of the one table: the row permits them all, so an arm naming one drops the rest through to a file nobody wrote and nothing said.
+    if MARKDOWN_EXPORT_EXTENSIONS.contains(&format) {
         export_picture_markdown(webview, target, source, alt);
         return;
     }

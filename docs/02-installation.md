@@ -131,7 +131,7 @@ The data folders are independent of where the app is installed, so reinstalling 
 
 ![A file in Explorer showing the green leaf icon, with the Open with menu expanded and Leaftext listed in it](../imgs/file-associations.png)
 
-Installing registers Leaftext as a handler for every extension it reads — `.md`, `.markdown`, `.mdown`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, and `.mhtml` — so those files carry the leaf icon and appear under **Open with**. On Windows the entries are per-user (`HKCU`), like the install itself.
+Installing registers Leaftext as a handler for every extension it reads — `.md`, `.markdown`, `.mdown`, `.mdc`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, and `.mhtml` — so those files carry the leaf icon and appear under **Open with**. On Windows the entries are per-user (`HKCU`), like the install itself.
 
 An extension no app has claimed opens in Leaftext on its own. One that already has a default app keeps it — neither installer overrides a choice you or another app made, so `.json` stays with your editor and `.eml` with your mail app until you say otherwise. To switch:
 

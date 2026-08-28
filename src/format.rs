@@ -24,7 +24,8 @@ impl DocumentFormat {
     /// `const` so a const table can take its endings from here rather than restating them.
     pub const fn extensions(self) -> &'static [&'static str] {
         match self {
-            Self::Markdown => &["md", "markdown", "mdown"],
+            // `.mdc` is Cursor's project rule: Markdown with a frontmatter block, which this reader already draws. It is readable but not writable — `MARKDOWN_EXPORT_EXTENSIONS` below is what an export offers.
+            Self::Markdown => &["md", "markdown", "mdown", "mdc"],
             Self::Xml => &["xml"],
             Self::Json => &["json"],
             Self::Yaml => &["yaml", "yml"],
@@ -76,6 +77,9 @@ impl DocumentFormat {
         }
     }
 }
+
+/// The Markdown endings an export may write, which is not every ending the app reads. A diagram or a picture exported as Markdown writes an ordinary document with no frontmatter, so offering `.mdc` there would name a Cursor rule over a file that is not one. Readable spellings are [`DocumentFormat::extensions`] above; both lists stay in this file so neither becomes a second table.
+pub const MARKDOWN_EXPORT_EXTENSIONS: &[&str] = &["md", "markdown", "mdown"];
 
 /// Every readable extension, in format order. The file dialog's combined filter and anything else that needs the flat list.
 pub fn all_document_extensions() -> Vec<&'static str> {

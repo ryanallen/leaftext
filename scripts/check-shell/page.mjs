@@ -1049,7 +1049,7 @@ export function runShell(source, extras = {}) {
     __leafVaults: { vaults: [], active: 0 },
     __leafVersion: '0.0.0',
     __leafUpdateAsset: '',
-    __leafDocumentExts: ['md', 'markdown', 'mdown', 'xml', 'json', 'yaml', 'yml', 'eml', 'mht', 'mhtml'],
+    __leafDocumentExts: ['md', 'markdown', 'mdown', 'mdc', 'xml', 'json', 'yaml', 'yml', 'eml', 'mht', 'mhtml'],
     __leafSettingsUnreadable: false,
     __leafUpdateFailed: null,
   };

@@ -100,7 +100,35 @@ fn a_folder_of_files_the_app_cannot_read_counts_them() {
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
 
-/// A link to a folder, made the way the platform lets an ordinary user make one: a junction on Windows, a symlink everywhere else.
+/// A link to a folder, made the way the platform lets an ordinary user make one: a junction on Windows, a symlink everywhere else. The folder pane is where a Cursor rule went missing: `.cursor/rules` is a folder of `.mdc` files, and every one of them was counted as a file the app cannot read. The pane asks the one readable table, so a rule is a row beside an ordinary note and nothing there is skipped.
+#[test]
+fn a_folder_of_cursor_rules_lists_them_beside_an_ordinary_note() {
+    let dir = tree_dir("cursor-rules");
+    let root = dir.join("project");
+    let rules = root.join(".cursor").join("rules");
+    // What Cursor writes: a frontmatter block over a Markdown body.
+    write(
+        &rules.join("style.mdc"),
+        "---\ndescription: House style\nalwaysApply: true\n---\n\n# Style\n\n- Short sentences.\n",
+    );
+    write(
+        &rules.join("tests.mdc"),
+        "---\nglobs: [\"**/*.rs\"]\n---\n\n# Tests\n",
+    );
+    write(&rules.join("README.md"), "# Rules\n");
+    // Still not a document, so the count is not simply switched off.
+    write(&rules.join("rules.lock"), "not a document");
+
+    let listing = read_folder_listing(Some(&root), &rules.to_string_lossy());
+    assert_eq!(names(&listing), vec!["README.md", "style.mdc", "tests.mdc"]);
+    assert_eq!(
+        listing.skipped_files, 1,
+        "a Cursor rule is a document the pane lists, and only the lock file is not"
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
 fn link_dir(link: &Path, target: &Path) {
     #[cfg(windows)]
     {

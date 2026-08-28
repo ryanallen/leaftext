@@ -13,7 +13,7 @@ const DIAGRAM_PNG_SCALE = 2;
 
 // The endings a diagram can be saved under. The save window is what offers them on Windows, so this is the page's copy of the same five the host lists in `DIAGRAM_EXPORT_FORMATS` — held here to draw the menu a Mac gets instead, to read the reader's chosen ending back, and to name them in the message when it is none of them. A row may permit more than one spelling; the first is what a file typed without an ending is named off.
 const DIAGRAM_EXPORTS = [
-  // Every spelling `src/format.rs` names for Markdown, written out because the browser host injects no format list at all and a derived row there would permit nothing. A test holds this line to that table.
+  // Every spelling `src/format.rs` lets an export write, written out because the browser host injects no format list at all and a derived row there would permit nothing. Shorter than the endings the app opens: `.mdc` is a Cursor rule, and this window writes an ordinary document with no frontmatter. A test holds this line to `MARKDOWN_EXPORT_EXTENSIONS`.
   { id: 'md', endings: ['md', 'markdown', 'mdown'], label: 'Markdown', hint: 'The mermaid text, in a document of its own' },
   { id: 'png', endings: ['png'], label: 'PNG', hint: 'The drawing as a picture, to paste anywhere' },
   { id: 'webp', endings: ['webp'], label: 'WebP', hint: 'The same picture, about half the file' },

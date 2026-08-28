@@ -20,7 +20,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { documentExtensions, documentRows as readDocumentRows } from './app-formats.mjs';
+import { documentExtensions, documentRows as readDocumentRows, namedExtensions } from './app-formats.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
@@ -89,7 +89,7 @@ const LISTS = [
     source: 'src/format.rs',
     what: '`DocumentFormat::ALL`',
     rows: [
-      ['Markdown', ['md', 'markdown', 'mdown']],
+      ['Markdown', ['md', 'markdown', 'mdown', 'mdc']],
       ['Xml', ['xml']],
       ['Json', ['json']],
       ['Yaml', ['yaml', 'yml']],
@@ -123,7 +123,7 @@ const LISTS = [
   },
 ];
 
-/// One of the host's export tables, read out of `src/app/fileops.rs` by name. A row's endings are either written out or asked of `src/format.rs`.
+/// One of the host's export tables, read out of `src/app/fileops.rs` by name. A row's endings are either written out, asked of a format's own spellings, or asked of a named constant beside that table — which is how the export endings stay a shorter list than the app reads.
 export function hostRows(fileopsSource, formatSource, constant = 'DIAGRAM_EXPORT_FORMATS') {
   const table = fileopsSource.match(new RegExp(`const ${constant}[^=]*=\\s*&\\[([\\s\\S]*?)\\n\\];`));
   if (!table) return null;
@@ -133,6 +133,17 @@ export function hostRows(fileopsSource, formatSource, constant = 'DIAGRAM_EXPORT
     const written = endings.match(/^&\[([^\]]*)\]$/);
     if (written) {
       rows.push([label, [...written[1].matchAll(/"([^"]*)"/g)].map((m) => m[1])]);
+      continue;
+    }
+    const named = endings.match(/^([A-Z][A-Z0-9_]*)$/);
+    if (named) {
+      let spellings;
+      try {
+        spellings = namedExtensions(formatSource, named[1]);
+      } catch {
+        return null;
+      }
+      rows.push([label, spellings]);
       continue;
     }
     const asked = endings.match(/DocumentFormat::(\w+)\.extensions\(\)/);

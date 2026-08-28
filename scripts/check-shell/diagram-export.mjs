@@ -258,7 +258,29 @@ export function run() {
     }
   });
 
-  // Every spelling of Markdown the app opens is one this window writes: refusing `.markdown` in the sentence that offers Markdown reads as the app not knowing its own format.
+  // `.mdc` is a Cursor rule — Markdown the app opens, and a shape this window never writes, since what goes out under it is a mermaid fence and no field block. So the ending is refused rather than quietly writing a rule nobody asked for.
+  check('a name ending in mdc is refused, because a Cursor rule is not what this writes', () => {
+    const wasSend = booted.ipc.postMessage;
+    const wasToast = booted.leafToast;
+    const sent = [];
+    const said = [];
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.leafToast = (words) => said.push(words);
+    try {
+      const block = drawnDiagram('flowchart TD\n  C1 --> C2');
+      booted.addMermaidControls(block);
+      booted.openMermaidExportMenu(exportChipOn(block));
+      answerSaveWindow(sent, 'mdc');
+      if (sent.some((one) => one.command === 'exportDiagram')) throw new Error('a name ending in mdc wrote a Cursor rule the reader never asked for');
+      if (said.length !== 1) throw new Error(`it said ${said.join(' / ') || 'nothing'}`);
+      if (!/Markdown/.test(said[0])) throw new Error(`the refusal left the reader nowhere to go: ${said[0]}`);
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      booted.leafToast = wasToast;
+    }
+  });
+
+  // Every spelling of Markdown this window writes: refusing `.markdown` in the sentence that offers Markdown reads as the app not knowing its own format.
   check('a name ending in any spelling of Markdown is written, not refused', () => {
     for (const ending of ['md', 'markdown', 'mdown']) {
       const wasSend = booted.ipc.postMessage;

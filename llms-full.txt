@@ -10,7 +10,7 @@
 ## Rendering
 - Page: https://leaftext.com/docs/01-features/01-rendering.md
 - Markdown: https://leaftext.com/docs/01-features/01-rendering.md
-- Summary: Leaftext picks a pipeline from the file extension. Markdown (.md, .markdown, .mdown) is parsed in Rust with pulldown-cmark, run through a GitHub-like rendering pipeline, sanitized, and handed to th...
+- Summary: Leaftext picks a pipeline from the file extension. Markdown (.md, .markdown, .mdown, .mdc) is parsed in Rust with pulldown-cmark, run through a GitHub-like rendering pipeline, sanitized, and handed...
 
 ## Navigation
 - Page: https://leaftext.com/docs/01-features/02-navigation.md

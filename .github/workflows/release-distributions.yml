@@ -229,6 +229,7 @@ jobs:
                   <string>md</string>
                   <string>markdown</string>
                   <string>mdown</string>
+                  <string>mdc</string>
                 </array>
                 <key>LSItemContentTypes</key>
                 <array>

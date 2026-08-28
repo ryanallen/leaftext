@@ -36,7 +36,7 @@ pub const UNINSTALLER_RELATIVE_PATH: &str = "leaftext-setup.exe";
 
 /// Every extension the app reads, claimed in the same three registry shapes `wix/main.wxs` uses. `src/format.rs` is the source; `installer_claims_every_readable_extension` fails when this list falls behind it.
 pub const EXTENSIONS: &[&str] = &[
-    "md", "markdown", "mdown", "xml", "json", "yaml", "yml", "eml", "mht", "mhtml",
+    "md", "markdown", "mdown", "mdc", "xml", "json", "yaml", "yml", "eml", "mht", "mhtml",
 ];
 
 /// The only registry root anything here writes. A per-user install cannot write `HKLM` and does not need to, and one variant is what makes that provable rather than remembered.

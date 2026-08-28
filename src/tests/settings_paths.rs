@@ -739,6 +739,56 @@ fn installer_claims_every_readable_extension() {
     );
 }
 
+/// A Cursor project rule is a Markdown document with a frontmatter block, spelled `.mdc`. It reads as Markdown through every door an extension is asked at — the Windows Open window, the folder pane, links, the pager and the installers — which is the whole of what admitting it means. The one place it is not offered is a save window: `MARKDOWN_EXPORT_EXTENSIONS` is a shorter list, and `src/app/tests/export.rs` holds that end.
+#[test]
+fn a_cursor_rule_reads_as_markdown_wherever_an_extension_is_asked_about() {
+    // Both spellings, because an extension arrives from the filesystem as somebody typed it.
+    for name in [".cursor/rules/style.mdc", ".cursor/rules/STYLE.MDC"] {
+        assert_eq!(
+            DocumentFormat::for_path(Path::new(name)),
+            Some(DocumentFormat::Markdown),
+            "{name} is a Cursor rule and the app must open it as Markdown"
+        );
+        assert!(
+            is_supported_document_path(Path::new(name)),
+            "{name} is refused by the one answer every door asks"
+        );
+    }
+
+    // The Windows Open window's combined row is this flat list, so a spelling missing here cannot be picked in the dialog at all.
+    assert!(
+        all_document_extensions().contains(&"mdc"),
+        "the Open window's Documents row does not offer a Cursor rule"
+    );
+
+    // A rule sits in a folder of rules, so Prev/Next has to walk to the one beside it.
+    assert!(is_pager_page_extension("mdc"));
+    assert!(is_pager_page_extension("MDC"));
+    assert_eq!(pager_label("code-style.mdc"), "Code Style");
+
+    // Double-clicking one has to reach the app, which is three separate claims in three files that cannot read `format.rs` at install time.
+    let wxs = include_str!("../../wix/main.wxs");
+    for needle in [
+        r"Key='Software\Classes\.mdc'",
+        r"SupportedTypes' Name='.mdc'",
+        r"Capabilities\FileAssociations' Name='.mdc'",
+    ] {
+        assert!(
+            wxs.contains(needle),
+            "wix/main.wxs does not claim .mdc: missing {needle}"
+        );
+    }
+    assert!(
+        exe_installer_extensions().contains(&"mdc"),
+        "installer/src/plan.rs does not claim .mdc"
+    );
+    assert!(
+        include_str!("../../.github/workflows/release-distributions.yml")
+            .contains("<string>mdc</string>"),
+        "the macOS Info.plist does not carry .mdc under its Markdown document type"
+    );
+}
+
 /// An install somebody ran themselves ends with Leaftext open; an install the updater ran ends with nothing, because the updater reopens the app itself and a scripted or managed install must start no program at all. In the MSI that whole rule is one condition on one action, so the condition is what this reads — with the recipe's comments stripped first, so a sentence explaining the rule cannot stand in for the rule.
 #[test]
 fn the_msi_opens_the_app_only_for_somebody_who_ran_the_install() {
