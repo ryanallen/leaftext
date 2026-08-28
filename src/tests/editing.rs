@@ -325,7 +325,7 @@ fn the_reading_view_has_no_gutter_line_numbers() {
         );
     }
 
-    // What the numbers were nice for survives: the line above the pane's headings still reports how long the document is. Counted rather than stamped onto every block.
+    // How long the document is, is reported by the line above the pane's headings. Counted rather than stamped onto every block.
     assert!(html.contains("function documentLineCount(body)"));
     assert!(html.contains("const DOCUMENT_LINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
     assert!(html.contains("${formatCount(openDocumentLineCount())} lines"));

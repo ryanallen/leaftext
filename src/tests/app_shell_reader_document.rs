@@ -271,7 +271,7 @@ fn app_shell_draws_the_documents_headings_in_the_library_pane() {
         "libraryOutlineFrame = window.requestAnimationFrame(() => {",
     );
 
-    // Nothing is drawn between a title and its first sentence any more: the box, its lazy populate and its summary are gone.
+    // Nothing is drawn between a title and its first sentence: no box, no lazy populate, no summary.
     for absent in [
         "buildDocumentOutline",
         "populateDocumentOutline",

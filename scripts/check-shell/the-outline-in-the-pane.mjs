@@ -208,7 +208,7 @@ export function run() {
 
   // ---- 4. the box comes out of the page -------------------------------------
   //
-  // The document keeps its headings and loses the control that used to sit between its title and its first sentence.
+  // The document keeps its headings, and nothing is drawn between its title and its first sentence.
 
   check('a rendered document holds no outline, and its blocks still slice back out of the source', () => {
     const src = '# Title\n\nAn opening line.\n\n## One\n\nFirst.\n';

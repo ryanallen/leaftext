@@ -236,7 +236,7 @@ Apple's paid check that lets macOS vouch for an app. Leaftext is free and not en
 
 ## Outline
 
-The collapsed table of contents under a document's title, built from its headings and labeled with the document's line count. Click it to expand; click an entry to jump. It is the document's structure as text, where the [minimap](GLOSSARY.md#minimap) is a picture of it.
+The open document's headings, listed in the [library pane](GLOSSARY.md#library-pane) in place of the file list, indented by level and labeled with the document's line count. The heading you are reading is lit; click a row to jump to it. It is the document's structure as text, where the [minimap](GLOSSARY.md#minimap) is a picture of it.
 
 ## Overflow menu
 

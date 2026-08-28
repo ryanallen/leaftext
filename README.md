@@ -2,7 +2,7 @@
 
 **Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
 
-![The Leaftext window with a Markdown document open: the library pane at left, the rendered page in the middle with its outline collapsed under the title, and the minimap rail down the right edge](imgs/leaftext.png)
+![The Leaftext window with a Markdown document open: the library pane at left holding the document's headings, the rendered page in the middle, and the minimap rail down the right edge](imgs/leaftext.png)
 
 {{{icon:windows[Download for Windows](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)}}} {{{icon:apple[Download for macOS](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)}}}
 
@@ -151,7 +151,7 @@ A vault can be a git repository that pushes to GitHub. Leaftext never holds a to
 
 ![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
 
-It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) at the top of every document, and Ctrl-click on a link to [open it behind](docs/01-features/02-navigation.md#opening-a-link-in-a-new-page) the page you are reading. Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
+It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) of the open document in the pane beside it, and Ctrl-click on a link to [open it behind](docs/01-features/02-navigation.md#opening-a-link-in-a-new-page) the page you are reading. Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
 
 ### Take in the whole page at once
 

@@ -43,7 +43,7 @@ flowchart LR
 
 ## 2. Know what you are looking at
 
-![The whole Leaftext window at once: the app bar with its tab strip across the top, the library pane at left, the rendered page with its collapsed outline in the middle, the minimap rail at right, and the floating toolbar over the foot of the page](../imgs/ui-tour.png)
+![The whole Leaftext window at once: the app bar with its tab strip across the top, the library pane at left holding the document's headings, the rendered page in the middle, the minimap rail at right, and the floating toolbar over the foot of the page](../imgs/ui-tour.png)
 
 ### The app bar, across the top
 
@@ -60,7 +60,7 @@ flowchart LR
 | Area | What it does |
 | --- | --- |
 | Main reader | Shows the rendered Markdown, [XML](01-features/01-rendering.md#xml), [JSON/YAML](01-features/01-rendering.md#data-files-json-and-yaml), or [email](01-features/01-rendering.md#email-eml) |
-| Outline | A collapsed list of the document's headings at the top, labeled with the document's line count, for jumping to a section |
+| Outline | The document's headings in the library pane, labeled with the document's line count, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
 | Pager | Previous / Next at the foot, where a folder is joined by `README.md` files |
 

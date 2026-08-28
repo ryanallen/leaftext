@@ -127,7 +127,7 @@ for (const [what, args] of [
   if (dryProbe(args).ok) problems.push(`the motion probe accepted a run with ${what}`);
 }
 
-// The half of the motion probe that lives past its dry run: reading one wrapper result. The reply is on the output stream and the note saying which copy answered is on the error stream, and joining them turned every answer from a copy `just probe-copy` launched into unreadable text — a valid reply with an English sentence after it is not JSON, so the probe stopped before its first frame and printed both pieces as though the app had answered badly. The reader the command really uses is imported rather than driven through the command, because the command needs a copy of the app up and this is the seam that does not.
+// The half of the motion probe that lives past its dry run: reading one wrapper result. The reply is on the output stream and the note saying which copy answered is on the error stream, and joining them makes unreadable text of every answer a copy `just probe-copy` launched, because a valid reply with an English sentence after it is not JSON. The reader the command really uses is imported rather than driven through the command, because the command needs a copy of the app up and this is the seam that does not.
 const NOTE = "answered by the probe copy launched under leaftext-probe-default, not by the one running as someone — 'just probe-close' hands it back";
 const READER = [
   [

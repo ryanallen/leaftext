@@ -2,7 +2,7 @@
 
 > Refine your mind. Your thoughts, secure and free — a free desktop app for reading and writing your own documents, on your own machine.
 
-![The Leaftext window with a Markdown document open: the library pane at left, the rendered page in the middle with its outline collapsed under the title, and the minimap rail down the right edge](../imgs/leaftext.png)
+![The Leaftext window with a Markdown document open: the library pane at left holding the document's headings, the rendered page in the middle, and the minimap rail down the right edge](../imgs/leaftext.png)
 
 Leaftext turns the files you already have into pages you actually want to read. Open a Markdown, [XML](01-features/01-rendering.md#xml), [JSON, or YAML](01-features/01-rendering.md#data-files-json-and-yaml) document — or a [saved email](01-features/01-rendering.md#email-eml) — on macOS or Windows and it renders clean and calm. Keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When something needs changing, [click into the sentence and type](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — then [save](01-features/07-editing.md#save) when you're ready.
 
@@ -37,7 +37,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 ### Move around
 
 - Keep several documents open at once in [tabs](01-features/02-navigation.md#tabs).
-- Jump to any section from the [outline](01-features/02-navigation.md#outline) at the top of each document, or from the [minimap](01-features/04-minimap.md) rail beside it.
+- Jump to any section from the [outline](01-features/02-navigation.md#outline) in the pane beside the document, or from the [minimap](01-features/04-minimap.md) rail on its other side.
 - Move [back and forward](01-features/02-navigation.md#history) through documents and in-page jumps, like a browser.
 - Read a folder in order with the [pager](01-features/02-navigation.md#pager) at the foot of each page.
 - Hover a link for a [hint](01-features/02-navigation.md#link-hints) saying what kind it is, where it goes, and how long that document is — and over a [glossary](01-features/02-navigation.md#glossary) term, the entry itself, so the word is read without leaving the sentence.

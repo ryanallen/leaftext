@@ -10,7 +10,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | --- | --- |
 | [Tabs](#tabs) | Open multiple documents at once |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
-| [Outline](#outline) | A collapsed table of contents, built from the document's headings, at the top of each page, labeled with the document's line count |
+| [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with the document's line count |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you leave sliding out the way you came |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it — or stays drawn the whole time, where your machine is set to always show scrollbars |
@@ -246,15 +246,16 @@ In the rendered view a replace is written to the file's source, not to the page.
 
 ### Outline
 
-![A document's Outline row just under its title, reading Outline (117 lines), expanded below into a nested bulleted list of the document's headings](../../imgs/outline.png)
+![The library pane holding the open document's headings: the back row naming its folder, an On this page line with the document's length at its right, and the heading rows indented by level with the one being read lit](../../imgs/outline.png)
 
-Every document opens with an **Outline** — a table of contents built automatically from the document's headings — tucked just under the title. It starts collapsed, so it never crowds the top of the page; click it to expand.
+Open a document and the [library pane](03-library.md) swaps its file list for that document's **Outline** — its headings, in order, indented by level, with the one you are reading lit. The lit row moves as you scroll, so the pane says where you are as well as what is there.
 
-- The collapsed header shows the document's total length — **Outline (312 lines)** — counting the body blocks: paragraphs, headings, list items, quotes, code blocks, tables. The outline's own entries are navigation rather than body, so they don't count, and neither do footnote definitions.
-- Entries nest as a bulleted list that mirrors the heading levels, so the shape of the document is visible at a glance.
-- Each entry links to its heading, so clicking one jumps straight there.
+- Above the list, a back row wearing the folder's name puts the files back.
+- Under it, **On this page** names the list, with the document's total length at its right — **312 lines** — counting the body blocks: paragraphs, headings, list items, quotes, code blocks, tables. Footnote definitions are not body, so they do not count.
+- Clicking a row jumps to that heading, and the jump joins scroll history, so Back returns to where you were reading.
+- Typing in the pane's [search box](03-library.md#search) replaces the outline with the results; clearing the box brings it back.
 - It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), [JSON or YAML](01-rendering.md#data-files-json-and-yaml), and [email](01-rendering.md#email-eml).
-- It appears whenever a document has a title plus at least one more heading; a document with only a title shows none.
+- It appears whenever a document has a title plus at least one more heading; a document with only a title leaves the file list showing.
 
 The outline lists the sections within the current document, which makes it a companion to the [minimap](04-minimap.md): the outline is the document's structure as clickable text, the minimap a scaled picture of the whole page.
 

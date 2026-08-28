@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Reading one wrapper result: the app's reply and the note beside it, kept apart.
 //
-// `scripts/mcp-leaftext.mjs --ask` reserves the output stream for the reply because that is what MCP reads, and says which copy answered on the error stream — so a build that launched its own copy with `just probe-copy` is told which window it is talking to. Joining the two before parsing turns every one of those answers into unreadable text: a valid reply plus one English sentence is not JSON, so the motion probe stopped before its first frame and printed both pieces as though the app had answered badly. That is the whole of the fault this file exists to remove.
+// `scripts/mcp-leaftext.mjs --ask` reserves the output stream for the reply because that is what MCP reads, and says which copy answered on the error stream — so a build that launched its own copy with `just probe-copy` is told which window it is talking to. Joining the two before parsing turns every one of those answers into unreadable text, because a valid reply with an English sentence after it is not JSON.
 //
 // A pure function rather than a few lines inside the probe, because the probe needs a running copy and this is the half that can be read back with no app open at all — `scripts/check-driver.mjs` calls it directly, so the gate proves the parser the command really uses rather than a second copy of it.
 

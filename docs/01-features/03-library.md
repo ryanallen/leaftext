@@ -14,6 +14,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button |
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out; going in and coming back out slide opposite ways |
+| [The open document's headings](#the-open-documents-headings) | Open a document and the pane holds its outline instead of the files, with the heading you are reading lit; a back row puts the files back |
 | [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault |
 | [Skipped folders](#skipped-folders) | A folder a machine filled — build output, a package cache — is listed and openable, and not read or watched. The search line says when one was left out |
@@ -90,6 +91,15 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 - The folder you are in is saved, so a restart reopens it. If the folder has gone, the pane falls back to the top of the vault.
 
 Each call reads exactly one directory, so nothing below what you opened is ever touched.
+
+### The open document's headings
+
+Opening a document swaps the file list for that document's [outline](02-navigation.md#outline) — its headings, in order, indented by level, with the one you are reading lit as you scroll. Clicking a row jumps to that heading.
+
+- A back row above the list wears the folder's name and puts the files back, the same way the row above a folder listing steps out of it.
+- Under that row, **On this page** names the list and the document's length sits at its right.
+- Typing in the [search box](#search) replaces the outline with the results; clearing the box brings it back.
+- A document with only a title, or none, has no outline, so the files stay where they are.
 
 ### File types
 
