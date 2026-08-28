@@ -705,6 +705,26 @@ export function run() {
     if (holder.querySelectorAll('[data-block-kind]').length !== 2) throw new Error('a bare data- attribute name stopped answering for one value');
   });
 
+  check('an id names its own element, alone and beside a tag or a class', () => {
+    const holder = fakeElement('id-selectors');
+    holder.innerHTML = '<p id="copy-row" class="block">first</p><div id="findBar"><span class="child">inner</span></div>';
+    const [row, bar] = holder.children;
+    if (holder.querySelector('#copy-row') !== row) throw new Error('an element was not found by its id alone');
+    if (holder.querySelector('p#copy-row') !== row) throw new Error('a tag and an id together did not find their element');
+    if (holder.querySelector('#copy-row.block') !== row) throw new Error('an id beside a class did not find their element');
+    if (holder.querySelector('#copy-row.no-such-class') !== null) throw new Error('an id found an element wearing another class');
+    if (holder.querySelector('div#copy-row') !== null) throw new Error('an id found an element of another tag');
+    if (holder.querySelector('#noSuchId') !== null) throw new Error('an id nothing wears found something');
+    if (holder.querySelectorAll('#copy-row').length !== 1) throw new Error('the list query missed the one element wearing the id');
+    if (holder.querySelectorAll('#noSuchId').length) throw new Error('the list query answered for an id nothing wears');
+    // The four queries stand on the one matcher, so a walk up and an element asked about itself have to say the same thing.
+    const inner = bar.children[0];
+    if (inner.closest('#findBar') !== bar) throw new Error('the walk up did not answer an id');
+    if (inner.closest('#copy-row') !== null) throw new Error('the walk up answered an id no holder wears');
+    if (!row.matches('#copy-row') || !row.matches('p#copy-row')) throw new Error('an element asked about its own id said no');
+    if (row.matches('#findBar')) throw new Error('an element answered an id it does not wear');
+  });
+
   check('a drawn diagram is refused by the selector for an undrawn diagram', () => {
     const holder = fakeElement('diagram-state');
     holder.innerHTML = '<pre class="mermaid" data-processed="true">drawn</pre><pre class="mermaid">waiting</pre>';

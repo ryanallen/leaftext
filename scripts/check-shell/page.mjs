@@ -78,13 +78,13 @@ export function selectorParts(selector) {
   return parts.map((one) => one.trim().replace(/\s+/g, ' ')).filter(Boolean);
 }
 
-/** One compound selector's own parts — a tag, a class, an attribute, a pseudo-class — each kept whole, so a bracket or the brackets of an `:is(...)` are never cut in half. */
+/** One compound selector's own parts — a tag, an id, a class, an attribute, a pseudo-class — each kept whole, so a bracket or the brackets of an `:is(...)` are never cut in half. */
 function compoundPieces(one) {
   const pieces = [];
   let depth = 0;
   let current = '';
   for (const ch of one) {
-    if (depth === 0 && current && (ch === '.' || ch === '[' || ch === ':')) {
+    if (depth === 0 && current && (ch === '.' || ch === '#' || ch === '[' || ch === ':')) {
       pieces.push(current);
       current = '';
     }
@@ -111,9 +111,10 @@ function attributeParts(piece, selector) {
   return { name, value };
 }
 
-/** Whether one node answers one piece of a compound. An attribute is asked for by name alone or compared with the value it carries. A tag is the whole piece, since everything that is not one has already been split off: comparing a tag to everything before the first space called a `pre` a `pre > code`. */
+/** Whether one node answers one piece of a compound. An id is asked of the element's own id, an attribute for by name alone or compared with the value it carries. A tag is the whole piece, since everything that is not one has already been split off: comparing a tag to everything before the first space called a `pre` a `pre > code`. */
 function matchesPiece(node, piece, selector, scope) {
   if (piece.startsWith('.')) return !!(node.classList && node.classList.contains(piece.slice(1)));
+  if (piece.startsWith('#')) return !!node.id && String(node.id) === piece.slice(1);
   if (piece.startsWith('[')) {
     const { name, value } = attributeParts(piece, selector);
     if (!name.startsWith('data-')) {
