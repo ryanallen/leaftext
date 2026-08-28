@@ -967,6 +967,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 } => window_cmds::resize(&reader, &mut resize_drag, &direction, &phase, x, y),
                 IpcCommand::WindowMinimize => window_cmds::minimize(&reader),
                 IpcCommand::WindowToggleMaximize => window_cmds::toggle_maximize(&reader),
+                IpcCommand::WindowToggleFullscreen => window_cmds::toggle_fullscreen(&reader),
                 IpcCommand::WindowClose => shut_down(
                     &mut reader,
                     &mut settings,

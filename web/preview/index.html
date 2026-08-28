@@ -103,7 +103,7 @@ function buildTree(container, entries, prefix = '') {
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'library-nav-folder';
-    toggle.innerHTML = `<span class="lt-icon lt-icon-folder library-folder-icon"></span><span class="library-file-label"></span>`;
+    toggle.innerHTML = `<span class="lt-icon lt-icon-folder"></span><span class="library-file-label"></span>`;
     toggle.querySelector('.library-file-label').textContent = name;
     const children = document.createElement('div');
     children.className = 'tree-children';

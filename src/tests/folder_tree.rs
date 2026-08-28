@@ -300,23 +300,45 @@ fn the_file_list_starts_with_a_way_back_out() {
             .contains("color: var(--lt-foreground);")
     );
 
-    // The pane sizes that arrow in one place. A second rule restating the size reads as an exception the pane does not make, so the back row's own arrow selector must open no rule at all.
-    let shared = rule_bodies(&css, ".library-folder-icon {");
+    // The arrow sits above the folder rows and takes the same box they do, so the shared icon rule is the only thing that sizes it. The action treatment it also wears carries the muted ink and nothing about size: a width or a height there is what made this row the odd one in the list.
+    let icon = rule_bodies(&css, ".lt-icon {");
+    assert_eq!(
+        icon.len(),
+        1,
+        "one rule sizes every icon, got {}",
+        icon.len()
+    );
+    for declaration in ["width: 16px;", "height: 16px;"] {
+        assert!(
+            icon[0].contains(declaration),
+            "the shared icon rule writes {declaration}"
+        );
+    }
+    let shared = rule_bodies(&css, ".library-action-icon {");
     assert_eq!(
         shared.len(),
         1,
-        "one rule sizes the arrow, got {}",
+        "one rule dresses the library actions, got {}",
         shared.len()
     );
-    for declaration in ["width: 14px;", "height: 14px;"] {
+    assert!(
+        shared[0].contains("color: var(--lt-muted-foreground);"),
+        "the action treatment carries the muted ink"
+    );
+    for property in ["width", "height"] {
         assert!(
-            shared[0].contains(declaration),
-            "the shared glyph rule writes {declaration}"
+            !shared[0].contains(property),
+            "the action treatment sizes nothing, so the arrow matches the folder marks under it"
         );
     }
     assert!(
-        rule_bodies(&css, ".library-nav-up .library-folder-icon {").is_empty(),
+        rule_bodies(&css, ".library-nav-up .library-action-icon {").is_empty(),
         "the back row restates the size the shared rule already gives it"
+    );
+    // The menu that holds the same three marks keeps its own smaller box, so removing the size above did not take that one with it.
+    assert!(
+        rule_body(&css, ".crumb-menu-item .library-action-icon {").contains("width: 15px;"),
+        "the crumb menu still overrides the shared icon box"
     );
 
     // It goes to the folder above, or to the root from one level in. There is nothing above the top, so no row there — leaving a vault is the switcher's job.

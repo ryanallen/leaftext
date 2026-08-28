@@ -783,7 +783,7 @@ body.library-resizing button {
   gap: var(--lt-space-6);
   font-weight: var(--lt-weight-500);
 }
-.crumb-menu-item .library-folder-icon {
+.crumb-menu-item .library-action-icon {
   flex: none;
   width: 15px;
   height: 15px;
@@ -850,20 +850,18 @@ body.library-resizing button {
   height: 14px;
   color: var(--lt-primary);
 }
-/* Folder glyph before folder names, dimmed to the muted tone so the name stays primary. The row is a flex box with its own gap, so it needs no margin. */
-.library-folder-icon {
+/* The mark on a library action — the way back out, New vault…, Remove vault — dimmed to the muted tone so the word stays primary. No size of its own: the back row sits among folder rows and takes the same icon box they do. */
+.library-action-icon {
   flex: none;
-  width: 14px;
-  height: 14px;
   color: var(--lt-muted-foreground);
 }
 /* The mark leans the way the row opens, on its own element so the label does not move: two pixels across a six-pixel gap. Below the leaf's own rule rather than above it, because the suite reads the leaf's color out of the first rule spelled `.library-file > .lt-icon` and this one would answer instead. */
 .library-file > .lt-icon,
-.library-nav-folder .library-folder-icon {
+.library-nav-folder .library-action-icon {
   transition: transform var(--lt-duration-120) var(--lt-ease);
 }
 .library-file:hover > .lt-icon,
-.library-nav-folder:hover .library-folder-icon {
+.library-nav-folder:hover .library-action-icon {
   transform: translateX(2px);
 }
 .library-file-label {

@@ -3047,10 +3047,6 @@ body.is-maximized #winMaximize .wc-restore {
   /* No mark at rest, the way a Mac's has none. The icon is still there, painted in nothing, so hover only has to change a color. */
   color: transparent;
 }
-/* Full screen: a Mac shows no window buttons there, so ours go too and the bar takes the room back. */
-body.mac-frame.is-fullscreen .window-controls {
-  display: none;
-}
 /* Apple's order, from markup that runs minimize, maximize, close: only the close has to move. */
 .mac-frame .window-control-close {
   order: -1;
@@ -4272,7 +4268,7 @@ body.library-resizing button {
   gap: var(--lt-space-6);
   font-weight: var(--lt-weight-500);
 }
-.crumb-menu-item .library-folder-icon {
+.crumb-menu-item .library-action-icon {
   flex: none;
   width: 15px;
   height: 15px;
@@ -4339,20 +4335,18 @@ body.library-resizing button {
   height: 14px;
   color: var(--lt-primary);
 }
-/* Folder glyph before folder names, dimmed to the muted tone so the name stays primary. The row is a flex box with its own gap, so it needs no margin. */
-.library-folder-icon {
+/* The mark on a library action — the way back out, New vault…, Remove vault — dimmed to the muted tone so the word stays primary. No size of its own: the back row sits among folder rows and takes the same icon box they do. */
+.library-action-icon {
   flex: none;
-  width: 14px;
-  height: 14px;
   color: var(--lt-muted-foreground);
 }
 /* The mark leans the way the row opens, on its own element so the label does not move: two pixels across a six-pixel gap. Below the leaf's own rule rather than above it, because the suite reads the leaf's color out of the first rule spelled `.library-file > .lt-icon` and this one would answer instead. */
 .library-file > .lt-icon,
-.library-nav-folder .library-folder-icon {
+.library-nav-folder .library-action-icon {
   transition: transform var(--lt-duration-120) var(--lt-ease);
 }
 .library-file:hover > .lt-icon,
-.library-nav-folder:hover .library-folder-icon {
+.library-nav-folder:hover .library-action-icon {
   transform: translateX(2px);
 }
 .library-file-label {
@@ -10038,11 +10032,11 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js</span></header>
-<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-folder-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon library-folder-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div></div></div>
+<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js</span></header>
-<div class="stage"><div class="library-pane" style="position:static;width:240px;height:280px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">4 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-1"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:280px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon library-action-icon lt-icon-back-long"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">4 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-1"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Library search</h3><code class="built">.library-search-clear</code><span class="built">app-shell.html, driven by library-search.js</span></header>

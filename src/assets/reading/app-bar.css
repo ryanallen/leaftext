@@ -452,10 +452,6 @@ body.is-maximized #winMaximize .wc-restore {
   /* No mark at rest, the way a Mac's has none. The icon is still there, painted in nothing, so hover only has to change a color. */
   color: transparent;
 }
-/* Full screen: a Mac shows no window buttons there, so ours go too and the bar takes the room back. */
-body.mac-frame.is-fullscreen .window-controls {
-  display: none;
-}
 /* Apple's order, from markup that runs minimize, maximize, close: only the close has to move. */
 .mac-frame .window-control-close {
   order: -1;

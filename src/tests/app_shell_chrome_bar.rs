@@ -430,15 +430,38 @@ fn both_shells_draw_their_own_three_window_buttons() {
         "const lead = window.__leafMacFrame && document.querySelector('.app-bar-lead');",
     );
 
-    // A full-screen Mac shows no window buttons, so ours go with them — but the Mac class stays on, because it says which shell this is and the dots keep their look and place underneath.
+    // A full-screen Mac keeps our three dots. Apple's own come back when the pointer reaches the top edge and ours cannot, so hiding ours leaves the green one as the way in and nothing as the way out.
     assert_contains(&html, "window.leafSetFullscreen = (fullscreen) => {");
     assert_contains(
         &html,
         "document.body.classList.toggle('is-fullscreen', !!fullscreen);",
     );
+    assert!(
+        !reading_mode_css().contains("body.mac-frame.is-fullscreen .window-controls"),
+        "full screen hides the dots again, so the green one enters and never leaves"
+    );
+    // What full screen does take is the frame the window is held off its own edge by: no shadow, no outer line, no rounded corner.
+    for rule in [
+        "body.mac-frame.is-fullscreen {\n  --app-shadow-top: 0px;",
+        "body.mac-frame.is-fullscreen .app-surface {\n  border: 0;\n  border-radius: 0;\n}",
+        "body.mac-frame.is-fullscreen::before {\n  content: none;\n}",
+    ] {
+        assert_contains(reading_mode_css(), rule);
+    }
+
+    // The green dot is full screen and Option-press is zoom, the way a Mac splits them; a Windows square is zoom either way.
     assert_contains(
-        reading_mode_css(),
-        "body.mac-frame.is-fullscreen .window-controls {\n  display: none;\n}",
+        &html,
+        "window.__leafMacFrame && !(event.altKey && !document.body.classList.contains('is-fullscreen'))",
+    );
+    // And the word on it follows whichever of the two states is this shell's.
+    assert_contains(
+        &html,
+        "leafWinMaxLabel(fullscreen ? 'Exit Full Screen' : 'Enter Full Screen')",
+    );
+    assert_contains(
+        &html,
+        "if (!window.__leafMacFrame) leafWinMaxLabel(maximized ? 'Restore' : 'Maximize');",
     );
 }
 

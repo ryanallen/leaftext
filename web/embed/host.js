@@ -58,6 +58,7 @@ export const COMMANDS = {
   windowDrag: [REFUSED, 'a frame inside a page has no window frame to drag'],
   windowMinimize: [REFUSED, 'a frame inside a page has no window to minimize'],
   windowToggleMaximize: [REFUSED, 'a frame inside a page has no window to maximize'],
+  windowToggleFullscreen: [REFUSED, 'a frame inside a page has no window to fill, and the product owns whatever full screen means around it'],
   windowClose: [REFUSED, 'the product closes the frame it mounted, and the page inside it never asks to go'],
   saveSessionPlace: [REFUSED, 'the product owns the mounted document and its saved session'],
   windowResizeDrag: [REFUSED, 'a frame inside a page has no window frame to resize, and an embed draws no shadow band to grab, so no phase of the drag is ever sent'],

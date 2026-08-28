@@ -323,6 +323,34 @@ fn full_screen_is_read_off_the_window_not_off_a_gesture() {
     );
 }
 
+/// The green dot's own command, which is not zoom: a Mac gives full screen a space of its own, and zoom only fills the room the menu bar and the Dock leave over.
+#[test]
+fn the_green_dot_asks_for_the_kind_of_full_screen_that_takes_a_space_of_its_own() {
+    use tao::window::Fullscreen;
+
+    assert_eq!(
+        fullscreen_after(false),
+        Some(Fullscreen::Borderless(None)),
+        "a windowed press goes to full screen on the monitor it is already on"
+    );
+    assert_eq!(
+        fullscreen_after(true),
+        None,
+        "and the next press is the way back out, or the dot enters and never leaves"
+    );
+
+    // The one thing about this no value can answer: the decision reaches a window library call, on a window no test can build.
+    let source = include_str!("../window_cmds.rs");
+    assert!(
+        source.contains("reader.window.set_fullscreen(fullscreen_after(fullscreen))"),
+        "the command reaches no window call, so the dot is pressed and nothing moves"
+    );
+    assert!(
+        !source.contains("set_simple_fullscreen"),
+        "the pre-Lion kind makes no space of its own, so swiping sideways would still do nothing"
+    );
+}
+
 /// The tail below the match persists the session and re-points the watcher, so it must run after anything an arm answered and after nothing else. Written as a skip list on purpose: an event this test does not name still reaches the tail, which is what keeps a new one from being dropped in silence. A drag is the gesture that made it matter — four of these a mouse move, each rebuilding the session from every open tab.
 #[test]
 fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {

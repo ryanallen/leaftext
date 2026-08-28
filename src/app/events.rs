@@ -315,6 +315,9 @@ pub(crate) enum IpcCommand {
     WindowMinimize,
     #[serde(rename = "windowToggleMaximize")]
     WindowToggleMaximize,
+    /// Native full screen, which is a different thing from zoom: a Mac gives it a space of its own, and zoom only fills the room the menu bar and the Dock leave over.
+    #[serde(rename = "windowToggleFullscreen")]
+    WindowToggleFullscreen,
     #[serde(rename = "windowClose")]
     WindowClose,
     /// The active view stopped moving, so its position can survive a native close.

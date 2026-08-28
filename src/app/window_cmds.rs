@@ -7,6 +7,7 @@
 //! The startup place below is read here for the same reason: it decides how the window is shown, and no other module owns the window.
 
 use super::*;
+use tao::window::Fullscreen;
 
 /// A monitor's rectangle in physical screen pixels — where it starts and how big it is. The same pixels a startup place is written in.
 #[cfg(windows)]
@@ -251,6 +252,21 @@ pub(crate) fn minimize(reader: &Reader) {
 pub(crate) fn toggle_maximize(reader: &Reader) {
     let maximized = reader.window.is_maximized();
     reader.window.set_maximized(!maximized);
+}
+
+/// What to ask the window for, given whether it is full screen now. Borderless on the monitor it is already on, which is the kind that takes a space of its own; the exclusive kind changes the display mode and is not what a reader means by full screen.
+pub(crate) fn fullscreen_after(fullscreen: bool) -> Option<Fullscreen> {
+    if fullscreen {
+        None
+    } else {
+        Some(Fullscreen::Borderless(None))
+    }
+}
+
+/// The window given a space of its own, or handed back to the desktop.
+pub(crate) fn toggle_fullscreen(reader: &Reader) {
+    let fullscreen = reader.window.fullscreen().is_some();
+    reader.window.set_fullscreen(fullscreen_after(fullscreen));
 }
 
 /// Where the tab in front was left, so coming back to it lands in the same place.

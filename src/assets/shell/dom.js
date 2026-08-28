@@ -474,11 +474,17 @@ if (window.__leafFrameless || window.__leafMacFrame) {
   }
   const winButton = (id, command) => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('click', () => send({ command }));
+    if (el) el.addEventListener('click', (event) => send({ command: typeof command === 'function' ? command(event) : command }));
   };
   winButton('winMinimize', 'windowMinimize');
-  winButton('winMaximize', 'windowToggleMaximize');
+  // The Mac split: the green dot is full screen, Option-press is zoom, and a full-screen press is always the way out, so Option cannot strand a reader in a space. The Windows square is zoom alone.
+  winButton('winMaximize', (event) =>
+    window.__leafMacFrame && !(event.altKey && !document.body.classList.contains('is-fullscreen'))
+      ? 'windowToggleFullscreen'
+      : 'windowToggleMaximize');
   winButton('winClose', 'windowClose');
+  // The markup's word is the Windows one, so a Mac dot says what it does from the first paint rather than from the first toggle.
+  if (window.__leafMacFrame) leafWinMaxLabel('Enter Full Screen');
   // The three window buttons are ours on both platforms now, so the one exclusion above covers a press on a Mac dot as well as on a Windows one. Maximize is decided on the way down: a drag hands the window to the platform's own move loop, which swallows every later mouse event, so an app-bar dblclick can never fire. event.detail is the click count, but it counts in page coordinates and a dragged window carries the page under the cursor — so a press just after a quick drag also arrives as 2. An unmoved window.screenX is what tells the second click apart from the tail of a drag.
   dragWindowFrom(appBar);
   // The flowchart sheet covers the app bar, so its header is the drag bar while it is open — otherwise the window cannot be moved without closing the sheet.
@@ -488,7 +494,7 @@ if (window.__leafFrameless || window.__leafMacFrame) {
 if (window.__leafFrameless || window.__leafMacFrame) {
   // Which of the eight compass points a press landed on, or null anywhere inside the app. Read off the app box rather than off the band's own sizes, so there is one copy of them; a window filling the screen has no band and no resize, and the platform refuses one anyway.
   const resizeEdgeAt = (x, y) => {
-    if (document.body.classList.contains('is-maximized')) return null;
+    if (document.body.classList.contains('is-maximized') || document.body.classList.contains('is-fullscreen')) return null;
     const box = leafAppRect();
     // In as far as the inside of the app's own drawn line, which is the edge somebody aims at. The element knows how thick that line is, so the width is not written down a second time beside the one in `design/`.
     const line = appSurface.clientTop || 0;
@@ -545,19 +551,23 @@ if (window.__leafFrameless || window.__leafMacFrame) {
     document.documentElement.style.cursor = wanted;
   });
 }
-// A full-screen Mac window shows no window buttons — the pointer at the top edge is how you get them — so ours go with them and the bar takes the room back. The Mac class itself stays on: it is what says which shell this is, and the dots' look and place are still the Mac's underneath. Defined unconditionally, like the maximize sync below, so the host's call is safe on every window.
-window.leafSetFullscreen = (fullscreen) => {
-  document.body.classList.toggle('is-fullscreen', !!fullscreen);
-};
-// Reflect the real maximized state: body.is-maximized swaps the maximize glyph for restore-down (CSS) and the label follows. Defined unconditionally (not just frameless) so the host's call is always safe — a no-op where controls are hidden.
-window.leafSetWindowMaximized = (maximized) => {
-  document.body.classList.toggle('is-maximized', !!maximized);
+// The middle button's word. Only one of the two states below is ever this shell's, so they never fight over it.
+function leafWinMaxLabel(label) {
   const el = document.getElementById('winMaximize');
   if (el) {
-    const label = maximized ? 'Restore' : 'Maximize';
     el.setAttribute('aria-label', label);
     el.setAttribute('title', label);
   }
+}
+// A full-screen Mac window keeps our three dots: Apple's come back on a pointer at the top edge and ours cannot, so taking them would leave the green one as the way in and nothing as the way out. Defined unconditionally, like the maximize sync below, so the host's call is safe on every window.
+window.leafSetFullscreen = (fullscreen) => {
+  document.body.classList.toggle('is-fullscreen', !!fullscreen);
+  if (window.__leafMacFrame) leafWinMaxLabel(fullscreen ? 'Exit Full Screen' : 'Enter Full Screen');
+};
+// Reflect the real maximized state: body.is-maximized swaps the maximize glyph for restore-down (CSS) and the Windows label follows. A Mac dot's word is full screen's, above. Defined unconditionally (not just frameless) so the host's call is always safe — a no-op where controls are hidden.
+window.leafSetWindowMaximized = (maximized) => {
+  document.body.classList.toggle('is-maximized', !!maximized);
+  if (!window.__leafMacFrame) leafWinMaxLabel(maximized ? 'Restore' : 'Maximize');
 };
 // Put a floating thing where it was asked for, but inside the app: a menu opened near the right edge would otherwise hang off it, and one at the bottom would open below the fold. Both menus place themselves this way, so the arithmetic is here. The point comes in as the window's and goes out as the app's — leafClampToApp does that crossing for everything that places an overlay.
 const LEAF_FLOAT_MARGIN = 8;

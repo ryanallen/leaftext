@@ -112,6 +112,11 @@ fn the_app_bar_sends_a_drag_and_a_maximize_under_the_names_the_page_uses() {
         serde_json::from_str::<IpcCommand>(r#"{"command":"windowToggleMaximize"}"#),
         Ok(IpcCommand::WindowToggleMaximize)
     ));
+    // The green dot sends this one instead, and a name the host does not know arrives as nothing: the dot would then be pressed and the window would sit there.
+    assert!(matches!(
+        serde_json::from_str::<IpcCommand>(r#"{"command":"windowToggleFullscreen"}"#),
+        Ok(IpcCommand::WindowToggleFullscreen)
+    ));
 }
 
 #[test]

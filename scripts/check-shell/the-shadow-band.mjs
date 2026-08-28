@@ -15,7 +15,7 @@ export function run() {
   // ---- the shadow band is the window's edge -----------------------------------
 
   /** A Windows shell whose app box is inset from the window the way the band insets it, with every command it sends recorded. */
-  function bandPress({ frameless = true, macFrame = false, maximized = false } = {}) {
+  function bandPress({ frameless = true, macFrame = false, maximized = false, fullscreen = false } = {}) {
     const sent = [];
     const context = runShell(source, {
       __leafFrameless: frameless,
@@ -27,7 +27,10 @@ export function run() {
     surface.getBoundingClientRect = () => ({ left: 20, top: 13, right: 1060, bottom: 810, width: 1040, height: 797 });
     surface.clientTop = 1;
     surface.clientLeft = 1;
-    if (maximized) context.document.body.classList.contains = (name) => name === 'is-maximized';
+    if (maximized || fullscreen) {
+      const on = maximized ? 'is-maximized' : 'is-fullscreen';
+      context.document.body.classList.contains = (name) => name === on;
+    }
     // Everything the page has is inside one fixed box, so the body has no height of its own and a press in the band lands on the page root above it. Raised on the document, which is where the page has to be listening for one at all.
     const raise = (type, event) => {
       const held = context.document.listeners.get(type) || [];
@@ -149,6 +152,14 @@ export function run() {
     // No band to grab, and the platform refuses the resize anyway.
     const full = bandPress({ maximized: true });
     if (resizeAsks(full.press(4, 4).sent).length !== 0) throw new Error('a maximized window still asked for a resize');
+  });
+
+  check('a full-screen Mac window asks for no resize either, marked zoomed or not', () => {
+    // Full screen is its own state on a Mac and the window is not maximized in it, so a band that only reads the zoom class would hand back eight resize edges over a space that has none.
+    const mac = bandPress({ frameless: false, macFrame: true, fullscreen: true });
+    // A Mac follows the whole drag rather than handing a press over, so the gesture is what asks.
+    if (resizeAsks(mac.drag([4, 400], [[0, 400]]).sent).length !== 0) throw new Error('a full-screen window still asked for a resize');
+    if (mac.move(4, 400)) throw new Error('the pointer still offered a resize edge in full screen');
   });
 
   check('a Mac follows the whole drag, and Windows hands the press over and hears no more', () => {

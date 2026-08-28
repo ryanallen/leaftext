@@ -712,8 +712,8 @@ fn an_icon_answers_the_pointer_by_moving_and_never_by_swapping_its_mask() {
             "transform: translateY(-1px);",
         ),
         (
-            ".library-file > .lt-icon,\n.library-nav-folder .library-folder-icon {",
-            ".library-file:hover > .lt-icon,\n.library-nav-folder:hover .library-folder-icon {",
+            ".library-file > .lt-icon,\n.library-nav-folder .library-action-icon {",
+            ".library-file:hover > .lt-icon,\n.library-nav-folder:hover .library-action-icon {",
             "transform: translateX(2px);",
         ),
     ] {

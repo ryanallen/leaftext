@@ -98,6 +98,12 @@ export const ALLOWED = [
   },
   {
     file: 'src/app/tests/window.rs',
+    reads: 'window_cmds.rs',
+    asserts: 'source.contains("reader.window.set_fullscreen(fullscreen_after(fullscreen))")',
+    because: 'the decision reaches a full-screen call on a window no test can build, and the kind it must not reach is a Mac-only call nothing here compiles',
+  },
+  {
+    file: 'src/app/tests/window.rs',
     reads: 'main.rs',
     asserts: '"the window and the web view are the two things that take the keyboard, and one of them no longer asks for none"',
     because: 'the window builder chain and the web view builder chain, neither of which is a value any test can build',
