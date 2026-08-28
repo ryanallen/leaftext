@@ -13,7 +13,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Vaults](#vaults) | A folder you name as a library root. The switcher beside the breadcrumb creates, edits and moves between them |
 | [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button |
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
-| [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
+| [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out; going in and coming back out slide opposite ways |
 | [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault |
 | [Skipped folders](#skipped-folders) | A folder a machine filled — build output, a package cache — is listed and openable, and not read or watched. The search line says when one was left out |
@@ -82,8 +82,8 @@ A vault *inside* one of these folders wears the cloud too. Where the files end u
 
 The pane lists one folder at a time — the folder you are in, not a whole hierarchy.
 
-- Click a folder row — or its `›` chevron — to go into it.
-- The row above the list steps back out one level.
+- Click a folder row — or its `›` chevron — to go into it. The folder you open slides in from the right while a still picture of the one you left slides off to the left.
+- The row above the list steps back out one level, and reverses that slide. So does a crumb.
 - The **breadcrumb** above the search box is the path you are on: `Vajrayana › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
 - Folders sort before files, each alphabetized. Every folder is listed, including the ones whose names start with a dot and the ones a shortcut points at.
 - Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.

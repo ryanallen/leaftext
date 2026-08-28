@@ -403,7 +403,7 @@ export function run() {
 
   // ---- 5c. the folder being left stays on screen long enough to leave ---------
   //
-  // Entering a folder used to be a hard cut in one frame: two rows became fifteen with nothing on screen saying which way the reader had gone, and coming back out looked exactly the same. The rows are drawn in a one-cell stage now, and a still copy of the folder being left is laid over the one that arrived for the length of the move. The copy is where every risk is: it carries the same rows, so a listener on one of them is a press that sends the reader somewhere the pane no longer says.
+  // A folder entered with no motion is a hard cut in one frame — two rows become fifteen with nothing on screen saying which way the reader went, and coming back out looks the same. So the rows are drawn in a one-cell stage and a still copy of the folder being left is laid over the one that arrived for the length of the move. The copy is where every risk is: it carries the same rows, so a listener on one of them is a press that sends the reader somewhere the pane no longer says.
 
   const libraryFolderPayload = (path, name, entries) => ({
     path,

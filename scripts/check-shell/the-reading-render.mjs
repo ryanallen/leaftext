@@ -106,7 +106,7 @@ export function run() {
 
   // ---- 4d. the page being left stays on screen long enough to leave -----------
   //
-  // Following a link used to show the old page not at all: the write that draws the new one takes the old one with it in the same frame, so nothing on screen said which way the reader had gone and Back looked exactly like going on. A still copy of the page being left is laid over the one that arrived now, in one cell of the reader's own scroll box. Everything worth checking is about the copy: that it is a copy, that it is behind the live page in every query, and that it goes.
+  // The write that draws a new page takes the old one with it in the same frame, so without a copy nothing on screen says which way the reader went and Back looks exactly like going on. A still copy of the page being left is laid over the one that arrived instead, in one cell of the reader's own scroll box. Everything worth checking is about the copy: that it is a copy, that it is behind the live page in every query, and that it goes.
 
   check('going somewhere lays a still copy of the page being left over the one that arrived', () => {
     const { context, app } = bootReading({ path: 'C:\Notes\first.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }] });

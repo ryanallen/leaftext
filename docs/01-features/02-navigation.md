@@ -11,9 +11,9 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Tabs](#tabs) | Open multiple documents at once |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
 | [Outline](#outline) | A collapsed table of contents, built from the document's headings, at the top of each page, labeled with the document's line count |
-| [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading |
+| [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you leave sliding out the way you came |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
-| [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it |
+| [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it — or stays drawn the whole time, where your machine is set to always show scrollbars |
 | [Live reload](#reload) | Reload a changed file without losing your place |
 | [Recent files](#recent-files) | Reopen a recently opened file from the home screen, showing the vault you are standing in |
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
@@ -156,6 +156,8 @@ While the [library sheet](03-library.md#narrow-windows) is up it covers the page
 
 That second case is why Leaftext keeps scroll history separately from file history.
 
+**Which way you went shows.** Following a link brings the new page in from the right while a still picture of the one you left slides off to the left; Back and Forward reverse it, and the page you are leaving carries the words you were reading out with it rather than jumping to its own top first. Going into a folder in the [library](03-library.md#file-tree) pane reads the same way, and the row that steps back out reverses it. Only going somewhere moves: saving, an edit, a file changing on disk, the padlock and clicking a tab all draw as immediately as they always have. With Reduce Motion on, every one of those lands in a single frame.
+
 ### Restore
 
 Leaftext stores a reading position as a `ScrollAnchor`:
@@ -223,6 +225,8 @@ Opening a document hands it to the Rust side to parse and render before the view
 ### Scrollbars
 
 Every scrollbar in the app fades in while its box is moving and fades out a moment after it stops, and there is only the one kind: the reading page, the [library](03-library.md#browsing) pane, the lists on the home screen, the [theme](06-themes.md) picker's grid of cards, a [glossary](../GLOSSARY.md) entry longer than its sheet, the canvas and the text pane in the [flowchart editor](07-editing.md#the-flowchart-editor) along with its shape picker, and the boxes a document itself brings — a line of code pushed past the page's width, a wide equation, a [frontmatter](01-rendering.md#frontmatter) block and any table too wide for the measure. A scroll Leaftext makes itself brings it up too, when it restores your place or jumps to a find match. Resting the pointer anywhere in the box does not bring it back — but resting it on the narrow strip the bar itself lives in does, and the bar thickens while it is pointed at, so it can be aimed at and dragged; moving away thins it and takes it off again. The space the bar takes is held whether or not it is drawn, so nothing on the page shifts when one arrives, and with the [minimap](04-minimap.md) rail up the reading page draws no bar at all because the rail is that indicator.
+
+Where your machine is set to always show scrollbars — the accessibility setting on Windows, **Show scroll bars: Always** on a Mac — every one of those bars stays drawn instead of fading, from the moment the app starts. Nothing else changes: a bar still thickens under the pointer, it still holds the same space, and the reading page with the rail up still draws none. The setting is read at launch, so turning it on or off takes effect the next time the app starts, and the app has no switch of its own for it.
 
 ### Find in this document
 
