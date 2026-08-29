@@ -28,7 +28,7 @@ const shell = (args) => {
   process.exit(run.status ?? 1);
 };
 
-// Which copy this build launched, asked here because this is the only attached caller in the tree. The photograph used to be picked by process path while every gesture already went down the copy's own pipe, so with a copy built from this checkout up beside a probe the driver played the steps into one window and photographed the other. Reading the pointer here rather than in the PowerShell keeps its single reader, which is the whole reason it can be trusted, and leaves a hand-run `-Attach` answering exactly as it does today.
+// Which copy this build launched, asked here because this is the only attached caller in the tree. Picking the photograph by process path while every gesture goes down the copy's own pipe plays the steps into one window and photographs the other, whenever a copy built from this checkout is up beside a probe. Reading the pointer here rather than in the PowerShell keeps its single reader, which is the whole reason it can be trusted, and leaves a hand-run `-Attach` answering exactly as it does today.
 const copy = probeCopy();
 const probe = copy ? ['-ProbePid', String(copy.pid)] : [];
 
