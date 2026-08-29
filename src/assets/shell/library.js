@@ -326,7 +326,7 @@ function renderProject(entries) {
 
 // Whether the pane is following the open document rather than the folder it sits in. Set when a document opens, cleared by the outline's own back row — the one way back to the files.
 let libraryOutlineOpen = false;
-// The frame the outline is waiting on. Building the rows and measuring them is layout: 5ms at sixty headings and 329ms at the app's own worst case, which is not a cost a document open may carry.
+// The frame the outline is waiting on. Measuring the row heights and drawing the window is layout, and it is not a cost a document open may carry: every row at once was 5ms at sixty headings and 329ms at the app's own worst case.
 let libraryOutlineFrame = 0;
 const libraryOutlineScroll = libraryOutline.parentElement;
 let libraryOutlineSource = null;
@@ -375,6 +375,7 @@ function outlineRowHtml(row, shallowest, current) {
 function outlineNoteHtml(count) {
   return `<div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">${formatCountLabel(count, 'heading', 'headings')}</span></div>`;
 }
+// One sample of each of the six depths, measured once. A row is one line at a height its depth decides, so every row's place is arithmetic over those six and no row has to be mounted to be placed.
 function measureLibraryOutline(rows) {
   libraryOutlineShallowest = rows.reduce((least, row) => Math.min(least, row.level), rows[0].level);
   const samples = Array.from({ length: 6 }, (_, depth) => outlineRowHtml({ level: libraryOutlineShallowest + depth, id: '', text: 'Measure' }, libraryOutlineShallowest, false)).join('');
@@ -406,6 +407,7 @@ function outlineIndexAtOffset(offset) {
   }
   return Math.max(0, low - 1);
 }
+// Only the rows in the pane, with a pane's worth either side so a wheel or a key crosses a boundary before blank space can appear. The padding above and below stands in for the rest, which is what keeps the scrollbar measuring the whole document.
 function drawLibraryOutlineWindow(rows, force) {
   const windowBox = libraryOutline.querySelector('[data-outline-window]');
   if (!windowBox) return;
