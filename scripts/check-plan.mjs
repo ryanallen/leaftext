@@ -427,7 +427,7 @@ function trackProblems(planText, tracksText, live) {
 }
 
 const PERFORMANCE_MARKER = /^> \*\*Performance finding\.\*\*\s*$/m;
-const PERFORMANCE_BOOTSTRAP = 'refactor/workflow/nothing-files-a-performance-finding.md';
+const PERFORMANCE_BOOTSTRAP = 'done/workflow/nothing-files-a-performance-finding.md';
 
 // The marker records why a ticket exists, so it decides both destinations without guessing from a file name or a sentence about speed.
 function performanceProblems(planText, tracksText, ticketTexts) {
