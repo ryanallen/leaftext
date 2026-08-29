@@ -15,7 +15,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { sessionOf, sessionTag, sweep } from './hook-payload.mjs';
+import { TURN_MS, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -72,6 +72,18 @@ export function open(required, session, startedAt = Date.now()) {
   mkdirSync(dirname(record), { recursive: true });
   writeFileSync(record, JSON.stringify({ required, reported: {}, startedAt }) + '\n');
   sweep(tmpdir(), 'leaftext-keycode-');
+}
+
+/// What a message does to this session's record. **A record still on disk is a turn still running**: the reply gate deletes it when a turn ends, so a message arriving while one stands is a sentence typed into a pass that has not finished. Such a message may add to what is owed and must touch nothing else — wiping what was reported asked a pass again for codes it had already given, and moving `startedAt` put every ticket that pass had filed behind its own start stamp, so a correct reply was refused and a build that ticked no boxes walked through. Nothing standing, or a record older than the hour a turn is allowed, is a turn that never reached the reply gate: that one is fresh and gets a fresh stamp.
+export function extend(required, session, now = Date.now()) {
+  const standing = read(session);
+  const running = typeof standing?.startedAt === 'number' && now - standing.startedAt <= TURN_MS;
+  if (!running) {
+    open(required, session, now);
+    return;
+  }
+  const owed = [...new Set([...(standing.required || []), ...required])];
+  writeFileSync(recordPath(session), JSON.stringify({ ...standing, required: owed }) + '\n');
 }
 
 export function read(session) {
@@ -185,6 +197,46 @@ function selfTest() {
     close(TWO);
   }
 
+  // A sentence typed into a pass that is still running. The record on disk is what says the turn is running, so a message arriving over one may only add to what is owed: a wipe here asks the pass again for a code it has given, and a moved stamp puts every ticket it filed behind its own start.
+  const MID = `selftest-${process.pid}-mid`;
+  const DEV = '.agents/skills/dev/SKILL.md';
+  const DESIGN = '.agents/skills/design/SKILL.md';
+  try {
+    extend(requiredFor('/dev the ticket'), MID);
+    const opened = read(MID);
+    if (!opened?.required?.includes(DEV)) fails.push('extend: a skill-named message did not owe that skill');
+    opened.reported = { [ALWAYS]: codeOf(ALWAYS) };
+    writeFileSync(recordPath(MID), JSON.stringify(opened) + '\n');
+
+    extend(requiredFor('also check the footer wording'), MID);
+    const sentence = read(MID);
+    if (sentence?.reported?.[ALWAYS] !== codeOf(ALWAYS)) fails.push('extend: a bare sentence wiped a code already reported');
+    if (sentence?.startedAt !== opened.startedAt) fails.push('extend: a bare sentence moved the stamp the turn began at');
+    if (!sentence?.required?.includes(DEV)) fails.push('extend: a bare sentence dropped the skill the pass is running');
+
+    extend(requiredFor('and $design it after'), MID);
+    const second = read(MID);
+    if (!second?.required?.includes(DESIGN)) fails.push('extend: a second skill named mid-turn was not owed');
+    if (!second?.required?.includes(DEV)) fails.push('extend: adding a second skill dropped the first');
+    if (second?.reported?.[ALWAYS] !== codeOf(ALWAYS)) fails.push('extend: adding a second skill wiped a reported code');
+    if (second?.startedAt !== opened.startedAt) fails.push('extend: adding a second skill moved the stamp');
+    if (new Set(second.required).size !== second.required.length) fails.push('extend: a file already owed was owed twice');
+
+    // Past the hour a turn is allowed, the record belongs to a turn nobody ended. Extending it would hand the next turn a dead stamp to measure its own filings against.
+    extend([ALWAYS], MID, Date.now() + TURN_MS + 1000);
+    const stale = read(MID);
+    if (stale?.reported?.[ALWAYS]) fails.push('extend: a record past the hour kept what a dead turn reported');
+    if (stale?.required?.includes(DEV)) fails.push('extend: a record past the hour kept what a dead turn owed');
+    close(MID);
+
+    // Nothing standing is the ordinary case: the reply gate deleted the last turn when it ended.
+    extend(requiredFor('go on then'), MID);
+    const afresh = read(MID);
+    if (!afresh?.required?.includes(ALWAYS)) fails.push('extend: a message with nothing standing did not owe the rule file');
+    if (typeof afresh?.startedAt !== 'number') fails.push('extend: a message with nothing standing carries no start stamp');
+  } finally {
+    close(MID);
+  }
   if (fails.length) {
     console.error('gate-keycode: failed');
     for (const f of fails) console.error(`  ${f}`);

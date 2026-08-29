@@ -12,10 +12,11 @@
 //
 // Never blocks: any failure exits 0, because a broken hook must not stop a turn.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { open, requiredFor } from './gate-keycode.mjs';
+import { ALWAYS, close, extend, read, recordPath, requiredFor } from './gate-keycode.mjs';
 import { KEEP, LICENSE_DIR, RING, keep, licensePath, ringLines, sessionOf, sweep } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -205,6 +206,30 @@ function selfTest() {
   const after = existsSync(RING) ? readFileSync(RING, 'utf8') : null;
   if (after !== before) fails.push('ring: an empty payload still wrote a line');
 
+  // The record, through the hook rather than through its own functions. A record still standing is a turn still running, and this is the one place that decision is wired: swapping this call back to `open` passes every test that reaches the record directly, so the fold is proved here by firing the hook twice.
+  const MID = `gate-rules-selftest-${process.pid}`;
+  const DEV = '.agents/skills/dev/SKILL.md';
+  const fire = (prompt) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
+    input: JSON.stringify({ session_id: MID, prompt }),
+    encoding: 'utf8',
+  });
+  try {
+    fire('/dev the ticket');
+    const opened = read(MID);
+    if (!opened?.required?.includes(DEV)) fails.push('hook: a skill-named message did not owe that skill');
+    opened.reported = { [ALWAYS]: 'LEAF-REPORTED' };
+    writeFileSync(recordPath(MID), JSON.stringify(opened) + '\n');
+    fire('also check the footer wording');
+    const sentence = read(MID);
+    if (sentence?.reported?.[ALWAYS] !== 'LEAF-REPORTED') fails.push('hook: a sentence typed mid-turn wiped a code already reported');
+    if (sentence?.startedAt !== opened.startedAt) fails.push('hook: a sentence typed mid-turn moved the stamp the turn began at');
+    if (!sentence?.required?.includes(DEV)) fails.push('hook: a sentence typed mid-turn dropped the skill the pass is running');
+  } catch (error) {
+    fails.push(`hook: ${error.message}`);
+  } finally {
+    close(MID);
+    rmSync(licensePath(MID), { force: true });
+  }
   if (fails.length) {
     console.error('gate-rules: failed');
     for (const f of fails) console.error(`  ${f}`);
@@ -228,9 +253,9 @@ if (!args) {
   const session = sessionOf(raw);
   writeLicense(hasReleaseLicense(prompt), prompt, session);
   if (prompt && !isMeta(prompt)) {
-    // A new turn owes its keycodes again. Clearing first is what keeps the record one message long instead of a growing file — and it clears this session's record only, or the other agent is held for codes it already gave.
+    // What this message owes, folded into this session's record. A record still standing is a turn still running, because the reply gate deletes it when one ends — so a sentence typed into a running pass adds to what is owed and leaves the codes it has given and the moment it began where they are. This session's record only, or the other agent is held for codes it already gave.
     try {
-      open(requiredFor(prompt), session);
+      extend(requiredFor(prompt), session);
     } catch {
       // A record that cannot be written owes nothing, which is the safe way round: a broken hook must never stop a turn.
     }

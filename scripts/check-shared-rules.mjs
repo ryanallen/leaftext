@@ -14,6 +14,18 @@ import { planTree } from './plan-tree.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+const PERFORMANCE_FINDING_COPIES = [
+  '.agents/skills/ticket/SKILL.md',
+  '.agents/skills/design/SKILL.md',
+  '.agents/skills/dev/SKILL.md',
+  '.agents/skills/check/SKILL.md',
+  '.agents/skills/sync-tests/SKILL.md',
+  '.agents/skills/sync-docs/SKILL.md',
+  '.agents/skills/pm/SKILL.md',
+  '.agents/skills/git-release/SKILL.md',
+  '.agents/skills/done/SKILL.md',
+];
+
 /** Every rule written in more than one file, its owner first. A path opening `../docs/` is in the plan tree next door. */
 const RULES = [
   {
@@ -49,6 +61,12 @@ const RULES = [
       '.agents/skills/git-release/SKILL.md',
       '.agents/skills/done/SKILL.md',
     ],
+  },
+  {
+    marker: 'performance-finding',
+    what: 'what a pass does when its work hints something could be faster',
+    owner: 'AGENTS.md',
+    copies: PERFORMANCE_FINDING_COPIES,
   },
 ];
 
@@ -163,12 +181,16 @@ if (process.argv.includes('--check')) {
   if (after !== 'The glossary defines the term. <!-- shared-rule: rule -->One sentence.<!-- /shared-rule --> Then its own last word.') wrong.push(`a repair rewrote more than the marked sentence: ${after}`);
   if (repaired(after, 'rule', 'One sentence.') !== null) wrong.push('a repair offered to rewrite a copy that already says what its owner says');
   if (repaired('No marker here.', 'rule', 'One sentence.') !== null) wrong.push('a repair offered to write a sentence into a file with no markers, which would put it wherever the file happens to start');
+  const performance = RULES.find((rule) => rule.marker === 'performance-finding');
+  const intendedPerformanceCopies = '.agents/skills/ticket/SKILL.md,.agents/skills/design/SKILL.md,.agents/skills/dev/SKILL.md,.agents/skills/check/SKILL.md,.agents/skills/sync-tests/SKILL.md,.agents/skills/sync-docs/SKILL.md,.agents/skills/pm/SKILL.md,.agents/skills/git-release/SKILL.md,.agents/skills/done/SKILL.md';
+  if (performance?.owner !== 'AGENTS.md') wrong.push(`the performance rule's owner is ${performance?.owner ?? 'missing'} rather than AGENTS.md`);
+  if (performance?.copies.join(',') !== intendedPerformanceCopies) wrong.push(`the performance rule names ${performance?.copies.join(',') ?? 'no copies'} rather than the nine ticket-writing passes`);
   if (wrong.length) {
     console.error('the comparison is wrong, so nothing was read:');
     for (const fault of wrong) console.error(`  ${fault}`);
     process.exit(1);
   }
-  console.log('comparison: refuses a drifted copy, a missing marker and an unclosed one, and repairs only the marked sentence');
+  console.log('comparison: refuses a drifted copy, a missing marker and an unclosed one, repairs only the marked sentence, and holds the performance rule to its nine passes');
 }
 
 if (process.argv.includes('--fix')) {

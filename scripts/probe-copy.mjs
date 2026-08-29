@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Which copy of the app a build is talking to. The one place that reads and writes `.tmp/probe-copy.json`, and it holds two things: the account name `just probe-copy` launched under, and that launcher's process id.
+// Which copy of the app a build is talking to. The one place that reads and writes `.tmp/probe-copy.json`, and it holds two things: the account name `just probe-copy` launched under, and that copy's own process id — the app's, not the launcher's, which is gone moments after it writes this.
 //
 // A pointer file rather than a flag on the ask, because the nine asks reach an agent as MCP tools rather than as shell lines: `.mcp.json` spawns the wrapper once with a fixed environment, so neither an environment line nor a per-call name exists unless every tool schema grows an argument the caller must remember. Which copy is being worked is a fact about the whole probe run, not about one question, so it belongs in one place.
 //
@@ -36,10 +36,12 @@ export function isRunning(pid) {
   }
 }
 
+// The whole record for the copy this build launched, or null when there is none to talk to. Both readers come through here — the ask wants the name to address its pipe by, the driver wants the process id to photograph — so neither can decide differently from the other about which copy is meant.
+//
 // Off Windows there is nothing to point at: the ask socket on macOS is named after the home folder rather than the account, so a copy launched under a name of its own cannot be addressed there at all.
 //
 // LEAFTEXT_ASK_ACCOUNT_ONLY is for a caller that has already set the account name to the copy it means, which is a stronger statement than a pointer left lying about: without it, the quit that closes a documentation shot would land on whatever probe copy happened to be up, and the shot copy would stay on screen.
-export function probeName({
+export function probeCopy({
   pointer = readPointer(),
   platform = process.platform,
   running = isRunning,
@@ -49,7 +51,12 @@ export function probeName({
   if (accountOnly) return null;
   if (!pointer) return null;
   if (!running(pointer.pid)) return null;
-  return pointer.name;
+  return pointer;
+}
+
+/** That copy's account name, which is what an ask addresses its pipe by. One guard block under both, because a tool answering differently from the ask is the fault this file exists to stop. */
+export function probeName(options = {}) {
+  return probeCopy(options)?.name ?? null;
 }
 
 export function remember({ name, pid }, file = POINTER) {

@@ -57,4 +57,6 @@ The whole reply is the owner's message, word for word.
 
 **Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
+**<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** Retirement sees the plan-tree rewrites together, so repeated work, an unnecessarily broad read or a wait is enough to file while this pass finishes the owner's close.
+
 <!-- keycode: LEAF-6C31 -->

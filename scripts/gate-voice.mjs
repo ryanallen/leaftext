@@ -25,7 +25,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { clear, heldBy, listPath, pending } from './gate-checklist.mjs';
 import { buildRecord, buildingPath, forget } from './gate-design.mjs';
-import { close, outstanding, read } from './gate-keycode.mjs';
+import { ALWAYS, close, extend, outstanding, read } from './gate-keycode.mjs';
 import { keep, sessionOf } from './hook-payload.mjs';
 import { dirtyPaths } from './plan-tree.mjs';
 
@@ -292,6 +292,25 @@ function nap(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+/// Read enough of the hook payload to know which turn an unreadable Stop still ends.
+export function readHookPayload(readInput = () => readFileSync(0, 'utf8'), parseInput = JSON.parse) {
+  let raw = '';
+  try {
+    raw = readInput();
+  } catch {
+    // A Stop that cannot measure anything is still the end of a turn.
+    clear(sessionOf(raw));
+    return null;
+  }
+  const session = sessionOf(raw);
+  try {
+    return { raw, payload: parseInput(raw), session };
+  } catch {
+    clear(session);
+    return null;
+  }
+}
+
 function selfTest() {
   const fails = [];
 
@@ -365,6 +384,19 @@ function selfTest() {
     if (!filedSince(past, tree)) fails.push('filedSince: a file written this turn was missed');
     if (!filedSince(undefined, tree)) fails.push('filedSince: no stamp should refuse nothing');
     if (!filedSince(past, join(tree, 'nowhere'))) fails.push('filedSince: an unreadable tree should refuse nothing');
+
+    // The stamp this reads comes off the record, and a sentence typed into a running pass must leave it alone. Written over, the ticket the pass filed a moment ago lands behind its own start and the reply naming it is refused.
+    const mid = `gate-voice-mid-${process.pid}`;
+    try {
+      extend([ALWAYS], mid, Date.now() - 1000);
+      const began = read(mid)?.startedAt;
+      writeFileSync(join(tree, 'refactor', 'workflow', 'filed-this-turn.md'), 'a plan\n');
+      extend([ALWAYS], mid);
+      if (read(mid)?.startedAt !== began) fails.push('filedSince: a bare sentence mid-turn moved the stamp its filings are measured against');
+      if (!filedSince(read(mid)?.startedAt, tree)) fails.push('filedSince: a bare sentence mid-turn hid a plan file the pass had already filed');
+    } finally {
+      close(mid);
+    }
   } catch (error) {
     fails.push(`filedSince: ${error.message}`);
   } finally {
@@ -412,6 +444,30 @@ function selfTest() {
   // Through the real entry point, because the three things that would hurt most are all in it: a malformed block does nothing and looks like a pass, a hook that blocks while a stop hook is already running spins the turn forever, and a reply that has not landed yet reads as no reply at all. This run's own: `just verify` beside another `just verify` would otherwise have one deleting the transcript the other is reading. Its own session id on every payload, never the environment's: sessionOf falls back to CLAUDE_CODE_SESSION_ID where a payload carries none, so a sessionless one run from a live session had the hook act on that session's own records — and the first thing it did was delete the list that session was working.
   const mine = `gate-voice-selftest-${process.pid}`;
   const path = join(tmpdir(), `${mine}.jsonl`);
+  const failureCases = ['stdin', 'payload', 'transcript'].map((kind) => `${mine}-${kind}`);
+  const oldSession = process.env.CLAUDE_CODE_SESSION_ID;
+  try {
+    for (const session of failureCases) writeFileSync(listPath(session), '- 1. Belongs to the turn ending in failure\n');
+    process.env.CLAUDE_CODE_SESSION_ID = failureCases[0];
+    if (readHookPayload(() => { throw new Error('stdin closed'); }) !== null) fails.push('entry point: a stdin failure returned a payload');
+    if (existsSync(listPath(failureCases[0]))) fails.push('entry point: a turn ending on a stdin failure left its list behind');
+
+    const malformed = JSON.stringify({ session_id: failureCases[1] });
+    if (readHookPayload(() => malformed, () => { throw new Error('payload unreadable'); }) !== null) fails.push('entry point: a payload failure returned a payload');
+    if (existsSync(listPath(failureCases[1]))) fails.push('entry point: a turn ending on a payload failure left its list behind');
+
+    execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
+      input: JSON.stringify({ stop_hook_active: false, transcript_path: join(tmpdir(), `${mine}-missing.jsonl`), session_id: failureCases[2] }),
+      encoding: 'utf8',
+    });
+    if (existsSync(listPath(failureCases[2]))) fails.push('entry point: a turn ending on a transcript failure left its list behind');
+  } catch (error) {
+    fails.push(`entry point failures: ${error.message}`);
+  } finally {
+    if (oldSession === undefined) delete process.env.CLAUDE_CODE_SESSION_ID;
+    else process.env.CLAUDE_CODE_SESSION_ID = oldSession;
+    for (const session of failureCases) clear(session);
+  }
   writeFileSync(path, [
     JSON.stringify({ type: 'user', message: { content: 'does it work on mac' } }),
     JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: "You're right, it does." }] } }),
@@ -534,9 +590,12 @@ function selfTest() {
     writeFileSync(listPath(mine), '- ~~1. Tests first~~ — N/A; a hook with its own self-test\n');
     if (stop().trim() !== '') fails.push('checklist: a fully struck list still held the turn');
     writeFileSync(listPath(mine), '- 1. Tests first\n');
+    extend([ALWAYS], mine);
     if (stop({ stop_hook_active: true }).trim() !== '') fails.push('checklist: held again while a stop hook was already running');
     // That second Stop is the end of the turn, so its list goes with it. Nothing else sweeps one now that a message naming no skill leaves the standing list alone.
     if (existsSync(listPath(mine))) fails.push('checklist: a turn ending on the already-held path left its list behind');
+    // And its keycode record with it, or the next message reads a turn that is over as one still running and folds into its dead stamp.
+    if (read(mine)) fails.push('keycode: a turn ending on the already-held path left its record behind');
 
     // The build record through the real entry point: the wiring, not only the reading. The reading does not open the ticket — every count it needs is in the samples — so the path here only has to name one.
     const ticket = join(tmpdir(), `gate-voice-ticket-${process.pid}.md`);
@@ -589,22 +648,15 @@ if (!args) {
 } else if (args.includes('--check')) {
   selfTest();
 } else {
-  let raw = '';
-  try {
-    raw = readFileSync(0, 'utf8');
-  } catch {
-    process.exit(0);
-  }
+  const input = readHookPayload();
+  if (!input) process.exit(0);
+  const { raw, payload, session } = input;
   keep('Stop', raw);
-  let payload = {};
-  try {
-    payload = JSON.parse(raw);
-  } catch {
-    process.exit(0);
-  }
-  // Already blocked once this turn. Blocking again is how a stop hook spins. The host allows one hold a turn, so this is the end of the turn whatever the steps still say, and the list goes here the way it goes on the path a turn that stands takes — nothing else sweeps it now that a message naming no skill leaves it alone.
+  // Already blocked once this turn. Blocking again is how a stop hook spins. The host allows one hold a turn, so this is the end of the turn whatever the steps still say, and both of this session's records go here the way they go on the path a turn that stands takes: the list because nothing else sweeps it now that a message naming no skill leaves it alone, and the keycode record because a record left standing reads as a turn still running — the next message would fold into this dead turn instead of stamping its own.
   if (payload.stop_hook_active) {
-    clear(sessionOf(raw));
+    const ended = sessionOf(raw);
+    clear(ended);
+    close(ended);
     process.exit(0);
   }
   let blocks = [];
@@ -615,10 +667,10 @@ if (!args) {
     blocks = blocksOf(lines);
     echo = typedPrompt(lines);
   } catch {
+    clear(session);
     process.exit(0);
   }
   // This session's record, not the other agent's: it owes its own codes and holds its own turn.
-  const session = sessionOf(raw);
   const record = read(session);
   const filed = filedSince(record?.startedAt);
   const found = offenses(blocks, filed, echo);

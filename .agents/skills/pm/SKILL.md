@@ -111,17 +111,21 @@ The tests pick the tier in that order, then run again inside it, which is what m
 
 **Anything this pass turns up that is not a row gets a ticket** — a gap nothing covers, a fault nobody has filed, a rule the tree is running under that is untrue. Write it with [`/ticket`](../ticket/SKILL.md), give it its README row, rank it here in the same pass. Never a sentence in the hand-back: reading eighty tickets against the code is the pass most likely to find something, and a finding with no file is one nobody sees again.
 
+**<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** Reading every ticket together can expose repeated planning work, a broader read than the decision needs or a wait in the workflow; the marked finding is written first, then this pass ranks it by the rule below.
+
+**Every ticket carrying `> **Performance finding.**` belongs to the Performance track and tier 0.** `nothing-files-a-performance-finding` is the one unmarked step in that track because it builds the filing route; keep the bootstrap row in the position the owner chose rather than lifting it into tier 0.
+
 ## 4. The tiers
 
 | Tier | What is in it |
 | --- | --- |
-| **0** | Not builds. Somebody reading the code to settle a claim the rest of the list rests on |
+| **0** | Somebody reading the code to settle a claim the rest of the list rests on, or a ticket carrying `> **Performance finding.**`. Cost orders marked findings inside tier 0; they are never compared against features below it |
 | **1** | **Wrong today.** Whatever the app, or a rule the work runs under, does incorrectly — at whatever it costs |
 | **2** | **The shared piece.** Two or more rows wait on it and it is smaller than they are, so it is built once here or several times below |
 | **3** | The features people would name, cheapest first — and the work behind them nobody would name: how the repo is built, and the published pages, where neither is wrong today, a shared piece, nor a big swing |
 | **4** | Big swings, each absorbing the time all of tiers 1 to 3 take together. **On its own size** — a small row behind one is put here by the blocker rule below, not by this definition |
 
-Tier 0 comes first, because the list is only as good as the statuses under it. **Held work has no tier or position**: move it to `../docs/on-hold/<subject>/`, move its README row under `## On hold`, keep its track step linked to the new path, and record its stage, return folder and the owner's reason in `../docs/on-hold/PLAN.md`. On restoration, reverse those moves and rank it from the rules rather than from its old position. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days.
+Tier 0 comes first, because the list is only as good as the statuses under it and performance findings accumulate before planned features. Readings keep the claim they must settle; marked performance findings are ordered cheapest first inside tier 0 and never against a lower-tier feature. **Held work has no tier or position**: move it to `../docs/on-hold/<subject>/`, move its README row under `## On hold`, keep its track step linked to the new path, and record its stage, return folder and the owner's reason in `../docs/on-hold/PLAN.md`. On restoration, reverse those moves and rank it from the rules rather than from its old position. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days.
 
 **No row sits in a tier above its own blocker.** It is the one rule that outranks the three tests: a shared piece behind a big swing goes with the swing, and a one-line row behind one stays behind it, because a row somebody cannot start is worse than a row somebody has to scroll to.
 

@@ -47,6 +47,9 @@ export function licensePath(session) {
 /// The folder the licenses sit in, for the sweep.
 export const LICENSE_DIR = join(root, '.tmp');
 
+/// How long a per-session record stands for the turn that wrote it. Past this it belongs to a turn nobody ended — the reply gate deletes both records when a turn stands, so anything older is a turn that never reached it — and holding a live turn to a dead one's record is what wedges a session. Measured rather than picked: of 2,259 turns in this checkout, 99 in 100 end inside 31 minutes and exactly one has ever run past an hour. Both per-session records read it from here, because two constants meaning the same thing is the second copy this tree refuses.
+export const TURN_MS = 60 * 60 * 1000;
+
 /// How long a file belonging to one session is kept. Longer than the four hours a release license is good for, so the sweep never takes one that still counts.
 export const STALE_MS = 24 * 60 * 60 * 1000;
 

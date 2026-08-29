@@ -10,17 +10,18 @@
 //
 // The list is one file per session in the OS temp folder, rewritten at the start of every message the way the keycode record is, so it never grows and never reaches a context window.
 
-import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { closeSync, existsSync, fstatSync, openSync, readFileSync, readSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { keyedFiles } from './gate-keycode.mjs';
-import { keep, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
+import { TURN_MS, keep, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/// A list older than this is a dead turn's, and holding a live turn to it would wedge the session. Same window the studio tree's own pair uses.
-export const STALE_MS = 60 * 60 * 1000;
+/// Enough transcript to reach the turn before the message without reading a whole session history.
+const TRANSCRIPT_TAIL_BYTES = 64 * 1024;
 
 /// One file per session: two agents can work this checkout at once, and one file for both is cleared by whichever starts a message while the other is halfway through its steps.
 export function listPath(session) {
@@ -86,7 +87,7 @@ export function write(prompt, session) {
 export function pending(session, now = Date.now()) {
   const path = listPath(session);
   try {
-    if (now - statSync(path).mtimeMs > STALE_MS) return [];
+    if (now - statSync(path).mtimeMs > TURN_MS) return [];
     return readFileSync(path, 'utf8')
       .split('\n')
       .filter((line) => /^- /.test(line) && !line.startsWith('- ~~'))
@@ -99,6 +100,55 @@ export function pending(session, now = Date.now()) {
 /// The turn stood, so its list has done its job. Left behind it would be read by the next turn until it went stale.
 export function clear(session) {
   rmSync(listPath(session), { force: true });
+}
+
+function transcriptTail(path, limit = TRANSCRIPT_TAIL_BYTES) {
+  const file = openSync(path, 'r');
+  try {
+    const size = fstatSync(file).size;
+    const start = Math.max(0, size - limit);
+    const bytes = Buffer.alloc(size - start);
+    let length = 0;
+    while (length < bytes.length) {
+      const read = readSync(file, bytes, length, bytes.length - length, start + length);
+      if (!read) break;
+      length += read;
+    }
+    let text = bytes.subarray(0, length).toString('utf8');
+    if (start > 0) text = text.slice(text.indexOf('\n') + 1);
+    return text.split('\n').filter(Boolean);
+  } finally {
+    closeSync(file);
+  }
+}
+
+function entryText(entry) {
+  const content = entry?.message?.content;
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.filter((part) => part?.type === 'text').map((part) => part.text ?? '').join('\n');
+}
+
+/// Whether the transcript entry before this message says the owner stopped the previous turn.
+export function interruptedBeforeMessage(path, promptId, readTail = transcriptTail) {
+  if (!path || !promptId) return false;
+  const lines = readTail(path);
+  let sawThisMessage = false;
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    let entry;
+    try {
+      entry = JSON.parse(lines[index]);
+    } catch {
+      return false;
+    }
+    if (entry.promptId === promptId) {
+      sawThisMessage = true;
+      continue;
+    }
+    if (!sawThisMessage) return false;
+    return Boolean(entry.interruptedMessageId) || entryText(entry).includes('[Request interrupted by user]');
+  }
+  return false;
 }
 
 /// What the Stop hook says when a bullet is left. It names the file, because striking a bullet means editing it.
@@ -190,7 +240,7 @@ function selfTest() {
     // A dead turn's list must not hold a live one, and neither must a missing one.
     writeFileSync(path, '- 1. Tests first\n');
     if (!pending(ONE).length) fails.push('pending: an un-struck bullet did not hold the turn');
-    if (pending(ONE, Date.now() + STALE_MS + 1000).length) fails.push('pending: a stale list still held the turn');
+    if (pending(ONE, Date.now() + TURN_MS + 1000).length) fails.push('pending: a stale list still held the turn');
     rmSync(path, { force: true });
     if (pending(ONE).length) fails.push('pending: a missing list held the turn');
 
@@ -204,12 +254,76 @@ function selfTest() {
     if (!existsSync(listPath(ONE))) fails.push('write: a message naming no skill deleted the standing list');
     if (readFileSync(listPath(ONE), 'utf8') !== partly) fails.push('write: a message naming no skill rewrote the standing list');
     if (pending(ONE).join('|') !== before.join('|')) fails.push('write: the steps left after a message naming no skill are not the ones that were left before it');
-    if (pending(ONE, Date.now() + STALE_MS + 1000).length) fails.push('pending: a standing list past the staleness window still held the turn');
+    if (pending(ONE, Date.now() + TURN_MS + 1000).length) fails.push('pending: a standing list past the staleness window still held the turn');
   } catch (error) {
     fails.push(`cycle: ${error.message}`);
   } finally {
     rmSync(listPath(ONE), { force: true });
     rmSync(listPath(TWO), { force: true });
+  }
+
+  const promptId = `prompt-${process.pid}`;
+  const stopped = `selftest-${process.pid}-stopped`;
+  const running = `selftest-${process.pid}-running`;
+  const currentOnly = `selftest-${process.pid}-current-only`;
+  const unreadable = `selftest-${process.pid}-unreadable`;
+  const stoppedTranscript = join(tmpdir(), `${stopped}.jsonl`);
+  const runningTranscript = join(tmpdir(), `${running}.jsonl`);
+  const currentOnlyTranscript = join(tmpdir(), `${currentOnly}.jsonl`);
+  const missingTranscript = join(tmpdir(), `${unreadable}-missing.jsonl`);
+  const standing = '- 1. Belongs to the turn still running\n';
+  const runPrompt = (session, transcript) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
+    input: JSON.stringify({ prompt: 'what does the pager do', prompt_id: promptId, session_id: session, transcript_path: transcript }),
+    encoding: 'utf8',
+  });
+  try {
+    writeFileSync(listPath(stopped), standing);
+    writeFileSync(stoppedTranscript, [
+      JSON.stringify({ type: 'user', interruptedMessageId: 'stopped-message', message: { content: '[Request interrupted by user]' } }),
+      JSON.stringify({ type: 'user', promptId, message: { content: 'what does the pager do' } }),
+    ].join('\n') + '\n');
+    runPrompt(stopped, stoppedTranscript);
+    if (existsSync(listPath(stopped))) fails.push('interrupted turn: the next message left the stopped turn\'s list behind');
+
+    const oldShape = [
+      JSON.stringify({ type: 'user', message: { content: '[Request interrupted by user]' } }),
+      JSON.stringify({ type: 'user', promptId, message: { content: 'what does the pager do' } }),
+    ];
+    if (!interruptedBeforeMessage('unused', promptId, () => oldShape)) fails.push('interrupted turn: the older text-only stop shape was missed');
+
+    writeFileSync(listPath(running), standing);
+    writeFileSync(runningTranscript, [
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Working.' }] } }),
+      JSON.stringify({ type: 'user', promptId, message: { content: 'what does the pager do' } }),
+    ].join('\n') + '\n');
+    runPrompt(running, runningTranscript);
+    if (!existsSync(listPath(running))) fails.push('running turn: the next message cleared the standing list');
+    else if (readFileSync(listPath(running), 'utf8') !== standing) fails.push('running turn: the next message rewrote the standing list');
+
+    writeFileSync(listPath(currentOnly), standing);
+    writeFileSync(currentOnlyTranscript, [
+      JSON.stringify({ type: 'user', promptId, message: { content: 'what does the pager do' } }),
+      JSON.stringify({ type: 'user', promptId, message: { content: 'the same incoming message' } }),
+    ].join('\n') + '\n');
+    runPrompt(currentOnly, currentOnlyTranscript);
+    if (!existsSync(listPath(currentOnly))) fails.push('current-only tail: the standing list was cleared without a previous turn to read');
+    else if (readFileSync(listPath(currentOnly), 'utf8') !== standing) fails.push('current-only tail: the standing list was rewritten');
+
+    writeFileSync(listPath(unreadable), standing);
+    runPrompt(unreadable, missingTranscript);
+    if (!existsSync(listPath(unreadable))) fails.push('unreadable tail: the standing list was cleared');
+    else if (readFileSync(listPath(unreadable), 'utf8') !== standing) fails.push('unreadable tail: the standing list was rewritten');
+  } catch (error) {
+    fails.push(`interrupted turn: ${error.message}`);
+  } finally {
+    clear(stopped);
+    clear(running);
+    clear(currentOnly);
+    clear(unreadable);
+    rmSync(stoppedTranscript, { force: true });
+    rmSync(runningTranscript, { force: true });
+    rmSync(currentOnlyTranscript, { force: true });
+    rmSync(missingTranscript, { force: true });
   }
 
   if (fails.length) {
@@ -235,15 +349,23 @@ if (!args) {
     process.exit(0);
   }
   keep('UserPromptSubmit', raw);
+  let payload = {};
   let prompt = '';
   try {
-    prompt = (JSON.parse(raw).prompt ?? '').trim();
+    payload = JSON.parse(raw);
+    prompt = (payload.prompt ?? '').trim();
   } catch {
     process.exit(0);
   }
+  const session = sessionOf(raw);
+  try {
+    if (interruptedBeforeMessage(payload.transcript_path, payload.prompt_id)) clear(session);
+  } catch {
+    // An unreadable tail leaves the list because the hour still bounds it.
+  }
   let found = null;
   try {
-    found = prompt ? write(prompt, sessionOf(raw)) : null;
+    found = prompt ? write(prompt, session) : null;
   } catch {
     // A list that cannot be written holds nobody, which is the safe way round.
     process.exit(0);
@@ -253,7 +375,7 @@ if (!args) {
       hookSpecificOutput: {
         hookEventName: 'UserPromptSubmit',
         additionalContext: [
-          `This turn's checklist is \`${listPath(sessionOf(raw))}\` — the ${found.steps.length} steps of /${found.name}, in its order.`,
+          `This turn's checklist is \`${listPath(session)}\` — the ${found.steps.length} steps of /${found.name}, in its order.`,
           'Work them in order and strike each one in the same edit as the work it names. A step that does not apply is struck with its reason. The turn cannot end while one is un-struck.',
           'They are steps, not work: anything found while working one is a ticket.',
         ].join('\n'),

@@ -44,6 +44,8 @@ Plain English, few words. Lead with the answer, then stop. No jargon, no abbrevi
 
 **Never name work in a reply instead of filing it.** Anything the app does not do, does wrong, or cannot do yet is a ticket, written in that same turn with [`/ticket`](.agents/skills/ticket/SKILL.md), given its row in `../docs/README.md` and ranked by [`/pm`](.agents/skills/pm/SKILL.md) — and then never mentioned, because the reply is the message back and the ticket is where the owner reads what was found. **A sentence saying a thing "needs a ticket", "is not covered", "is out of scope", "would be its own work", or "is a different feature" is the failure itself** — you found it and handed the filing back to the owner. This holds when the finding is a question the owner asked, and when you are certain they will say no: a refused ticket is a decision recorded, and an unfiled one is a decision nobody can find.
 
+**<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** A repeated operation, work running more often than its result changes, a broad read where a narrow one answers, or a wait somebody would feel is enough to file; measurement and the fix belong to that ticket.
+
 **When told you got it wrong, skip the response and do the work.** Don't own it, don't explain it, don't say what you meant, don't list the parts you got right. Start at whatever comes after.
 
 ---

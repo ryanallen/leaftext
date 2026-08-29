@@ -17,6 +17,7 @@ import { basename, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { readProbeReply } from './probe-motion-output.mjs';
+import { probeCopy, probeName } from './probe-copy.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const script = join(root, 'scripts/capture-screenshot.ps1');
@@ -565,12 +566,71 @@ const ATTACH = [
   ['prefer the copy built from this checkout', /\$ours = @\(\$copies \| Where-Object \{ \$_\.Path -and \$_\.Path\.StartsWith\(\$root/],
   ['refuse two copies from this checkout rather than guess', /built from this checkout are running with a window/],
   ['still refuse two it cannot tell apart', /none was built from this checkout/],
+  ['narrow to the copy this build launched before it counts what is left', /if \(\$ProbePid\) \{\s+\$copies = @\(\$copies \| Where-Object \{ \$_\.Id -eq \$ProbePid \}\)/],
+  ['refuse a process id naming no copy that is up rather than falling back to the owner’s window', /is no longer running with a window/],
 ];
 for (const [what, pattern] of ATTACH) {
   if (!pattern.test(text)) problems.push(`-Attach no longer knows how to ${what}`);
 }
 
+// ---- which copy the driver photographs --------------------------------------
+
+// The pointer already answers which copy a build is talking to, and it answers with a process id — exact, and the same number every other reader of that file guards on. Read back on made-up pointers, so this needs no app and no window: the guards are the ask's own, which is the point of there being one function under both.
+const RECORD_CASES = [
+  ['a copy that is up', { pointer: { name: 'leaftext-probe-default', pid: 7 }, running: () => true }, { name: 'leaftext-probe-default', pid: 7 }],
+  ['a pointer whose process is gone', { pointer: { name: 'leaftext-probe-default', pid: 7 }, running: () => false }, null],
+  ['no pointer at all', { pointer: null, running: () => true }, null],
+  ['a live pointer off Windows', { pointer: { name: 'leaftext-probe-default', pid: 7 }, running: () => true, platform: 'darwin' }, null],
+  ['a caller that has already named the copy it means', { pointer: { name: 'leaftext-probe-default', pid: 7 }, running: () => true, accountOnly: true }, null],
+];
+for (const [name, given, wanted] of RECORD_CASES) {
+  const got = probeCopy({ platform: 'win32', accountOnly: false, ...given });
+  const said = (record) => (record ? `${record.name} at ${record.pid}` : 'nothing');
+  if (said(got) !== said(wanted)) {
+    problems.push(`with ${name} the pointer record should answer ${said(wanted)}, and it answers ${said(got)}`);
+  }
+  // The two readers cannot disagree: whatever the record says, the name the ask addresses is that record's own.
+  const name_ = probeName({ platform: 'win32', accountOnly: false, ...given });
+  if (name_ !== (got?.name ?? null)) {
+    problems.push(`with ${name} the ask goes to ${name_ ?? 'the account it is running under'} while the driver photographs ${said(got)}`);
+  }
+}
+
+// `just drive` is the one attached caller in the tree, so it is the one reader: the file's single reader is why the pointer can be trusted, and a second one in another language would write the staleness rule twice.
+const DRIVE_POINTER = [
+  ['ask which copy this build launched', /probeCopy\(\)/],
+  ['pass that copy’s process id down to the driver', /'-ProbePid', String\(copy\.pid\)/],
+  ['pass nothing when there is no live pointer', /copy \? \[[^\]]+\] : \[\]/],
+];
+for (const [what, pattern] of DRIVE_POINTER) {
+  if (!pattern.test(driveText)) problems.push(`the drive command no longer knows how to ${what}`);
+}
+
+// A dry run says which copy it would drive, because that is the one thing a build cannot see from the outside and the one thing that was wrong: gestures already reached the probe while the photograph went to another window.
+const launched = dryRun(['click:1,2'], '-Attach -ProbePid 4242');
+if (!launched.ok) problems.push(`an attached dry run naming a launched copy was refused:\n${launched.text}`);
+else if (!launched.text.includes('the copy this build launched, process 4242')) {
+  problems.push(`an attached dry run does not say it would drive the copy this build launched: ${launched.text.trim()}`);
+}
+const unattached = dryRun(['click:1,2'], '-ProbePid 4242');
+if (unattached.ok) problems.push('a process id was accepted without -Attach, on a run that launches its own copy and is already talking to it');
+else if (!unattached.text.includes('already talking to it')) {
+  problems.push(`-ProbePid without -Attach was refused for some other reason:\n${unattached.text}`);
+}
+// The box a dismissal cancels stands over the window being driven, so a dismissal reading a different copy from the step list that raised the box is the same wrong window one command along.
+const dismissProbe = spawnSync(
+  exe,
+  ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-DryRun', '-DismissBox', 'A box', '-ProbePid', '4242'],
+  { encoding: 'utf8' }
+);
+if (dismissProbe.status !== 0) {
+  problems.push(`a dismissal naming the copy this build launched was refused:\n${dismissProbe.stdout ?? ''}${dismissProbe.stderr ?? ''}`);
+}
+if (!/'-DismissBox', rest\.join\(' '\), \.\.\.probe/.test(driveText)) {
+  problems.push('the drive command no longer tells a dismissal which copy it is driving, so it could cancel a box over another window');
+}
+
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways, closes it by asking too, and was run against a cargo that fails to read back that it built outside the starved profile, under ${buildHome}, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways and cancels exactly that box by its whole title in ${DISMISS.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, keeps the app's reply and the note naming which copy answered apart in ${READER.length} ways, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways, closes it by asking too, and was run against a cargo that fails to read back that it built outside the starved profile, under ${buildHome}, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways and cancels exactly that box by its whole title in ${DISMISS.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the driver photographs the copy this build launched rather than the one the owner is reading — the pointer record read back in ${RECORD_CASES.length} ways with the ask agreeing every time, carried down in ${DRIVE_POINTER.length} ways, and said out loud by a dry run, the motion probe reads its element, trigger and property back and refuses a run missing one, keeps the app's reply and the note naming which copy answered apart in ${READER.length} ways, and ${webSaid}`
 );

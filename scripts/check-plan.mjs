@@ -3,7 +3,7 @@
 //
 //   node scripts/check-plan.mjs   fail on a running order that has stopped ranking every live ticket
 //
-// Thirteen rules, every one read straight off the page. Whether a row is ranked well is the ranker's judgment and no script's.
+// Fourteen rules, every one read straight off the page. Whether a row is ranked well is the ranker's judgment and no script's.
 //
 // One of them is about the shipped log next door: 30 retired rows once sat above its title, under no header row and inside no tier table, and the count that would have caught it read a struck line wherever it sat. One walk answers the count and the shape so the two cannot drift apart again.
 //
@@ -422,6 +422,25 @@ function trackProblems(planText, tracksText, live) {
         say(ticket, `position ${cells[0]} names TRACKS.md#${slug} and ${ticket} is not a step of it, so the link lands the reader on a table their own ticket is nowhere in`);
       }
     }
+  }
+  return problems;
+}
+
+const PERFORMANCE_MARKER = /^> \*\*Performance finding\.\*\*\s*$/m;
+const PERFORMANCE_BOOTSTRAP = 'refactor/workflow/nothing-files-a-performance-finding.md';
+
+// The marker records why a ticket exists, so it decides both destinations without guessing from a file name or a sentence about speed.
+function performanceProblems(planText, tracksText, ticketTexts) {
+  const problems = [];
+  const say = (rule, subject, message) => problems.push({ rule, subject, message });
+  const performance = trackSteps(tracksText).get('performance') ?? new Set();
+  for (const row of planRows(planText)) {
+    if (row.ticket === null) continue;
+    const marked = PERFORMANCE_MARKER.test(ticketTexts.get(row.ticket) ?? '');
+    const inPerformance = performance.has(row.ticket);
+    if (marked && row.tier !== 0) say('performance-tier', row.ticket, `position ${row.position} carries the performance-finding marker and sits in tier ${row.tier}; marked findings belong in tier 0`);
+    if (marked && !inPerformance) say('performance-track', row.ticket, `position ${row.position} carries the performance-finding marker and is not a step of the Performance track`);
+    if (!marked && inPerformance && row.ticket !== PERFORMANCE_BOOTSTRAP) say('performance-marker', row.ticket, `position ${row.position} is a Performance track step and carries no \`> **Performance finding.**\` line; only ${PERFORMANCE_BOOTSTRAP} is the unmarked bootstrap`);
   }
   return problems;
 }
@@ -1002,6 +1021,21 @@ const TRACK_CASES = [
   ['a running order with no Track column at all is outside the rule', TRACK_ABSENT, []],
 ];
 
+const PERFORMANCE_FINDING = 'refactor/performance/slow.md';
+const PERFORMANCE_ROW = '| 1 | [slow](refactor/performance/slow.md) | Ready | — | — | [Performance](TRACKS.md#performance) step 2 | — | repeated work |';
+const PERFORMANCE_TRACKS = `# Tracks\n\n## Performance\n\n| step | Work |\n|---|---|\n| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) |\n| 2 | [slow](${PERFORMANCE_FINDING}) |\n`;
+const OTHER_TRACKS = `# Tracks\n\n## Performance\n\n| step | Work |\n|---|---|\n| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) |\n\n## Other\n\n| step | Work |\n|---|---|\n| 1 | [slow](${PERFORMANCE_FINDING}) |\n`;
+const MARKED_FINDING = new Map([[PERFORMANCE_FINDING, '> **Performance finding.**\n']]);
+const UNMARKED_FINDING = new Map([[PERFORMANCE_FINDING, '# Slow\n']]);
+const BOOTSTRAP_ROW = `| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) | Dev | — | — | [Performance](TRACKS.md#performance) step 1 | — | the filing route |`;
+const PERFORMANCE_CASES = [
+  ['a marked finding in tier 0 and the Performance track passes', tracked(PERFORMANCE_ROW).replace('## Tier 3', '## Tier 0'), PERFORMANCE_TRACKS, MARKED_FINDING, []],
+  ['a marked finding outside tier 0 is refused and names its row', tracked(PERFORMANCE_ROW), PERFORMANCE_TRACKS, MARKED_FINDING, [`performance-tier ${PERFORMANCE_FINDING}`]],
+  ['a marked finding outside the Performance track is refused and names its row', tracked(PERFORMANCE_ROW).replace('## Tier 3', '## Tier 0'), OTHER_TRACKS, MARKED_FINDING, [`performance-track ${PERFORMANCE_FINDING}`]],
+  ['an unmarked Performance step is refused and names its row', tracked(PERFORMANCE_ROW).replace('## Tier 3', '## Tier 0'), PERFORMANCE_TRACKS, UNMARKED_FINDING, [`performance-marker ${PERFORMANCE_FINDING}`]],
+  ['the unmarked bootstrap passes in its owner-chosen tier', tracked(BOOTSTRAP_ROW), PERFORMANCE_TRACKS, new Map([[PERFORMANCE_BOOTSTRAP, '# Nothing files a performance finding\n']]), []],
+];
+
 // The eighth column, read the same way. `tracked(...)` writes the header this column sits in, so a row here is a `Devs with` cell in the seventh place and `Why` in the eighth.
 const DEVS_ROW = (cell) => `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | ${cell} | first |`;
 const DEVS_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
@@ -1057,6 +1091,12 @@ const DEVS_FOOTPRINT_CASES = [
 
 function selfTest() {
   const fails = [];
+  for (const [name, text, tracksText, ticketTexts, want] of PERFORMANCE_CASES) {
+    const got = performanceProblems(text, tracksText, ticketTexts).map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+  }
   for (const [name, text, want, said] of TRACK_CASES) {
     const found = trackProblems(text, TRACKS_FILE, TRACK_LIVE);
     const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
@@ -1194,8 +1234,11 @@ const held = [...archived].filter((f) => f.startsWith('on-hold/')).length;
 
 // What a row costs: the slices its ticket ships in.
 const phases = new Map();
+const ticketTexts = new Map();
 for (const ticket of live) {
-  const found = readFileSync(join(plans, ticket), 'utf8').match(/^###\s+Phase\b/gm);
+  const ticketText = readFileSync(join(plans, ticket), 'utf8');
+  ticketTexts.set(ticket, ticketText);
+  const found = ticketText.match(/^###\s+Phase\b/gm);
   if (found) phases.set(ticket, found.length);
 }
 
@@ -1205,6 +1248,7 @@ const problems = [
   ...shippedRead.problems,
   ...heldProblems(readFileSync(join(plans, 'on-hold', 'PLAN.md'), 'utf8'), new Set([...archived].filter((file) => file.startsWith('on-hold/')))),
   ...trackProblems(text, readFileSync(join(plans, 'TRACKS.md'), 'utf8'), live),
+  ...performanceProblems(text, readFileSync(join(plans, 'TRACKS.md'), 'utf8'), ticketTexts),
   ...devsWithProblems(text, live, claimsInTree(plans)),
 ];
 

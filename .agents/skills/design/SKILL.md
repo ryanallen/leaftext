@@ -169,6 +169,8 @@ grep -rn "<the behavior>" src/tests/ src/app/tests/ src/store/tests.rs scripts/c
 
 **This is the reading most likely to turn up something nobody was looking for**, because every citation is opened and every node in every drawing is chased into the code. A fault beside the one being planned, a rule nothing enforces, a check that would have caught it, a second copy of something that already has one source: add it to this ticket when building the current change needs it. A plan that grows a fix with no connection to the current change is one the owner cannot read against what they asked for.
 
+**<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** A design pass sees the calls and flows together, so repeated work, work wider than its answer or a wait somebody would feel is enough to file; the finding's own design measures and decides the fix.
+
 [ticket](../ticket/SKILL.md) holds the rule and the test — a find the current change needs becomes a box in this file. Two things are this skill's own end of it:
 
 - **Name it in this ticket's Still open** only when it does not help this ticket work, so a later reader cannot mistake it for covered.

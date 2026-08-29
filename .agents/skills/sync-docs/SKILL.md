@@ -232,6 +232,8 @@ Leave the changes uncommitted. The whole reply is the owner's message, word for 
 
 **Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
+**<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** A page or documentation pass that repeats work, reads more than its result needs or visibly waits has supplied enough of a hint; the new ticket measures and fixes it.
+
 ## Reference
 
 - `docs/docs.js` — the shell, the routing and the link interception. Its nav comes from `site/docs-nav.js`, which reads the folder listing, so there is no page list in it.

@@ -52,6 +52,8 @@ The whole reply is the owner's message, word for word. The tree stays dirty; tha
 
 **Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
+**<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** A slow wait or repeated gate work is enough to file when this pass sees it; checking continues, and the finding owns the timing and fix.
+
 ## Reference
 
 - `Justfile` — what `verify` runs, and each step on its own.

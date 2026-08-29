@@ -37,6 +37,8 @@ Add a measured wireframe for visible work or a Mermaid flow for an ordered mecha
 
 Write the ticket's one owned index row and place it as one numbered step of exactly one subject.
 
+**A ticket carrying `> **Performance finding.**` is always the next step of the Performance track**, whatever subject folder holds its code. `nothing-files-a-performance-finding` stays the track's unmarked first step because it builds this route rather than recording a slow path, and its owner-chosen place in the running order is not changed by this rule.
+
 ### 7. Run /pm
 
 Add the ticket to the running order and rebuild its derived cells.
@@ -139,6 +141,8 @@ Only when the reader will see a difference — drawn, not described. See below.
 
 **The not-built note says when the ticket was asked for, and it says the time as well as the day.** So does the found line where this ticket came out of another pass — `Found 18 August 2026, 9:11pm while designing …`. Read both off this machine's clock (`Get-Date`), never off memory and never off the last date you saw written down: the tree fills a whole day in a day, so a date on its own cannot say whether a ticket is twelve minutes old or twelve hours, and after a shuffle of the running order that is the only question anybody is asking about the names in front of them. `AGENTS.md` carries the rule, and `just check-docs` refuses a date written from `2026-08-19` on with no time after it.
 
+**A ticket written because the performance-finding rule fired carries one fixed line directly under its not-built and found lines: `> **Performance finding.**`.** No other ticket carries it, and neither a fast-sounding file name nor prose elsewhere in the ticket stands in for it; the line records where the request came from so the track and ranking checks can read the fact without guessing.
+
 ### The one-sentence summary
 
 The line under the not-built note is the whole ticket in one sentence, and it is the only part most readers finish. It has four pieces and each earns its place:
@@ -238,6 +242,8 @@ Drop the bundler line when the work is nowhere near `design/`. **One check, at t
 ## Work a pass turns up that is not this ticket's is its own ticket
 
 **Anything found while reading the code that no phase in this file would have to build anyway is a second file, written in the same pass.** A bug beside the one being planned, a rule nothing enforces, a check that would have caught it, a subject with no tests, a piece of work the ticket brushes past — the find does not survive the session any other way, and there are only two other places it can go, both of which lose it. A box smuggled in makes a ticket nobody can review: a ticket about the find bar that quietly grows four tests for the pager, or a fix for something else, is one the owner cannot read against what they asked for. A sentence in a hand-back dies with the session.
+
+**<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** Research already has the code open, so a repeated operation, needless breadth or visible wait is evidence enough to write the finding; the new ticket owns measurement and the fix.
 
 - **The test is scope, not size.** A one-line fix that is out of this ticket's work is still a ticket, because what makes it one is the record, not the cost. A find a phase already in the file has to build anyway is a box in that phase, not a second file.
 - **Two files finish it, the same two as any other ticket** — the file, its row in `../docs/README.md`, then [`/pm`](../pm/SKILL.md) once for both. Never a row placed by hand.

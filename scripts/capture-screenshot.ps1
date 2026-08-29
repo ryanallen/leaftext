@@ -121,6 +121,12 @@ param(
   [int]$StepMs = 900,
   # Drive the copy that is already running instead of launching one.
   [switch]$Attach,
+  # The process id of the copy this build launched, read off `.tmp/probe-copy.json` by
+  # scripts/drive.mjs. It is the same number every ask already guards on, so the window
+  # photographed is the window the gestures were played into. A copy that has gone is
+  # refused rather than fallen back from: quietly photographing the owner's window
+  # instead is the wrong-window answer this exists to remove.
+  [int]$ProbePid = 0,
   # Cancel one box standing over the window being driven, by the exact title the refusal
   # printed, and stop. Escape only and an exact title, so it can neither press a warning's
   # default button nor cancel a box that merely happened to be there.
@@ -209,6 +215,12 @@ if ($Attach) {
   }
 }
 
+# A process id says which of the copies already open to drive, so a run that launches its own
+# copy is already talking to it and naming a second one is a step list aimed at two windows.
+if ($ProbePid -and -not ($Attach -or $PSBoundParameters.ContainsKey('DismissBox'))) {
+  throw '-ProbePid names which copy that is already open to drive, and a run launching its own copy is already talking to it. Add -Attach, or drop it.'
+}
+
 $asked = @($Do) + @($Steps.Split(@(' ', "`t"), [System.StringSplitOptions]::RemoveEmptyEntries))
 $plan = @($asked | ForEach-Object { Read-Step $_ })
 
@@ -234,7 +246,8 @@ if ($DryRun) {
     Write-Output 'pressing Escape rather than a default button, and only while that exact title is the box that is there'
     return
   }
-  $whose = if ($Attach) { 'the running copy' } else { 'a fresh copy' }
+  # Which copy, said out loud: the one thing that was wrong here was invisible from outside, because the gestures already reached the probe while the photograph went to another window.
+  $whose = if ($ProbePid) { "the copy this build launched, process $ProbePid" } elseif ($Attach) { 'the running copy' } else { 'a fresh copy' }
   Write-Output "$($plan.Count) steps against $whose"
   foreach ($step in $plan) { Write-Output "  $($step.Said)$($step.OffScreen)" }
   # Which rectangle a coordinate is in, and which one the picture is, said out loud: they are the same one, and getting that wrong is invisible until a click lands 11 px off.
@@ -359,6 +372,16 @@ function Find-Attached {
   # windows means a second copy was launched against another profile.
   $copies = @(Get-Process leaftext -ErrorAction SilentlyContinue |
     Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero })
+  # The copy this build launched, named by the pointer every ask already reads, and asked
+  # before anything is counted — so the count and the refusal below are what they have
+  # always been on a run that named none.
+  if ($ProbePid) {
+    $copies = @($copies | Where-Object { $_.Id -eq $ProbePid })
+    if ($copies.Count -ne 1) {
+      throw "the copy this build launched, process $ProbePid, is no longer running with a window; launch one with just probe-copy, or drop the pointer at .tmp/probe-copy.json"
+    }
+    return $copies[0]
+  }
   if (-not $copies.Count) { throw 'no copy of the app is running, so there is no window to drive' }
   # A copy built from this checkout is the one this checkout meant. That is what
   # keeps two development copies apart, since each is built and run under its own

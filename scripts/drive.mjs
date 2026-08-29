@@ -9,6 +9,7 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { probeCopy } from './probe-copy.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // cmd.exe hands the quotes around an argument through rather than stripping them, so a path quoted in the Justfile arrives wrapped in them — and every path with a quote in it is one Windows refuses.
@@ -27,9 +28,13 @@ const shell = (args) => {
   process.exit(run.status ?? 1);
 };
 
+// Which copy this build launched, asked here because this is the only attached caller in the tree. The photograph used to be picked by process path while every gesture already went down the copy's own pipe, so with a copy built from this checkout up beside a probe the driver played the steps into one window and photographed the other. Reading the pointer here rather than in the PowerShell keeps its single reader, which is the whole reason it can be trusted, and leaves a hand-run `-Attach` answering exactly as it does today.
+const copy = probeCopy();
+const probe = copy ? ['-ProbePid', String(copy.pid)] : [];
+
 // The way past a box standing over the driven window, named in the driver's own refusal. A title arrives as separate words — the Justfile interpolates it without quotes and cmd hands each word on — so it is joined back into the one exact title the box wears, and an empty one goes down to the driver to be refused there rather than being refused twice in two wordings.
 if (first === '--dismiss') {
-  shell(['-DismissBox', rest.join(' ')]);
+  shell(['-DismissBox', rest.join(' '), ...probe]);
 }
 
 const [out, steps] = [first, rest];
@@ -40,7 +45,7 @@ if (!out) {
   process.exit(1);
 }
 
-const args = ['-Attach', '-Out', out];
+const args = ['-Attach', '-Out', out, ...probe];
 // One argument holding the whole list, split by the script: a `-Do` array would be re-split at the commas inside a step.
 if (steps.length) args.push('-Steps', steps.join(' '));
 shell(args);
