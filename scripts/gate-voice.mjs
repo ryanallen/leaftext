@@ -240,22 +240,24 @@ function typedCommands(text) {
 
 /// The last thing the owner actually typed, as one string. The same read `blocksOf` makes from the same end, and for the same reason: tool results arrive as user turns too, so a turn only counts when it carries plain text.
 export function typedPrompt(lines) {
-  const entries = parse(lines);
-  const said = [];
-  for (let i = entries.length - 1; i >= 0; i -= 1) {
-    const entry = entries[i];
-    if (entry.type === 'assistant') break;
-    if (entry.type !== 'user') continue;
+  const spoken = parse(lines).map((entry) => {
+    if (entry.type !== 'user') return '';
     const content = entry.message?.content;
-    let text = '';
-    if (typeof content === 'string') text = content;
-    else if (Array.isArray(content)) text = content.filter((c) => c.type === 'text' && c.text).map((c) => c.text).join('\n');
-    if (text.trim()) said.unshift(text);
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) return content.filter((c) => c.type === 'text' && c.text).map((c) => c.text).join('\n');
+    return '';
+  });
+  let last = -1;
+  for (let i = spoken.length - 1; i >= 0; i -= 1) {
+    if (spoken[i].trim()) { last = i; break; }
   }
-  // The skill's own text rides in behind the tags as a turn of the owner's, so where a message names a skill the tags are the message and the rest of that run is the host talking.
+  if (last < 0) return '';
+  // One message reaches the transcript as several turns of the owner's in a row, so the run is taken whole rather than only the last turn of it.
+  const said = [];
+  for (let i = last; i >= 0 && spoken[i].trim(); i -= 1) said.unshift(spoken[i]);
+  // The skill's own text rides in behind the tags as another turn of theirs, so where a message names a skill the tags are the message and the rest of the run is the host talking.
   const commands = said.flatMap(typedCommands);
-  if (commands.length) return commands.join('\n');
-  return said.length ? said[said.length - 1] : '';
+  return commands.length ? commands.join('\n') : said[said.length - 1];
 }
 
 /// True once the newest message in the transcript is something the assistant said, which is what a finished turn looks like.
@@ -374,6 +376,19 @@ function selfTest() {
   if (blocksOf(transcript).join('') !== 'No.') fails.push('blocksOf: did not isolate the reply');
   if (typedPrompt(transcript) !== 'does it work on mac') fails.push('typedPrompt: did not find what the owner typed');
   if (typedPrompt([]) !== '') fails.push('typedPrompt: an empty transcript should say nothing');
+
+  // A message naming a skill arrives as tags with the skill's own text behind it, so the words the owner pressed enter on are rebuilt rather than read; without this the echo is measured as the reply's own and refused for length.
+  const commanded = [
+    JSON.stringify({ type: 'user', message: { content: '<command-message>git-release</command-message>\n<command-name>/git-release</command-name>\n<command-args>one.md and two.md</command-args>' } }),
+    JSON.stringify({ type: 'user', message: { content: '<command-message>done</command-message>\n<command-name>/done</command-name>\n<command-args>one.md and two.md</command-args>' } }),
+    JSON.stringify({ type: 'user', message: { content: 'Base directory for this skill: x\n\n# Done\n\nThe skill itself, which the owner never typed.' } }),
+  ];
+  const sent = '/git-release one.md and two.md\n/done one.md and two.md';
+  if (typedPrompt(commanded) !== sent) fails.push(`typedPrompt: a message naming two skills read as ${JSON.stringify(typedPrompt(commanded))}`);
+  if (offenses(['x'.repeat(LIMIT + 1)], true, sent).length !== 1) fails.push('typedPrompt: a long reply against a rebuilt message should still be measured');
+  if (offenses([sent], true, sent).length) fails.push('typedPrompt: the whole of a rebuilt message came back refused');
+  // The argument alone is still part of the message and nothing else, so it is refused for being cut rather than passed for being inside it.
+  if (offenses(['one.md and two.md'], true, sent).length !== 1) fails.push('typedPrompt: the argument alone should be refused as part of the message');
   if (blocksOf([]).length) fails.push('blocksOf: empty transcript should say nothing');
   if (!endsInSpeech(transcript)) fails.push('endsInSpeech: a finished turn read as unfinished');
   if (endsInSpeech(transcript.slice(0, 4))) fails.push('endsInSpeech: a turn mid-tool read as finished');
