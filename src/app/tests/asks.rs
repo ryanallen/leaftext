@@ -1,6 +1,7 @@
 //! Every ask the pipe answers, and the sentences it refuses with.
 
 use super::*;
+use crate::app::pipe_asks::pipe_document_answer_after_render;
 
 /// An address only this test uses, so a running copy of the app is never the thing answering — a named pipe on Windows, a socket file elsewhere.
 fn test_pipe_address(name: &str) -> String {
@@ -105,10 +106,90 @@ fn the_doc_ask_answers_the_buffer_and_refuses_a_path_that_will_not_open() {
 
     // A path with no file behind it is refused in words, and no tab is opened for it.
     let missing = dir.join("gone.md");
-    let refusal =
-        pipe_bring_to_front(&mut workspace, &missing).expect_err("a missing file is refused");
-    assert!(refusal.contains("gone.md"), "{refusal}");
+    assert_eq!(
+        pipe_bring_to_front(&mut workspace, &missing),
+        Err(format!("there is no file at {}", missing.display()))
+    );
     assert_eq!(workspace.tabs.len(), 1);
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_render_refusal_carries_the_file_and_the_reason_the_reader_sees() {
+    let path = PathBuf::from("notes.docx");
+    let reason = "This doesn't look like a text file — there's a zero byte at 5";
+    let refusal = open_refusal(&path, reason);
+
+    assert_eq!(
+        refusal,
+        format!("Failed to open {}: {reason}", path.display())
+    );
+    assert_eq!(
+        pipe_document_answer_after_render(&mut Workspace::default(), Err(refusal.clone())),
+        Err(refusal)
+    );
+}
+
+#[test]
+fn a_doc_ask_for_a_file_that_cannot_be_read_is_refused() {
+    let dir = scratch_dir("doc-ask-unreadable");
+    let note = dir.join("note.md");
+    fs::write(&note, "# Note\n").expect("the front document is written");
+    let unreadable = dir.join("notes.docx");
+    fs::write(&unreadable, b"II*\0\x08\xFF\xFF\xFF\xFF").expect("the unreadable file is written");
+    let mut workspace = Workspace::default();
+    pipe_bring_to_front(&mut workspace, &note).expect("the first document opens");
+    let before = pipe_document_answer(&mut workspace).expect("the front document answers");
+
+    assert_eq!(pipe_bring_to_front(&mut workspace, &unreadable), Ok(true));
+    let failed_index = workspace
+        .active
+        .expect("the unreadable tab is at the front");
+    let reason = read_source(&unreadable)
+        .expect_err("the file cannot be read")
+        .to_string();
+    recover_failed_open(&mut workspace, failed_index);
+    let refusal = open_refusal(&unreadable, &reason);
+    let answer = pipe_document_answer_after_render(&mut workspace, Err(refusal));
+
+    let refusal = answer.expect_err("the failed open is refused");
+    assert!(
+        refusal.contains(&unreadable.display().to_string()),
+        "{refusal}"
+    );
+    let after = pipe_document_answer(&mut workspace).expect("the front document still answers");
+    assert_eq!(after["path"], before["path"]);
+    assert_eq!(after["text"], before["text"]);
+    assert_eq!(after["fingerprint"], before["fingerprint"]);
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_doc_ask_for_a_file_that_opens_keeps_its_answer() {
+    let dir = scratch_dir("doc-ask-opens");
+    let note = dir.join("tasks.md");
+    let spelling = SourceSpelling {
+        encoding: SourceEncoding::Utf16Le,
+        mark: true,
+    };
+    fs::write(
+        &note,
+        leaftext::encode_source("# Tasks\n\n- [ ] one\n", spelling),
+    )
+    .expect("the document is written");
+    let mut workspace = Workspace::default();
+    pipe_bring_to_front(&mut workspace, &note).expect("the document opens");
+    let before = pipe_document_answer(&mut workspace).expect("the document answers");
+
+    let after = pipe_document_answer_after_render(&mut workspace, Ok(()))
+        .expect("a successful render answers");
+
+    assert_eq!(after["text"], before["text"]);
+    assert_eq!(after["spelling"], before["spelling"]);
+    assert_eq!(after["fingerprint"], before["fingerprint"]);
+    assert_eq!(after["tasks"], before["tasks"]);
 
     let _ = fs::remove_dir_all(&dir);
 }

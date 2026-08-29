@@ -503,20 +503,17 @@ pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEve
     // Its own thread rather than `off_loop`, because this worker answers many times: a slice of the vault every fifty documents, so the pane fills while the disk is still being read instead of after it.
     let proxy = proxy.clone();
     thread::spawn(move || {
-        let mut first = true;
         let overtaken = || !counter.is_current(wanted);
         VaultCorpus::read_in_slices(&root, CORPUS_SLICE_DOCUMENTS, &overtaken, |slice| {
-            let sent = proxy.send_event(UserEvent::CorpusLoaded {
+            let _ = proxy.send_event(UserEvent::CorpusLoaded {
                 root: root.clone(),
                 documents: Box::new(slice.documents),
                 truncated: slice.truncated,
                 skipped: slice.skipped,
-                first,
+                replaces: slice.replaces,
                 last: slice.last,
                 wanted,
             });
-            first = false;
-            let _ = sent;
         });
     });
 }
@@ -541,7 +538,7 @@ pub(crate) fn absorb_corpus_slice(
     documents: Vec<CorpusDocument>,
     truncated: bool,
     skipped: Vec<String>,
-    first: bool,
+    replaces: bool,
     last: bool,
     wanted: u64,
 ) -> Option<AbsorbedSlice> {
@@ -551,11 +548,11 @@ pub(crate) fn absorb_corpus_slice(
     if state.root.as_deref() != Some(root) {
         return None;
     }
-    // Leaving the vault bumped this, so a slice stamped with the older number is a read nobody is waiting on — including the one overtaken before it opened a document, whose only slice is also its first.
+    // Leaving the vault bumped this, so a slice stamped with the older number is a read nobody is waiting on — including the one overtaken before it opened a document, whose only slice also replaces.
     if !state.corpus_read.is_current(wanted) {
         return None;
     }
-    match state.corpus.as_mut().filter(|_| !first) {
+    match state.corpus.as_mut().filter(|_| !replaces) {
         // Cheap unless a worker is mid-scan against this exact text, in which case it clones rather than grow it out from under one.
         Some(held) => {
             let held = Arc::make_mut(held);
@@ -636,12 +633,12 @@ pub(crate) fn delivered_slice_work(
     documents: Vec<CorpusDocument>,
     truncated: bool,
     skipped: Vec<String>,
-    first: bool,
+    replaces: bool,
     last: bool,
     wanted: u64,
 ) -> SliceWork {
     match absorb_corpus_slice(
-        state, root, documents, truncated, skipped, first, last, wanted,
+        state, root, documents, truncated, skipped, replaces, last, wanted,
     ) {
         Some(absorbed) => SliceWork::Absorbed(absorbed),
         None if read_is_owed(state) => SliceWork::StartTheOwedRead,
@@ -657,12 +654,12 @@ pub(crate) fn deliver_corpus(
     documents: Vec<CorpusDocument>,
     truncated: bool,
     skipped: Vec<String>,
-    first: bool,
+    replaces: bool,
     last: bool,
     wanted: u64,
 ) -> Option<FilterHints> {
     let absorbed = match delivered_slice_work(
-        state, &root, documents, truncated, skipped, first, last, wanted,
+        state, &root, documents, truncated, skipped, replaces, last, wanted,
     ) {
         SliceWork::Absorbed(absorbed) => absorbed,
         SliceWork::StartTheOwedRead => {

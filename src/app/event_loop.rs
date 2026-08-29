@@ -342,7 +342,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 documents,
                 truncated,
                 skipped,
-                first,
+                replaces,
                 last,
                 wanted,
             }) => {
@@ -354,7 +354,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     *documents,
                     truncated,
                     skipped,
-                    first,
+                    replaces,
                     last,
                     wanted,
                 );

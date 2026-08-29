@@ -22,7 +22,7 @@ use std::path::{Path, PathBuf};
 pub const MAX_CORPUS_DOCUMENTS: usize = 25_000;
 
 /// How much text one vault may hold. The count above does not bound memory, because the many files and the many bytes sit in different folders: measured on this repo, a count of 5,000 filled with 5 MB of build output and left every note somebody wrote unread.
-const MAX_CORPUS_BYTES: usize = 32 * 1024 * 1024;
+pub(crate) const MAX_CORPUS_BYTES: usize = 32 * 1024 * 1024;
 
 /// How much of one document is kept. Long enough for anything anyone reads; short enough that one enormous file cannot dominate the vault's footprint.
 const MAX_DOCUMENT_BYTES: usize = 2 * 1024 * 1024;
@@ -160,15 +160,74 @@ pub struct VaultCorpus {
     pub skipped: Vec<String>,
 }
 
-/// One slice of a read, as it lands. `documents` are the new ones only, so whoever is collecting them grows what it holds rather than replacing it.
+/// One slice of a read, as it lands. `documents` are the new ones only unless `replaces` says otherwise, so whoever is collecting them grows what it holds rather than replacing it.
 pub struct CorpusSlice {
     pub documents: Vec<CorpusDocument>,
     /// Whether either cap has been hit so far, or the read was stopped. The last slice carries the final answer.
     pub truncated: bool,
-    /// What the walk left out. Known in full before the first slice, because the walk runs whole before anything is opened — so it rides every slice rather than waiting for the last.
+    /// What the walk left out. Empty on a preview, which goes out before the walk has finished listing; every sorted slice carries the walk's one whole answer.
     pub skipped: Vec<String>,
+    /// What this slice lands on is thrown away rather than grown. Two slices of a read carry it: the preview, which starts the text, and the first sorted slice, which drops the preview so no document is held twice and nothing the final limits exclude survives.
+    pub replaces: bool,
     /// Nothing more is coming. Always sent, even for a vault of nothing: it is what says the read is over.
     pub last: bool,
+}
+
+/// The first documents the walk lists, handed over before the sort so a search can be answered while the rest of the tree is still being listed. Bounded by the same two numbers the whole corpus is, read off the directory entries the walk already had, so it costs no second look at the disk and no second format test.
+///
+/// It goes out once. `deliver` is taken when it does, which is the whole of that rule: after it the walk only records paths.
+pub(crate) struct CorpusPreview<'a> {
+    paths: Vec<PathBuf>,
+    bytes: u64,
+    deliver: Option<&'a mut dyn FnMut(Vec<PathBuf>)>,
+}
+
+impl<'a> CorpusPreview<'a> {
+    /// A walk that hands nothing over early — what a test of the walk itself asks for. Every read the app makes wants the preview, so this exists for the tests alone.
+    #[cfg(test)]
+    pub(crate) fn none() -> Self {
+        Self {
+            paths: Vec::new(),
+            bytes: 0,
+            deliver: None,
+        }
+    }
+
+    /// A walk that hands its first documents over as soon as it has them.
+    pub(crate) fn sending(deliver: &'a mut dyn FnMut(Vec<PathBuf>)) -> Self {
+        Self {
+            paths: Vec::new(),
+            bytes: 0,
+            deliver: Some(deliver),
+        }
+    }
+
+    /// One listed document offered to the batch. A file whose own size would cross the ceiling is left to the final corpus rather than emptying the preview of everything else.
+    fn offer(&mut self, size: u64, path: &Path) {
+        if self.deliver.is_none() {
+            return;
+        }
+        if self.bytes + size <= MAX_CORPUS_BYTES as u64 {
+            self.bytes += size;
+            self.paths.push(path.to_path_buf());
+        }
+        if self.paths.len() >= CORPUS_SLICE_DOCUMENTS || self.bytes >= MAX_CORPUS_BYTES as u64 {
+            self.send();
+        }
+    }
+
+    /// A folder has been listed. Whatever it turned up goes now: waiting for the next folder is the wait this exists to end.
+    fn folder_listed(&mut self) {
+        if !self.paths.is_empty() {
+            self.send();
+        }
+    }
+
+    fn send(&mut self) {
+        if let Some(deliver) = self.deliver.take() {
+            deliver(std::mem::take(&mut self.paths));
+        }
+    }
 }
 
 /// How many folders the count line will name. Past this the sentence is longer than the answer it is a footnote to, and the number in front of it still says how many there were.
@@ -184,6 +243,11 @@ impl VaultCorpus {
         let mut truncated = false;
         let mut skipped = Vec::new();
         Self::read_in_slices(root, usize::MAX, &|| false, |slice| {
+            // The preview lands first and the first sorted slice drops it, so the whole read is these slices played in order rather than added up.
+            if slice.replaces {
+                documents.clear();
+                truncated = false;
+            }
             documents.extend(slice.documents);
             truncated |= slice.truncated;
             skipped = slice.skipped;
@@ -198,7 +262,7 @@ impl VaultCorpus {
 
     /// The same read, handing over what it has as it goes, so a search can answer over part of a vault while the rest is still being opened.
     ///
-    /// The walk runs whole before anything is opened, and that order is load-bearing: the byte budget is spent smallest-first, which is what buys the whole of a vault of notes rather than as much as fits of a folder of generated ones. So a slice is a prefix of the sorted list, and nothing can be handed over until every path under the vault has been listed.
+    /// The sorted slices spend the byte budget smallest-first, which is what buys the whole of a vault of notes rather than as much as fits of a folder of generated ones — and that order needs every path, so none of them can go out until the walk has finished. Ahead of them is one preview taken in the order the walk met them, which answers the search that paid for the walk and is thrown away by the first sorted slice.
     ///
     /// `overtaken` is checked between documents, the same question [`Self::search_until`] asks in the same place: the vault has been left, so the rest of this read is answers nobody will collect.
     pub fn read_in_slices(
@@ -209,7 +273,30 @@ impl VaultCorpus {
     ) {
         let mut found = Vec::new();
         let mut left_out = Vec::new();
-        collect_documents(root, 0, &mut found, &mut left_out, overtaken);
+        {
+            let mut send_preview = |paths: Vec<PathBuf>| {
+                if overtaken() {
+                    return;
+                }
+                let documents: Vec<CorpusDocument> = paths
+                    .iter()
+                    .filter_map(|path| read_document(path))
+                    .collect();
+                // Nothing readable in the batch, so there is no early answer to give and the sorted slices carry the read on their own.
+                if documents.is_empty() {
+                    return;
+                }
+                deliver(CorpusSlice {
+                    documents,
+                    truncated: false,
+                    skipped: Vec::new(),
+                    replaces: true,
+                    last: false,
+                });
+            };
+            let mut preview = CorpusPreview::sending(&mut send_preview);
+            collect_documents(root, 0, &mut found, &mut left_out, overtaken, &mut preview);
+        }
         let skipped = skipped_folder_labels(root, left_out);
         // Smallest first, so the byte budget buys as many documents as it can. The sizes came back off the same directory entries the walk had already read, so this costs no second look at the disk.
         found.sort_by_key(|(size, _)| *size);
@@ -219,6 +306,8 @@ impl VaultCorpus {
 
         let size = size.max(1);
         let mut held = 0;
+        // The first sorted slice drops the preview: a document held twice would be two rows, and a preview hit the final limits exclude would outlive the ranking that excluded it.
+        let mut replaces = true;
         let mut documents = Vec::new();
         for (_, path) in found {
             // Break rather than return: the slice below is the only thing that says a read is over, and the loop that started this one cannot begin another until it lands.
@@ -239,6 +328,7 @@ impl VaultCorpus {
                     documents: std::mem::take(&mut documents),
                     truncated,
                     skipped: skipped.clone(),
+                    replaces: std::mem::take(&mut replaces),
                     last: false,
                 });
             }
@@ -247,6 +337,7 @@ impl VaultCorpus {
             documents,
             truncated,
             skipped,
+            replaces,
             last: true,
         });
     }
@@ -696,6 +787,7 @@ pub(crate) fn collect_documents(
     out: &mut Vec<(u64, PathBuf)>,
     left_out: &mut Vec<PathBuf>,
     overtaken: &dyn Fn() -> bool,
+    preview: &mut CorpusPreview,
 ) {
     // Beside the document cap, so a walk of a folder nobody is in unwinds at the next folder. The recursion hands nothing back, so the caller asks again once this returns.
     if depth >= MAX_DEPTH || out.len() > MAX_CORPUS_DOCUMENTS || overtaken() {
@@ -723,11 +815,15 @@ pub(crate) fn collect_documents(
             subfolders.push(path);
         } else if file_type.is_file() && crate::is_supported_document_path(&path) {
             // The size is already in the directory entry, so this is not a second look at the disk.
-            out.push((entry.metadata().map(|meta| meta.len()).unwrap_or(0), path));
+            let size = entry.metadata().map(|meta| meta.len()).unwrap_or(0);
+            preview.offer(size, &path);
+            out.push((size, path));
         }
     }
+    // This folder's own files are listed, so anything the preview gathered goes out here rather than waiting on the folders below.
+    preview.folder_listed();
     for folder in subfolders {
-        collect_documents(&folder, depth + 1, out, left_out, overtaken);
+        collect_documents(&folder, depth + 1, out, left_out, overtaken, preview);
     }
 }
 

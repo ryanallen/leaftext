@@ -3,6 +3,7 @@
 use super::*;
 
 use crate::store::GraphRequest;
+use crate::vault_corpus::CorpusPreview;
 
 fn corpus_dir(tag: &str) -> PathBuf {
     scratch_dir(&format!("corpus-{tag}"))
@@ -72,7 +73,14 @@ fn a_folder_of_build_output_is_not_walked() {
     write(&root.join("target/.rustc_info.json"), "{}\n");
 
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new(), &|| false);
+    crate::vault_corpus::collect_documents(
+        &root,
+        0,
+        &mut found,
+        &mut Vec::new(),
+        &|| false,
+        &mut CorpusPreview::none(),
+    );
     let names: Vec<String> = found
         .iter()
         .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
@@ -102,7 +110,14 @@ fn a_cache_tag_and_a_known_name_each_skip_a_folder_on_their_own() {
     write(&root.join("diary/monday.md"), "# Monday\n");
 
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new(), &|| false);
+    crate::vault_corpus::collect_documents(
+        &root,
+        0,
+        &mut found,
+        &mut Vec::new(),
+        &|| false,
+        &mut CorpusPreview::none(),
+    );
     let mut names: Vec<String> = found
         .iter()
         .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
@@ -128,7 +143,14 @@ fn a_vault_whose_notes_live_under_a_dotted_folder_still_reads_them() {
     write(&root.join(".notes/deeper/two.md"), "# Two\n");
 
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new(), &|| false);
+    crate::vault_corpus::collect_documents(
+        &root,
+        0,
+        &mut found,
+        &mut Vec::new(),
+        &|| false,
+        &mut CorpusPreview::none(),
+    );
     let mut names: Vec<String> = found
         .iter()
         .map(|(_, path)| path.file_name().unwrap().to_string_lossy().to_string())
@@ -229,7 +251,14 @@ fn reading_a_vault_is_timed_in_its_parts() {
 
     let started = std::time::Instant::now();
     let mut found = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut found, &mut Vec::new(), &|| false);
+    crate::vault_corpus::collect_documents(
+        &root,
+        0,
+        &mut found,
+        &mut Vec::new(),
+        &|| false,
+        &mut CorpusPreview::none(),
+    );
     found.sort_by_key(|(size, _)| *size);
     let walk = started.elapsed();
     println!(
@@ -360,13 +389,16 @@ fn a_vault_read_in_slices_ends_up_holding_what_one_read_holds() {
         slices += 1;
         if slice.last {
             lasts += 1;
-        } else {
-            // Only the final slice may be short: anything else means the read handed over a part-filled one and the answers behind it would crowd each other.
+        } else if slices > 1 {
+            // Only the final slice may be short: anything else means the read handed over a part-filled one and the answers behind it would crowd each other. The preview ahead of them is however many the walk had when it turned the first corner.
             assert_eq!(
                 slice.documents.len(),
                 2,
                 "a slice before the last was short"
             );
+        }
+        if slice.replaces {
+            documents.clear();
         }
         documents.extend(slice.documents);
     });
@@ -418,6 +450,10 @@ a talk on dharma
             so_far >= 4
         },
         |slice| {
+            // Played back the way the app plays it, so the preview the walk handed over is not counted twice.
+            if slice.replaces {
+                opened = 0;
+            }
             opened += slice.documents.len();
             if slice.last {
                 ends += 1;
@@ -432,7 +468,12 @@ a talk on dharma
 
     // Nothing stopping it reads the whole vault, so the stop is the only difference between the two.
     let mut whole = 0;
-    VaultCorpus::read_in_slices(&root, 2, &|| false, |slice| whole += slice.documents.len());
+    VaultCorpus::read_in_slices(&root, 2, &|| false, |slice| {
+        if slice.replaces {
+            whole = 0;
+        }
+        whole += slice.documents.len();
+    });
     assert_eq!(whole, 7);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
@@ -475,11 +516,18 @@ a talk on dharma
     // Stopped part-way instead: the walk unwinds at the next folder rather than listing the rest of the tree, so it comes back with some of the vault and not all of it.
     let asked = std::cell::Cell::new(0usize);
     let mut some = Vec::new();
-    crate::vault_corpus::collect_documents(&root, 0, &mut some, &mut Vec::new(), &|| {
-        let so_far = asked.get();
-        asked.set(so_far + 1);
-        so_far >= 4
-    });
+    crate::vault_corpus::collect_documents(
+        &root,
+        0,
+        &mut some,
+        &mut Vec::new(),
+        &|| {
+            let so_far = asked.get();
+            asked.set(so_far + 1);
+            so_far >= 4
+        },
+        &mut CorpusPreview::none(),
+    );
     assert!(
         !some.is_empty() && some.len() < 18,
         "a walk stopped part-way listed {} of 18 documents",
@@ -490,6 +538,176 @@ a talk on dharma
     let whole = VaultCorpus::read(&root);
     assert_eq!(whole.documents.len(), 18);
     assert!(!whole.truncated);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+/// What one read hands over, in order, with the replacing slices marked. The whole of what a caller has to play back to end up with the vault's text.
+fn slices_of(root: &Path, size: usize) -> Vec<(bool, bool, Vec<String>)> {
+    let mut slices = Vec::new();
+    VaultCorpus::read_in_slices(root, size, &|| false, |slice| {
+        slices.push((
+            slice.replaces,
+            slice.last,
+            slice.documents.iter().map(|doc| doc.path.clone()).collect(),
+        ));
+    });
+    slices
+}
+
+/// A vault of `folders` folders holding `per_folder` notes each, none of them at the top, so the walk has to go down one level before it has a document at all.
+fn vault_of_folders(root: &Path, folders: usize, per_folder: usize) {
+    for folder in 0..folders {
+        for note in 0..per_folder {
+            write(
+                &root
+                    .join(format!("part-{folder}"))
+                    .join(format!("note-{note}.md")),
+                &format!(
+                    "# Note {folder}-{note}
+
+a talk on dharma
+"
+                ),
+            );
+        }
+    }
+}
+
+/// The whole of what the preview is for: something to search before every folder has been listed. It goes out once, ahead of the sorted slices, inside both caps — and playing the read back through the replacement marks lands on the same text a whole read holds, which is what says the preview never leaves a document behind or holds one twice.
+#[test]
+fn one_read_hands_over_a_bounded_preview_before_any_sorted_slice() {
+    let dir = corpus_dir("preview-bounded");
+    let root = dir.join("vault");
+    // More than one batch in the first folder, so the preview is cut by its own count rather than by where the walk turns a corner.
+    vault_of_folders(&root, 3, 80);
+
+    let slices = slices_of(&root, 50);
+    let replacing: Vec<usize> = slices
+        .iter()
+        .enumerate()
+        .filter(|(_, (replaces, _, _))| *replaces)
+        .map(|(at, _)| at)
+        .collect();
+    assert_eq!(
+        replacing,
+        vec![0, 1],
+        "a read handed over {} replacing slices rather than one preview and one first sorted slice",
+        replacing.len()
+    );
+
+    let (_, last, preview) = &slices[0];
+    assert!(!last, "the preview said the read was over");
+    assert!(
+        preview.len() <= crate::vault_corpus::CORPUS_SLICE_DOCUMENTS,
+        "the preview carried {} documents",
+        preview.len()
+    );
+
+    // Played back the way the app plays it: a replacing slice throws away what it lands on, and every other slice grows it.
+    let mut held: Vec<String> = Vec::new();
+    for (replaces, _, documents) in &slices {
+        if *replaces {
+            held.clear();
+        }
+        held.extend(documents.iter().cloned());
+    }
+    let whole: Vec<String> = VaultCorpus::read(&root)
+        .documents
+        .iter()
+        .map(|doc| doc.path.clone())
+        .collect();
+    assert_eq!(
+        held, whole,
+        "playing the slices back did not land on the text a whole read holds"
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+/// The other bound on the preview: one folder listed is enough to hand it over. Waiting for the count to fill would put the whole rest of the walk back in front of the first row, which is the wait this exists to end.
+#[test]
+fn a_preview_short_of_its_count_still_goes_out_at_the_first_folder() {
+    let dir = corpus_dir("preview-folder");
+    let root = dir.join("vault");
+    vault_of_folders(&root, 4, 6);
+
+    let slices = slices_of(&root, 50);
+    let (replaces, last, preview) = &slices[0];
+    assert!(replaces, "the first slice of the read did not replace");
+    assert!(!last, "the read was over before its sorted slices");
+    assert_eq!(
+        preview.len(),
+        6,
+        "the preview waited past the folder that filled it"
+    );
+    // And the sorted slices still carry the whole vault, so the early answer costs nothing off the final one.
+    assert_eq!(VaultCorpus::read(&root).documents.len(), 24);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+/// The preview goes out mid-walk, so it cannot know what the walk will leave out — and the count line above the rows says nothing rather than a wrong number. Every sorted slice carries the whole answer, which is what puts the line right.
+#[test]
+fn the_preview_names_no_skipped_folders_and_the_sorted_slices_name_them_all() {
+    let dir = corpus_dir("preview-skipped");
+    let root = dir.join("vault");
+    vault_of_folders(&root, 2, 6);
+    write(
+        &root.join("app/target/debug/unit.rlib"),
+        "x
+",
+    );
+    write(
+        &root.join("site/node_modules/pkg/index.js"),
+        "x
+",
+    );
+
+    let mut skipped_by_slice = Vec::new();
+    VaultCorpus::read_in_slices(&root, 50, &|| false, |slice| {
+        skipped_by_slice.push(slice.skipped)
+    });
+    assert!(
+        skipped_by_slice[0].is_empty(),
+        "a preview named folders the walk had not finished leaving out: {:?}",
+        skipped_by_slice[0]
+    );
+    for named in &skipped_by_slice[1..] {
+        assert_eq!(
+            named,
+            &vec!["app/target".to_string(), "site/node_modules".to_string()],
+            "a sorted slice did not carry the walk's whole answer"
+        );
+    }
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+/// A file big enough to blow the vault's byte ceiling on its own is left to the sorted slices rather than emptying the preview of everything beside it. Asked of the walk rather than of a 32 MB file on disk: the preview counts the sizes the directory entries declared, which is the number under test.
+#[test]
+fn the_preview_counts_the_bytes_the_walk_already_read() {
+    let dir = corpus_dir("preview-bytes");
+    let root = dir.join("vault");
+    vault_of_folders(&root, 1, 4);
+
+    let mut found = Vec::new();
+    crate::vault_corpus::collect_documents(
+        &root,
+        0,
+        &mut found,
+        &mut Vec::new(),
+        &|| false,
+        &mut CorpusPreview::none(),
+    );
+    let declared: u64 = found.iter().map(|(size, _)| *size).sum();
+    assert!(
+        declared > 0 && declared < crate::vault_corpus::MAX_CORPUS_BYTES as u64,
+        "four notes declared {declared} bytes"
+    );
+
+    let slices = slices_of(&root, 50);
+    assert_eq!(slices[0].2.len(), 4, "the preview left a note out");
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }

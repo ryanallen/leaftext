@@ -181,6 +181,15 @@ impl Reader {
 
     /// Render the active tab's document (or the home screen) into the webview and refresh the tab bar, window title, image source dir, and navigation buttons.
     pub(crate) fn render(&mut self, scroll: ScrollIntent) {
+        let _ = self.render_with_open_result(scroll);
+    }
+
+    /// Render for a caller that needs to know whether the document opened.
+    pub(crate) fn render_for_pipe(&mut self, scroll: ScrollIntent) -> Result<(), String> {
+        self.render_with_open_result(scroll)
+    }
+
+    fn render_with_open_result(&mut self, scroll: ScrollIntent) -> Result<(), String> {
         // Pop the spinner for navigations (open, back/forward, tab switch), where the load below can be slow; the state script clears it. In-place re-renders (Preserve: edits, saves, renames) and the home screen skip it, so a checkbox click doesn't flash an overlay.
         if self.workspace.active.is_some() && !matches!(scroll, ScrollIntent::Preserve { .. }) {
             begin_reader_loading(self.page());
@@ -194,7 +203,7 @@ impl Reader {
                     .and_then(|tab| tab.history.current().cloned())
                 else {
                     self.workspace.active = None;
-                    return self.render(scroll);
+                    return self.render_with_open_result(scroll);
                 };
                 // Opening, Back, Forward and a tab switch are the four ways a reader arrives at a document they have been away from, and any of them can arrive at a buffer the disk has moved past. A `Preserve` render is the app redrawing its own edit, where the buffer is the truth and a read could only ever say the same thing.
                 if !matches!(scroll, ScrollIntent::Preserve { .. }) {
@@ -230,7 +239,7 @@ impl Reader {
                     {
                         say_edit_refused(self.page(), &self.workspace, &why);
                     }
-                    return;
+                    return Ok(());
                 }
 
                 // Prefer this document's edit buffer so unsaved edits show — but only when the buffer is for THIS document, or a leftover buffer would shadow a page opened by a link click.
@@ -258,7 +267,8 @@ impl Reader {
                         Err(error) => {
                             let reason = error.to_string();
                             let missing = error.kind() == io::ErrorKind::NotFound;
-                            eprintln!("Failed to open {}: {}", path.display(), reason);
+                            let refusal = open_refusal(&path, &reason);
+                            eprintln!("{refusal}");
 
                             // Drop a missing file from Recent so it can't re-trigger.
                             if missing && self.recent.forget(&path) {
@@ -266,23 +276,11 @@ impl Reader {
                             }
 
                             // Don't strand the user on a tab that can't render: fall back to the previous document, or close the tab.
-                            let recovered = self
-                                .workspace
-                                .tabs
-                                .get_mut(index)
-                                .map(|tab| {
-                                    tab.scroll_history.clear();
-                                    tab.history.forget_current()
-                                })
-                                .unwrap_or(false);
-                            if !recovered {
-                                // The answer is ignored on purpose: the reader never saw this document, so the reset below is what they want whichever tab went.
-                                let _ = self.workspace.close_tab(index);
-                            }
+                            recover_failed_open(&mut self.workspace, index);
 
-                            self.render(ScrollIntent::Reset);
+                            let _ = self.render_with_open_result(ScrollIntent::Reset);
                             show_open_error(self.page(), &path, &reason);
-                            return;
+                            return Err(refusal);
                         }
                     }
                 };
@@ -333,6 +331,26 @@ impl Reader {
             }
         }
         update_active_navigation(self.page(), &self.workspace);
+        Ok(())
+    }
+}
+
+pub(crate) fn open_refusal(path: &Path, reason: &str) -> String {
+    format!("Failed to open {}: {reason}", path.display())
+}
+
+pub(crate) fn recover_failed_open(workspace: &mut Workspace, index: usize) {
+    let recovered = workspace
+        .tabs
+        .get_mut(index)
+        .map(|tab| {
+            tab.scroll_history.clear();
+            tab.history.forget_current()
+        })
+        .unwrap_or(false);
+    if !recovered {
+        // The reader never saw this document, so whichever tab the close chooses is the right reset target.
+        let _ = workspace.close_tab(index);
     }
 }
 

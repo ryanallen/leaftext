@@ -15,14 +15,24 @@ pub(crate) fn state(reader: &Reader, vault_state: &VaultState, reply: &PipeReply
 pub(crate) fn doc(reader: &mut Reader, path: &Path, reply: &PipeReply) {
     let answer = match pipe_bring_to_front(&mut reader.workspace, path) {
         Ok(moved) => {
-            if moved {
-                reader.render(ScrollIntent::Reset);
-            }
-            pipe_document_answer(&mut reader.workspace)
+            let rendered = if moved {
+                reader.render_for_pipe(ScrollIntent::Reset)
+            } else {
+                Ok(())
+            };
+            pipe_document_answer_after_render(&mut reader.workspace, rendered)
         }
         Err(reason) => Err(reason),
     };
     let _ = reply.try_send(answer);
+}
+
+pub(crate) fn pipe_document_answer_after_render(
+    workspace: &mut Workspace,
+    rendered: Result<(), String>,
+) -> Result<serde_json::Value, String> {
+    rendered?;
+    pipe_document_answer(workspace)
 }
 
 /// A byte range spliced as one undo step, then straight back on screen the way a reading-view edit is: the render restores a tab left in source from the same buffer, so either view shows what the agent wrote.

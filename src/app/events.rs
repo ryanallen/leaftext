@@ -47,16 +47,16 @@ pub(crate) enum UserEvent {
         folder: PathBuf,
         error: Option<String>,
     },
-    /// A slice of the active vault's text, as the read hands it over. Several of these land per read: a query parked on the read is answered by each one, so somebody is reading matches while the rest of the vault is still being opened, and only the last one lets an answer be kept.
+    /// A slice of the active vault's text, as the read hands it over. Several of these land per read: a query parked on the read is answered by each one, so somebody is reading matches while the rest of the vault is still being opened, and only the last one lets an answer be kept. The first is a preview taken while the folders were still being listed, and the first sorted slice replaces it.
     CorpusLoaded {
         root: PathBuf,
         documents: Box<Vec<CorpusDocument>>,
         /// The read hit a cap, so the vault holds more than this will.
         truncated: bool,
-        /// Folders the walk did not go into because they hold generated files. Known in full before the first slice, since the walk runs whole before anything is opened.
+        /// Folders the walk did not go into because they hold generated files. Empty on the preview, which goes out before the walk has finished listing; every sorted slice carries the whole answer.
         skipped: Vec<String>,
-        /// The first slice of a fresh read: what this vault held is replaced rather than grown.
-        first: bool,
+        /// What this slice lands on is thrown away rather than grown: the preview, which starts the text, and the first sorted slice, which drops the preview.
+        replaces: bool,
         /// The last slice. Until it lands the vault's text is partial.
         last: bool,
         /// Which read sent it, claimed once when that read started. A vault left and come straight back to is the same root again, so the root alone cannot tell an abandoned read's slice from the live one's.

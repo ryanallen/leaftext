@@ -281,7 +281,7 @@ fn a_read_overtaken_before_it_opened_a_document_is_thrown_away_though_its_slice_
     state.corpus_loading = true;
     let abandoned = state.corpus_read.claim();
 
-    // The fast gesture: away and back before the walk ended, so the read broke having sent nothing. Its one slice is its first as well as its last and holds no documents — the case a `first`-based test keeps, leaving the vault empty and calling it read.
+    // The fast gesture: away and back before the walk ended, so the read broke having sent nothing. Its one slice replaces and is also its last and holds no documents — the case a test that trusted the mark keeps, leaving the vault empty and calling it read.
     state.drop_corpus();
     state.root = Some(PathBuf::from("/another-vault"));
     state.drop_corpus();
@@ -529,6 +529,163 @@ fn a_fresh_read_replaces_the_text_it_finds_rather_than_growing_it() {
         "a fresh read was added to the last one's text"
     );
     assert_eq!(fresh.corpus.documents[0].label, "two");
+}
+
+/// The whole shape of a read that starts with a preview: the batch the walk handed over is what the vault holds while the folders are still being listed, the first sorted slice throws it away rather than adding to it, and the slices after that grow. Whichever query is in the box at the time is the one every slice answers, so typing again while the ring turns is answered off the preview and again off the whole vault.
+#[test]
+fn the_preview_starts_the_text_and_the_first_sorted_slice_throws_it_away() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus_loading = true;
+    // Somebody searched a vault nobody had read, which is what paid for the walk.
+    state.pending_search = Some(typed("dharma"));
+    let reading = state.corpus_read.claim();
+
+    let preview = absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("in-the-first-folder")],
+        false,
+        Vec::new(),
+        true,
+        false,
+        reading,
+    )
+    .expect("the preview is for the vault on screen");
+    assert_eq!(preview.corpus.documents.len(), 1);
+    assert!(
+        state.corpus_partial,
+        "a vault one folder into its walk was called whole"
+    );
+    assert!(
+        preview.parked.is_some(),
+        "the preview did not answer the query that paid for the walk"
+    );
+    assert!(
+        preview.hints.is_none() && preview.graph.is_none(),
+        "the preview filled the completion menu or drew the map off one folder"
+    );
+
+    // The reader typed again while the ring was still turning, so this is the query every later slice owes an answer to.
+    state.pending_search = Some(typed("practice"));
+
+    let sorted = absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("smallest")],
+        false,
+        Vec::new(),
+        true,
+        false,
+        reading,
+    )
+    .expect("the first sorted slice is kept");
+    assert_eq!(
+        sorted
+            .corpus
+            .documents
+            .iter()
+            .map(|doc| doc.label.clone())
+            .collect::<Vec<_>>(),
+        vec!["smallest".to_string()],
+        "the first sorted slice grew the preview rather than replacing it"
+    );
+    assert_eq!(
+        sorted.parked.map(|query| query.text),
+        Some("practice".to_string()),
+        "the slice answered the query the reader had already typed past"
+    );
+    assert!(
+        state.pending_search.is_some(),
+        "the newer query was taken out of its slot before the read was over"
+    );
+
+    let last = absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("bigger")],
+        false,
+        Vec::new(),
+        false,
+        true,
+        reading,
+    )
+    .expect("the last slice is kept");
+    assert_eq!(
+        last.corpus
+            .documents
+            .iter()
+            .map(|doc| doc.label.clone())
+            .collect::<Vec<_>>(),
+        vec!["smallest".to_string(), "bigger".to_string()],
+        "a later sorted slice replaced the text instead of growing it"
+    );
+    assert!(
+        !state.corpus_partial && !state.corpus_loading,
+        "a finished read still called its text partial"
+    );
+    assert!(
+        last.hints.is_some(),
+        "the completion menu was never filled from the whole vault"
+    );
+    assert!(
+        state.pending_search.is_none(),
+        "the finished read left its query parked for ever"
+    );
+}
+
+/// The preview is refused by the same two questions every other slice is. It lands earliest of all, so a reader who has already moved on is exactly who it would reach.
+#[test]
+fn a_preview_from_a_vault_the_reader_left_is_refused() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus_loading = true;
+    let abandoned = state.corpus_read.claim();
+
+    // Away and back inside the walk, so the root matches again while the read nobody is waiting on is still delivering.
+    state.drop_corpus();
+    state.root = Some(PathBuf::from("/another-vault"));
+    state.drop_corpus();
+    state.root = Some(root.clone());
+
+    assert!(
+        absorb_corpus_slice(
+            &mut state,
+            &root,
+            vec![slice_document("one")],
+            false,
+            Vec::new(),
+            true,
+            false,
+            abandoned
+        )
+        .is_none(),
+        "a preview from the read they walked out on became the vault's text"
+    );
+    assert!(
+        state.corpus.is_none(),
+        "the abandoned preview was left standing as the whole vault"
+    );
+
+    // And one from another folder entirely, which is the other question.
+    let reading = state.corpus_read.claim();
+    assert!(
+        absorb_corpus_slice(
+            &mut state,
+            &PathBuf::from("/somewhere-else"),
+            vec![slice_document("one")],
+            false,
+            Vec::new(),
+            true,
+            false,
+            reading
+        )
+        .is_none(),
+        "a preview walked under another vault was taken as this one's text"
+    );
+    assert!(state.corpus.is_none());
 }
 
 /// One hit, which is all a memo test needs: what is kept matters here, not what it holds.
