@@ -185,7 +185,7 @@ if (!exe) {
 
 // A cargo that always fails, ahead of the real one on PATH: the launcher's refusal to fall through to the last build is the whole point of building, and nothing else can prove it without breaking the tree.
 //
-// It says which home folder it was run under before it fails, and the read below is the only thing holding the build outside the starved profile: Rust keeps its toolchain setting and its crate cache under %USERPROFILE%, which the probe profile points at a folder that has never held either.
+// It prints the home it ran under before it fails: Rust keeps its toolchain and its crate cache under %USERPROFILE%, which the profile starves, so the read below is the only thing holding the build outside it.
 const failedBuildName = `driver-check-${process.pid}`;
 const failedBuildWork = join(tmpdir(), `leaftext-probe-${failedBuildName}`);
 const fakeCargoHome = join(tmpdir(), `leaftext-fake-cargo-${process.pid}`);
@@ -222,7 +222,7 @@ function inOrder(lines) {
   let at = -1;
   return lines.every((line) => (at = launcherRun.indexOf(line, at + 1)) >= 0);
 }
-// The build is not named here: where it runs is read off the run above, and a text order that passes on a launcher that read refuses is the weaker of the two deciding when the tree turns red. These three print nothing a run could be read off.
+// The build is not named here: the read above already proves where it ran, and a text order that passes on a launcher that read refuses is the weaker check deciding when the tree turns red. These three print nothing a run could be read off.
 if (!inOrder(['if (-not $Close -and (Test-LeafPipe $name))', 'Copy-Item -LiteralPath $builtExe', 'Start-LeafOffScreen $Exe'])) {
   problems.push('the probe open path is no longer same-name refusal, copy, launch');
 }
