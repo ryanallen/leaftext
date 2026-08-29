@@ -1509,7 +1509,7 @@ function wireSourceEditable(el) {
     if (event.target && event.target.closest && event.target.closest('a')) return;
     // A press on a fold's own row opens the fold. It is the one press on a block that already means something, and swallowing it would leave a box nothing can open.
     if (event.target && event.target.closest && event.target.closest('summary')) return;
-    // A value inside this block that carries its own bytes and was wired answers the press itself. Swapping the block for its markup here would take the caret off the one word the reader aimed at, which is the whole of what a composed run of values was drawn apart for.
+    // A value inside this block that carries its own bytes and is wired answers the press itself. Swapping the block for its markup here would take the caret off the one word the reader aimed at, which is the whole of what a composed run of values was drawn apart for.
     if (event.target && event.target.closest && event.target.closest('[data-value-start].leaf-editable')) return;
     if (el.dataset.processed === 'true' && el.classList.contains('mermaid')) return;
     event.preventDefault();

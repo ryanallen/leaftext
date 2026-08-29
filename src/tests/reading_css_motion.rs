@@ -702,7 +702,7 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
 
 #[test]
 fn a_hover_moves_nothing_and_never_swaps_an_icons_drawing() {
-    // Pointing at something answers with color and nothing else, so no hover anywhere shifts an element off where it rests — the leaf that slid and the chip drawing that rose were both refused. The swap is pinned in the same body: a mask does not interpolate, so an icon that changed drawing on hover would land in one frame beside a fill that fades.
+    // Pointing at something answers with color and nothing else, so no hover anywhere shifts an element off where it rests — the leaf that slides and the chip drawing that rises are both refused. The swap is pinned in the same body: a mask does not interpolate, so an icon that changed drawing on hover would land in one frame beside a fill that fades.
     let css = reading_mode_css();
 
     for (at, _) in css.match_indices(":hover") {
