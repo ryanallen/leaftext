@@ -61,7 +61,7 @@ Bundle status and `Devs with`, stamp the ranking and run the plan checks.
 
 ### 11. Hand back
 
-The whole reply is the owner's message repeated word for word.
+The whole reply is the owner's message, word for word.
 
 ## 1. Read first
 
@@ -228,7 +228,7 @@ The tree is read from whichever file somebody opens first, so each one names the
 
 ## 11. Hand back
 
-The whole reply is the owner's message repeated word for word. Which rows moved and why, what tier 0 turned up and what is at the top now are all written into the list itself, which is where the owner reads them. Nothing in the app moved; the tree stays dirty.
+The whole reply is the owner's message, word for word. Which rows moved and why, what tier 0 turned up and what is at the top now are all written into the list itself, which is where the owner reads them. Nothing in the app moved; the tree stays dirty.
 
 ## Reference
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Stop hook. Measures the reply against Rule 1 and refuses to end the turn when it breaks. Printing a rule does not enforce it: gate-rules.mjs is the reminder, this is the check.
 //
-// It enforces the half of Rule 1 that names its own words: the 500-character ceiling, the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
+// It enforces the half of Rule 1 that names its own words: the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
 //
-// Finished work is handed back as the owner's own message repeated word for word, so a block they typed is measured against nothing — the ceiling included, since the owner sets the length of their own message, and the phrases included, since a message asking whether something is out of scope would otherwise refuse its own echo.
+// Finished work is handed back as the owner's own message repeated word for word, so a block they typed is measured against nothing: a message asking whether something is out of scope would otherwise refuse its own echo.
 //
 // It also refuses a build whose boxes did not go in one at a time while its code was landing. `/dev` says to tick each box in the same edit as its code, and a rule nothing reads is one a build forgets — which leaves the owner asking whether one is happening at all, the question the plan tree exists to answer without being asked. Read off the samples gate-sample.mjs takes after every edit and every shell command, never off the ticket alone: a phase ticked all at once at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart. The rule is written per box, so the reading is the run rather than a count — every rise is exactly one box, and no two rises touch. Nothing is left over to make up at the end.
 //
@@ -31,8 +31,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /// Where the tickets live, beside this repo. A file written here this turn is the work being filed.
 const PLAN_TREE = join(root, '..', 'docs');
-
-const LIMIT = 500;
 
 // How long to wait for the reply to reach the transcript. The last thing said is written after the turn ends, so reading the file straight away saw only the short lines said between tool calls — that is how a 952-character sign-off went out unrefused.
 const SETTLE_MS = 3000;
@@ -155,26 +153,27 @@ export function sweptPhase(held) {
   return null;
 }
 
-/// Each block on its own. Rule 1 caps a response, and a turn that says three things says three of them — joining first would fail a turn for the sum of twelve short lines and pass one that ended in an essay.
+/// Whitespace is not something the owner typed: the host splits a reply into blocks, so blank lines and breaks tell nothing apart. Compared this way a reply that is the message is the message, however it was laid out.
+const flat = (text) => text.replace(/\s+/g, ' ').trim();
+
+/// Each block on its own, so a fault in the last is not hidden by the clean ones above it.
 ///
-/// `filed` is whether the plan tree was written this turn; it is the one thing here that is not in the reply, and it decides only the filing phrases. `echo` is what the owner typed, and a block they wrote is not a block the reply wrote.
+/// `filed` is whether the plan tree was written this turn; it is the one thing here that is not in the reply, and it decides only the filing phrases. `echo` is what the owner typed.
 export function offenses(blocks, filed = true, echo = '') {
+  // The message back, word for word: the whole reply against the whole message, never block by block. Read a block at a time, a message of two lines came back as two blocks that each looked like a piece of it and was refused — so the next reply cut a line out to satisfy the refusal and handed the owner something they never typed.
+  const whole = flat(blocks.join('\n'));
+  if (echo && whole) {
+    const asked = flat(echo);
+    if (whole === asked) return [];
+    if (asked.includes(whole)) {
+      return ["The message back, with part of it cut. Rule 1 echoes the owner's whole message, first character to last: the skill name, its argument and every line of it. Send it whole, however long it ran."];
+    }
+  }
   const out = [];
   for (const block of blocks) {
     const trimmed = block.trim();
     if (!trimmed) continue;
-    // The message back, word for word. Nothing in it is the reply's own words, so nothing in it is measured.
-    if (echo && echo.includes(trimmed)) {
-      // Word for word is the whole message. A reply that is a piece of it has cut the front or the tail off what the owner wrote — the skill's own name most often — and hands them something they never typed.
-      if (trimmed !== echo.trim()) {
-        out.push('The message back, with part of it cut. Rule 1 echoes the owner\'s whole message, first character to last: the skill name, its argument and every line of it. Send it whole.');
-      }
-      continue;
-    }
-    // The ceiling counts everything said. The phrases count only what the reply says in its own voice.
-    if (trimmed.length > LIMIT) {
-      out.push(`${trimmed.length} characters. Rule 1 caps a reply at ${LIMIT}. Cut it to the answer and stop.`);
-    }
+    // The phrases count only what the reply says in its own voice.
     const said = unquoted(trimmed);
     if (SYCOPHANCY.some((p) => p.test(said))) {
       out.push('Opens with praise or an apology. Rule 1 forbids both. Delete the opener and lead with the answer.');
@@ -291,13 +290,11 @@ function selfTest() {
     if (got !== want) fails.push(`${label}: expected ${want ? 'blocked' : 'allowed'}`);
   };
   check('Log to a file: yes, all three.', false, 'short answer');
-  check('x'.repeat(LIMIT + 1), true, 'over the ceiling');
-  check('x'.repeat(LIMIT), false, 'exactly at the ceiling');
   check("You're right, the port is Windows only.", true, 'opens with praise');
   check('Good question. It works everywhere.', true, 'opens with a compliment');
   check('I apologize for the confusion.', true, 'opens with an apology');
   check('No. Windows only.', false, 'a flat no');
-  check('The right answer is exactly 500 bytes.', false, 'the word mid-sentence');
+  check('The right answer is exactly the twelve bytes.', false, 'the word mid-sentence');
   check('Exactly the twelve the ticket predicted.', false, 'a count, not a compliment');
   check('Exactly. Windows only.', true, 'agreement as the whole opener');
   check('', false, 'a turn that only ran tools');
@@ -320,11 +317,8 @@ function selfTest() {
   check('The pane opens on the second click.', false, 'a reply naming no work at all', false);
 
   // The message back, word for word. Every rule above is the reply's own words, and none of these words are the reply's.
-  const long = `fix the pager ${'x'.repeat(LIMIT)}`;
-  check(long, false, 'the message back, over the ceiling', true, long);
   check('is the strip out of scope', false, 'the filing phrase in the message back', false, 'is the strip out of scope');
   check('No. But the pane still opens.', true, 'a walk-back the owner never typed', true, 'does the pane open');
-  check('x'.repeat(LIMIT + 1), true, 'a long reply against a short message', true, 'go');
 
   // Word for word is the whole message. Echoing the argument without the skill that carried it is the way this goes wrong.
   const asked = '/dev C:\\work\\docs\\fixes\\reading\\the-bar-icons.md';
@@ -361,9 +355,9 @@ function selfTest() {
   } finally {
     rmSync(tree, { force: true, recursive: true });
   }
-  // Twelve short lines said between tool calls are twelve replies, not one long one. Joining them was how the ceiling read as met.
+  // Twelve short lines said between tool calls are twelve replies, not one. Each block is read on its own, so a fault in the last is not hidden by the eleven clean ones above it.
   if (offenses(Array(12).fill('Now the fixes.')).length) fails.push('short lines summed into an offense');
-  if (!offenses(['ok', 'x'.repeat(LIMIT + 1)]).length) fails.push('a long last block was missed');
+  if (!offenses(['ok', "You're right, the pane opens."]).length) fails.push('a faulty last block was missed');
 
   const transcript = [
     JSON.stringify({ type: 'user', message: { content: 'does it work on mac' } }),
@@ -385,8 +379,10 @@ function selfTest() {
   ];
   const sent = '/git-release one.md and two.md\n/done one.md and two.md';
   if (typedPrompt(commanded) !== sent) fails.push(`typedPrompt: a message naming two skills read as ${JSON.stringify(typedPrompt(commanded))}`);
-  if (offenses(['x'.repeat(LIMIT + 1)], true, sent).length !== 1) fails.push('typedPrompt: a long reply against a rebuilt message should still be measured');
+  if (offenses(["You're right, one.md is the one."], true, sent).length !== 1) fails.push('typedPrompt: a reply in its own words against a rebuilt message should still be measured');
   if (offenses([sent], true, sent).length) fails.push('typedPrompt: the whole of a rebuilt message came back refused');
+  // The whole message, laid out the way the host splits a reply. Read block by block, each half looked like a piece of the message and the refusal asked for less.
+  if (offenses(['/git-release one.md and two.md', '/done one.md and two.md'], true, sent).length) fails.push('typedPrompt: a two-command message came back refused for being two blocks');
   // The argument alone is still part of the message and nothing else, so it is refused for being cut rather than passed for being inside it.
   if (offenses(['one.md and two.md'], true, sent).length !== 1) fails.push('typedPrompt: the argument alone should be refused as part of the message');
   if (blocksOf([]).length) fails.push('blocksOf: empty transcript should say nothing');
@@ -397,7 +393,7 @@ function selfTest() {
   const path = join(tmpdir(), `gate-voice-selftest-${process.pid}.jsonl`);
   writeFileSync(path, [
     JSON.stringify({ type: 'user', message: { content: 'does it work on mac' } }),
-    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'x'.repeat(LIMIT + 1) }] } }),
+    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: "You're right, it does." }] } }),
   ].join('\n') + '\n');
   const run = (active) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
     input: JSON.stringify({ stop_hook_active: active, transcript_path: path }),
@@ -405,8 +401,8 @@ function selfTest() {
   });
   try {
     const blocked = JSON.parse(run(false) || '{}');
-    if (blocked.decision !== 'block') fails.push('entry point: an over-long reply was not blocked');
-    if (!blocked.reason?.includes(String(LIMIT))) fails.push('entry point: the block did not say the limit');
+    if (blocked.decision !== 'block') fails.push('entry point: a reply opening with praise was not blocked');
+    if (!blocked.reason?.includes('praise')) fails.push('entry point: the block did not say what was wrong');
     if (run(true).trim() !== '') fails.push('entry point: blocked again while a stop hook was already running');
   } catch (error) {
     fails.push(`entry point: ${error.message}`);
@@ -538,7 +534,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, the owner's own message measured against nothing, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half — keycodes)`);
+  console.log(`gate-voice: ok (${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, the owner's own message measured against nothing, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half — keycodes)`);
 }
 
 // Only act when run directly: anything importing this for a function would otherwise read a stream nobody is writing, and the importer hangs with no message.

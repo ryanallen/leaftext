@@ -228,9 +228,9 @@ Page list, titles, summaries and dates are all derived from the current files, a
 
 ### 10. Hand back — do NOT release
 
-Leave the changes uncommitted. The whole reply is the owner's message repeated word for word; what the lint found and left open is a ticket, not a sentence. Publishing is a separate, explicit `/git-release` the owner asks for (site-only: no version bump).
+Leave the changes uncommitted. The whole reply is the owner's message, word for word; what the lint found and left open is a ticket, not a sentence. Publishing is a separate, explicit `/git-release` the owner asks for (site-only: no version bump).
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 ## Reference
 

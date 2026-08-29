@@ -37,7 +37,7 @@ Build Rust documentation after Rust comment edits, then run `/check`.
 
 ### 5. Hand back the comment pass
 
-The whole reply is the owner's message repeated word for word, leaving the tree dirty.
+The whole reply is the owner's message, word for word. The tree stays dirty.
 
 ## Scope
 
@@ -119,7 +119,7 @@ So, per rewrite: grep every identifier the replacement names and confirm it is r
 4. Run `cargo doc --no-deps --lib` if any Rust changed, then `just verify`.
 5. Say how many comments were cut, rewritten or shortened, in which files, and anything left alone as out of scope.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 ## Reference
 

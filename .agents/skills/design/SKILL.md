@@ -57,7 +57,7 @@ Write what the earlier draft got wrong, what was checked and left alone, and wha
 
 ### 10. Hand back the designed ticket
 
-The whole reply is the owner's message repeated word for word; app code remains untouched.
+The whole reply is the owner's message, word for word.
 
 **It runs mid-build as well as before one.** [`/dev`](../dev/SKILL.md) calls it when a round of refinement opens a real fork, when a line the plan rests on turns out to be false, or when what the owner asked for reaches past the phases — and it answers the same way it would on a cold ticket: decide from the code and the repo's rules, fix the plan in place, leave the record. A phase already built is not evidence a decision was made; the ticket is.
 
@@ -271,7 +271,7 @@ Fix the small stuff in place without a line in the record — a stale line numbe
 
 ## 10. Hand back
 
-The whole reply is the owner's message repeated word for word. The ticket is a file in `../docs/`; nothing in the app moved, so there is nothing to verify and nothing to bundle. The tree stays dirty.
+The whole reply is the owner's message, word for word. The ticket is a file in `../docs/`; nothing in the app moved, so there is nothing to verify and nothing to bundle. The tree stays dirty.
 
 Four things have to be on the file when this ends: the dated line at the top, a watched cause in the measured table, a picture in the body — a photographed wireframe or a Mermaid flow — and the record at the bottom. Missing the first or the last, nothing downstream can tell a checked plan from an unchecked one; missing the picture, the plan is four paragraphs somebody has to hold in their head, and what they build instead is whatever they pictured; missing the cause, the whole file is a confident answer to a question nobody asked the app.
 

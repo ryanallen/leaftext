@@ -48,9 +48,9 @@ The Mac build, the installer and the GitHub workflows do not run here, GitHub bu
 
 ### 5. Hand back
 
-The whole reply is the owner's message repeated word for word — not what changed, not that the gate is green. The tree stays dirty; that is the correct end state.
+The whole reply is the owner's message, word for word. The tree stays dirty; that is the correct end state.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 ## Reference
 

@@ -71,7 +71,7 @@ The page is handed to the web view as one string with a ~2 MB ceiling; past it t
 - **Reordering** is not: run `just check-shell` and read what it says. A silent reorder that happens to work today is a blank window tomorrow.
 - Two script tags would be two scopes. There is one, and the theme bootstrap's own, which runs first and shares nothing.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 ## Reference
 

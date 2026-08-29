@@ -6,7 +6,7 @@ Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. 
 
 # Rule 1: Talking to the owner
 
-Plain English, few words. Lead with the answer, then stop. No jargon, no abbreviations. Under 500 characters. Same in code comments: one short line, only where the code can't say it.
+Plain English, few words. Lead with the answer, then stop. No jargon, no abbreviations. Same in code comments: one short line, only where the code can't say it.
 
 **A question gets an answer and nothing else.** No next step, no offer, no "want me to". A question is not a request to act; if work is wanted, that will be said.
 
@@ -20,7 +20,7 @@ Plain English, few words. Lead with the answer, then stop. No jargon, no abbrevi
 
 **Another session is never a hand-back.** Its work, failures and locks are not this turn's result and are never reported to the owner. If one temporarily blocks a shared check or resource, wait in this turn, retry in silence and finish the work when it clears. Never stop work to explain, attribute or complain about activity outside this turn.
 
-**Finished work is handed back as the message that asked for it, repeated word for word, and nothing else** — no summary, no gesture to try, no command to run next, no note of what was left. **Word for word is the whole message, first character to last**: the skill's own name, its argument, every line of a message that ran to several, and any words around them. A message reading `/dev <path>` is echoed as `/dev <path>` and never as the path alone — a reply cutting the front off it hands the owner something they did not write and cannot recognize, which is the one thing the echo exists to avoid. **The 500-character ceiling does not reach it**, however long the message ran: the owner set the length of their own words, and cutting the echo to fit hands them something they did not write. The owner wrote those words and has the app open, so the echo says the work is done and spends nothing saying it. A question is not work and gets its answer, which is the rule at the top of this one. `just verify` still runs before the echo goes out, because the echo claims the work landed.
+**Finished work is handed back as the message that asked for it, word for word, and nothing else.** Send the whole message, first character to last, however long it ran — the skill's own name, its argument, every line of it. Nothing else in the reply: no summary, no gesture to try, no command to run next, no note of what was left. A question is not work and gets its answer instead, which is the rule at the top of this one. `just verify` still runs before the echo goes out, because the echo claims the work landed.
 
 **A paragraph is one line.** Never hard-wrap — not in a reply, a ticket, a skill, a doc page, this file, or a code comment. Everything that reads them reflows, so a wrapped paragraph has to be re-flowed by hand and diffs whole on a one-word change. `just check-wrapping` names the file; `--fix` joins them, in Markdown and in `.rs`/`.js`/`.css` comments alike. A break doing real work stays: two trailing spaces in Markdown, any indent of its own in a comment, or `<!-- keep-wrapping -->` on a line of its own, which takes a whole file out.
 

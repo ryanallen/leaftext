@@ -43,7 +43,7 @@ Add the ticket to the running order and rebuild its derived cells.
 
 ### 8. Hand back the ticket
 
-The whole reply is the owner's message repeated word for word, with no app change claimed. The plan is a file the owner can open, so naming it in the reply says nothing the file does not.
+The whole reply is the owner's message, word for word. The plan is a file the owner can open, so naming it in the reply says nothing the file does not.
 
 ## Where it goes
 
