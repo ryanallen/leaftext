@@ -183,6 +183,7 @@ if (!exe) {
   process.exit(0);
 }
 
+// A cargo that always fails, ahead of the real one on PATH: the launcher's refusal to fall through to the last build is the whole point of building, and nothing else can prove it without breaking the tree.
 const failedBuildName = `driver-check-${process.pid}`;
 const failedBuildWork = join(tmpdir(), `leaftext-probe-${failedBuildName}`);
 const fakeCargoHome = join(tmpdir(), `leaftext-fake-cargo-${process.pid}`);

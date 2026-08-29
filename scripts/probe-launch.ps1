@@ -128,6 +128,7 @@ function Send-LeafQuit {
   }
 }
 
+# The refusal and the build come before the profile is entered, so a name already up costs nothing and a build that fails on the code leaves the last executable unlaunched rather than standing in for the tree. The build is then copied into this name's own folder, because two probes sharing target\debug lock each other out of it.
 $builtExe = $null
 if (-not $Close -and (Test-LeafPipe $name)) {
   throw "a probe copy is already up under $name - close it with 'just probe-close' or launch this one under a different -Work name"
