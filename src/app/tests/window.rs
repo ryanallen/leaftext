@@ -543,7 +543,7 @@ fn a_launch_puts_up_the_small_window_and_grows_it_once_the_page_has_drawn() {
     );
     assert!(startup_done_script().contains("leafStartupDone"));
 
-    // The launch size is not a size anybody chose, so it must never be what the next launch comes back at — nor a maximized or minimized one, which is why those were already refused.
+    // The launch size is not a size anybody chose, so it must never be what the next launch comes back at, and nor is a maximized or a minimized one.
     assert!(!remembers_windowed_size(false, false, false, 1080, 820));
     assert!(remembers_windowed_size(true, false, false, 1080, 820));
     assert!(!remembers_windowed_size(true, true, false, 1080, 820));

@@ -281,7 +281,7 @@ pub(crate) struct StartupGrowth {
 
 /// Whether a resize is a size the reader chose, and so the one the next launch should come back at.
 ///
-/// The launch window is none of those things: it is 256 by 256 whatever the reader left behind, so a copy closed while its page was still loading would come back at the launch size for ever. Nor is a maximized or minimized window, which is why those two were already here.
+/// The launch window is none of those things: it is 256 by 256 whatever the reader left behind, so a copy closed while its page is still loading would otherwise come back at the launch size for ever. Nor is a maximized or a minimized one.
 pub(crate) fn remembers_windowed_size(
     grown: bool,
     maximized: bool,
@@ -320,7 +320,7 @@ pub(crate) fn finish_startup(reader: &Reader, startup: &mut StartupWindow) -> bo
     let Some(growth) = startup_growth(startup) else {
         return false;
     };
-    // The limit goes on first and the maximize last. Both orders were watched: setting the limit after the maximize made Windows recompute the window and hand back a maximized-looking rectangle the platform no longer called maximized, so the page was told it was windowed while it filled the screen — a shadow band inside the screen edge, and a maximize button already spent. Nothing is lost by leading with it, since the limit is smaller than any size a reader can have left behind.
+    // The limit goes on first and the maximize last. Setting the limit after the maximize makes Windows recompute the window and hand back a rectangle filling the screen that the platform no longer calls maximized — so the page is told it is windowed, draws its shadow band inside the screen edge, and offers a maximize button already spent. Nothing is lost by leading with it: the limit is smaller than any size a reader can have left behind.
     reader.window.set_min_inner_size(Some(growth.min_size));
     // And the size before the maximize. A window maximized straight from the launch size keeps that as the size it restores to, so the first press of the restore button would hand back the launch window rather than the one they left.
     reader.window.set_inner_size(growth.size);

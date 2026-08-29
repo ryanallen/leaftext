@@ -175,7 +175,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 event: WindowEvent::Resized(size),
                 ..
             } => {
-                // Remember the size only while windowed; convert the physical event size to the logical size the next launch expects. The launch window is not a size anybody chose, so nothing is remembered until it has grown — otherwise a copy closed while the page was still loading would come back at 256 by 256 for ever.
+                // Remember the size only while windowed; convert the physical event size to the logical size the next launch expects. Whether this resize is a size the reader chose is `remembers_windowed_size`'s to say.
                 if remembers_windowed_size(
                     startup.grown,
                     reader.window.is_maximized(),

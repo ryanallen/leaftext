@@ -46,7 +46,7 @@ export function run() {
   });
 
   check('a launch opening a document waits for the document rather than for the home screen it draws first', () => {
-    // The page boots on a state that carries the tab and no document: the host reads the file and renders it afterwards. Growing the window on that first render is the full-size window with an empty reader in it, which is the half of the complaint this ticket answers.
+    // The page boots on a state that carries the tab and no document: the host reads the file and renders it afterwards. Growing the window on that first render hands the reader a full-size window with an empty reader in it.
     const opening = { recent: [], favorites: [], tabs: [{ title: 'one', path: 'C:\Notes\one.md' }], active: 0, document: null };
     const boot = launch(opening);
     if (boot.said() !== 0) throw new Error('the window was grown on the home screen a launch draws before its document arrives');

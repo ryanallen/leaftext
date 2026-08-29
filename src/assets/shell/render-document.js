@@ -580,7 +580,7 @@ function runHeldReadingLanding() {
 }
 // The window comes up 256 pixels square holding the startup card, and this is what lets the host grow it into the one the reader left. Said once, after the reader has something on it — the page's own load event is too early, because the host renders the launch's first document inside the arm that event lands in, so a window grown there is a full-size window with an empty reader in it.
 //
-// Everything it remembers is on `window` rather than in a name of its own, because theme.js renders the page from inside its own load and that is long before this fragment is evaluated: a `let` or a `const` here is in its temporal dead zone at that moment, and reading one threw and took the rest of the front end down with it.
+// Everything it remembers is on `window` rather than in a name of its own, because theme.js renders the page from inside its own load and that is long before this fragment is evaluated: a `let` or a `const` here is in its temporal dead zone at that moment, and reading one throws and takes the rest of the front end down with it.
 function sayStartupDrawn(hasDocument) {
   // That same early render is a page still being built, so the word waits for the bootstrap at the foot of the script.
   if (!window.__leafBooted || window.__leafStartupSaid) return;

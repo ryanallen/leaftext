@@ -351,12 +351,10 @@
      script tag, not a module, because the fragments are written as one shared
      scope.
 
-     `defer` because running it is what the first pixel was waiting on: without it
-     the parser stops here for the whole of the script's own execution, and three
-     launches each way put the first paint 20ms later and the page's interactive
-     mark 100ms later. The startup card has to paint before this runs or it is not
-     a startup card at all. It still runs before DOMContentLoaded and still runs
-     last on the page, which is where it already sat. -->
+     `defer` because the parser otherwise stops here for the whole of the script's
+     own execution: three launches each way put the first paint 20ms later and the
+     page's interactive mark 100ms later without it. It still runs before
+     DOMContentLoaded and still last on the page, which is where it sits. -->
 
 <script src="{{APP_SCRIPT_URL}}" crossorigin="anonymous" defer></script>
 </div>
