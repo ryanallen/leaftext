@@ -110,13 +110,13 @@ function selfTest() {
       '# A plan', '', '## Phases', '',
       '### Phase 1 — the first one', '', '- [x] built', '- [ ] not built yet', '',
       '### Phase 2 — the second one', '', '- [ ] nothing here yet', '',
-      '### Every phase ends the same way', '', '- [ ] `/check`', '',
+      '### The build ends the same way', '', '- [ ] `/check` once', '',
       '### The owner\'s box', '', '- [ ] press it', '',
     ].join('\n');
     const phases = phasesOf(TICKET);
     if (phases.length !== 2) fails.push(`${phases.length} phases read rather than 2 — a heading of its own is not a phase`);
     if (phases[0]?.ticked !== 1 || phases[0]?.open !== 1) fails.push("the first phase's boxes were not counted");
-    if (phases.some((p) => p.phase.includes('owner') || p.phase.includes('Every'))) fails.push("the owner's box or the `/check` box was read as a phase");
+    if (phases.some((p) => p.phase.includes('owner') || p.phase.includes('The build ends'))) fails.push("the owner's box or the one final check box was read as a phase");
     if (phasesOf('# A plan\n\n### Phase 1 — struck\n\n- [x] ~~dropped~~ — N/A\n')[0]?.ticked !== 1) fails.push('a struck box was not counted as ticked');
     if (phasesOf('')?.length) fails.push('an empty ticket named a phase');
 

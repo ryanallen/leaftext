@@ -35,7 +35,7 @@ Open the gallery or the app surface that changed and compare the actual state re
 
 ### 6. Check the design system
 
-Run `/check`; fix the source table and rebundle if any generated file or literal check disagrees.
+Run the design checks alone — `just check-tokens check-icons check-gallery check-design-docs check-classes check-literals` — and fix the source table and rebundle if any of them disagrees. Never the complete suite: the build that called this pays for that once, at its end.
 
 ## Where a thing lives
 
@@ -65,13 +65,13 @@ Renaming or deleting a class works the same way round: the check fails on a row 
 1. A row in the right file. The name says the value —`lt-space-8` is 8px, `lt-duration-120` is 120ms — so a reader never has to look it up. The "what it is for" column earns its place: say where it is used, not what it is.
 2. `just bundle-tokens` (or `bundle-icons`).
 3. Use it: `var(--lt-space-8)`.
-4. `just verify`.
+4. `just check-tokens check-icons check-literals` — the checks about the thing you changed, never the complete suite.
 
 **Reuse before adding.** 162 values exist. A new one that is 1px from an old one is two names for one idea, and the gallery will show them side by side looking identical.
 
 ## Changing a value
 
-Edit the row, run the bundler, `just verify`. That is all — nothing else holds a copy.
+Edit the row, run the bundler, run the design checks. That is all — nothing else holds a copy.
 
 **A value change moves the interface**, so the ticket says what looks different and where.
 

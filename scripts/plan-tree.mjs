@@ -1,14 +1,10 @@
 #!/usr/bin/env node
-// Where the plan tree is, and the still copy of it a public release checks itself against.
+// Where the plan tree is.
 //
 // The plan tree is `../docs` beside this checkout — the tickets, the running order, the README and the glossary. It is not in this repository, so every check that reads it asks here rather than writing the path out again.
-//
-// A release takes a still copy because the owner writes that tree while a release is running, and half of somebody else's edit is not a state anybody wrote. The copy is a folder of this run's own; the release points its own child processes at it with `LEAFTEXT_PLAN_ROOT`, which is the only thing that ever sets it.
 
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,10 +24,10 @@ export function repoRoot(dir) {
   }
 }
 
-/// What a public release points the plan-reading checks at instead of the live tree. Set on the gate's own child processes and nothing else, so an ordinary run always answers the owner's folder.
+/// What points the plan-reading checks at a tree other than the one beside this checkout. Nothing in the workflow sets it; a checkout whose plan tree lives elsewhere does.
 export const PLAN_ROOT_ENV = 'LEAFTEXT_PLAN_ROOT';
 
-/// Where the plan tree is. It is what the eight checks that read `../docs` ask — the document, running-order, spelling, wrapping, box-drawing, shared-rule, snapshot-copy and footprint checks — so the path is written down once, and `planTreeMissing` beside it is what they refuse a checkout without one by.
+/// Where the plan tree is. It is what the eight checks that read `../docs` ask — the document, running-order, spelling, wrapping, box-drawing, shared-rule and footprint checks — so the path is written down once, and `planTreeMissing` beside it is what they refuse a checkout without one by.
 export function planTree(dir = here) {
   const held = (process.env[PLAN_ROOT_ENV] || '').trim();
   return held || join(resolve(dir), '..', 'docs');
@@ -55,74 +51,5 @@ export function dirtyPaths(dir) {
       .filter(Boolean);
   } catch {
     return [];
-  }
-}
-
-/// Every plan file and what it held — how a release sees the tree move under it instead of failing on half of somebody else's edit.
-export function planManifest(root) {
-  const found = [];
-  const walk = (dir, prefix) => {
-    let entries;
-    try {
-      entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const entry of [...entries].sort((a, b) => (a.name < b.name ? -1 : 1))) {
-      if (entry.name === '.git') continue;
-      const full = join(dir, entry.name);
-      const path = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) walk(full, path);
-      else {
-        try {
-          found.push(`${path} ${createHash('sha256').update(readFileSync(full)).digest('hex')}`);
-        } catch {
-          // A file that vanished between the listing and the read is a moving tree, which is what the caller compares for.
-          found.push(`${path} gone`);
-        }
-      }
-    }
-  };
-  walk(root, '');
-  return found.join('\n');
-}
-
-/// How many times a moving tree is copied again before the release gives up.
-export const SNAPSHOT_ATTEMPTS = 3;
-
-/// A still copy of the plan tree, in a folder of this run's own. The manifest is taken before and after the copy: a tree that changed while it was being read is copied again rather than handed to the gate.
-export function snapshotPlanTree({ plans = planTree(), attempts = SNAPSHOT_ATTEMPTS, copy = null } = {}) {
-  const take = copy || ((from, to) => cpSync(from, to, { recursive: true }));
-  for (let attempt = 1; ; attempt += 1) {
-    const root = mkdtempSync(join(tmpdir(), `leaf-plan-${process.pid}-`));
-    const before = planManifest(plans);
-    try {
-      take(plans, root);
-    } catch (error) {
-      rmSync(root, { recursive: true, force: true });
-      throw error;
-    }
-    if (planManifest(plans) === before) return { root, plans };
-    rmSync(root, { recursive: true, force: true });
-    if (attempt >= attempts) throw new Error(`the plan tree changed every time it was copied (${attempts} tries), so there is no one state to check this release against — let the other edit finish and release again`);
-  }
-}
-
-/// Run something against a still copy of the plan tree and take the copy down afterwards, whichever way it ends. The signal handlers are for a run somebody stops: without them a killed release leaves a whole plan tree in the temp folder.
-export function withPlanSnapshot(fn, options = {}) {
-  const snapshot = snapshotPlanTree(options);
-  const drop = () => rmSync(snapshot.root, { recursive: true, force: true });
-  const stopped = () => {
-    drop();
-    process.exit(130);
-  };
-  process.once('SIGINT', stopped);
-  process.once('SIGTERM', stopped);
-  try {
-    return fn(snapshot);
-  } finally {
-    process.removeListener('SIGINT', stopped);
-    process.removeListener('SIGTERM', stopped);
-    drop();
   }
 }

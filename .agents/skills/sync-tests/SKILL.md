@@ -15,7 +15,7 @@ Two things it rules out: shipping a fix with no test that would have caught it, 
 
 ## When to run
 
-- Before handing work back, and before a release. `/check` calls it, so a release gets it without being asked.
+- At the end of a build, as the first half of [`/check`](../check/SKILL.md) — the reading that asks whether the change made a test necessary, before the gate runs the tests that exist.
 - On a file that feels under-covered, whether or not it changed: `/sync-tests src/editing.rs`.
 
 ## Inputs
@@ -82,14 +82,13 @@ This pass writes the tests **this change** needed. Walking the suite to do that 
 - **Never leave it in the hand-back only.** A sentence in a reply dies with the session; a ticket is the one place a finding survives, and it is always a ticket.
 - Where a phase in the ticket being built asked for a test and the suite already has it, say which one covers it rather than writing a second.
 
-### 4. Run them
+### 4. Leave the running to the gate
 
-```bash
-cargo test
-node scripts/check-shell.mjs
-```
+**This pass writes tests; it does not run the suites.** [`/check`](../check/SKILL.md) calls this first and then runs `just verify`, which runs the Rust tests and the front-end boot seconds later — so running either here is the same work paid for twice, and it was the largest of the repeated passes in the whole workflow.
 
-Both, every time — a Rust change can break the front-end check through `app_shell_html()`.
+Run one test by name while writing it, where that is how you get it right — `cargo test <name>`. What this step forbids is the whole of `cargo test` or `node scripts/check-shell.mjs` on the way out.
+
+Where this pass is run on its own, with no gate behind it, say in the hand-back that the tests are written and unproven rather than running the suites to make it moot.
 
 ### 5. Say what cannot be tested — about this change, not in general
 

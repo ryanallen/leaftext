@@ -109,7 +109,7 @@ export function context(prompt, rule) {
   out.push('', hasReleaseLicense(prompt)
     ? '- A git-release command starts this message: one git write is authorized, for this turn only.'
     : '- No git-release command starts this message (`/git-release` in Claude, `$git-release` in Codex). Git writes are refused by scripts/gate-git.mjs. Do not offer or hint at one; a dirty tree is the correct end state.');
-  out.push('- Before handing work back: `just verify`. Then the whole reply is this message repeated word for word: nothing about what changed, nothing to try, no command after it. Never mention that the Mac build or the installer cannot be built here — it is true every time, it is already known, and saying it is the padding Rule 1 refuses.');
+  out.push('- A build runs `/check` once, after its last phase. A pass that wrote no code runs none: shipping, retirement, ticket writing, design and ranking each prove what they write and never the code again. Then the whole reply is this message repeated word for word: nothing about what changed, nothing to try, no command after it. Never mention that the Mac build or the installer cannot be built here — it is true every time, it is already known, and saying it is the padding Rule 1 refuses.');
   return out.join('\n');
 }
 
@@ -181,6 +181,11 @@ function selfTest() {
   if (reminders('hello').length) fails.push('reminders: fired on a message that touches nothing');
   if (!context('hello', rule).includes('refused')) fails.push('context: missing the git refusal');
   if (!context('$git-release', rule).includes('authorized')) fails.push('context: missing the license note');
+  // A ticket pays for the complete suite once, at the end of its build. The line printed before every message used to command one before every hand-back, which is a plan-only pass paying for a suite that proves nothing about a file it never wrote — and a build paying again for what it just proved.
+  const printed = context('hello', rule);
+  if (!/build runs `\/check` once, after its last phase/.test(printed)) fails.push('context: the printed rule no longer says the build owns the one check');
+  if (!/wrote no code runs none/.test(printed)) fails.push('context: the printed rule no longer excuses a pass that wrote no code');
+  if (/Before handing work back: `just verify`/.test(printed)) fails.push('context: the printed rule still commands the complete suite before every hand-back');
 
   // The ring, which all three hooks write to now. Per hook, because the tool gate fires on every command and would otherwise push the one prompt of the turn out before anyone read it back.
   const line = (hook, n) => JSON.stringify({ hook, n });

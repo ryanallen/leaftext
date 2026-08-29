@@ -177,16 +177,16 @@ A box is one piece of work with an obvious done. "Make search fast" is not a box
 
 **Every phase in a file has to be buildable off this repo as it stands, plus the phases above it.** A phase that waits on *another ticket* does not belong in this one — it belongs in its own file, whose first line says what it rides on. A file with a buildable half and a blocked half cannot be finished, so it never moves to `done/`, its README row goes on describing a plan forever, and whoever picks it up stops halfway with no idea whether that was the plan. Split it at the seam and cross-reference both halves: the buildable file ships and closes, the blocked one waits with a name of its own.
 
-End the phase list with the block that closes every phase:
+End the phase list with the block that closes the build — one block for the whole ticket, never one per phase:
 
 ```markdown
-### Every phase ends the same way
+### The build ends the same way
 
 - [ ] `just bundle-tokens`, `bundle-icons`, `bundle-gallery` for anything that touched `design/`
-- [ ] `/check`
+- [ ] `/check` once, after every phase is built
 ```
 
-Drop the bundler line when the work is nowhere near `design/`.
+Drop the bundler line when the work is nowhere near `design/`. **One check, at the end.** A ticket is what pays for the complete suite, and it pays once: a block repeated under every phase is the same fifty seconds spent again for each one, and it proves nothing the final run does not prove.
 
 ## The last box in the file is the owner's
 

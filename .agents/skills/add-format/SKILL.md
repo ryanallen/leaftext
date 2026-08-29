@@ -25,9 +25,9 @@ Compile and work every place the new enum arm makes incomplete.
 
 Use an existing render shape where it fits, add a module only for a genuinely new one, and update the published format lists.
 
-### 4. Test and check it
+### 4. Test it
 
-Add the format-table and rendering coverage, then run `/check`.
+Add the format-table and rendering coverage. Run the format's own tests, not the complete suite: the build that called this pays for that once, at its end.
 
 ## The work
 

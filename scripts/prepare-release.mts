@@ -1,4 +1,4 @@
-// The public release: check this app copy, then commit and tag it.
+// The public release: commit this app copy and tag it. It proves nothing about the code — the build that wrote it paid for the complete suite once, at its end, and nothing between that run and this one edits a line.
 //
 //   LEAFTEXT_RELEASE_PATHS='["path"]' node --experimental-strip-types scripts/prepare-release.mts <version> <message...> [--no-sign-commit]
 //   LEAFTEXT_RELEASE_PATHS='["path"]' node --experimental-strip-types scripts/prepare-release.mts --land <message...>    get this pass's work onto main now (`just land`)
@@ -6,20 +6,20 @@
 //
 // Every commit names its work — the ticket in plain words, or what changed where no ticket carries it. A history that says one repeated title cannot answer which commit brought what, so a blank message is refused before anything is read rather than filled in with a placeholder.
 //
-// The landing runs first and on its own: it stages only the paths this pass names, commits and pushes main, with no gate, no version and no tag. Other sessions' paths stay in the checkout. A release spends an hour in docs, comments and the whole suite, and every minute of that is a minute its own work sits uncommitted where another session can collide with it.
+// The landing runs first and on its own: it stages only the paths this pass names, commits and pushes main, with no version and no tag. Other sessions' paths stay in the checkout. A release spends time in the docs and the comments afterwards, and every minute of that is a minute its own work sits uncommitted where another session can collide with it.
 //
 // The tree is dirty on purpose: the work being released was written in this checkout and never committed, so the caller names its paths and the release intersects that list with the work on disk. A clean owned set is nothing to release, however much work another session has beside it.
 //
-// The gate reads a still copy of the plan tree rather than the live one. Tickets, README rows and skill copies are written straight into the tree the owner reads while a release runs, and one landing mid-gate is real drift that the release did not cause and cannot fix — which is how a release stopped after the old tag had already gone.
+// The one thing about the tree this does prove is the lockfile, because nothing else can: the version is bumped after the build's check, and both release builds pass `--locked`.
 //
-// Every command the release runs goes through one runner, so the self-test can hand it a fixture and read back the order: what must not happen after a failed gate is proved by the commands that were never reached.
+// Every command the release runs goes through one runner, so the self-test can hand it a fixture and read back the order: what must not happen after a refusal is proved by the commands that were never reached.
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { PLAN_ROOT_ENV, dirtyPaths, withPlanSnapshot } from "./plan-tree.mjs";
+import { dirtyPaths } from "./plan-tree.mjs";
 
 type CommandResult = { status: number; stdout: string };
 type RunOptions = { capture?: boolean; env?: Record<string, string | undefined> };
@@ -28,7 +28,8 @@ type ReleaseHost = {
   run: Runner;
   enterRepoRoot: () => void;
   packageVersion: () => string;
-  withSnapshot: (fn: (root: string) => void) => void;
+  lockfileVersion: () => string;
+  writeLockfileVersion: (version: string) => void;
   withPrivateIndex: (fn: (env: Record<string, string | undefined>) => void) => void;
   recordTag: (tag: string) => void;
   changedPaths: () => string[];
@@ -72,8 +73,11 @@ export function liveHost(): ReleaseHost {
       }
       return match[1] ?? "";
     },
-    withSnapshot: (fn) => {
-      withPlanSnapshot((snapshot: { root: string }) => fn(snapshot.root));
+    lockfileVersion: () => lockfileVersionIn(readFileSync("Cargo.lock", "utf8")),
+    writeLockfileVersion: (version: string) => {
+      const lock = readFileSync("Cargo.lock", "utf8");
+      const rewritten = withLockfileVersion(lock, version);
+      if (rewritten !== lock) writeFileSync("Cargo.lock", rewritten);
     },
     withPrivateIndex: (fn) => {
       const folder = mkdtempSync(join(tmpdir(), "leaftext-release-index-"));
@@ -180,6 +184,27 @@ function assertMacHalfCompiles(host: ReleaseHost): void {
   }
 }
 
+// The app's own entry in `Cargo.lock`, and only that one. The other two workspace members carry versions of their own that a release never moves, so the rewrite is anchored on the package name rather than on "the first version line after a package block".
+const LOCKFILE_ENTRY = /(\[\[package\]\]\nname = "leaftext"\nversion = ")([^"]*)(")/;
+
+/// The version the lockfile records for the app, or '' where it has no entry to read.
+export function lockfileVersionIn(text: string): string {
+  return LOCKFILE_ENTRY.exec(text)?.[2] ?? "";
+}
+
+/// That lockfile with the app's version rewritten. Unchanged where there is no entry — the caller reads it back and stops.
+export function withLockfileVersion(text: string, version: string): string {
+  return text.replace(LOCKFILE_ENTRY, (_whole, before: string, _was: string, after: string) => `${before}${version}${after}`);
+}
+
+// `Cargo.toml` is checked against the requested version before anything else; this is the same reading for the file the release builds actually resolve against, and it runs after the rewrite so a lockfile with no entry to rewrite stops the release rather than shipping a stale one.
+function assertLockfileVersion(host: ReleaseHost, version: string): void {
+  const found = host.lockfileVersion();
+  if (found !== version) {
+    throw new Error(`Cargo.lock records the app at ${found || "no version at all"} rather than ${version}, so both release builds would die on \`--locked\` with the tag already up. No tag was made.`);
+  }
+}
+
 function commitArgs(signCommit: boolean, message: string): string[] {
   return signCommit
     ? ["commit", "-S", "-m", message]
@@ -257,27 +282,26 @@ export function prepareRelease(version: string, message: string, options: Releas
   assertSomethingToRelease(host, waiting);
   assertTagDoesNotExist(host, tag);
   // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
-  host.withSnapshot((root) => {
-    required(host, "just", ["verify"], { env: { ...process.env, [PLAN_ROOT_ENV]: root } });
-    // After the gate, before anything is written: a stop here spends nothing.
-    assertMacHalfCompiles(host);
-    // Which release people are downloading right now, asked before anything is deleted: the new release does not exist until its build publishes, so this tag is the only complete download for the whole of that build and a failed build leaves it standing.
-    const published = newestPublishedTag(host);
-    // Read again, because the gate compiles and a compile rewrites `Cargo.lock` with the package's own version in it: staging the earlier list commits a bump whose lockfile still names the version before it, and both release builds pass `--locked`, so they die on their first command with the tag already up and nothing published under it. v1.15.4 went out that way. The gate is the only thing between the two reads, and every file it writes into this checkout is one the release is supposed to carry.
-    const staging = ownedChanges(host.changedPaths(), options.paths);
-    // Only now: a gate that stops here leaves the last released tag exactly where it was.
-    retireOldTags(host, [tag, published]);
-    host.withPrivateIndex((env) => {
-      required(host, "git", ["add", "--", ...staging], { env });
-      required(host, "git", releaseCommit, { env });
-    });
-    required(host, "git", ["add", "--", ...staging]);
-    required(host, "git", tagArgs);
-    host.recordTag(tag);
-    required(host, "git", ["push", "origin", "HEAD"]);
-    // The tag on its own, after main: a push carrying several tags makes no push event, so no build starts.
-    required(host, "git", ["push", "origin", tag]);
+  // The lockfile carries the package's own version, and nothing before this writes it: the build's one check ran before `Cargo.toml` was bumped, and a release runs no suite of its own. Both release builds pass `--locked`, so a lockfile still naming the version before dies on the build's first command with the tag already up and nothing published under it — v1.15.4 went out that way. It used to be rewritten by accident, as a side effect of the gate compiling, and read back on a second pass over the dirty tree; now it is written on purpose and read back here.
+  host.writeLockfileVersion(normalized);
+  assertLockfileVersion(host, normalized);
+  assertMacHalfCompiles(host);
+  // Which release people are downloading right now, asked before anything is deleted: the new release does not exist until its build publishes, so this tag is the only complete download for the whole of that build and a failed build leaves it standing.
+  const published = newestPublishedTag(host);
+  // One read of the dirty tree, taken after the lockfile is written so the bump rides out with the work it belongs to.
+  const staging = ownedChanges(host.changedPaths(), options.paths);
+  // Only now: a stop above here leaves the last released tag exactly where it was.
+  retireOldTags(host, [tag, published]);
+  host.withPrivateIndex((env) => {
+    required(host, "git", ["add", "--", ...staging], { env });
+    required(host, "git", releaseCommit, { env });
   });
+  required(host, "git", ["add", "--", ...staging]);
+  required(host, "git", tagArgs);
+  host.recordTag(tag);
+  required(host, "git", ["push", "origin", "HEAD"]);
+  // The tag on its own, after main: a push carrying several tags makes no push event, so no build starts.
+  required(host, "git", ["push", "origin", tag]);
   return tag;
 }
 
@@ -292,6 +316,8 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
   const calls: string[] = [];
   const envs: Array<Record<string, string | undefined> | undefined> = [];
   let treeReads = 0;
+  // What the lockfile records before the release touches it: the version before the bump, which is the state every release meets.
+  let lockVersion = "1.2.2";
   // Both lists stay the same length, so the environment a call carried is read at that call's own place.
   const record = (line: string, env?: Record<string, string | undefined>) => {
     calls.push(line);
@@ -313,13 +339,13 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
       record("enter repo root");
     },
     packageVersion: () => "1.2.3",
-    withSnapshot: (fn) => {
-      record("snapshot taken");
-      try {
-        fn("/snapshot/docs");
-      } finally {
-        record("snapshot removed");
-      }
+    lockfileVersion: () => {
+      record("lockfile version read");
+      return lockVersion;
+    },
+    writeLockfileVersion: (version) => {
+      record(`lockfile written ${version}`);
+      lockVersion = version;
     },
     withPrivateIndex: (fn) => {
       record("private index created");
@@ -332,11 +358,11 @@ function fixture(answer: (command: string, args: string[]) => CommandResult | nu
     recordTag: (tag) => {
       record(`record ${tag}`);
     },
-    // Work sitting in the checkout, waiting to be released: two paths, and a third once the gate has compiled. The lockfile carries the package's own version, so the tree a release stages is never the tree it was refused for being clean — a fixture answering the same list twice cannot tell whether the list was read again.
+    // Work sitting in the checkout, waiting to be released: two paths, and the lockfile once the release has written it. The read is counted so a case can prove the release takes one and stages what the bump left.
     changedPaths: () => {
       record("changed paths read");
       treeReads += 1;
-      return treeReads > 1 ? ["Cargo.toml", "src/lib.rs", "Cargo.lock"] : ["Cargo.toml", "src/lib.rs"];
+      return lockVersion === "1.2.3" ? ["Cargo.toml", "src/lib.rs", "Cargo.lock"] : ["Cargo.toml", "src/lib.rs"];
     },
     // A read, not tag work: it is recorded under its own name so the loops proving a refusal reached no tag can stay about the commands that write one.
     tagsOnHead: () => {
@@ -414,18 +440,17 @@ function selfTest(): void {
   const at = (want: string) => clean.calls.findIndex((call) => call.includes(want));
   const order: Array<[string, number]> = [
     ["the work in the tree was read", clean.calls.indexOf("changed paths read")],
-    ["the plan tree was copied", clean.calls.indexOf("snapshot taken")],
-    ["the check suite ran", clean.calls.indexOf("just verify")],
+    ["the lockfile was written with the released version", at("lockfile written 1.2.3")],
+    ["the lockfile was read back", at("lockfile version read")],
     ["the Mac half's newest completed answer was read", at("gh run list --workflow validate-macos.yml")],
     ["the release people are downloading was named", at("gh release list")],
-    ["the tree was read again, now the gate has written its lockfile into it", clean.calls.lastIndexOf("changed paths read")],
+    ["the tree was read for what to stage, now the lockfile is in it", clean.calls.lastIndexOf("changed paths read")],
     ["the old tags went", at("git tag -d")],
     ["the changed paths were staged", at("git add --")],
     ["the release was committed", at("commit --no-gpg-sign")],
     ["the new tag was made", at("tag -a --no-sign")],
     ["main was pushed", at("git push origin HEAD")],
     ["the tag was pushed", at("git push origin v1.2.3")],
-    ["the plan copy was taken down", clean.calls.indexOf("snapshot removed")],
   ];
   for (const [what, where] of order) {
     if (where < 0) fails.push(`a passing release never reached the step where ${what}`);
@@ -436,13 +461,14 @@ function selfTest(): void {
     if (beforeAt >= 0 && afterAt >= 0 && beforeAt > afterAt) fails.push(`${after} before ${before}`);
   }
   if (!clean.calls.some((call) => call.includes("push origin --delete"))) fails.push("the old tags were left on the remote, so they come back on the next push carrying tags");
-  const held = clean.envs[clean.calls.indexOf("just verify")];
-  if (held?.[PLAN_ROOT_ENV] !== "/snapshot/docs") fails.push("the check suite was not pointed at the plan copy");
-  // What the gate wrote is staged with the work it belongs to: the list read before the gate has no lockfile in it, so a release staging that one puts the bump on main with a lockfile naming the version before it and both builds refuse it.
+  // The complete suite belongs to the build, once, at the end of a ticket. A release running it again proves the same bytes an hour later.
+  if (clean.calls.some((call) => call.includes("just verify"))) fails.push("a release ran the complete suite, which the build already ran over the same code");
+  if (clean.calls.some((call) => call.includes("snapshot"))) fails.push("a release copied the plan tree, which existed only to hold it still under that suite");
+  // What the release wrote is staged with the work it belongs to: the lockfile carries the app's own version and nothing before this writes it, so a release staging a list taken before the bump puts a lockfile naming the version before onto main, and both builds pass `--locked` and die on it.
   const treeReads = clean.calls.filter((call) => call === "changed paths read").length;
-  if (treeReads !== 2) fails.push(`a release read the work in the tree ${treeReads} time(s): it is read once to refuse a clean tree and again after the gate to decide what to commit`);
+  if (treeReads !== 2) fails.push(`a release read the work in the tree ${treeReads} time(s): once to refuse a clean tree, once after the lockfile is written to decide what to commit`);
   // By name, never the whole tree: a release commits the paths with work in them and nothing else the tree happens to be carrying.
-  if (!clean.calls.includes("git add -- Cargo.toml src/lib.rs Cargo.lock")) fails.push(`a release did not stage the paths the gate left behind it: ${clean.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
+  if (!clean.calls.includes("git add -- Cargo.toml src/lib.rs Cargo.lock")) fails.push(`a release did not stage the lockfile it had just written: ${clean.calls.filter((call) => call.startsWith("git add")).join(", ") || "it staged nothing"}`);
   if (clean.calls.some((call) => /^git add (-A|--all|\.)(\s|$)/.test(call))) fails.push("a release staged the whole tree rather than the paths it read");
   // The commit says which version and which work, so the history answers what each release brought without opening it.
   if (!clean.calls.includes("git -c commit.gpgsign=false commit --no-gpg-sign -m Release v1.2.3: The find bar ships")) fails.push("a release commit did not carry the version and the name of the work");
@@ -480,7 +506,6 @@ function selfTest(): void {
       if (isTagWork(call)) fails.push(`${state} still ran ${call}`);
     }
     if (blind.calls.some((call) => call.startsWith("git tag -l"))) fails.push(`${state} still read the tag list, so the deletion was one answer away`);
-    if (!blind.calls.includes("snapshot removed")) fails.push(`${state} left the plan copy behind`);
   }
 
   // A repository with nothing published yet: an empty list is an answer, not a failure, so the first release goes on and keeps only its own tag.
@@ -514,7 +539,6 @@ function selfTest(): void {
     if (beforeAt >= 0 && afterAt >= 0 && beforeAt > afterAt) fails.push(`${after} before ${before} in a landing`);
   }
   if (landed.calls.includes("just verify")) fails.push("a landing ran the gate, which is the hour it exists to get out in front of");
-  if (landed.calls.includes("snapshot taken")) fails.push("a landing copied the plan tree, which only the gate reads");
   for (const call of landed.calls) {
     if (TAG_ONLY.test(call)) fails.push(`a landing ran ${call}, and a landing is not a release`);
   }
@@ -567,7 +591,6 @@ function selfTest(): void {
   const emptyFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: empty.host }));
   if (!emptyFailed.includes("nothing to release")) fails.push(`a release with a clean tree was not told so: ${emptyFailed || "it passed"}`);
   if (empty.calls.includes("just verify")) fails.push("a release with a clean tree ran the whole gate before it could say so");
-  if (empty.calls.includes("snapshot taken")) fails.push("a release with a clean tree copied the plan tree before being refused");
   for (const call of empty.calls) {
     if (isTagWork(call)) fails.push(`a release with a clean tree still ran ${call}`);
   }
@@ -588,17 +611,22 @@ function selfTest(): void {
   if (!commitFailed.includes("commit")) fails.push(`a failed commit did not stop the release: ${commitFailed || "it passed"}`);
   if (noCommit.calls.some((call) => /^git (tag -a|push)/.test(call))) fails.push("a release whose commit failed still tagged or pushed");
 
-  // A gate that fails: nothing is committed, tagged or pushed, and the copy still goes.
-  const broken = fixture((command) => (command === "just" ? { status: 1, stdout: "" } : null));
-  const gateFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: broken.host }));
-  if (!gateFailed.includes("just verify")) fails.push(`a failed gate did not stop the release: ${gateFailed || "it passed"}`);
-  for (const call of broken.calls) {
-    if (isTagWork(call)) fails.push(`a failed gate still ran ${call}`);
+  // A lockfile the release cannot bring to the requested version: nothing is committed, tagged or pushed. Both builds pass `--locked`, so a lockfile naming the version before would die on the build's first command with the tag already up and nothing published under it.
+  const staleLock = fixture(() => null, { writeLockfileVersion: () => {} });
+  const lockFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: staleLock.host }));
+  if (!lockFailed.includes("Cargo.lock records the app at 1.2.2")) fails.push(`a lockfile left at the version before did not stop the release: ${lockFailed || "it passed"}`);
+  if (!/--locked/.test(lockFailed)) fails.push("a stale lockfile refusal did not say the builds would die on it");
+  for (const call of staleLock.calls) {
+    if (isTagWork(call)) fails.push(`a stale lockfile still ran ${call}`);
   }
-  if (broken.calls.some((call) => call.includes("tag -d") || call.includes("--delete"))) fails.push("a failed gate took down the last released tag");
-  if (!broken.calls.includes("snapshot removed")) fails.push("a failed gate left its copy of the plan tree behind");
-  if (broken.calls.some((call) => call.startsWith("gh run list"))) fails.push("a failed gate still asked GitHub for the Mac answer, which only a passed gate spends");
-  if (broken.calls.some((call) => call.startsWith("gh release list"))) fails.push("a failed gate still asked which release is published, and a gate that stops deletes no tag to need it");
+  if (staleLock.calls.some((call) => call.includes("tag -d") || call.includes("--delete"))) fails.push("a stale lockfile took down the last released tag");
+  if (staleLock.calls.some((call) => call.startsWith("gh run list"))) fails.push("a stale lockfile still asked GitHub for the Mac answer, which only a release going ahead spends");
+  if (staleLock.calls.some((call) => call.startsWith("gh release list"))) fails.push("a stale lockfile still asked which release is published, and a release that stops deletes no tag to need it");
+
+  // A lockfile with no entry for the app at all: the same refusal, said with what it found.
+  const noEntry = fixture(() => null, { lockfileVersion: () => "", writeLockfileVersion: () => {} });
+  const noEntryFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: noEntry.host }));
+  if (!noEntryFailed.includes("no version at all")) fails.push(`a lockfile with no entry for the app did not stop the release: ${noEntryFailed || "it passed"}`);
 
   // A red Mac check on main: the release stops after the gate with nothing written, naming the failed run, so the tag is never the first reader of a Mac arm again.
   const macRed = fixture((command, args) =>
@@ -609,11 +637,10 @@ function selfTest(): void {
   const macFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: macRed.host }));
   if (!macFailed.includes("Mac half does not compile")) fails.push(`a red Mac check on main did not stop the release: ${macFailed || "it passed"}`);
   if (!macFailed.includes("https://github.com/example/runs/9")) fails.push("a red Mac check did not name the run that failed");
-  if (macRed.calls.indexOf("just verify") < 0) fails.push("a red Mac check was read before the gate ran, so the read spends nothing yet stopped a release the gate might have stopped better");
+  if (macRed.calls.indexOf("lockfile version read") < 0) fails.push("a red Mac check was read before the lockfile was, so a release stops on the cheaper reading first");
   for (const call of macRed.calls) {
     if (isTagWork(call)) fails.push(`a red Mac check still ran ${call}`);
   }
-  if (!macRed.calls.includes("snapshot removed")) fails.push("a red Mac check left the plan copy behind");
 
   // GitHub silent, or no completed run yet: neither stops anything, because a release never waits on a build.
   const macQuiet: Array<[string, CommandResult]> = [
@@ -635,31 +662,11 @@ function selfTest(): void {
   if (landed.calls.some((call) => call.startsWith("gh run list"))) fails.push("a landing asked GitHub for the Mac answer, and a landing is not a release");
   if (landed.calls.some((call) => call.startsWith("gh release list"))) fails.push("a landing asked which release is published, and a landing deletes no tag");
 
-  // Nothing the release does may outlive the plan copy the gate read: the old path was two processes, and the push in the second one had no copy behind it at all.
-  const outside = clean.calls.indexOf("snapshot removed");
-  for (let i = outside + 1; i < clean.calls.length; i += 1) {
-    if (isTagWork(clean.calls[i]!)) fails.push(`${clean.calls[i]} ran after the plan copy had gone`);
-  }
-
-  // A plan tree that will not hold still: the gate never runs, so no tag work can follow it.
-  const moving = fixture(() => null, {
-    withSnapshot: () => {
-      throw new Error("the plan tree changed every time it was copied");
-    },
-  });
-  const movingFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: moving.host }));
-  if (!movingFailed.includes("changed every time")) fails.push(`a moving plan tree did not stop the release: ${movingFailed || "it passed"}`);
-  if (moving.calls.includes("just verify")) fails.push("a release checked itself against a plan tree that would not hold still");
-  for (const call of moving.calls) {
-    if (isTagWork(call)) fails.push(`a release with no plan copy still ran ${call}`);
-  }
-
   // The refusals that come before any of it.
   const mismatched = fixture(() => null, { packageVersion: () => "9.9.9" });
   if (!refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: mismatched.host })).includes("does not match")) {
     fails.push("a release ran with a version the package does not carry");
   }
-  if (mismatched.calls.includes("snapshot taken")) fails.push("a wrong version copied the plan tree before being refused");
   for (const call of mismatched.calls) {
     if (isTagWork(call)) fails.push(`a wrong version still ran ${call}`);
   }
@@ -671,7 +678,7 @@ function selfTest(): void {
     for (const line of fails) console.error(`  ${line}`);
     process.exit(1);
   }
-  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts only this pass's named paths on main, using an index of its own so another session's staged work stays out, reaching no gate, no plan copy and no tag, and writing nothing when its owned set is clean; one command from the gate to the push, all of it inside a still copy of the plan tree; the work in the tree is read once to refuse a clean owned set and again after the gate, with both readings filtered through the same path list and the release commit using that private index too; the old tags go only after the gate passes, keeping the new tag and the tag of the release people are downloading while a newer tag left by a failed build goes with the rest, and a GitHub that cannot name the published release stops everything rather than guessing, while a repository with nothing published carries on; the newest completed Mac answer on main is read after the gate and a failed one stops the release naming its run before any tag work, while GitHub silent or no run yet stops nothing; a failed gate, a moving tree, a clean owned set or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty owned set an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
+  console.log("prepare-release: ok (every commit carries the message naming its work, and a landing or release handed a blank one is refused before the repository is touched; a landing puts only this pass's named paths on main, using an index of its own so another session's staged work stays out, reaching no tag, and writing nothing when its owned set is clean; a release runs no complete suite and copies no plan tree, because the build it ships already proved the same bytes; it writes the app's own version into the lockfile and reads it back, since nothing before it does and both builds pass `--locked`; the work in the tree is read once to refuse a clean owned set and once after that write to decide what to commit, with both readings filtered through the same path list and the release commit using that private index too; the old tags go only after those readings pass, keeping the new tag and the tag of the release people are downloading while a newer tag left by a failed build goes with the rest, and a GitHub that cannot name the published release stops everything rather than guessing, while a repository with nothing published carries on; the newest completed Mac answer on main is read after the lockfile and a failed one stops the release naming its run before any tag work, while GitHub silent or no run yet stops nothing; a stale lockfile, a clean owned set or a wrong version reaches no tag cleanup, staging, commit, tag or push, and a release meeting the empty owned set an earlier one left names the tag already on the commit and says to bump the patch; and those refusals read the verb behind git's own options, so the unsigned commit and tag a public release writes are seen)");
 }
 
 function isMainModule(): boolean {

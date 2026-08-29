@@ -1,6 +1,6 @@
 ---
 name: dev
-description: Build a ticket from its path under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Designs it when needed, works its phases in order, checks each phase, drives what it can reach, and always stops at the owner's box without retiring the ticket. Use when the user says "build this", "dev this", "work that ticket", or "do the plan".
+description: Build a ticket from its path under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Designs it when needed, works its phases in order, drives what it can reach, runs the one complete check the ticket pays for after the last phase, and always stops at the owner's box without retiring the ticket. Use when the user says "build this", "dev this", "work that ticket", or "do the plan".
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
@@ -49,9 +49,12 @@ Build the phase's test box with its code, and write the test's name on the box i
 
 Anything found while building that no phase in this ticket would have to build anyway is a second file, written in the same pass and never mentioned in the reply. The section below holds the rule and the sentences that break it.
 
-### 6. `/check` after each phase and at the end
+### 6. `/check` once, after the last phase
 
-Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase is not finished until it is green.
+**This pass owns the only automatic complete gate in the workflow, and it runs once — after the last phase, never after each one.** A phase is finished when its boxes are ticked and its test is written; the suite is what the whole ticket pays for at the end, not what every phase pays for on the way. Nothing downstream runs it again over the same code: the shipping pass lands the work, brings the published pages and the comments up to date and lands again, and none of that re-proves what this gate already proved.
+
+Run [`/check`](../check/SKILL.md). A red is fixed and the suite is re-run from the top. An owner asking for a check mid-build gets one; what this step forbids is a call nobody asked for.
+
 
 **<!-- shared-rule: sessions-in-one-checkout -->Two sessions build in this one checkout, on tickets the running order's `Devs with` column says share no file, and neither of them writes the running order.<!-- /shared-rule -->** So the pair that column named is built here at once, and this pass keeps to its own ticket and the code — the other build is happening in the same folders, on the same screen, and is not this one's to touch.
 

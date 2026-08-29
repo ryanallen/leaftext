@@ -33,7 +33,7 @@ Boot the changed behavior through its subject file in `scripts/check-shell/`.
 
 ### 6. Check the joined program
 
-Run `/check` against the fragments in their real order.
+Run `just check-shell` — it boots the fragments in their real order, which is the proof this pass owes. Never the complete suite: the build that called this pays for that once, at its end.
 
 ## The rules the list carries
 

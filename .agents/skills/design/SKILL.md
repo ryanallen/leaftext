@@ -141,7 +141,7 @@ The tell is a plan that gets green without the thing being true.
 - The italic line says why it is in that position, and is true — phase 2 must really need what phase 1 proved.
 - A box has an obvious done. "Make it fast" does not.
 - Tests have their own boxes, in the phase that needs them — step 5a is the pass that checks it.
-- Every phase ends with `/check`, and with the bundler line if it touched `design/`.
+- The phase list ends with one block for the whole build — the bundler line if it touched `design/`, the documentation and comment work, then `/check` once. Never a block per phase: the ticket pays for the complete suite once, at the end, and a repeated block spends it again for every phase.
 - Nothing open-ended survives: no TBD, no "decide later", no question left in the file. Something genuinely unknowable until code exists is **phase 0** — one grep, one measurement, spelled out as a box.
 
 If a fix changes what gets built rather than how it is described, choose among the ticket's researched options from the code and the repo rules, then record the decision and its reason. Ask the owner only when the ticket's intent cannot be established from the request or the evidence; do not send a build choice back to the ticket author.

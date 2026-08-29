@@ -1,13 +1,13 @@
 ---
 name: check
-description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify`; a failure is fixed and re-run, never explained past. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
+description: The one complete gate a ticket pays for, run once at the end of its build. Reads the change with /sync-tests so it has a test, then `just verify`; a failure is fixed and re-run, never explained past. Use when the user says "check it" or "verify", and when /dev has finished its last phase; nothing else calls it automatically.
 argument-hint: ""
 user-invocable: true
 ---
 
 # Check
 
-The last thing before work goes back, and the last thing before it ships.
+The one complete gate a ticket pays for. [`/dev`](../dev/SKILL.md) runs it once, after its last phase is built; the owner runs it by asking. Nothing else calls it — not a phase, not a subject skill, not the shipping pass, not retirement, and not a pass that wrote no code at all.
 
 **Never run git** — a green check is not a license to commit. That needs a `/git-release` in the message.
 
@@ -17,7 +17,7 @@ The last thing before work goes back, and the last thing before it ships.
 
 Run [sync-tests](../sync-tests/SKILL.md): `/sync-tests` with no argument, so it works the uncommitted diff.
 
-Tests come before `verify` because `verify` runs the tests that exist. A change with no test passes it and proves nothing.
+Tests come before `verify` because `verify` runs the tests that exist. A change with no test passes it and proves nothing. That pass is the reading alone — it names what is missing and writes it, and never runs the test suites itself, because the next step runs both of them seconds later.
 
 ### 2. `just verify`
 
@@ -55,7 +55,8 @@ The whole reply is the owner's message, word for word. The tree stays dirty; tha
 ## Reference
 
 - `Justfile` — what `verify` runs, and each step on its own.
-- `/sync-tests` — step 1.
-- `/git-release` — calls this before it commits, and is the only thing that touches git.
+- `/sync-tests` — step 1, the reading that names a missing test.
+- `/dev` — the one pass that calls this automatically, once, after its last phase is built.
+- `/git-release` — ships what this proved rather than proving it again, and is the only thing that touches git.
 
 <!-- keycode: LEAF-5E64 -->

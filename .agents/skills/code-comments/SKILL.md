@@ -33,7 +33,7 @@ Keep rationale and measured history, cut drafting history, and verify every repl
 
 ### 4. Run the proof the file needs
 
-Build Rust documentation after Rust comment edits, then run `/check`.
+Build Rust documentation after Rust comment edits — `cargo doc --no-deps --lib`, the only thing that catches a dead intra-doc link and the one proof this pass owes. Never the complete suite: the build that called this pays for that once, at its end, and this pass runs inside it.
 
 ### 5. Hand back the comment pass
 
@@ -116,7 +116,7 @@ So, per rewrite: grep every identifier the replacement names and confirm it is r
 1. List the comments in the touched files. Candidate grep: `used to · no longer · any more · is gone · was · were`.
 2. Read each with the code under it and give it a verdict.
 3. Edit in place, checking every rewrite as above.
-4. Run `cargo doc --no-deps --lib` if any Rust changed, then `just verify`.
+4. Run `cargo doc --no-deps --lib` if any Rust changed. Not the complete suite — the build this runs inside pays for that once, after this pass.
 5. Say how many comments were cut, rewritten or shortened, in which files, and anything left alone as out of scope.
 
 **Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).

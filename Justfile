@@ -270,6 +270,11 @@ check-verify:
 check-dev-task-toggle:
     node scripts/check-dev-task-toggle.mjs --check
 
+# Hold the complete suite to one automatic run a ticket, at the end of its build. Every
+# other pass proves what it writes with the narrow checks about it.
+check-suite-callers:
+    node scripts/check-suite-callers.mjs --check
+
 # Fail on a class in reading.css that design/components.md does not account for — as a
 # component with a sample the gallery draws, as something a rendered document brings, or
 # as a state. New parts of the interface join the design system or fail here.
@@ -550,7 +555,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
