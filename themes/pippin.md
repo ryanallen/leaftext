@@ -4,6 +4,8 @@
 
 **Family ID:** `pippin`
 
+**Pack:** `lucide`
+
 ## Fonts
 
 | Role    | Stack |

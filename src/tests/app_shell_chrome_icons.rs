@@ -67,9 +67,14 @@ fn app_shell_back_icon_uses_current_color_and_keeps_no_square_fallback() {
     // The back arrow is a mask class now, so the page names it and the stylesheet holds the drawing. `currentColor` still governs, one level out: the base class paints the mask in the control's own color.
     assert_contains(&html, r#"class="lt-icon lt-icon-back""#);
     let css = reading_mode_css();
+    // The drawing is a value the page root declares and the class reads, which is what a theme pack replaces. Both halves are asserted: the same arrow reaching the root, and the class still taking it — either one alone passes on a drawing that never arrives.
     assert_contains(
         css,
-        "%3Cpath d='M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18' fill='none' stroke='%23000'",
+        "--lt-icon-back: url(\"data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18' fill='none' stroke='%23000'",
+    );
+    assert_contains(
+        rule_body(css, ".lt-icon-back {"),
+        "mask-image: var(--lt-icon-back);",
     );
     assert_contains(
         rule_body(css, ".lt-icon {"),
@@ -108,19 +113,44 @@ fn app_shell_back_icon_uses_current_color_and_keeps_no_square_fallback() {
     );
 }
 
+/// A drawing is a value the page root declares and the class reads, which is the whole hook a theme pack hangs on: a family selector on the root redeclares the ones its pack covers and every class follows without being touched. A class that went back to carrying its own drawing would still look right in the window and would silently stop answering the theme.
+#[test]
+fn every_icon_is_a_value_the_root_declares_and_the_class_reads() {
+    let rows = icon_rows();
+    assert!(rows.len() > 30, "only found {} icon rows", rows.len());
+
+    let css = reading_mode_css();
+    for name in &rows {
+        assert_contains(
+            css,
+            &format!("  --lt-icon-{name}: url(\"data:image/svg+xml,"),
+        );
+        let body = rule_body(css, &format!(".lt-icon-{name} {{"));
+        assert_contains(body, &format!("-webkit-mask-image: var(--lt-icon-{name});"));
+        assert_contains(body, &format!("mask-image: var(--lt-icon-{name});"));
+    }
+    // Nothing is left drawing its own: a rule holding a `data:` URI is a class the root cannot reach.
+    let baked = css
+        .lines()
+        .filter(|line| line.contains("mask-image: url(\"data:"))
+        .count();
+    assert_eq!(
+        baked, 0,
+        "{baked} icon rules still bake in their own drawing"
+    );
+    // The bolder masks the view buttons swap to work the same way and are declared in the same block, so the file holds one pattern rather than two.
+    for name in ["code-view", "document", "graph"] {
+        assert_contains(
+            css,
+            &format!("  --lt-icon-{name}-heavy: url(\"data:image/svg+xml,"),
+        );
+    }
+}
+
 /// `A@{ icon: "leaf:back" }` in a diagram draws the app's own back arrow, out of a set generated from the same rows as the stylesheet — so an icon is named in one place and mermaid never falls back to its own glyph, an 80x80 square in a hardcoded #087ebf.
 #[test]
 fn every_icon_row_reaches_the_diagram_icon_set_and_nothing_else_does() {
-    let rows: Vec<String> = include_str!("../../design/icons.md")
-        .lines()
-        .filter(|line| line.starts_with('|'))
-        .filter_map(|line| {
-            let cells: Vec<&str> = line.split('|').map(str::trim).collect();
-            let name = cells.get(1).copied().unwrap_or_default();
-            let file = cells.get(2).copied().unwrap_or_default();
-            (file.ends_with(".svg") && !name.is_empty()).then(|| name.to_string())
-        })
-        .collect();
+    let rows = icon_rows();
     assert!(rows.len() > 30, "only found {} icon rows", rows.len());
 
     let set = include_str!("../assets/mermaid-icons.js");

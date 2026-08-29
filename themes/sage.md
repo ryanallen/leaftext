@@ -4,6 +4,8 @@
 
 **Family ID:** `sage`
 
+**Pack:** `leaftext`
+
 ## Fonts
 
 | Role    | Stack |

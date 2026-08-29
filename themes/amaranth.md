@@ -4,6 +4,8 @@
 
 **Family ID:** `amaranth`
 
+**Pack:** `heroicons`
+
 ## Fonts
 
 | Role    | Stack |

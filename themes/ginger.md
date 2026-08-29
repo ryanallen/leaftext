@@ -4,6 +4,8 @@
 
 **Family ID:** `ginger`
 
+**Pack:** `tabler`
+
 ## Fonts
 
 | Role    | Stack |

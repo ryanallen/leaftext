@@ -235,8 +235,12 @@ fn theme_preview_images_are_prose_the_parser_ignores() {
 #[test]
 fn github_family_uses_github_markdown_fonts_not_noto() {
     let css = reading_mode_css();
-    // The GitHub family swaps the document fonts for GitHub's own markdown stack: system sans (no serif) for body and headings, system mono for code.
-    let block = rule_body(css, ":root[data-leaf-theme=\"github\"] {");
+    // The GitHub family swaps the document fonts for GitHub's own markdown stack: system sans (no serif) for body and headings, system mono for code. The family opens two rules — its own colors, and the icon pack it wears — so the fonts one is named by a declaration only it carries.
+    let block = rule_body(
+        css,
+        ":root[data-leaf-theme=\"github\"] {
+  --heading-font:",
+    );
     assert!(block.contains("--heading-font: -apple-system"));
     assert!(block.contains("--reading-font: -apple-system"));
     assert!(block.contains("--code-font: ui-monospace"));
@@ -545,4 +549,179 @@ fn bundled_asset_serves_graph_runtimes() {
     assert_eq!(unsafe_eval.status, 200);
     assert!(unsafe_eval.content_type.contains("javascript"));
     assert!(!unsafe_eval.body.is_empty());
+}
+
+/// Every rule in the sheet that declares an icon drawing under a theme family — the pack blocks, and nothing else — as its selector and its declarations. Families sharing a pack share one block, so a selector here can name several.
+fn pack_blocks(css: &str) -> impl Iterator<Item = (String, &str)> {
+    css.split("\n}").filter_map(|rule| {
+        let (head, body) = rule.rsplit_once(" {\n")?;
+        // A selector list runs over several lines, so the selector is every line of the head that is not a comment.
+        let selector: String = head
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("/*"))
+            .collect::<Vec<_>>()
+            .join("");
+        (selector.contains("[data-leaf-theme=") && body.contains("--lt-icon-"))
+            .then_some((selector, body))
+    })
+}
+
+/// Which pack each family wears is a `**Pack:**` line in its own file, and the stylesheet is what carries it to the page: a family naming an outside pack gets a block redeclaring the drawings that pack covers, and a family naming none is left with the drawings at the root — the ones it wears today. A pack that compiled into no block is a theme the reader would see no change from.
+#[test]
+fn a_family_naming_a_pack_wears_it_and_a_family_naming_none_wears_what_it_wears_today() {
+    let css = reading_mode_css();
+    let mut wearing = 0;
+    let mut plain = 0;
+    for entry in std::fs::read_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/themes")).expect("themes/")
+    {
+        let path = entry.expect("a theme file").path();
+        if path.extension().and_then(|e| e.to_str()) != Some("md") {
+            continue;
+        }
+        if path.file_name().and_then(|n| n.to_str()) == Some("README.md") {
+            continue;
+        }
+        let family = std::fs::read_to_string(&path).expect("a theme file reads");
+        let id = family
+            .lines()
+            .find_map(|line| line.strip_prefix("**Family ID:** `"))
+            .and_then(|rest| rest.split('`').next())
+            .expect("every family declares its id");
+        let named = family
+            .lines()
+            .find_map(|line| line.strip_prefix("**Pack:** `"))
+            .and_then(|rest| rest.split('`').next());
+        // Every family already opens a rule for its own colors, so the question is only whether one of its rules declares a drawing. Read off the selector rather than by name: families sharing a pack share one block, and the second one in that list starts mid-line.
+        let drawings = pack_blocks(css)
+            .any(|(selector, _)| selector.contains(&format!("[data-leaf-theme=\"{id}\"]")));
+        match named {
+            Some("leaftext") | None => {
+                assert!(
+                    !drawings,
+                    "{id} names no outside pack and still has a block of drawings, so it is not wearing the set it wears today"
+                );
+                plain += 1;
+            }
+            Some(pack) => {
+                assert!(
+                    drawings,
+                    "{id} wears {pack} and no block of drawings reaches it, so the theme would change nothing"
+                );
+                wearing += 1;
+            }
+        }
+    }
+    assert!(
+        wearing > 0,
+        "no family wears an outside pack, so nothing here is proved"
+    );
+    assert!(
+        plain > 0,
+        "every family wears an outside pack, so the fallback half is not proved"
+    );
+}
+
+/// A pack covers the jobs it has a drawing for and no others, and the rest are not blanked — nothing is declared for them, so the value at the root stands and the reader sees the drawing they already know. An uncovered job that declared an empty value would be a control with no icon in it.
+#[test]
+fn an_icon_a_pack_does_not_cover_keeps_the_drawing_it_has() {
+    let css = reading_mode_css();
+    let block = pack_blocks(css)
+        .next()
+        .expect("a family wears an outside pack")
+        .1;
+    let covered: Vec<&str> = block
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("--lt-icon-"))
+        .filter_map(|rest| rest.split(':').next())
+        .collect();
+    assert!(!covered.is_empty(), "the pack block declares nothing");
+
+    let rows = icon_rows();
+    let uncovered: Vec<&String> = rows
+        .iter()
+        .filter(|name| !covered.contains(&name.as_str()))
+        .collect();
+    assert!(
+        !uncovered.is_empty(),
+        "this pack covers every job, so the fallback it exists to prove never happens"
+    );
+    for name in uncovered {
+        // Nothing declared for it under the family, and a drawing declared for it at the root: that pair is the fallback.
+        assert!(
+            css.contains(&format!("\n  --lt-icon-{name}: url(\"data:image/svg+xml,")),
+            "{name} has no drawing at the root, so a family that does not cover it would show an empty box"
+        );
+    }
+}
+
+/// `icon: "leaf:back"` is something a document's author wrote, so it has to draw the same for every reader. A pack that reached the diagram set would redraw somebody else's document when they picked a theme.
+#[test]
+fn no_pack_drawing_reaches_the_diagram_icon_set() {
+    let set = include_str!("../assets/mermaid-icons.js");
+    let packs = std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/assets/icon-packs"
+    ));
+    let mut read = 0;
+    if let Ok(folders) = std::fs::read_dir(packs) {
+        for folder in folders.flatten() {
+            for drawing in std::fs::read_dir(folder.path())
+                .expect("a pack folder")
+                .flatten()
+            {
+                let svg = std::fs::read_to_string(drawing.path()).expect("a drawing reads");
+                let body = svg
+                    .split_once('>')
+                    .map(|(_, rest)| rest.trim_end().trim_end_matches("</svg>"))
+                    .unwrap_or_default();
+                assert!(
+                    body.len() < 12 || !set.contains(body),
+                    "{} reached the diagram icon set, so a document would redraw when its reader changes theme",
+                    drawing.path().display()
+                );
+                read += 1;
+            }
+        }
+    }
+    assert!(
+        read > 0,
+        "no pack drawing was read, so nothing here is proved"
+    );
+}
+
+/// Whichever pack a family wears, every one of the sixty-three controls has a drawing: the pack's own where it has one, and the root's where it does not. A family that resolved nothing for a job would draw an empty box in the window, and the reader has no way to ask what went missing.
+#[test]
+fn every_family_resolves_a_drawing_for_every_icon_by_pack_or_by_fallback() {
+    let css = reading_mode_css();
+    let names = icon_rows();
+    let root: Vec<&String> = names
+        .iter()
+        .filter(|name| css.contains(&format!("\n  --lt-icon-{name}: url(\"data:image/svg+xml,")))
+        .collect();
+    assert_eq!(
+        root.len(),
+        names.len(),
+        "the page root declares {} of {} drawings, so a family with no pack would already be short",
+        root.len(),
+        names.len()
+    );
+
+    for (family, _) in theme_families() {
+        // A pack block may declare some, all or none of them; whatever it leaves out, the root above it answers. So the only way a control goes blank is a name the root never declared, which the count above rules out.
+        let covered: Vec<&str> = pack_blocks(css)
+            .filter(|(selector, _)| selector.contains(&format!("[data-leaf-theme=\"{family}\"]")))
+            .flat_map(|(_, body)| {
+                body.lines()
+                    .filter_map(|line| line.trim().strip_prefix("--lt-icon-"))
+                    .filter_map(|rest| rest.split(':').next())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        for name in &names {
+            assert!(
+                covered.contains(&name.as_str()) || root.contains(&name),
+                "{family} resolves no drawing for {name}, so that control would be an empty box"
+            );
+        }
+    }
 }

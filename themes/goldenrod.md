@@ -4,6 +4,8 @@
 
 **Family ID:** `goldenrod`
 
+**Pack:** `lucide`
+
 ## Fonts
 
 | Role    | Stack |

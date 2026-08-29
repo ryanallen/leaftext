@@ -4,6 +4,8 @@
 
 **Family ID:** `halcyon`
 
+**Pack:** `heroicons`
+
 ## Fonts
 
 | Role    | Stack |

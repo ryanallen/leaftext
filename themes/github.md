@@ -4,6 +4,8 @@
 
 **Family ID:** `github`
 
+**Pack:** `feather`
+
 ## Fonts
 
 | Role    | Stack |

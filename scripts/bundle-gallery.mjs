@@ -32,7 +32,7 @@ function tables(file) {
     if (!line.startsWith('|')) continue;
     const cells = line.split('|').slice(1, -1).map((c) => c.trim());
     if (!cells.length || cells.some((c) => /^-{3,}$/.test(c))) continue;
-    if (['Token', 'Component', 'Name'].includes(cells[0])) continue;
+    if (['Token', 'Component', 'Name', 'Pack'].includes(cells[0])) continue;
     rows.push({ group, cells });
   }
   return rows;
@@ -40,8 +40,12 @@ function tables(file) {
 
 const colors = tables('colors.md');
 const tokens = tables('tokens.md');
-// The rows that name a drawing: icons.md also carries the Stroke table, which is values, not icons.
-const icons = tables('icons.md').filter(({ cells }) => /\.svg$/.test(cells[1] || ''));
+// Every set a theme family can wear, in the order the Packs table lists them. `leaftext` is the app's own and needs no scope: it is what the page root already declares.
+const packs = tables('icons.md').filter(({ group, cells }) => group === 'Packs' && cells.length === 4).map(({ cells }) => cells[0]);
+// An icon row is its drawing, then the audit label and one decision per outside pack, then the sentence saying where it is worn. Counted off the Packs table, so a seventh pack widens the row here too.
+const ICON_COLUMNS = 6 + packs.length;
+// The rows that name a drawing: icons.md also carries the Stroke table and the Packs table, which are values and sets, not icons.
+const icons = tables('icons.md').filter(({ cells }) => cells.length === ICON_COLUMNS && /\.svg$/.test(cells[1] || ''));
 // Only the first table: the document prefixes and states after it account for classes, they are not components with markup to draw.
 const components = tables('components.md').filter(({ group }) => !group.startsWith('What a document') && !group.startsWith('State'));
 
@@ -139,6 +143,10 @@ out.push('  .pick button { font: inherit; font-size: var(--lt-text-12); padding:
 out.push('  .pick button[aria-pressed="true"] { background: var(--lt-primary); border-color: var(--lt-primary); color: var(--lt-primary-foreground); }');
 out.push('  .wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 10px 12px; align-items: start; }');
 out.push('  .wall.wide { grid-template-columns: repeat(auto-fill, minmax(224px, 1fr)); }');
+// One row per icon, one column per pack: a fixed track count, because the whole point is reading across a row and comparing the same job in seven sets.
+out.push('  .wall.packs { grid-template-columns: 152px repeat(7, 1fr); gap: 0; align-items: center; }');
+out.push('  .wall.packs .glyph { padding: 6px 4px; }');
+out.push('  .wall.packs .packs-head code { opacity: 0.7; }');
 // The stroke matters: a color the same as the page has no edge of its own, and without one the swatch reads as a missing swatch.
 out.push('  .swatch i { display: block; height: 40px; border-radius: var(--lt-radius-md); border: var(--lt-stroke-1) solid var(--lt-border-strong); }');
 out.push('  .swatch code, .value code { font-family: var(--code-font); font-size: var(--lt-text-10); color: var(--lt-muted-foreground); overflow-wrap: anywhere; }');
@@ -222,11 +230,17 @@ for (const [group, rows] of byGroup(tokens)) {
 
 out.push('</section>');
 out.push('<section class="panel" id="icons" role="tabpanel" hidden>');
-out.push(`<p class="lead">${icons.length} icons. Each takes the color of whatever it sits in, which is why they follow the theme.</p><div class="wall">`);
+out.push(`<p class="lead">${icons.length} icons, each under all ${packs.length} packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>`);
+out.push(`<div class="wall packs"><div class="glyph packs-head"><code>&nbsp;</code></div>${packs.map((pack) => `<div class="glyph packs-head"><code>${pack}</code></div>`).join('')}</div>`);
 for (const { cells } of icons) {
-  out.push(`<div class="glyph"><span class="lt-icon lt-icon-${cells[0]}"></span><code>${cells[0]}</code></div>`);
+  // `data-leaf-pack` is a name any element can take, written into `icons.css` beside the family selectors for exactly this: seven page roots do not exist, so a scope per pack is the only way to show them together.
+  const under = packs
+    .map((pack) => pack === 'leaftext'
+      ? `<div class="glyph"><span class="lt-icon lt-icon-${cells[0]}"></span></div>`
+      : `<div class="glyph" data-leaf-pack="${pack}"><span class="lt-icon lt-icon-${cells[0]}"></span></div>`)
+    .join('');
+  out.push(`<div class="wall packs"><div class="glyph"><code>${cells[0]}</code></div>${under}</div>`);
 }
-out.push('</div>');
 
 out.push('</section>');
 out.push('<section class="panel" id="interface" role="tabpanel" hidden>');

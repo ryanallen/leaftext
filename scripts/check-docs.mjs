@@ -1098,6 +1098,78 @@ function appBarSelfTest() {
   return fails;
 }
 
+// Three generated sheets put every one of the app's drawings beside the same job in six candidate packs, and a theme that wears a pack is compiled off them. A cell missing there is a drawing nobody chose, so the choice gets made by whoever compiles the pack instead of by whoever read the chart — which is how the first pass shipped share and network shapes where the app draws a graph.
+//
+// Offline and parser-only on purpose: the sheets are HTML in the plan tree and the names come from `design/icons.md`, so nothing renders and no browser starts. Whether a photograph shows the last row is the audit bundler's to prove, not this one's.
+//
+// Two rows wear a label the reader sees rather than the class name behind them — the folder menu's arrow is Back and the header logomark is Logo — because an app-wide class rename is not the price of an honest chart.
+const AUDIT_SHEETS = [1, 2, 3].map((n) => `imgs/wireframes/theme-icon-sets-audit-${n}.html`);
+const AUDIT_PACKS = ['Feather', 'Lucide', 'Tabler', 'Remix', 'Phosphor', 'Heroicons'];
+const AUDIT_LABELS = { 'back-long': 'back', leaf: 'logo' };
+
+/** Every icon name `design/icons.md` holds, in the order its table holds them, which is the audit's row order too. */
+export function iconNames(text) {
+  return text.split('\n').filter((line) => /^\| [a-z0-9-]+ \| \S+\.svg \| /.test(line)).map((line) => line.split('|')[1].trim());
+}
+
+/** What the audit is missing, one line each. `sheets` is the three sources in order; `names` is what `iconNames` read. */
+export function auditFaults(sheets, names) {
+  const faults = [];
+  const whole = sheets.join('');
+  for (const pack of AUDIT_PACKS) if (!whole.includes(`<th scope="col">${pack}<`)) faults.push(`no ${pack} column`);
+  const rows = [...whole.matchAll(/<tr><th scope="row">(.*?)<\/th>(.*?)<\/tr>/g)];
+  if (rows.length !== names.length) faults.push(`${rows.length} rows audited, ${names.length} drawings ship`);
+  names.forEach((name, at) => {
+    const row = rows[at];
+    const want = AUDIT_LABELS[name] ?? name;
+    if (!row) return faults.push(`${want} has no row`);
+    const label = /<strong>(.*?)<\/strong>/.exec(row[1])?.[1];
+    if (label !== want) return faults.push(`row ${at + 1} is ${label ?? 'unnamed'}, not ${want}`);
+    const cells = [...row[2].matchAll(/<td( class="[^"]*")?>(.*?)<\/td>/g)];
+    if (cells.length !== AUDIT_PACKS.length + 1) return faults.push(`${want} shows ${cells.length} of ${AUDIT_PACKS.length + 1} packs`);
+    cells.forEach((cell, column) => {
+      const pack = column === 0 ? 'Leaftext' : AUDIT_PACKS[column - 1];
+      const candidate = /<small>(.*?)<\/small>/.exec(cell[2])?.[1] ?? '';
+      if (!candidate) return faults.push(`${want} names no ${pack} drawing`);
+      if ((cell[1] ?? '').includes('fallback') && !candidate.startsWith('keep Leaftext')) faults.push(`${want} falls back under ${pack} without saying what it keeps`);
+    });
+  });
+  return faults;
+}
+
+// One good row, and every way the audit can lose a decision. Written out rather than read off the sheets, so the refusal is proved against a shape this file holds rather than against whatever the sheets happen to say today.
+const AUDIT_CELL = '<td><div class="icon"><span class="glyph"></span></div><small>arrow-left</small></td>';
+const AUDIT_KEPT = '<td class="fallback"><div class="icon"><span class="glyph"></span></div><small>keep Leaftext · back.svg · heroicons</small></td>';
+const auditRow = (label, cells) => `<tr><th scope="row"><span class="number">1</span><strong>${label}</strong><small>Where it is worn.</small></th>${cells}</tr>`;
+const auditSheet = (rows, packs = AUDIT_PACKS) => `<thead><tr><th scope="col">Icon and where it is worn</th><th scope="col">Leaftext<small>Mixed pack</small></th>${packs.map((p) => `<th scope="col">${p}<small>1.0.0</small></th>`).join('')}</tr></thead><tbody>${rows}</tbody>`;
+const AUDIT_WHOLE = auditSheet(auditRow('back', AUDIT_CELL.replace('<td>', '<td class="current">') + AUDIT_CELL.repeat(5) + AUDIT_KEPT));
+
+const AUDIT_CASES = [
+  ['a complete row passes', [AUDIT_WHOLE], ['back'], []],
+  ['a drawing with no row at all is refused', [auditSheet('')], ['back'], ['0 rows audited, 1 drawings ship', 'back has no row']],
+  ['a row named after another drawing is refused', [AUDIT_WHOLE], ['forward'], ['row 1 is back, not forward']],
+  ['a missing pack column is refused', [auditSheet(auditRow('back', AUDIT_CELL.repeat(7)), AUDIT_PACKS.slice(0, 5))], ['back'], ['no Heroicons column']],
+  ['a row short of a pack is refused', [auditSheet(auditRow('back', AUDIT_CELL.repeat(6)))], ['back'], ['back shows 6 of 7 packs']],
+  ['a cell naming no drawing is refused', [AUDIT_WHOLE.replace('<small>arrow-left</small>', '<small></small>')], ['back'], ['back names no Leaftext drawing']],
+  ['a fallback that never says what it keeps is refused', [AUDIT_WHOLE.replace('keep Leaftext · back.svg · heroicons', 'arrow-left')], ['back'], ['back falls back under Heroicons without saying what it keeps']],
+  ['the folder menu\'s arrow is audited as Back, and the logomark as Logo', [AUDIT_WHOLE + auditRow('logo', AUDIT_CELL.repeat(7))], ['back-long', 'leaf'], []],
+];
+
+function auditSelfTest() {
+  const fails = [];
+  for (const [name, sheets, names, want] of AUDIT_CASES) {
+    const got = auditFaults(sheets, names);
+    if (got.join(' | ') !== want.join(' | ')) fails.push(`${name}: got [${got.join(' | ') || 'nothing'}], want [${want.join(' | ') || 'nothing'}]`);
+  }
+  return fails;
+}
+
+const AUDIT_ADVICE = [
+  'the audit is what a theme pack is compiled off, so a cell it does not carry is a drawing nobody chose.',
+  'Every one of the app\'s drawings gets a row, every row gets all six pack columns, and a pack with no',
+  'drawing for that job names the Leaftext one it keeps instead — never a blank and never a lookalike.',
+];
+
 const OWNER_ADVICE = [
   'the last box in a ticket is the owner\'s, unticked until they say the thing works — a machine agreeing with itself is not evidence.',
   'Write `### The owner\'s box` at the end of the phases in each, with one box holding the gesture the owner makes to see the thing,',
@@ -1229,6 +1301,26 @@ const appBarFails = appBarSelfTest();
 if (appBarFails.length) {
   console.error('the app bar order: the reader is wrong, so nothing was read:');
   for (const line of appBarFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
+const auditReaderFails = auditSelfTest();
+if (auditReaderFails.length) {
+  console.error('the icon audit: the reader is wrong, so nothing was read:');
+  for (const line of auditReaderFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
+// Silent where the sheets are not beside this checkout, which is every session cut without the plan tree.
+const auditSources = AUDIT_SHEETS.map((sheet) => join(plans, sheet)).filter((at) => existsSync(at));
+const auditGaps = auditSources.length === AUDIT_SHEETS.length
+  ? auditFaults(auditSources.map((at) => readFileSync(at, 'utf8')), iconNames(readFileSync(join(root, 'design', 'icons.md'), 'utf8')))
+  : [];
+
+if (auditGaps.length) {
+  console.error('the icon audit does not carry a decision for every drawing:');
+  for (const gap of auditGaps) console.error(`  ${gap}`);
+  for (const line of AUDIT_ADVICE) console.error(line);
   process.exit(1);
 }
 
@@ -1455,4 +1547,7 @@ if (outOfOrder.length) {
 
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
 const links = `${opened} document links all opening something`;
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan opening with a title of its own rather than the template placeholder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every live plan saying which files it will write with every path spelled from the top of the pair, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date in either tree written from the 2026-08-19 cutoff on saying what time it was, license notices apart, ${links}`);
+const audited = auditSources.length === AUDIT_SHEETS.length
+  ? `every icon audited beside all ${AUDIT_PACKS.length} candidate packs with no cell left undecided`
+  : 'the icon audit not beside this checkout to read';
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder, every live plan opening with a title of its own rather than the template placeholder, every live plan carrying a box only the owner can tick at the end of its phases and nowhere else, every struck box saying where its work went, every live ticket that adds a control saying what it looks like, every live plan saying which files it will write with every path spelled from the top of the pair, every page that draws the app bar naming its right-hand controls in the order the markup draws them, every date in either tree written from the 2026-08-19 cutoff on saying what time it was, license notices apart, ${audited}, ${links}`);

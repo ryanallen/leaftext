@@ -4,6 +4,8 @@
 
 **Family ID:** `nightshade`
 
+**Pack:** `phosphor`
+
 ## Fonts
 
 | Role    | Stack |

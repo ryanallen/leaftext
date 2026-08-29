@@ -22,7 +22,7 @@ function rows(file) {
     if (!line.startsWith('|')) continue;
     const cells = line.split('|').slice(1, -1).map((c) => c.trim());
     if (!cells.length || cells.some((c) => /^-{3,}$/.test(c))) continue;
-    if (['Token', 'Component', 'Name'].includes(cells[0])) continue;
+    if (['Token', 'Component', 'Name', 'Pack'].includes(cells[0])) continue;
     out.push({ group, cells });
   }
   return out;
@@ -30,8 +30,12 @@ function rows(file) {
 
 const colors = rows('colors.md');
 const tokens = rows('tokens.md');
-// The rows that name a drawing, not the Stroke table's weights.
-const icons = rows('icons.md').filter(({ cells }) => /\.svg$/.test(cells[1] || ''));
+// Every set a theme family can wear, this app's own included.
+const packs = rows('icons.md').filter(({ group, cells }) => group === 'Packs' && cells.length === 4);
+// An icon row is its drawing, then the audit label and one decision per outside pack, then the sentence saying where it is worn. Counted off the Packs table, so a seventh pack widens the row here too.
+const ICON_COLUMNS = 6 + packs.length;
+// The rows that name a drawing, not the Stroke table's weights and not the Packs table's sets — a pack row has four columns where an icon row has six.
+const icons = rows('icons.md').filter(({ cells }) => cells.length === ICON_COLUMNS && /\.svg$/.test(cells[1] || ''));
 // Only the first table: the document prefixes and states after it account for classes, they are not components with markup to draw.
 const components = rows('components.md').filter(({ group }) => !group.startsWith('What a document') && !group.startsWith('State'));
 const themes = readFileSync(join(root, 'src/assets/themes.md'), 'utf8')
@@ -83,6 +87,8 @@ lines.push('');
 lines.push('## Icons');
 lines.push('');
 lines.push(`${icons.length} icons, each a class drawn with \`mask-image\`. A mask reads only transparency, so the icon takes the color of whatever it sits in — and a drawing used in five places is in the app once. A control with a bolder active state swaps to a second mask rather than thickening a stroke a mask does not have. Each row also names the pack its drawing came from, so a pack with no license notice in the app is refused, and its line weight names the box the drawing must be in.`);
+lines.push('');
+lines.push(`Every drawing is a value the page root declares and the class reads, which is what lets a theme family bring its own. A family names a whole pack on a \`**Pack:**\` line in its own file; the pack's drawings are copied into \`src/assets/icon-packs/<pack>/\`, one file per icon name, and compiled into one block of values under every family wearing it. A pack with no drawing for one of the ${icons.length} jobs declares nothing for it, so the value at the root stands and the reader keeps the drawing they already know. \`leaftext\` is a pack too — the app's own mixed set, a permanent choice, and the fallback for all ${packs.length - 1} outside ones.`);
 lines.push('');
 lines.push('## Components');
 lines.push('');

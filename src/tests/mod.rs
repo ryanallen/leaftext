@@ -307,6 +307,20 @@ fn rule_body<'a>(css: &'a str, selector: &str) -> &'a str {
     &body[..body.find('}').expect("the rule should close")]
 }
 
+/// Every icon name `design/icons.md` holds, in the order its table holds them.
+fn icon_rows() -> Vec<String> {
+    include_str!("../../design/icons.md")
+        .lines()
+        .filter(|line| line.starts_with('|'))
+        .filter_map(|line| {
+            let cells: Vec<&str> = line.split('|').map(str::trim).collect();
+            let name = cells.get(1).copied().unwrap_or_default();
+            let file = cells.get(2).copied().unwrap_or_default();
+            (file.ends_with(".svg") && !name.is_empty()).then(|| name.to_string())
+        })
+        .collect()
+}
+
 fn local_img(path: &str) -> String {
     local_image_webview_url(path)
 }

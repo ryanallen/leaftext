@@ -4,6 +4,8 @@
 
 **Family ID:** `fern`
 
+**Pack:** `tabler`
+
 ## Fonts
 
 | Role    | Stack |

@@ -36,16 +36,35 @@ for (const named of ['regular', 'heavy', 'hairline']) {
   if (!BOXES.get(named)) throw new Error(`design/icons.md gives ${named} no Box in its Stroke table`);
 }
 
+// The packs a theme family may wear, read out of the Packs table. `leaftext` is the set below it — the app's own drawings, held to the Stroke table's boxes and weights — and every other row is an outside set with a folder of its own, its own box, and its own answer to whether it draws with strokes at all. Both are needed before a pack can compile: Phosphor draws in a 256-unit box and Remix fills rather than strokes, and the weight rule above would refuse either of them whole.
+const PACKS = new Map();
+const packsSection = /\n## Packs\n([\s\S]*?)(?=\n## |$)/.exec(md);
+if (!packsSection) throw new Error('design/icons.md has no ## Packs section, so nothing says which sets a family may wear');
+for (const line of packsSection[1].split('\n')) {
+  const cells = line.startsWith('|') ? line.split('|').slice(1, -1).map((cell) => cell.trim()) : [];
+  if (cells.length !== 4 || cells[0] === 'Pack' || /^-{3,}$/.test(cells[1])) continue;
+  const [name, notice, box, drawn] = cells;
+  if (!/^[a-z][a-z0-9-]*$/.test(name)) throw new Error(`design/icons.md: "${name}" is not a pack name`);
+  PACKS.set(name, { notice, box, stroked: /\bstroked\b/.test(drawn) });
+}
+if (!PACKS.has('leaftext')) throw new Error('design/icons.md has no leaftext row in its Packs table, so the app\'s own set is not a pack a family can name');
+/** Every pack but this app's own, which has no folder of drawings and takes the Stroke table's rule instead. */
+const outsidePacks = () => [...PACKS.keys()].filter((pack) => pack !== 'leaftext');
+
+// An icon row is its drawing, then the label and one decision per outside pack, then the sentence saying where it is worn: five, one, six, one. Written down because the row is read positionally and a column added in the middle would otherwise slide the sentence into a decision.
+const ICON_COLUMNS = 6 + PACKS.size;
+
 // The rows that carry a class, and the ones that only carry a drawing.
 const rows = [];
 for (const line of md.split('\n')) {
   if (!line.startsWith('|')) continue;
   const cells = line.split('|').slice(1, -1).map((cell) => cell.trim());
-  if (cells.length < 5 || cells[0] === 'Name' || /^-{3,}$/.test(cells[1])) continue;
-  const [name, file, source, stroke, heavy] = cells;
+  if (cells.length !== ICON_COLUMNS || cells[0] === 'Name' || /^-{3,}$/.test(cells[1])) continue;
+  const [name, file, source, stroke, heavy, audit, ...rest] = cells;
+  const worn = rest.pop();
   if (!/^[a-z][a-z0-9-]*$/.test(name)) throw new Error(`design/icons.md: "${name}" is not an icon name`);
   if (!WEIGHTS.has(stroke)) throw new Error(`design/icons.md: ${name} asks for stroke "${stroke}", which the Stroke table does not name`);
-  rows.push({ name, file, source, stroke, heavy: heavy.toLowerCase() === 'yes' });
+  rows.push({ name, file, source, stroke, heavy: heavy.toLowerCase() === 'yes', audit, decided: rest, worn });
 }
 if (rows.length < 30) throw new Error(`design/icons.md gave only ${rows.length} icons`);
 
@@ -67,6 +86,55 @@ function rowProblems({ name, file, source, stroke }, svg, notices) {
     }
   }
   return found;
+}
+
+// Everything one row's six decisions can be wrong about. A decision is what that pack draws this job with: its own drawing by name, `<pack>:<name>` where the audit approved a borrow from another pack, `<name> filled` where a pack's own outline path is filled instead, or `leaftext` where the pack has nothing for this job and keeps the drawing the reader already knows. A row missing one is a drawing nobody chose, which is how share and network shapes ended up where the app draws a graph.
+//
+// The `leaftext` half is the one that has to agree with the disk, and it is the only half that can: a decision naming a drawing is a name in somebody else's pack, and nothing here can look it up. So `leaftext` must have no file and anything else must have one.
+const PROTECTED = new Set(['leaf', 'windows', 'apple']);
+function decisionProblems({ name, audit, decided }, drawings) {
+  const found = [];
+  if (!audit) found.push(`design/icons.md gives ${name} no audit label, so the chart has nothing to call it`);
+  const packs = outsidePacks();
+  if (decided.length !== packs.length) {
+    found.push(`design/icons.md gives ${name} ${decided.length} of ${packs.length} pack decisions, so at least one pack has no answer for it`);
+    return found;
+  }
+  decided.forEach((said, at) => {
+    const pack = packs[at];
+    if (!said) return found.push(`design/icons.md leaves ${name} undecided under ${pack}`);
+    if (PROTECTED.has(name) && said !== 'leaftext') {
+      found.push(`design/icons.md gives ${name} the ${pack} drawing "${said}", and the app's own marks are never an outside pack's`);
+      return;
+    }
+    const has = (drawings.get(pack) || new Map()).has(name);
+    if (said === 'leaftext' && has) found.push(`design/icons.md says ${name} keeps the Leaftext drawing under ${pack}, and src/assets/icon-packs/${pack}/${name}.svg is there`);
+    if (said !== 'leaftext' && !has) found.push(`design/icons.md gives ${name} the ${pack} drawing "${said}", and src/assets/icon-packs/${pack}/${name}.svg is not there`);
+  });
+  return found;
+}
+
+// Everything one outside drawing can be wrong about, held to the box its own pack's row declares. Never the pack's weight: what is stamped is the icon row's, and only where the drawing has strokes to stamp — a filled glyph inside a stroked pack is a drawing, not a fault. A drawing borrowed from another pack arrives in that pack's box and is refused here, which is right while nothing records the borrow: the decision column that will record one is phase 5 of theme-icon-sets, and until it exists a borrowed job keeps the Leaftext drawing the reader already knows.
+function packProblems(pack, icon, svg, drewIt = pack) {
+  const from = PACKS.get(drewIt) ? drewIt : pack;
+  const { box } = PACKS.get(from);
+  const found = [];
+  const drawn = VIEWBOX.exec(svg);
+  if (!drawn) found.push(`src/assets/icon-packs/${pack}/${icon}.svg has no square viewBox, so nothing can say what box it is drawn in`);
+  else if (drawn[1] !== drawn[2]) found.push(`src/assets/icon-packs/${pack}/${icon}.svg is drawn in a ${drawn[1]}x${drawn[2]} box, and every icon here is square`);
+  else if (drawn[1] !== box) {
+    const said = from === pack ? `design/icons.md says ${pack} draws in ${box}` : `design/icons.md borrows it from ${from}, which draws in ${box}`;
+    found.push(`src/assets/icon-packs/${pack}/${icon}.svg is drawn in a ${drawn[1]}-unit box, and ${said}`);
+  }
+  return found;
+}
+
+/** Which pack actually drew the file in `<pack>/<icon>.svg`, off that row's decision: itself, or the one a `<pack>:<name>` borrow names. */
+function drewIt(pack, icon) {
+  const row = rows.find((one) => one.name === icon);
+  const said = row && row.decided[outsidePacks().indexOf(pack)];
+  const borrowed = said && /^([a-z][a-z0-9-]*):/.exec(said);
+  return borrowed ? borrowed[1] : pack;
 }
 
 const problems = [];
@@ -98,7 +166,7 @@ function encode(svg) {
     .replace(/\}/g, '%7D');
 }
 
-const lines = [
+const head = [
   '/* Generated from design/icons.md by `just bundle-icons`. Do not edit. */',
   '/* One class per icon, drawn as a mask so the control it sits in colors it. */',
   '.lt-icon {',
@@ -171,6 +239,58 @@ if (check) {
     if (got.length) fails.push(`${what} was refused: ${got.join(' ')}`);
   }
 
+  // The pack rules, proved the same way and on the same made-up shapes. A pack is where an outside set's box and stroke stop being the weight table's business, so the refusals are what stop a folder of drawings nobody declared compiling into a theme.
+  const boxes = new Set(['24', '256']);
+  const refusesPack = [
+    ['a drawing with no viewBox', 'feather', '<svg><path d="M0 0"/></svg>', 'no square viewBox'],
+    ['a drawing that is not square', 'feather', '<svg viewBox="0 0 24 16"><path d="M0 0"/></svg>', 'every icon here is square'],
+    ['a drawing in a box its pack does not draw in', 'feather', box(33), 'design/icons.md says feather draws in 24'],
+    ['a drawing borrowed from a pack with a bigger box', 'feather', box(256), 'design/icons.md says feather draws in 24'],
+    ['a 24-unit drawing dropped into the pack that draws at 256', 'phosphor', box(24), 'design/icons.md says phosphor draws in 256'],
+  ];
+  for (const [what, pack, svg, wanted] of refusesPack) {
+    const got = packProblems(pack, 'x', svg).join(' ');
+    if (!got.includes(wanted)) fails.push(`${what} was not refused (got "${got || 'nothing'}")`);
+  }
+  for (const [what, pack, svg] of [
+    ['a stroked drawing in its pack\'s own box', 'feather', box(24)],
+    ['a filled drawing in its pack\'s own bigger box', 'phosphor', box(256)],
+  ]) {
+    const got = packProblems(pack, 'x', svg);
+    if (got.length) fails.push(`${what} was refused: ${got.join(' ')}`);
+  }
+  // The decision rules, on made-up rows put through the same code the sixty-three go through. Every one of these is a way a new icon reaches the app without anybody choosing what it looks like under six other themes, which is the whole reason the column exists.
+  const drew = new Map([['feather', new Map([['x', '<svg/>']])], ['lucide', new Map()]]);
+  const decision = (name, decided, audit = name) => ({ name, audit, decided });
+  const six = (...said) => [...said, ...Array(outsidePacks().length - said.length).fill('leaftext')];
+  const refusesDecision = [
+    ['a row with no audit label', decision('x', six('x'), ''), 'no audit label'],
+    ['a row short of a decision', { name: 'x', audit: 'x', decided: ['x'] }, 'of 6 pack decisions'],
+    ['a decision left empty', decision('x', ['x', '', 'leaftext', 'leaftext', 'leaftext', 'leaftext']), 'leaves x undecided under lucide'],
+    ['a decision naming a drawing nobody vendored', decision('x', six('x', 'thing')), 'src/assets/icon-packs/lucide/x.svg is not there'],
+    ['a fallback claimed where a drawing is vendored', decision('x', six('leaftext')), 'src/assets/icon-packs/feather/x.svg is there'],
+    ['an outside drawing offered for one of the app\'s own marks', decision('leaf', six('leaf')), 'marks are never an outside pack'],
+  ];
+  for (const [what, made, wanted] of refusesDecision) {
+    const got = decisionProblems(made, drew).join(' ');
+    if (!got.includes(wanted)) fails.push(`${what} was not refused (got "${got || 'nothing'}")`);
+  }
+  for (const [what, made] of [
+    ['a complete row whose every decision agrees with the disk', decision('x', six('x'))],
+    ['a protected mark kept in every pack', decision('leaf', six(), 'logo')],
+  ]) {
+    const got = decisionProblems(made, drew);
+    if (got.length) fails.push(`${what} was refused: ${got.join(' ')}`);
+  }
+
+  // A pack row owes a license notice, exactly as a row's Source does. Read here off the same table the compile reads, so a row that stopped naming one is caught before a single drawing of it ships.
+  for (const [pack, { notice }] of PACKS) {
+    if (pack === 'leaftext') continue;
+    if (!/^[A-Za-z][A-Za-z0-9]*-[A-Za-z0-9.]+\.md$/.test(notice)) {
+      fails.push(`design/icons.md gives ${pack} the notice "${notice}", which is not a <Pack>-<License>.md file name`);
+    }
+  }
+
   if (fails.length) {
     console.error('bundle-icons: the row rules do not hold:');
     for (const fail of fails) console.error(`  ${fail}`);
@@ -178,7 +298,70 @@ if (check) {
   }
 }
 
+// The second pass, over the pack folders. The scan of `src/assets/` is one level deep and refuses a loose `.svg` no row names; a pack folder is refused the same way, by a pack with no row and by a drawing named after no icon — otherwise a file dropped in the wrong folder compiles into a theme nobody chose.
+const packFolder = (pack) => join(root, 'src/assets/icon-packs', pack);
+const packDrawings = new Map();
+let packsFolder = [];
+try {
+  packsFolder = readdirSync(join(root, 'src/assets/icon-packs'), { withFileTypes: true });
+} catch {
+  packsFolder = [];
+}
+for (const entry of packsFolder) {
+  if (!entry.isDirectory()) {
+    problems.push(`src/assets/icon-packs/${entry.name} is not a pack folder, and only a pack's folder belongs there`);
+    continue;
+  }
+  if (!PACKS.has(entry.name) || entry.name === 'leaftext') {
+    problems.push(`src/assets/icon-packs/${entry.name}/ has no row in design/icons.md's Packs table, so no theme can name it`);
+    continue;
+  }
+  const drawings = new Map();
+  for (const file of readdirSync(packFolder(entry.name))) {
+    if (!file.endsWith('.svg')) {
+      problems.push(`src/assets/icon-packs/${entry.name}/${file} is not a drawing, and a pack folder holds nothing else`);
+      continue;
+    }
+    const icon = file.slice(0, -4);
+    if (!rows.some((row) => row.name === icon)) {
+      problems.push(`src/assets/icon-packs/${entry.name}/${file} is named after no icon in design/icons.md, so nothing would ever wear it`);
+      continue;
+    }
+    const svg = readFileSync(join(packFolder(entry.name), file), 'utf8');
+    problems.push(...packProblems(entry.name, icon, svg, drewIt(entry.name, icon)));
+    drawings.set(icon, svg);
+  }
+  packDrawings.set(entry.name, drawings);
+}
+for (const pack of outsidePacks()) {
+  if (!packDrawings.has(pack)) continue;
+  const { notice } = PACKS.get(pack);
+  if (!notices.has(notice)) problems.push(`design/icons.md gives ${pack} the notice ${notice}, which is not in src/assets/`);
+}
+// Every row's six decisions, asked only once every pack folder has been read: the answer to "does this pack draw this job" is the folder, and half of what a decision claims is exactly that.
+for (const row of rows) problems.push(...decisionProblems(row, packDrawings));
+
+// Which pack each theme family wears, off a `**Pack:**` header line beside `**Family ID:**` — a family file has no per-family table to add a column to, and the header lines are already how a family declares itself. A file written before packs existed names none and gets `leaftext`, which is the set it is already wearing, so an old family is not a blank theme.
+const familyPacks = new Map();
+for (const file of readdirSync(join(root, 'themes')).filter((f) => f.endsWith('.md') && f !== 'README.md')) {
+  const family = readFileSync(join(root, 'themes', file), 'utf8');
+  const id = /^\*\*Family ID:\*\*\s*`([^`]+)`/m.exec(family);
+  if (!id) {
+    problems.push(`themes/${file} names no Family ID, so nothing can say which pack it wears`);
+    continue;
+  }
+  const named = /^\*\*Pack:\*\*\s*`([^`]+)`/m.exec(family);
+  const pack = named ? named[1] : 'leaftext';
+  if (!PACKS.has(pack)) {
+    problems.push(`themes/${file} wears ${pack}, which has no row in design/icons.md's Packs table`);
+    continue;
+  }
+  familyPacks.set(id[1], pack);
+}
+
 let drawn = 0;
+const values = [];
+const classes = [];
 const heavy = [];
 const set = [];
 const masks = [];
@@ -205,7 +388,8 @@ for (const row of rows) {
   const stamped = wanted ? atWeight(raw, wanted) : raw;
   const uri = `url("data:image/svg+xml,${encode(stamped)}")`;
   masks.push({ label: `${name} (${file})`, uri });
-  lines.push(`.lt-icon-${name} {`, `  -webkit-mask-image: ${uri};`, `  mask-image: ${uri};`, '}');
+  values.push(`  --lt-icon-${name}: ${uri};`);
+  classes.push(`.lt-icon-${name} {`, `  -webkit-mask-image: var(--lt-icon-${name});`, `  mask-image: var(--lt-icon-${name});`, '}');
   const entry = iconSetEntry(name, stamped);
   if (!entry) problems.push(`src/assets/${file} has no viewBox, or no <svg> wrapper, so ${name} cannot be an icon in a diagram`);
   else set.push(entry);
@@ -216,11 +400,47 @@ for (const row of rows) {
   heavy.push(`  --lt-icon-${name}-heavy: ${bolder};`);
 }
 problems.push(...collisions(masks));
-if (heavy.length) {
-  // Properties rather than classes: the rule that swaps to one belongs to the component that has an active state, not to the icon.
-  lines.push('/* The bolder drawing an active control swaps to. */', ':root {', ...heavy, '}');
+
+// One block per pack, not one per family: eleven families sharing six packs is six copies of a drawing rather than eleven, and a drawing is the expensive thing in this file. The selector list is every family wearing that pack, and a family wearing `leaftext` needs no block at all — the root is already its set.
+const packBlocks = [];
+const uncovered = [];
+for (const pack of outsidePacks()) {
+  const drawings = packDrawings.get(pack);
+  if (!drawings || !drawings.size) continue;
+  const wearing = [...familyPacks].filter(([, worn]) => worn === pack).map(([family]) => family).sort();
+  const covers = [];
+  for (const row of rows) {
+    const svg = drawings.get(row.name);
+    // A pack with no file for this job declares nothing, so the root value stands and the reader sees the drawing they already know. That is the fallback, and it is a value left alone rather than a value written.
+    if (!svg) { uncovered.push(`${pack} has no ${row.name}, so it keeps ${row.file}`); continue; }
+    // The icon row's weight, stamped only where the drawing has strokes to stamp: a filled glyph inside a stroked pack, and every drawing of a filled pack, take none.
+    const wanted = WEIGHTS.get(row.stroke);
+    const stamped = wanted && STROKE_WIDTH.test(svg) ? atWeight(svg, wanted) : svg;
+    STROKE_WIDTH.lastIndex = 0;
+    covers.push(`  --lt-icon-${row.name}: url("data:image/svg+xml,${encode(stamped)}");`);
+  }
+  if (!covers.length) continue;
+  // Two ways in, one copy of the drawings. `data-leaf-theme` on the page root is what the app writes, and `data-leaf-pack` is a name any element can take — which is how the design-system gallery shows all seven packs on one page, where seven page roots do not exist. Nothing in the app ever writes the second.
+  const worn = wearing.length ? `worn by ${wearing.join(', ')}` : 'worn by no family yet';
+  packBlocks.push(
+    `/* The ${pack} pack, ${worn}. Every drawing it does not cover keeps the one above. */`,
+    [...wearing.map((family) => `:root[data-leaf-theme="${family}"]`), `[data-leaf-pack="${pack}"]`].join(',\n') + ' {',
+    ...covers,
+    '}',
+  );
 }
-const css = lines.join('\n') + '\n';
+
+// Every drawing is a value the page root declares and the class reads, which is what lets a theme family redeclare the ones its pack covers without touching a class. It is also smaller: written into the rule a drawing is stored twice, once for each of the two mask properties, and written as a value it is stored once. The bolder masks joined the same block — they have worked this way since before the rest did, for the same reason a rule that swaps to one belongs to the component with an active state rather than to the icon.
+const css = [
+  ...head,
+  '/* Every drawing, declared once, so a theme family can redeclare the ones its pack covers. */',
+  ':root {',
+  ...values,
+  ...(heavy.length ? ['  /* The bolder drawing an active control swaps to. */', ...heavy] : []),
+  '}',
+  ...packBlocks,
+  ...classes,
+].join('\n') + '\n';
 
 // A fragment of the page's one script, so it declares a `const` and nothing else — there is no module loader to export to. decorate.js hands it to mermaid.registerIconPacks once, and rewrites an `icon:` it cannot find to the missing-picture row before mermaid ever sees the block.
 if (!set.some((entry) => entry.startsWith("  'missing-image'"))) {
@@ -259,5 +479,11 @@ for (const [path, wanted] of [[target, css], [setTarget, js]]) {
   writeFileSync(join(root, path), wanted);
   written.push(path);
 }
-const made = `${drawn} classes, ${heavy.length} heavy masks and ${set.length} diagram icons from ${rows.length} rows`;
+// What each pack does not cover, named one line at a time rather than counted, so the decision about a gap is made off a list rather than off somebody noticing a control looks wrong. Written rather than checked: a gap is not a fault, it is a drawing the reader keeps.
+if (!check && uncovered.length) {
+  console.log(`icons: ${uncovered.length} jobs no outside pack draws, each keeping the drawing it has:`);
+  for (const gap of uncovered) console.log(`  ${gap}`);
+}
+const wearing = [...familyPacks.values()].filter((pack) => pack !== 'leaftext').length;
+const made = `${drawn} classes, ${heavy.length} heavy masks and ${set.length} diagram icons from ${rows.length} rows, plus ${packDrawings.size} outside packs worn by ${wearing} of ${familyPacks.size} families`;
 console.log(written.length ? `icons: wrote ${made} to ${written.join(' and ')}` : `icons: ${made} — both files match`);

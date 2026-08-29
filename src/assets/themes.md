@@ -7,6 +7,8 @@
 
 **Family ID:** `amaranth`
 
+**Pack:** `heroicons`
+
 ## Fonts
 
 | Role    | Stack |
@@ -193,6 +195,8 @@
 ![Arabica — the same document in the light and dark variants](../imgs/themes/arabica.png)
 
 **Family ID:** `arabica`
+
+**Pack:** `remix`
 
 ## Fonts
 
@@ -381,6 +385,8 @@
 
 **Family ID:** `bloodleaf`
 
+**Pack:** `remix`
+
 ## Fonts
 
 | Role    | Stack |
@@ -567,6 +573,8 @@
 ![Fern — the same document in the light and dark variants](../imgs/themes/fern.png)
 
 **Family ID:** `fern`
+
+**Pack:** `tabler`
 
 ## Fonts
 
@@ -802,6 +810,8 @@
 
 **Family ID:** `ginger`
 
+**Pack:** `tabler`
+
 ## Fonts
 
 | Role    | Stack |
@@ -988,6 +998,8 @@
 ![GitHub — the same document in the light and dark variants](../imgs/themes/github.png)
 
 **Family ID:** `github`
+
+**Pack:** `feather`
 
 ## Fonts
 
@@ -1189,6 +1201,8 @@
 
 **Family ID:** `goldenrod`
 
+**Pack:** `lucide`
+
 ## Fonts
 
 | Role    | Stack |
@@ -1378,6 +1392,8 @@
 
 **Family ID:** `halcyon`
 
+**Pack:** `heroicons`
+
 ## Fonts
 
 | Role    | Stack |
@@ -1564,6 +1580,8 @@
 ![Nightshade — the same document in the light and dark variants](../imgs/themes/nightshade.png)
 
 **Family ID:** `nightshade`
+
+**Pack:** `phosphor`
 
 ## Fonts
 
@@ -1752,6 +1770,8 @@
 
 **Family ID:** `pippin`
 
+**Pack:** `lucide`
+
 ## Fonts
 
 | Role    | Stack |
@@ -1938,6 +1958,8 @@
 ![Sage — the same document in the light and dark variants](../imgs/themes/sage.png)
 
 **Family ID:** `sage`
+
+**Pack:** `leaftext`
 
 ## Fonts
 

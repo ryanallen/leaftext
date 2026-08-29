@@ -4,6 +4,8 @@
 
 **Family ID:** `arabica`
 
+**Pack:** `remix`
+
 ## Fonts
 
 | Role    | Stack |

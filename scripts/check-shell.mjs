@@ -50,6 +50,7 @@ import { run as runTheStartupCard } from './check-shell/the-startup-card.mjs';
 import { run as runTheFocusRing } from './check-shell/the-focus-ring.mjs';
 import { run as runAPinThatMatchesTwice } from './check-shell/a-pin-that-matches-twice.mjs';
 import { run as runTheOutlineInThePane } from './check-shell/the-outline-in-the-pane.mjs';
+import { run as runAThemeSwapsADrawing } from './check-shell/a-theme-swaps-a-drawing.mjs';
 
 // Every subject, in the order it was written in. The boot comes first: it fills the record the rest read.
 
@@ -100,6 +101,7 @@ runTheStartupCard();
 runTheFocusRing();
 runAPinThatMatchesTwice();
 runTheOutlineInThePane();
+runAThemeSwapsADrawing();
 
 // ---- report -----------------------------------------------------------------
 
