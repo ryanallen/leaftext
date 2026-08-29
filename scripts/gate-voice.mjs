@@ -17,7 +17,7 @@
 // Never loops: a payload that says a stop hook is already running exits 0.
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -259,6 +259,13 @@ export function typedPrompt(lines) {
   return commands.length ? commands.join('\n') : said[said.length - 1];
 }
 
+/// What the reply has to be, spelled out, where the message named a skill. A hold is the one block a turn gets, so this rides on every one of them: the reply after it is written from what the hold says rather than from what the turn remembers, and the skill call at the front is what memory drops first.
+export function handBack(echo) {
+  const asked = echo.trim();
+  if (!asked.startsWith('/') && !asked.startsWith('$')) return '';
+  return `The reply that ends this turn is this message, word for word, first character to last, and nothing else:\n\n${asked}`;
+}
+
 /// True once the newest message in the transcript is something the assistant said, which is what a finished turn looks like.
 export function endsInSpeech(lines) {
   const entries = parse(lines).filter((e) => e.type === 'assistant' || e.type === 'user');
@@ -285,6 +292,12 @@ function nap(ms) {
 
 function selfTest() {
   const fails = [];
+
+  // Nothing this test sends may reach the session running it. Every payload here carries a session id of its own, because sessionOf falls back to the environment where one carries none — and the Stop path clears a list, so a sessionless payload deletes the list of whoever is running this check.
+  const outsider = listPath(sessionOf(''));
+  const planted = !existsSync(outsider);
+  if (planted) writeFileSync(outsider, '- 1. Belongs to the session running this check\n');
+  const outsiderBefore = readFileSync(outsider, 'utf8');
   const check = (text, want, label, filed = true, echo = '') => {
     const got = offenses([text], filed, echo).length > 0;
     if (got !== want) fails.push(`${label}: expected ${want ? 'blocked' : 'allowed'}`);
@@ -389,14 +402,15 @@ function selfTest() {
   if (!endsInSpeech(transcript)) fails.push('endsInSpeech: a finished turn read as unfinished');
   if (endsInSpeech(transcript.slice(0, 4))) fails.push('endsInSpeech: a turn mid-tool read as finished');
 
-  // Through the real entry point, because the three things that would hurt most are all in it: a malformed block does nothing and looks like a pass, a hook that blocks while a stop hook is already running spins the turn forever, and a reply that has not landed yet reads as no reply at all. This run's own: `just verify` beside another `just verify` would otherwise have one deleting the transcript the other is reading.
-  const path = join(tmpdir(), `gate-voice-selftest-${process.pid}.jsonl`);
+  // Through the real entry point, because the three things that would hurt most are all in it: a malformed block does nothing and looks like a pass, a hook that blocks while a stop hook is already running spins the turn forever, and a reply that has not landed yet reads as no reply at all. This run's own: `just verify` beside another `just verify` would otherwise have one deleting the transcript the other is reading. Its own session id on every payload, never the environment's: sessionOf falls back to CLAUDE_CODE_SESSION_ID where a payload carries none, so a sessionless one run from a live session had the hook act on that session's own records — and the first thing it did was delete the list that session was working.
+  const mine = `gate-voice-selftest-${process.pid}`;
+  const path = join(tmpdir(), `${mine}.jsonl`);
   writeFileSync(path, [
     JSON.stringify({ type: 'user', message: { content: 'does it work on mac' } }),
     JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: "You're right, it does." }] } }),
   ].join('\n') + '\n');
   const run = (active) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
-    input: JSON.stringify({ stop_hook_active: active, transcript_path: path }),
+    input: JSON.stringify({ stop_hook_active: active, transcript_path: path, session_id: mine }),
     encoding: 'utf8',
   });
   try {
@@ -475,8 +489,7 @@ function selfTest() {
   // A sample naming no phase at all says nothing about any box, so it holds nothing — which is also how a record left by an older shape of sample reads out.
   if (sweptPhase({ ticket: '/plans/a.md', samples: [[], [{ ticked: 2 }], 'not a sample'] })) fails.push('swept: a record whose samples name no phase held the turn');
 
-  // The checklist's other half, through the real entry point: a step left un-struck has to actually hold the turn, and a turn held for a step alone must not be told to say its reply again. Its own session id, so a `just verify` beside another one does not hold the agent running it to a list this test wrote.
-  const mine = `gate-voice-selftest-${process.pid}`;
+  // The checklist's other half, through the real entry point: a step left un-struck has to actually hold the turn, and a turn held for a step alone must not be told to say its reply again.
   writeFileSync(path, [
     JSON.stringify({ type: 'user', message: { content: 'go' } }),
     JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } }),
@@ -496,7 +509,8 @@ function selfTest() {
     if (stop().trim() !== '') fails.push('checklist: a fully struck list still held the turn');
     writeFileSync(listPath(mine), '- 1. Tests first\n');
     if (stop({ stop_hook_active: true }).trim() !== '') fails.push('checklist: held again while a stop hook was already running');
-    clear(mine);
+    // That second Stop is the end of the turn, so its list goes with it. Nothing else sweeps one now that a message naming no skill leaves the standing list alone.
+    if (existsSync(listPath(mine))) fails.push('checklist: a turn ending on the already-held path left its list behind');
 
     // The build record through the real entry point: the wiring, not only the reading. The reading does not open the ticket — every count it needs is in the samples — so the path here only has to name one.
     const ticket = join(tmpdir(), `gate-voice-ticket-${process.pid}.md`);
@@ -529,6 +543,10 @@ function selfTest() {
   if (waited < SETTLE_MS) fails.push('settled: gave up before the deadline');
   if (lines.length !== 2) fails.push('settled: lost lines while waiting');
 
+  if (!existsSync(outsider) || readFileSync(outsider, 'utf8') !== outsiderBefore) {
+    fails.push('self-test: a payload carrying no session id of its own reached the list of the session running this check');
+  }
+  if (planted) rmSync(outsider, { force: true });
   if (fails.length) {
     console.error('gate-voice: failed');
     for (const f of fails) console.error(`  ${f}`);
@@ -558,8 +576,11 @@ if (!args) {
   } catch {
     process.exit(0);
   }
-  // Already blocked once this turn. Blocking again is how a stop hook spins.
-  if (payload.stop_hook_active) process.exit(0);
+  // Already blocked once this turn. Blocking again is how a stop hook spins. The host allows one hold a turn, so this is the end of the turn whatever the steps still say, and the list goes here the way it goes on the path a turn that stands takes — nothing else sweeps it now that a message naming no skill leaves it alone.
+  if (payload.stop_hook_active) {
+    clear(sessionOf(raw));
+    process.exit(0);
+  }
   let blocks = [];
   let echo = '';
   try {
@@ -575,6 +596,7 @@ if (!args) {
   const record = read(session);
   const filed = filedSince(record?.startedAt);
   const found = offenses(blocks, filed, echo);
+  // A turn is held once and no more, so whatever it was held for, the hold is the last thing the next reply reads before it writes the hand-back. Without the message in it, the reply is written from memory and the skill call at the front of it is the first thing to go: a hand-back that lost its /pm went out because the turn had already spent its one hold on something else, and the rule that would have caught it never ran a second time.
   // The boxes did not go in one at a time while the code was landing. Held whatever the reply says, because the reply is not where a box is ticked, and read off the run of samples rather than off the ticket — a phase swept at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart.
   const held = buildRecord(session);
   const swept = held ? sweptPhase(held) : null;
@@ -598,6 +620,8 @@ if (!args) {
     }
     // Only a reply that broke a rule is written again. A turn held for a step or a keycode says nothing new.
     if (found.length) parts.push('Say it again, shorter. No note about this correction — just the answer.');
+    const back = handBack(echo);
+    if (back) parts.push(back);
     // The samples belong to the turn that made them. Kept past the block, they would hold the turn that fixes the ticket for the sweep it is repairing.
     forget(session);
     process.stdout.write(JSON.stringify({ decision: 'block', reason: parts.join('\n\n') }));

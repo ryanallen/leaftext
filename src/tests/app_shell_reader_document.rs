@@ -292,7 +292,12 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         "variables['cScaleLabel' + index] = inkOn(style, [color]);",
         // One variable, four differently colored gantt bars: only CSS can say that.
         "function mermaidGanttStateCss(style) {",
-        "themeCSS: [mermaidGanttStateCss(style), mermaidC4RelationCss(style)]",
+        // A group title takes the spacing scale around it and its natural width before Mermaid lays out the boxes below it.
+        "const subgraphTitleGap = parseFloat(themeTokenValue(style, '--lt-space-8')) || 0;",
+        "flowchart: { htmlLabels, subGraphTitleMargin: { top: subgraphTitleGap, bottom: subgraphTitleGap } },",
+        "function mermaidSubgraphTitleCss() {",
+        "white-space: nowrap !important; width: max-content !important; max-width: none !important;",
+        "themeCSS: [mermaidGanttStateCss(style), mermaidC4RelationCss(style), mermaidSubgraphTitleCss()]",
         // A theme switch cannot recolor an SVG, so the diagram is drawn again.
         "function repaintMermaidDiagrams() {",
         "attributeFilter: ['data-theme', 'data-leaf-theme'],",
@@ -667,9 +672,12 @@ fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
     // The picture's own call is in the flowchart editor, at the head of the script.
     assert_contains(
         app_shell_script(),
-        "mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));",
+        "const config = mermaidRuntimeConfig({ htmlLabels: false });",
     );
-    assert_contains(&html, "    htmlLabels,\n    flowchart: { htmlLabels },");
+    assert_contains(
+        &html,
+        "flowchart: { htmlLabels, subGraphTitleMargin: { top: subgraphTitleGap, bottom: subgraphTitleGap } },",
+    );
     // The page's own draw leaves the answer alone, and the bare call is made in several places.
     assert_in(
         &html,

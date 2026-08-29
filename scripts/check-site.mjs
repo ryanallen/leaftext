@@ -155,6 +155,22 @@ if (pager.detail !== '#/reading/002-rains') problems.push(`a pager button's card
 const jump = describeLink(anchor({ href: '#a-heading' }));
 if (jump.kind !== 'In-page jump') problems.push(`an ordinary fragment link became '${jump.kind}'`);
 
+// Both published readers configure Mermaid for themselves, so each one owes the same room and one-line group title the app carries.
+const GROUP_TITLE_CONFIG = [
+  "const subgraphTitleGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lt-space-8')) || 0;",
+  'flowchart: { subGraphTitleMargin: { top: subgraphTitleGap, bottom: subgraphTitleGap } },',
+  "themeCSS: '.cluster-label div { white-space: nowrap !important; width: max-content !important; max-width: none !important; }',",
+];
+const missingGroupTitleConfig = (source) => GROUP_TITLE_CONFIG.filter((line) => !source.includes(line));
+for (const file of ['site/reader.js', 'docs/docs.js']) {
+  const missing = missingGroupTitleConfig(read(file));
+  if (missing.length) problems.push(`${file} leaves a flowchart group title without its one-line rule or the spacing around it`);
+}
+for (let skipped = 0; skipped < GROUP_TITLE_CONFIG.length; skipped += 1) {
+  const incomplete = GROUP_TITLE_CONFIG.filter((_line, index) => index !== skipped).join('\n');
+  if (missingGroupTitleConfig(incomplete).length !== 1) problems.push('the group-title check does not refuse each missing part of a published Mermaid configuration');
+}
+
 // ---- the renderer the publish builds ---------------------------------------
 //
 // The module and the stylesheet are the two files on this site that are not in it: the publish workflow builds them and serves them beside the pages, so nothing generated ever enters the tree. That leaves two ways for the pages to end up fetching nothing — a page naming a path the build does not write, and the build being taken out of the publish — and neither shows up until the site is live. Both are read here instead. The workflow itself ships unproven, the way every workflow in this repo does; this is the half that can be proved with nothing running.

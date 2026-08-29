@@ -72,14 +72,11 @@ export function render(name, steps) {
   ].join('\n');
 }
 
-/// Start a turn: this session's last list goes, and this one's is written in its place. No skill named means no list, which is the common case and costs nothing.
+/// A message naming a skill writes that skill's steps over whatever was there. One naming none leaves the list alone: this fires when the message is submitted, which cannot tell a new turn from a sentence typed into a running one, and deleting there took the list out from under the pass halfway through it. The end of the turn is what clears a list, in gate-voice.mjs, because that is the one side that knows a turn has ended.
 export function write(prompt, session) {
   const path = listPath(session);
   const found = skillFor(prompt);
-  if (!found) {
-    rmSync(path, { force: true });
-    return null;
-  }
+  if (!found) return null;
   writeFileSync(path, render(found.name, found.steps));
   sweep(tmpdir(), 'leaftext-checklist-');
   return found;
@@ -197,10 +194,17 @@ function selfTest() {
     rmSync(path, { force: true });
     if (pending(ONE).length) fails.push('pending: a missing list held the turn');
 
-    // A message naming no skill clears the last one rather than leaving it to hold the next turn.
+    // A message naming no skill leaves the standing list where it is. It is submitted while the last turn may still be running, so deleting here took the list out from under the pass halfway through working it.
     write('/check it', ONE);
+    const partly = readFileSync(listPath(ONE), 'utf8').replace(/^- (1\. .*)$/m, '- ~~$1~~');
+    writeFileSync(listPath(ONE), partly);
+    const before = pending(ONE);
+    if (!partly.includes('- ~~') || !before.length) fails.push('write: the list was not left part-struck, so the case below proves nothing');
     write('what does the pager do', ONE);
-    if (existsSync(listPath(ONE))) fails.push('write: a message naming no skill left the last list standing');
+    if (!existsSync(listPath(ONE))) fails.push('write: a message naming no skill deleted the standing list');
+    if (readFileSync(listPath(ONE), 'utf8') !== partly) fails.push('write: a message naming no skill rewrote the standing list');
+    if (pending(ONE).join('|') !== before.join('|')) fails.push('write: the steps left after a message naming no skill are not the ones that were left before it');
+    if (pending(ONE, Date.now() + STALE_MS + 1000).length) fails.push('pending: a standing list past the staleness window still held the turn');
   } catch (error) {
     fails.push(`cycle: ${error.message}`);
   } finally {

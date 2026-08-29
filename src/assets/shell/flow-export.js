@@ -34,23 +34,43 @@ function diagramBase64(text) {
 // The room around the drawing, so the picture is not the boxes cropped to their own edges. The reading view pays the same in padding.
 const DIAGRAM_EXPORT_MARGIN = 24;
 
-// The drawing on its way to becoming pixels, and no further: a web view will only rasterize an SVG by loading it as an image, so one has to exist for a moment. It is never written to a file — see the header. `htmlLabels` off because an image-loaded SVG drops a `<foreignObject>`, leaving shapes with no text in them.
-async function diagramDrawingSvg(source) {
-  if (!source) return null;
-  const mermaid = await loadMermaid();
-  mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));
-  const name = 'leafFlowExport' + (diagramExportSeq += 1);
-  let drawn;
-  try {
-    drawn = (await mermaid.render(name, source)).svg;
-  } catch (error) {
-    // Mermaid leaves the element it was drawing into behind when it throws.
-    const orphan = document.getElementById('d' + name);
-    if (orphan && orphan.remove) orphan.remove();
-    throw error;
+// Mermaid lays group boxes and their labels in separate SVG branches, so geometry is the only shared fact that says which first node sits under which title.
+function diagramSubgraphTitleOverlap(root) {
+  const view = (root.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+  if (view.length === 4 && view[2] > 0 && view[3] > 0) {
+    root.setAttribute('width', view[2]);
+    root.setAttribute('height', view[3]);
+    root.style.maxWidth = 'none';
   }
-  const root = new DOMParser().parseFromString(drawn, 'image/svg+xml').documentElement;
-  const box = (root.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+  const measuring = document.createElement('div');
+  measuring.setAttribute('style', 'position: fixed; left: -10000px; top: 0; visibility: hidden; pointer-events: none;');
+  measuring.appendChild(root);
+  appSurface.appendChild(measuring);
+  try {
+    const nodes = Array.from(root.querySelectorAll('.node')).map((node) => node.getBoundingClientRect());
+    let largest = 0;
+    for (const cluster of root.querySelectorAll('.cluster')) {
+      const frame = cluster.querySelector('rect');
+      const title = cluster.querySelector('.cluster-label');
+      if (!frame || !title) continue;
+      const bounds = frame.getBoundingClientRect();
+      const titleBox = title.getBoundingClientRect();
+      const firstTop = nodes
+        .filter((node) => {
+          const x = node.left + node.width / 2;
+          const y = node.top + node.height / 2;
+          return x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
+        })
+        .reduce((top, node) => Math.min(top, node.top), Infinity);
+      if (Number.isFinite(firstTop)) largest = Math.max(largest, titleBox.bottom - firstTop);
+    }
+    return Math.max(0, largest);
+  } finally {
+    measuring.remove();
+  }
+}
+
+function finishDiagramDrawingSvg(drawn, root, box) {
   // Anything unexpected and the drawing goes out exactly as mermaid wrote it, rather than half-edited by us.
   if (root.tagName !== 'svg' || box.length !== 4 || !(box[2] > 0)) return drawn;
   // The drawing keeps its own coordinates and the view widens around it, which is what puts the margin outside every box rather than moving anything.
@@ -70,6 +90,38 @@ async function diagramDrawingSvg(source) {
   behind.setAttribute('fill', leafExportBackground());
   root.insertBefore(behind, root.firstChild);
   return new XMLSerializer().serializeToString(root);
+}
+
+// The drawing on its way to becoming pixels, and no further: a web view will only rasterize an SVG by loading it as an image, so one has to exist for a moment. It is never written to a file — see the header. `htmlLabels` off because an image-loaded SVG drops a `<foreignObject>`, leaving shapes with no text in them.
+async function diagramDrawingSvg(source) {
+  if (!source) return null;
+  const mermaid = await loadMermaid();
+  const config = mermaidRuntimeConfig({ htmlLabels: false });
+  const draw = async () => {
+    const name = 'leafFlowExport' + (diagramExportSeq += 1);
+    try {
+      return (await mermaid.render(name, source)).svg;
+    } catch (error) {
+      // Mermaid leaves the element it was drawing into behind when it throws.
+      const orphan = document.getElementById('d' + name);
+      if (orphan && orphan.remove) orphan.remove();
+      throw error;
+    }
+  };
+  mermaid.initialize(config);
+  let drawn = await draw();
+  let root = new DOMParser().parseFromString(drawn, 'image/svg+xml').documentElement;
+  let box = (root.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+  if (root.tagName !== 'svg' || box.length !== 4 || !(box[2] > 0)) return drawn;
+  const titleOverlap = diagramSubgraphTitleOverlap(root);
+  if (titleOverlap <= 0) return finishDiagramDrawingSvg(drawn, root, box);
+  const titleGap = config.flowchart.subGraphTitleMargin.bottom;
+  config.flowchart.subGraphTitleMargin.bottom = titleOverlap + titleGap;
+  mermaid.initialize(config);
+  drawn = await draw();
+  root = new DOMParser().parseFromString(drawn, 'image/svg+xml').documentElement;
+  box = (root.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+  return finishDiagramDrawingSvg(drawn, root, box);
 }
 
 // The drawing, painted at export size, which both picture rows start from. The markup goes in as a data URL, which is why the page's img-src allows `data:`.

@@ -965,7 +965,7 @@ function standInWindow(document, address) {
       unobserve() {}
       disconnect() {}
     },
-    getComputedStyle: () => ({ getPropertyValue: () => '' }),
+    getComputedStyle: (element) => ({ getPropertyValue: (name) => (name === '--lt-space-8' ? '8px' : element.style.getPropertyValue(name)) }),
   };
   window.self = window;
   window.window = window;
@@ -1022,6 +1022,7 @@ function installGlobals({ document, window, fetch, wasm }) {
     localStorage: storeStandIn(),
     navigator: { userAgent: 'leaftext-check', clipboard: undefined },
     matchMedia: window.matchMedia,
+    getComputedStyle: window.getComputedStyle,
     requestAnimationFrame: window.requestAnimationFrame,
     cancelAnimationFrame: window.cancelAnimationFrame,
     // On the global as well as on the window, because the site guards on `window.ResizeObserver` and then constructs the bare name — which is the same object in a browser and nothing at all here.
@@ -1336,9 +1337,10 @@ async function settled(done, said) {
 let boots = 0;
 
 /** One reader, booted against its own page. Every import carries a fresh query, because Node keys its module cache on the resolved URL: without one a second boot returns the first instance, runs nothing, and reports a boot that never happened. */
-async function bootReader(file, page, address, files, { wrap = null, markup = null, from = root } = {}) {
+async function bootReader(file, page, address, files, { wrap = null, markup = null, from = root, mermaid = null } = {}) {
   const document = standInPage(markup || read(page), address);
   const window = standInWindow(document, standInAddress(address));
+  if (mermaid) window.mermaid = mermaid;
   const fetch = wrap ? wrap(standInFetch(address, files), address) : standInFetch(address, files);
   const module_ = standInModule();
   installGlobals({ document, window, fetch, wasm: standInWebAssembly(module_) });
@@ -1544,6 +1546,26 @@ const docsPage = await check('the docs reader boots', async () => {
   want(fetch.asked().includes('/docs/'), 'the nav never asked for a directory listing, so it went straight to the API');
   want(fetch.asked().includes('/README.md'), "the site's own README was never read, so the repo behind the fallback is unknown");
   return page;
+});
+
+await check('both published readers give a flowchart group title its natural width and spacing', async () => {
+  for (const [file, page, address, sourcePath, source] of [
+    ['site/reader.js', 'index.html', 'https://leaf.test/', '/README.md', SITE_README],
+    ['docs/docs.js', 'docs/index.html', 'https://leaf.test/docs/', '/docs/README.md', DOCS_README],
+  ]) {
+    const configs = [];
+    const mermaid = {
+      initialize: (config) => configs.push(config),
+      run: async ({ nodes }) => nodes.forEach((node) => (node.dataset.processed = 'true')),
+    };
+    const files = { ...SITE_FILES, [sourcePath]: `${source}\n\n<pre class="mermaid">flowchart TD\n  subgraph One\n    A\n  end</pre>` };
+    const booted = await bootReader(file, page, address, files, { mermaid });
+    await settled(() => configs.length > 0, `${file} never handed its diagram configuration to Mermaid`);
+    const config = configs[0];
+    want(config.flowchart.subGraphTitleMargin.top === 8 && config.flowchart.subGraphTitleMargin.bottom === 8, `${file} gave a group title ${JSON.stringify(config.flowchart && config.flowchart.subGraphTitleMargin)} rather than eight pixels on both sides`);
+    want(/\.cluster-label div/.test(config.themeCSS) && /white-space:\s*nowrap/.test(config.themeCSS) && /max-width:\s*none/.test(config.themeCSS), `${file} handed Mermaid no one-line group-title rule`);
+    want(booted.document.getElementById('content').querySelector('pre.mermaid').dataset.processed === 'true', `${file} configured Mermaid without drawing the group`);
+  }
 });
 
 check('a route link inside a document reaches the router', () => {

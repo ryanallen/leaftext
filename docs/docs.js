@@ -156,11 +156,14 @@ async function renderMermaidDiagrams() {
   if (!nodes.length) return;
   try {
     if (!window.mermaid) await loadScript(MERMAID_SRC);
+    const subgraphTitleGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lt-space-8')) || 0;
     window.mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
       theme: 'dark',
       fontFamily: "'Noto Sans', sans-serif",
+      flowchart: { subGraphTitleMargin: { top: subgraphTitleGap, bottom: subgraphTitleGap } },
+      themeCSS: '.cluster-label div { white-space: nowrap !important; width: max-content !important; max-width: none !important; }',
       themeVariables: { fontFamily: "'Noto Sans', sans-serif" },
     });
     await window.mermaid.run({ nodes });

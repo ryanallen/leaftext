@@ -440,6 +440,71 @@ export function run() {
     }
   });
 
+  checkSettled('a wrapped SVG group title redraws with its measured room, while a clear one keeps its first drawing', async () => {
+    const grouped =
+      '<svg viewBox="0 0 200 100" width="200" height="100">' +
+      '<g class="clusters"><g class="cluster"><rect x="0" y="0" width="200" height="100"></rect><g class="cluster-label"><text>Long group title</text></g></g></g>' +
+      '<g class="nodes"><g class="node"><rect x="20" y="30" width="80" height="30"></rect></g></g>' +
+      '</svg>';
+    const box = (left, top, width, height) => ({ left, top, right: left + width, bottom: top + height, width, height });
+    const run = async (titleBottom, fail = false) => {
+      const wasMermaid = booted.mermaid;
+      const surface = booted.document.getElementById('appSurface');
+      const wasAppend = surface.appendChild;
+      const before = surface.children.length;
+      const configs = [];
+      let renders = 0;
+      booted.document.documentElement.style.setProperty('--lt-space-8', '8px');
+      booted.mermaid = {
+        initialize: (config) => configs.push(JSON.parse(JSON.stringify(config))),
+        render: async () => {
+          renders += 1;
+          return { svg: grouped };
+        },
+      };
+      surface.appendChild = function (child) {
+        const added = wasAppend.call(this, child);
+        const root = child.querySelector('svg');
+        if (!root) return added;
+        root.querySelector('.cluster').querySelector('rect').getBoundingClientRect = () => box(0, 0, 200, 100);
+        root.querySelector('.cluster-label').getBoundingClientRect = () => {
+          if (fail) throw new Error('measurement failed');
+          return box(20, 0, 160, titleBottom);
+        };
+        root.querySelector('.node').getBoundingClientRect = () => box(20, 30, 80, 30);
+        return added;
+      };
+      try {
+        if (fail) {
+          let refused = false;
+          try {
+            await booted.diagramDrawingSvg('flowchart TD\n  subgraph One\n    A\n  end');
+          } catch (error) {
+            refused = /measurement failed/.test(String(error && error.message));
+          }
+          if (!refused) throw new Error('a failed measurement did not reach the export refusal');
+        } else {
+          await booted.diagramDrawingSvg('flowchart TD\n  subgraph One\n    A\n  end');
+        }
+        if (surface.children.length !== before) throw new Error('the off-screen measurement stayed on the page');
+        return { configs, renders };
+      } finally {
+        surface.appendChild = wasAppend;
+        booted.document.documentElement.style.removeProperty('--lt-space-8');
+        if (wasMermaid === undefined) delete booted.mermaid;
+        else booted.mermaid = wasMermaid;
+      }
+    };
+
+    const clear = await run(20);
+    if (clear.renders !== 1) throw new Error(`a clear title was drawn ${clear.renders} times`);
+    const wrapped = await run(50);
+    if (wrapped.renders !== 2) throw new Error(`an overlapping title was drawn ${wrapped.renders} times`);
+    const reserve = wrapped.configs[1].flowchart.subGraphTitleMargin.bottom;
+    if (reserve !== 28) throw new Error(`a 20-pixel overlap was redrawn with ${reserve} pixels below its title rather than 28`);
+    await run(50, true);
+  });
+
   // A window that can draw one, which is where the three picture rows part: PNG hands the host raw pixels to encode, WebP and JPEG hand it a file the canvas already wrote. The stand-in page has no canvas at all, so one is lent for the length of the check; the drawing is the page's own rewrite over mermaid's markup, and the picture is the page's own too, told how wide this case's drawing comes out.
   const withCanvas = async (answer) => {
     const original = booted.document.createElement;

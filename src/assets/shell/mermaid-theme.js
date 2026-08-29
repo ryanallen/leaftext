@@ -307,6 +307,11 @@ function mermaidC4RelationCss(style) {
   ].join('\n');
 }
 
+// A group title is measured before its box is laid out. Keeping the label at its natural width stops a wrapped title from being laid under the first node.
+function mermaidSubgraphTitleCss() {
+  return '.cluster-label div { white-space: nowrap !important; width: max-content !important; max-width: none !important; }';
+}
+
 // The per-state gantt label colors, as CSS. Mermaid's own gantt rules carry `!important` on the active and done states, so ours have to as well.
 function mermaidGanttStateCss(style) {
   const rules = [];
@@ -375,15 +380,16 @@ function mermaidRuntimeConfig(options) {
   const htmlLabels = !options || options.htmlLabels !== false;
   const style = window.getComputedStyle(document.documentElement);
   const fontFamily = (options && options.fontFamily) || mermaidFontFamily();
+  const subgraphTitleGap = parseFloat(themeTokenValue(style, '--lt-space-8')) || 0;
   const themeVariables = mermaidThemeVariables();
   themeVariables.fontFamily = fontFamily;
   return {
     startOnLoad: false,
     securityLevel: 'strict',
     htmlLabels,
-    flowchart: { htmlLabels },
+    flowchart: { htmlLabels, subGraphTitleMargin: { top: subgraphTitleGap, bottom: subgraphTitleGap } },
     // Appended after mermaid's own stylesheet, so it settles what a variable cannot: one ink per gantt state, and C4's one hardcoded color.
-    themeCSS: [mermaidGanttStateCss(style), mermaidC4RelationCss(style)]
+    themeCSS: [mermaidGanttStateCss(style), mermaidC4RelationCss(style), mermaidSubgraphTitleCss()]
       .filter(Boolean)
       .join('\n'),
     // Mermaid's own light and dark palettes underneath, never `base`: `base` recomputes the categorical scale and darkens every entry it derives.
