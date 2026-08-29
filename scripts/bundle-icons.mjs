@@ -22,6 +22,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
 const target = 'src/assets/icons.css';
 const setTarget = 'src/assets/mermaid-icons.js';
+const themeTarget = 'src/theme.rs';
+// The third generated answer, and the only one that is a slice of another file rather than a file of its own: where each pack's block sits in the sheet above, so an exported page can be handed the one pack it wears.
+const RANGES_START = '// GENERATED from design/icons.md by `just bundle-icons` — do not edit by hand.';
+const RANGES_END = '// END GENERATED ICON PACKS';
 
 // The named line weights and the box each was set for, read out of the Stroke table so both values live in design/ like every other one. `—` is a drawing with no strokes at all, held to no box.
 const md = readFileSync(join(root, 'design/icons.md'), 'utf8');
@@ -422,25 +426,37 @@ for (const pack of outsidePacks()) {
   if (!covers.length) continue;
   // Two ways in, one copy of the drawings. `data-leaf-theme` on the page root is what the app writes, and `data-leaf-pack` is a name any element can take — which is how the design-system gallery shows all seven packs on one page, where seven page roots do not exist. Nothing in the app ever writes the second.
   const worn = wearing.length ? `worn by ${wearing.join(', ')}` : 'worn by no family yet';
-  packBlocks.push(
-    `/* The ${pack} pack, ${worn}. Every drawing it does not cover keeps the one above. */`,
-    [...wearing.map((family) => `:root[data-leaf-theme="${family}"]`), `[data-leaf-pack="${pack}"]`].join(',\n') + ' {',
-    ...covers,
-    '}',
-  );
+  packBlocks.push({
+    pack,
+    lines: [
+      `/* The ${pack} pack, ${worn}. Every drawing it does not cover keeps the one above. */`,
+      [...wearing.map((family) => `:root[data-leaf-theme="${family}"]`), `[data-leaf-pack="${pack}"]`].join(',\n') + ' {',
+      ...covers,
+      '}',
+    ],
+  });
 }
 
 // Every drawing is a value the page root declares and the class reads, which is what lets a theme family redeclare the ones its pack covers without touching a class. It is also smaller: written into the rule a drawing is stored twice, once for each of the two mask properties, and written as a value it is stored once. The bolder masks sit in the same block, because a rule that swaps to one belongs to the component with an active state rather than to the icon.
-const css = [
+const cssLines = [
   ...head,
   '/* Every drawing, declared once, so a theme family can redeclare the ones its pack covers. */',
   ':root {',
   ...values,
   ...(heavy.length ? ['  /* The bolder drawing an active control swaps to. */', ...heavy] : []),
   '}',
-  ...packBlocks,
-  ...classes,
-].join('\n') + '\n';
+];
+// Where each pack's block starts and ends in the sheet being written, in bytes, counted as the lines go in: this is the only place a block's exact shape is known, so reading the boundaries back off the finished CSS would be a second parser of the same thing.
+const packRanges = [];
+let at = cssLines.reduce((bytes, line) => bytes + Buffer.byteLength(line, 'utf8') + 1, 0);
+for (const block of packBlocks) {
+  const start = at;
+  for (const line of block.lines) at += Buffer.byteLength(line, 'utf8') + 1;
+  packRanges.push([block.pack, start, at]);
+  cssLines.push(...block.lines);
+}
+cssLines.push(...classes);
+const css = cssLines.join('\n') + '\n';
 
 // A fragment of the page's one script, so it declares a `const` and nothing else — there is no module loader to export to. decorate.js hands it to mermaid.registerIconPacks once, and rewrites an `icon:` it cannot find to the missing-picture row before mermaid ever sees the block.
 if (!set.some((entry) => entry.startsWith("  'missing-image'"))) {
@@ -457,6 +473,26 @@ const js = [
   '};',
 ].join('\n') + '\n';
 
+// The pack ranges as the table `src/theme.rs` slices `icons.css` by. Spliced between markers rather than written as a file of its own, because these numbers are only true of the exact sheet written above them and the two have to move together.
+const theme = readFileSync(join(root, themeTarget), 'utf8');
+const rangesFrom = theme.indexOf(RANGES_START);
+const rangesTo = theme.indexOf(RANGES_END, rangesFrom);
+if (rangesFrom < 0 || rangesTo < 0) {
+  throw new Error(`${themeTarget} is missing the generated icon-pack markers`);
+}
+const rangesBlock = [
+  RANGES_START,
+  "/// Where each outside icon pack's block sits inside `assets/icons.css`, as `(pack, start, end)` byte offsets. Only true of the exact sheet beside them, which is why one generator writes both.",
+  // One row per line whatever the count: rustfmt would fold a short list onto one line and the next run here would unfold it, so `just verify` would fail on drift with nothing to fix.
+  '#[rustfmt::skip]',
+  "pub(crate) const LEAF_ICON_PACK_RANGES: &[(&str, usize, usize)] = &[",
+  ...packRanges.map(([pack, start, end]) => `    ("${pack}", ${start}, ${end}),`),
+  '];',
+  RANGES_END,
+].join('\n');
+const themeNext =
+  theme.slice(0, rangesFrom) + rangesBlock + theme.slice(rangesTo + RANGES_END.length);
+
 if (problems.length) {
   console.error('design/icons.md and the files disagree:');
   for (const problem of problems) console.error(`  ${problem}`);
@@ -464,7 +500,7 @@ if (problems.length) {
 }
 
 const written = [];
-for (const [path, wanted] of [[target, css], [setTarget, js]]) {
+for (const [path, wanted] of [[target, css], [setTarget, js], [themeTarget, themeNext]]) {
   let current = '';
   try {
     current = readFileSync(join(root, path), 'utf8');
@@ -486,4 +522,4 @@ if (!check && uncovered.length) {
 }
 const wearing = [...familyPacks.values()].filter((pack) => pack !== 'leaftext').length;
 const made = `${drawn} classes, ${heavy.length} heavy masks and ${set.length} diagram icons from ${rows.length} rows, plus ${packDrawings.size} outside packs worn by ${wearing} of ${familyPacks.size} families`;
-console.log(written.length ? `icons: wrote ${made} to ${written.join(' and ')}` : `icons: ${made} — both files match`);
+console.log(written.length ? `icons: wrote ${made} to ${written.join(' and ')}` : `icons: ${made} — every generated file matches`);

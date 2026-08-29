@@ -127,11 +127,30 @@ for (const [source, want, label] of FIXTURE) {
   }
 }
 
-// This is the only caller that turns a place in the whole sheet back into a part, so it is where that arithmetic is proved. Walked at every seam: the first line of each part has to come back as line 1 of that part, and the last line of the sheet as the last line of the last one. A `locate` off by one sends a reader to the wrong rule and nothing else would say so.
+// This is the only caller that turns a place in the whole sheet back into a part, so it proves the reader's membership, separators and arithmetic together. A `locate` off by one sends a reader to the wrong rule and nothing else would say so.
 {
   const list = parts();
+  const source = whole();
+  const expected = list.map((part, index) => part.css + (index < 2 ? '\n' : '')).join('');
+  if (source !== expected) {
+    console.error('the stylesheet reader no longer uses the binary\'s newline after tokens and drawings and no separator between reading-rule parts');
+    process.exit(1);
+  }
+  let after = -1;
+  for (const [needle, label] of [
+    ['--lt-radius-xs:', 'a token declaration'],
+    ['--lt-icon-back:', 'an icon value'],
+    ['.app-surface', 'a reading rule'],
+  ]) {
+    const at = source.indexOf(needle);
+    if (at <= after) {
+      console.error(`the complete static stylesheet did not carry ${label} after the part before it`);
+      process.exit(1);
+    }
+    after = at;
+  }
   let first = 1;
-  for (const part of list) {
+  for (const [index, part] of list.entries()) {
     const lines = part.css.split('\n').length - 1;
     for (const [line, want] of [[first, 1], [first + lines - 1, lines]]) {
       const got = locate(line);
@@ -141,8 +160,21 @@ for (const [source, want, label] of FIXTURE) {
       }
     }
     first += lines;
+    if (index < 2) {
+      let refused = false;
+      try {
+        locate(first);
+      } catch (error) {
+        refused = error.message.includes('separator');
+      }
+      if (!refused) {
+        console.error(`locate called the separator after ${part.path} a source line`);
+        process.exit(1);
+      }
+      first += 1;
+    }
   }
-  if (first - 1 !== whole().split('\n').length - 1) {
+  if (first - 1 !== source.split('\n').length - 1) {
     console.error('locate is broken: the parts do not add up to the sheet it maps into');
     process.exit(1);
   }

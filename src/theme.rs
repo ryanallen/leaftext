@@ -40,6 +40,8 @@ pub(crate) struct ThemeSource {
     pub(crate) font_body: &'static str,
     pub(crate) font_code: &'static str,
     pub(crate) font_google: &'static str,
+    /// The icon pack this family wears, e.g. `heroicons`. `leaftext` is the app's own drawings, which is what a family file written before packs existed gets.
+    pub(crate) pack: &'static str,
 }
 
 /// A theme's fonts, as stored in the Markdown theme files.
@@ -66,6 +68,7 @@ pub(crate) struct ThemeFile {
     pub(crate) tokens: Vec<(String, String)>,
     pub(crate) overrides: Vec<(String, String)>,
     pub(crate) fonts: ThemeFonts,
+    pub(crate) pack: String,
 }
 
 // GENERATED from design/colors.md by `just bundle-tokens` — do not edit by hand.
@@ -161,6 +164,19 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_DEFAULTS: &[(&str, &str)] = &[
 ];
 // END GENERATED
 
+// GENERATED from design/icons.md by `just bundle-icons` — do not edit by hand.
+/// Where each outside icon pack's block sits inside `assets/icons.css`, as `(pack, start, end)` byte offsets. Only true of the exact sheet beside them, which is why one generator writes both.
+#[rustfmt::skip]
+pub(crate) const LEAF_ICON_PACK_RANGES: &[(&str, usize, usize)] = &[
+    ("feather", 29989, 50333),
+    ("lucide", 50333, 77625),
+    ("tabler", 77625, 106669),
+    ("remix", 106669, 135791),
+    ("phosphor", 135791, 160301),
+    ("heroicons", 160301, 180787),
+];
+// END GENERATED ICON PACKS
+
 /// Leak an owned string to `&'static str`. Called only for the theme table, which is parsed once and lives for the whole process, so the leak is bounded.
 fn leak_str(value: String) -> &'static str {
     Box::leak(value.into_boxed_str())
@@ -188,6 +204,7 @@ fn theme_source_from_file(file: ThemeFile) -> ThemeSource {
         font_body: leak_str(file.fonts.body),
         font_code: leak_str(file.fonts.code),
         font_google: leak_str(file.fonts.google),
+        pack: leak_str(file.pack),
     }
 }
 
@@ -248,6 +265,7 @@ fn parse_theme_markdown(md: &str) -> Vec<ThemeFile> {
         name: String,
         id: String,
         fonts: ThemeFonts,
+        pack: String,
         light_tokens: Vec<(String, String)>,
         light_overrides: Vec<(String, String)>,
         dark_tokens: Vec<(String, String)>,
@@ -291,6 +309,10 @@ fn parse_theme_markdown(md: &str) -> Vec<ThemeFile> {
 
         if let Some(rest) = line.strip_prefix("**Family ID:**") {
             family.id = unwrap_value(rest);
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("**Pack:**") {
+            family.pack = unwrap_value(rest);
             continue;
         }
         if let Some(heading) = line.strip_prefix("## ") {
@@ -383,6 +405,11 @@ fn parse_theme_markdown(md: &str) -> Vec<ThemeFile> {
                 tokens,
                 overrides,
                 fonts: family.fonts.clone(),
+                // A file written before packs existed names none and wears the app's own set, which is what it is already drawn with — the same fallback `scripts/bundle-icons.mjs` applies when it compiles the sheet.
+                pack: match family.pack.is_empty() {
+                    true => LEAFTEXT_ICON_PACK.to_string(),
+                    false => family.pack.clone(),
+                },
             });
         }
     }
@@ -548,70 +575,117 @@ pub(crate) fn theme_web_font_hrefs_json() -> String {
     serde_json::to_string(&map).expect("theme web font map serializes")
 }
 
+/// The app's own drawings: a pack a family may name, and the one every family that names none wears.
+pub(crate) const LEAFTEXT_ICON_PACK: &str = "leaftext";
+
+// Assets, not Rust literals, so they stay editable as CSS. Every `var(--lt-*)` resolves against what came before it: the per-theme colors, then the app-wide scales, then the rules that spend both.
+const TOKENS_CSS: &str = include_str!("assets/tokens.css");
+const ICONS_CSS: &str = include_str!("assets/icons.css");
+// The stylesheet as ordered parts, one per component group, joined with nothing between them. Order is the cascade — at equal specificity the later rule wins — so a part is a contiguous run of lines and never a rule lifted out of one, and a separator here would put a character in the sheet that no part holds. `scripts/reading-css.mjs` reads this array, so a part added to the app is a part every check sees.
+const READING_CSS_PARTS: &[&str] = &[
+    // The reset, the theme root, the window frame and the reduced-motion opt-out. First because everything below resolves against it.
+    include_str!("assets/reading/base.css"),
+    // The bar across the top: the brand, the tabs and their hearts, the overflow fold and the window controls.
+    include_str!("assets/reading/app-bar.css"),
+    // What floats over the app: the context menu, the rename box, the updater panel — and the one grouped rule that gives every one of them its shadow.
+    include_str!("assets/reading/panels.css"),
+    // The spinner and every button the bars press, including the app-wide `button:hover` the design system holds each control against.
+    include_str!("assets/reading/buttons.css"),
+    // The pane down the left: its frame, its scroll, the search and its hits, the breadcrumbs and their menu, the files and folders. One part rather than two, because `.library-hit-title` is written twice inside it — a block that clips near the top and a flex row that does not near the foot, 443 lines apart and decided by nothing but their order.
+    include_str!("assets/reading/library.css"),
+    // The map, in the reader's own cell and wearing the page's frame because it stands in for the page.
+    include_str!("assets/reading/reader-graph.css"),
+    // The floating bar over the foot of the page: the views, then the edits.
+    include_str!("assets/reading/reader-toolbar.css"),
+    // The page itself — its cell, its edges, its scroller and what it says while it loads — and the toast and first-run bubble that sit over it.
+    include_str!("assets/reading/reader-page.css"),
+    // A rendered document's own typography: headings, links, lists, the outline, the data and TEI blocks, and what the speed reader does to all of it.
+    include_str!("assets/reading/document.css"),
+    // The handle you drag a block by and the plus that writes a new one, in the page's left margin.
+    include_str!("assets/reading/block-gutter.css"),
+    // The bar that appears over selected text.
+    include_str!("assets/reading/selection-toolbar.css"),
+    // Quotes, alerts, code and an undrawn diagram — everything in a document that comes in a block of its own, and the syntax colors inside it.
+    include_str!("assets/reading/document-code.css"),
+    // The source view: the Monaco editor and the heading trail pinned over it.
+    include_str!("assets/reading/code-view.css"),
+    // Math, footnotes, tables, pictures and a note's own field block, and the openers that put a table or a picture on the whole window.
+    include_str!("assets/reading/document-tables.css"),
+    // The rail down the right, in the shell's own column so nothing in it can bleed onto the page.
+    include_str!("assets/reading/minimap.css"),
+    // The start screen: the empty state, the recent and favorite lists, and the rows they hold.
+    include_str!("assets/reading/home.css"),
+    // Everything that rises from the bottom of the window — the scrim, the sheet itself, the glossary, home and theme sheets — plus the scroll areas and the link preview.
+    include_str!("assets/reading/sheets.css"),
+    // The flowchart editor: its panes, its canvas, the handles laid over the drawing and the menus they open.
+    include_str!("assets/reading/flow-sheet.css"),
+    // A drawn diagram's own corner controls.
+    include_str!("assets/reading/diagram-tools.css"),
+    // A diagram, a table or a picture opened over the whole window.
+    include_str!("assets/reading/full-window.css"),
+    // Find in this document: the bar over both views, and the wash every match takes.
+    include_str!("assets/reading/find.css"),
+    // Last, and last on purpose: the page as it is handed to paper unwinds the window frame every rule above it sets up.
+    include_str!("assets/reading/print.css"),
+];
+
+/// The stylesheet, composed over one icon sheet: the theme colors, the app-wide scales, those drawings, then the rules that spend all three. Every `var(--lt-*)` resolves against what came before it, so the order is the whole of it.
+///
+/// Taking the drawings as an argument is what lets an exported page get a sheet of its own without a second copy of this order — the window is composed over the complete sheet, an export over the same sheet with the five packs it can never wear cut out.
+fn compose_reading_css(icons: &str) -> String {
+    let mut css = compiled_theme_css();
+    css.push('\n');
+    css.push_str(TOKENS_CSS);
+    css.push('\n');
+    css.push_str(icons);
+    css.push('\n');
+    for part in READING_CSS_PARTS {
+        css.push_str(part);
+    }
+    css
+}
+
 pub fn reading_mode_css() -> &'static str {
     static READING_MODE_CSS: OnceLock<String> = OnceLock::new();
+    // Every pack, because the window has a theme picker in it: whichever family the reader lands on next, its drawings are already here.
+    READING_MODE_CSS.get_or_init(|| compose_reading_css(ICONS_CSS))
+}
 
-    // Assets, not Rust literals, so they stay editable as CSS. Every `var(--lt-*)` resolves against what came before it: the per-theme colors, then the app-wide scales, then the rules that spend both.
-    const TOKENS_CSS: &str = include_str!("assets/tokens.css");
-    const ICONS_CSS: &str = include_str!("assets/icons.css");
-    // The stylesheet as ordered parts, one per component group, joined with nothing between them. Order is the cascade — at equal specificity the later rule wins — so a part is a contiguous run of lines and never a rule lifted out of one, and a separator here would put a character in the sheet that no part holds. `scripts/reading-css.mjs` reads this array, so a part added to the app is a part every check sees.
-    const READING_CSS_PARTS: &[&str] = &[
-        // The reset, the theme root, the window frame and the reduced-motion opt-out. First because everything below resolves against it.
-        include_str!("assets/reading/base.css"),
-        // The bar across the top: the brand, the tabs and their hearts, the overflow fold and the window controls.
-        include_str!("assets/reading/app-bar.css"),
-        // What floats over the app: the context menu, the rename box, the updater panel — and the one grouped rule that gives every one of them its shadow.
-        include_str!("assets/reading/panels.css"),
-        // The spinner and every button the bars press, including the app-wide `button:hover` the design system holds each control against.
-        include_str!("assets/reading/buttons.css"),
-        // The pane down the left: its frame, its scroll, the search and its hits, the breadcrumbs and their menu, the files and folders. One part rather than two, because `.library-hit-title` is written twice inside it — a block that clips near the top and a flex row that does not near the foot, 443 lines apart and decided by nothing but their order.
-        include_str!("assets/reading/library.css"),
-        // The map, in the reader's own cell and wearing the page's frame because it stands in for the page.
-        include_str!("assets/reading/reader-graph.css"),
-        // The floating bar over the foot of the page: the views, then the edits.
-        include_str!("assets/reading/reader-toolbar.css"),
-        // The page itself — its cell, its edges, its scroller and what it says while it loads — and the toast and first-run bubble that sit over it.
-        include_str!("assets/reading/reader-page.css"),
-        // A rendered document's own typography: headings, links, lists, the outline, the data and TEI blocks, and what the speed reader does to all of it.
-        include_str!("assets/reading/document.css"),
-        // The handle you drag a block by and the plus that writes a new one, in the page's left margin.
-        include_str!("assets/reading/block-gutter.css"),
-        // The bar that appears over selected text.
-        include_str!("assets/reading/selection-toolbar.css"),
-        // Quotes, alerts, code and an undrawn diagram — everything in a document that comes in a block of its own, and the syntax colors inside it.
-        include_str!("assets/reading/document-code.css"),
-        // The source view: the Monaco editor and the heading trail pinned over it.
-        include_str!("assets/reading/code-view.css"),
-        // Math, footnotes, tables, pictures and a note's own field block, and the openers that put a table or a picture on the whole window.
-        include_str!("assets/reading/document-tables.css"),
-        // The rail down the right, in the shell's own column so nothing in it can bleed onto the page.
-        include_str!("assets/reading/minimap.css"),
-        // The start screen: the empty state, the recent and favorite lists, and the rows they hold.
-        include_str!("assets/reading/home.css"),
-        // Everything that rises from the bottom of the window — the scrim, the sheet itself, the glossary, home and theme sheets — plus the scroll areas and the link preview.
-        include_str!("assets/reading/sheets.css"),
-        // The flowchart editor: its panes, its canvas, the handles laid over the drawing and the menus they open.
-        include_str!("assets/reading/flow-sheet.css"),
-        // A drawn diagram's own corner controls.
-        include_str!("assets/reading/diagram-tools.css"),
-        // A diagram, a table or a picture opened over the whole window.
-        include_str!("assets/reading/full-window.css"),
-        // Find in this document: the bar over both views, and the wash every match takes.
-        include_str!("assets/reading/find.css"),
-        // Last, and last on purpose: the page as it is handed to paper unwinds the window frame every rule above it sets up.
-        include_str!("assets/reading/print.css"),
-    ];
+/// The icon pack a theme family wears. A family nothing declares wears the app's own set, which is what it is already drawn with.
+pub fn icon_pack_for_theme(family: &str) -> &'static str {
+    theme_sources()
+        .iter()
+        .find(|source| source.family == family)
+        .map_or(LEAFTEXT_ICON_PACK, |source| source.pack)
+}
 
-    READING_MODE_CSS.get_or_init(|| {
-        let mut css = compiled_theme_css();
-        css.push('\n');
-        css.push_str(TOKENS_CSS);
-        css.push('\n');
-        css.push_str(ICONS_CSS);
-        css.push('\n');
-        for part in READING_CSS_PARTS {
-            css.push_str(part);
+/// Every outside icon pack the sheet carries a block for, in the order it carries them. `leaftext` is not one: the app's own drawings are what the root declares, so a family wearing them needs no block.
+pub fn icon_packs() -> Vec<&'static str> {
+    LEAF_ICON_PACK_RANGES
+        .iter()
+        .map(|(pack, _, _)| *pack)
+        .collect()
+}
+
+/// The stylesheet an exported page gets: the whole of the window's sheet but for the icon packs the page can never wear.
+///
+/// A page written out pins one theme and carries no picker, so five of the six outside packs are drawings it can never reach. Only those blocks come out: which reading rules a document needs is a guess, and a rule missed is a page that looks wrong in a way nobody sees coming.
+pub fn exported_page_css(family: &str) -> String {
+    compose_reading_css(&icons_css_for_pack(icon_pack_for_theme(family)))
+}
+
+/// The icon sheet with every outside pack's block cut out but the one named, sliced by the byte ranges the generator wrote beside the sheet itself. `leaftext` names no block, so it keeps only the drawings the root declares.
+fn icons_css_for_pack(pack: &str) -> String {
+    let mut css = String::with_capacity(ICONS_CSS.len());
+    let mut at = 0;
+    // In ascending order and never overlapping, because the generator counted them as it wrote the lines.
+    for (name, start, end) in LEAF_ICON_PACK_RANGES {
+        if *name == pack {
+            continue;
         }
-        css
-    })
+        css.push_str(&ICONS_CSS[at..*start]);
+        at = *end;
+    }
+    css.push_str(&ICONS_CSS[at..]);
+    css
 }

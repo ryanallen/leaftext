@@ -132,6 +132,8 @@ A family carries a set of drawings as well as a palette. Every icon class in `sr
 
 Seven packs ship. `leaftext` is the app's own mixed set — the drawings that were here before packs existed — and it is both a family's permanent choice and the fallback every other pack falls back to: an icon a pack has no drawing for keeps the `:root` value, so a control is never blank.
 
+A family names its pack on a `**Pack:**` line beside its `**Family ID:**`, and `ThemeSource.pack` is that value at runtime; a file naming none wears `leaftext`. `just bundle-icons` writes each pack block's byte range into `src/theme.rs` as `LEAF_ICON_PACK_RANGES` beside the sheet itself, which is what lets `exported_page_css()` hand a written-out page one block instead of six.
+
 | Pack | Drawings |
 |---|---|
 | `leaftext` | The app's own set, composed here |
@@ -187,7 +189,7 @@ Three tests re-derive contrast across **every** theme so an unreadable palette f
 
 Then, per family, it emits a font block (`--heading-font`/`--reading-font`/`--app-font`/`--code-font`) from that family's `fonts`.
 
-`reading_mode_css()` assembles the full style block: the compiled theme CSS above, then the stylesheet itself, as the ordered parts `READING_CSS_PARTS` names under `src/assets/reading/` and concatenates with nothing between them — its own `:root` block (the radius scale, the type scale, the layout metrics and the grain inks — everything that is one value for the whole app rather than per theme), then the application layout and document body CSS. The theme blocks have to come first so every `var(--lt-*)` in the stylesheet resolves. The stylesheet is an asset rather than a Rust literal so it stays editable as CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
+`reading_mode_css()` assembles the full style block: the compiled theme CSS above, then the stylesheet itself, as the ordered parts `READING_CSS_PARTS` names under `src/assets/reading/` and concatenates with nothing between them — its own `:root` block (the radius scale, the type scale, the layout metrics and the grain inks — everything that is one value for the whole app rather than per theme), then the application layout and document body CSS. The theme blocks have to come first so every `var(--lt-*)` in the stylesheet resolves. The stylesheet is an asset rather than a Rust literal so it stays editable as CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime. Both it and `exported_page_css()` are one call on `compose_reading_css()`, which takes the icon sheet as an argument: the window gets every pack, because a reader changes theme there, and a page written out gets the same sheet with the five [packs](#icon-packs) its pinned theme can never wear cut out.
 
 ## Theme fonts
 

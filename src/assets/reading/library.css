@@ -88,14 +88,26 @@ body.is-library-closing .app-bar::after {
 body.is-library-settling .app-bar::after {
   transition: left var(--lt-duration-120) var(--lt-ease-decelerate);
 }
-/* The rail's own column: the lead-in holds it off the page's right border, and the gutter beyond gives it the same outer inset the page card has. The bar's height keeps its top level with the card's. */
+/* The rail's own column: the lead-in holds it off the page's right border, and the gutter beyond gives it the same outer inset the page card has. The bar's height keeps its top level with the card's.
+
+   It scrolls, and that is the whole of how a wheel over the rail moves the page: the column is a scroller the web view drives itself, so a notch here is the same gesture it is over the page, on the web view's own curve, with no step of ours between the hand and the document. The front end only writes the reader's position from this scroll. Its travel is a spacer minimap.js sizes to the reader's own range; the rail's contents are pinned to the top of the column, so nothing the reader points at moves with it. Sideways stays clipped — the thumbnail is the column's width and there is nothing beside it. */
 .reader-minimap {
   grid-column: 3;
   grid-row: 1;
   min-width: 0;
   padding-left: var(--reader-minimap-gap);
   padding-top: var(--app-bar-height);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* The rail is what shows where you are, so a bar beside it says the same thing twice. Two rules, kept apart: in Chromium `scrollbar-width` anywhere on an element kills every ::-webkit-scrollbar rule on it (see .reader-shell.has-minimap). */
+  scrollbar-width: none;
+}
+.reader-minimap::-webkit-scrollbar {
+  width: 0;
+}
+/* A drag on the box writes the reader's position itself, so the column's own scroll stands aside for the length of it and a notch cannot fight the box being held. Hidden rather than unset: a programmatic write still lands, which is what lets the release put the column back where the reader now is. */
+.reader-minimap.is-scroll-held {
+  overflow-y: hidden;
 }
 .library-pane {
   /* Positioning context for the overlays it stacks (.library-scroll, .library-crumbs, .library-header). The pane itself doesn't scroll or clip; the inner .library-scroll owns the scroll. */

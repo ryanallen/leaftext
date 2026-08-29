@@ -49,9 +49,12 @@ fn an_exported_page_names_its_stylesheet_and_pins_the_theme_it_was_written_in() 
     assert_contains(&page, "data-leaf-theme=\"moss\"");
     assert_contains(&page, "data-leaf-appearance=\"dark\"");
     assert_contains(&page, "<title>Release notes</title>");
-    // The folder the pictures go in is the same one, so the two are named together and nowhere else.
-    assert_eq!(EXPORTED_PAGE_STYLESHEET, "assets/app.css");
-    assert_contains(&page, "<link rel=\"stylesheet\" href=\"assets/app.css\">");
+    // The folder the pictures go in is the same one, so the two are named together and nowhere else. The sheet is named after the drawings this page's theme wears, because the folder is shared and a second page may wear another set.
+    assert_eq!(exported_page_stylesheet("moss"), "assets/app-leaftext.css");
+    assert_contains(
+        &page,
+        "<link rel=\"stylesheet\" href=\"assets/app-leaftext.css\">",
+    );
     // `leaf-paper` drops the app's own frame off the sheet and makes the browser scroll the body rather than the page carrying a scroller of its own; `leaf-web` hands a wide table or picture back its screen width, which the paper rules alone freeze at the text measure, and it is what the rail's placement rules are keyed on. The whole attribute, not a substring: nothing on this page ever writes a class, so these two are the page's entire state for ever.
     assert_contains(&page, "<body class=\"leaf-paper leaf-web\">");
     assert_contains(&page, "<div class=\"app-surface\">the document</div>");
@@ -170,5 +173,36 @@ fn the_paper_rules_paint_every_drawn_diagram_and_take_the_waiting_ring_off_the_s
     assert!(
         !css.contains("\n.document-body pre.mermaid {\n  content-visibility: visible !important;"),
         "the paint skip was taken off every screen rather than off the paper alone"
+    );
+}
+
+/// The sheet an exported page names is the one its own theme wears, and two pages pinned to different themes therefore name different files.
+///
+/// The `assets` folder beside the page is shared — that is what lets two documents exported into one folder share their pictures — so one fixed stylesheet name would leave whichever page was written first pointing at somebody else's drawings. The name is per pack rather than per family, since families wearing the same pack get identical bytes and can share the file.
+#[test]
+fn an_exported_page_names_the_sheet_its_own_theme_wears() {
+    // Amaranth wears an outside pack and Sage the app's own, so the two are the case this exists for.
+    let outside = exported_page_stylesheet("amaranth");
+    let own = exported_page_stylesheet("sage");
+    assert_eq!(outside, "assets/app-heroicons.css");
+    assert_eq!(own, "assets/app-leaftext.css");
+    assert_ne!(outside, own, "two packs shared one file name");
+
+    // The page links what the writer writes, off the same helper, so the two can never disagree.
+    for (theme, sheet) in [("amaranth", &outside), ("sage", &own)] {
+        let page = exported_page_document(theme, "light", "Notes", "", "<p>hi</p>");
+        assert_contains(
+            &page,
+            &format!("<link rel=\"stylesheet\" href=\"{sheet}\">"),
+        );
+    }
+
+    // Halcyon wears heroicons too, so it shares the file rather than writing a second copy of the same bytes.
+    assert_eq!(exported_page_stylesheet("halcyon"), outside);
+
+    // A theme name no family has still names a file a browser can fetch, rather than an empty one.
+    assert_eq!(
+        exported_page_stylesheet("no-such-family"),
+        "assets/app-leaftext.css"
     );
 }

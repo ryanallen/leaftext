@@ -4,12 +4,7 @@
 //
 // Only custom properties on `:root`, and only the last winner: a custom property takes the most specific declaration that matches, and every family selector is `:root` plus an attribute, so it outranks the bare `:root` on specificity alone and order never has to be weighed. A pack block is not in the sheet yet, so the family half is proved by declaring one over the real sheet — which is exactly what phase 3's generator will write.
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { check, root } from './shared.mjs';
-
-// The drawings are their own part of the sheet, joined ahead of the rules that spend them by `reading_mode_css`, and `readingCss()` hands back only `READING_CSS_PARTS` — which that part is not one of. So it is read here by name.
-const iconsCss = () => readFileSync(join(root, 'src/assets/icons.css'), 'utf8');
+import { check, readingCss } from './shared.mjs';
 
 /** Every `--lt-icon-*` a block declares, as a map. `block` is the text between one rule's braces. */
 function declared(block) {
@@ -46,7 +41,7 @@ function painted(css, icon, family) {
 }
 
 export function run() {
-  const shipped = iconsCss();
+  const shipped = readingCss();
   // A pack block the shape `bundle-icons` writes: one family, one drawing, everything else left to the root.
   const swapped = `${shipped}\n:root[data-leaf-theme="nightshade"] {\n  --lt-icon-back: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24'%3E%3Cpath d='M0 0'/%3E%3C/svg%3E");\n}\n`;
 

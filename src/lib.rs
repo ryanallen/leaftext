@@ -22,8 +22,8 @@ pub use markdown::{
     drawable_image_extensions, is_local_image_path, local_image_protocol_path,
     local_image_protocol_response, local_image_source_dir, markdown_image_insert_destination,
 };
-pub use theme::reading_mode_css;
 pub(crate) use theme::*;
+pub use theme::{exported_page_css, icon_pack_for_theme, icon_packs, reading_mode_css};
 mod scripts;
 pub use scripts::*;
 mod pager;
@@ -1110,7 +1110,7 @@ pub fn exported_page_document(
 <meta charset=\"utf-8\">
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <title>{title}</title>
-<link rel=\"stylesheet\" href=\"{EXPORTED_PAGE_STYLESHEET}\">
+<link rel=\"stylesheet\" href=\"{stylesheet}\">
 <script src=\"{EXPORTED_PAGE_MINIMAP_SCRIPT}\" defer></script>
 {math}{sheet}</head>
 <body class=\"leaf-paper leaf-web\">
@@ -1118,6 +1118,7 @@ pub fn exported_page_document(
 </body>
 </html>
 ",
+        stylesheet = exported_page_stylesheet(theme),
         theme = escape_html_text(theme),
         appearance = escape_html_text(appearance),
         title = escape_html_text(title),
@@ -1127,8 +1128,17 @@ pub fn exported_page_document(
 /// Where an exported page's stylesheet goes, and the folder every picture beside it goes in. The same `assets` folder the static site export already writes, so a reader who has seen one knows the other.
 pub const EXPORTED_PAGE_ASSETS_FOLDER: &str = "assets";
 
-/// The one stylesheet an exported page names: the whole of [`reading_mode_css`], which carries every theme's colors, the tokens, the icons and the reading rules. All of it rather than a trimmed copy — deciding which rules a document needs is a guess against a stylesheet that changes every week, and a rule missed is a page that looks wrong in a way nobody can see coming.
-pub const EXPORTED_PAGE_STYLESHEET: &str = "assets/app.css";
+/// The one stylesheet an exported page names, named after the icon pack the page's theme wears.
+///
+/// One file per pack rather than one fixed name, because the `assets` folder is shared: two pages exported into it can wear different drawings, and a single name would leave the first written pointing at the second's pack. Per pack rather than per family, since families sharing a pack get the same bytes.
+///
+/// Everything but those drawings is the whole of [`reading_mode_css`] — which rules a document needs is a guess against a stylesheet that changes every week. An icon pack is the one exception the page itself settles: the root pins one theme and carries no picker, so five of the six can never match.
+pub fn exported_page_stylesheet(theme: &str) -> String {
+    format!(
+        "{EXPORTED_PAGE_ASSETS_FOLDER}/app-{}.css",
+        icon_pack_for_theme(theme)
+    )
+}
 
 /// The one script an exported page names: the minimap rail, in the `assets` folder beside the stylesheet.
 pub const EXPORTED_PAGE_MINIMAP_SCRIPT: &str = "assets/minimap.js";

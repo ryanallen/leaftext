@@ -35,7 +35,7 @@ export const createCollector = () => {
 
 export const { check, checkSettled, failures, settled } = createCollector();
 
-// The app stylesheet the way the browser is handed it: every part of it, joined in cascade order. Read here rather than in a subject file, so a part added to the sheet reaches every check at once.
+// The complete static cascade: tokens, drawings and every reading rule in order, after the run-time theme colors the Rust host adds. Read here rather than in a subject file, so a static part added to the sheet reaches every check at once.
 let readingSource = null;
 export const readingCss = () => {
   if (readingSource === null) readingSource = whole();

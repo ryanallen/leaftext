@@ -124,6 +124,7 @@ fn a_family_that_names_a_defaulted_color_keeps_its_own_value() {
         font_body: "",
         font_code: "",
         font_google: "",
+        pack: LEAFTEXT_ICON_PACK,
     };
     assert_eq!(
         theme_source_token_value(&source, "--lt-hover-tint"),
@@ -724,4 +725,114 @@ fn every_family_resolves_a_drawing_for_every_icon_by_pack_or_by_fallback() {
             );
         }
     }
+}
+
+/// A page written out pins one theme on its root and carries no picker, so the five packs it is not wearing are drawings nothing on it can ever reach. The sheet beside it carries one, and everything else about the sheet is untouched.
+///
+/// Four things, and they fail apart. The pack a family wears has to survive the trip from its own file into the registry; the sheet handed to an export has to hold that pack's block; it has to hold no other; and the window's own sheet has to still hold all six, because the window is where a reader changes theme.
+#[test]
+fn an_exported_sheet_carries_the_one_pack_its_theme_wears() {
+    // The comment the generator opens each block with, which is the one mark that block is in a sheet at all.
+    let block_of = |pack: &str| format!("/* The {pack} pack,");
+    let packs = icon_packs();
+    assert_eq!(
+        packs.len(),
+        6,
+        "the sheet compiled {} pack blocks",
+        packs.len()
+    );
+
+    // Every family's declared pack, read off its own file, is the one the registry answers.
+    for entry in std::fs::read_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/themes")).expect("themes/")
+    {
+        let path = entry.expect("a theme file").path();
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default();
+        if !name.ends_with(".md") || name == "README.md" {
+            continue;
+        }
+        let family = name.trim_end_matches(".md");
+        let file = std::fs::read_to_string(&path).expect("the theme file reads");
+        let declared = file
+            .lines()
+            .find_map(|line| line.strip_prefix("**Pack:**"))
+            .map(|rest| rest.trim().trim_matches('`').to_string())
+            .unwrap_or_else(|| LEAFTEXT_ICON_PACK.to_string());
+        assert_eq!(
+            icon_pack_for_theme(family),
+            declared,
+            "{family} wears {declared} in its own file"
+        );
+    }
+    // A name no family has is the app's own set rather than a theme with no drawings at all.
+    assert_eq!(icon_pack_for_theme("no-such-family"), LEAFTEXT_ICON_PACK);
+
+    let window = reading_mode_css();
+    for pack in &packs {
+        assert!(
+            window.contains(&block_of(pack)),
+            "the window's sheet lost the {pack} block, and the window is where a theme is changed"
+        );
+    }
+
+    // A family wearing an outside pack: its own block travels, and only its own.
+    for wanted in &packs {
+        let family = theme_families()
+            .into_iter()
+            .map(|(family, _)| family)
+            .find(|family| icon_pack_for_theme(family) == *wanted)
+            .unwrap_or_else(|| panic!("no family wears {wanted}"));
+        let sheet = exported_page_css(family);
+        assert!(
+            sheet.contains(&block_of(wanted)),
+            "a page pinned to {family} lost the {wanted} drawings it is wearing"
+        );
+        for other in packs.iter().filter(|pack| *pack != wanted) {
+            assert!(
+                !sheet.contains(&block_of(other)),
+                "a page pinned to {family} carries the {other} block it can never wear"
+            );
+        }
+        // Only the packs come out. Everything the sheet is otherwise made of stays whole, because which rules a document needs is a guess.
+        assert!(
+            sheet.contains(".app-surface"),
+            "{family} lost the reading rules"
+        );
+        assert!(
+            sheet.contains("--lt-icon-back:"),
+            "{family} lost the drawings the root declares"
+        );
+        assert!(
+            sheet.contains(".lt-icon-back {"),
+            "{family} lost the icon classes"
+        );
+        assert!(
+            sheet.contains(&format!("[data-leaf-theme=\"{family}\"]")),
+            "{family} lost its own colors"
+        );
+        assert!(
+            sheet.len() < window.len(),
+            "the sheet for {family} is no smaller than the window's"
+        );
+    }
+
+    // A family wearing the app's own set names no block at all, so its sheet carries none of the six.
+    let plain = theme_families()
+        .into_iter()
+        .map(|(family, _)| family)
+        .find(|family| icon_pack_for_theme(family) == LEAFTEXT_ICON_PACK)
+        .expect("a family wearing the app's own drawings");
+    let sheet = exported_page_css(plain);
+    for pack in &packs {
+        assert!(
+            !sheet.contains(&block_of(pack)),
+            "a page pinned to {plain} carries the {pack} block, and {plain} wears the app's own drawings"
+        );
+    }
+    assert!(
+        sheet.contains("--lt-icon-back:"),
+        "{plain} lost the drawings it wears"
+    );
 }

@@ -519,9 +519,12 @@ pub(crate) fn write_exported_page(
         .ok_or_else(|| "there is nowhere beside it to put its assets.".to_string())?;
     let assets = folder.join(EXPORTED_PAGE_ASSETS_FOLDER);
     fs::create_dir_all(&assets).map_err(|error| error.to_string())?;
-    // The whole stylesheet, which is every theme's colors, the tokens, the icons and the reading rules — see `EXPORTED_PAGE_STYLESHEET` for why none of it is trimmed. The name carries the folder, so this is the one place the two are joined.
-    fs::write(folder.join(EXPORTED_PAGE_STYLESHEET), reading_mode_css())
-        .map_err(|error| error.to_string())?;
+    // The stylesheet, named and composed off the same two helpers the page links, so the file written and the file named can never disagree. `exported_page_stylesheet` holds why the name carries a pack.
+    fs::write(
+        folder.join(exported_page_stylesheet(&export.theme)),
+        exported_page_css(&export.theme),
+    )
+    .map_err(|error| error.to_string())?;
     // The rail, which is the one thing on this page that runs. On every export rather than only a long document: the reader handed it has no library pane, no outline and no tab strip whatever it holds.
     fs::write(
         folder.join(EXPORTED_PAGE_MINIMAP_SCRIPT),

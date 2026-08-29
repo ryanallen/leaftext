@@ -192,6 +192,8 @@ The compiled stylesheet is assembled in this order:
 
 Every palette is pure data, compiled from [`themes.md`](../02-development/04-theming.md#palettes-are-data-themesmd); the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.
 
+The app's own copy carries every family's [icon pack](#icons), since a theme can be changed at any moment. A page [written out as a web page](02-navigation.md#export-the-page) pins one theme and has no picker, so the stylesheet beside it carries that theme's drawings alone.
+
 ## Windows
 
 On Windows, Leaftext uses a frameless window with its own title bar rather than the native one, so nothing the OS draws sits above the app. The app bar doubles as the title bar: drag it to move the window, double-click to maximize or restore, and its right edge carries the minimize / maximize / close buttons, which take the same rounded hover chip as the other toolbar icons (close turns red instead of the accent color). Press `F11` for full screen, with the taskbar, shadow band, edge and corner gone; the middle square becomes the way back out, then means maximize again in the ordinary window. The taskbar still shows the leaf icon outside full screen. The window has no border of its own and no system shadow: the app draws both, a hairline in the theme's divider color around a rounded surface, and outside it the same dot-grain shadow every floating surface in the app throws — so what separates the app from the desktop is drawn in the app's own language rather than the platform's.

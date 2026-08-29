@@ -486,7 +486,7 @@ fn app_shell_disables_minimap_without_leaving_empty_layout_column() {
             "app.innerHTML = `<div class=\"${layoutClass}\" style=\"display:none\">${state.document.html}</div>`;",
             // The rail is placed beside the page, not inside it. Empty markup means no rail element at all, which is what collapses the shell column — a hidden one would still satisfy :has().
             "setMinimapMarkup(minimapHtml);",
-            "if (readerMinimap) readerMinimap.innerHTML = html || '';",
+            "    readerMinimap.innerHTML = html || '';",
             r#"<div id="readerMinimap" class="reader-minimap" aria-hidden="true"></div>"#,
         ] {
             assert_contains(&html, expected);

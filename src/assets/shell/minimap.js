@@ -21,6 +21,9 @@ var minimapBuiltFirstRow;
 var minimapBuiltLastRow;
 // Rail geometry, cached for the scroll path: scrolling changes none of it, and re-measuring per wheel click forces a fresh layout of the whole document.
 var minimapScrollMetrics;
+// The last position the column's scroll wrote onto the reader. The two mirror each other, so without it the reader's answering event would carry the column straight back — and a plain flag cannot do the job: a scroll event lands a frame after the write that caused it, by which time the gliding column has moved again and would spend the flag on its own real move. A value is the whole of what has to be recognized.
+var minimapMirroredScrollTop;
+var minimapSpacerFrame;
 var readerLayoutFrame;
 var readerScrollSettleTimer;
 var readerReflowObserver;
@@ -46,6 +49,8 @@ function initializeMinimapState() {
   minimapBuiltFirstRow = -1;
   minimapBuiltLastRow = -1;
   minimapScrollMetrics = null;
+  minimapMirroredScrollTop = -1;
+  minimapSpacerFrame = 0;
   readerLayoutFrame = 0;
   readerScrollSettleTimer = 0;
   readerReflowObserver = null;
@@ -166,11 +171,59 @@ function renderDocumentMinimap(model) {
 //
 // The scroller is told directly rather than left to :has(): scrollbar styles do not re-resolve when a :has() match flips, so the bar outlives the rail.
 function setMinimapMarkup(html) {
-  if (readerMinimap) readerMinimap.innerHTML = html || '';
+  if (readerMinimap) {
+    readerMinimap.innerHTML = html || '';
+    // The column's travel, and a sibling of the rail rather than a child of it: the rail is pinned to the top of the column, so anything inside it is pinned too and there would be nothing left to scroll. No rail means no spacer, so the column has no travel at all and a notch there is left to the web view exactly as it was.
+    if (html) {
+      const spacer = document.createElement('div');
+      spacer.className = 'reader-minimap-spacer';
+      spacer.setAttribute('aria-hidden', 'true');
+      readerMinimap.appendChild(spacer);
+      scheduleMinimapSpacerResize();
+    }
+  }
   if (app) app.classList.toggle('has-minimap', Boolean(html));
 }
 function currentMinimap() {
   return readerMinimap ? readerMinimap.querySelector('.document-minimap') : null;
+}
+function minimapSpacer() {
+  return readerMinimap ? readerMinimap.querySelector('.reader-minimap-spacer') : null;
+}
+// The column has to travel exactly as far as the reader can, or a notch over the rail carries the page a different distance than the same notch over the page — which is the one thing the wheel already got right. Corrected against what the column reads back rather than computed and trusted: the column's own padding, the rail's height and the browser's rounding all count towards its range, and none of them is knowable from here. Twice is enough to land it; a third pass would only be answering a layout that is still moving.
+function resizeMinimapSpacer() {
+  const spacer = minimapSpacer();
+  if (!readerMinimap || !spacer) {
+    return;
+  }
+  // An unscrollable reader gets no travel, so the column is not a scroller and the notch stays the web view's.
+  const target = Math.max(0, app.scrollHeight - app.clientHeight);
+  for (let pass = 0; pass < 2; pass += 1) {
+    const height = Math.max(0, parseFloat(spacer.style.height) || 0);
+    const reached = Math.max(0, readerMinimap.scrollHeight - readerMinimap.clientHeight);
+    const next = Math.max(0, height + (target - reached));
+    if (next === height) {
+      break;
+    }
+    spacer.style.height = `${next}px`;
+  }
+  syncMinimapColumnToReader();
+}
+function scheduleMinimapSpacerResize() {
+  if (minimapSpacerFrame) {
+    return;
+  }
+  minimapSpacerFrame = window.requestAnimationFrame(() => {
+    minimapSpacerFrame = 0;
+    resizeMinimapSpacer();
+  });
+}
+// Everything that moves the reader without touching the column — a click on the rail, a drag on the box, the keyboard, a tab switch, a reflow re-pin — leaves the column behind, and the next notch there would jump the page back. Never a write while the two already agree: writing a position a scroller has already reached cancels an animation it has in flight, which is the glide this whole path exists for.
+function syncMinimapColumnToReader() {
+  if (!readerMinimap || Math.round(readerMinimap.scrollTop) === Math.round(app.scrollTop)) {
+    return;
+  }
+  readerMinimap.scrollTop = app.scrollTop;
 }
 function bindDocumentMinimap() {
   const minimap = currentMinimap();
@@ -249,6 +302,8 @@ function bindDocumentMinimap() {
     event.preventDefault();
     minimapPointerId = event.pointerId;
     minimapDragging = true;
+    // The drag writes the reader's position itself, so the column's own scroll stands aside until it is over: a notch landing mid-drag would fight the box being held.
+    if (readerMinimap) readerMinimap.classList.add('is-scroll-held');
     minimapPointerOffsetY = minimapPointerOffset(event);
     // Measure the document geometry ONCE for the whole drag (see minimapDragMetrics).
     minimapDragMetrics = measureDocumentMinimap(track);
@@ -273,6 +328,9 @@ function bindDocumentMinimap() {
       minimapPointerOffsetY = null;
       minimapDragging = false;
       minimapDragMetrics = null;
+      // The column stood aside for the drag and so fell behind it; hand its scroll back where the reader now is, or the first notch after the release would jump the page to where the drag began.
+      if (readerMinimap) readerMinimap.classList.remove('is-scroll-held');
+      syncMinimapColumnToReader();
       // A pass queued mid-drag holds the pre-drag anchor, so drop it before recording where the drag landed; either omission snaps the reader back to the start.
       cancelReaderLayoutUpdate();
       recordReaderScrollPosition();
@@ -343,8 +401,11 @@ function disconnectMinimapPreviewObservers() {
   invalidateMinimapMetrics();
 }
 // Drop the cached rail geometry. Everything that can change it calls this; the scroll handler, which cannot, is the one path that reads the cache.
+//
+// Anything that changes the rail's geometry changes the document's height, and the column's travel is that height — so the spacer follows from here rather than from a second list of the same triggers. Asked for a frame rather than done here, because this is called from a render before the new document has been laid out and the answer is a layout read.
 function invalidateMinimapMetrics() {
   minimapScrollMetrics = null;
+  scheduleMinimapSpacerResize();
 }
 function minimapMetricsForScroll(track) {
   if (minimapScrollMetrics && minimapScrollMetrics.track === track) {
@@ -641,11 +702,15 @@ function scheduleReaderLayoutUpdate() {
     updateMinimapViewport();
   });
 }
-// Drop a queued layout pass whose captured `anchor` has been superseded.
+// Drop a queued layout pass whose captured `anchor` has been superseded. The column's travel goes with it: the document that height was going to be read off has been taken away, and the render replacing it drops the rail's geometry again.
 function cancelReaderLayoutUpdate() {
   if (readerLayoutFrame) {
     window.cancelAnimationFrame(readerLayoutFrame);
     readerLayoutFrame = 0;
+  }
+  if (minimapSpacerFrame) {
+    window.cancelAnimationFrame(minimapSpacerFrame);
+    minimapSpacerFrame = 0;
   }
 }
 function disconnectReaderReflowObserver() {
@@ -1053,50 +1118,27 @@ function cancelReaderScrollSettle() {
   }
   readerScrolling = false;
 }
-// A wheel over the rail scrolls the page the same distance that notch moves it over the page. Nothing else can: the rail is chrome, so it stands in a grid column beside the box that scrolls, and the window's own scroll is gone (`base.css`) — so a notch here has nothing above it to move, in the one strip the app draws in place of a scrollbar and the one a click or a drag leaves the pointer on.
+// A wheel over the rail moves the page the way a wheel over the page moves it, because the rail's column is a scroller and the web view is the one doing the scrolling. Nothing of ours is on that path: the app used to write the reader's new position outright, one whole jump a notch, and it was the only place in the app that moved the reader itself rather than asking the web view to.
 //
-// On the column, not the track: the column runs the height of the window and the track only as far as the thumbnail reaches, so a listener on the track leaves the whole stretch below it dead. The column is permanent, so this binds once instead of being rebound on every render.
-//
-// A wheel in lines or pages is converted rather than added raw. This host reports pixels, so raw is right here; the same fragment runs the app in a browser this tree does not choose, where a mouse reporting lines would move the reader three pixels a notch.
-const MINIMAP_WHEEL_FALLBACK_LINE = 16;
-let minimapWheelLineHeight = 0;
-function minimapWheelPixels(event, metrics) {
-  // A page is the reader's own height, already in the cached metrics.
-  if (event.deltaMode === 2) {
-    return event.deltaY * metrics.viewportHeight;
-  }
-  if (event.deltaMode !== 1) {
-    return event.deltaY;
-  }
-  if (!minimapWheelLineHeight) {
-    // Read once, off the reading body, and kept: the wheel path may read no layout (see settleReaderScroll).
-    const source = minimapSourceElement();
-    const measured = parseFloat(getComputedStyle(source || app).getPropertyValue('line-height'));
-    minimapWheelLineHeight = Number.isFinite(measured) && measured > 0 ? measured : MINIMAP_WHEEL_FALLBACK_LINE;
-  }
-  return event.deltaY * minimapWheelLineHeight;
-}
+// So all that is left here is the mirror. The column's scroll writes the reader's, one to one, and the column travels exactly as far as the reader can — so the distance a notch carries is the page's own, and a notch at either end stops where the page stops. What a notch counted in lines or in pages is worth is the web view's arithmetic now, and so is the curve.
 if (readerMinimap) {
-  readerMinimap.addEventListener('wheel', (event) => {
-    // A zoom or a sideways gesture over the rail stays the web view's, exactly as it is over the page.
-    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
-    if (!event.deltaY) return;
-    const minimap = currentMinimap();
-    const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
-    if (!track) return;
-    // Never a fresh scrollHeight: that layout read is ~400ms on a large glossary, which is the wheel taking two seconds to answer. Scrolling cannot change this geometry, so the scroll path's cache is the right read.
-    const metrics = minimapMetricsForScroll(track);
-    if (!metrics || metrics.scrollable <= 0) return;
-    // The drag owns the scroll while it stands; a notch must not fight the box being held.
-    if (minimapDragging) return;
-    event.preventDefault();
-    app.scrollTop = Math.min(metrics.scrollable, Math.max(0, app.scrollTop + minimapWheelPixels(event, metrics)));
-  }, { passive: false });
+  readerMinimap.addEventListener('scroll', () => {
+    const top = readerMinimap.scrollTop;
+    if (Math.round(app.scrollTop) === Math.round(top)) {
+      return;
+    }
+    minimapMirroredScrollTop = top;
+    app.scrollTop = top;
+  }, { passive: true });
 }
 app.addEventListener('scroll', () => {
   // A minimap drag owns the scroll (clamped scrollTop, box pinned via CSS vars, endDrag re-captures on release), so do nothing here during a drag — the forced layouts would be exactly the stutter this avoids.
   if (minimapDragging) {
     return;
+  }
+  // The reader is already where the column's scroll put it, so there is nothing to carry back. Everything else that moves it — a click on the rail, the keyboard, a tab switch, a reflow re-pin — leaves the column behind and has to bring it along.
+  if (Math.round(app.scrollTop) !== Math.round(minimapMirroredScrollTop)) {
+    syncMinimapColumnToReader();
   }
   scheduleMinimapViewportUpdate();
   readerScrolling = true;

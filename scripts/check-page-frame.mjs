@@ -10,16 +10,7 @@
 //
 // The compiled themes are not read here. `theme.rs` emits one custom property per row of `design/colors.md` and can emit nothing else, and `src/tests/reading_css_layout.rs` walks the concatenated result the browser actually gets.
 
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-import { partPaths } from './reading-css.mjs';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-
-/** The stylesheets `reading_mode_css()` concatenates, in its order — the two generated ones, then every part of the app's own sheet. Each is read on its own, so a hit names the file a reader opens. */
-const FILES = ['src/assets/tokens.css', 'src/assets/icons.css', ...partPaths()];
+import { parts } from './reading-css.mjs';
 
 /** Nothing else in a page belongs to the page's frame. A class, an attribute, a pseudo-class or a combinator scopes a rule to something; these three name whatever document the stylesheet lands in. */
 const BARE = new Set(['html', 'body', ':root']);
@@ -128,8 +119,9 @@ if (process.argv.includes('--check')) {
   if (!problems.length) console.log('scanner: refuses the rule that shipped, passes the scope that fixed it');
 }
 
-for (const file of FILES) {
-  for (const hit of frameGrabs(readFileSync(join(root, file), 'utf8'), file)) {
+const stylesheet = parts();
+for (const { path, css } of stylesheet) {
+  for (const hit of frameGrabs(css, path)) {
     problems.push(`${hit.label}:${hit.line} — \`${hit.selector}\` sets \`${hit.property}\`, which takes the frame of every page handed this stylesheet`);
   }
 }
@@ -140,4 +132,4 @@ if (problems.length) {
   console.error("Scope it to the app's own page — `body:has(.app-surface)` — so leaftext.com and empty.guru keep their own scroll.");
   process.exit(1);
 }
-console.log(`page frame: ${FILES.length} stylesheets, and none of them takes a published page's scroll, place or touch`);
+console.log(`page frame: ${stylesheet.length} stylesheets, and none of them takes a published page's scroll, place or touch`);

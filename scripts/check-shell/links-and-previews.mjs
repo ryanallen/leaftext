@@ -918,7 +918,7 @@ export function run() {
     const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
     const css = readingCss();
     const fragment = readFileSync(join(root, 'src/assets/shell/glossary.js'), 'utf8');
-    const written = (text) => (text.match(/0\.36(?!\d)/g) || []).length;
+    const written = (text) => (text.match(/--link-preview-shrink:\s*0\.36\s*;/g) || []).length;
     if (!css.includes('--link-preview-shrink: 0.36;')) throw new Error('the shrink is not a property of the picture box');
     if (written(css) !== 1) throw new Error(`the stylesheet writes the shrink ${written(css)} times instead of once`);
     if (written(fragment) !== 0) throw new Error('the fragment still writes the shrink down rather than reading it off the box');

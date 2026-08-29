@@ -316,175 +316,181 @@ export function run() {
     if (!frames.drain()) throw new Error('the pane finishing its motion never asked for the width it held back');
     if (!/^[\d.]+px$/.test(minimapWidth())) throw new Error(`the pane stopped and the rail was left at ${minimapWidth() || 'nothing'}`);
   });
-  // The rail is chrome in a grid column beside the box that scrolls, and the window's own scroll is gone — so a notch over the one strip the app draws in place of a scrollbar found nothing above it to move, in the very place a click or a drag on it leaves the pointer. Everything below fires the real handler at the real column.
-  const railWheelStand = () => {
+  // The rail is chrome in a grid column beside the box that scrolls, and the window's own scroll is gone — so a notch over the one strip the app draws in place of a scrollbar found nothing above it to move, in the very place a click or a drag on it leaves the pointer. What answers it is the column itself: it is a scroller, the web view moves it, and all the page does is carry the position across. Everything below drives the real listeners at the real column.
+  //
+  // The column's range here is what a browser adds up: whatever the rail itself stands in, plus the spacer. So a spacer written straight from the reader's range and left there overshoots, which is what makes the read-back correction visible rather than assumed.
+  const RAIL_CONTENT_HEIGHT = 730;
+  const COLUMN_HEIGHT = 800;
+  const railColumnStand = () => {
     const rail = booted.document.getElementById('readerMinimap');
-    const handler = (rail.listeners.get('wheel') || []).at(-1);
-    if (!handler) throw new Error('nothing listens for a wheel over the rail');
     const appEl = booted.document.getElementById('app');
-    const track = fakeElement('');
-    track.classList.add('document-minimap-track');
-    const minimap = fakeElement('');
-    minimap.classList.add('document-minimap');
-    minimap.appendChild(track);
-    rail.appendChild(minimap);
-    const measured = { count: 0 };
+    const columnScroll = (rail.listeners.get('scroll') || []).at(-1);
+    if (!columnScroll) throw new Error("nothing carries the rail column's scroll onto the reader");
+    // The reader's own, and the last one bound to it: minimap.js is the last fragment that binds a scroll there.
+    const readerScroll = (appEl.listeners.get('scroll') || []).at(-1);
+    if (!readerScroll) throw new Error("nothing carries the reader's scroll back onto the rail column");
+    booted.setMinimapMarkup(booted.documentMinimapMarkup());
+    const spacer = rail.querySelector('.reader-minimap-spacer');
+    const spacerHeight = () => Math.max(0, parseFloat(spacer && spacer.style.height) || 0);
+    rail.clientHeight = COLUMN_HEIGHT;
+    Object.defineProperty(rail, 'scrollHeight', {
+      configurable: true,
+      // A browser never answers less than the box itself, which is what leaves an unscrollable reader's column with no travel at all.
+      get: () => Math.max(COLUMN_HEIGHT, RAIL_CONTENT_HEIGHT + spacerHeight()),
+    });
+    const wasHold = booted.leafHoldPointer;
+    booted.leafHoldPointer = () => {};
     const wasMeasure = booted.measureDocumentMinimap;
-    booted.measureDocumentMinimap = () => {
-      measured.count += 1;
-      return { scrollable: 10000, viewportHeight: 800 };
-    };
-    vm.runInContext('invalidateMinimapMetrics(); minimapDragging = false;', booted);
+    booted.measureDocumentMinimap = () => ({ scrollable: 10000, viewportHeight: 800, previewScale: 0.05, trackHeight: 700, scaledDocumentHeight: 2000, scrollTop: 0 });
     return {
-      handler,
+      rail,
       app: appEl,
-      minimap,
-      measured,
+      spacer,
+      columnScroll,
+      readerScroll,
+      // What the column can travel, the way a browser works it out.
+      travel: () => Math.max(0, rail.scrollHeight - rail.clientHeight),
+      // Give the reader a document, and let the frame the invalidation asks for size the column to it.
+      setReader: (scrollHeight, clientHeight = 787) => {
+        appEl.scrollHeight = scrollHeight;
+        appEl.clientHeight = clientHeight;
+        booted.invalidateMinimapMetrics();
+        booted.__frames.drain();
+      },
       done: () => {
+        booted.leafHoldPointer = wasHold;
         booted.measureDocumentMinimap = wasMeasure;
-        minimap.remove();
+        booted.setMinimapMarkup('');
+        delete rail.scrollHeight;
+        rail.scrollHeight = 0;
+        rail.clientHeight = 0;
+        rail.scrollTop = 0;
+        rail.classList.remove('is-scroll-held');
         appEl.scrollTop = 0;
-        vm.runInContext('invalidateMinimapMetrics(); minimapDragging = false; minimapWheelLineHeight = 0;', booted);
+        appEl.scrollHeight = 0;
+        appEl.clientHeight = 0;
+        booted.__frames.drain();
       },
     };
   };
-  const railWheel = (changes = {}) => {
-    let prevented = false;
-    return {
-      ctrlKey: false,
-      metaKey: false,
-      altKey: false,
-      shiftKey: false,
-      deltaX: 0,
-      deltaY: 200,
-      deltaMode: 0,
-      preventDefault() {
-        prevented = true;
-      },
-      prevented: () => prevented,
-      ...changes,
-    };
-  };
 
-  // The whole of the fault: a real notch at the rail left the reader where it was, while the same notch over the page moved it 200.
-  check('a wheel over the rail scrolls the reader by the notch and claims it', () => {
-    const stand = railWheelStand();
-    try {
-      stand.app.scrollTop = 400;
-      const notch = railWheel();
-      stand.handler(notch);
-      if (stand.app.scrollTop !== 600) throw new Error(`a notch over the rail moved the reader to ${stand.app.scrollTop}`);
-      if (!notch.prevented()) throw new Error('the notch it spent was left to the web view as well');
-    } finally {
-      stand.done();
-    }
-  });
-
-  // Over the page a notch at either end chains nowhere, because the window's own scroll is gone — so claiming it here is what the reader already sees rather than a stray gesture escaping to the web view.
-  check('the wheel stops the reader at the top and at the foot, and still claims the notch', () => {
-    const stand = railWheelStand();
-    try {
-      stand.app.scrollTop = 0;
-      const up = railWheel({ deltaY: -200 });
-      stand.handler(up);
-      if (stand.app.scrollTop !== 0) throw new Error(`a notch at the top took the reader to ${stand.app.scrollTop}`);
-      if (!up.prevented()) throw new Error('a notch at the top escaped to the web view');
-      stand.app.scrollTop = 10000;
-      const down = railWheel();
-      stand.handler(down);
-      if (stand.app.scrollTop !== 10000) throw new Error(`a notch at the foot took the reader to ${stand.app.scrollTop}`);
-      if (!down.prevented()) throw new Error('a notch at the foot escaped to the web view');
-    } finally {
-      stand.done();
-    }
-  });
-
-  // A zoom over the rail is the web view's exactly as it is over the page, and a sideways trackpad gesture is nobody's here.
-  check('a held key or a sideways notch over the rail is left alone', () => {
-    const stand = railWheelStand();
-    try {
-      for (const changes of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { shiftKey: true }, { deltaY: 0, deltaX: 200 }]) {
-        stand.app.scrollTop = 400;
-        const ignored = railWheel(changes);
-        stand.handler(ignored);
-        if (stand.app.scrollTop !== 400) throw new Error(`an unclaimed wheel moved the reader to ${stand.app.scrollTop}`);
-        if (ignored.prevented()) throw new Error('an unclaimed wheel was taken off the web view anyway');
-      }
-    } finally {
-      stand.done();
-    }
-  });
-
-  // The column stands while the code view is up, where it holds no rail at all — and the same return covers the start screen. Claiming a notch there would take the wheel off a web view that is scrolling something of its own.
-  check('with no rail in the column the notch is left to the web view', () => {
-    const stand = railWheelStand();
-    stand.minimap.remove();
-    try {
-      stand.app.scrollTop = 400;
-      const notch = railWheel();
-      stand.handler(notch);
-      if (stand.app.scrollTop !== 400) throw new Error(`an empty column scrolled the reader to ${stand.app.scrollTop}`);
-      if (notch.prevented()) throw new Error('an empty column claimed the notch');
-    } finally {
-      stand.done();
-    }
-  });
-
-  // A drag holds the box against the pointer and writes the scroll itself; a notch landing mid-drag would fight it for the same value.
-  check('a notch while the box is being dragged changes nothing', () => {
-    const stand = railWheelStand();
-    try {
-      vm.runInContext('minimapDragging = true;', booted);
-      stand.app.scrollTop = 400;
-      const notch = railWheel();
-      stand.handler(notch);
-      if (stand.app.scrollTop !== 400) throw new Error(`a notch mid-drag moved the reader to ${stand.app.scrollTop}`);
-      if (notch.prevented()) throw new Error('a notch mid-drag was claimed');
-    } finally {
-      stand.done();
-    }
-  });
-
-  // This host reports pixels, so raw arithmetic would ship correct here and move the reader three pixels a notch in a browser reporting lines — the same fault in a thinner shape.
-  check('a notch counted in lines or in pages moves further than its raw number', () => {
-    const stand = railWheelStand();
-    try {
-      stand.app.style.setProperty('line-height', '40px');
-      stand.app.scrollTop = 0;
-      stand.handler(railWheel({ deltaY: 3, deltaMode: 1 }));
-      if (stand.app.scrollTop !== 120) throw new Error(`three lines moved the reader ${stand.app.scrollTop}`);
-      stand.app.scrollTop = 0;
-      stand.handler(railWheel({ deltaY: 2, deltaMode: 2 }));
-      if (stand.app.scrollTop !== 1600) throw new Error(`two pages moved the reader ${stand.app.scrollTop}`);
-    } finally {
-      stand.app.style.removeProperty('line-height');
-      stand.done();
-    }
-  });
-
-  // Re-measuring per notch forces a fresh layout of the whole document — ~400ms on a large glossary, the wheel taking two seconds to answer. Scrolling cannot change that geometry, so the scroll path's cache is what the range comes from.
-  check('the wheel takes its range from the cached rail metrics rather than measuring again', () => {
-    const stand = railWheelStand();
-    try {
-      stand.app.scrollTop = 0;
-      for (let i = 0; i < 5; i += 1) stand.handler(railWheel());
-      if (stand.app.scrollTop !== 1000) throw new Error(`five notches moved the reader ${stand.app.scrollTop}`);
-      if (stand.measured.count !== 1) throw new Error(`five notches measured the document ${stand.measured.count} times`);
-    } finally {
-      stand.done();
-    }
-  });
-
-  // The fault was the rail standing outside the box that scrolls, so a notch looking up its ancestors found nothing. The listener has to be on that outside element, and it has to be able to claim the notch.
-  check('the wheel listener is bound to the rail column, which stands outside the scroller', () => {
+  // The whole of the fault: a real notch at the rail landed the right distance in one jump, because the page wrote the reader's new position itself — the only place in the app that moved the reader rather than asking the web view to. Nothing may claim that notch now, or whatever curve the web view gives the page is taken off it again.
+  check('no listener claims a notch over the rail', () => {
+    const rail = booted.document.getElementById('readerMinimap');
+    if ((rail.listeners.get('wheel') || []).length) throw new Error('something still claims a wheel over the rail, so the notch is not the web view\u2019s');
     const fragment = readFileSync(join(root, 'src/assets/shell/minimap.js'), 'utf8');
-    const opened = fragment.indexOf("readerMinimap.addEventListener('wheel',");
-    if (opened < 0) throw new Error('the wheel is no longer listened for on the rail column itself');
-    if (!/\{ passive: false \}\);/.test(fragment.slice(opened))) throw new Error('the rail wheel listener is passive, so it cannot claim a notch');
-    const page = pageMarkup();
-    const from = page.indexOf('<main id="app"');
-    const to = page.indexOf('</main>', from);
-    if (from < 0 || to < 0) throw new Error('the reading view is not a <main id="app"> any more');
-    if (page.slice(from, to).includes('readerMinimap')) throw new Error('the rail moved inside the scroller, so the notch it answers would have chained there anyway');
+    if (/deltaMode/.test(fragment)) throw new Error('the notch conversion outlived the handler, so something is still counting a wheel');
+    const css = readFileSync(join(root, 'src/assets/reading/library.css'), 'utf8');
+    const opened = css.indexOf('.reader-minimap {');
+    if (opened < 0) throw new Error('the rail column has no rule of its own');
+    const rule = css.slice(opened, css.indexOf('}', opened));
+    if (!/overflow-y:\s*auto/.test(rule)) throw new Error('the rail column does not scroll, so a notch over it has nothing to move');
+    if (!/scrollbar-width:\s*none/.test(rule)) throw new Error('the column would draw a bar saying what the rail already says');
+    if (!/\.reader-minimap::-webkit-scrollbar\s*\{[^}]*width:\s*0/.test(css)) throw new Error('the column draws a bar in the web view it actually runs in');
+    if (!/\.reader-minimap\.is-scroll-held\s*\{[^}]*overflow-y:\s*hidden/.test(css)) throw new Error('a drag on the box cannot take the column\u2019s scroll away');
+    // The travel is the spacer's alone: pinned to the top of the column, the rail's own parts stay where the click jump and the box drag read them.
+    const railCss = readFileSync(join(root, 'src/assets/reading/minimap.css'), 'utf8');
+    const opensPin = railCss.indexOf('.document-minimap {');
+    const pinned = railCss.slice(opensPin, railCss.indexOf('}', opensPin));
+    if (!/position:\s*sticky/.test(pinned) || !/top:\s*var\(--app-bar-height\)/.test(pinned)) throw new Error('the rail rides the column\u2019s scroll instead of staying pinned to the top of it');
+  });
+
+  // A notch over the rail has to carry the page exactly what the same notch carries it over the page, which is the one thing the handler this replaces already got right. A column that travels a different distance than the reader spends every notch at a different rate.
+  check('the rail\u2019s column travels exactly as far as the reader does', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      if (stand.travel() !== 16320 - 787) throw new Error(`the reader can travel ${16320 - 787} and the column ${stand.travel()}`);
+      // Computed and trusted rather than read back, the spacer would be the reader's whole range and the column would outrun it by what the rail itself stands in.
+      if (stand.spacer.style.height === `${16320 - 787}px`) throw new Error('the spacer was written straight from the reader\u2019s range, so the column outruns it');
+    } finally {
+      stand.done();
+    }
+  });
+
+  // The page's whole part in the gesture: the web view scrolls the column, and this carries that position onto the reader.
+  check('scrolling the rail\u2019s column carries the reader with it', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      stand.app.scrollTop = 1000;
+      stand.rail.scrollTop = 1400;
+      stand.columnScroll();
+      if (stand.app.scrollTop !== 1400) throw new Error(`the column moved to 1400 and the reader to ${stand.app.scrollTop}`);
+    } finally {
+      stand.done();
+    }
+  });
+
+  // A click on the rail, a drag on the box, the keyboard, a tab switch and a reflow re-pin all move the reader without touching the column, and the next notch over the rail would jump the page back to wherever the column was left. The other half is what must not happen: the reader's own event answering a scroll the column started, and carrying the column back over it.
+  check('a jump the reader makes leaves the column where the reader now is', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      stand.app.scrollTop = 900;
+      stand.readerScroll();
+      if (stand.rail.scrollTop !== 900) throw new Error(`the reader jumped to 900 and the column stayed at ${stand.rail.scrollTop}`);
+      // A scroll event lands a frame after the write that caused it, so by the time the reader's arrives a gliding column has moved on twice. What the page holds is the position it last wrote, not a flag — a flag would be spent on the second of these, and the reader's event would then drag the column back to the first.
+      stand.rail.scrollTop = 2000;
+      stand.columnScroll();
+      stand.rail.scrollTop = 2200;
+      stand.columnScroll();
+      stand.readerScroll();
+      if (stand.rail.scrollTop !== 2200) throw new Error(`the reader\u2019s answer dragged the gliding column back to ${stand.rail.scrollTop}`);
+      if (stand.app.scrollTop !== 2200) throw new Error(`the column glided to 2200 and left the reader at ${stand.app.scrollTop}`);
+    } finally {
+      stand.done();
+    }
+  });
+
+  // The column stands while the code view is up, where it holds no rail at all — and the same case covers the start screen and a document short enough to need no scrolling. No travel there, so the notch is the web view's to do nothing with, exactly as it is today.
+  check('an empty column is left to the web view', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      if (!stand.travel()) throw new Error('the column had no travel to lose');
+      // A document that fits the window.
+      stand.setReader(600, 787);
+      if (stand.travel()) throw new Error(`a reader that cannot scroll left the column ${stand.travel()} to travel`);
+      // No rail at all: the code view, and the start screen.
+      booted.setMinimapMarkup('');
+      if (stand.rail.querySelector('.reader-minimap-spacer')) throw new Error('an empty column kept the travel the rail gave it');
+    } finally {
+      stand.done();
+    }
+  });
+
+  // A drag holds the box against the pointer and writes the reader's position itself; a notch landing mid-drag would fight it for the same value. The shipped handler refused the notch, and the column refuses to scroll at all — the same fact one layer down.
+  check('a drag on the box still owns the scroll', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      const track = stand.rail.querySelector('.document-minimap-track');
+      booted.bindDocumentMinimap();
+      const pointer = () => ({ button: 0, pointerId: 7, clientY: 100, preventDefault() {} });
+      for (const handler of track.listeners.get('pointerdown') || []) handler(pointer());
+      if (!stand.rail.classList.contains('is-scroll-held')) throw new Error('the column can still be scrolled while the box is held');
+      stand.app.scrollTop = 5000;
+      for (const handler of track.listeners.get('pointerup') || []) handler(pointer());
+      if (stand.rail.classList.contains('is-scroll-held')) throw new Error('the column never got its scroll back after the drag');
+      if (stand.rail.scrollTop !== 5000) throw new Error(`the drag left the reader at 5000 and the column at ${stand.rail.scrollTop}`);
+    } finally {
+      stand.done();
+    }
+  });
+
+  // The travel is the document's height, so it has to follow it — a diagram pass, a details block opening, an image landing, a window resize. Everything that can change it already drops the rail's cached geometry, so that is the one place it is asked for rather than a second list of the same triggers to keep in step.
+  check('a taller document lengthens the column\u2019s travel', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      if (stand.travel() !== 16320 - 787) throw new Error(`the column travels ${stand.travel()}`);
+      stand.setReader(40000, 787);
+      if (stand.travel() !== 40000 - 787) throw new Error(`the document grew and the column travels ${stand.travel()}`);
+      stand.setReader(4000, 787);
+      if (stand.travel() !== 4000 - 787) throw new Error(`the document shrank and the column travels ${stand.travel()}`);
+    } finally {
+      stand.done();
+    }
   });
 }

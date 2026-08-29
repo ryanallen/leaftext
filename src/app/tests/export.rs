@@ -999,10 +999,10 @@ fn an_exported_page_copies_each_picture_once_and_never_over_one_already_there() 
         "a picture off the network was rewritten: {page}"
     );
     assert!(
-        fs::read_to_string(out.join("assets/app.css"))
+        fs::read_to_string(out.join(exported_page_stylesheet("moss")))
             .expect("the stylesheet is written")
             .contains(".app-surface"),
-        "the whole reading stylesheet travels beside the page"
+        "the reading stylesheet travels beside the page"
     );
 
     // A second document into the same folder, whose picture has the same name and is a different file. Overwriting would silently replace a picture belonging to a page somebody exported yesterday.
@@ -1621,4 +1621,75 @@ fn a_jpeg_picture_is_copied_under_either_spelling_and_a_conversion_is_what_the_p
     );
 
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Two pages exported into one folder under themes wearing different drawings keep both sets, because the sheet is named after the pack rather than fixed.
+///
+/// The `assets` folder beside the page is shared — that is what lets the pictures be shared — so a single stylesheet name would have the second export write over the first, and the page written yesterday would come back wearing today's drawings. Written as two real exports through the real writer, because the name the page links and the name the folder holds are decided in two different files and the fault is exactly them disagreeing.
+#[test]
+fn two_pages_exported_into_one_folder_each_keep_the_drawings_their_theme_wears() {
+    use crate::app::fileops::{write_exported_page, PageHtmlExport};
+    // Only this test asks which packs the sheet holds, so the two names come in here rather than into the binary's own imports.
+    use leaftext::{icon_pack_for_theme, icon_packs};
+
+    let out = scratch_dir("exported-page-packs");
+    fs::create_dir_all(&out).expect("the folder is made");
+
+    // Sage wears the app's own drawings and Amaranth an outside pack, so the two sheets are the case this exists for.
+    let export = |theme: &str| PageHtmlExport {
+        markup: format!("<div class=\"app-surface\">{theme}</div>"),
+        sheet: String::new(),
+        theme: theme.to_string(),
+        appearance: "light".to_string(),
+        title: theme.to_string(),
+    };
+    for theme in ["sage", "amaranth"] {
+        write_exported_page(&out.join(format!("{theme}.html")), &export(theme), None)
+            .expect("the page is written");
+    }
+
+    let sage = exported_page_stylesheet("sage");
+    let amaranth = exported_page_stylesheet("amaranth");
+    assert_ne!(sage, amaranth, "two packs shared one file name");
+
+    // Both sheets are still there: the second export wrote beside the first rather than over it.
+    let sage_css = fs::read_to_string(out.join(&sage)).expect("the sage sheet survives");
+    let amaranth_css =
+        fs::read_to_string(out.join(&amaranth)).expect("the amaranth sheet is written");
+
+    // Each page links its own, off the same helper the writer used.
+    for (theme, sheet) in [("sage", &sage), ("amaranth", &amaranth)] {
+        let page =
+            fs::read_to_string(out.join(format!("{theme}.html"))).expect("the page reads back");
+        assert!(
+            page.contains(&format!("<link rel=\"stylesheet\" href=\"{sheet}\">")),
+            "the {theme} page names a sheet the folder does not hold: {page}"
+        );
+    }
+
+    let block_of = |pack: &str| format!("/* The {pack} pack,");
+    for (theme, css) in [("sage", &sage_css), ("amaranth", &amaranth_css)] {
+        // Only the packs come out. A rule missed is a page that looks wrong in a way nobody sees coming, so everything else stays whole.
+        assert!(
+            css.contains(".app-surface"),
+            "the {theme} sheet lost the reading rules"
+        );
+        assert!(
+            css.contains("--lt-icon-back:"),
+            "the {theme} sheet lost the drawings the root declares"
+        );
+        let wanted = icon_pack_for_theme(theme);
+        for pack in icon_packs() {
+            let carried = css.contains(&block_of(pack));
+            assert_eq!(
+                carried,
+                pack == wanted,
+                "the {theme} sheet {} the {pack} block",
+                match carried {
+                    true => "carries",
+                    false => "is missing",
+                }
+            );
+        }
+    }
 }

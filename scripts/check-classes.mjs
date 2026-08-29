@@ -20,12 +20,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parts } from './reading-css.mjs';
+import { ruleParts } from './reading-css.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // A comment mentioning `block-controls.js` is not a class. Blank the comments, keeping each line's length so the line numbers still point at the right place. Each part of the stylesheet is read on its own, so a hit names the file a reader opens rather than a line in the concatenation.
-const code = parts().flatMap(({ path, css }) => {
+const code = ruleParts().flatMap(({ path, css }) => {
   let inComment = false;
   return css.split('\n').map((line, index) => {
     let text = line;

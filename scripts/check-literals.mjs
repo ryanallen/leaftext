@@ -22,12 +22,12 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parts } from './reading-css.mjs';
+import { ruleParts } from './reading-css.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // The stylesheet is served as ordered parts. Each one is scanned on its own so a hit names the file a reader opens, with that file's own line number.
-const stylesheet = parts();
+const stylesheet = ruleParts();
 
 // Comments and @media conditions are not declarations.
 function strip(source) {
