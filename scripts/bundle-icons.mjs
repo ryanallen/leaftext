@@ -12,7 +12,7 @@
 //
 // The row's Stroke cell is the line weight, and it is stamped over whatever the file draws at. A drawing arrives carrying its tool's number; left alone those drift, and this set had reached seven weights before the column existed.
 //
-// The row's Source cell is the pack the drawing came from, and a pack named there has to have its license notice beside the drawings. The box is the weight's, not the drawing's: a weight only means a thickness once you know how many units across the drawing is, so a 32-unit drawing taking the regular weight comes out at three quarters of everything beside it.
+// The row's Source cell is the pack the drawing came from, and a pack named there has to have its license notice beside the drawings. The box beside a weight is the box that number was set for, and a drawing in a wider box is scaled up to it: a weight only means a thickness once you know how many units across the drawing is, so left alone a 32-unit drawing taking the regular weight comes out at three quarters of everything beside it.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -190,6 +190,13 @@ const head = [
 // Every stroke in a drawing, set to one weight. The row decides; the number a file happens to carry is only a note, and the check below holds the two together.
 const STROKE_WIDTH = /stroke-width=(['"])[\d.]+\1/g;
 const atWeight = (svg, value) => svg.replace(STROKE_WIDTH, `stroke-width="${value}"`);
+// The weight a drawing actually takes. A number in the Stroke table is a thickness only alongside the box it was set for, so the same number in a wider box draws a thinner line: the window's hairline is 1 in 12 units, and a pack's 24-unit drawing took that 1 and came out at half the app's own line. The same box, or either box unknown, hands the row's own characters straight back, so an unchanged drawing compiles byte for byte.
+function weightInBox(value, setFor, drawnIn) {
+  if (!value || !setFor || !drawnIn || setFor === drawnIn) return value;
+  return String(Number(((Number(value) * Number(drawnIn)) / Number(setFor)).toFixed(4)));
+}
+// The box a pack's drawing is actually in: its own pack's, or the box of the pack a borrow names, which is the lookup the box check already makes.
+const boxDrawnIn = (pack, from) => (PACKS.get(from) || PACKS.get(pack)).box;
 // What a drawing is once the `<svg>` wrapper is off it: the body an icon set carries, sized by the viewBox it was drawn in. `currentColor` is left alone, so the icon takes the ink of the diagram it lands in rather than a color of its own.
 const VIEWBOX = /viewBox="0 0 ([\d.]+) ([\d.]+)"/;
 const OUTER_SVG = /^[\s\S]*?<svg\b[^>]*>([\s\S]*)<\/svg>\s*$/;
@@ -241,6 +248,30 @@ if (check) {
   for (const [what, made, svg, notices_] of accepts) {
     const got = rowProblems(made, svg, notices_);
     if (got.length) fails.push(`${what} was refused: ${got.join(' ')}`);
+  }
+
+  // The scale, on made-up weights and boxes. The accepted cases are the point of this one: the same hairline row has to land at 1 in the box it was set for and at 2 in a pack drawing twice as wide, and every regular row has to come out where it already is or sixty drawings move.
+  const scales = [
+    ['a hairline row on a 24-unit pack drawing', ['1', '12', '24'], '2'],
+    ['a hairline row on the 12-unit drawing it was set for', ['1', '12', '12'], '1'],
+    ['a regular row on a 24-unit drawing', ['1.5', '24', '24'], '1.5'],
+    ['a heavy row on a 12-unit drawing', ['2.25', '24', '12'], '1.125'],
+    ['a hairline row on a 256-unit drawing', ['1', '12', '256'], '21.3333'],
+    ['a strokeless row, held to no box at all', [null, null, null], null],
+  ];
+  for (const [what, [value, setFor, drawnIn], wanted] of scales) {
+    const got = weightInBox(value, setFor, drawnIn);
+    if (got !== wanted) fails.push(`${what} was stamped at ${got}, not ${wanted}`);
+  }
+  // Which box a drawing is measured in. A borrowed one arrives in the lending pack box, so it is scaled against that rather than against the box of the pack wearing it — the same lookup the box refusals above make.
+  const measured = [
+    ['a drawing borrowed from the 256-unit pack', ['feather', 'phosphor'], '256'],
+    ['a drawing a pack made for itself', ['feather', 'feather'], '24'],
+    ['a borrow naming a pack the table does not carry', ['feather', 'nobody'], '24'],
+  ];
+  for (const [what, [pack, from], wanted] of measured) {
+    const got = boxDrawnIn(pack, from);
+    if (got !== wanted) fails.push(`${what} was measured in a ${got}-unit box, not a ${wanted}-unit one`);
   }
 
   // The pack rules, proved the same way and on the same made-up shapes. A pack is where an outside set's box and stroke stop being the weight table's business, so the refusals are what stop a folder of drawings nobody declared compiling into a theme.
@@ -389,6 +420,7 @@ for (const row of rows) {
     problems.push(`src/assets/${file} draws ${off}, but design/icons.md gives ${name} the ${stroke} stroke (${wanted})`);
     continue;
   }
+  // No scale here: one of the app's own drawings is refused unless it sits in the box its weight was set for.
   const stamped = wanted ? atWeight(raw, wanted) : raw;
   const uri = `url("data:image/svg+xml,${encode(stamped)}")`;
   masks.push({ label: `${name} (${file})`, uri });
@@ -399,7 +431,9 @@ for (const row of rows) {
   else set.push(entry);
   drawn += 1;
   if (!wantsHeavy) continue;
-  const bolder = `url("data:image/svg+xml,${encode(atWeight(raw, WEIGHTS.get('heavy')))}")`;
+  // Heavy is set for a 24-unit box, and the row being drawn may not be in one, so the second mask is scaled the same way a pack's drawing is.
+  const heavier = weightInBox(WEIGHTS.get('heavy'), BOXES.get('heavy'), BOXES.get(stroke));
+  const bolder = `url("data:image/svg+xml,${encode(atWeight(raw, heavier))}")`;
   masks.push({ label: `${name} heavy (${file})`, uri: bolder });
   heavy.push(`  --lt-icon-${name}-heavy: ${bolder};`);
 }
@@ -417,9 +451,10 @@ for (const pack of outsidePacks()) {
     const svg = drawings.get(row.name);
     // A pack with no file for this job declares nothing, so the root value stands and the reader sees the drawing they already know. That is the fallback, and it is a value left alone rather than a value written.
     if (!svg) { uncovered.push(`${pack} has no ${row.name}, so it keeps ${row.file}`); continue; }
-    // The icon row's weight, stamped only where the drawing has strokes to stamp: a filled glyph inside a stroked pack, and every drawing of a filled pack, take none.
+    // The icon row's weight, scaled to the box this drawing is in and stamped only where there are strokes to stamp: a filled glyph inside a stroked pack, and every drawing of a filled pack, take none. A borrowed drawing arrives in the lending pack's box, so the box comes off the same lookup the box check makes rather than off the pack wearing it.
     const wanted = WEIGHTS.get(row.stroke);
-    const stamped = wanted && STROKE_WIDTH.test(svg) ? atWeight(svg, wanted) : svg;
+    const drawnIn = boxDrawnIn(pack, drewIt(pack, row.name));
+    const stamped = wanted && STROKE_WIDTH.test(svg) ? atWeight(svg, weightInBox(wanted, BOXES.get(row.stroke), drawnIn)) : svg;
     STROKE_WIDTH.lastIndex = 0;
     covers.push(`  --lt-icon-${row.name}: url("data:image/svg+xml,${encode(stamped)}");`);
   }

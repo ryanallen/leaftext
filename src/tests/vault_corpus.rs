@@ -161,6 +161,57 @@ fn a_vault_whose_notes_live_under_a_dotted_folder_still_reads_them() {
     fs::remove_dir_all(&root).ok();
 }
 
+#[test]
+fn a_vault_rooted_at_a_path_with_forward_slashes_reads_its_subfolders() {
+    let root = corpus_dir("forward-slash-root");
+    write(&root.join("top.md"), "# Top\n");
+    write(&root.join("notes/deep/bottom.md"), "# Bottom\n");
+    let forward_slashes = PathBuf::from(root.to_string_lossy().replace('\\', "/"));
+
+    let corpus = VaultCorpus::read(&forward_slashes);
+    let mut names: Vec<String> = corpus
+        .documents
+        .iter()
+        .map(|document| {
+            Path::new(&document.path)
+                .file_name()
+                .expect("document has a name")
+                .to_string_lossy()
+                .to_string()
+        })
+        .collect();
+    names.sort();
+    assert_eq!(names, vec!["bottom.md".to_string(), "top.md".to_string()]);
+
+    fs::remove_dir_all(&root).ok();
+}
+
+#[test]
+fn a_real_junction_is_not_followed_by_the_vault_walk() {
+    let dir = corpus_dir("junction");
+    let root = dir.join("vault");
+    let elsewhere = dir.join("elsewhere");
+    write(&root.join("keep.md"), "# Keep\n");
+    write(&elsewhere.join("linked.md"), "# Linked\n");
+    link_dir(&root.join("shortcut"), &elsewhere);
+
+    let corpus = VaultCorpus::read(&root);
+    let names: Vec<String> = corpus
+        .documents
+        .iter()
+        .map(|document| {
+            Path::new(&document.path)
+                .file_name()
+                .expect("document has a name")
+                .to_string_lossy()
+                .to_string()
+        })
+        .collect();
+    assert_eq!(names, vec!["keep.md".to_string()]);
+
+    fs::remove_dir_all(&dir).ok();
+}
+
 /// A vault that quietly reads three quarters of itself is worse than one that reads all of it slowly, so the read says what it did not go into — named from the root down, since four folders called `target` would otherwise read as one.
 #[test]
 fn a_read_says_which_folders_it_did_not_go_into() {

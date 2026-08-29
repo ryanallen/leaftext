@@ -162,6 +162,7 @@ pub(super) fn io_path(path: &Path) -> PathBuf {
     let bytes = text.as_bytes();
     // Drive-absolute like `C:\...`.
     if bytes.len() >= 2 && bytes[1] == b':' {
+        let text = text.replace('/', r"\");
         return PathBuf::from(format!(r"\\?\{text}"));
     }
     path.to_path_buf()

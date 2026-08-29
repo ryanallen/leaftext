@@ -129,24 +129,6 @@ fn a_folder_of_cursor_rules_lists_them_beside_an_ordinary_note() {
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
 
-fn link_dir(link: &Path, target: &Path) {
-    #[cfg(windows)]
-    {
-        let made = std::process::Command::new("cmd")
-            .args(["/C", "mklink", "/J"])
-            .arg(link)
-            .arg(target)
-            .output()
-            .expect("mklink runs");
-        assert!(
-            made.status.success(),
-            "a junction is made without elevation"
-        );
-    }
-    #[cfg(not(windows))]
-    std::os::unix::fs::symlink(target, link).expect("symlink created");
-}
-
 #[test]
 fn every_folder_is_listed_even_the_ones_the_pane_used_to_throw_away() {
     let dir = tree_dir("hidden");

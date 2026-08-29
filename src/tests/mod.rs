@@ -347,6 +347,24 @@ pub(crate) fn scratch_dir(label: &str) -> PathBuf {
     dir
 }
 
+pub(crate) fn link_dir(link: &Path, target: &Path) {
+    #[cfg(windows)]
+    {
+        let made = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .output()
+            .expect("mklink runs");
+        assert!(
+            made.status.success(),
+            "a junction is made without elevation"
+        );
+    }
+    #[cfg(not(windows))]
+    std::os::unix::fs::symlink(target, link).expect("symlink created");
+}
+
 #[test]
 fn a_scratch_folder_is_named_for_its_test_and_for_the_run_that_asked_for_it() {
     // Handed in rather than written into the call, so the check that refuses one word twice reads only real call sites.

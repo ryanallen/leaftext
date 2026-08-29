@@ -12,7 +12,7 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 
 **The row sets the line weight, not the drawing.** A `.svg` arrives from wherever it was drawn carrying whatever number that tool wrote, and left alone those numbers drift — this set reached seven of them, so a new button in the app bar could sit beside an old one at half again the weight. `bundle-icons` stamps the row's weight over every stroke in the file, so what the drawing says is only a note, and the check fails when the two disagree.
 
-**A weight is only a thickness once you know how many units the drawing is across**, so `Box` is the drawing a weight was set for and the check refuses one in any other — a strokeless row is held to no box, which is how the leaf stays at 64 and the drag grip at 24.
+**A weight is only a thickness once you know how many units the drawing is across**, so `Box` is the box the value beside it was set for. A drawing in a wider box is scaled up to match rather than left thin — the same 1 in 24 units is half the line it is in 12, so `bundle-icons` stamps 2 there and the reader gets the weight this row asked for whichever set drew it. The app's own drawings are still refused outside their weight's box, so the scale only ever moves an outside pack's; a strokeless row is held to no box at all, which is how the leaf stays at 64 and the drag grip at 24.
 
 | Weight | Value | Box | Where |
 | --- | --- | --- | --- |
@@ -25,7 +25,7 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 
 **A pack is a whole set of drawings a theme family can wear**, and `leaftext` is one of them: the mixed set below is this app's own pack, a permanent choice a family can name, and the fallback every outside pack uses where it has no drawing for the same job. An outside pack's drawings sit in `src/assets/icon-packs/<pack>/`, one file per icon name in the table below rather than per whatever that pack called it, so six packs shipping their own `arrow-left.svg` never collide.
 
-**The box and the stroke are the pack's, not the weight's.** The Stroke table above is one number per weight and refuses a drawing in any other box, which is right for drawings composed here and wrong for six outside sets: Phosphor draws in a 256-unit box and Remix fills rather than strokes, so either would be refused whole. A pack row says which box its drawings are in and whether they carry strokes; a filled pack takes no weight at all, and a stroked one still takes the icon row's weight so an outside drawing sits at the same line weight as everything beside it.
+**The box and the stroke are the pack's, not the weight's.** The Stroke table above is one number per weight and refuses a drawing in any other box, which is right for drawings composed here and wrong for six outside sets: Phosphor draws in a 256-unit box and Remix fills rather than strokes, so either would be refused whole. A pack row says which box its drawings are in and whether they carry strokes; a filled pack takes no weight at all, and a stroked one takes the icon row's weight scaled to that box, so an outside drawing sits at the same line weight as everything beside it rather than at the same number. A drawing borrowed from another pack is scaled against the box of the pack that drew it.
 
 **A pack that is not `leaftext` owes a license notice** beside the drawings, exactly as a row's `Source` does.
 

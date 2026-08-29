@@ -6,6 +6,27 @@ fn unique_dir(tag: &str) -> PathBuf {
     crate::tests::scratch_dir(&format!("store-{tag}"))
 }
 
+#[cfg(windows)]
+#[test]
+fn io_path_respells_a_drive_absolute_path_before_adding_the_verbatim_prefix() {
+    assert_eq!(
+        io_path(Path::new("C:/vault/notes")),
+        PathBuf::from(r"\\?\C:\vault\notes")
+    );
+    assert_eq!(
+        io_path(Path::new(r"\\?\C:/vault/notes")),
+        PathBuf::from(r"\\?\C:/vault/notes")
+    );
+    assert_eq!(
+        io_path(Path::new(r"\\server/share/notes")),
+        PathBuf::from(r"\\server/share/notes")
+    );
+    assert_eq!(
+        io_path(Path::new("notes/deep")),
+        PathBuf::from("notes/deep")
+    );
+}
+
 fn table_exists(conn: &Connection, table: &str) -> bool {
     conn.query_row(
         "SELECT COUNT(*) FROM sqlite_master WHERE name = ?1",
