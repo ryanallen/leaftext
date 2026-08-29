@@ -982,7 +982,7 @@ fn plist_strings(entry: &str, key: &str) -> Vec<String> {
     values
 }
 
-/// Cursor's `.mdc` cannot ride in the Markdown entry. Launch Services ignores an entry's extension list whenever that entry also names a content type, and the Markdown type covers `.md` and `.markdown` — never Cursor's spelling — so an `.mdc` written there is claimed by nothing at all and a rule sits in the Finder as a blank page with leaftext absent from Open With. It gets an entry of its own naming extensions and no type, the shape the email entry already uses for a spelling with no type to import. Read as structure rather than searched, because the fault this replaces was exactly an extension sitting in the file where nothing read it.
+/// Cursor's `.mdc` cannot ride in the Markdown entry. Launch Services ignores an entry's extension list whenever that entry also names a content type, and the Markdown type covers `.md` and `.markdown` — never Cursor's spelling — so an `.mdc` written there is claimed by nothing at all and a rule sits in the Finder as a blank page with leaftext absent from Open With. It gets an entry of its own naming extensions and no type, the shape the email entry already uses for a spelling with no type to import. Read as structure rather than searched: an extension sitting in the file where nothing reads it is exactly this fault, so a text search passes on the broken shape.
 #[test]
 fn a_cursor_rule_is_claimed_by_extension_rather_than_by_a_type_that_omits_it() {
     let entries = macos_document_type_entries();
