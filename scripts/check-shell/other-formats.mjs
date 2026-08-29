@@ -560,6 +560,144 @@ ${run}
     }
   });
 
+  check('a lone XML attribute opens on its value while the blank row opens the tag', () => {
+    const { bindEditableBlocks } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source = '<feed>\n<category term="news"/>\n</feed>\n';
+    const element = '<category term="news"/>';
+    const at = source.indexOf(element);
+    const field = fakeElement('field');
+    field.tagName = 'DD';
+    field.dataset = { blockKind: 'paragraph', srcStart: String(at), srcEnd: String(at + element.length) };
+    const value = fakeElement('news');
+    value.tagName = 'SPAN';
+    const valueAt = source.indexOf('"news"') + 1;
+    value.dataset = { valueStart: String(valueAt), valueEnd: String(valueAt + 'news'.length) };
+    value.textContent = 'news';
+    value.contains = (node) => node === value;
+    field.appendChild(value);
+    const nodes = [field, value];
+    const body = { querySelectorAll: (selector) => nodes.filter((one) => one.matches(selector)) };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const wasSelection = booted.getSelection;
+    const wasRange = booted.document.createRange;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      bindEditableBlocks('xml');
+
+      if (!value.__innerSpan || source.slice(value.__innerSpan.start, value.__innerSpan.end) !== 'news') {
+        throw new Error('the lone value did not open on its quoted bytes');
+      }
+      const range = { startContainer: value, endContainer: value, startOffset: 0, endOffset: 0 };
+      booted.getSelection = () => ({
+        rangeCount: 1,
+        getRangeAt: () => range,
+        removeAllRanges: () => {},
+        addRange: () => {},
+      });
+      booted.document.createRange = () => ({
+        selectNodeContents: () => {},
+        setStart: () => {},
+        setEnd: () => {},
+        collapse: () => {},
+        cloneContents: () => ({ textContent: '' }),
+      });
+      value.listeners.get('pointerup')[0]({ button: 0, target: value });
+      if (value.getAttribute('contenteditable') !== 'true') throw new Error('pressing the lone value did not open a caret');
+
+      const press = field.listeners.get('pointerdown')[0];
+      press({ button: 0, target: field, preventDefault: () => {} });
+      if (field.dataset.editingSource !== 'true') throw new Error('pressing the blank row no longer opened the whole tag');
+    } finally {
+      booted.getSelection = wasSelection;
+      booted.document.createRange = wasRange;
+      inApp.querySelector = wasQuery;
+      read(`currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`);
+    }
+  });
+
+  check('an unlocked ranged XML link edits while other link gestures keep their jobs', () => {
+    const { bindEditableBlocks, wireMarkdownEditable } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source = '<feed>\n<link href="https://leaftext.com/"/>\n</feed>\n';
+    const field = fakeElement('field');
+    field.tagName = 'DD';
+    const element = '<link href="https://leaftext.com/"/>';
+    const at = source.indexOf(element);
+    field.dataset = { blockKind: 'paragraph', srcStart: String(at), srcEnd: String(at + element.length) };
+    const value = fakeElement('value');
+    value.tagName = 'SPAN';
+    const valueAt = source.indexOf('https://leaftext.com/');
+    value.dataset = { valueStart: String(valueAt), valueEnd: String(valueAt + 'https://leaftext.com/'.length) };
+    value.textContent = 'https://leaftext.com/';
+    const link = fakeElement('link');
+    link.tagName = 'A';
+    link.setAttribute('href', 'https://leaftext.com/');
+    value.appendChild(link);
+    value.contains = (node) => node === value || node === link;
+    field.appendChild(value);
+    const nodes = [field, value];
+    const body = { querySelectorAll: (selector) => nodes.filter((one) => one.matches(selector)) };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const wasSelection = booted.getSelection;
+    const wasRange = booted.document.createRange;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    try {
+      if (value.listeners.size) throw new Error('a locked ranged link already answered as an editor');
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      bindEditableBlocks('xml');
+      if (!value.__innerSpan || source.slice(value.__innerSpan.start, value.__innerSpan.end) !== 'https://leaftext.com/') {
+        throw new Error('the linked lone value did not open on its quoted bytes');
+      }
+      const range = { startContainer: value, endContainer: value, startOffset: 0, endOffset: 0 };
+      booted.getSelection = () => ({
+        rangeCount: 1,
+        getRangeAt: () => range,
+        removeAllRanges: () => {},
+        addRange: () => {},
+      });
+      booted.document.createRange = () => ({
+        selectNodeContents: () => {},
+        setStart: () => {},
+        setEnd: () => {},
+        collapse: () => {},
+        cloneContents: () => ({ textContent: '' }),
+      });
+
+      let downStopped = false;
+      value.listeners.get('mousedown')[0]({ button: 0, target: link, preventDefault: () => { downStopped = true; } });
+      if (downStopped) throw new Error('the ranged link kept the navigation-only mousedown');
+      value.listeners.get('pointerup')[0]({ button: 0, target: link });
+      if (value.getAttribute('contenteditable') !== 'true') throw new Error('the ranged link did not open for typing');
+      let clickStopped = false;
+      value.listeners.get('click')[0]({ button: 0, target: link, preventDefault: () => { clickStopped = true; } });
+      if (!clickStopped) throw new Error('the ranged link click still reached navigation');
+
+      let rightStopped = false;
+      value.listeners.get('mousedown')[0]({ button: 2, target: link, preventDefault: () => { rightStopped = true; } });
+      if (rightStopped) throw new Error('the ranged link swallowed the right-click menu');
+
+      const ordinary = fakeElement('ordinary');
+      const ordinaryLink = fakeElement('ordinary-link');
+      ordinaryLink.tagName = 'A';
+      ordinary.appendChild(ordinaryLink);
+      wireMarkdownEditable(ordinary);
+      let ordinaryStopped = false;
+      ordinary.listeners.get('mousedown')[0]({ button: 0, target: ordinaryLink, preventDefault: () => { ordinaryStopped = true; } });
+      if (!ordinaryStopped) throw new Error('a link outside a ranged value stopped navigating');
+    } finally {
+      booted.getSelection = wasSelection;
+      booted.document.createRange = wasRange;
+      inApp.querySelector = wasQuery;
+      read(`currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`);
+    }
+  });
+
   // A sitemap, a feed and a manifest put almost everything they say in attributes, so a table drawn from one is columns of values inside tags. Those cells carry the bytes between their quotes rather than a whole element, which is a different proof — and the point is that correcting one date leaves every other row of the file byte for byte where it was.
   check('a cell drawn from an attribute types on its own bytes and leaves every other row alone', () => {
     const { bindEditableBlocks, commitBlockEdit } = booted;

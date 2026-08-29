@@ -184,13 +184,15 @@ if (!exe) {
 }
 
 // A cargo that always fails, ahead of the real one on PATH: the launcher's refusal to fall through to the last build is the whole point of building, and nothing else can prove it without breaking the tree.
+//
+// It says which home folder it was run under before it fails, and the read below is the only thing holding the build outside the starved profile: Rust keeps its toolchain setting and its crate cache under %USERPROFILE%, which the probe profile points at a folder that has never held either.
 const failedBuildName = `driver-check-${process.pid}`;
 const failedBuildWork = join(tmpdir(), `leaftext-probe-${failedBuildName}`);
 const fakeCargoHome = join(tmpdir(), `leaftext-fake-cargo-${process.pid}`);
 rmSync(failedBuildWork, { recursive: true, force: true });
 rmSync(fakeCargoHome, { recursive: true, force: true });
 mkdirSync(fakeCargoHome, { recursive: true });
-writeFileSync(join(fakeCargoHome, 'cargo.cmd'), '@echo fake cargo failed 1>&2\r\n@exit /b 23\r\n');
+writeFileSync(join(fakeCargoHome, 'cargo.cmd'), '@echo leaf-build-home=%USERPROFILE%\r\n@echo fake cargo failed 1>&2\r\n@exit /b 23\r\n');
 const failedBuild = spawnSync(
   exe,
   ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', launcher, '-Work', failedBuildName],
@@ -203,6 +205,15 @@ if (failedBuild.status === 0 || !failedBuildText.includes('cargo build failed wi
 if (existsSync(join(failedBuildWork, 'leaftext.exe'))) {
   problems.push('the probe launcher copied or launched an executable after Cargo failed');
 }
+// Where the build ran, read off what the build saw rather than off the order some lines of text sit in. There is no third answer: either the home is the machine's own, or it is the throwaway one under the work folder and the profile was entered first.
+const buildHome = /^leaf-build-home=(.*)$/m.exec(failedBuildText)?.[1]?.trim();
+if (!buildHome) {
+  problems.push(`the probe launcher's build no longer says which home folder it ran under, so nothing holds it outside the starved profile:\n${failedBuildText}`);
+} else if (buildHome.toLowerCase().startsWith(failedBuildWork.toLowerCase())) {
+  problems.push(
+    `the probe launcher builds inside the throwaway profile, whose home folder at ${buildHome} has never held Rust - the build asks it which toolchain to use and the launch never happens. Build before Enter-LeafProfile.`
+  );
+}
 rmSync(failedBuildWork, { recursive: true, force: true });
 rmSync(fakeCargoHome, { recursive: true, force: true });
 
@@ -211,8 +222,9 @@ function inOrder(lines) {
   let at = -1;
   return lines.every((line) => (at = launcherRun.indexOf(line, at + 1)) >= 0);
 }
-if (!inOrder(['if (-not $Close -and (Test-LeafPipe $name))', '& cargo build', 'Copy-Item -LiteralPath $builtExe', 'Start-LeafOffScreen $Exe'])) {
-  problems.push('the probe open path is no longer same-name refusal, build, copy, launch');
+// The build is not named here: where it runs is read off the run above, and a text order that passes on a launcher that read refuses is the weaker of the two deciding when the tree turns red. These three print nothing a run could be read off.
+if (!inOrder(['if (-not $Close -and (Test-LeafPipe $name))', 'Copy-Item -LiteralPath $builtExe', 'Start-LeafOffScreen $Exe'])) {
+  problems.push('the probe open path is no longer same-name refusal, copy, launch');
 }
 if (!inOrder(['Send-LeafQuit', 'Wait-LeafPipe $name $false', 'Remove-Item -LiteralPath $privateExe'])) {
   problems.push('the probe close path is no longer quit, wait, remove');
@@ -560,5 +572,5 @@ for (const [what, pattern] of ATTACH) {
 
 if (problems.length) stop();
 console.log(
-  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways and closes it by asking too, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways and cancels exactly that box by its whole title in ${DISMISS.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, keeps the app's reply and the note naming which copy answered apart in ${READER.length} ways, and ${webSaid}`
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag and picks the copy built from this checkout, the shot profile starts empty in ${PROFILE.length} ways, one shared throwaway profile separates a copy in ${SHARED.length} ways for both launchers and was entered for real to read back a home folder with an empty Desktop under it, a documentation shot runs under a name of its own and closes only that copy by asking, the probe launcher leaves its copy up and addressable in ${LAUNCHER.length} ways, closes it by asking too, and was run against a cargo that fails to read back that it built outside the starved profile, under ${buildHome}, the photograph leaves a window nobody can see where it stands and drives it through the page's own gesture ask in ${OFF_SCREEN_SHOT.length} ways with every verb's route read back, puts no word onto its own return and says a driven window that closed in ${CLOSED_WINDOW.length} ways, refuses a key step under a box standing over that window in ${BOX_OVER.length} ways and cancels exactly that box by its whole title in ${DISMISS.length} ways, the one command behind both recipes keeps its pointer honest in ${WRAPPER.length} ways, the motion probe reads its element, trigger and property back and refuses a run missing one, keeps the app's reply and the note naming which copy answered apart in ${READER.length} ways, and ${webSaid}`
 );

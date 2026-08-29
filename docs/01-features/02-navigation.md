@@ -21,7 +21,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Export the page](#export-the-page) | Save the page you are reading as one continuous PDF, as a picture of the whole document, or as a web page with its stylesheet, its pictures and its [minimap](04-minimap.md#on-an-exported-page) in a folder beside it — every one of them in the theme on screen |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, the opening of a linked note, and a glossary term's whole entry |
-| [The pointer](#the-pointer) | The arrow stays the arrow over every control, and turns into the hand only over a link |
+| [The pointer](#the-pointer) | The hand means this goes somewhere — a link, a button written into a document, and the controls that carry you between documents; the arrow stays over the icons the app bar draws for itself and over anything you cannot press right now |
 | [What a control does under the pointer](#what-a-control-does-under-the-pointer) | The buttons at the top right, the file rows in the pane and a button written into a document answer with their color over the same beat, and with nothing else — none of them lifts, changes shape or moves |
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the page's own dot texture under the pointer |
@@ -307,7 +307,11 @@ A link naming something your machine would **run** rather than open — a progra
 
 ### The pointer
 
-The pointer keeps the arrow over everything you can press — buttons, tabs, menu rows, files in the [library](03-library.md#browsing) pane, the steps of the folder path, the window's own three dots. It turns into the hand only over a link in the document you are reading, so the shape says one thing: this goes somewhere else. Every other shape still does its own work — the caret over words you can [type in](07-editing.md#inline-editing-the-reading-view), the open hand over a block you can drag, the double arrow over a [column edge](01-rendering.md#tables) you can widen, the cross over a picture you are cropping.
+The shape under the pointer says one thing: the hand means this goes somewhere. You get it over a link in the document you are reading, over a [button written into one](01-rendering.md#buttons-leaf-extension), and over the controls that carry you between documents — the leaf, Back, Forward, a tab, a file or folder row in the [library](03-library.md#browsing) pane, a step of the folder path, the find bar's controls and the reader's own view buttons.
+
+The arrow says the opposite: nothing here leaves the page. It stays over any control you cannot press right now — Back on the first document of a session is the one you meet most — over the folder you are already standing in, over the icons the app bar draws for itself (the library toggle, themes, open, new document, export, and the window's own minimize, maximize and close), and over the two controls a document offers that are not links: a fold's summary line and a task checkbox. The [minimap](04-minimap.md) rail keeps it too, because it is dragged rather than followed.
+
+Every other shape still does its own work, because it describes a gesture rather than a promise — the caret over words you can [type in](07-editing.md#inline-editing-the-reading-view), the open hand over a block you can drag, the double arrow over the [library](03-library.md#browsing) pane's own edge and over the bar that splits a [diagram sheet](01-rendering.md#mermaid-diagrams), and the cross while you draw a connection in one.
 
 ### What a control does under the pointer
 

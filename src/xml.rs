@@ -650,9 +650,13 @@ fn value_html(node: Node) -> Option<String> {
         return Some(html);
     }
     match attributes.as_slice() {
-        // The element's own label already names a lone attribute's value: an Atom `<link href="…"/>` reads "Link: …", not "Link: Link: …". Nothing is composed around it, so it is drawn bare and the block it fills answers for it.
+        // The element's label already names a lone attribute, while the value keeps its own quoted bytes.
         [] => None,
-        [(_, only, _)] => Some(linkify(only)),
+        [(_, only, range)] => Some(format!(
+            "<span{}>{}</span>",
+            value_range_attrs(*range),
+            linkify(only)
+        )),
         several => Some(named(several)),
     }
 }

@@ -476,6 +476,7 @@ fn atom_link_attributes_stand_in_for_missing_text() {
     let xml = r#"<feed xmlns="http://www.w3.org/2005/Atom">
   <title>Example Feed</title>
   <link href="http://example.org/"/>
+  <category term="news" scheme="https://example.org/categories"/>
   <author><name>Ada</name><email>ada@example.org</email></author>
 </feed>"#;
 
@@ -485,11 +486,33 @@ fn atom_link_attributes_stand_in_for_missing_text() {
     assert_contains(&html, "<dt>Link</dt><dd data-block-id=");
     assert_contains(
         &html,
-        "<a href=\"http://example.org/\">http://example.org/</a></dd>",
+        "<a href=\"http://example.org/\">http://example.org/</a></span></dd>",
     );
     assert!(!html.contains("Link: <a"), "{html}");
+    let link_row = &html[html.find("<dt>Link</dt>").expect("the link row")..];
+    let link_row = &link_row[..link_row.find("</dd>").expect("the end of the link row")];
+    let span = &link_row[link_row
+        .find("<span data-value-start=")
+        .expect("the ranged link")..];
+    let span = &span[..span.find('>').expect("the end of the ranged link") + 1];
+    assert_eq!(
+        &xml[stamp_offset(span, "data-value-start=\"")..stamp_offset(span, "data-value-end=\"")],
+        "http://example.org/"
+    );
+    assert_contains(&html, "Term: <span data-value-start=");
+    assert_contains(&html, "</span>, Scheme: <span data-value-start=");
     // A section named by a `<name>` child is qualified by its tag, so a person's name doesn't read as a section title on its own.
     assert_contains(&html, ">Author: Ada</h2>");
+}
+
+#[test]
+fn a_lone_attribute_value_is_drawn_in_its_own_ranged_element() {
+    let xml = r#"<feed><category term="news"/></feed>"#;
+    let (_title, html) = render_xml_body(xml);
+
+    assert_contains(&html, "<dt>Category</dt><dd data-block-id=");
+    assert_contains(&html, "<span data-value-start=");
+    assert_contains(&html, ">news</span></dd>");
 }
 
 #[test]

@@ -1376,11 +1376,12 @@ function closeWysiwygBlock(el) {
 
 // Wire `el` as a live Markdown editor: keep the rendered styling, edit in place, commit on blur. Checkboxes stay non-editable islands; focus moving within the block neither resets the baseline nor commits.
 function wireMarkdownEditable(el) {
+  const editsLinkedValue = el.dataset && el.dataset.valueStart != null;
   // A link click is navigation, not "edit here": swallow the mousedown so the block never takes focus (the delegated click still navigates), and commit the block being edited first, since no focusout will fire.
   el.addEventListener('mousedown', (event) => {
     const target = event.target;
     if (!target || !target.closest) return;
-    if (target.closest('a')) {
+    if (target.closest('a') && !editsLinkedValue) {
       commitActiveEditingBlock();
       event.preventDefault();
     } else if (target.closest('input[type="checkbox"]')) {
@@ -1392,11 +1393,17 @@ function wireMarkdownEditable(el) {
   el.addEventListener('pointerup', (event) => {
     if (event.button !== 0 || blockIsEditingHost(el)) return;
     const target = event.target;
-    if (target && target.closest && target.closest('a, input[type="checkbox"]')) return;
+    if (target && target.closest && (target.closest('input[type="checkbox"]') || (target.closest('a') && !editsLinkedValue))) return;
     const span = selectionTextSpanIn(el);
     if (!span) return;
     openWysiwygBlock(el, span);
   });
+  // An unlocked ranged value owns its left click; the same link stays available from its menu.
+  if (editsLinkedValue) {
+    el.addEventListener('click', (event) => {
+      if (event.button === 0 && event.target && event.target.closest && event.target.closest('a')) event.preventDefault();
+    });
+  }
   el.addEventListener('focusin', () => {
     if (!el.__editingActive) {
       el.__editingActive = true;
