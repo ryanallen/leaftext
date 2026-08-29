@@ -211,13 +211,13 @@ function shapeProblems(text, tree) {
   }
 
   for (const row of rows) {
-    for (const problem of whyProblems(row)) say('why here', row.ticket ?? row.position, `position ${row.position}: ${problem}`);
+    for (const problem of whyProblems(row)) say('why', row.ticket ?? row.position, `position ${row.position}: ${problem}`);
   }
 
   return problems;
 }
 
-// The `Why here` cell says what makes this row belong in its tier, in the words of what a reader of the app meets. It once said where the row sat relative to its neighbors instead, and that column grew to nearly two thirds of the file: 153 cells averaging 352 characters, the longest 956.
+// The `Why` cell says what the app does wrong or cannot do yet, and what answers it, in the words of somebody using it — the ticket's own `## Why` in one sentence. It once argued the row's place in the ranking instead, and that column grew to nearly two thirds of the file: 153 cells averaging 352 characters, the longest 956.
 //
 // Two faults, and the ceiling alone would not have caught either. A cell written as "behind the row above, ahead of everything under it" is a claim about a position, so every reorder falsifies every cell it moved past and nobody rewrites a hundred of them. A cell carrying the day it was found, the day it was designed and what the build will do is the ticket's own writing, copied — the ticket is where it stays true.
 //
@@ -247,17 +247,17 @@ function whyProblems(row) {
   if (row.why === undefined || row.why === '') return found;
   const spelled = whySpelled(row.why);
   if (spelled.length > WHY_LIMIT) {
-    found.push(`the Why here cell runs ${spelled.length} characters and the ceiling is ${WHY_LIMIT} — what a row is comes from its tier and one sentence, and the rest of it belongs in the ticket`);
+    found.push(`the Why cell runs ${spelled.length} characters and the ceiling is ${WHY_LIMIT} — what a row is comes from its tier and one sentence, and the rest of it belongs in the ticket`);
   }
   const lower = spelled.toLowerCase();
   for (const phrase of NEIGHBOR) {
     if (lower.includes(phrase)) {
-      found.push(`the Why here cell says "${phrase.trim()}", which is a claim about where the row sits — the next reorder makes it untrue and nobody comes back to rewrite it`);
+      found.push(`the Why cell says "${phrase.trim()}", which is a claim about where the row sits — the next reorder makes it untrue and nobody comes back to rewrite it`);
       break;
     }
   }
   const date = WHY_DATE.exec(spelled);
-  if (date) found.push(`the Why here cell carries the date "${date[0]}" — when it was found, designed or asked for is the ticket's own record, and copying it here is a second copy that goes stale`);
+  if (date) found.push(`the Why cell carries the date "${date[0]}" — when it was found, designed or asked for is the ticket's own record, and copying it here is a second copy that goes stale`);
   return found;
 }
 
@@ -623,7 +623,7 @@ function nameProblems(live, archived) {
 }
 
 // Every refusal is proved on made-up files before the real one is opened. Each case is a fault that has happened.
-const TABLE = '| # | Ticket | Status | Blocks | Blocked by | Why here |\n|---|---|---|---|---|---|\n';
+const TABLE = '| # | Ticket | Status | Blocks | Blocked by | Why |\n|---|---|---|---|---|---|\n';
 
 // `phases` is what the real run reads off each ticket. Left out, every ticket is three phases, which is the middle sub-band and the tree's own commonest row.
 function tree(live, retired = 0, turnedDown = 0, phases = null, held = 0) {
@@ -753,7 +753,7 @@ const CASES = [
   ['a wait on a ticket that has shipped is refused',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) | Ready | — | [gone](done/app/gone.md) | first |'], [3, TWO]),
     PAIR, ['depends done/app/gone.md']],
-  ['a link in a Why here cell is not read as a row',
+  ['a link in a Why cell is not read as a row',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) | Ready | — | — | it shares a seam with [two](refactor/b/two.md) |']),
     PAIR, ['ticket refactor/b/two.md']],
   ['words after the link still name the ticket',
@@ -783,18 +783,18 @@ const CASES = [
     plan(PAIR, [1, ONE], [3, TWO]).replace('**Last ranked 9 August 2026, 4:07pm.**', ''), PAIR, ['stamp the foot of the file']],
   ['a stamp written round the clock is a time too',
     plan(PAIR, [1, ONE], [3, TWO]).replace('4:07pm', '16:07'), PAIR, []],
-  ['a Why here cell over the ceiling is refused',
+  ['a Why cell over the ceiling is refused',
     plan(PAIR, [1, `| 1 | [one](refactor/a/one.md) | Ready | — | — | ${'a word about the app '.repeat(12)}|`], [3, TWO]),
-    PAIR, ['why here refactor/a/one.md']],
-  ['a Why here cell naming the row above it is refused',
+    PAIR, ['why refactor/a/one.md']],
+  ['a Why cell naming the row above it is refused',
     plan(PAIR, [1, ONE], [3, '| 2 | [two](refactor/b/two.md) | Ready | — | — | behind the row above on cost |']),
-    PAIR, ['why here refactor/b/two.md']],
-  ['a Why here cell placing itself in the band is refused',
+    PAIR, ['why refactor/b/two.md']],
+  ['a Why cell placing itself in the band is refused',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) | Ready | — | — | last of the band and cheapest in it |'], [3, TWO]),
-    PAIR, ['why here refactor/a/one.md']],
-  ['a Why here cell carrying the day it was found is refused',
+    PAIR, ['why refactor/a/one.md']],
+  ['a Why cell carrying the day it was found is refused',
     plan(PAIR, [1, '| 1 | [one](refactor/a/one.md) | Ready | — | — | the padlock opens on a document with nothing in it. Found 24 August 2026, 1:43pm |'], [3, TWO]),
-    PAIR, ['why here refactor/a/one.md']],
+    PAIR, ['why refactor/a/one.md']],
   ['a link is read at the length a reader sees it, so the path behind a name does not spend the ceiling',
     plan(PAIR, [1, `| 1 | [one](refactor/a/one.md) | Ready | — | — | it shares a seam with [the other one](refactor/${'and-another-long-word-'.repeat(12)}two.md) |`], [3, TWO]),
     PAIR, []],
@@ -972,7 +972,7 @@ const NAME_CASES = [
 ];
 
 // The track a row names, read against the file the tracks live in. `tracked(row, ...)` writes a running order carrying the seventh column, and `tracks(...)` the file beside it.
-const TRACKED_TABLE = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |\n|---|---|---|---|---|---|---|---|\n';
+const TRACKED_TABLE = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |\n|---|---|---|---|---|---|---|---|\n';
 
 function tracked(...rows) {
   return `${TITLE}\n\n## Tier 3 — a band\n\n${TRACKED_TABLE}${rows.map((r) => `${r}\n`).join('')}\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
@@ -1002,7 +1002,7 @@ const TRACK_CASES = [
   ['a running order with no Track column at all is outside the rule', TRACK_ABSENT, []],
 ];
 
-// The eighth column, read the same way. `tracked(...)` writes the header this column sits in, so a row here is a `Devs with` cell in the seventh place and `Why here` in the eighth.
+// The eighth column, read the same way. `tracked(...)` writes the header this column sits in, so a row here is a `Devs with` cell in the seventh place and `Why` in the eighth.
 const DEVS_ROW = (cell) => `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | ${cell} | first |`;
 const DEVS_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
 

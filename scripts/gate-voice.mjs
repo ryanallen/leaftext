@@ -5,6 +5,8 @@
 //
 // Finished work is handed back as the owner's own message repeated word for word, so a block they typed is measured against nothing: a message asking whether something is out of scope would otherwise refuse its own echo.
 //
+// Whatever a turn is held for, the hold carries that message spelled out. A turn gets one block and no more, so a turn held for a keycode or an un-struck step has already spent it, and the reply written after that one has no rule left behind it — which is how a hand-back went out with the skill call at the front of it missing. The hold is the last thing that reply reads, so the message goes in it.
+//
 // It also refuses a build whose boxes did not go in one at a time while its code was landing. `/dev` says to tick each box in the same edit as its code, and a rule nothing reads is one a build forgets — which leaves the owner asking whether one is happening at all, the question the plan tree exists to answer without being asked. Read off the samples gate-sample.mjs takes after every edit and every shell command, never off the ticket alone: a phase ticked all at once at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart. The rule is written per box, so the reading is the run rather than a count — every rise is exactly one box, and no two rises touch. Nothing is left over to make up at the end.
 //
 // Where no build message named a ticket there are no samples, and the older reading stands in: code moved in this checkout and nothing under the plan tree did. That one is satisfied by any plan file, which is why it is the weaker of the two and why the samples replace it wherever the exact ticket is known.
@@ -398,6 +400,11 @@ function selfTest() {
   if (offenses(['/git-release one.md and two.md', '/done one.md and two.md'], true, sent).length) fails.push('typedPrompt: a two-command message came back refused for being two blocks');
   // The argument alone is still part of the message and nothing else, so it is refused for being cut rather than passed for being inside it.
   if (offenses(['one.md and two.md'], true, sent).length !== 1) fails.push('typedPrompt: the argument alone should be refused as part of the message');
+  // The hold spells the hand-back out. A turn gets one block, so a turn held for a keycode or a step has already spent it, and the reply after that one is written with no rule left to catch a message that came back missing the skill call at the front of it.
+  if (!handBack(sent).includes(sent)) fails.push('handBack: the hold did not carry the whole message');
+  if (!handBack(sent).includes('/git-release')) fails.push('handBack: the hold dropped the skill call');
+  if (handBack('does it work on mac')) fails.push('handBack: a question was told to echo itself');
+  if (handBack('')) fails.push('handBack: an empty message asked for an echo');
   if (blocksOf([]).length) fails.push('blocksOf: empty transcript should say nothing');
   if (!endsInSpeech(transcript)) fails.push('endsInSpeech: a finished turn read as unfinished');
   if (endsInSpeech(transcript.slice(0, 4))) fails.push('endsInSpeech: a turn mid-tool read as finished');
@@ -422,6 +429,25 @@ function selfTest() {
     fails.push(`entry point: ${error.message}`);
   } finally {
     rmSync(path, { force: true });
+  }
+
+  // The same path over a message that named a skill: whatever the hold is for, it comes back carrying the message the reply has to be.
+  const named = `${mine}-named`;
+  const namedPath = join(tmpdir(), `${named}.jsonl`);
+  writeFileSync(namedPath, [
+    JSON.stringify({ type: 'user', message: { content: '<command-message>pm</command-message>\n<command-name>/pm</command-name>\n<command-args>rank them</command-args>' } }),
+    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: "You're right, they are ranked." }] } }),
+  ].join('\n') + '\n');
+  try {
+    const held = JSON.parse(execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
+      input: JSON.stringify({ stop_hook_active: false, transcript_path: namedPath, session_id: named }),
+      encoding: 'utf8',
+    }) || '{}');
+    if (!held.reason?.includes('/pm rank them')) fails.push('entry point: a held turn was not told the message it owes back');
+  } catch (error) {
+    fails.push(`entry point: ${error.message}`);
+  } finally {
+    rmSync(namedPath, { force: true });
   }
 
   // The code moving with the ticket left where it was. A scratch checkout of its own, because the answer is about what git calls dirty and the tree this runs in is dirty on purpose.
@@ -552,7 +578,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-voice: ok (${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, the owner's own message measured against nothing, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half — keycodes)`);
+  console.log(`gate-voice: ok (${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, the owner's own message measured against nothing, every hold carrying the message the hand-back owes, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half — keycodes)`);
 }
 
 // Only act when run directly: anything importing this for a function would otherwise read a stream nobody is writing, and the importer hangs with no message.
@@ -596,7 +622,6 @@ if (!args) {
   const record = read(session);
   const filed = filedSince(record?.startedAt);
   const found = offenses(blocks, filed, echo);
-  // A turn is held once and no more, so whatever it was held for, the hold is the last thing the next reply reads before it writes the hand-back. Without the message in it, the reply is written from memory and the skill call at the front of it is the first thing to go: a hand-back that lost its /pm went out because the turn had already spent its one hold on something else, and the rule that would have caught it never ran a second time.
   // The boxes did not go in one at a time while the code was landing. Held whatever the reply says, because the reply is not where a box is ticked, and read off the run of samples rather than off the ticket — a phase swept at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart.
   const held = buildRecord(session);
   const swept = held ? sweptPhase(held) : null;
@@ -621,6 +646,8 @@ if (!args) {
     // Only a reply that broke a rule is written again. A turn held for a step or a keycode says nothing new.
     if (found.length) parts.push('Say it again, shorter. No note about this correction — just the answer.');
     const back = handBack(echo);
+
+    // Whatever the hold was for, this is the last thing the next reply reads, so the message it owes back goes in it rather than being remembered — the skill call at the front is what memory drops first.
     if (back) parts.push(back);
     // The samples belong to the turn that made them. Kept past the block, they would hold the turn that fixes the ticket for the sweep it is repairing.
     forget(session);

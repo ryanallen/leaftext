@@ -152,30 +152,29 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 
 ## Tier 1 — wrong today
 
-| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |
 
 ## Tier 3 — the features people would name, cheapest first
 
 ### One or two phases
 
-| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |
 
 ### Three or four phases
 
-| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |
 ```
 
 - **The number is the position**, not the ticket's identity: moving a row renumbers everything under it, and the number is never copied anywhere else. The name is what every line of prose cites.
-- **One sentence a cell, 200 characters at the outside** — what a reader of the app meets, or what it cannot do yet, in their own words. `scripts/check-plan.mjs` counts every cell and refuses a longer one. The heading a row sits under has already said which of the three tests placed it; the cell says what the row is, and the ticket says the rest.
-- **Never a neighbor.** No `behind the row above`, no `ahead of everything under it`, no `top of the band`, no `last of the tier`, no position. A cell written about where a row sits is made untrue by the next reorder and nobody comes back to rewrite a hundred of them — which is how this column grew to two thirds of the file, 153 cells averaging 352 characters with the longest at 956. The check refuses those words.
+- **`Why` is the problem and what answers it** — what the app does wrong, or cannot do yet, in the words of somebody using it, and where it helps, the thing that puts it right. It is the ticket's own `## Why` in one sentence. **Never why the row sits where it does**: the heading above it has already said which of the three tests placed it, and a placement is worth no words at all. One sentence a cell, 200 characters at the outside; `scripts/check-plan.mjs` counts every one and refuses a longer one.
+- **Never a neighbor.** No `behind the row above`, no `ahead of everything under it`, no `top of the band`, no `last of the tier`, no position, and no argument for the tier the row landed in. A cell written about where a row sits is made untrue by the next reorder and nobody comes back to rewrite a hundred of them — which is how this column grew to two thirds of the file, 153 cells averaging 352 characters with the longest at 956. The check refuses those words.
 - **Never a date.** When it was found, asked for or designed is the ticket's own record, and a second copy here goes stale the moment the ticket moves on. The check refuses one.
-- **A row standing above what the three tests allow says so in four words** — `Here on the owner's word.` That is a fact about the row rather than about its neighbors, so a reorder leaves it true, and it is the one placement a reader cannot work out from the heading.
 - **Nothing that belongs to the ticket** — no citation, no phase count, no box count, no cost breakdown, no account of what it will build, no restating what the README already says the ticket is.
 - **No preamble under a heading, no method, no record, no picture.** How rows are ranked is this skill; what an earlier ranking got wrong is `done/PLAN.md`'s.
 - **Every ticket name is a link**, in every cell and every line of prose, using the path from the README. A bare name is a ranking error.
 - **`Blocks` is `Blocked by` read the other way** — every live row whose `Blocked by` names this one, linked, or `—`. It carries no claim of its own: the waiting ticket's cell is the source, and this one exists so a row being weighed says what sits behind it without reading the whole file. `scripts/check-plan.mjs` holds the two columns to each other.
 - **`Blocked by` holds live blockers only**, linked, or `—`. A ticket that has shipped does not block anything, so naming one there reads as a wait that is over.
-- **`Track` names the subject order a row sits in** — the track in [`TRACKS.md`](../../../../docs/TRACKS.md), linked to its heading, with the step or steps the ticket is there as. **Every live row carries one, and `—` is not an answer**: a subject with one ticket is a track with one step, so a ticket with nowhere to sit means the track has not been written yet, never that the cell is empty. Write it in this pass — heading, one line saying what the subject is, and the step — and add its node and its `click` line to the map at the top of that file. The step numbers are read out of that file in this pass, never remembered or copied from an older row, and the `Why here` cell does not repeat them: a track named in one cell is one cell to fix when its steps renumber.
+- **`Track` names the subject order a row sits in** — the track in [`TRACKS.md`](../../../../docs/TRACKS.md), linked to its heading, with the step or steps the ticket is there as. **Every live row carries one, and `—` is not an answer**: a subject with one ticket is a track with one step, so a ticket with nowhere to sit means the track has not been written yet, never that the cell is empty. Write it in this pass — heading, one line saying what the subject is, and the step — and add its node and its `click` line to the map at the top of that file. The step numbers are read out of that file in this pass, never remembered or copied from an older row, and the `Why` cell does not repeat them: a track named in one cell is one cell to fix when its steps renumber.
 - **A row with no track is how a subject climbs the tiers unnoticed.** Twice now a run of build-machinery rows has been ranked with an empty cell, read as loose faults on their own words, and walked up one pass at a time until they sat above the app's own work. `scripts/check-plan.mjs` refuses an empty cell, a track no heading in that file spells, and a track the ticket is not a step of — the last being the one a reader cannot see, since the link opens a real table their ticket is nowhere in. So the pass that writes a row writes its track in the same edit.
 - **`Devs with` is computed, never written.** It names the three highest-ranked live rows this one shares no file with, then the total in brackets where there are more, and `—` where there are none — read off each ticket's own [`## What it writes`](../../../../docs/GLOSSARY.md#footprint) section. **This pass does not derive it the way it derives `Blocks`**: a wait is a handful of rows across the whole tree and this is 153 set comparisons a row, 11,781 in all, which is not a pass anybody makes carefully twice. So the pass runs `just bundle-devs-with` after the rows are in their final order and reads the result rather than composing it, and `scripts/check-plan.mjs` refuses a cell the bundler would not have written, one naming a ticket that is not live, and one naming a row whose footprint it shares a file with.
 - **The order the two run in is the order they are written in.** The bundler orders every cell by position, so running it before the rows are settled writes 153 cells against the old numbering. Rank, then bundle, then read the file back.
@@ -188,7 +187,7 @@ If a cell needs more words, the ticket is what needs them.
 
 ## 6. Every word this file spends has a glossary row
 
-[`../docs/GLOSSARY.md`](../../../../docs/GLOSSARY.md) is what makes the ranking readable by somebody who did not write it, so a planning word spent here and missing there gets a row in this pass. That covers the ones easiest to miss: **each column heading**, **each status value**, tier, row, position, track, step, and anything off the list.
+[`../docs/GLOSSARY.md`](../../../../docs/GLOSSARY.md) is what makes the ranking readable by somebody who did not write it, so a planning word spent here and missing there gets a row in this pass. That covers the ones easiest to miss: **each column heading whose meaning is not its own name**, **each status value**, tier, row, position, track, step, and anything off the list. `Why` needs none: the heading is the definition.
 
 **A row is one or two sentences saying what the word means today**, with a link to whatever owns it. No history, no dates, no counts of how many files carry it — that is a log, and it belongs in a ticket. A word nothing uses any more loses its row.
 

@@ -3,7 +3,7 @@
 //
 // It answers only what the table says: where the row sits, which ticket it names, what it blocks, what it waits on, and the sub-band heading it is under. Whether any of that is *right* is `check-plan.mjs`'s, and every rule stays there.
 //
-// A `Track` column may or may not be in the file, which is why `Why here` is taken as the last cell rather than by index. Nothing here reads `Track` or `Devs with`: both are found by name where they are needed.
+// A `Track` column may or may not be in the file, which is why `Why` is taken as the last cell rather than by index. Nothing here reads `Track` or `Devs with`: both are found by name where they are needed.
 
 const LINK = /\[[^\]]*\]\(\s*([^)\s]+)\)/g;
 
@@ -53,12 +53,12 @@ export function planRows(text) {
       tier,
       sub,
       position: /^\d+$/.test(cells[0]) ? Number(cells[0]) : null,
-      // The first link only: a `Ticket` cell can carry words after it, and a `Why here` cell links neighbors.
+      // The first link only: a `Ticket` cell can carry words after it, and a `Why` cell links neighbors.
       ticket: links(cells[1])[0] ?? null,
       shown: cells[1].replace(/\s+/g, ' '),
       blocks: links(cells[3]),
       blockers: links(cells[4]),
-      // The last cell is always `Why here`, whether or not the file carries a `Track` column.
+      // The last cell is always `Why`, whether or not the file carries a `Track` column.
       why: cells[cells.length - 1],
       cells,
     });

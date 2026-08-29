@@ -94,7 +94,7 @@ export function faults(plan, read) {
   return problems;
 }
 
-const HEAD = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why here |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n';
+const HEAD = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n';
 const DESIGNED = '# A plan\n\n> **Designed 19 August 2026, 7:07pm.** Citations opened.\n';
 const PLAIN = '# A plan\n\n> **Not built.** A plan.\n';
 const BUILDING = `${DESIGNED}> **Building since 19 August 2026, 8:02pm.**\n`;

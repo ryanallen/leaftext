@@ -154,7 +154,7 @@ const NL = '\n';
 /// How many partners a cell names before it stops and gives a total instead. Three, because 87 partners is not a list anybody reads and the reader's question is what to pick up next, not a census.
 export const CELL_BOUND = 3;
 
-/// The header this column is written under, and where it sits — after `Track`, before `Why here`, which is the one spot no positional read in either plan check moves over.
+/// The header this column is written under, and where it sits — after `Track`, before `Why`, which is the one spot no positional read in either plan check moves over.
 export const CELL_HEADING = 'Devs with';
 
 /// What one row's cell says: the highest-ranked partners, then the total in brackets where more were left out. `—` where nothing is disjoint.
@@ -200,7 +200,7 @@ export function withColumn(planText, rows, claims) {
       const held = cells.indexOf(CELL_HEADING);
       already = held === -1 ? null : held;
       const track = bare().indexOf('Track');
-      // With no Track column the cell goes where Track would have put it: second from the end, since `Why here` is always last.
+      // With no Track column the cell goes where Track would have put it: second from the end, since `Why` is always last.
       spot = track === -1 ? bare().length - 1 : track + 1;
       write(CELL_HEADING);
       continue;
@@ -318,7 +318,7 @@ const PAIR_ORDER = `# Leaftext Plan Log
 
 ## Tier 1 — wrong today
 
-| # | Ticket | Status | Blocks | Blocked by | Track | Why here |
+| # | Ticket | Status | Blocks | Blocked by | Track | Why |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | [a](fixes/reading/a.md) | Ready | — | — | t | … |
 | 2 | [b](fixes/reading/b.md) | Ready | — | — | t | … |
@@ -432,8 +432,8 @@ function cellSelfTest() {
 
   const written = withColumn(PAIR_ORDER, planRows(PAIR_ORDER), PAIR_CLAIMS);
   const header = written.split(NL).find((line) => line.trim().startsWith('| #'));
-  say('the column lands after Track and before Why here',
-    header.trim(), `| # | Ticket | Status | Blocks | Blocked by | Track | ${CELL_HEADING} | Why here |`);
+  say('the column lands after Track and before Why',
+    header.trim(), `| # | Ticket | Status | Blocks | Blocked by | Track | ${CELL_HEADING} | Why |`);
   const separator = written.split(NL).find((line) => /^\|\s*---/.test(line.trim()));
   say('the separator gains a column with the header', separator.trim(), '| --- | --- | --- | --- | --- | --- | --- | --- |');
   // Found by its Ticket cell, not by the name appearing anywhere in the line: every row now carries other rows' names in the new column.
@@ -447,7 +447,7 @@ function cellSelfTest() {
   say('writing the column twice writes it once', twice, written);
   const rows = planRows(written);
   if (rows.length !== 6) fails.push(`the rewritten order read as ${rows.length} rows, want 6`);
-  if (rows[0] && rows[0].why !== '…') fails.push(`Why here is no longer the last cell: got \`${rows[0].why}\``);
+  if (rows[0] && rows[0].why !== '…') fails.push(`Why is no longer the last cell: got \`${rows[0].why}\``);
   return fails;
 }
 
