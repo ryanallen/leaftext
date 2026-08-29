@@ -284,6 +284,26 @@ fn reading_a_vault_is_timed_in_its_parts() {
         );
     }
 
+    // What the preview's second open costs: the sorted read opens those same paths again seconds later, off the file cache. Taken on a batch the lines above never reached, read cold and then straight away again.
+    if let Some(chunk) = found.chunks(BATCH).nth(10) {
+        let started = std::time::Instant::now();
+        let cold_documents = chunk
+            .iter()
+            .filter_map(|(_, path)| crate::vault_corpus::read_document(path))
+            .count();
+        let cold = started.elapsed();
+        let started = std::time::Instant::now();
+        let warm_documents = chunk
+            .iter()
+            .filter_map(|(_, path)| crate::vault_corpus::read_document(path))
+            .count();
+        println!(
+            "  same batch:    {:>9.1} ms cold, {:>9.1} ms read again, {cold_documents} then {warm_documents} documents",
+            cold.as_secs_f64() * 1000.0,
+            started.elapsed().as_secs_f64() * 1000.0
+        );
+    }
+
     let started = std::time::Instant::now();
     let corpus = VaultCorpus::read(&root);
     let whole = started.elapsed();

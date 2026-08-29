@@ -1115,6 +1115,109 @@ fn re_exporting_a_page_addresses_the_picture_it_already_wrote() {
     );
 }
 
+/// A folder somebody has exported into already holds the stylesheet, the rail's script and the math set, and writing them again spends the whole of them for nothing.
+///
+/// Watched before this: one document with an equation in it, exported twice into one folder, rewrote 23 files and 768,606 bytes, while the pictures beside them were left alone. The bytes match whether or not the write was skipped, so only a write time that did not move proves it was — which is what the stamp is here for. The stale file is the other half: neither name carries a version, so a folder somebody exported into before an app update holds files under exactly the names the next export wants, and a page wearing last month's stylesheet is the failure that refuses the cheaper answers to this.
+#[test]
+fn re_exporting_a_page_leaves_the_generated_files_already_beside_it_alone() {
+    use crate::app::fileops::{write_exported_page, PageHtmlExport};
+    use leaftext::{
+        exported_page_css, exported_page_minimap_script, exported_page_stylesheet,
+        EXPORTED_PAGE_MATH_FONTS_FOLDER, EXPORTED_PAGE_MATH_STYLESHEET,
+        EXPORTED_PAGE_MINIMAP_SCRIPT, KATEX_CSS, KATEX_FONTS,
+    };
+    use std::time::Duration;
+
+    let out = scratch_dir("exported-page-second-export");
+    let export = PageHtmlExport {
+        markup: "<p><span class=\"katex\">x</span></p>".to_string(),
+        sheet: String::new(),
+        theme: "moss".to_string(),
+        appearance: "dark".to_string(),
+        title: "Notes".to_string(),
+    };
+    // Every generated file this export writes, each beside the bytes the app composes for it.
+    let mut written = vec![
+        (
+            out.join(exported_page_stylesheet(&export.theme)),
+            exported_page_css(&export.theme).into_bytes(),
+        ),
+        (
+            out.join(EXPORTED_PAGE_MINIMAP_SCRIPT),
+            exported_page_minimap_script().into_bytes(),
+        ),
+        (out.join(EXPORTED_PAGE_MATH_STYLESHEET), KATEX_CSS.to_vec()),
+    ];
+    // The three above are the ones an app update can leave stale under a name it still wants; the faces are vendored and come after them.
+    let generated = written.len();
+    for (face, bytes) in KATEX_FONTS {
+        written.push((
+            out.join(EXPORTED_PAGE_MATH_FONTS_FOLDER).join(face),
+            bytes.to_vec(),
+        ));
+    }
+
+    let page = out.join("notes.html");
+    write_exported_page(&page, &export, None).expect("the page is written");
+    // An hour back, which no clock on this machine could land on by itself, so a stamp still there is a write that never happened.
+    let stamp = SystemTime::now() - Duration::from_secs(3600);
+    for (path, _) in &written {
+        fs::OpenOptions::new()
+            .write(true)
+            .open(path)
+            .expect("the written file opens")
+            .set_times(fs::FileTimes::new().set_modified(stamp))
+            .expect("the written file takes the stamp");
+    }
+
+    write_exported_page(&page, &export, None).expect("the page is written a second time");
+    for (path, bytes) in &written {
+        let there = fs::read(path).expect("the file is still beside the page");
+        assert_eq!(
+            &there,
+            bytes,
+            "{} no longer holds the bytes the app composes",
+            path.display()
+        );
+        let moved = fs::metadata(path)
+            .expect("the file reads back")
+            .modified()
+            .expect("the file carries a write time");
+        assert_eq!(
+            moved,
+            stamp,
+            "{} was written a second time over the same bytes",
+            path.display()
+        );
+    }
+
+    // The app update: the folder holds a file under the name this export wants, and it is no longer the file it wants.
+    for (path, _) in &written[..generated] {
+        fs::write(path, b"last month's").expect("the stale file is written");
+    }
+    write_exported_page(&page, &export, None).expect("the page is written a third time");
+    for (path, bytes) in &written[..generated] {
+        assert_eq!(
+            &fs::read(path).expect("the file is still beside the page"),
+            bytes,
+            "{} kept last month's file beside a page exported today",
+            path.display()
+        );
+    }
+    // The faces were never made stale, so that same export had to leave every one of them where it was: a refresh that rewrites the whole folder because three files in it moved is the fault this ticket is about, wearing the other name.
+    for (path, _) in &written[generated..] {
+        assert_eq!(
+            fs::metadata(path)
+                .expect("the face reads back")
+                .modified()
+                .expect("the face carries a write time"),
+            stamp,
+            "{} was rewritten because the files beside it had gone stale",
+            path.display()
+        );
+    }
+}
+
 /// The rail's script goes into `assets` beside the stylesheet on every export, whatever the document holds.
 ///
 /// Not conditional the way the math stylesheet is: a document's own length is not the question the rail answers. The reader handed this file has no library pane, no outline and no tab strip, so the rail is the only thing telling them the shape of what they were sent. It is the site's own script with the `export` mark off and a call on its foot, because a browser refuses a module script on a page opened off a disk.

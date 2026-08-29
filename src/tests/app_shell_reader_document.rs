@@ -190,12 +190,14 @@ fn app_shell_draws_the_documents_headings_in_the_library_pane() {
     // The pane draws them, in the box it already swaps the file list for.
     assert_contains(&html, "function renderLibraryOutline() {");
     assert_contains(&html, "library-outline-row library-outline-depth-${depth}");
-    assert_contains(&html, "data-outline-section=");
-    // The line naming the list counts the headings it is drawing, read off the rows it already has rather than off the document under them, and asks the shared chooser for the word so one section reads "1 heading".
-    assert_contains(
+    assert_in(
         &html,
-        "formatCountLabel(rows.length, 'heading', 'headings')",
+        "function outlineRowHtml(row, shallowest, current) {",
+        "data-outline-section=",
     );
+    // The line naming the list counts the headings it is drawing, read off the rows it already has rather than off the document under them, and asks the shared chooser for the word so one section reads "1 heading".
+    assert_contains(&html, "outlineNoteHtml(rows.length)");
+    assert_contains(&html, "formatCountLabel(count, 'heading', 'headings')");
     assert_contains(&html, "On this page");
     // None of the block counter's four names may come back, or the number drifts to document length.
     for absent in [

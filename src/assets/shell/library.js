@@ -328,6 +328,12 @@ function renderProject(entries) {
 let libraryOutlineOpen = false;
 // The frame the outline is waiting on. Building the rows and measuring them is layout: 5ms at sixty headings and 329ms at the app's own worst case, which is not a cost a document open may carry.
 let libraryOutlineFrame = 0;
+const libraryOutlineScroll = libraryOutline.parentElement;
+let libraryOutlineSource = null;
+let libraryOutlineOffsets = [0];
+let libraryOutlineShallowest = 1;
+let libraryOutlineWindowStart = -1;
+let libraryOutlineWindowEnd = -1;
 // Whether the outline is what the box should be holding at all. A document with fewer than two headings has none, so the files stay.
 function libraryOutlineShowing() {
   return libraryOutlineOpen && readDocumentOutlineRows().length > 0;
@@ -366,24 +372,79 @@ function outlineRowHtml(row, shallowest, current) {
   const aria = current ? ' aria-current="true"' : '';
   return `<button type="button" class="library-outline-row library-outline-depth-${depth}${selected}"${aria} data-outline-section="${escapeAttr(row.id)}" title="${escapeAttr(row.text)}"><span class="library-file-label">${escapeText(row.text)}</span></button>`;
 }
+function outlineNoteHtml(count) {
+  return `<div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">${formatCountLabel(count, 'heading', 'headings')}</span></div>`;
+}
+function measureLibraryOutline(rows) {
+  libraryOutlineShallowest = rows.reduce((least, row) => Math.min(least, row.level), rows[0].level);
+  const samples = Array.from({ length: 6 }, (_, depth) => outlineRowHtml({ level: libraryOutlineShallowest + depth, id: '', text: 'Measure' }, libraryOutlineShallowest, false)).join('');
+  libraryOutline.innerHTML = `${outlineBackRowHtml()}${outlineNoteHtml(rows.length)}<div class="library-project" data-outline-window="1">${samples}</div>`;
+  renderLibraryLists();
+  const measured = Array.from(libraryOutline.querySelectorAll('.library-outline-row'), (row) => {
+    const box = row.getBoundingClientRect();
+    const margin = Number.parseFloat(getComputedStyle(row).marginBottom) || 0;
+    return box.height + margin;
+  });
+  const firstMeasured = measured.find((height) => height > 0) || 24;
+  const heights = measured.map((height) => height || firstMeasured);
+  libraryOutlineOffsets = [0];
+  for (const row of rows) {
+    const depth = Math.min(Math.max(row.level - libraryOutlineShallowest, 0), 5);
+    libraryOutlineOffsets.push(libraryOutlineOffsets[libraryOutlineOffsets.length - 1] + heights[depth]);
+  }
+  libraryOutlineSource = rows;
+  libraryOutlineWindowStart = -1;
+  libraryOutlineWindowEnd = -1;
+}
+function outlineIndexAtOffset(offset) {
+  let low = 0;
+  let high = libraryOutlineOffsets.length - 1;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (libraryOutlineOffsets[middle] <= offset) low = middle + 1;
+    else high = middle;
+  }
+  return Math.max(0, low - 1);
+}
+function drawLibraryOutlineWindow(rows, force) {
+  const windowBox = libraryOutline.querySelector('[data-outline-window]');
+  if (!windowBox) return;
+  const paneHeight = libraryOutlineScroll.clientHeight || libraryOutlineScroll.getBoundingClientRect().height || libraryOutlineOffsets[rows.length];
+  const rowsTop = windowBox.offsetTop || 0;
+  const visibleTop = Math.max(0, libraryOutlineScroll.scrollTop - rowsTop);
+  const start = outlineIndexAtOffset(Math.max(0, visibleTop - paneHeight));
+  const end = Math.min(rows.length, outlineIndexAtOffset(visibleTop + paneHeight * 2) + 1);
+  if (!force && start === libraryOutlineWindowStart && end === libraryOutlineWindowEnd) {
+    lightLibraryOutlineSection(readerSectionAtReadingLine());
+    return;
+  }
+  libraryOutlineWindowStart = start;
+  libraryOutlineWindowEnd = end;
+  const current = readerSectionAtReadingLine();
+  windowBox.innerHTML = rows.slice(start, end).map((row, at) => outlineRowHtml(row, libraryOutlineShallowest, row.id === current).replace(' data-outline-section=', ` data-outline-index="${start + at}" data-outline-section=`)).join('');
+  windowBox.style.setProperty('padding-top', `${libraryOutlineOffsets[start]}px`);
+  windowBox.style.setProperty('padding-bottom', `${libraryOutlineOffsets[rows.length] - libraryOutlineOffsets[end]}px`);
+  bindLibraryOutlineRows(force);
+}
 function renderLibraryOutline() {
   const rows = readDocumentOutlineRows();
   if (!libraryOutlineShowing()) {
     libraryOutline.innerHTML = '';
+    libraryOutlineSource = null;
+    libraryOutlineOffsets = [0];
+    libraryOutlineWindowStart = -1;
+    libraryOutlineWindowEnd = -1;
     renderLibraryLists();
     return;
   }
-  const shallowest = rows.reduce((least, row) => Math.min(least, row.level), rows[0].level);
-  const current = readerSectionAtReadingLine();
-  // Not a row and not a button: one quiet line naming what the list below it is, and how many headings it holds — read off the rows already collected, so the number cannot disagree with the list under it.
-  const note = `<div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">${formatCountLabel(rows.length, 'heading', 'headings')}</span></div>`;
-  libraryOutline.innerHTML = `<div class="library-project">${outlineBackRowHtml()}${note}${rows.map((row) => outlineRowHtml(row, shallowest, row.id === current)).join('')}</div>`;
-  bindLibraryOutlineRows();
+  const changed = rows !== libraryOutlineSource;
+  if (changed) measureLibraryOutline(rows);
+  drawLibraryOutlineWindow(rows, changed);
   renderLibraryLists();
 }
-function bindLibraryOutlineRows() {
+function bindLibraryOutlineRows(bindBack) {
   const back = libraryOutline.querySelector('[data-close-outline]');
-  if (back) {
+  if (back && bindBack) {
     bindLibraryRowPress(back, () => {
       libraryOutlineOpen = false;
       renderLibraryLists();
@@ -393,6 +454,25 @@ function bindLibraryOutlineRows() {
     // The jump the document's own heading links already make, so a section is reached one way and the host learns no new command.
     bindLibraryRowPress(button, () => {
       send({ command: 'openLink', href: '#' + encodeURIComponent(button.dataset.outlineSection), scroll_anchor: currentScrollAnchor() });
+    });
+    button.addEventListener('keydown', (event) => {
+      const index = Number(button.dataset.outlineIndex);
+      const rows = readDocumentOutlineRows();
+      const paneHeight = libraryOutlineScroll.clientHeight || libraryOutlineOffsets[rows.length];
+      let target = index;
+      if (event.key === 'ArrowUp') target -= 1;
+      else if (event.key === 'ArrowDown') target += 1;
+      else if (event.key === 'PageUp') target = outlineIndexAtOffset(Math.max(0, libraryOutlineOffsets[index] - paneHeight));
+      else if (event.key === 'PageDown') target = outlineIndexAtOffset(libraryOutlineOffsets[index] + paneHeight);
+      else if (event.key === 'Home') target = 0;
+      else if (event.key === 'End') target = rows.length - 1;
+      else return;
+      event.preventDefault();
+      target = Math.min(Math.max(target, 0), rows.length - 1);
+      libraryOutlineScroll.scrollTop = libraryOutlineOffsets[target];
+      drawLibraryOutlineWindow(rows, false);
+      const focused = Array.from(libraryOutline.querySelectorAll('[data-outline-index]')).find((row) => Number(row.dataset.outlineIndex) === target);
+      if (focused) focused.focus();
     });
   }
 }
@@ -416,6 +496,9 @@ function lightLibraryOutlineSection(section) {
     else row.removeAttribute('aria-current');
   }
 }
+libraryOutlineScroll.addEventListener('scroll', () => {
+  if (libraryOutlineShowing()) scheduleLibraryOutline();
+}, { passive: true });
 // A browse path as somewhere on disk. Inside a vault the top level is browsed as '' — a stand-in the host resolves — but paste and drop need a real folder, so that resolves to the vault's own root. Outside a vault the top is the list of drive roots, which is not a folder, and stays empty.
 function realFolderPath(browsePath) {
   if (browsePath) return browsePath;

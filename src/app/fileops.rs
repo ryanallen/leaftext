@@ -520,26 +520,23 @@ pub(crate) fn write_exported_page(
     let assets = folder.join(EXPORTED_PAGE_ASSETS_FOLDER);
     fs::create_dir_all(&assets).map_err(|error| error.to_string())?;
     // The stylesheet, named and composed off the same two helpers the page links, so the file written and the file named can never disagree. `exported_page_stylesheet` holds why the name carries a pack.
-    fs::write(
+    write_unless_already_there(
         folder.join(exported_page_stylesheet(&export.theme)),
-        exported_page_css(&export.theme),
-    )
-    .map_err(|error| error.to_string())?;
+        exported_page_css(&export.theme).as_bytes(),
+    )?;
     // The rail, which is the one thing on this page that runs. On every export rather than only a long document: the reader handed it has no library pane, no outline and no tab strip whatever it holds.
-    fs::write(
+    write_unless_already_there(
         folder.join(EXPORTED_PAGE_MINIMAP_SCRIPT),
-        exported_page_minimap_script(),
-    )
-    .map_err(|error| error.to_string())?;
+        exported_page_minimap_script().as_bytes(),
+    )?;
     let markup = copy_page_pictures(&export.markup, &assets, source_dir);
     // Only where there is an equation to spend them on: the stylesheet and its twenty faces come to 283,127 bytes, and the reading stylesheet carries no math rule at all. The page names them off the same reading of the markup, so what is copied and what is named can never disagree.
     if markup_has_math(&markup) {
         let faces = folder.join(EXPORTED_PAGE_MATH_FONTS_FOLDER);
         fs::create_dir_all(&faces).map_err(|error| error.to_string())?;
-        fs::write(folder.join(EXPORTED_PAGE_MATH_STYLESHEET), KATEX_CSS)
-            .map_err(|error| error.to_string())?;
+        write_unless_already_there(folder.join(EXPORTED_PAGE_MATH_STYLESHEET), KATEX_CSS)?;
         for (name, bytes) in KATEX_FONTS {
-            fs::write(faces.join(name), bytes).map_err(|error| error.to_string())?;
+            write_unless_already_there(faces.join(name), bytes)?;
         }
     }
     let page = exported_page_document(
@@ -550,6 +547,18 @@ pub(crate) fn write_exported_page(
         &markup,
     );
     fs::write(target, page).map_err(|error| error.to_string())
+}
+
+/// Write those bytes there, unless the file already there is that file.
+///
+/// A reader exporting a folder of notes one at a time fills one `assets` folder, so the second export and every one after it finds the stylesheet, the rail's script and the math set already beside the page holding those exact bytes. The name settles nothing — the sheet's carries only the icon pack, the script's is fixed — so an app update leaves a file under the name this export wants that is no longer the file it wants, and only the bytes tell the two apart. The length first and the bytes only where it matches, which is the two-step `assets_name_for` already makes.
+fn write_unless_already_there(path: PathBuf, bytes: &[u8]) -> Result<(), String> {
+    if fs::metadata(&path).map(|there| there.len()).ok() == Some(bytes.len() as u64)
+        && fs::read(&path).ok().as_deref() == Some(bytes)
+    {
+        return Ok(());
+    }
+    fs::write(&path, bytes).map_err(|error| error.to_string())
 }
 
 /// Copy every picture the document draws into `assets`, and point the markup at the copies.

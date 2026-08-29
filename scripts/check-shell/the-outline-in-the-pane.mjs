@@ -140,12 +140,13 @@ export function run() {
   ];
 
   // A page with a document open, its headings handed to the pane, and the reader standing in the second section.
-  const paneShowingAnOutline = (rows = OUTLINE_ROWS) => {
+  const paneShowingAnOutline = (rows = OUTLINE_ROWS, paneHeight = 0) => {
     const page = threeSections();
     layOutAnchorBlocks(page, 400);
     page.outline = page.context.document.getElementById('libraryOutline');
     page.tree = page.context.document.getElementById('libraryTree');
     page.results = page.context.document.getElementById('librarySearchResults');
+    page.outline.parentElement.clientHeight = paneHeight;
     page.context.setDocumentOutlineRows(rows);
     page.context.followFileInLibrary('C:\\Notes\\one.md');
     page.app.scrollTop = 1200;
@@ -240,6 +241,54 @@ export function run() {
     if (rowsBefore.some((row, at) => row !== rowsAfter[at])) throw new Error('a scroll rebuilt the rows rather than moving the mark');
     const lit = rowsAfter.filter((row) => row.classList.contains('is-selected')).map((row) => row.textContent);
     if (lit.join(' ') !== 'Three') throw new Error(`reading on marked: ${JSON.stringify(lit)}`);
+  });
+
+  check('a very long outline keeps its complete range while drawing, selecting, and moving through one bounded window', () => {
+    const rows = Array.from({ length: 25000 }, (_, at) => ({ level: 2 + (at % 6), text: `Section ${at}`, id: `section-${at}` }));
+    const page = paneShowingAnOutline(rows, 1020);
+    const scroll = page.outline.parentElement;
+    const mounted = () => page.outline.querySelectorAll('.library-outline-row');
+    const count = page.outline.querySelector('.library-outline-count').textContent;
+    if (!count.includes('25,000 headings')) throw new Error(`the bounded outline counts: ${count}`);
+    if (!mounted().length || mounted().length > 144) throw new Error(`the first window mounted ${mounted().length} rows`);
+    const windowBox = page.outline.querySelector('[data-outline-window]');
+    const represented = Number.parseFloat(windowBox.style.getPropertyValue('padding-top')) + Number.parseFloat(windowBox.style.getPropertyValue('padding-bottom')) + mounted().length * 24;
+    if (represented !== 600000) throw new Error(`the scrollbar represents ${represented}px of the 600000px outline`);
+
+    page.context.__frames.drain();
+    scroll.scrollTop = 300000;
+    for (const handler of scroll.listeners.get('scroll') || []) handler({});
+    for (const handler of scroll.listeners.get('scroll') || []) handler({});
+    if (page.context.__frames.waiting() !== 1) throw new Error(`two scrolls queued ${page.context.__frames.waiting()} outline frames`);
+    page.context.__frames.drain();
+    const firstFarIndex = Number(mounted()[0].dataset.outlineIndex);
+    if (firstFarIndex < 10000 || firstFarIndex > 15000) throw new Error(`the far window begins at row ${firstFarIndex}`);
+    if (mounted().length > 144) throw new Error(`the far window mounted ${mounted().length} rows`);
+
+    const wasSection = page.context.readerSectionAtReadingLine;
+    vm.runInContext("readerSectionAtReadingLine = () => 'section-24999';", page.context);
+    scroll.scrollTop = 599976;
+    for (const handler of scroll.listeners.get('scroll') || []) handler({});
+    page.context.__frames.drain();
+    const last = mounted().find((row) => row.dataset.outlineSection === 'section-24999');
+    if (!last || !last.classList.contains('is-selected')) throw new Error('the last selected row lost its mark when its window arrived');
+
+    let focused = false;
+    last.focus = () => { focused = true; };
+    const from = mounted()[0];
+    for (const handler of from.listeners.get('keydown') || []) handler({ key: 'End', preventDefault() {} });
+    if (!focused) throw new Error('End did not focus the last heading');
+    const sent = [];
+    const wasSend = page.context.ipc.postMessage;
+    page.context.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      for (const handler of last.listeners.get('click') || []) handler({});
+    } finally {
+      page.context.ipc.postMessage = wasSend;
+      page.context.readerSectionAtReadingLine = wasSection;
+    }
+    const jump = sent.find((message) => message.command === 'openLink');
+    if (!jump || jump.href !== '#section-24999') throw new Error(`the last row jumped to: ${JSON.stringify(jump)}`);
   });
 
   // ---- 4. the box comes out of the page -------------------------------------
