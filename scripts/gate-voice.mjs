@@ -164,7 +164,13 @@ export function offenses(blocks, filed = true, echo = '') {
     const trimmed = block.trim();
     if (!trimmed) continue;
     // The message back, word for word. Nothing in it is the reply's own words, so nothing in it is measured.
-    if (echo && echo.includes(trimmed)) continue;
+    if (echo && echo.includes(trimmed)) {
+      // Word for word is the whole message. A reply that is a piece of it has cut the front or the tail off what the owner wrote — the skill's own name most often — and hands them something they never typed.
+      if (trimmed !== echo.trim()) {
+        out.push('The message back, with part of it cut. Rule 1 echoes the owner\'s whole message, first character to last: the skill name, its argument and every line of it. Send it whole.');
+      }
+      continue;
+    }
     // The ceiling counts everything said. The phrases count only what the reply says in its own voice.
     if (trimmed.length > LIMIT) {
       out.push(`${trimmed.length} characters. Rule 1 caps a reply at ${LIMIT}. Cut it to the answer and stop.`);
@@ -217,20 +223,39 @@ export function blocksOf(lines) {
   return said;
 }
 
+/// A message naming a skill reaches the transcript as tags rather than as the line the owner pressed enter on, and the skill's whole text arrives behind it as another turn of theirs. So the words are rebuilt: `/name argument` per command, in the order they were sent, which is what the owner has in front of them and what a hand-back has to come back as.
+function typedCommands(text) {
+  const out = [];
+  const names = /<command-name>([^<]*)<\/command-name>/g;
+  for (let found = names.exec(text); found; found = names.exec(text)) {
+    const name = found[1].trim();
+    if (!name) continue;
+    const args = /<command-args>([\s\S]*?)<\/command-args>/.exec(text.slice(found.index));
+    const written = name.startsWith('/') || name.startsWith('$') ? name : `/${name}`;
+    const argument = args ? args[1].trim() : '';
+    out.push(argument ? `${written} ${argument}` : written);
+  }
+  return out;
+}
+
 /// The last thing the owner actually typed, as one string. The same read `blocksOf` makes from the same end, and for the same reason: tool results arrive as user turns too, so a turn only counts when it carries plain text.
 export function typedPrompt(lines) {
   const entries = parse(lines);
+  const said = [];
   for (let i = entries.length - 1; i >= 0; i -= 1) {
     const entry = entries[i];
+    if (entry.type === 'assistant') break;
     if (entry.type !== 'user') continue;
     const content = entry.message?.content;
-    if (typeof content === 'string' && content.trim()) return content;
-    if (Array.isArray(content)) {
-      const text = content.filter((c) => c.type === 'text' && c.text).map((c) => c.text).join('\n');
-      if (text.trim()) return text;
-    }
+    let text = '';
+    if (typeof content === 'string') text = content;
+    else if (Array.isArray(content)) text = content.filter((c) => c.type === 'text' && c.text).map((c) => c.text).join('\n');
+    if (text.trim()) said.unshift(text);
   }
-  return '';
+  // The skill's own text rides in behind the tags as a turn of the owner's, so where a message names a skill the tags are the message and the rest of that run is the host talking.
+  const commands = said.flatMap(typedCommands);
+  if (commands.length) return commands.join('\n');
+  return said.length ? said[said.length - 1] : '';
 }
 
 /// True once the newest message in the transcript is something the assistant said, which is what a finished turn looks like.
@@ -298,6 +323,13 @@ function selfTest() {
   check('is the strip out of scope', false, 'the filing phrase in the message back', false, 'is the strip out of scope');
   check('No. But the pane still opens.', true, 'a walk-back the owner never typed', true, 'does the pane open');
   check('x'.repeat(LIMIT + 1), true, 'a long reply against a short message', true, 'go');
+
+  // Word for word is the whole message. Echoing the argument without the skill that carried it is the way this goes wrong.
+  const asked = '/dev C:\\work\\docs\\fixes\\reading\\the-bar-icons.md';
+  check(asked, false, 'the whole message back', true, asked);
+  check('C:\\work\\docs\\fixes\\reading\\the-bar-icons.md', true, 'the argument back without the skill name', true, asked);
+  check('/dev', true, 'the skill name back without its argument', true, asked);
+  check('first line', true, 'one line back out of a message of two', true, 'first line\nsecond line');
 
   // Quoted material is not what the reply says. Rule 1 itself carries every phrase above, so a reply naming the rule would refuse itself.
   check('Rule 1 says a reply may not say "that needs a ticket".', false, 'the phrase inside quotation marks', false);
