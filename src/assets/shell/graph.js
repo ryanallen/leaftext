@@ -4,11 +4,9 @@
 let graphData = null; // last {nodes, edges, truncated} payload from the backend
 let graphRequested = false; // asked the backend since entering the graph view
 let graphScene = null; // live Pixi/d3 scene while the view is open
-let graphActivePath = null;
 let graphLibsPromise = null;
 let graphSeedKey = null; // scope+seeds of the last request, to skip redundant refetches
 let keptGraphCamera = null; // the framing and node places the map was left at, with the signature they were taken under. See teardownGraph.
-let graphFocusPending = false; // fly to the active node once the next scene finishes building
 const GRAPH_NEIGHBOR_LABEL_CAP = 12;
 // Focus scope on the start screen seeds from the recent files; cap how many so a long history does not balloon the neighborhood.
 const GRAPH_RECENT_SEED_CAP = 50;
@@ -622,4 +620,3 @@ async function buildGraphScene() {
     setGraphStatus((err && err.message) ? String(err.message) : GRAPH_ERROR);
   }
 }
-

@@ -88,7 +88,7 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 - The row above the list steps back out one level. So does a crumb.
 - The **breadcrumb** above the search box is the path you are on: `Vajrayana › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
 - Folders sort before files, each alphabetized. Every folder is listed, including the ones whose names start with a dot and the ones a shortcut points at.
-- Pointing at a row washes it, rounds its ends fully, lifts it a hair off the pane and leans its mark a little the way the row opens — [what a control does under the pointer](02-navigation.md#what-a-control-does-under-the-pointer). The row you have open keeps its own tint and its own shape instead, so what is open still reads as open.
+- Pointing at a row washes it and nothing else — no shadow, no change of shape, nothing sliding — [what a control does under the pointer](02-navigation.md#what-a-control-does-under-the-pointer). The row you have open keeps its own tint instead, so what is open still reads as open.
 - Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
 - The folder you are in is saved, so a restart reopens it. If the folder has gone, the pane falls back to the top of the vault.
 

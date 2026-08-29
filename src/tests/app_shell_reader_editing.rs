@@ -198,9 +198,9 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
     let html = app_shell_page();
 
     for expected in [
-            "let readerLayoutFrame = 0;",
+            "var readerLayoutFrame;",
             "let readerScrollAnchor = null;",
-            "let readerReflowObserver = null;",
+            "var readerReflowObserver;",
             "const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';",
             "function captureReaderScrollAnchor() {",
             // Capture and restore share one cached block list so a serialized {section, block} anchor always resolves back to the element it named.
@@ -224,6 +224,9 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
         ] {
             assert_contains(&html, expected);
         }
+    for expected in ["readerLayoutFrame = 0;", "readerReflowObserver = null;"] {
+        assert_in(&html, "function initializeMinimapState() {", expected);
+    }
 
     // The page holds all three of these lines in several places, so the block each is in is the claim: the capture reads the cached list, the queued pass re-origins, and the reflow observer drops the cache.
     for (inside, expected) in [

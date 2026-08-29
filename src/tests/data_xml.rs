@@ -255,6 +255,14 @@ fn table_cell_tags(html: &str) -> Vec<&str> {
     table_tags(html, "<td")
 }
 
+/// The number an opening tag carries under `name`, which is written `data-value-start="`, quote and all.
+fn stamp_offset(tag: &str, name: &str) -> usize {
+    let from = tag.find(name).expect("the name") + name.len();
+    tag[from..from + tag[from..].find('"').expect("a closed value")]
+        .parse()
+        .expect("a number")
+}
+
 /// Every opening tag in the first table of `html` starting with `mark`.
 fn table_tags<'a>(html: &'a str, mark: &str) -> Vec<&'a str> {
     let table = &html[html.find("<table").expect("a table")..];
@@ -266,7 +274,7 @@ fn table_tags<'a>(html: &'a str, mark: &str) -> Vec<&'a str> {
 
 #[test]
 fn a_table_cell_carries_the_bytes_of_the_element_it_was_drawn_from() {
-    // Typing in a cell rests on something naming one element's own range. A cell drawn from an attribute, or invented because the record was short of that column, is nobody's bytes and names none. A cell two elements folded into names none either — each of them is a span of its own inside it, and the separator between them belongs to neither.
+    // Typing in a cell rests on something naming that value's own bytes. A cell drawn from an element names the element whole, tags and all; one drawn from an attribute names the bytes inside its quotes, which is a different proof and so a different pair of names. A cell invented because the record was short of that column is nobody's bytes and names neither, and a cell two values folded into names neither either — each of them is a span of its own inside it, and the separator between them belongs to neither.
     let (_title, html) = render_xml_body(CELL_STAMP_XML);
 
     let tags = table_cell_tags(&html);
@@ -281,6 +289,22 @@ fn a_table_cell_carries_the_bytes_of_the_element_it_was_drawn_from() {
         stamped,
         vec![false, true, true, false, false, true, false, true],
         "{tags:?}"
+    );
+    // The two attribute-drawn cells carry the bytes inside their quotes instead, and never the element names beside them.
+    let inside_quotes: Vec<bool> = tags
+        .iter()
+        .map(|tag| tag.contains("data-value-start"))
+        .collect();
+    assert_eq!(
+        inside_quotes,
+        vec![true, false, false, false, true, false, false, false],
+        "{tags:?}"
+    );
+    // And what it names is the value inside the quotes, never the tag around it.
+    assert_eq!(
+        &CELL_STAMP_XML[stamp_offset(tags[0], "data-value-start=\"")
+            ..stamp_offset(tags[0], "data-value-end=\"")],
+        "a"
     );
     // The folded cell's two elements, each on a span of its own, and the separator on neither.
     let spans = table_tags(&html, "<span");
@@ -335,6 +359,81 @@ fn a_table_cells_range_slices_out_its_whole_element() {
             "<tag>two</tag>",
         ],
     );
+}
+
+/// The XML an element's own attribute list is proved against: a value the file spells the way the page draws it, one padded with spaces the renderer trims off, and one written with an entity the parser hands back as a single character.
+const ATTRIBUTE_STAMP_XML: &str = r#"<feed id="chapter-4" updated=" 2026-08-13 " note="Cats &amp; dogs">
+  <entry>Words enough to render.</entry>
+</feed>"#;
+
+/// Every `<dd>` of the attribute list in `html`, as its opening tag.
+fn attribute_value_tags(html: &str) -> Vec<&str> {
+    let list = &html[html.find("data-attributes").expect("an attribute list")..];
+    let list = &list[..list.find("</dl>").expect("a closed list")];
+    list.match_indices("<dd")
+        .map(|(at, _)| &list[at..at + list[at..].find('>').expect("a closed tag") + 1])
+        .collect()
+}
+
+#[test]
+fn an_attribute_carries_its_own_bytes_only_where_the_page_draws_them_unchanged() {
+    // Typing on a value inside a tag rests on the drawn words being the file's own bytes. A value the renderer trimmed, and one the file spells with an entity, are neither — so they name no range and answer a press the way they do today.
+    let (_title, html) = render_xml_body(ATTRIBUTE_STAMP_XML);
+
+    let tags = attribute_value_tags(&html);
+    let stamped: Vec<bool> = tags
+        .iter()
+        .map(|tag| tag.contains("data-value-start"))
+        .collect();
+    assert_eq!(stamped, vec![true, false, false], "{tags:?}");
+    // And never the names a block is found by, or the gutter would offer a value a drag handle.
+    assert!(
+        !tags.iter().any(|tag| tag.contains("data-src-start")),
+        "{tags:?}"
+    );
+}
+
+#[test]
+fn an_attributes_range_slices_out_the_value_between_its_quotes() {
+    // The page holds the drawn words against exactly these bytes, so the stamp has to stop inside both quotes: a byte either side and every value on the page would refuse itself.
+    let (_title, html) = render_xml_body(ATTRIBUTE_STAMP_XML);
+
+    let tag = attribute_value_tags(&html)[0];
+    let start = stamp_offset(tag, "data-value-start=\"");
+    let end = stamp_offset(tag, "data-value-end=\"");
+    assert_eq!(&ATTRIBUTE_STAMP_XML[start..end], "chapter-4");
+    // The bytes on either side are the quotes the value is written inside, which the splice must never reach.
+    assert_eq!(&ATTRIBUTE_STAMP_XML[start - 1..start], "\"");
+    assert_eq!(&ATTRIBUTE_STAMP_XML[end..end + 1], "\"");
+}
+
+/// The XML the composed run is proved against: an element with words of its own and two values packed into the parenthetical after them.
+const COMPOSED_VALUE_XML: &str = r#"<feed>
+  <entry type="post" lang="en">Words here.</entry>
+</feed>"#;
+
+#[test]
+fn a_value_composed_with_others_carries_its_own_bytes_and_not_its_label() {
+    // Several values drawn as one run take labels and commas the file has not got, so a range over the run would splice the renderer's own words into somebody's file. Each value is drawn in an element of its own with all of that outside it.
+    let (_title, html) = render_xml_body(COMPOSED_VALUE_XML);
+
+    // The label and the separator sit outside the element the range is on.
+    assert_contains(&html, "(Type: <span data-value-start=");
+    assert_contains(&html, "</span>, Lang: <span data-value-start=");
+
+    let tags: Vec<&str> = html
+        .match_indices("<span data-value-start=")
+        .map(|(at, _)| &html[at..at + html[at..].find('>').expect("a closed tag") + 1])
+        .collect();
+    assert_eq!(tags.len(), 2, "{html}");
+    let sliced: Vec<&str> = tags
+        .iter()
+        .map(|tag| {
+            &COMPOSED_VALUE_XML
+                [stamp_offset(tag, "data-value-start=\"")..stamp_offset(tag, "data-value-end=\"")]
+        })
+        .collect();
+    assert_eq!(sliced, vec!["post", "en"]);
 }
 
 #[test]

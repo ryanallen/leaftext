@@ -30,8 +30,6 @@ const flowCode = document.getElementById('flowCode');
 
 // What the sheet is editing, for as long as it is open. `graph` is null while the text is something the canvas cannot model; `text` is authoritative either way, because it is what Save writes.
 let flowSession = null;
-let flowSelection = null;
-let flowDrag = null;
 let flowCodeTimer = 0;
 // Drawing is a round trip through mermaid, so it is debounced, and whatever mermaid says when it refuses is what the notice shows.
 let flowDrawTimer = 0;
@@ -43,8 +41,6 @@ let flowLastFocus = null;
 let flowSize = null;
 let flowZoom = 1;
 let flowPlaced = null;
-// The box being typed into on the canvas, if any.
-let flowLabelBox = null;
 // Steps back and forward, and the state as of the last settled point. `before` is what a change undoes to, re-taken after every change — which is how one place can record a step without every caller having to remember to.
 const flowHistory = { past: [], future: [] };
 let flowBefore = null;

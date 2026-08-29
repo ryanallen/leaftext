@@ -164,8 +164,10 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     ));
 
     // Two padlocks, both locked until you say otherwise, each a saved setting rather than an answer you give again on every file you open. Unlocking the page you read must not also hand over the file's own text.
-    assert!(html.contains("let readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;"));
-    assert!(html.contains("let codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;"));
+    assert!(html.contains("let readingUnlocked;"));
+    assert!(html.contains("let codeUnlocked;"));
+    assert!(html.contains("readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;"));
+    assert!(html.contains("codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;"));
     assert!(html.contains("  return readingUnlocked;"));
     assert!(html.contains("if (readerEditingAllowed()) {"));
     assert!(html.contains("send({ command: 'setReadingUnlocked', enabled: readingUnlocked });"));

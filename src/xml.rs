@@ -376,8 +376,27 @@ fn render_fields<'a>(nodes: &[Node<'a, 'a>], ctx: &mut XmlCtx) {
     ctx.push(&format!("<dl class=\"data-fields\">\n{rows}</dl>\n"));
 }
 
+/// The bytes of an attribute's value inside its quotes, and only where the page draws those bytes unchanged. A value the renderer trimmed, or one the file spells with an entity, is not the text on the screen, so writing the screen back over it would respell somebody's file.
+fn attribute_value_range(
+    attribute: &roxmltree::Attribute,
+    source: &str,
+    drawn: &str,
+) -> Option<(usize, usize)> {
+    let range = attribute.range_value();
+    (source.get(range.clone())? == drawn).then_some((range.start, range.end))
+}
+
+/// The names a value inside a tag carries its own bytes under. Never the names a block is found by: four separate things read `data-src-start`, and a value answering to one would be offered a drag handle and a plus.
+fn value_range_attrs(range: Option<(usize, usize)>) -> String {
+    match range {
+        Some((start, end)) => format!(" data-value-start=\"{start}\" data-value-end=\"{end}\""),
+        None => String::new(),
+    }
+}
+
 /// Render an element's attributes as a compact label/value list under its heading. Nothing is emitted when it has none.
 fn render_attribute_fields<'a>(node: Node<'a, 'a>, ctx: &mut XmlCtx) {
+    let source = node.document().input_text();
     let mut rows = String::new();
     for attribute in node.attributes() {
         let value = attribute.value().trim();
@@ -385,8 +404,9 @@ fn render_attribute_fields<'a>(node: Node<'a, 'a>, ctx: &mut XmlCtx) {
             continue;
         }
         rows.push_str(&format!(
-            "<dt>{}</dt><dd>{}</dd>\n",
+            "<dt>{}</dt><dd{}>{}</dd>\n",
             encode_text(&friendly_label(attribute.name())),
+            value_range_attrs(attribute_value_range(&attribute, source, value)),
             linkify(value)
         ));
     }
@@ -398,22 +418,43 @@ fn render_attribute_fields<'a>(node: Node<'a, 'a>, ctx: &mut XmlCtx) {
     ));
 }
 
+/// Where a drawn value's own bytes are, and so which names they travel under and how the page proves them: a whole leaf element, tags and all, or the bytes inside an attribute's quotes.
+#[derive(Clone, Copy)]
+enum DrawnBytes {
+    Element(usize, usize),
+    InsideQuotes(usize, usize),
+}
+
+impl DrawnBytes {
+    /// The `data-*` pair for the opening tag it is drawn in.
+    fn attrs(self) -> String {
+        match self {
+            // Never the names a block is found by: four separate things read `data-src-start`, and a cell answering to one would be offered a drag handle and a plus.
+            DrawnBytes::Element(start, end) => {
+                format!(" data-cell-start=\"{start}\" data-cell-end=\"{end}\"")
+            }
+            DrawnBytes::InsideQuotes(start, end) => value_range_attrs(Some((start, end))),
+        }
+    }
+}
+
 /// One cell of a record row.
 struct Cell {
     /// Lower-cased column key: an attribute or child element name.
     key: String,
     /// The column heading this cell would give its column.
     label: String,
-    /// One rendered value per element folded into this cell, each beside the range of the element its words came from, opening tag to closing tag. None where the words are nobody's own bytes, as an attribute value is. Drawn joined by `, `.
-    parts: Vec<(String, Option<(usize, usize)>)>,
+    /// One rendered value per thing folded into this cell, each beside where its own bytes are. None where the words are nobody's own bytes. Drawn joined by `, `.
+    parts: Vec<(String, Option<DrawnBytes>)>,
     /// Plain-text length, for deciding whether the run reads as a table.
     chars: usize,
 }
 
 /// The cells of one record: its attributes first, then its leaf children. Repeated child names fold into one cell holding a part per element.
 fn row_cells<'a>(node: Node<'a, 'a>) -> Vec<Cell> {
+    let source = node.document().input_text();
     let mut cells: Vec<Cell> = Vec::new();
-    let mut push = |name: &str, text: &str, range: Option<(usize, usize)>| {
+    let mut push = |name: &str, text: &str, range: Option<DrawnBytes>| {
         let key = name.to_lowercase();
         let chars = text.chars().count();
         let html = linkify(text);
@@ -434,7 +475,9 @@ fn row_cells<'a>(node: Node<'a, 'a>) -> Vec<Cell> {
     for attribute in node.attributes() {
         let value = attribute.value().trim();
         if !value.is_empty() {
-            push(attribute.name(), value, None);
+            let range = attribute_value_range(&attribute, source, value)
+                .map(|(start, end)| DrawnBytes::InsideQuotes(start, end));
+            push(attribute.name(), value, range);
         }
     }
     for child in node.children().filter(|child| child.is_element()) {
@@ -442,7 +485,7 @@ fn row_cells<'a>(node: Node<'a, 'a>) -> Vec<Cell> {
         if !text.is_empty() {
             let range = is_leaf(child).then(|| {
                 let range = child.range();
-                (range.start, range.end)
+                DrawnBytes::Element(range.start, range.end)
             });
             push(child.tag_name().name(), &text, range);
         }
@@ -496,13 +539,9 @@ fn table_group<'a>(
     Some((end, columns))
 }
 
-/// One `<td>`. The range sits on whatever element holds exactly one XML element's words: the cell itself where it was drawn from one element, and a span of its own per element where several folded into it — so the `, ` between them sits in no span and answers a press with nothing, which is what it is.
+/// One `<td>`. The range sits on whatever element holds exactly one value's words: the cell itself where one thing drew it, and a span of its own per value where several folded into it — so the `, ` between them sits in no span and answers a press with nothing, which is what it is.
 fn cell_html(cell: Option<&Cell>) -> String {
-    // Never the names a block is found by: four separate things read `data-src-start`, and a cell answering to one would be offered a drag handle and a plus.
-    let stamp = |range: Option<(usize, usize)>| match range {
-        Some((start, end)) => format!(" data-cell-start=\"{start}\" data-cell-end=\"{end}\""),
-        None => String::new(),
-    };
+    let stamp = |range: Option<DrawnBytes>| range.map(DrawnBytes::attrs).unwrap_or_default();
     let Some(cell) = cell else {
         return "<td></td>".to_string();
     };
@@ -573,17 +612,29 @@ fn element_text(node: Node) -> String {
 
 /// The value of a leaf element: its text, or — for an empty element that only carries attributes, like an Atom `<link href="…">` — those attributes. `None` when the element says nothing at all.
 fn value_html(node: Node) -> Option<String> {
+    let source = node.document().input_text();
     let text = element_text(node);
-    let attributes: Vec<(String, String)> = node
+    let attributes: Vec<(String, String, Option<(usize, usize)>)> = node
         .attributes()
-        .map(|attribute| (attribute.name(), attribute.value().trim()))
-        .filter(|(_, value)| !value.is_empty())
-        .map(|(name, value)| (friendly_label(name), linkify(value)))
+        .map(|attribute| {
+            let value = attribute.value().trim();
+            let range = attribute_value_range(&attribute, source, value);
+            (friendly_label(attribute.name()), value.to_string(), range)
+        })
+        .filter(|(_, value, _)| !value.is_empty())
         .collect();
-    let named = |attributes: &[(String, String)]| {
+    // Several values composed into one run: the label and the comma after it are the renderer's words, so each value is drawn in an element of its own and they stay outside it. Otherwise a press anywhere in the run would name a splice covering words the file has not got.
+    let named = |attributes: &[(String, String, Option<(usize, usize)>)]| {
         attributes
             .iter()
-            .map(|(label, value)| format!("{}: {value}", encode_text(label)))
+            .map(|(label, value, range)| {
+                format!(
+                    "{}: <span{}>{}</span>",
+                    encode_text(label),
+                    value_range_attrs(*range),
+                    linkify(value)
+                )
+            })
             .collect::<Vec<_>>()
             .join(", ")
     };
@@ -599,9 +650,9 @@ fn value_html(node: Node) -> Option<String> {
         return Some(html);
     }
     match attributes.as_slice() {
-        // The element's own label already names a lone attribute's value: an Atom `<link href="…"/>` reads "Link: …", not "Link: Link: …".
+        // The element's own label already names a lone attribute's value: an Atom `<link href="…"/>` reads "Link: …", not "Link: Link: …". Nothing is composed around it, so it is drawn bare and the block it fills answers for it.
         [] => None,
-        [(_, only)] => Some(only.clone()),
+        [(_, only, _)] => Some(linkify(only)),
         several => Some(named(several)),
     }
 }

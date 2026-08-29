@@ -395,6 +395,229 @@ ${run}
     }
   });
 
+  // The same gate asked of a value the element keeps inside its own tag. Half of what an XML file says is written there, so the point is that correcting one leaves the name, the equals and both quotes exactly where they were: a splice a byte wide either way takes the tag apart.
+  check('a value an XML element keeps in a tag writes between its quotes and leaves the tag standing', () => {
+    const { xmlValueTypeableInPlace, valueClosingQuote, bindEditableBlocks, commitBlockEdit } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source = '<feed id="chapter-4" updated=" 2026-08-13 " note=\'a "quoted" word\'>\n<entry>Words.</entry>\n</feed>\n';
+    const valueFor = (written, drawn, quote = '"') => {
+      const at = source.indexOf(quote + written + quote);
+      if (at < 0) throw new Error(`the fixture has no ${quote}${written}${quote}`);
+      const el = fakeElement(drawn);
+      el.tagName = 'DD';
+      el.dataset = { valueStart: String(at + 1), valueEnd: String(at + 1 + written.length) };
+      el.textContent = drawn;
+      return el;
+    };
+    const id = valueFor('chapter-4', 'chapter-4');
+    const body = { querySelectorAll: () => [id] };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const wasIpc = booted.ipc;
+    const posted = [];
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+
+      const span = xmlValueTypeableInPlace(id);
+      if (!span) throw new Error('a value drawn as the file spells it could not be typed on');
+      if (source.slice(span.start, span.end) !== 'chapter-4') {
+        throw new Error(`the span opened was ${JSON.stringify(source.slice(span.start, span.end))}`);
+      }
+      // Which quote closes it decides the one character it can never hold, and it is read off the byte in front of the value.
+      if (valueClosingQuote(span.start) !== '"') throw new Error('the quote the value is written inside was not found');
+      if (valueClosingQuote(xmlValueTypeableInPlace(valueFor('a "quoted" word', 'a "quoted" word', "'")).start) !== "'") {
+        throw new Error('a value written in single quotes was read as closing on a double one');
+      }
+      // A value the renderer trimmed is not the bytes on the page, so a splice through it would eat the spaces around it.
+      if (xmlValueTypeableInPlace(valueFor(' 2026-08-13 ', '2026-08-13'))) {
+        throw new Error('a value the renderer trimmed opened for typing');
+      }
+      // And a value with no range at all is nobody's to type on.
+      if (xmlValueTypeableInPlace(fakeElement('bare'))) throw new Error('a value with no range opened for typing');
+
+      // The pass reaches it: nothing else walks these, because the pass before it walks the names a block is found by.
+      bindEditableBlocks('xml');
+      if (!id.listeners.has('pointerup') || !id.__innerSpan || !id.classList.contains('leaf-editable')) {
+        throw new Error('a value inside a tag was not opened for typing');
+      }
+      if (id.__valueQuote !== '"') throw new Error('the wiring pass did not record which quote closes the value');
+
+      id.__editBaseline = 'chapter-4';
+      commitBlockEdit(id, 'chapter-5');
+      const edit = posted.find((message) => message.command === 'editBlock');
+      if (!edit) throw new Error('typing on a value inside a tag wrote nothing');
+      const after = source.slice(0, edit.start) + edit.text + source.slice(edit.end);
+      if (!after.includes('id="chapter-5"')) throw new Error('the name, the equals and the quotes did not survive the commit');
+      if (after.replace('chapter-5', 'chapter-4') !== source) {
+        throw new Error('writing one value moved something else in the file');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // The one thing a value inside a tag cannot hold is the quote that closes it, and there is no escape the page could hide it behind — so it is refused and the words go back, the same answer a note gives to two dashes in a row.
+  check('a value carrying the quote that closes it is refused rather than written', () => {
+    const { commitBlockEdit } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source = '<feed id="chapter-4">\n<entry>Words.</entry>\n</feed>\n';
+    const at = source.indexOf('chapter-4');
+    const id = fakeElement('chapter-4');
+    id.tagName = 'DD';
+    id.dataset = { valueStart: String(at), valueEnd: String(at + 'chapter-4'.length) };
+    id.textContent = 'chapter "4"';
+    id.__innerSpan = { start: at, end: at + 'chapter-4'.length };
+    id.__valueQuote = '"';
+    id.__editBaseline = 'chapter-4';
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const wasIpc = booted.ipc;
+    const wasToast = booted.leafToast;
+    const said = [];
+    const posted = [];
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+      booted.leafToast = (words) => said.push(words);
+
+      if (commitBlockEdit(id, 'chapter "4"')) throw new Error('a value holding the quote that closes it was written');
+      if (posted.some((message) => message.command === 'editBlock')) {
+        throw new Error('the refused value reached the document anyway');
+      }
+      if (!said.length) throw new Error('the refusal said nothing');
+      // And the words go back to the bytes the file has, so the page and the document say the same thing again.
+      if (id.textContent !== 'chapter-4') {
+        throw new Error(`the refused words were left on the page as ${JSON.stringify(id.textContent)}`);
+      }
+      // The other quote is not the one that closes it, so it goes in.
+      id.textContent = "chapter '4'";
+      if (!commitBlockEdit(id, "chapter '4'")) throw new Error('a value holding the quote it is not written inside was refused');
+    } finally {
+      booted.ipc = wasIpc;
+      booted.leafToast = wasToast;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // A block whose words the page cannot write back out opens its own markup on a press, and it swallows that press to do it. So a value drawn inside one — a run of several composed with labels and commas the file has not got — would never get the press aimed at it, and drawing the values apart would buy nothing.
+  check('a press on a value inside a block that opens its markup goes to the value', () => {
+    const { bindEditableBlocks } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source = '<feed>\n<entry type="post" lang="en">Words here.</entry>\n</feed>\n';
+    const element = '<entry type="post" lang="en">Words here.</entry>';
+    const at = source.indexOf(element);
+    const field = fakeElement('field');
+    field.tagName = 'DD';
+    field.dataset = { blockKind: 'paragraph', srcStart: String(at), srcEnd: String(at + element.length) };
+    const value = fakeElement('type');
+    value.tagName = 'SPAN';
+    const valueAt = source.indexOf('"post"') + 1;
+    value.dataset = { valueStart: String(valueAt), valueEnd: String(valueAt + 'post'.length) };
+    value.textContent = 'post';
+    field.appendChild(value);
+    const nodes = [field, value];
+    const body = {
+      querySelectorAll: (selector) => nodes.filter((one) => one.matches(selector)),
+    };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const wasToast = booted.leafToast;
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      booted.leafToast = () => {};
+
+      bindEditableBlocks('xml');
+      // The block around it holds words the page cannot write back — the labels and the comma are the renderer's — so it keeps the raw editor and the value inside it opens for typing.
+      if (!value.classList.contains('leaf-editable')) throw new Error('a composed value was not opened for typing');
+      if (field.dataset.editingSource === 'true') throw new Error('the block opened its markup before any press');
+
+      const press = (field.listeners.get('pointerdown') || [])[0];
+      if (!press) throw new Error('the block around the values took no press');
+      let stopped = false;
+      press({ button: 0, target: value, preventDefault: () => { stopped = true; } });
+      if (stopped || field.dataset.editingSource === 'true') {
+        throw new Error('a press on the value swapped the block around it for its markup');
+      }
+      // A press anywhere else in the same block still opens the markup, which is the only way to reach the labels and the tag.
+      press({ button: 0, target: field, preventDefault: () => {} });
+      if (field.dataset.editingSource !== 'true') throw new Error('a press beside the value no longer opens the markup');
+    } finally {
+      booted.leafToast = wasToast;
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
+  // A sitemap, a feed and a manifest put almost everything they say in attributes, so a table drawn from one is columns of values inside tags. Those cells carry the bytes between their quotes rather than a whole element, which is a different proof — and the point is that correcting one date leaves every other row of the file byte for byte where it was.
+  check('a cell drawn from an attribute types on its own bytes and leaves every other row alone', () => {
+    const { bindEditableBlocks, commitBlockEdit } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const source =
+      '<urlset>\n<url id="a" when="2026-07-24"><loc>https://leaftext.com/</loc></url>\n' +
+      '<url id="b" when="2026-07-11"><loc>https://leaftext.com/docs/</loc></url>\n</urlset>\n';
+    const cellFor = (written, after) => {
+      const at = source.indexOf('"' + written + '"', after);
+      if (at < 0) throw new Error(`the fixture has no "${written}"`);
+      const cell = fakeElement(written);
+      cell.tagName = 'TD';
+      cell.dataset = { valueStart: String(at + 1), valueEnd: String(at + 1 + written.length) };
+      cell.textContent = written;
+      return cell;
+    };
+    const first = cellFor('2026-07-24', 0);
+    const second = cellFor('2026-07-11', 0);
+    const nodes = [first, second];
+    const body = { querySelectorAll: (selector) => nodes.filter((one) => one.matches(selector)) };
+    const inApp = read('app');
+    const wasQuery = inApp.querySelector;
+    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const wasIpc = booted.ipc;
+    const posted = [];
+    try {
+      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+
+      // The pass that opens a value inside a tag is not scoped to the fields list, so a cell drawn from one is wired by exactly the same walk.
+      bindEditableBlocks('xml');
+      for (const cell of nodes) {
+        if (!cell.classList.contains('leaf-editable') || !cell.__innerSpan || cell.__valueQuote !== '"') {
+          throw new Error(`a cell drawn from an attribute was not opened for typing: ${cell.textContent}`);
+        }
+        if (cell.dataset.cellStart != null) throw new Error('an attribute-drawn cell wore the element names');
+      }
+
+      first.__editBaseline = '2026-07-24';
+      commitBlockEdit(first, '2026-08-01');
+      const edit = posted.find((message) => message.command === 'editBlock');
+      if (!edit) throw new Error('typing in an attribute-drawn cell wrote nothing');
+      const after = source.slice(0, edit.start) + edit.text + source.slice(edit.end);
+      if (!after.includes('when="2026-08-01"')) throw new Error('the cell was not written between its quotes');
+      if (!after.includes('when="2026-07-11"')) throw new Error('the other row moved');
+      if (after.replace('2026-08-01', '2026-07-24') !== source) {
+        throw new Error('writing one cell moved something else in the file');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      inApp.querySelector = wasQuery;
+      read(
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+      );
+    }
+  });
+
   // A stand-in table: the heading row and the cells in reading order, answering the three questions the wiring pass and a heading ask of one. A cell drawn from one element carries the range itself; one drawn from several carries none and holds a span each.
   const xmlTable = (source, run, heads, rows) => {
     const spanFor = (element, tag) => {

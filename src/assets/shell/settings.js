@@ -1,5 +1,3 @@
-let currentState = { recent: [], favorites: [], tabs: [], active: null, document: null };
-let navigationState = { canGoBack: false, canGoForward: false };
 // The home screen's three rotating slots — headline, subtitle, sentence — in one registry. A family owns all three for a visit, so the screen reads as one voice rather than three lines drawn separately. A line may claim only what the docs publish: no account, no cloud, no telemetry, plain files on the reader's own device that any other app can open.
 const HOME_MESSAGE_FAMILIES = [
   {
@@ -52,8 +50,7 @@ function pickHomeMessage() {
     description: family.descriptions[Math.floor(Math.random() * family.descriptions.length)],
   };
 }
-// Kept between renders so a re-render redraws the same message rather than re-rolling it under the reader.
-let homeMessage = pickHomeMessage();
+homeMessage = pickHomeMessage();
 // UI toggles are persisted by the host, injected as window.__leafSettings before any page script (the app shell's opaque origin can't use localStorage). We seed from them synchronously here and report every change back so it can save them.
 const LEAF_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
 // The reader's own operating system already answers whether scrollbars always show, so the app asks nobody: the host reads it at launch and injects it as window.__leafScrollbarsAlways. Never one of the switches above — a copy of somebody else's answer in settings.json goes stale the moment they change their mind. The flag rides the surface, where one stylesheet rule pins every bar in the app painted. A published page and an exported one carry no injected globals at all, so both stay as they are.

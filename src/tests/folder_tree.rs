@@ -292,7 +292,7 @@ fn the_file_list_starts_with_a_way_back_out() {
     assert!(html.contains("if (parent) rows.push(upRowHtml(parent));"));
     assert!(html.contains(r#"class="library-nav-folder library-nav-up""#));
 
-    // Both classes in the selector, and the block below the hover rule: the folder rows' block ties on weight and erases all five of these without the second class, and the hover pill above curves the hairline up at both ends into a bowl.
+    // Both classes in the selector, and the block below the hover rule: the folder rows' block ties on weight and erases all five of these without the second class.
     let rows = ".library-file,
 .library-nav-folder {";
     let hover = ".library-file:hover,
@@ -313,15 +313,9 @@ fn the_file_list_starts_with_a_way_back_out() {
         "padding-bottom: var(--lt-space-6);",
         "border-bottom: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-border) 60%, transparent);",
         "border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;",
-        // The way out is fixed above the divider, so it takes the hover lift back off itself; the shared block still hands one to every row below.
-        "box-shadow: none;",
     ] {
         assert!(body.contains(declaration), "the back row's own rule writes {declaration}");
     }
-    assert!(
-        rule_body(&css, hover).contains("box-shadow: var(--lt-shadow-raised);"),
-        "there is a lift to refuse: flattening the shared hover instead would pass the line above and take every row's lift with it"
-    );
     // Full-strength ink under the pointer, which needs the third class to outrank the shared hover rule's own color.
     assert!(
         rule_body(&css, ".library-nav-folder.library-nav-up:hover {")

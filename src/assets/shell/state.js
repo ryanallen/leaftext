@@ -1,6 +1,50 @@
-// The state more than one fragment touches, grouped by its owner. First in the load order because it has to be: the fragments are one script, and theme.js runs renderState() as it loads — before code-view.js, whose state that reads.
+// The state more than one fragment touches, grouped by its owner. It follows the error journal and leads every subject fragment, so each shared binding exists before anything reaches it.
 //
-// Only shared state belongs here. What one fragment reads goes in that fragment.
+// Only shared state belongs here. What one fragment reads goes in that fragment. Outside this file, a top-level mutable binding may be assigned only by the fragment that declares it.
+
+// ---- the flowchart sheet ---------------------------------------------------
+
+// The shape picker carries an add callback and its typed name between the picker and canvas.
+let flowPickerAdd = null;
+let flowPickerName = '';
+// The canvas selection and drag are changed by its pointer and menu fragments.
+let flowSelection = null;
+let flowDrag = null;
+
+// ---- settings and navigation ---------------------------------------------
+
+let currentState = { recent: [], favorites: [], tabs: [], active: null, document: null };
+let navigationState = { canGoBack: false, canGoForward: false };
+// Kept between renders so a re-render redraws the same message rather than re-rolling it under the reader.
+let homeMessage = null;
+
+// ---- the library, views, and graph ----------------------------------------
+
+// Vaults and pane state are written by the library and search fragments and read across the reader.
+let leafVaults;
+let activeVaultId;
+let libraryProjectPath;
+let libraryChain = [];
+let librarySearchQuery = '';
+let pendingSearchJump = null;
+// The two editable views keep separate saved padlocks, while the graph is one window-wide view.
+let readingUnlocked;
+let codeUnlocked;
+let graphViewOpen = false;
+let graphExitPending = false;
+let graphActivePath = null;
+let graphFocusPending = false;
+
+// ---- tabs, images, and reader position ------------------------------------
+
+let tabDrag = null;
+// A changed local picture gets a new URL without rebuilding the document.
+let localImageEpoch = 0;
+// Scroll anchoring is measured and spent across the updater, renderer, and minimap fragments.
+let readerScrollAnchor = null;
+let readerScrolling = false;
+let resetReaderScrollOnNextRender = false;
+let readerAnchorBlocks = null;
 
 // ---- the box that means "the app" (dom.js, context-menu.js, glossary.js, hints.js, library.js, render-document.js, decorate.js, code-view.js, minimap.js, frontmatter-fields.js)
 

@@ -162,12 +162,18 @@ fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
         "cursor: text;",
     );
 
-    // A tab drags by its name, so the label keeps the grab; the mark and the close beside it are presses and take the hand from the shared rule.
-    assert_contains(rule_body(&css, ".tab-label {"), "cursor: grab;");
+    // Pointing at a tab shows the arrow: a tab drags, and an open hand on every one of them said so all the time. The closed hand stays, because that one is only up while a tab is actually moving.
+    for selector in [".tab {", ".tab-label {"] {
+        assert!(
+            !rule_body(&css, selector).contains("cursor: grab;"),
+            "`{selector}` offers the open hand before anything is being dragged"
+        );
+    }
     assert_contains(
         rule_body(&css, ".tab-dragging .tab-label {"),
         "cursor: grabbing;",
     );
+    assert_contains(rule_body(&css, ".tab-dragging {"), "cursor: grabbing;");
 
     // And a drag that locks the whole window has to name the buttons too, or the pointer turns into a hand every time it crosses one and the drag reads as having let go.
     for selector in [
@@ -405,32 +411,27 @@ fn a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot() {
         (".reader-subtool {", "box-shadow"),
         // A diagram box's + handle shows with the box it belongs to, so its fill is named beside that reveal.
         (".flow-bud {", "background-color"),
-        // The three families that answer a pointer with a lift: the shorthand that times the shadow is what takes the shared fade away from them.
-        (".theme-button,
-.open-button,
-.new-button,
-.export-button {", "background-color"),
-        (".theme-button,
-.open-button,
-.new-button,
-.export-button {", "border-color"),
-        (".theme-button,
-.open-button,
-.new-button,
-.export-button {", "color"),
-        (".library-file,
-.library-nav-folder {", "background-color"),
-        (".library-file,
-.library-nav-folder {", "border-color"),
-        (".library-file,
-.library-nav-folder {", "color"),
-        (".document-body a.leaf-md-button {", "background-color"),
-        (".document-body a.leaf-md-button {", "border-color"),
-        (".document-body a.leaf-md-button {", "color"),
     ] {
         assert_contains(
             rule_body(css, selector),
             &format!("{property} var(--lt-duration-120) var(--lt-ease)"),
+        );
+    }
+
+    // The three families that once wrote a four-property shorthand to time a lift take the shared fade again, so the lift cannot come back through a timing line nobody reads as one.
+    for selector in [
+        ".theme-button,
+.open-button,
+.new-button,
+.export-button {",
+        ".library-file,
+.library-nav-folder {",
+        ".document-body a.leaf-md-button {",
+    ] {
+        let body = rule_body(css, selector);
+        assert!(
+            !body.contains("transition"),
+            "{selector} answers from the shared fade, so it writes no clock of its own: {body}"
         );
     }
 
@@ -674,55 +675,40 @@ fn the_focus_ring_is_the_keyboards_and_the_mouse_takes_it_off_every_control() {
 }
 
 #[test]
-fn a_pointed_at_control_lifts_and_nothing_that_means_something_does() {
-    // Three families answer a pointer with the raised shadow as well as color, and only a library row rounds to the pill. What none of them may reach is a state that already means something: the open file, and a button whose link goes nowhere and is drawn as words.
+fn nothing_lifts_or_changes_shape_when_a_pointer_lands_on_it() {
+    // The lift shipped twice and was refused twice. This reads the whole stylesheet rather than three named rules, so flattening one row can never be what makes it pass: no hover anywhere casts the raised shadow, and a library row keeps the corner it rests at.
     let css = reading_mode_css();
 
-    // The 32px chips lift and keep their corner: a pill on a square is a circle, a different control rather than an emphasis.
-    let chips = rule_body(
+    for (at, _) in css.match_indices(":hover") {
+        let rule = &css[at..css[at..].find('}').map_or(css.len(), |end| at + end)];
+        assert!(
+            !rule.contains("--lt-shadow-raised"),
+            "a control that rises off the surface under the pointer: {rule}"
+        );
+    }
+
+    // The row answers with color on the corner it already had; a shape that changes under the pointer is the pill the owner refused.
+    let row = rule_body(
         css,
-        ".theme-button:hover,\n.open-button:hover,\n.new-button:hover,\n.export-button:hover {",
+        ".library-file:hover,
+.library-nav-folder:hover {",
     );
-    assert_contains(chips, "box-shadow: var(--lt-shadow-raised);");
     assert!(
-        !chips.contains("border-radius"),
-        "a 32px chip rounded to the pill is a circle: {chips}"
+        !row.contains("border-radius"),
+        "a row that changes shape under the pointer: {row}"
     );
 
-    // A library row is a whole strip a pointer sweeps, so it rounds to the pill with the lift.
-    let row = rule_body(css, ".library-file:hover,\n.library-nav-folder:hover {");
-    assert_contains(row, "border-radius: var(--lt-radius-pill);");
-    assert_contains(row, "box-shadow: var(--lt-shadow-raised);");
-
-    // A document button is aimed at, so it lifts and keeps the medium corner it was aimed at rather than becoming a pill under the pointer.
-    let button = rule_body(css, ".document-body a.leaf-md-button {");
-    assert_contains(button, "border-radius: var(--lt-radius-md);");
-    let button_hover = rule_body(css, ".document-body a.leaf-md-button:hover {");
-    assert_contains(button_hover, "box-shadow: var(--lt-shadow-raised);");
-    assert!(
-        !button_hover.contains("border-radius"),
-        "a button that changes shape under the pointer is a different button than the one aimed at: {button_hover}"
-    );
-
-    // The open file is already saying something with its tint, so it keeps its rectangle under the pointer rather than saying two things at once.
-    let selected = rule_body(
-        css,
-        ".library-file.is-selected,\n.library-file.is-selected:hover {",
-    );
-    assert_contains(selected, "border-radius: var(--lt-radius-md);");
-    assert_contains(selected, "box-shadow: none;");
-
-    // A brace-wrapped button with nothing behind it is words in a sentence. It gives up its border, corner and fill in its own rule, and that rule has to take the lift back too — it sits later at the same weight as the hover handing one out.
-    let nowhere = rule_body(css, ".document-body a.leaf-md-button.link-goes-nowhere {");
-    assert_contains(nowhere, "box-shadow: none;");
-    let at_hover = css
-        .find(".document-body a.leaf-md-button:hover {")
-        .expect("the document button's hover rule");
-    let at_nowhere = css
-        .find(".document-body a.leaf-md-button.link-goes-nowhere {")
-        .expect("the stripped button's rule");
-    assert!(
-        at_nowhere > at_hover,
-        "the two weigh the same, so the one taking the lift back has to come second"
-    );
+    // Nothing hands a lift out, so nothing takes one back: a rule refusing a shadow no rule offers sends the next reader looking for the one that offers it.
+    for selector in [
+        ".library-file.is-selected,
+.library-file.is-selected:hover {",
+        ".library-nav-folder.library-nav-up {",
+        ".document-body a.leaf-md-button.link-goes-nowhere {",
+    ] {
+        let body = rule_body(css, selector);
+        assert!(
+            !body.contains("box-shadow"),
+            "{selector} refuses a lift nothing hands out: {body}"
+        );
+    }
 }

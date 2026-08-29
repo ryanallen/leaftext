@@ -2727,7 +2727,6 @@ body.frameless.is-fullscreen::before {
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
-  cursor: grab;
   user-select: none;
   /* Emphasized: a tab neither arrives nor leaves, the strip rearranges around it. */
   transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized), margin var(--lt-duration-120) var(--lt-ease-emphasized);
@@ -2796,9 +2795,8 @@ body.frameless.is-fullscreen::before {
   right: calc(-1 * var(--tab-flare));
   background: radial-gradient(circle at 100% 0, var(--tab-flare-arc));
 }
-/* The whole tab drags by its name, so the label keeps the grab the tab wears; the mark and the close beside it are presses and take the hand. */
+/* The whole tab drags by its name; the mark and the close beside it are presses and take the hand. */
 .tab-label {
-  cursor: grab;
   flex: 1;
   min-width: 0;
   max-width: 124px;
@@ -3392,9 +3390,6 @@ button {
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
-  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. */
-  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
 /* The chip keeps its 8px corner: a pill on a 32px square is a circle, which reads as a different control rather than as an emphasis. */
 .theme-button:hover,
@@ -3404,20 +3399,6 @@ button {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
-  box-shadow: var(--lt-shadow-raised);
-}
-/* The drawing answers with the chip, on its own element so the 32px box does not move. One pixel, because the fill is already the loud half. Never a mask swap instead: a mask does not interpolate, so it would land in one frame beside a fill that fades. */
-.theme-button .lt-icon,
-.open-button .lt-icon,
-.new-button .lt-icon,
-.export-button .lt-icon {
-  transition: transform var(--lt-duration-120) var(--lt-ease);
-}
-.theme-button:hover .lt-icon,
-.open-button:hover .lt-icon,
-.new-button:hover .lt-icon,
-.export-button:hover .lt-icon {
-  transform: translateY(-1px);
 }
 /* Unsaved-edits dot on a tab, sharing the close button's corner. In the row it is 13px of content that vanishes on the tab's own hover, so a modified tab shrinks and its label jumps the moment you point at it. */
 .tab-dirty-dot {
@@ -4299,20 +4280,14 @@ body.library-resizing button {
   background: transparent;
   color: inherit;
   font: inherit;
-  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. The corner is left out: a row is 23px tall, so every radius over 11.5px draws as the same pill and the shape is finished inside the first frame at any duration. */
-  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
 .library-file:hover,
 .library-nav-folder:hover {
   background: var(--lt-wash-hover);
-  border-radius: var(--lt-radius-pill);
-  box-shadow: var(--lt-shadow-raised);
 }
-/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. Both classes and this position are load-bearing: the rows block ties on weight, and the hover pill above would curve the hairline up at both ends into a bowl. The hover lift is taken back here too: a row fixed above the divider reads as a card laid over it if it rises off the pane. */
+/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. Both classes and this position are load-bearing: the rows block ties on weight. */
 .library-nav-folder.library-nav-up {
   color: var(--lt-muted-foreground);
-  box-shadow: none;
   margin-bottom: var(--lt-space-6);
   padding-bottom: var(--lt-space-6);
   border-bottom: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-border) 60%, transparent);
@@ -4321,12 +4296,10 @@ body.library-resizing button {
 .library-nav-folder.library-nav-up:hover {
   color: var(--lt-foreground);
 }
-/* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere — and holding its rectangle too, because the tint says which file is open and a row that also lifts and rounds under the pointer says two things at once. */
+/* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere. */
 .library-file.is-selected,
 .library-file.is-selected:hover {
   background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
-  border-radius: var(--lt-radius-md);
-  box-shadow: none;
 }
 /* The leaf mark before Markdown file names. Same inline glyph as the header logomark, so it tracks the theme's primary color instead of a baked-in one. */
 .library-file > .lt-icon {
@@ -4339,15 +4312,6 @@ body.library-resizing button {
 .library-action-icon {
   flex: none;
   color: var(--lt-muted-foreground);
-}
-/* The mark leans the way the row opens, on its own element so the label does not move: two pixels across a six-pixel gap. Below the leaf's own rule rather than above it, because the suite reads the leaf's color out of the first rule spelled `.library-file > .lt-icon` and this one would answer instead. */
-.library-file > .lt-icon,
-.library-nav-folder .library-action-icon {
-  transition: transform var(--lt-duration-120) var(--lt-ease);
-}
-.library-file:hover > .lt-icon,
-.library-nav-folder:hover .library-action-icon {
-  transform: translateX(2px);
 }
 .library-file-label {
   /* Fill the row so the fade lands on empty space until the name overflows; without flex:1 the label hugs its text and the mask clips every name. */
@@ -5342,16 +5306,12 @@ body:has(#readerToolbar:not([hidden])) {
   text-decoration: none;
   /* The hand, because a reader reads the drawing and this is drawn as a button. Written rather than left off: it is the same answer the shared button rule gives every native button. */
   cursor: pointer;
-  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. */
-  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
-/* The lift is on the base rule alone, so the outline and ghost variants below take it by having the same box rather than by writing it again. No corner here: the button a reader aimed at keeps the shape it was aimed at. */
+/* Color alone, on the base rule, so the outline and ghost variants below take it by having the same box rather than by writing it again. No corner here: the button a reader aimed at keeps the shape it was aimed at. */
 .document-body a.leaf-md-button:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
-  box-shadow: var(--lt-shadow-raised);
   text-decoration: none;
 }
 /* Outline, from `{{[Label](url)}}`: an outline at rest that fills on hover. */
@@ -5389,8 +5349,6 @@ body:has(#readerToolbar:not([hidden])) {
   border: none;
   border-radius: 0;
   background: none;
-  /* The hover above hands out a lift, and this is the one place it must be taken back: these are words in a sentence, and a shadow under them is a button nobody can press. */
-  box-shadow: none;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;

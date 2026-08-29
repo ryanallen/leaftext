@@ -1,3 +1,6 @@
+let mermaidLoadPromise = null;
+let katexLoadPromise = null;
+
 function loadMermaid() {
   if (window.mermaid) {
     return Promise.resolve(window.mermaid);
@@ -1228,7 +1231,6 @@ function publishDocumentOutline() {
 // The host serves local images over leaf-image://, which arrives as http://leaf-image.local/ where custom protocols are restricted.
 const LOCAL_IMAGE_SRC_PREFIXES = ['leaf-image://', 'http://leaf-image.', 'https://leaf-image.'];
 // The web view keeps a decoded image against its URL for the life of the process, so a replaced file would show stale until a restart. A per-render token makes each request a distinct URL.
-let localImageEpoch = 0;
 function isLocalImageSrc(src) {
   return LOCAL_IMAGE_SRC_PREFIXES.some((prefix) => src.startsWith(prefix));
 }

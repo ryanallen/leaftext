@@ -1,3 +1,58 @@
+var minimapViewportFrame;
+var minimapPreviewFrame;
+// Rebuilding the thumbnail clones the whole document, so only rebuild when the content, wrap width, or rail width changed. minimapContentVersion bumps on mutation; the minimapBuilt* values record the last clone's inputs, so a height-only resize reuses the existing clone.
+var minimapContentVersion;
+var minimapBuiltVersion;
+var minimapBuiltSourceWidth;
+var minimapBuiltPreviewWidth;
+// The reading layout's own width, which the clone is laid out against. It moves without the body's moving — the body stops at the text measure and the layout keeps growing — so a widening window has to rebuild on this alone or a wide table stays drawn at the old room.
+var minimapBuiltFrameWidth;
+var minimapDragging;
+var minimapPointerId;
+var minimapPointerOffsetY;
+// Document geometry captured once at the start of a minimap drag (it doesn't change while dragging, and re-measuring forces a synchronous layout). Then map pointer -> scrollTop with pure math.
+var minimapDragMetrics;
+var minimapResizeObserver;
+var minimapBodyObserver;
+// The document range the built clone holds, or null when it holds all of it — the clone is a window on long documents, so scrolling out of range is a third reason to rebuild (see updateDocumentMinimapPreview).
+var minimapBuiltRange;
+// The rows the built clone was sliced from. A rebuild that would slice the same two cannot change anything, so it keeps the thumbnail and stops asking for another.
+var minimapBuiltFirstRow;
+var minimapBuiltLastRow;
+// Rail geometry, cached for the scroll path: scrolling changes none of it, and re-measuring per wheel click forces a fresh layout of the whole document.
+var minimapScrollMetrics;
+var readerLayoutFrame;
+var readerScrollSettleTimer;
+var readerReflowObserver;
+var readerAnchorBlocksCount;
+// The `.document-body` the cache was built against. A re-render swaps in a fresh body node, so comparing identity catches that immediately instead of relying on the child-count heuristic alone.
+var readerAnchorBlocksSource;
+
+function initializeMinimapState() {
+  minimapViewportFrame = 0;
+  minimapPreviewFrame = 0;
+  minimapContentVersion = 0;
+  minimapBuiltVersion = -1;
+  minimapBuiltSourceWidth = -1;
+  minimapBuiltPreviewWidth = -1;
+  minimapBuiltFrameWidth = -1;
+  minimapDragging = false;
+  minimapPointerId = null;
+  minimapPointerOffsetY = null;
+  minimapDragMetrics = null;
+  minimapResizeObserver = null;
+  minimapBodyObserver = null;
+  minimapBuiltRange = null;
+  minimapBuiltFirstRow = -1;
+  minimapBuiltLastRow = -1;
+  minimapScrollMetrics = null;
+  readerLayoutFrame = 0;
+  readerScrollSettleTimer = 0;
+  readerReflowObserver = null;
+  readerAnchorBlocksCount = -1;
+  readerAnchorBlocksSource = null;
+}
+
 // ---- The rail's width: whatever the code view's map comes out as -------------
 //
 // The code view's minimap is Monaco's, and Monaco has no width setting — it works one out from the room the window can spare it. The rail does the same arithmetic here, so both views' pages end at the same place without the code view ever having been opened. Monaco's own figures, and its defaults for the parts the code view leaves alone; the last one is the only guess, and it moves the answer by a fraction of a pixel.

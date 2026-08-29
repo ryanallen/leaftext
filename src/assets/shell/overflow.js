@@ -129,8 +129,6 @@ const {
   monaco: MONACO_SCRIPT_URL,
   monacoCss: MONACO_CSS_URL,
 } = window.__lt.assets;
-let mermaidLoadPromise = null;
-let katexLoadPromise = null;
 // Nothing to wire on a published site: dom.js has taken both out, the way it takes Back and Forward out, because neither command has an answer a static site could give.
 const openButton = document.getElementById('openButton');
 const newButton = document.getElementById('newButton');

@@ -58,10 +58,11 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
     let css = reading_mode_css();
 
     for expected in [
-        "let minimapPreviewFrame = 0;",
-        "let minimapResizeObserver = null;",
-        "let minimapBodyObserver = null;",
-        "let readerLayoutFrame = 0;",
+        "var minimapPreviewFrame;",
+        "var minimapResizeObserver;",
+        "var minimapBodyObserver;",
+        "var readerLayoutFrame;",
+        "function initializeMinimapState() {",
         "let readerScrollAnchor = null;",
         "function bindDocumentMinimapPreview(track) {",
         // Content changes bump the version so the clone is rebuilt; geometry-only triggers (resize) skip the rebuild unless a width changed.
@@ -109,6 +110,14 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "link.classList.add('glossary-term');",
     ] {
         assert_contains(&html, expected);
+    }
+    for expected in [
+        "minimapPreviewFrame = 0;",
+        "minimapResizeObserver = null;",
+        "minimapBodyObserver = null;",
+        "readerLayoutFrame = 0;",
+    ] {
+        assert_in(&html, "function initializeMinimapState() {", expected);
     }
 
     // The clone keeps glossary terms blended into body text like the page, instead of showing them on the generic accent link color.
@@ -170,7 +179,7 @@ fn app_shell_throttles_minimap_scroll_sync() {
     let html = app_shell_page();
 
     for expected in [
-        "let minimapViewportFrame = 0;",
+        "var minimapViewportFrame;",
         "function scheduleMinimapViewportUpdate() {",
         "function updateMinimapViewport() {",
         // A scroll schedules the sync and flags the reader as scrolling; a resize invalidates the metrics, queues the layout pass and rebuilds the thumbnail. Each of those calls alone is in the page many times over, so the pin is the pair.
@@ -180,6 +189,11 @@ fn app_shell_throttles_minimap_scroll_sync() {
     ] {
         assert_contains(&html, expected);
     }
+    assert_in(
+        &html,
+        "function initializeMinimapState() {",
+        "minimapViewportFrame = 0;",
+    );
 
     // The sync is throttled to a frame, and the settle — not the listener, and not some other caller — is where a scroll clamps and re-pins.
     assert_in(
@@ -225,8 +239,8 @@ fn app_shell_drags_minimap_to_scroll_document() {
     let html = app_shell_page();
 
     for expected in [
-            "let minimapPointerId = null;",
-            "let minimapPointerOffsetY = null;",
+            "var minimapPointerId;",
+            "var minimapPointerOffsetY;",
             "const minimapPointerOffset = (event) => {",
             "return event.clientY - viewportRect.top;",
             "const dragMinimapViewportToPointer = (event, pointerOffsetY) => {",
@@ -243,6 +257,9 @@ fn app_shell_drags_minimap_to_scroll_document() {
         ] {
             assert_contains(&html, expected);
         }
+    for expected in ["minimapPointerId = null;", "minimapPointerOffsetY = null;"] {
+        assert_in(&html, "function initializeMinimapState() {", expected);
+    }
 
     // Both of these are in the page more than once, so the move is what has to keep dragging and the release is what has to forget the offset.
     assert_in(

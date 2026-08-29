@@ -1,4 +1,25 @@
 // The snippet() markers from the backend are control characters (STX/ETX) that cannot occur in normal Markdown, so we can escape the whole untrusted snippet for the DOM first and only then swap the markers for <mark> tags.
+let librarySearchTimer = 0;
+let librarySearchHits = null;
+let librarySearchError = null;
+let librarySearchLoading = false;
+// Whether the host cut the list at its cap, so the count can say so.
+let librarySearchTruncated = false;
+// More rows are coming for this same query: the vault is still being read. The ring stays up, an answer adds rows under what is drawn rather than replacing it, and the count says "so far". A payload that does not mention it is finished — a host that never streams says so by saying nothing.
+let librarySearchPartial = false;
+// Which query the drawn rows answer. Rows are only added to when the next answer is for the same question; anything else replaces them.
+let librarySearchHitsQuery = '';
+// The filter read back in words, and any field name the vault has never set. Shown under the box so a mistyped field is visible instead of silently matching nothing. Empty for a query of plain words, which needs no explaining.
+let librarySearchUnderstood = '';
+let librarySearchUnknownFields = [];
+// Folders under the vault the read did not go into because they hold generated files. The count line says how many and carries their names, because a vault that quietly read three quarters of itself is worse than one that read all of it slowly.
+let librarySearchSkipped = [];
+// The vault's field names and the values each holds, pushed once when its text is read. What the completion menu offers; empty until a vault is open.
+let filterHintFields = [];
+// What the completion menu is offering under the search box, and which row is picked.
+let filterMenuItems = [];
+let filterMenuIndex = 0;
+
 function highlightSnippet(snippet) {
   return escapeText(snippet || '')
     .split('').join('<mark class="library-hit-mark">')

@@ -514,6 +514,8 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
 /// What each fixture rendered to before the host boundary was drawn, taken on 6 August 2026. Nothing in that work is allowed to move one of these.
 ///
 /// The markdown one has moved since, on purpose: it is the only fixture with a leading field block, and its two fences were reported as blocks the page has no element for, which cost that document every editable range it had. Same title, same HTML, two fewer blocks.
+///
+/// So has the xml one: every value the file keeps inside a tag now carries the bytes between its quotes, and the values composed into one run are drawn in an element each so a press can name one of them. Same title, same blocks, more names on the markup.
 const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "markdown",
@@ -533,7 +535,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "xml",
-        "e2395c9f5067df1db347fd70ff9a3e8e69bfb3bf253bd83c07beedd403059eb6",
+        "cd26a8726ec3128133adfa09566f42c6e0ce5042936a46d50a42029356ceac28",
     ),
     (
         "json",

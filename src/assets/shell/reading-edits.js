@@ -392,6 +392,21 @@ function commentTextRefused(el, text) {
   return true;
 }
 
+// A value inside a tag cannot hold the quote that closes it, and the page has no escape to hide it behind either — the file would have to spell it as an entity, which is not the words the reader typed. So it is refused and the value goes back to the bytes the file has, which is where the last accepted keystroke of this run left it.
+function valueQuoteRefused(el, text) {
+  const quote = el.__valueQuote;
+  const span = el.__innerSpan;
+  if (!quote || !span || !text.includes(quote)) return false;
+  leafToast('A value inside a tag cannot hold the quote that closes it, so this was not written.');
+  el.textContent = sliceSourceBytes(currentDocumentSource, span.start, span.end);
+  return true;
+}
+
+// What a tree document refuses to write, whichever gesture is writing it — the pause in the typing and the click-out both ask. Neither of these has an escape the page could hide, so both go back to the file's own bytes rather than being spelled another way.
+function treeTextRefused(el, text) {
+  return commentTextRefused(el, text) || valueQuoteRefused(el, text);
+}
+
 // An email block as the file spells it: text as it stands, a break as the ending its own slice uses, a link as the text it shows. Never the Markdown serializer, which would write asterisks and bracket forms into a message that never had them.
 function emailBlockDomToText(el, ending) {
   if (ending === undefined) {
@@ -457,6 +472,13 @@ function xmlElementInnerSpan(src) {
   return { from, to: close.index };
 }
 
+// The `data-*` pair each kind of typed-on thing carries its own byte range under. A block's names are read by four other things — the gutter's plus, the drag handle, a delete over a run — so a cell of a table and a value an element keeps in a tag each wear a pair of their own, and nothing on the page wears two. Every gesture that moves a range or finds a thing by one walks this list, because a name added to one gesture and not the next is a splice at the wrong offset.
+const RANGE_NAMES = [
+  { found: 'data-src-start', start: 'srcStart', end: 'srcEnd' },
+  { found: 'data-cell-start', start: 'cellStart', end: 'cellEnd' },
+  { found: 'data-value-start', start: 'valueStart', end: 'valueEnd' },
+];
+
 // The span this tree block may be typed on, or null for one that keeps the raw editor — the message's question asked of an element. The drawn words, escaped the way a tree holds them, have to be exactly the bytes between the element's own tags: that equality is the whole safety, and inline markup the renderer flattened, whitespace it collapsed and an entity spelled another way all fail it.
 function xmlBlockTypeableInPlace(el) {
   return xmlRangeTypeableInPlace(el, Number(el.dataset.srcStart), Number(el.dataset.srcEnd));
@@ -465,6 +487,21 @@ function xmlBlockTypeableInPlace(el) {
 // The same question asked of one cell of a table. A cell is not a block and must never answer to a block's own names, so it carries its element's range under names of its own; everything after that is the block's proof unchanged, because a cell's words come from one leaf element exactly as a paragraph's do.
 function xmlCellTypeableInPlace(el) {
   return xmlRangeTypeableInPlace(el, Number(el.dataset.cellStart), Number(el.dataset.cellEnd));
+}
+
+// The same question asked of a value an element keeps in a tag. The renderer stamped the bytes inside the quotes, so there are no tags in the slice to find: the drawn words are held straight against those bytes, which is the block's proof with the one step it has nothing to do taken out.
+function xmlValueTypeableInPlace(el) {
+  const start = Number(el.dataset.valueStart);
+  const end = Number(el.dataset.valueEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  if (escapeTreeText(el.textContent) !== sliceSourceBytes(currentDocumentSource, start, end)) return null;
+  return { start, end };
+}
+
+// The quote a value is written inside, read off the byte before it, or null where that byte is not one — a stamp the buffer has moved past cannot be typed on. An attribute takes either quote and may hold the other freely, so which one it is decides what it can never hold.
+function valueClosingQuote(start) {
+  const quote = sliceSourceBytes(currentDocumentSource, start - 1, start);
+  return quote === '"' || quote === "'" ? quote : null;
 }
 
 // The proof both of those spend: `start..end` is one element, and what is drawn is exactly the bytes between its tags.
@@ -516,7 +553,7 @@ function commitBlockEdit(el, text, range) {
   }
   // A block the page has already replaced describes a buffer that has moved on — a re-render blurs it, and that blur must not splice yesterday's offsets.
   if (!el.isConnected) return false;
-  if (commentTextRefused(el, text)) return false;
+  if (treeTextRefused(el, text)) return false;
   const span = range || el.__innerSpan || null;
   const start = span ? span.start : Number(el.dataset.srcStart);
   const end = span ? span.end : Number(el.dataset.srcEnd);
@@ -534,17 +571,17 @@ function commitBlockEdit(el, text, range) {
     if (pendingCaret) return; // a structural edit already claimed the caret
     const active = document.activeElement;
     if (!active || !active.dataset) return;
-    // A caret that walked into a cell of a table is carried by the cell's own names — the block's would find the table, whose range does not move with the splice.
-    const inCell = active.dataset.cellStart != null;
-    if (!inCell && active.dataset.srcStart == null) return;
+    // A caret that walked into a cell of a table, or into a value inside a tag, is carried by that thing's own names — the block's would find the table or the element around it, whose range does not move with the splice.
+    const held = RANGE_NAMES.find((pair) => active.dataset[pair.start] != null);
+    if (!held) return;
     if (active.getAttribute('contenteditable') !== 'true') return;
     if (active.dataset.editingSource === 'true') return;
-    const activeStart = Number(inCell ? active.dataset.cellStart : active.dataset.srcStart);
+    const activeStart = Number(active.dataset[held.start]);
     if (!Number.isFinite(activeStart)) return;
     const offset = caretTextOffsetIn(active);
     setPendingCaret({
       srcStart: activeStart >= end ? activeStart + delta : activeStart,
-      cell: inCell,
+      found: held.found,
       textOffset: offset == null ? 0 : offset,
     });
   }, 0);
@@ -585,7 +622,7 @@ function sendLiveBlockEdit(el, words) {
   if (!edit) return;
   // Nothing new since the last pause.
   if (edit.text === (el.__liveText === undefined ? el.__editBaseline : el.__liveText)) return;
-  if (commentTextRefused(el, edit.text)) return;
+  if (treeTextRefused(el, edit.text)) return;
   sendEditCommand({
     command: 'editBlock',
     start: edit.start,
@@ -613,25 +650,23 @@ function advanceLiveRanges(el, edit) {
   if (delta) shiftBlockRangesAfter(edit.end, delta, el);
 }
 
-// Every offset at or past `at` moves by `delta`. One pass over the mapped blocks and the cells of a tree document's tables, because anything holding a range that lags the buffer — the gutter's plus, the drag, a delete over a run — splices the wrong bytes on its next press.
+// Every offset at or past `at` moves by `delta`. One pass over everything on the page holding a range, because anything that lags the buffer — the gutter's plus, the drag, a delete over a run — splices the wrong bytes on its next press.
 function shiftBlockRangesAfter(at, delta, typed) {
   const body = app.querySelector('.document-body');
   if (!body) return;
   const move = (value) => (Number.isFinite(value) && value >= at ? value + delta : value);
-  const shiftSpan = (node) => {
+  const moved = new Set();
+  RANGE_NAMES.forEach(({ found, start, end }) => {
+    body.querySelectorAll(`[${found}]`).forEach((node) => {
+      node.dataset[start] = String(move(Number(node.dataset[start])));
+      node.dataset[end] = String(move(Number(node.dataset[end])));
+      moved.add(node);
+    });
+  });
+  moved.forEach((node) => {
     // The typed block's own span was just set to what was written; moving it again would count the splice twice.
     if (node === typed || !node.__innerSpan) return;
     node.__innerSpan = { start: move(node.__innerSpan.start), end: move(node.__innerSpan.end) };
-  };
-  body.querySelectorAll('[data-src-start]').forEach((node) => {
-    node.dataset.srcStart = String(move(Number(node.dataset.srcStart)));
-    node.dataset.srcEnd = String(move(Number(node.dataset.srcEnd)));
-    shiftSpan(node);
-  });
-  body.querySelectorAll('[data-cell-start]').forEach((node) => {
-    node.dataset.cellStart = String(move(Number(node.dataset.cellStart)));
-    node.dataset.cellEnd = String(move(Number(node.dataset.cellEnd)));
-    shiftSpan(node);
   });
 }
 
@@ -1474,6 +1509,8 @@ function wireSourceEditable(el) {
     if (event.target && event.target.closest && event.target.closest('a')) return;
     // A press on a fold's own row opens the fold. It is the one press on a block that already means something, and swallowing it would leave a box nothing can open.
     if (event.target && event.target.closest && event.target.closest('summary')) return;
+    // A value inside this block that carries its own bytes and was wired answers the press itself. Swapping the block for its markup here would take the caret off the one word the reader aimed at, which is the whole of what a composed run of values was drawn apart for.
+    if (event.target && event.target.closest && event.target.closest('[data-value-start].leaf-editable')) return;
     if (el.dataset.processed === 'true' && el.classList.contains('mermaid')) return;
     event.preventDefault();
     // Now that most of a tree document types on its words, the markup arriving is the surprise, so the press that brings it says why — the same answer a packed part of a message gives. A note's code block or diagram opens its source because that is what it is, and says nothing.
@@ -1567,6 +1604,16 @@ function bindEditableBlocks(format) {
       el.__innerSpan = cellSpan;
       wysiwygBlocks.push(el);
     });
+    // And a value the element keeps inside its own tag, drawn in the list under its heading. Nothing walks these either, and the renderer stamped only the ones it drew unchanged — so what is left to settle here is the page's own proof and which quote the value is written inside, which is the one character it can never hold.
+    body.querySelectorAll('[data-value-start]').forEach((el) => {
+      const valueSpan = xmlValueTypeableInPlace(el);
+      if (!valueSpan) return;
+      const quote = valueClosingQuote(valueSpan.start);
+      if (!quote) return;
+      el.__innerSpan = valueSpan;
+      el.__valueQuote = quote;
+      wysiwygBlocks.push(el);
+    });
     // And the headings, decided by the same ranges: one that stands over a column with an element behind it opens onto the tag rather than onto the label it was drawn with.
     wireXmlTableHeadings(body);
   }
@@ -1630,10 +1677,8 @@ function placePendingCaret(body) {
     openMediumStart(body);
     return;
   }
-  // A cell answers to its own names, never a block's — the gutter reads a block's, and a cell wearing them would be offered a drag handle.
-  const target = body.querySelector(
-    pending.cell ? `[data-cell-start="${pending.srcStart}"]` : `[data-src-start="${pending.srcStart}"]`,
-  );
+  // A cell, and a value inside a tag, each answer to their own names rather than a block's — the gutter reads a block's, and either wearing them would be offered a drag handle. So the caret comes back under whichever name it left on.
+  const target = body.querySelector(`[${pending.found || 'data-src-start'}="${pending.srcStart}"]`);
   if (!target) return;
   if (pending.insertBelow) {
     openInsertBlockAfter(target, pending.blockSpec);

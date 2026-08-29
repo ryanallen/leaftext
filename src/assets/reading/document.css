@@ -224,16 +224,12 @@
   text-decoration: none;
   /* The hand, because a reader reads the drawing and this is drawn as a button. Written rather than left off: it is the same answer the shared button rule gives every native button. */
   cursor: pointer;
-  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. */
-  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
-/* The lift is on the base rule alone, so the outline and ghost variants below take it by having the same box rather than by writing it again. No corner here: the button a reader aimed at keeps the shape it was aimed at. */
+/* Color alone, on the base rule, so the outline and ghost variants below take it by having the same box rather than by writing it again. No corner here: the button a reader aimed at keeps the shape it was aimed at. */
 .document-body a.leaf-md-button:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
-  box-shadow: var(--lt-shadow-raised);
   text-decoration: none;
 }
 /* Outline, from `{{[Label](url)}}`: an outline at rest that fills on hover. */
@@ -271,8 +267,6 @@
   border: none;
   border-radius: 0;
   background: none;
-  /* The hover above hands out a lift, and this is the one place it must be taken back: these are words in a sentence, and a shadow under them is a button nobody can press. */
-  box-shadow: none;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;

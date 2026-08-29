@@ -132,7 +132,6 @@
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
-  cursor: grab;
   user-select: none;
   /* Emphasized: a tab neither arrives nor leaves, the strip rearranges around it. */
   transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized), margin var(--lt-duration-120) var(--lt-ease-emphasized);
@@ -201,9 +200,8 @@
   right: calc(-1 * var(--tab-flare));
   background: radial-gradient(circle at 100% 0, var(--tab-flare-arc));
 }
-/* The whole tab drags by its name, so the label keeps the grab the tab wears; the mark and the close beside it are presses and take the hand. */
+/* The whole tab drags by its name; the mark and the close beside it are presses and take the hand. */
 .tab-label {
-  cursor: grab;
   flex: 1;
   min-width: 0;
   max-width: 124px;

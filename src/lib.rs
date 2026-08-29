@@ -131,6 +131,8 @@ const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     // The error handlers lead, so a fragment that throws as it loads is reported instead of vanishing. Nothing above them could catch it.
     include_str!("assets/shell/journal.js"),
+    // Shared state follows the journal and leads every subject that reaches it.
+    include_str!("assets/shell/state.js"),
     // Then the flowchart sheet, in seven: the grammar, the sheet that asks it, then five more of that sheet. Mermaid draws the canvas, so there is no layout of ours in between, and the grammar leads because everything else calls into it.
     include_str!("assets/shell/flow-model.js"),
     include_str!("assets/shell/flow-canvas.js"),
@@ -140,8 +142,6 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/flow-rename.js"),
     include_str!("assets/shell/flow-picker.js"),
     include_str!("assets/shell/flow-export.js"),
-    // Then the state more than one fragment touches, in scope before any of them run. See the file for why it cannot live with its own subject.
-    include_str!("assets/shell/state.js"),
     include_str!("assets/shell/dom.js"),
     // The first-run bubble, ahead of every fragment that registers a hint against it. It needs `send` from dom.js and nothing else.
     include_str!("assets/shell/hints.js"),

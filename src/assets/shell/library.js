@@ -1,5 +1,15 @@
 // Said by both sync buttons and the count chip, so it is written once.
 const SYNC_WORKING = 'Working…';
+// Library pane open/close + resize. The closed preference and last open width are host-persisted (window.__leafSettings + setLibraryLayout), like the other settings.
+let libraryUserClosed = LEAF_SETTINGS.libraryClosed === true;
+// Whether the narrow-window sheet is showing. Never persisted: it describes the current view, not a preference, and a window opened wide has no sheet.
+let librarySheetOpen = false;
+let libraryWidth = Number.isFinite(LEAF_SETTINGS.libraryWidth) && LEAF_SETTINGS.libraryWidth > 0
+  ? LEAF_SETTINGS.libraryWidth
+  : DEFAULT_PANE_WIDTH;
+// The pane shows one folder at a time, read off the disk by the host. These are what is in it. There is no tree here and no index behind it — nothing is known about a folder until it is opened.
+let libraryEntries = [];
+let libraryError = null;
 function persistLibraryState() {
   send({ command: 'setLibraryState', projectPath: libraryProjectPath });
 }

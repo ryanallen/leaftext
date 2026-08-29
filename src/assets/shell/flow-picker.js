@@ -4,9 +4,6 @@
 //
 // Adding a box and changing one are the same question — which shape — so they are the same sheet, in the same order, with the same headings. It slides up from the bottom of the canvas and goes back down when there is nothing selected and nothing being added.
 
-// The callback waiting for a shape, while the sheet is open to add a box, and the name typed into the field above it in the meantime.
-let flowPickerAdd = null;
-let flowPickerName = '';
 let flowPickerReady = false;
 
 // Pushed down and away by its grab bar, like every other sheet. Wired on the first open rather than at load: this fragment is served ahead of the inline script, so `makeSheetDraggable` is not there yet when it runs.

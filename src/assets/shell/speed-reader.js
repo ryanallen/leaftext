@@ -157,8 +157,6 @@ function setSpeedReaderEnabled(enabled) {
   }
 }
 setSpeedReaderEnabled(speedReaderEnabled);
-// Whether the page is showing the graph instead of the document. Not a pane mode and not per-tab: one flag, dropped the moment a document is opened, so there is never a question of which tab the map belonged to.
-let graphViewOpen = false;
 // Markdown files are badged with the app's own leaf mark. The host inlines the same glyph the header uses, so the row tints it via stroke/fill currentColor rather than shipping a fixed color.
 const LEAF_FILE_ICON = `<span class="lt-icon lt-icon-leaf"></span>`;
 // Sending a vault to GitHub. Inlined the same way the rest are.
@@ -183,8 +181,8 @@ const MENU_TRASH_SVG = '<span class="lt-icon library-action-icon lt-icon-trash">
 const BACK_ARROW_SVG = '<span class="lt-icon library-action-icon lt-icon-back-long"></span>';
 // Vaults. A vault is a folder the app treats as a library root; nothing is written into it, the app just remembers the choice. The host owns the list and seeds it before the first paint. Rows are keyed on id, never on name.
 const LEAF_VAULTS = (window.__leafVaults && typeof window.__leafVaults === 'object') ? window.__leafVaults : {};
-let leafVaults = Array.isArray(LEAF_VAULTS.vaults) ? LEAF_VAULTS.vaults : [];
-let activeVaultId = Number.isFinite(LEAF_VAULTS.active) ? LEAF_VAULTS.active : 0;
+leafVaults = Array.isArray(LEAF_VAULTS.vaults) ? LEAF_VAULTS.vaults : [];
+activeVaultId = Number.isFinite(LEAF_VAULTS.active) ? LEAF_VAULTS.active : 0;
 function activeVault() {
   if (!activeVaultId) return null;
   return leafVaults.find((vault) => vault && vault.id === activeVaultId) || null;
@@ -195,51 +193,16 @@ function libraryRootLabel() {
   return (vault && vault.name) || libraryRootName || 'Library';
 }
 // The folder the pane is inside ('' is the root); the breadcrumb is this path.
-let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
-// Library pane open/close + resize. The closed preference and last open width are host-persisted (window.__leafSettings + setLibraryLayout), like the other settings.
+libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
 const SNAP_SHUT = 40;           // drag narrower than this and the pane closes
 const DEFAULT_PANE_WIDTH = 240; // first-run fallback only
 const MIN_READER_WIDTH = 360;   // keep the document column usable as the pane grows
-let libraryUserClosed = LEAF_SETTINGS.libraryClosed === true;
-// Whether the narrow-window sheet is showing. Never persisted: it describes the current view, not a preference, and a window opened wide has no sheet.
-let librarySheetOpen = false;
-let libraryWidth = Number.isFinite(LEAF_SETTINGS.libraryWidth) && LEAF_SETTINGS.libraryWidth > 0
-  ? LEAF_SETTINGS.libraryWidth
-  : DEFAULT_PANE_WIDTH;
-// The pane shows one folder at a time, read off the disk by the host. These are that folder: where it is, the trail down to it, and what is in it. There is no tree here and no index behind it — nothing is known about a folder until it is opened.
-let libraryEntries = [];
-let libraryChain = [];
-let libraryError = null;
-// Full-text search over the library. A non-empty query replaces the tree with ranked results; clearing it restores the tree. The backend echoes the query so a slow response for an old one is dropped.
+// The pane shows one folder at a time, read off the disk by the host. These are that folder: where it is, the trail down to it, and what is in it. There is no tree here and no index behind it — nothing is known about a folder until it is opened. Full-text search over the library. A non-empty query replaces the tree with ranked results; clearing it restores the tree. The backend echoes the query so a slow response for an old one is dropped.
 const SEARCH_DEBOUNCE_MS = 150;
-let librarySearchQuery = '';
-let librarySearchTimer = 0;
-let librarySearchHits = null;
-let librarySearchError = null;
-let librarySearchLoading = false;
-// Whether the host cut the list at its cap, so the count can say so.
-let librarySearchTruncated = false;
-// More rows are coming for this same query: the vault is still being read. The ring stays up, an answer adds rows under what is drawn rather than replacing it, and the count says "so far". A payload that does not mention it is finished — a host that never streams says so by saying nothing.
-let librarySearchPartial = false;
-// Which query the drawn rows answer. Rows are only added to when the next answer is for the same question; anything else replaces them.
-let librarySearchHitsQuery = '';
-// The filter read back in words, and any field name the vault has never set. Shown under the box so a mistyped field is visible instead of silently matching nothing. Empty for a query of plain words, which needs no explaining.
-let librarySearchUnderstood = '';
-let librarySearchUnknownFields = [];
-// Folders under the vault the read did not go into because they hold generated files. The count line says how many and carries their names, because a vault that quietly read three quarters of itself is worse than one that read all of it slowly.
-let librarySearchSkipped = [];
-// The vault's field names and the values each holds, pushed once when its text is read. What the completion menu offers; empty until a vault is open.
-let filterHintFields = [];
-// What the completion menu is offering under the search box, and which row is picked.
-let filterMenuItems = [];
-let filterMenuIndex = 0;
-// A heading anchor to scroll to once a clicked result's document has rendered.
-let pendingSearchJump = null;
-// The padlocks: whether documents open ready to type into. Saved settings, not a question asked again on every file you open. One per editable view, because typing in the page and typing in the source are two different risks and unlocking one is not consent to the other. Both locked by default.
-let readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;
-let codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;
+// A heading anchor to scroll to once a clicked result's document has rendered. The padlocks: whether documents open ready to type into. Saved settings, not a question asked again on every file you open. One per editable view, because typing in the page and typing in the source are two different risks and unlocking one is not consent to the other. Both locked by default.
+readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;
+codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;
 function readerEditingAllowed() {
   return readingUnlocked;
 }
 // Set by the two gestures that mean "leave the map": a search hit, whose whole point is landing on the matching line, and the jump to the source view. Everything else that opens a file -- the pane, a tab, a link, a node on the map -- keeps the view you are in, so changing document does not change how you read.
-let graphExitPending = false;

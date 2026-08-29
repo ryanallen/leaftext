@@ -2,6 +2,9 @@
 
 // ---- renaming on the canvas ------------------------------------------------
 
+// The box being typed into on the canvas, if any.
+let flowLabelBox = null;
+
 // A field over the thing it renames, rather than a trip to the strip at the bottom of the pane. Placed from the layout, so nothing has to be measured.
 function openFlowLabelBox(kind, id) {
   const graph = flowSession && flowSession.graph;

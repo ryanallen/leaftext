@@ -701,41 +701,16 @@ fn every_bar_in_the_app_is_painted_only_while_its_box_is_moving() {
 }
 
 #[test]
-fn an_icon_answers_the_pointer_by_moving_and_never_by_swapping_its_mask() {
-    // A hover has no direction, so the icon takes the plain curve both ways and lives here rather than in the table above. The two things this pins are the clock — a hand-written duration or curve is what the rest of the file refuses — and the swap: a mask does not interpolate, so an icon that changed drawing on hover would land in one frame beside a fill that fades.
+fn a_hover_moves_nothing_and_never_swaps_an_icons_drawing() {
+    // Pointing at something answers with color and nothing else, so no hover anywhere shifts an element off where it rests — the leaf that slid and the chip drawing that rose were both refused. The swap is pinned in the same body: a mask does not interpolate, so an icon that changed drawing on hover would land in one frame beside a fill that fades.
     let css = reading_mode_css();
 
-    for (rest, moved, travel) in [
-        (
-            ".theme-button .lt-icon,\n.open-button .lt-icon,\n.new-button .lt-icon,\n.export-button .lt-icon {",
-            ".theme-button:hover .lt-icon,\n.open-button:hover .lt-icon,\n.new-button:hover .lt-icon,\n.export-button:hover .lt-icon {",
-            "transform: translateY(-1px);",
-        ),
-        (
-            ".library-file > .lt-icon,\n.library-nav-folder .library-action-icon {",
-            ".library-file:hover > .lt-icon,\n.library-nav-folder:hover .library-action-icon {",
-            "transform: translateX(2px);",
-        ),
-    ] {
-        // The clock is on the resting rule, so the move reverses on its own when the pointer leaves.
-        assert_contains(
-            rule_body(css, rest),
-            "transition: transform var(--lt-duration-120) var(--lt-ease);",
-        );
-        let hovered = rule_body(css, moved);
-        assert_contains(hovered, travel);
-        // Only the drawing moves: a size or a place here would reflow the label beside it.
-        for property in ["width", "height", "margin", "padding"] {
-            assert!(
-                !hovered.contains(property),
-                "{property} in a hover rule moves the label beside the icon: {hovered}"
-            );
-        }
-    }
-
-    // No hover rule anywhere swaps the drawing under an icon.
     for (at, _) in css.match_indices(":hover") {
         let rule = &css[at..css[at..].find('}').map_or(css.len(), |end| at + end)];
+        assert!(
+            !rule.contains("transform:"),
+            "a hover that moves something: pointing at a control changes its color and nothing else: {rule}"
+        );
         for swap in ["-webkit-mask-image:", "mask-image:", "background-image:"] {
             if !rule.contains(swap) {
                 continue;

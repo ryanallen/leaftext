@@ -72,7 +72,6 @@ const updateButtonFill = document.getElementById('updateButtonFill');
 const updateButtonSpinner = document.getElementById('updateButtonSpinner');
 const readerLoading = document.getElementById('readerLoading');
 const readerMinimap = document.getElementById('readerMinimap');
-let tabDrag = null;
 let suppressTabClick = false;
 tabBar.addEventListener('wheel', (event) => {
   if (event.deltaY === 0) return;

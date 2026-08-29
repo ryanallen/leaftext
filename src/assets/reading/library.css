@@ -814,20 +814,14 @@ body.library-resizing button {
   background: transparent;
   color: inherit;
   font: inherit;
-  /* A `transition` shorthand replaces the file's shared hover fade outright at any weight, so timing the lift here means re-naming the three colors here too. The corner is left out: a row is 23px tall, so every radius over 11.5px draws as the same pill and the shape is finished inside the first frame at any duration. */
-  transition: background-color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease), box-shadow var(--lt-duration-120) var(--lt-ease);
 }
 .library-file:hover,
 .library-nav-folder:hover {
   background: var(--lt-wash-hover);
-  border-radius: var(--lt-radius-pill);
-  box-shadow: var(--lt-shadow-raised);
 }
-/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. Both classes and this position are load-bearing: the rows block ties on weight, and the hover pill above would curve the hairline up at both ends into a bowl. The hover lift is taken back here too: a row fixed above the divider reads as a card laid over it if it rises off the pane. */
+/* The way back out, first in the list. Quieter than the folders below it — it is not one of this folder's contents — and set apart by a hairline so the eye reads it as chrome rather than a row. Both classes and this position are load-bearing: the rows block ties on weight. */
 .library-nav-folder.library-nav-up {
   color: var(--lt-muted-foreground);
-  box-shadow: none;
   margin-bottom: var(--lt-space-6);
   padding-bottom: var(--lt-space-6);
   border-bottom: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-border) 60%, transparent);
@@ -836,12 +830,10 @@ body.library-resizing button {
 .library-nav-folder.library-nav-up:hover {
   color: var(--lt-foreground);
 }
-/* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere — and holding its rectangle too, because the tint says which file is open and a row that also lifts and rounds under the pointer says two things at once. */
+/* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere. */
 .library-file.is-selected,
 .library-file.is-selected:hover {
   background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
-  border-radius: var(--lt-radius-md);
-  box-shadow: none;
 }
 /* The leaf mark before Markdown file names. Same inline glyph as the header logomark, so it tracks the theme's primary color instead of a baked-in one. */
 .library-file > .lt-icon {
@@ -854,15 +846,6 @@ body.library-resizing button {
 .library-action-icon {
   flex: none;
   color: var(--lt-muted-foreground);
-}
-/* The mark leans the way the row opens, on its own element so the label does not move: two pixels across a six-pixel gap. Below the leaf's own rule rather than above it, because the suite reads the leaf's color out of the first rule spelled `.library-file > .lt-icon` and this one would answer instead. */
-.library-file > .lt-icon,
-.library-nav-folder .library-action-icon {
-  transition: transform var(--lt-duration-120) var(--lt-ease);
-}
-.library-file:hover > .lt-icon,
-.library-nav-folder:hover .library-action-icon {
-  transform: translateX(2px);
 }
 .library-file-label {
   /* Fill the row so the fade lands on empty space until the name overflows; without flex:1 the label hugs its text and the mask clips every name. */

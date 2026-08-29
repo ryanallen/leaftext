@@ -173,42 +173,8 @@ renderUpdateButton();
 checkForUpdate(true);
 // So a window left open for days notices a release. The tick is short; the throttle above decides whether it actually reaches the network.
 window.setInterval(() => checkForUpdate(), 30 * 60 * 1000);
-let minimapViewportFrame = 0;
-let minimapPreviewFrame = 0;
-// Rebuilding the thumbnail clones the whole document, so only rebuild when the content, wrap width, or rail width changed. minimapContentVersion bumps on mutation; the minimapBuilt* values record the last clone's inputs, so a height-only resize reuses the existing clone.
-let minimapContentVersion = 0;
-let minimapBuiltVersion = -1;
-let minimapBuiltSourceWidth = -1;
-let minimapBuiltPreviewWidth = -1;
-// The reading layout's own width, which the clone is laid out against. It moves without the body's moving — the body stops at the text measure and the layout keeps growing — so a widening window has to rebuild on this alone or a wide table stays drawn at the old room.
-let minimapBuiltFrameWidth = -1;
-let minimapDragging = false;
-let minimapPointerId = null;
-let minimapPointerOffsetY = null;
-// Document geometry captured once at the start of a minimap drag (it doesn't change while dragging, and re-measuring forces a synchronous layout). Then map pointer -> scrollTop with pure math.
-let minimapDragMetrics = null;
-let minimapResizeObserver = null;
-let minimapBodyObserver = null;
-// The document range the built clone holds, or null when it holds all of it — the clone is a window on long documents, so scrolling out of range is a third reason to rebuild (see updateDocumentMinimapPreview).
-let minimapBuiltRange = null;
-// The rows the built clone was sliced from. A rebuild that would slice the same two cannot change anything, so it keeps the thumbnail and stops asking for another.
-let minimapBuiltFirstRow = -1;
-let minimapBuiltLastRow = -1;
-// Rail geometry, cached for the scroll path: scrolling changes none of it, and re-measuring per wheel click forces a fresh layout of the whole document.
-let minimapScrollMetrics = null;
-let readerLayoutFrame = 0;
-let readerScrollAnchor = null;
-// Between the first wheel click and the settle after it. The clamp and the anchor capture each force a layout, so they wait for the gesture to stop — and the reflow re-pin stands aside while it runs, the anchor being stale by design until then.
-let readerScrollSettleTimer = 0;
-let readerScrolling = false;
+initializeMinimapState();
 const READER_SCROLL_SETTLE_MS = 120;
-let readerReflowObserver = null;
-let resetReaderScrollOnNextRender = false;
-// Cached list of the document's anchor blocks, rebuilt when the document changes, so the per-scroll probe never re-runs querySelectorAll over huge documents.
-let readerAnchorBlocks = null;
-let readerAnchorBlocksCount = -1;
-// The `.document-body` the cache was built against. A re-render swaps in a fresh body node, so comparing identity catches that immediately instead of relying on the child-count heuristic alone.
-let readerAnchorBlocksSource = null;
 // Where the reader parks the first block, from the shell's top edge (the app bar overlays part of that). Keep equal to --reader-content-top-gap, which is how the code view — no scroll origin — pays the same gap as padding.
 const READER_CONTENT_TOP_GAP = 88;
 const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';
