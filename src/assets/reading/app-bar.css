@@ -398,6 +398,8 @@
 }
 /* The same chip as every other toolbar icon button: three square full-height fills in a row read as a different control set from the icons beside them. */
 .window-control {
+  /* The window's own frame rather than anything the document offers, so the pointer stays an arrow. Beats the shared hand by being one class. */
+  cursor: default;
   width: 32px;
   height: 32px;
   min-width: 32px;

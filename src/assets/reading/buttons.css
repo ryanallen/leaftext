@@ -54,6 +54,8 @@ button {
 .open-button,
 .new-button,
 .export-button {
+  /* The app's own furniture, not something the document offers, so the pointer stays an arrow across the run. Beats the shared hand by being one class. */
+  cursor: default;
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);

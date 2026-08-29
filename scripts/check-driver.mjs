@@ -11,7 +11,7 @@
 //
 // The browser driver is checked by driving it, because what this is afraid of is the browser changing under it and a source read can never see that. A headless page hides itself a few seconds in, which stops every animation frame and so every bit of the front end's placing, while each step still says it worked; one focus call holds it awake. `about:blank` hides just the same, so the probe needs no site, no export and no server.
 
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { basename, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -23,6 +23,7 @@ const script = join(root, 'scripts/capture-screenshot.ps1');
 // The throwaway profile both launchers run against, and the launcher that leaves its copy up. One file answers for both callers, which is what stops a probe writing into the owner's recent files while a shot stays clean.
 const profile = join(root, 'scripts/probe-profile.ps1');
 const launcher = join(root, 'scripts/probe-launch.ps1');
+const launcherText = readFileSync(launcher, 'utf8');
 // The one command behind both recipes, and the only thing that sees a launch and its pointer in the same process.
 const wrapper = join(root, 'scripts/probe.mjs');
 const webDriver = join(root, 'scripts/drive-web.mjs');
@@ -182,6 +183,40 @@ if (!exe) {
   process.exit(0);
 }
 
+const failedBuildName = `driver-check-${process.pid}`;
+const failedBuildWork = join(tmpdir(), `leaftext-probe-${failedBuildName}`);
+const fakeCargoHome = join(tmpdir(), `leaftext-fake-cargo-${process.pid}`);
+rmSync(failedBuildWork, { recursive: true, force: true });
+rmSync(fakeCargoHome, { recursive: true, force: true });
+mkdirSync(fakeCargoHome, { recursive: true });
+writeFileSync(join(fakeCargoHome, 'cargo.cmd'), '@echo fake cargo failed 1>&2\r\n@exit /b 23\r\n');
+const failedBuild = spawnSync(
+  exe,
+  ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', launcher, '-Work', failedBuildName],
+  { encoding: 'utf8', env: { ...process.env, PATH: `${fakeCargoHome};${process.env.PATH ?? ''}` } }
+);
+const failedBuildText = `${failedBuild.stdout ?? ''}${failedBuild.stderr ?? ''}`;
+if (failedBuild.status === 0 || !failedBuildText.includes('cargo build failed with exit code 23')) {
+  problems.push(`the probe launcher did not stop on a failed build:\n${failedBuildText}`);
+}
+if (existsSync(join(failedBuildWork, 'leaftext.exe'))) {
+  problems.push('the probe launcher copied or launched an executable after Cargo failed');
+}
+rmSync(failedBuildWork, { recursive: true, force: true });
+rmSync(fakeCargoHome, { recursive: true, force: true });
+
+const launcherRun = launcherText.slice(launcherText.indexOf('$builtExe = $null'));
+function inOrder(lines) {
+  let at = -1;
+  return lines.every((line) => (at = launcherRun.indexOf(line, at + 1)) >= 0);
+}
+if (!inOrder(['if (-not $Close -and (Test-LeafPipe $name))', '& cargo build', 'Copy-Item -LiteralPath $builtExe', 'Start-LeafOffScreen $Exe'])) {
+  problems.push('the probe open path is no longer same-name refusal, build, copy, launch');
+}
+if (!inOrder(['Send-LeafQuit', 'Wait-LeafPipe $name $false', 'Remove-Item -LiteralPath $privateExe'])) {
+  problems.push('the probe close path is no longer quit, wait, remove');
+}
+
 /** One dry run. Returns what it printed and whether it was refused. */
 function dryRun(steps, extra = '') {
   const list = steps.map((step) => `'${step}'`).join(',');
@@ -321,7 +356,6 @@ if (both.status === 0) problems.push('a dismissal took a step list as well, so a
 // Every file the shot profile is made of, written or removed on every unattached run. The recent list was already like this — the app appends to it as it opens files — and the vault registry has the same fault for the same reason: the app registers a cloud folder as a vault at every launch, so a database reused across a batch photographs whatever the earlier shots found.
 const text = readFileSync(script, 'utf8');
 const profileText = readFileSync(profile, 'utf8');
-const launcherText = readFileSync(launcher, 'utf8');
 const wrapperText = readFileSync(wrapper, 'utf8');
 const driveText = readFileSync(join(root, 'scripts/drive.mjs'), 'utf8');
 const PROFILE = [

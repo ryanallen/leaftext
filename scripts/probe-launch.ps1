@@ -31,6 +31,7 @@ $root = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
 
 $workDir = Join-Path ([System.IO.Path]::GetTempPath()) "leaftext-probe-$Work"
 $name = Get-LeafProfileName $workDir
+$privateExe = Join-Path $workDir 'leaftext.exe'
 
 # Whether a copy is listening under that name. Enumerating the pipe directory rather than Test-Path on one entry: the filesystem provider answers False for a named pipe often enough that a launch would look like it never came up.
 function Test-LeafPipe([string]$pipeName) {
@@ -127,6 +128,26 @@ function Send-LeafQuit {
   }
 }
 
+$builtExe = $null
+if (-not $Close -and (Test-LeafPipe $name)) {
+  throw "a probe copy is already up under $name - close it with 'just probe-close' or launch this one under a different -Work name"
+}
+if (-not $Close -and -not $Exe) {
+  Push-Location $root
+  try {
+    & cargo build
+    if ($LASTEXITCODE -ne 0) { throw "cargo build failed with exit code $LASTEXITCODE" }
+  }
+  finally {
+    Pop-Location
+  }
+  $builtExe = Join-Path $root 'target\debug\leaftext.exe'
+  if (-not (Test-Path $builtExe)) { throw "cargo build succeeded without writing $builtExe" }
+}
+elseif (-not $Close -and -not (Test-Path $Exe)) {
+  throw "no binary at $Exe"
+}
+
 $entered = Enter-LeafProfile -Work $workDir -Name $name
 try {
   if ($Close) {
@@ -138,14 +159,14 @@ try {
     if (-not (Wait-LeafPipe $name $false $TimeoutMs)) {
       throw "the probe copy under $name would not close when asked, and nothing here will stop it: a kill throws its window size and place away"
     }
+    if (Test-Path -LiteralPath $privateExe) { Remove-Item -LiteralPath $privateExe -Force }
     Write-Output "closed the probe copy under $name"
     return
   }
 
-  if (-not $Exe) { $Exe = Join-Path $root 'target\debug\leaftext.exe' }
-  if (-not (Test-Path $Exe)) { throw "no binary at $Exe - run 'cargo build' first" }
-  if (Test-LeafPipe $name) {
-    throw "a probe copy is already up under $name - close it with 'just probe-close' or launch this one under a different -Work name"
+  if (-not $Exe) {
+    Copy-Item -LiteralPath $builtExe -Destination $privateExe -Force
+    $Exe = $privateExe
   }
 
   # The place, and the process id a later ask needs to tell a probe that is still up from a pointer left behind by a session that crashed. The copy outlives this script: CreateProcessW makes an independent process, and both handles are closed before this returns.

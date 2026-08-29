@@ -114,10 +114,20 @@ fn every_hover_fills_with_the_one_wash() {
 
 #[test]
 fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
-    // The hand says "this can be pressed", so every enabled button wears it and the shared `button` rule is where it is written — a control added later takes it without anybody remembering. The rule is deliberately weak: a single-class rule still beats it, which is what leaves a control whose gesture is a drag or a draw wearing its own shape.
+    // The hand says "this can be pressed", so an enabled button wears it and the shared `button` rule is where it is written — a control added later takes it without anybody remembering. The rule is deliberately weak: a single-class rule still beats it, which is what leaves a control whose gesture is a drag or a draw wearing its own shape, and what leaves the app's own furniture at the top of the window wearing the arrow.
     let css = reading_mode_css();
 
     assert_contains(rule_body(&css, "button {"), "cursor: pointer;");
+    // And the hand is still handed out from there rather than named control by control: the exception below is three rules, not the hand being withdrawn. The shared rule stays the bare element with no class or id on it and no `!important`, or the eight would need one of their own to win.
+    let shared = rule_body(&css, "button {");
+    assert!(
+        !shared.contains('!'),
+        "the shared hand must stay weak enough for a one-class rule to beat it"
+    );
+    assert!(
+        css.contains("\nbutton {") || css.starts_with("button {"),
+        "the hand is written on the bare element, so every button added later takes it"
+    );
     // A control that cannot be pressed says so, and its rule outranks the shared one.
     assert_contains(rule_body(&css, "button:disabled {"), "cursor: default;");
     // A document button is an anchor drawn as a button, so it is written rather than left to the browser.
@@ -152,6 +162,28 @@ fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
             !rule_body(&css, selector).contains("cursor: default"),
             "`{selector}` is a button, so it may not write the arrow back"
         );
+    }
+
+    // The eight icons the app bar draws for itself are the app's own furniture rather than something a document offers, so the pointer crosses the whole row as an arrow. Each already owned a one-class rule, which is what beats the shared hand without a second selector.
+    for selector in [".export-button {", ".window-control {", ".library-open {"] {
+        assert_contains(rule_body(&css, selector), "cursor: default;");
+    }
+    // And nothing wider than those three says it, or the arrow would reach the find bar's eleven icon controls, the leaf and the two history buttons — the controls the owner keeps the hand on.
+    for selector in [
+        ".icon-button {",
+        ".brand-button {",
+        ".history-button {",
+        ".find-flag {",
+        ".find-action {",
+    ] {
+        let bodies = rule_bodies(&css, selector);
+        assert!(!bodies.is_empty(), "`{selector}` opens no rule");
+        for body in bodies {
+            assert!(
+                !body.contains("cursor:"),
+                "`{selector}` reaches controls that keep the hand, so it may not write a cursor"
+            );
+        }
     }
 
     // What is not a button keeps the shape its own gesture asks for. A summary and a task checkbox are not buttons and keep the arrow; the drag, draw, resize and text shapes stay where they were.
