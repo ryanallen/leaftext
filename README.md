@@ -18,7 +18,7 @@ Free · Windows 10+ and macOS Universal · **[Windows `.msi`](https://github.com
 
 Your notes deserve better than a text editor. Open a file in Leaftext and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
 
-There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) — formats every other app can read, so you're never locked in.
+There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [HTML](docs/01-features/01-rendering.md#html-files), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) — formats every other app can read, so you're never locked in.
 
 Free, on macOS and Windows.
 
@@ -69,6 +69,10 @@ A lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned
 
 An `.eml` from Gmail, Outlook, or Apple Mail opens as the message it carries: headers, body, inline images, attachments — instead of a wall of base64. Nothing in the message reaches the network. **[Email →](docs/01-features/01-rendering.md#email-eml)**
 
+### HTML without the web page taking over
+
+A saved report, exported note, or hand-written `.html` page opens in Leaftext's own reading view. Scripts, styles, forms, buttons, event handlers, and unsafe addresses are removed; the source view keeps the original file for editing. **[HTML →](docs/01-features/01-rendering.md#html-files)**
+
 ### Read faster when you need to
 
 ![Speed Reader dimming prose and adding bold lead anchors](imgs/speedreader.png)
@@ -105,7 +109,7 @@ A canvas beside the Mermaid text, each following the other. Double-click to add 
 
 ![Editing in code view, with save and undo button](imgs/code-view.png)
 
-Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, XML, YAML and JSON come colored in your theme's own syntax colors, and a color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
+Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, or a raw email — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML and JSON come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 
@@ -256,7 +260,7 @@ If a small box says **the system administrator has set policies to prevent this 
 
 ### Opening files with it
 
-Installing registers Leaftext for every extension it reads — `.md`, `.markdown`, `.mdown`, `.mdc`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, `.mhtml` — so those files carry the leaf icon. An extension another app already owns keeps its app until you say otherwise. **[File associations →](docs/02-installation.md#file-associations)**
+Installing registers Leaftext for every extension it reads — `.md`, `.markdown`, `.mdown`, `.mdc`, `.html`, `.htm`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, `.mhtml` — so those files carry the leaf icon. HTML stays with the browser unless you choose Leaftext; an extension another app already owns keeps its app until you say otherwise. **[File associations →](docs/02-installation.md#file-associations)**
 
 ## Learn it
 

@@ -624,7 +624,6 @@ export function run() {
   // This window has no canvas, which is the branch the refusal is written for, so what is held is that it refuses out loud and writes nothing — a row failing quietly leaves a reader waiting on a Save dialog that never opens. The drawing step stands in: everything after it is what is under test.
   checkSettled('the picture refuses in a toast when the window cannot draw one, and sends nothing', async () => {
     const putMermaid = withMermaidDrawing();
-    const was = { send: booted.ipc.postMessage, toast: booted.leafToast };
     const sent = [];
     const said = [];
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
@@ -643,10 +642,8 @@ export function run() {
       // The refusal is the canvas's, which means the picture before it really did load off the page's own map.
       if (!/cannot make a picture/i.test(said[0])) throw new Error(`the refusal came from somewhere before the canvas: ${said[0]}`);
     } finally {
-      booted.ipc.postMessage = was.send;
-      booted.leafToast = was.toast;
+      // The one thing the hand-back after this body will not do: it puts back the names the boot took and removes none, so a `mermaid` on a page that had none outlives it.
       putMermaid();
-      booted.__pictures.delete(url);
     }
   });
 

@@ -296,7 +296,7 @@ impl EditableDocument {
             DocumentFormat::Json => json_block_source_map(&self.text),
             DocumentFormat::Yaml => yaml_block_source_map(&self.text),
             // Bodies are transfer-encoded, so no rendered block can prove a source range; the code view edits the raw message.
-            DocumentFormat::Eml => Vec::new(),
+            DocumentFormat::Eml | DocumentFormat::Html => Vec::new(),
         }
     }
 
@@ -333,7 +333,8 @@ impl EditableDocument {
             DocumentFormat::Xml
             | DocumentFormat::Json
             | DocumentFormat::Yaml
-            | DocumentFormat::Eml => Vec::new(),
+            | DocumentFormat::Eml
+            | DocumentFormat::Html => Vec::new(),
         }
     }
 
@@ -344,7 +345,8 @@ impl EditableDocument {
             DocumentFormat::Xml
             | DocumentFormat::Json
             | DocumentFormat::Yaml
-            | DocumentFormat::Eml => Vec::new(),
+            | DocumentFormat::Eml
+            | DocumentFormat::Html => Vec::new(),
         }
     }
 }

@@ -39,6 +39,8 @@ pub(super) const YAML_FIXTURE: &str =
 
 pub(super) const EML_FIXTURE: &str = "From: Ada <ada@example.com>\nTo: Grace <grace@example.com>\nSubject: A message\nDate: Mon, 3 Aug 2026 09:00:00 +0000\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\n\nOne short body.\n";
 
+pub(super) const HTML_FIXTURE: &str = "<!doctype html><html><body><main><h1>A page</h1><p>Safe words.</p><script>alert(1)</script></main></body></html>";
+
 /// The document phase 4's source edits splice into: every block kind that has a byte range worth addressing.
 pub(super) const SOURCE_EDIT_FIXTURE: &str = "# Title\n\nFirst paragraph.\n\n- one\n- two\n\n```js\nlet a = 1;\n```\n\n---\n\nLast paragraph.\n";
 
@@ -103,6 +105,11 @@ pub(super) fn web_core_fixtures() -> Vec<WebCoreFixture> {
             name: "eml",
             file: "message.eml",
             source: EML_FIXTURE,
+        },
+        WebCoreFixture {
+            name: "html",
+            file: "page.html",
+            source: HTML_FIXTURE,
         },
     ]
 }
@@ -479,6 +486,7 @@ fn the_fixture_set_covers_every_format_the_app_reads() {
         DocumentFormat::Json,
         DocumentFormat::Yaml,
         DocumentFormat::Eml,
+        DocumentFormat::Html,
     ] {
         assert!(
             covered.contains(&format),
@@ -542,6 +550,10 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "eml",
         "508de6aae4b4b251f66c1de14e102a04780c64af1ec4b442294f1adb2bca1936",
+    ),
+    (
+        "html",
+        "d1d04a3bf08f6f6dd95accc91b794e4ee110929092aaa8562bb20d977f77bbdd",
     ),
 ];
 

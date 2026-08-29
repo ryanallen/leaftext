@@ -26,6 +26,7 @@ mod encoding;
 mod folder_tree;
 mod git;
 mod glossary;
+mod html;
 mod images;
 mod indexer_pager;
 mod known_folders;

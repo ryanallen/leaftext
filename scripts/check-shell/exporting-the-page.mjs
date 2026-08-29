@@ -66,13 +66,15 @@ export function run() {
   };
   // The page's own promise chain: the draw resolves, the finally runs, the send goes out.
   const settle = () => new Promise((resolve) => setImmediate(resolve));
-  // One press at a time. A settled check runs beside every other settled check, and two presses in flight read each other's stubs; a synchronous check is no answer either, because the hand-back after every one of those puts the page's values back while the press's own promise is still to land. So each of these waits for the one before it and settles the page before it hands over.
-  let pressInTurn = Promise.resolve();
-  const checkPressed = (name, run) => {
-    const mine = pressInTurn.then(run, run).then(settle);
-    pressInTurn = mine.catch(() => {});
-    checkSettled(name, () => mine);
-  };
+  // One press at a time, and the page's own chain landed before the body ends. A chain of its own alongside the collector's would start the first press the moment this file is read, which is before any awaiting body has run — so the presses would interleave with them, and the hand-back after each body would put the page back under a press still in flight. The queue is the one that orders bodies, so a press is a body on it and the settle stays inside.
+  const checkPressed = (name, run) =>
+    checkSettled(name, async () => {
+      try {
+        await run();
+      } finally {
+        await settle();
+      }
+    });
 
   // Four rounds shipped an export that measured and sent while the diagrams below the window were still boxes, and the boxes printed as empty frames the right size. So the press draws first and sends after, with the document spinner up for the wait — and a document with nothing waiting sends the way it always did, in the same turn as the press.
   checkPressed('pressing Export with diagrams still waiting draws them before the measurement is sent, and with none waiting sends at once', async () => {

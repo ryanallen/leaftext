@@ -22,7 +22,10 @@ export const createCollector = () => {
   const settled = [];
   let settlingQueue = Promise.resolve();
   const checkSettled = (name, run) => {
-    const mine = settlingQueue.then(run);
+    // The same hand-back a synchronous check gets, on the promise the queue chains: `finally` leaves the rejection alone, so a failing body is still reported under its own name and the next one still starts on the page the boot made.
+    const mine = settlingQueue.then(run).finally(() => {
+      if (record.restore) record.restore();
+    });
     // The next body starts after either result and reports only its own failure.
     settlingQueue = mine.catch(() => {});
     settled.push(mine.catch((error) => failures.push(`${name}: ${error && error.message ? error.message : error}`)));

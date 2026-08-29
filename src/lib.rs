@@ -13,6 +13,9 @@ mod data;
 pub(crate) use data::*;
 mod eml;
 pub(crate) use eml::*;
+#[path = "html.rs"]
+mod html_document;
+pub(crate) use html_document::*;
 mod theme;
 pub(crate) use markdown::*;
 pub use markdown::{
@@ -507,6 +510,13 @@ pub fn opened_document_from_source_with_host(
         DocumentFormat::Eml => {
             opened_document_from_tree(source, path, DocumentFormat::Eml, render_eml_document, host)
         }
+        DocumentFormat::Html => opened_document_from_tree(
+            source,
+            path,
+            DocumentFormat::Html,
+            render_html_document,
+            host,
+        ),
         DocumentFormat::Markdown => opened_document_from_markdown_with_host(source, path, host),
     }
 }

@@ -532,6 +532,14 @@ A file that will not parse renders a single line naming the position — `JSON p
 
 Editing works, with one limit worth knowing. The [code view](07-editing.md#code-view) edits any data file as raw text, exactly as it does Markdown and XML. In the reading view, a block is click-to-edit only where its precise byte range in the file can be *proved*: that covers every JSON value, and YAML plain scalars. YAML lists, tables, quoted strings, and block scalars (`|`, `>`) are read-only in the reading view and edited in the code view instead — an approximate range would splice an edit over the wrong bytes, so none is offered. See [Editing data files](07-editing.md#editing-data-files).
 
+## HTML files
+
+Leaftext opens `.html` and `.htm` files in its own reading view, so a saved report, exported note, or hand-written page uses the same theme, outline, minimap, Find, pager, and link behavior as every other document. The file name supplies the page heading when the source does not provide one Leaftext can safely use.
+
+The full page crosses the same sanitizer as HTML written inside Markdown. Document structure including `main` and `section` stays; scripts, styles, event handlers, forms, buttons, and unsafe addresses do not reach the reading view. The original source stays intact in the [code view](07-editing.md#code-view), which is the editing surface because sanitizing cannot prove byte ranges for click-to-edit blocks.
+
+Installing Leaftext offers it under **Open with** for HTML without replacing the browser as the default. See [File associations](../02-installation.md#file-associations).
+
 ## Email (.eml)
 
 ![An .eml file opened in Leaftext: the subject as the page heading, From, To and Date as a field list of mailto links, the message body below with an inline image, and a list of attachments at the foot](../../imgs/email.png)

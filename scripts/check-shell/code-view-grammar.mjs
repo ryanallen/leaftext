@@ -18,6 +18,8 @@ export function run() {
   check('the JSON grammar colors a JSON file, comments and all', () => {
     const { jsonMonarchLanguage, monacoLanguageFor } = booted;
     if (monacoLanguageFor({ language: 'json' }) !== 'json') throw new Error('a .json payload is not sent to the grammar');
+    if (monacoLanguageFor({ language: 'html' }) !== 'html') throw new Error('an .html payload is not sent to the grammar');
+    if (monacoLanguageFor({ language: 'unknown' }) !== 'plaintext') throw new Error('an unknown payload is not plain text');
     const grammar = jsonMonarchLanguage();
     const tokenize = (text) => {
       const out = [];
@@ -138,7 +140,7 @@ export function run() {
     // Every language the code view can put in front of somebody: a registration lost here is a format that silently stops drawing squares.
     const registered = codeView.match(/\[([^\]]*)\]\.forEach\(\(id\) =>\s*\n?\s*monaco\.languages\.registerColorProvider/);
     if (!registered) throw new Error('nothing registers the color provider');
-    for (const id of ['markdown', 'xml', 'yaml', 'json', 'plaintext']) {
+    for (const id of ['markdown', 'html', 'xml', 'yaml', 'json', 'plaintext']) {
       if (!registered[1].includes(`'${id}'`)) throw new Error(`${id} gets no color squares`);
     }
   });

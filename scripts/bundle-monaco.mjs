@@ -1,6 +1,6 @@
 // Rebuild the vendored Monaco bundle at src/assets/vendor/monaco/{monaco.js,monaco.css}.
 //
-// Monaco (the VS Code editor) powers the raw-source code view. Unlike the other vendored libraries it is NOT distributed as one drop-in file, so we bundle it here: the core editor (which includes the minimap, line wrapping and the mouse handling that puts a second cursor down), the Markdown / XML / YAML colorizers, and the three UI contributions we stand on — the suggestion popup and the hover card for typing help, and multicursor for add-a-cursor-above/below and add-the-next-match. Still no language services and no web workers: the popup's *answers* come from the host over IPC (code-intel.js), so colorizing, the minimap and the popup all run on the main thread. esbuild inlines the icon font, so the output is just monaco.js + monaco.css.
+// Monaco (the VS Code editor) powers the raw-source code view. Unlike the other vendored libraries it is NOT distributed as one drop-in file, so we bundle it here: the core editor (which includes the minimap, line wrapping and the mouse handling that puts a second cursor down), the Markdown / HTML / XML / YAML colorizers, and the three UI contributions we stand on — the suggestion popup and the hover card for typing help, and multicursor for add-a-cursor-above/below and add-the-next-match. Still no language services and no web workers: the popup's *answers* come from the host over IPC (code-intel.js), so colorizing, the minimap and the popup all run on the main thread. esbuild inlines the icon font, so the output is just monaco.js + monaco.css.
 //
 // This is a manual regeneration step, like the other vendored assets — it is not part of `just verify`. It needs monaco-editor and esbuild:
 //
@@ -21,6 +21,7 @@ const entryPath = join(outDir, '.entry.js');
 const ENTRY = `
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import 'monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution';
+import 'monaco-editor/esm/vs/basic-languages/html/html.contribution';
 import 'monaco-editor/esm/vs/basic-languages/xml/xml.contribution';
 import 'monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution';
 import 'monaco-editor/esm/vs/editor/contrib/suggest/browser/suggestController';

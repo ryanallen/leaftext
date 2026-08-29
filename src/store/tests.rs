@@ -1046,6 +1046,29 @@ fn document_links_finds_markdown_html_and_wiki_targets() {
 }
 
 #[test]
+fn html_links_join_documents_and_web_addresses_without_copying_the_page() {
+    let source = PathBuf::from(if cfg!(windows) {
+        r"C:\vault\notes\report.html"
+    } else {
+        "/vault/notes/report.html"
+    });
+    let links = document_links(
+        r##"<a href="neighbor.md">Neighbor</a><a href="https://Example.com/story/#part">Web</a><a href="#inside">Inside</a>"##,
+        &source,
+    );
+
+    assert_eq!(links.len(), 2);
+    assert!(links
+        .iter()
+        .filter_map(|link| link.target_abs.as_deref())
+        .any(|path| path.ends_with("neighbor.md")));
+    assert!(links
+        .iter()
+        .any(|link| { link.target_url.as_deref() == Some("https://example.com/story") }));
+    assert!(!links.iter().any(|link| link.raw == "#inside"));
+}
+
+#[test]
 fn a_file_is_owned_by_the_innermost_vault_that_holds_it() {
     let dir = unique_dir("owner");
     let outer = dir.join("dharma");

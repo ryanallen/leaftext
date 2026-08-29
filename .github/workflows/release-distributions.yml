@@ -340,6 +340,25 @@ jobs:
                   <string>mhtml</string>
                 </array>
               </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>HTML Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>html</string>
+                  <string>htm</string>
+                </array>
+                <key>LSItemContentTypes</key>
+                <array>
+                  <string>public.html</string>
+                </array>
+              </dict>
             </array>
           </dict>
           </plist>

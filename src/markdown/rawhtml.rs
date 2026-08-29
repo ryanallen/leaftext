@@ -374,7 +374,8 @@ pub(crate) const RENDERED_HTML_URL_SCHEMES: [&str; 6] = [
 pub(crate) fn configure_rendered_html_sanitizer(sanitizer: &mut Builder<'_>) {
     sanitizer
         .url_schemes(RENDERED_HTML_URL_SCHEMES.into_iter().collect())
-        .add_tags(&["input"])
+        .clean_content_tags(["script", "style", "title"].into_iter().collect())
+        .add_tags(&["input", "main", "section"])
         .add_tag_attributes("a", &["aria-label", "class", "id", "name"])
         .add_tag_attributes("blockquote", &["class"])
         .add_tag_attributes("div", &["align", "class", "id"])

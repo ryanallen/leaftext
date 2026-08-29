@@ -18,6 +18,7 @@ pub struct DocLink {
 pub(crate) fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     let mut links = match DocumentFormat::from_path(source_abs) {
         DocumentFormat::Xml => xml_links(content, source_abs),
+        DocumentFormat::Html => html_links(content, source_abs),
         // A data file's strings are values, not prose. Scanning them as Markdown invents links that were never written, so the graph leaves them out. Mail bodies are transfer-encoded — the scan would read base64, not links — so messages stay out too.
         DocumentFormat::Json | DocumentFormat::Yaml | DocumentFormat::Eml => Vec::new(),
         DocumentFormat::Markdown => markdown_links(content, source_abs),
@@ -78,6 +79,13 @@ fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
 fn xml_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     let mut out = Vec::new();
     collect_attr_targets(content, "target", source_abs, &mut out);
+    collect_attr_targets(content, "href", source_abs, &mut out);
+    out
+}
+
+/// Complete HTML documents contribute only their written `href=` targets; there is no Markdown or wiki-link syntax to scan beside them.
+fn html_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
+    let mut out = Vec::new();
     collect_attr_targets(content, "href", source_abs, &mut out);
     out
 }

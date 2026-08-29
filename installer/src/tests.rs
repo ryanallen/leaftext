@@ -7,6 +7,34 @@ use crate::locations;
 use crate::plan::{self, Root};
 
 #[test]
+fn html_is_offered_without_taking_the_browsers_place() {
+    let plan = plan::plan(
+        std::path::Path::new(r"C:\x"),
+        std::path::Path::new(r"C:\y"),
+        "0.0.0",
+    );
+
+    for extension in ["html", "htm"] {
+        let bare = format!(r"Software\Classes\.{extension}");
+        assert!(!plan
+            .values
+            .iter()
+            .any(|value| value.key == bare && value.name.is_none()));
+        assert!(plan
+            .values
+            .iter()
+            .any(|value| value.key == format!(r"{bare}\OpenWithProgids")
+                && value.name.as_deref() == Some(plan::PROGID)));
+        assert!(plan.values.iter().any(|value| value.key
+            == r"Software\Classes\Applications\leaftext.exe\SupportedTypes"
+            && value.name.as_deref() == Some(&format!(".{extension}"))));
+        assert!(plan.values.iter().any(|value| value.key
+            == format!(r"{}\Capabilities\FileAssociations", plan::APP_KEY)
+            && value.name.as_deref() == Some(&format!(".{extension}"))));
+    }
+}
+
+#[test]
 fn the_install_is_one_start_menu_entry_inside_the_users_own_folder() {
     // The three things `.github/workflows/validate-installer.yml` asserts about the MSI once WiX has compiled it — the scope, the one shortcut, nothing outside the profile — asserted about this installer with nothing running.
     let folder = locations::default_install_folder();

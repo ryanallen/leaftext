@@ -67,8 +67,8 @@ fn classifies_link_targets_for_native_opening() {
     }
     // A Windows drive letter is one character, so it is a path rather than a scheme.
     assert_eq!(
-        classify_link_target(r"C:\notes\a.html"),
-        LinkTarget::LocalFile(r"C:\notes\a.html".to_string())
+        classify_link_target(r"C:\notes\a.pdf"),
+        LinkTarget::LocalFile(r"C:\notes\a.pdf".to_string())
     );
     assert_eq!(classify_link_target("#section"), LinkTarget::AnchorOnly);
     assert_eq!(classify_link_target("./#section"), LinkTarget::AnchorOnly);
@@ -92,9 +92,9 @@ fn a_link_to_a_file_the_app_does_not_read_reaches_the_opener_resolved() {
         )
     );
     assert_eq!(
-        os_open_target("../../designs/v3-00-map.html", &current),
+        os_open_target("../../designs/v3-00-map.pdf", &current),
         Some(
-            normalize_path_lexically(fixture_source_path("designs/v3-00-map.html"))
+            normalize_path_lexically(fixture_source_path("designs/v3-00-map.pdf"))
                 .to_string_lossy()
                 .into_owned()
         )
@@ -111,14 +111,14 @@ fn a_link_to_a_file_the_app_does_not_read_reaches_the_opener_resolved() {
 
     // Both spellings of a whole path stand on their own rather than being joined onto the note's folder.
     assert_eq!(
-        os_open_target(r"C:\notes\a.html", &current),
-        Some(r"C:\notes\a.html".to_string())
+        os_open_target(r"C:\notes\a.pdf", &current),
+        Some(r"C:\notes\a.pdf".to_string())
     );
     // A path written from the root of the disk stands on its own rather than being hung off the note's folder. Windows reads a rooted path as rooted on the drive the app is running from, which is that platform's own answer for the same path.
     let rooted =
-        os_open_target("/Users/reader/a.html", &current).expect("a rooted path reaches the opener");
+        os_open_target("/Users/reader/a.pdf", &current).expect("a rooted path reaches the opener");
     assert!(rooted.ends_with(
-        &normalize_path_lexically(PathBuf::from("/Users/reader/a.html"))
+        &normalize_path_lexically(PathBuf::from("/Users/reader/a.pdf"))
             .to_string_lossy()
             .into_owned()
     ));
@@ -148,8 +148,8 @@ fn a_link_naming_a_file_that_is_not_there_is_reported_rather_than_opened() {
 
     // The file is not, so the reader is told where the app looked.
     assert_eq!(
-        missing_linked_file("../designs/v3-00-map.html", &note),
-        Some(normalize_path_lexically(dir.join("designs/v3-00-map.html")))
+        missing_linked_file("../designs/v3-00-map.pdf", &note),
+        Some(normalize_path_lexically(dir.join("designs/v3-00-map.pdf")))
     );
 
     // An address another handler reads is never asked about: a handler that is not installed fails the way it always has.

@@ -717,7 +717,7 @@ fn installer_claims_every_readable_extension() {
     for extension in all_document_extensions() {
         // The closing quote matters: .mht must not pass on .mhtml's entry.
         for needle in [
-            format!(r"Key='Software\Classes\.{extension}'"),
+            format!(r"Key='Software\Classes\.{extension}\OpenWithProgids'"),
             format!(r"SupportedTypes' Name='.{extension}'"),
             format!(r"Capabilities\FileAssociations' Name='.{extension}'"),
         ] {
@@ -737,6 +737,26 @@ fn installer_claims_every_readable_extension() {
         all_document_extensions(),
         "installer/src/plan.rs claims a different set of extensions from format.rs"
     );
+
+    for extension in ["html", "htm"] {
+        assert!(
+            !wxs.contains(&format!(r"Key='Software\Classes\.{extension}' Type=")),
+            "the MSI takes .{extension} away from the browser"
+        );
+        let entry = macos_document_type_entries()
+            .into_iter()
+            .find(|entry| {
+                plist_strings(entry, "CFBundleTypeExtensions")
+                    .iter()
+                    .any(|item| item == extension)
+            })
+            .expect("macOS offers HTML files");
+        assert_eq!(
+            plist_string(&entry, "LSHandlerRank").as_deref(),
+            Some("Alternate")
+        );
+        assert_eq!(plist_strings(&entry, "LSItemContentTypes"), ["public.html"]);
+    }
 }
 
 /// A Cursor project rule is a Markdown document with a frontmatter block, spelled `.mdc`. It reads as Markdown through every door an extension is asked at — the Windows Open window, the folder pane, links, the pager and the installers — which is the whole of what admitting it means. The one place it is not offered is a save window: `MARKDOWN_EXPORT_EXTENSIONS` is a shorter list, and `src/app/tests/export.rs` holds that end.
@@ -1050,7 +1070,7 @@ fn a_cursor_rule_is_claimed_by_extension_rather_than_by_a_type_that_omits_it() {
 fn every_macos_file_type_claiming_extensions_names_the_icon() {
     let workflow = include_str!("../../.github/workflows/release-distributions.yml");
     let entries = macos_document_type_entries();
-    assert_eq!(entries.len(), 7, "the bundle claims seven file types");
+    assert_eq!(entries.len(), 8, "the bundle claims eight file types");
 
     for entry in &entries {
         let name = plist_string(entry, "CFBundleTypeName").expect("every entry names its type");

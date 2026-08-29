@@ -36,6 +36,12 @@ pub const UNINSTALLER_RELATIVE_PATH: &str = "leaftext-setup.exe";
 
 /// Every extension the app reads, claimed in the same three registry shapes `wix/main.wxs` uses. `src/format.rs` is the source; `installer_claims_every_readable_extension` fails when this list falls behind it.
 pub const EXTENSIONS: &[&str] = &[
+    "md", "markdown", "mdown", "mdc", "xml", "json", "yaml", "yml", "eml", "mht", "mhtml", "html",
+    "htm",
+];
+
+/// Readable extensions Leaftext may claim where no default exists. HTML stays with the browser unless a person chooses Leaftext.
+pub const OWNED_EXTENSIONS: &[&str] = &[
     "md", "markdown", "mdown", "mdc", "xml", "json", "yaml", "yml", "eml", "mht", "mhtml",
 ];
 
@@ -196,13 +202,16 @@ pub fn plan(folder: &Path, start_menu: &Path, version: &str) -> Plan {
         ),
     ];
 
-    // Windows 8+ honors its own UserChoice above these keys, so claiming an extension takes effect where nothing else has claimed it and is ignored where the user already chose — the correct behavior in both cases.
-    for extension in EXTENSIONS {
+    // Windows 8+ honors its own UserChoice above these keys. Only formats Leaftext may own receive the bare extension key; HTML is offered without taking a browser's place.
+    for extension in OWNED_EXTENSIONS {
         values.push(Value::string(
             &format!(r"Software\Classes\.{extension}"),
             None,
             PROGID,
         ));
+    }
+
+    for extension in EXTENSIONS {
         values.push(Value::string(
             &format!(r"Software\Classes\.{extension}\OpenWithProgids"),
             Some(PROGID),

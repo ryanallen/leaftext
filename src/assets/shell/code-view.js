@@ -661,7 +661,7 @@ function leafColorRanges(text) {
 // Monaco keeps providers globally, not per editor, so re-entering the code view must not hand it a second one.
 let colorProvidersRegistered = false;
 
-// Registered for every language the code view uses, not just one: a hex in a Markdown note, a YAML theme file, a JSON settings file or an XML attribute is a color the same way it is anywhere else — and the eleven theme families this repo edits are Markdown tables of hex.
+// Registered for every language the code view uses, not just one: a hex in a Markdown note, an HTML or XML attribute, a YAML theme file or a JSON settings file is a color the same way it is anywhere else — and the eleven theme families this repo edits are Markdown tables of hex.
 function registerColorProvidersOnce(monaco) {
   if (colorProvidersRegistered) return;
   colorProvidersRegistered = true;
@@ -686,14 +686,15 @@ function registerColorProvidersOnce(monaco) {
       return [];
     },
   };
-  ['markdown', 'xml', 'yaml', 'json', 'plaintext'].forEach((id) =>
+  ['markdown', 'html', 'xml', 'yaml', 'json', 'plaintext'].forEach((id) =>
     monaco.languages.registerColorProvider(id, provider)
   );
 }
 
-// The Monaco language id for a code-view payload. Markdown, XML and YAML are bundled colorizers and JSON is the grammar above; anything else falls back to plain text, which still edits and minimaps.
+// The Monaco language id for a code-view payload. Markdown, HTML, XML and YAML are bundled colorizers and JSON is the grammar above; anything else falls back to plain text, which still edits and minimaps.
 function monacoLanguageFor(state) {
   const lang = (state.language || '').toLowerCase();
+  if (lang === 'html') return 'html';
   if (lang.includes('xml') || lang === 'tei') return 'xml';
   if (lang.includes('yaml') || lang === 'yml') return 'yaml';
   if (lang.includes('json')) return 'json';

@@ -866,10 +866,8 @@ export function run() {
       const css = readingCss();
       if (!css.includes('.link-hover-tip-preview-document pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])[data-card-diagram="unshown"] {')) throw new Error('the card has no strip rule for a drawing it will not show');
     } finally {
+      // The one thing the hand-back after this body will not do: it puts back the names the boot took and removes none, and the boot carries no `mermaid` at all.
       booted.window.mermaid = wasMermaid;
-      previewDocument.innerHTML = '';
-      preview.classList.remove('is-loaded');
-      vm.runInContext('activeHoverToken = 0; linkHoverTip.hidden = true;', booted);
     }
   });
 

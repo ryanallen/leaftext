@@ -75,8 +75,8 @@ fn a_folder_of_files_the_app_cannot_read_counts_them() {
     let dir = tree_dir("skipped");
     let root = dir.join("vault");
     // The shape the owner hit: a folder of design captures, nothing in it the app reads.
-    write(&root.join("index.html"), "<p>one</p>");
-    write(&root.join("about.html"), "<p>two</p>");
+    write(&root.join("index.png"), "one");
+    write(&root.join("about.png"), "two");
     write(&root.join("site.css"), "p{}");
     // A folder is always a row, so it can never be one of the missing.
     write(&root.join("notes").join("deep.md"), "# Deep\n");

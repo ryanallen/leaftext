@@ -191,6 +191,8 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\.mht\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.mhtml' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.mhtml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.html\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.htm\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
 
                 <!-- Puts leaftext in the "Open with" list even for extensions it
                      does not own. -->
@@ -207,6 +209,8 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.eml' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mht' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mhtml' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.html' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.htm' Type='string' Value=''/>
                 <RemoveRegistryKey Root='HKCU' Key='Software\Classes\Applications\leaftext.exe' Action='removeOnUninstall'/>
 
                 <!-- Default Programs registration, so the app is listed in
@@ -224,6 +228,8 @@
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.eml' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mht' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mhtml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.html' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.htm' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\RegisteredApplications' Name='Leaftext' Type='string' Value='Software\ryanallen\leaftext\Capabilities'/>
             </Component>
         </DirectoryRef>

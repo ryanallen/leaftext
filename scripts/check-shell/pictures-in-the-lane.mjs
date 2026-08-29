@@ -413,53 +413,46 @@ export function run() {
 
   // Copy is the only row that puts a picture on the clipboard, and it does it for every kind the reading view can draw — which is the whole reason it goes through the page's own canvas rather than a decoder on the other side. Driven over a canvas of the check's own, because the way it would break is silent: a source the encoder cannot read comes back as a throw nobody sees, and the reader is left thinking the picture was copied.
   checkSettled('every kind of picture copies through the one PNG encoder, and an encode that fails is said on the page', async () => {
-    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, canvas: booted.pictureCanvas };
     const sent = [];
     const said = [];
     const asked = [];
     const settle = async () => {
       for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
     };
-    try {
-      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
-      booted.leafToast = (words) => said.push(words);
-      booted.pictureCanvas = async (picture, background) => {
-        asked.push({ src: picture.getAttribute('src'), background });
-        return { width: 8, height: 8, toDataURL: (type) => 'data:' + type + ';base64,UE5H' };
-      };
-      // The four the app draws that a decoder written against a picture's own bytes would have had to learn separately.
-      for (const ending of ['png', 'svg', 'webp', 'avif']) {
-        const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {} });
-        picture.setAttribute('src', `leaf-image://local/imgs/shot.${ending}`);
-        await booted.copyPicture(picture);
-      }
-      await settle();
-      const copied = sent.filter((one) => one.command === 'copyImage');
-      if (copied.length !== 4) throw new Error(`4 kinds of picture made ${copied.length} copies: ${said.join(' / ') || 'and said nothing'}`);
-      if (copied.some((one) => one.data !== 'UE5H')) throw new Error('a copy carried something other than what the canvas wrote');
-      // PNG holds transparency, so nothing is painted under any of them — a copy on the page's own surface color would flatten a cutout every reader expects back.
-      if (asked.some((one) => one.background)) throw new Error('a picture was drawn onto a color before it was copied');
-      if (asked.map((one) => one.src.split('.').pop()).join() !== 'png,svg,webp,avif') {
-        throw new Error(`the encoder saw ${JSON.stringify(asked.map((one) => one.src))}`);
-      }
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    booted.leafToast = (words) => said.push(words);
+    booted.pictureCanvas = async (picture, background) => {
+      asked.push({ src: picture.getAttribute('src'), background });
+      return { width: 8, height: 8, toDataURL: (type) => 'data:' + type + ';base64,UE5H' };
+    };
+    // The four the app draws that a decoder written against a picture's own bytes would have had to learn separately.
+    for (const ending of ['png', 'svg', 'webp', 'avif']) {
+      const picture = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {} });
+      picture.setAttribute('src', `leaf-image://local/imgs/shot.${ending}`);
+      await booted.copyPicture(picture);
+    }
+    await settle();
+    const copied = sent.filter((one) => one.command === 'copyImage');
+    if (copied.length !== 4) throw new Error(`4 kinds of picture made ${copied.length} copies: ${said.join(' / ') || 'and said nothing'}`);
+    if (copied.some((one) => one.data !== 'UE5H')) throw new Error('a copy carried something other than what the canvas wrote');
+    // PNG holds transparency, so nothing is painted under any of them — a copy on the page's own surface color would flatten a cutout every reader expects back.
+    if (asked.some((one) => one.background)) throw new Error('a picture was drawn onto a color before it was copied');
+    if (asked.map((one) => one.src.split('.').pop()).join() !== 'png,svg,webp,avif') {
+      throw new Error(`the encoder saw ${JSON.stringify(asked.map((one) => one.src))}`);
+    }
 
-      // A source the canvas cannot read: the row says so where the reader is looking, rather than leaving them holding a clipboard that never changed.
-      sent.length = 0;
-      booted.pictureCanvas = async () => {
-        throw new Error('That picture could not be read, so nothing was written.');
-      };
-      const broken = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {} });
-      broken.setAttribute('src', 'leaf-image://local/imgs/broken.png');
-      await booted.copyPicture(broken);
-      await settle();
-      if (sent.some((one) => one.command === 'copyImage')) throw new Error('a picture that could not be read was still sent to the clipboard');
-      if (!said.some((words) => String(words).includes('could not be read'))) {
-        throw new Error(`a failed encode said ${JSON.stringify(said)} on the page`);
-      }
-    } finally {
-      booted.ipc.postMessage = was.send;
-      booted.leafToast = was.toast;
-      booted.pictureCanvas = was.canvas;
+    // A source the canvas cannot read: the row says so where the reader is looking, rather than leaving them holding a clipboard that never changed.
+    sent.length = 0;
+    booted.pictureCanvas = async () => {
+      throw new Error('That picture could not be read, so nothing was written.');
+    };
+    const broken = Object.assign(fakeElement('img'), { tagName: 'IMG', dataset: {} });
+    broken.setAttribute('src', 'leaf-image://local/imgs/broken.png');
+    await booted.copyPicture(broken);
+    await settle();
+    if (sent.some((one) => one.command === 'copyImage')) throw new Error('a picture that could not be read was still sent to the clipboard');
+    if (!said.some((words) => String(words).includes('could not be read'))) {
+      throw new Error(`a failed encode said ${JSON.stringify(said)} on the page`);
     }
   });
 
@@ -477,7 +470,6 @@ export function run() {
       .find((child) => child.className === 'image-lane-corner')
       .children.find((child) => child.className === 'image-export-open');
 
-    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, canvas: booted.pictureCanvas };
     const sent = [];
     const said = [];
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
@@ -497,60 +489,54 @@ export function run() {
       for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
     };
     const written = () => sent.filter((one) => one.command === 'exportPicture').pop();
-    try {
-      // A JPEG asked for as a PNG: a conversion, so the canvas writes the file and it travels as bytes.
-      press();
-      answer('/out/holiday.png');
-      await settle();
-      let file = written();
-      if (!file) throw new Error(`converting a JPEG to a PNG wrote nothing: ${said.join(' / ') || 'and said nothing either'}`);
-      if (file.format !== 'png' || !file.data) throw new Error('the conversion carried no file for the host to write');
-      if (file.data !== 'QUJD') throw new Error(`the host was handed ${JSON.stringify(file.data)} rather than what the canvas wrote`);
+    // A JPEG asked for as a PNG: a conversion, so the canvas writes the file and it travels as bytes.
+    press();
+    answer('/out/holiday.png');
+    await settle();
+    let file = written();
+    if (!file) throw new Error(`converting a JPEG to a PNG wrote nothing: ${said.join(' / ') || 'and said nothing either'}`);
+    if (file.format !== 'png' || !file.data) throw new Error('the conversion carried no file for the host to write');
+    if (file.data !== 'QUJD') throw new Error(`the host was handed ${JSON.stringify(file.data)} rather than what the canvas wrote`);
 
-      // A PNG asked for as a PNG: nothing is drawn at all, and the host is handed the address to copy the file off.
-      picture.setAttribute('src', 'leaf-image://local/imgs/holiday.png?leaf-epoch=1');
-      press();
-      answer('/out/copy.png');
-      await settle();
-      file = written();
-      if (file.data) throw new Error('a picture already in the format asked for was re-encoded rather than copied');
-      if (file.source !== 'leaf-image://local/imgs/holiday.png?leaf-epoch=1') {
-        throw new Error('the copy carried no address for the host to read the file off');
-      }
-
-      // A canvas answering with a PNG when it was asked for a WebP: saving that under a `.webp` name is a file nobody can open, so the type in the answer is what settles it.
-      picture.setAttribute('src', 'leaf-image://local/imgs/holiday.jpg?leaf-epoch=1');
-      answers = () => 'data:image/png;base64,QUJD';
-      let before = sent.length;
-      press();
-      answer('/out/holiday.webp');
-      await settle();
-      if (sent.length !== before + 1) throw new Error('a canvas that could not write WebP still wrote a file under that name');
-      if (!said.length) throw new Error('a canvas that could not write WebP said nothing about it');
-      said.length = 0;
-
-      // Past what the format holds, the canvas answers an empty address rather than failing, so the refusal has to be ours and it has to come before the encode.
-      answers = (type) => 'data:' + type + ';base64,QUJD';
-      drawn = { width: 16384, height: 30 };
-      before = sent.length;
-      press();
-      answer('/out/huge.webp');
-      await settle();
-      if (sent.length !== before + 1) throw new Error('a picture past what WebP holds still wrote a file');
-      if (!said.some((words) => /too big for WebP/.test(words))) {
-        throw new Error(`a picture past what WebP holds was refused with: ${said.join(' / ') || 'nothing'}`);
-      }
-
-      // And the same picture is fine as a PNG, which is what that refusal points a reader at.
-      press();
-      answer('/out/huge.png');
-      await settle();
-      if (written().format !== 'png') throw new Error('a picture too wide for WebP could not be written as a PNG either');
-    } finally {
-      booted.ipc.postMessage = was.send;
-      booted.leafToast = was.toast;
-      booted.pictureCanvas = was.canvas;
+    // A PNG asked for as a PNG: nothing is drawn at all, and the host is handed the address to copy the file off.
+    picture.setAttribute('src', 'leaf-image://local/imgs/holiday.png?leaf-epoch=1');
+    press();
+    answer('/out/copy.png');
+    await settle();
+    file = written();
+    if (file.data) throw new Error('a picture already in the format asked for was re-encoded rather than copied');
+    if (file.source !== 'leaf-image://local/imgs/holiday.png?leaf-epoch=1') {
+      throw new Error('the copy carried no address for the host to read the file off');
     }
+
+    // A canvas answering with a PNG when it was asked for a WebP: saving that under a `.webp` name is a file nobody can open, so the type in the answer is what settles it.
+    picture.setAttribute('src', 'leaf-image://local/imgs/holiday.jpg?leaf-epoch=1');
+    answers = () => 'data:image/png;base64,QUJD';
+    let before = sent.length;
+    press();
+    answer('/out/holiday.webp');
+    await settle();
+    if (sent.length !== before + 1) throw new Error('a canvas that could not write WebP still wrote a file under that name');
+    if (!said.length) throw new Error('a canvas that could not write WebP said nothing about it');
+    said.length = 0;
+
+    // Past what the format holds, the canvas answers an empty address rather than failing, so the refusal has to be ours and it has to come before the encode.
+    answers = (type) => 'data:' + type + ';base64,QUJD';
+    drawn = { width: 16384, height: 30 };
+    before = sent.length;
+    press();
+    answer('/out/huge.webp');
+    await settle();
+    if (sent.length !== before + 1) throw new Error('a picture past what WebP holds still wrote a file');
+    if (!said.some((words) => /too big for WebP/.test(words))) {
+      throw new Error(`a picture past what WebP holds was refused with: ${said.join(' / ') || 'nothing'}`);
+    }
+
+    // And the same picture is fine as a PNG, which is what that refusal points a reader at.
+    press();
+    answer('/out/huge.png');
+    await settle();
+    if (written().format !== 'png') throw new Error('a picture too wide for WebP could not be written as a PNG either');
   });
 
   // The JPEG row, driven the same way. It is the third picture in the run and the only one whose format has two spellings, so what is pressed here is what the canvas was asked for and what the row does with a picture already wearing either name.
@@ -571,7 +557,6 @@ export function run() {
       .find((child) => child.className === 'image-lane-corner')
       .children.find((child) => child.className === 'image-export-open');
 
-    const was = { send: booted.ipc.postMessage, toast: booted.leafToast, canvas: booted.pictureCanvas };
     const sent = [];
     const said = [];
     const asked = [];
@@ -595,55 +580,49 @@ export function run() {
       for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
     };
     const written = () => sent.filter((one) => one.command === 'exportPicture').pop();
-    try {
-      // A PNG asked for as a JPEG: a conversion, and the encoder is named a quality rather than left to a default a web view update could move under every file already written.
-      press();
-      answer('/out/shot.jpg');
-      await settle();
-      const file = written();
-      if (!file) throw new Error(`the JPEG row wrote nothing: ${said.join(' / ') || 'and said nothing either'}`);
-      if (file.format !== 'jpg' || file.data !== 'QUJD') throw new Error('the JPEG row carried no file for the host to write');
-      if (asked.length !== 1) throw new Error(`the canvas was asked ${asked.length} times for one file`);
-      if (asked[0].type !== 'image/jpeg') throw new Error(`the canvas was asked for ${JSON.stringify(asked[0].type)} rather than a JPEG`);
-      if (asked[0].quality !== 0.92) throw new Error(`the JPEG was written at ${asked[0].quality} rather than at the named 0.92`);
+    // A PNG asked for as a JPEG: a conversion, and the encoder is named a quality rather than left to a default a web view update could move under every file already written.
+    press();
+    answer('/out/shot.jpg');
+    await settle();
+    const file = written();
+    if (!file) throw new Error(`the JPEG row wrote nothing: ${said.join(' / ') || 'and said nothing either'}`);
+    if (file.format !== 'jpg' || file.data !== 'QUJD') throw new Error('the JPEG row carried no file for the host to write');
+    if (asked.length !== 1) throw new Error(`the canvas was asked ${asked.length} times for one file`);
+    if (asked[0].type !== 'image/jpeg') throw new Error(`the canvas was asked for ${JSON.stringify(asked[0].type)} rather than a JPEG`);
+    if (asked[0].quality !== 0.92) throw new Error(`the JPEG was written at ${asked[0].quality} rather than at the named 0.92`);
 
-      // Either spelling already on disk, asked for as the row's own word: copied, so nothing is drawn at all and a lossy source is not re-encoded into a bigger file.
-      for (const spelled of ['holiday.jpg', 'holiday.jpeg']) {
-        picture.setAttribute('src', 'leaf-image://local/imgs/' + spelled + '?leaf-epoch=1');
-        asked.length = 0;
-        press();
-        answer('/out/copy.jpg');
-        await settle();
-        if (asked.length) throw new Error(`a ${spelled} exported as a JPEG went through the canvas rather than being copied`);
-        if (written().data) throw new Error(`a ${spelled} exported as a JPEG was re-encoded rather than copied`);
-      }
-
-      // The run the reader is offered, read off the words the page says when the ending is none of them: the rows in the order they are drawn in, which is the order the window offers and the order a bare name is built off. The three pictures together, JPEG under the two it is measured against.
-      picture.setAttribute('src', 'leaf-image://local/imgs/shot.png?leaf-epoch=1');
-      said.length = 0;
+    // Either spelling already on disk, asked for as the row's own word: copied, so nothing is drawn at all and a lossy source is not re-encoded into a bigger file.
+    for (const spelled of ['holiday.jpg', 'holiday.jpeg']) {
+      picture.setAttribute('src', 'leaf-image://local/imgs/' + spelled + '?leaf-epoch=1');
+      asked.length = 0;
       press();
-      answer('/out/shot.gif');
+      answer('/out/copy.jpg');
       await settle();
-      if (!said.some((words) => words.includes('PNG, WebP, JPEG, PDF, Markdown'))) {
-        throw new Error(`the picture export names its rows as: ${said.join(' / ') || 'nothing'}`);
-      }
+      if (asked.length) throw new Error(`a ${spelled} exported as a JPEG went through the canvas rather than being copied`);
+      if (written().data) throw new Error(`a ${spelled} exported as a JPEG was re-encoded rather than copied`);
+    }
 
-      // A canvas answering with a PNG when it was asked for a JPEG: saving that under a `.jpg` name is a file nobody can open, so the type in the answer is what settles it.
-      picture.setAttribute('src', 'leaf-image://local/imgs/shot.png?leaf-epoch=1');
-      booted.pictureCanvas = async () => ({ width: 40, height: 30, toDataURL: () => 'data:image/png;base64,QUJD' });
-      const before = sent.length;
-      said.length = 0;
-      press();
-      answer('/out/shot.jpg');
-      await settle();
-      if (sent.length !== before + 1) throw new Error('a canvas that could not write JPEG still wrote a file under that name');
-      if (!said.some((words) => /cannot write JPEG/.test(words))) {
-        throw new Error(`a canvas that could not write JPEG said: ${said.join(' / ') || 'nothing'}`);
-      }
-    } finally {
-      booted.ipc.postMessage = was.send;
-      booted.leafToast = was.toast;
-      booted.pictureCanvas = was.canvas;
+    // The run the reader is offered, read off the words the page says when the ending is none of them: the rows in the order they are drawn in, which is the order the window offers and the order a bare name is built off. The three pictures together, JPEG under the two it is measured against.
+    picture.setAttribute('src', 'leaf-image://local/imgs/shot.png?leaf-epoch=1');
+    said.length = 0;
+    press();
+    answer('/out/shot.gif');
+    await settle();
+    if (!said.some((words) => words.includes('PNG, WebP, JPEG, PDF, Markdown'))) {
+      throw new Error(`the picture export names its rows as: ${said.join(' / ') || 'nothing'}`);
+    }
+
+    // A canvas answering with a PNG when it was asked for a JPEG: saving that under a `.jpg` name is a file nobody can open, so the type in the answer is what settles it.
+    picture.setAttribute('src', 'leaf-image://local/imgs/shot.png?leaf-epoch=1');
+    booted.pictureCanvas = async () => ({ width: 40, height: 30, toDataURL: () => 'data:image/png;base64,QUJD' });
+    const before = sent.length;
+    said.length = 0;
+    press();
+    answer('/out/shot.jpg');
+    await settle();
+    if (sent.length !== before + 1) throw new Error('a canvas that could not write JPEG still wrote a file under that name');
+    if (!said.some((words) => /cannot write JPEG/.test(words))) {
+      throw new Error(`a canvas that could not write JPEG said: ${said.join(' / ') || 'nothing'}`);
     }
   });
 
@@ -667,34 +646,27 @@ export function run() {
     picture.currentSrc = 'leaf-image://local/imgs/logo.png?leaf-epoch=1';
     // The page's own picture loads this, off the exact address the conversion asks for, so the load is decided here rather than by a stand-in that called every address good. An address nobody registers takes that same picture's failure branch, which is what the case below drives.
     booted.__pictures.set(picture.currentSrc, { width: 64, height: 48 });
-    try {
-      await booted.pictureFileBase64(picture, 'image/jpeg');
-      if (drawn.length !== 2 || drawn[0].what !== 'fill' || drawn[1].what !== 'picture') {
-        throw new Error(`a JPEG drew ${JSON.stringify(drawn.map((one) => one.what))} rather than the page under the picture`);
-      }
-      if (drawn[0].color !== '#101014') {
-        throw new Error(`a JPEG was painted onto ${JSON.stringify(drawn[0].color)} rather than onto the surface the reader was looking at`);
-      }
-      if (drawn[0].width !== 64 || drawn[0].height !== 48) {
-        throw new Error('the paint under a JPEG does not cover the whole canvas, so the corners come out black');
-      }
-      // The picture that arrived, not the element it was read off: a picture in the lane is drawn at whatever width the lane gave it, and a file written at that width is a file the reader never asked to be shrunk.
-      if (madeCanvas.width !== 64 || madeCanvas.height !== 48) {
-        throw new Error(`the canvas was made ${madeCanvas.width}×${madeCanvas.height} rather than at the pixels the picture came back with`);
+    await booted.pictureFileBase64(picture, 'image/jpeg');
+    if (drawn.length !== 2 || drawn[0].what !== 'fill' || drawn[1].what !== 'picture') {
+      throw new Error(`a JPEG drew ${JSON.stringify(drawn.map((one) => one.what))} rather than the page under the picture`);
+    }
+    if (drawn[0].color !== '#101014') {
+      throw new Error(`a JPEG was painted onto ${JSON.stringify(drawn[0].color)} rather than onto the surface the reader was looking at`);
+    }
+    if (drawn[0].width !== 64 || drawn[0].height !== 48) {
+      throw new Error('the paint under a JPEG does not cover the whole canvas, so the corners come out black');
+    }
+    // The picture that arrived, not the element it was read off: a picture in the lane is drawn at whatever width the lane gave it, and a file written at that width is a file the reader never asked to be shrunk.
+    if (madeCanvas.width !== 64 || madeCanvas.height !== 48) {
+      throw new Error(`the canvas was made ${madeCanvas.width}×${madeCanvas.height} rather than at the pixels the picture came back with`);
+    }
+    drawn.length = 0;
+    for (const type of ['image/png', 'image/webp']) {
+      await booted.pictureFileBase64(picture, type);
+      if (drawn.some((one) => one.what === 'fill')) {
+        throw new Error(`a ${type} was flattened onto the page, and it is a format that keeps what it came with`);
       }
       drawn.length = 0;
-      for (const type of ['image/png', 'image/webp']) {
-        await booted.pictureFileBase64(picture, type);
-        if (drawn.some((one) => one.what === 'fill')) {
-          throw new Error(`a ${type} was flattened onto the page, and it is a format that keeps what it came with`);
-        }
-        drawn.length = 0;
-      }
-    } finally {
-      booted.document.createElement = was.create;
-      // Gone with the case, or a later one asking for this address would be handed a picture this case decided for.
-      booted.__pictures.delete(picture.currentSrc);
-      booted.document.documentElement.style.removeProperty('--lt-surface');
     }
   });
 
@@ -717,27 +689,21 @@ export function run() {
     const button = lane.children
       .find((child) => child.className === 'image-lane-corner')
       .children.find((child) => child.className === 'image-export-open');
-    const was = { send: booted.ipc.postMessage, toast: booted.leafToast };
     const sent = [];
     const said = [];
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     booted.leafToast = (words) => said.push(words);
-    try {
-      // A PNG asked for as a JPEG, so the row converts rather than asking the host to copy the file: the load is the first thing it does.
-      (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
-      const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
-      if (!ask) throw new Error('pressing Export asked nowhere for a path');
-      booted.window.leafPicturePathPicked(ask.token, '/out/nowhere.jpg');
-      for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
-      if (sent.some((one) => one.command === 'exportPicture')) {
-        throw new Error('a picture that could not be read still sent a file for the host to write');
-      }
-      if (!said.includes('That picture could not be read, so nothing was written.')) {
-        throw new Error(`a picture that could not be read said: ${said.join(' / ') || 'nothing'}`);
-      }
-    } finally {
-      booted.ipc.postMessage = was.send;
-      booted.leafToast = was.toast;
+    // A PNG asked for as a JPEG, so the row converts rather than asking the host to copy the file: the load is the first thing it does.
+    (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+    const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
+    if (!ask) throw new Error('pressing Export asked nowhere for a path');
+    booted.window.leafPicturePathPicked(ask.token, '/out/nowhere.jpg');
+    for (let turn = 0; turn < 40; turn += 1) await Promise.resolve();
+    if (sent.some((one) => one.command === 'exportPicture')) {
+      throw new Error('a picture that could not be read still sent a file for the host to write');
+    }
+    if (!said.includes('That picture could not be read, so nothing was written.')) {
+      throw new Error(`a picture that could not be read said: ${said.join(' / ') || 'nothing'}`);
     }
   });
 

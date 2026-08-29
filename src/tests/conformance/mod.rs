@@ -88,7 +88,7 @@ fn suites_for(format: DocumentFormat) -> &'static [Suite] {
         DocumentFormat::Yaml => &[Suite::Yaml],
         // Nothing comparable is published for mail. If one ever is, this is where
         // it goes.
-        DocumentFormat::Eml => &[],
+        DocumentFormat::Eml | DocumentFormat::Html => &[],
     }
 }
 
@@ -403,7 +403,7 @@ pub(super) fn read_case(suite: Suite, case: &Case) {
         DocumentFormat::Yaml => {
             let _ = render_yaml_document(&case.source, None);
         }
-        DocumentFormat::Eml => {}
+        DocumentFormat::Eml | DocumentFormat::Html => {}
     }
 }
 

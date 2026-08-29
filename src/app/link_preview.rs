@@ -50,11 +50,13 @@ fn read_for_preview(path: &Path, size: u64) -> Option<SourceText> {
     match DocumentFormat::from_path(path) {
         // Prose reads back as prose wherever it is cut, so the opening is a smaller document.
         DocumentFormat::Markdown => read_source_head(path, LINK_PREVIEW_HEAD_BYTES).ok(),
-        DocumentFormat::Xml | DocumentFormat::Json | DocumentFormat::Yaml | DocumentFormat::Eml => {
-            (size <= LINK_PREVIEW_WHOLE_FILE_BYTES)
-                .then(|| read_source(path).ok())
-                .flatten()
-        }
+        DocumentFormat::Xml
+        | DocumentFormat::Json
+        | DocumentFormat::Yaml
+        | DocumentFormat::Eml
+        | DocumentFormat::Html => (size <= LINK_PREVIEW_WHOLE_FILE_BYTES)
+            .then(|| read_source(path).ok())
+            .flatten(),
     }
 }
 

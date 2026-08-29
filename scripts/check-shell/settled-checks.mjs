@@ -1,6 +1,7 @@
 // The order the checks themselves run in: one awaiting check at a time against the one booted page.
 
-import { check, checkSettled, createCollector, failures, settle } from './shared.mjs';
+import vm from 'node:vm';
+import { check, checkSettled, createCollector, failures, record, settle } from './shared.mjs';
 
 export function run() {
   // ---- one awaiting check at a time -------------------------------------------
@@ -37,6 +38,51 @@ export function run() {
   check('a synchronous check finishes before any awaiting body starts', () => {
     if (ran.length) throw new Error(`${JSON.stringify(ran)} ran before this call, so an awaiting body registered above started inside the run rather than after it`);
     ran.push('sync');
+  });
+
+  // ---- the page goes back between awaiting bodies -----------------------------
+  //
+  // A synchronous check has always been handed the page the boot made, because the collector runs the boot's snapshot after every one. An awaiting body got nothing, so the next one started on whatever the last one left — once the queue put them in a row that became repeatable rather than random, and no easier to read, since the check that caused the failure is the one above it and passes. These two are the proof, and the first writes in three places on purpose: the page holds what it is in its tree, in the values on its root, and in its script's own top-level names, and a walk over one reaches nothing of the others.
+
+  const asBooted = {};
+  checkSettled('an awaiting check may leave the shared page anywhere it drove it', async () => {
+    const surface = record.booted.document.getElementById('appSurface');
+    asBooted.children = surface.children.length;
+    asBooted.rail = record.booted.document.documentElement.style.getPropertyValue('--library-rail-width');
+    asBooted.code = vm.runInContext('codeViewActive', record.booted);
+
+    // Across a pause, so what the next body meets is what a real awaiting check leaves rather than what a synchronous one would.
+    await settle();
+
+    const drawn = record.booted.document.createElement('div');
+    drawn.className = 'left-behind-by-an-awaiting-check';
+    surface.appendChild(drawn);
+    record.booted.document.documentElement.style.setProperty('--library-rail-width', '999px');
+    vm.runInContext(`codeViewActive = ${!asBooted.code};`, record.booted);
+  });
+
+  checkSettled('the next awaiting check reads the page the boot made, not what the one above it left', async () => {
+    const surface = record.booted.document.getElementById('appSurface');
+    if (surface.children.length !== asBooted.children) throw new Error('an element the awaiting check above drew was left on the page');
+    const rail = record.booted.document.documentElement.style.getPropertyValue('--library-rail-width');
+    if (rail !== asBooted.rail) throw new Error(`the rail width the awaiting check above wrote was left at ${JSON.stringify(rail)}`);
+    if (vm.runInContext('codeViewActive', record.booted) !== asBooted.code) throw new Error('a page own value the awaiting check above wrote was left standing');
+  });
+
+  // The edge of what the hand-back reaches, and the reason a handful of put-back lines are still written by hand. The snapshot takes the names the window had at boot and puts those back; it removes none, so a name a check adds outlives it — which is why every stand-in on `mermaid` is still taken down by the check that set it. Pinned here rather than trusted, because the day the snapshot learns to delete, those lines are the ones that can go.
+  checkSettled('the hand-back puts back the names the boot had and leaves a name a check added standing', async () => {
+    const surroundings = 'leafCheckAddedName';
+    if (surroundings in record.booted) throw new Error('the page already carries the name this check adds, so it proves nothing');
+    const wasToast = record.booted.leafToast;
+    record.booted.leafToast = () => {};
+    record.booted[surroundings] = 'left behind';
+
+    await settle();
+
+    record.restore();
+    if (record.booted.leafToast !== wasToast) throw new Error('a name the boot had was not put back');
+    if (record.booted[surroundings] !== 'left behind') throw new Error('the hand-back removed a name a check added, so the put-back lines written for that case can go');
+    delete record.booted[surroundings];
   });
 
   checkSettled('a failed awaiting check does not lend its fault to the checks after it', async () => {

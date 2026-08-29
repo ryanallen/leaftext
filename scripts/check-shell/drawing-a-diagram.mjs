@@ -323,6 +323,7 @@ export function run() {
       if (drawn.length !== 2) throw new Error('a formula already remembered was drawn again rather than read out of the memo');
       if (later.innerHTML !== first.innerHTML) throw new Error(`the copy drawn out of the memo holds ${JSON.stringify(later.innerHTML)}`);
     } finally {
+      // The hand-back after this body is the shared page's snapshot, and this element belongs to the page booted above — so nothing but this line puts it back.
       appEl.querySelectorAll = wasQuery;
     }
   });

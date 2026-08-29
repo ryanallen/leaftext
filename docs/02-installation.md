@@ -1,6 +1,6 @@
 # Installation
 
-> Download the installer for your platform, run it, and open a Markdown, XML, JSON, YAML, or email file.
+> Download the installer for your platform, run it, and open a Markdown, HTML, XML, JSON, YAML, or email file.
 
 Leaftext is free, and it ships ready to run on macOS and Windows. There's no account to create, no plugins to pick, and no runtime to install first — download it, open it, and it works.
 
@@ -131,7 +131,7 @@ The data folders are independent of where the app is installed, so reinstalling 
 
 ![A file in Explorer showing the green leaf icon, with the Open with menu expanded and Leaftext listed in it](../imgs/file-associations.png)
 
-Installing registers Leaftext as a handler for every extension it reads — `.md`, `.markdown`, `.mdown`, `.mdc`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, and `.mhtml` — so those files carry the leaf icon and appear under **Open with**. On Windows the entries are per-user (`HKCU`), like the install itself.
+Installing registers Leaftext as a handler for every extension it reads — `.md`, `.markdown`, `.mdown`, `.mdc`, `.html`, `.htm`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, and `.mhtml` — so those files carry the leaf icon and appear under **Open with**. On Windows the entries are per-user (`HKCU`), like the install itself. HTML remains assigned to the browser unless you choose Leaftext.
 
 An extension no app has claimed opens in Leaftext on its own. One that already has a default app keeps it — neither installer overrides a choice you or another app made, so `.json` stays with your editor and `.eml` with your mail app until you say otherwise. To switch:
 
@@ -150,7 +150,7 @@ flowchart LR
     A[Download] --> B[Install]
     B --> C[Let it through the first-launch warning]
     C --> D[Launch app]
-    D --> E[Open .md, .xml, .json, .yaml, or .eml file]
+    D --> E[Open .md, .html, .xml, .json, .yaml, or .eml file]
     E --> F[Read]
 ```
 

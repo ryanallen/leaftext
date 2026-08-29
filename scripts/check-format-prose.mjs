@@ -7,7 +7,7 @@
 //
 // Adding a format is therefore two edits: the table, and the recorded rows below. The second edit is what hands over the reading list.
 //
-// **Both lists sit here rather than in a script each** because the mechanism is a table of lists and nothing about it is one list's: a second script would be this one copied, with a second reading list to keep and a second place for the parser to rot. The diagram export formats and the document formats already share a row — the diagram table takes Markdown's spellings from `src/format.rs` — and a third list, whenever somebody finds one drifting, is a row in `LISTS` rather than a new file. What differs between them is only what can be read and what can be pinned: `DocumentFormat::ALL` is `[Self; 5]`, so the compiler already refuses a wrong length there and the prose is the whole of what is unguarded, where the diagram table has a second copy in the page and that copy is pinned.
+// **Both lists sit here rather than in a script each** because the mechanism is a table of lists and nothing about it is one list's: a second script would be this one copied, with a second reading list to keep and a second place for the parser to rot. The diagram export formats and the document formats already share a row — the diagram table takes Markdown's spellings from `src/format.rs` — and a third list, whenever somebody finds one drifting, is a row in `LISTS` rather than a new file. What differs between them is only what can be read and what can be pinned: `DocumentFormat::ALL` has a compiler-checked length, so the compiler already refuses a wrong one there and the prose is the whole of what is unguarded, where the diagram table has a second copy in the page and that copy is pinned.
 //
 // **What it can be certain about is the pin.** The page keeps its own copy of the diagram export list to draw the menu a Mac gets, and nothing held the two together — `scripts/check-shell.mjs` compares the drawn menu to a third hand-kept string, which is a rendering claim rather than a list-equality one and stays where it is. Here the page's endings must be the host's endings, in the same order, because the Mac menu is drawn from one and the save window from the other. Labels are deliberately not compared: the save window says "PNG image" where the menu says "PNG".
 //
@@ -94,6 +94,7 @@ const LISTS = [
       ['Json', ['json']],
       ['Yaml', ['yaml', 'yml']],
       ['Eml', ['eml', 'mht', 'mhtml']],
+      ['Html', ['html', 'htm']],
     ],
     prose: [
       'src/app/link_preview.rs',
@@ -106,18 +107,28 @@ const LISTS = [
       'src/assets.rs',
       'src/data.rs',
       'src/editing.rs',
+      'src/html.rs',
       'src/lib.rs',
       'src/minimap.rs',
       'src/store/links.rs',
       'src/tests/data_xml.rs',
       'src/tests/markdown_render.rs',
       'src/tests/settings_paths.rs',
+      'src/tests/web_core.rs',
       'src/xml.rs',
     ],
     looked: [
       ['src/tests/conformance/mod.rs', 'the CommonMark suite ships its own examples as JSON files — the word is the fixture\'s file type, not a format the app reads'],
       ['src/tests/conformance/yaml.rs', 'names the pair of fixture files one suite reads its cases from, which a new row in the table leaves exactly as it is'],
       ['src/tests/indexer_pager.rs', 'a walkthrough naming the three pages a test stands on in order, the way it would name three headings'],
+      ['src/assets/shell/dom-to-markdown.js', 'the serializers for Markdown and TEI editing, not the formats the app admits'],
+      ['src/assets/shell/speed-reader.js', 'the acronym rule and the Markdown badge, not the formats the app admits'],
+      ['src/eml.rs', 'the email renderer and the HTML policy it shares with Markdown, not the formats the app admits'],
+      ['src/markdown/images.rs', 'image paths written in Markdown or HTML, not the formats the app admits'],
+      ['src/markdown/rawhtml.rs', 'the shared HTML sanitizer policy, not the formats the app admits'],
+      ['src/scripts.rs', 'the shape and cost of one rendered-document payload, not the formats the app admits'],
+      ['src/tests/images.rs', 'picture paths written in Markdown or HTML, not the formats the app admits'],
+      ['src/tests/markdown_rawhtml.rs', 'raw HTML written inside Markdown, not the formats the app admits'],
     ],
     read: (formatSource) => documentRows(formatSource),
   },
