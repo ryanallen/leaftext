@@ -477,12 +477,18 @@ if (window.__leafFrameless || window.__leafMacFrame) {
     if (el) el.addEventListener('click', (event) => send({ command: typeof command === 'function' ? command(event) : command }));
   };
   winButton('winMinimize', 'windowMinimize');
-  // The Mac split: the green dot is full screen, Option-press is zoom, and a full-screen press is always the way out, so Option cannot strand a reader in a space. The Windows square is zoom alone.
+  // The Mac split: the green dot is full screen, Option-press is zoom, and a full-screen press is always the way out, so Option cannot strand a reader in a space. The Windows square is zoom until full screen makes it the way out too.
   winButton('winMaximize', (event) =>
-    window.__leafMacFrame && !(event.altKey && !document.body.classList.contains('is-fullscreen'))
+    document.body.classList.contains('is-fullscreen') || (window.__leafMacFrame && !event.altKey)
       ? 'windowToggleFullscreen'
       : 'windowToggleMaximize');
   winButton('winClose', 'windowClose');
+  // F11 belongs to full screen on Windows; a Mac keeps it for Show Desktop.
+  if (window.__leafFrameless) document.addEventListener('keydown', (event) => {
+    if (event.key !== 'F11') return;
+    event.preventDefault();
+    send({ command: 'windowToggleFullscreen' });
+  });
   // The markup's word is the Windows one, so a Mac dot says what it does from the first paint rather than from the first toggle.
   if (window.__leafMacFrame) leafWinMaxLabel('Enter Full Screen');
   // The three window buttons are ours on both platforms now, so the one exclusion above covers a press on a Mac dot as well as on a Windows one. Maximize is decided on the way down: a drag hands the window to the platform's own move loop, which swallows every later mouse event, so an app-bar dblclick can never fire. event.detail is the click count, but it counts in page coordinates and a dragged window carries the page under the cursor — so a press just after a quick drag also arrives as 2. An unmoved window.screenX is what tells the second click apart from the tail of a drag.

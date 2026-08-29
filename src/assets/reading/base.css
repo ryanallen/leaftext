@@ -72,9 +72,9 @@ body.frameless {
   --app-shadow-side: 20px;
   --app-shadow-bottom: 10px;
 }
-/* Nothing behind a window filling the screen for a shadow to fall on, and a band there would show the desktop through a frame inside the screen edge. Filling the screen means maximized on Windows and full screen on a Mac — never a Mac's maximized, which is a zoomed window that still floats over what is behind it and still casts a shadow. Hence `:not(.mac-frame)`: both platforms report maximized, and only one of them means this by it. */
+/* Nothing behind a window filling the screen for a shadow to fall on, and a band there would show the desktop through a frame inside the screen edge. Filling the screen means maximized on Windows or full screen on either platform — never a Mac's maximized, which is a zoomed window that still floats over what is behind it and still casts a shadow. Hence `:not(.mac-frame)`: both platforms report maximized, and only one of them means this by it. */
 body.frameless:not(.mac-frame).is-maximized,
-body.mac-frame.is-fullscreen {
+body.frameless.is-fullscreen {
   --app-shadow-top: 0px;
   --app-shadow-side: 0px;
   --app-shadow-bottom: 0px;
@@ -92,7 +92,7 @@ body.mac-frame.is-fullscreen {
 /* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. */
 body:not(.frameless) .app-surface,
 body.frameless:not(.mac-frame).is-maximized .app-surface,
-body.mac-frame.is-fullscreen .app-surface {
+body.frameless.is-fullscreen .app-surface {
   border: 0;
   border-radius: 0;
 }
@@ -123,7 +123,7 @@ body::before {
 /* No frame of its own, maximized, or in full screen: no band at all rather than one masked away to nothing. A browser carries neither frame class, so this is also what takes it off a published page. */
 body:not(.frameless)::before,
 body.frameless:not(.mac-frame).is-maximized::before,
-body.mac-frame.is-fullscreen::before {
+body.frameless.is-fullscreen::before {
   content: none;
 }
 ::selection {

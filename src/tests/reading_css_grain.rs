@@ -554,10 +554,10 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
     assert_contains(frame, "--app-shadow-side: 20px;");
     assert_contains(frame, "--app-shadow-bottom: 10px;");
 
-    // Nothing behind a maximized window to cast onto, and a band there would show the desktop through a frame inside the screen edge.
+    // Nothing behind a maximized Windows window or a full-screen window on either platform to cast onto, and a band there would show the desktop through a frame inside the screen edge.
     let maxed = rule_body(
         &css,
-        "body.frameless:not(.mac-frame).is-maximized,\nbody.mac-frame.is-fullscreen {",
+        "body.frameless:not(.mac-frame).is-maximized,\nbody.frameless.is-fullscreen {",
     );
     let page_rule = rule_body(&css, "body:has(.app-surface) {");
     for zero in [
@@ -572,7 +572,7 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
     // Drawn nowhere rather than masked to nothing, in all three cases.
     assert_contains(
         &css,
-        "body:not(.frameless)::before,\nbody.frameless:not(.mac-frame).is-maximized::before,\nbody.mac-frame.is-fullscreen::before {\n  content: none;\n}",
+        "body:not(.frameless)::before,\nbody.frameless:not(.mac-frame).is-maximized::before,\nbody.frameless.is-fullscreen::before {\n  content: none;\n}",
     );
     // A Mac carries `frameless` too, and it reports maximized for a zoomed window — one that still floats over what is behind it and still casts a shadow. So every rule that takes the band away for a screen-filling window has to say `:not(.mac-frame)`.
     for flush in ["::before", " .app-surface"] {

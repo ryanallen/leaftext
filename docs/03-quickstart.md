@@ -97,6 +97,7 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | Back | `Alt+Left` | `Cmd+Left` |
 | Forward | `Alt+Right` | `Cmd+Right` |
+| [Full screen](01-features/06-themes.md#windows) | `F11` | Green dot at the top left |
 | Save ([unsaved edits](01-features/07-editing.md#save), your own typing included) | `Ctrl+S` | `Cmd+S` |
 | [Undo](01-features/07-editing.md#undo) — a word of your typing, then the last edit | `Ctrl+Z` | `Cmd+Z` |
 | [Redo](01-features/07-editing.md#undo) a word of typing, or a whole edit, you took back | `Ctrl+Y` or `Ctrl+Shift+Z` | `Cmd+Shift+Z` |

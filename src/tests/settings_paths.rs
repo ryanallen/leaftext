@@ -782,10 +782,15 @@ fn a_cursor_rule_reads_as_markdown_wherever_an_extension_is_asked_about() {
         exe_installer_extensions().contains(&"mdc"),
         "installer/src/plan.rs does not claim .mdc"
     );
+    // Read as structure, because on a Mac the spelling being somewhere in the file is not the claim: an extension list beside a content type is ignored. Which entry it must be, and what that entry must say, is `a_cursor_rule_is_claimed_by_extension_rather_than_by_a_type_that_omits_it`.
     assert!(
-        include_str!("../../.github/workflows/release-distributions.yml")
-            .contains("<string>mdc</string>"),
-        "the macOS Info.plist does not carry .mdc under its Markdown document type"
+        macos_document_type_entries().iter().any(|entry| {
+            !entry.contains("<key>LSItemContentTypes</key>")
+                && plist_strings(entry, "CFBundleTypeExtensions")
+                    .iter()
+                    .any(|extension| extension == "mdc")
+        }),
+        "no macOS document entry claims .mdc where Launch Services reads it"
     );
 }
 
@@ -956,12 +961,96 @@ fn plist_string(entry: &str, key: &str) -> Option<String> {
     Some(value.trim().to_string())
 }
 
+/// The values of a plist `<array>` of strings under a named key inside one entry. Empty where the key is absent, which is itself an answer: an entry claiming no extensions claims no spelling.
+fn plist_strings(entry: &str, key: &str) -> Vec<String> {
+    let Some((_, after_key)) = entry.split_once(&format!("<key>{key}</key>")) else {
+        return Vec::new();
+    };
+    let Some((array, _)) = after_key.split_once("</array>") else {
+        return Vec::new();
+    };
+
+    let mut values = Vec::new();
+    let mut rest = array;
+    while let Some((_, after_open)) = rest.split_once("<string>") {
+        let Some((value, after_close)) = after_open.split_once("</string>") else {
+            break;
+        };
+        values.push(value.trim().to_string());
+        rest = after_close;
+    }
+    values
+}
+
+/// Cursor's `.mdc` cannot ride in the Markdown entry. Launch Services ignores an entry's extension list whenever that entry also names a content type, and the Markdown type covers `.md` and `.markdown` — never Cursor's spelling — so an `.mdc` written there is claimed by nothing at all and a rule sits in the Finder as a blank page with leaftext absent from Open With. It gets an entry of its own naming extensions and no type, the shape the email entry already uses for a spelling with no type to import. Read as structure rather than searched, because the fault this replaces was exactly an extension sitting in the file where nothing read it.
+#[test]
+fn a_cursor_rule_is_claimed_by_extension_rather_than_by_a_type_that_omits_it() {
+    let entries = macos_document_type_entries();
+    let claiming: Vec<&String> = entries
+        .iter()
+        .filter(|entry| {
+            plist_strings(entry, "CFBundleTypeExtensions")
+                .iter()
+                .any(|e| e == "mdc")
+        })
+        .collect();
+    assert_eq!(
+        claiming.len(),
+        1,
+        "exactly one macOS document entry claims .mdc, and it is the one Launch Services reads"
+    );
+
+    let entry = claiming[0];
+    assert_eq!(
+        plist_string(entry, "CFBundleTypeName").as_deref(),
+        Some("Cursor Rule")
+    );
+    assert_eq!(
+        plist_strings(entry, "CFBundleTypeExtensions"),
+        ["mdc"],
+        "the Cursor Rule entry claims that one spelling; the rest keep their own entries"
+    );
+    assert!(
+        !entry.contains("<key>LSItemContentTypes</key>"),
+        "a content type here would make Launch Services ignore the extension beside it, which is the fault"
+    );
+    assert_eq!(
+        plist_string(entry, "CFBundleTypeIconFile").as_deref(),
+        Some("Leaf"),
+        "without the icon Finder draws a blank page for a rule whoever the default handler is"
+    );
+    assert_eq!(
+        plist_string(entry, "CFBundleTypeRole").as_deref(),
+        Some("Viewer"),
+        "macOS reserves Editor for apps that own saving the format"
+    );
+    assert_eq!(
+        plist_string(entry, "LSHandlerRank").as_deref(),
+        Some("Default"),
+        "Default is what hands leaftext an unclaimed spelling without taking one somebody chose"
+    );
+
+    // The Markdown entry keeps the spellings its type does cover, and must not take this one back.
+    let markdown = entries
+        .iter()
+        .find(|entry| {
+            plist_string(entry, "CFBundleTypeName").as_deref() == Some("Markdown Document")
+        })
+        .expect("the bundle must claim Markdown");
+    assert!(
+        !plist_strings(markdown, "CFBundleTypeExtensions")
+            .iter()
+            .any(|e| e == "mdc"),
+        "the Markdown entry names a content type, so an .mdc written there is read by nothing"
+    );
+}
+
 /// An entry that claims a file type and names no icon leaves Finder nothing to draw for that type, whoever the default handler is — which is why every `.md` file on a Mac was a blank page while the app itself wore the leaf. The plain text entry is the one that claims no extensions, on purpose, so an icon there would mark files the app never claimed.
 #[test]
 fn every_macos_file_type_claiming_extensions_names_the_icon() {
     let workflow = include_str!("../../.github/workflows/release-distributions.yml");
     let entries = macos_document_type_entries();
-    assert_eq!(entries.len(), 6, "the bundle claims six file types");
+    assert_eq!(entries.len(), 7, "the bundle claims seven file types");
 
     for entry in &entries {
         let name = plist_string(entry, "CFBundleTypeName").expect("every entry names its type");

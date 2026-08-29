@@ -52,6 +52,7 @@ flowchart LR
 | Forward | `Alt+Right` | `Cmd+Right` |
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
+| [Full screen](06-themes.md#windows) | `F11` | Green dot at the top left |
 | Save (with [unsaved edits](07-editing.md#save), your own typing included) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) — a word of your typing, then the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
 | [Redo](07-editing.md#undo) a word of typing, or a whole edit, you took back | `Ctrl+Y` or `Ctrl+Shift+Z` | `Cmd+Shift+Z` |

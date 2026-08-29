@@ -430,29 +430,29 @@ fn both_shells_draw_their_own_three_window_buttons() {
         "const lead = window.__leafMacFrame && document.querySelector('.app-bar-lead');",
     );
 
-    // A full-screen Mac keeps our three dots. Apple's own come back when the pointer reaches the top edge and ours cannot, so hiding ours leaves the green one as the way in and nothing as the way out.
+    // A full-screen window keeps our three controls. On a Mac Apple's own come back when the pointer reaches the top edge and ours cannot, while on Windows the middle square is the pointer-driven way out.
     assert_contains(&html, "window.leafSetFullscreen = (fullscreen) => {");
     assert_contains(
         &html,
         "document.body.classList.toggle('is-fullscreen', !!fullscreen);",
     );
     assert!(
-        !reading_mode_css().contains("body.mac-frame.is-fullscreen .window-controls"),
-        "full screen hides the dots again, so the green one enters and never leaves"
+        !reading_mode_css().contains("body.frameless.is-fullscreen .window-controls"),
+        "full screen hides the controls, leaving no pointer-driven way out"
     );
     // What full screen does take is the frame the window is held off its own edge by: no shadow, no outer line, no rounded corner.
     for rule in [
-        "body.mac-frame.is-fullscreen {\n  --app-shadow-top: 0px;",
-        "body.mac-frame.is-fullscreen .app-surface {\n  border: 0;\n  border-radius: 0;\n}",
-        "body.mac-frame.is-fullscreen::before {\n  content: none;\n}",
+        "body.frameless.is-fullscreen {\n  --app-shadow-top: 0px;",
+        "body.frameless.is-fullscreen .app-surface {\n  border: 0;\n  border-radius: 0;\n}",
+        "body.frameless.is-fullscreen::before {\n  content: none;\n}",
     ] {
         assert_contains(reading_mode_css(), rule);
     }
 
-    // The green dot is full screen and Option-press is zoom, the way a Mac splits them; a Windows square is zoom either way.
+    // The green dot is full screen and Option-press is zoom, the way a Mac splits them; either shell's middle button is the way out of full screen.
     assert_contains(
         &html,
-        "window.__leafMacFrame && !(event.altKey && !document.body.classList.contains('is-fullscreen'))",
+        "document.body.classList.contains('is-fullscreen') || (window.__leafMacFrame && !event.altKey)",
     );
     // And the word on it follows whichever of the two states is this shell's.
     assert_contains(

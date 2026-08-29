@@ -21,8 +21,14 @@ export function run() {
       for (const handler of button.listeners.get('click') || []) handler(event);
       return sent.map((message) => message.command);
     };
+    const key = (event = {}) => {
+      sent.length = 0;
+      for (const handler of context.document.listeners.get('keydown') || []) handler(event);
+      return sent.map((message) => message.command);
+    };
     return {
       press,
+      key,
       label: () => button.getAttribute('aria-label'),
       title: () => button.getAttribute('title'),
       fullscreen: (on) => context.window.leafSetFullscreen(on),
@@ -53,12 +59,33 @@ export function run() {
     }
   });
 
-  check('the Windows square goes on meaning zoom, with or without the modifier', () => {
+  check('F11 enters full screen on Windows and stays with Show Desktop on a Mac', () => {
+    let prevented = false;
+    const windows = dots();
+    const sent = windows.key({ key: 'F11', preventDefault: () => { prevented = true; } });
+    if (sent.join() !== 'windowToggleFullscreen' || !prevented) {
+      throw new Error(`F11 sent ${sent.join() || 'nothing'} and ${prevented ? 'was' : 'was not'} kept from the page`);
+    }
+
+    const mac = dots({ macFrame: true });
+    if (mac.key({ key: 'F11', preventDefault: () => {} }).length) {
+      throw new Error('F11 took Show Desktop away from the Mac');
+    }
+  });
+
+  check('the Windows square means zoom out of full screen and becomes the way out while full screen is on', () => {
     const windows = dots();
     for (const event of [{}, { altKey: true }]) {
       const sent = windows.press(event);
       if (sent.join() !== 'windowToggleMaximize') {
-        throw new Error(`a press on the Windows square sent ${sent.join() || 'nothing'} rather than zoom`);
+        throw new Error(`a press on the Windows square out of full screen sent ${sent.join() || 'nothing'} rather than zoom`);
+      }
+    }
+    windows.fullscreen(true);
+    for (const event of [{}, { altKey: true }]) {
+      const sent = windows.press(event);
+      if (sent.join() !== 'windowToggleFullscreen') {
+        throw new Error(`a press on the Windows square in full screen sent ${sent.join() || 'nothing'} rather than the way out`);
       }
     }
   });
