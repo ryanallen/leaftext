@@ -120,10 +120,31 @@ The editable source of truth is the **`themes/` folder at the repo root**. Being
 - `# Display Name` — the family's picker label (`Sage`, `GitHub`, …).
 - `**Family ID:** \`<family>\`` — the family id used in `data-leaf-theme` and in the `<family>.md` filename (the bundler checks they match).
 - An optional preview image — a standalone `![Display Name](../imgs/themes/<family>.png)` line in the header, above the `**Family ID:**` line. The Rust parser ignores it (only headings and tables carry data), while the bundler lifts it into the family's gallery entry and fails the run if the path does not resolve. Shipping families point at `imgs/themes/<family>.png`, one screenshot of the reference document split across the light and dark variants.
+- `**Pack:** \`<pack>\`` — the [icon pack](#icon-packs) the family wears. One of `leaftext`, `feather`, `lucide`, `tabler`, `remix`, `phosphor` or `heroicons`; a family file without the line wears `leaftext`.
 - `## Fonts` — a `Role | Stack` table with `Heading`, `Body`, `Code`, and `Google` rows.
 - `## Light` and `## Dark` — a `Token | Value` table covering every required contract property (all but `hover-tint`, which may be left out), each optionally followed by a `### Overrides` table for per-source token nudges. **Token names drop the `--lt-` prefix** (re-added at parse time) and values are wrapped in backticks (`` `#282a36` ``).
 
 There is no manifest — the bundler globs `themes/*.md`. `scripts/bundle-themes.mjs` produces two outputs: it concatenates the family files into `src/assets/themes.md` (the embedded bundle) and regenerates [`themes/README.md`](https://github.com/ryanallen/leaftext/blob/main/themes/README.md) (the gallery above), both ordered **by display name** so the picker and gallery stay alphabetical no matter what order they're added. `just bundle-themes` rebuilds them; `just check-themes` (part of `just verify`) fails if either has drifted from the folder — the same drift-guard pattern used for the vendored site assets.
+
+## Icon packs
+
+A family carries a set of drawings as well as a palette. Every icon class in `src/assets/icons.css` reads `var(--lt-icon-<name>)` rather than carrying its own drawing, and the generated stylesheet declares all sixty-three at `:root`. A pack is one block of those same properties redeclared under the family selectors that name it, so switching family swaps the drawings with the colors and no class is touched.
+
+Seven packs ship. `leaftext` is the app's own mixed set — the drawings that were here before packs existed — and it is both a family's permanent choice and the fallback every other pack falls back to: an icon a pack has no drawing for keeps the `:root` value, so a control is never blank.
+
+| Pack | Drawings |
+|---|---|
+| `leaftext` | The app's own set, composed here |
+| `feather` | [Feather](https://feathericons.com), stroked |
+| `lucide` | [Lucide](https://lucide.dev), stroked |
+| `tabler` | [Tabler](https://tabler.io/icons), stroked |
+| `remix` | [Remix Icon](https://remixicon.com), filled |
+| `phosphor` | [Phosphor](https://phosphoricons.com), filled |
+| `heroicons` | [Heroicons](https://heroicons.com), stroked |
+
+An outside pack's drawings are copied into `src/assets/icon-packs/<pack>/`, one `.svg` per icon name in `design/icons.md`, with the pack's license notice beside them under `src/assets/`. Nothing is fetched at runtime. `design/icons.md` holds the pack table and, on every icon row, one decision per outside pack — that pack's own drawing, a filled variant of its own path, a named borrow from another pack, or `leaftext`. `just bundle-icons` compiles all of it; `just check-icons` and `just check-icon-audit` fail on drift.
+
+Diagrams are deliberately outside this: `mermaid-icons.js` takes no pack drawing, so a document draws the same for every reader.
 
 ## Startup contract check
 
@@ -224,6 +245,7 @@ Create `themes/myfamily.md`. Copy an existing family file (e.g. `themes/amaranth
 
 - the `# My Family` heading and the `**Family ID:** \`myfamily\`` line (it must match the filename);
 - optionally a preview screenshot — a standalone `![My Family](../imgs/themes/myfamily.png)` line between the heading and the `**Family ID:**` line. `bundle-themes` picks up the first such image in the header, copies it into the gallery entry in `themes/README.md`, and fails if the path does not resolve (relative to `themes/`);
+- the `**Pack:**` line naming the [icon pack](#icon-packs) the family wears, or leave it out to wear `leaftext`;
 - the `## Fonts` table (set the `Google` row to a Google Fonts `css2` URL, or leave it blank for system fonts);
 - the `## Light` and `## Dark` `Token | Value` tables — every property in `LEAF_SEMANTIC_TOKEN_CONTRACT` (minus the `--lt-` prefix) that is not in `LEAF_SEMANTIC_TOKEN_DEFAULTS`, with an optional `### Overrides` table for tokens you nudge off the base. Add `hover-tint` only if you want the hovers in a hue of their own.
 

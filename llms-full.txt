@@ -35,7 +35,7 @@
 ## Themes
 - Page: https://leaftext.com/docs/01-features/06-themes.md
 - Markdown: https://leaftext.com/docs/01-features/06-themes.md
-- Summary: From the user side, themes are simple: open the theme picker, tap a family, pick an appearance, and the app updates immediately. Under the hood every family covers the full --lt- token set, and the...
+- Summary: From the user side, themes are simple: open the theme picker, tap a family, pick an appearance, and the app updates immediately. Under the hood every family covers the full --lt- token set, names t...
 
 ## Editing
 - Page: https://leaftext.com/docs/01-features/07-editing.md

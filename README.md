@@ -181,7 +181,7 @@ Write one `GLOSSARY.md` and every mention of a defined term, across every docume
 
 ![Amaranth theme](imgs/themes/themes.png)
 
-[Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, diagrams, minimap. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
+[Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, diagrams, minimap, and the [icons](docs/01-features/06-themes.md#icons) — seven icon sets, and each theme wears one. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
 
 ### Settings you can read, where you need them
 
@@ -314,6 +314,6 @@ The prose, the design sources, and the guidance an agent reads — each of these
 | [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
 | [Agent guide](AGENTS.md) | The standing rules for anyone — person or agent — changing this repo. `CLAUDE.md` and `CODEX.md` are the same file. Its tables link the fourteen [skills](.agents/skills/) and the [hook settings](.agents/settings.json), and [Workflow](docs/02-development/07-workflow.md) is the published account of how they fit together |
 | [Design sources](docs/02-development/05-design-system.md) | [Colors](design/colors.md), [tokens](design/tokens.md), [icons](design/icons.md) and [components](design/components.md) — the four files every value in the interface is compiled from |
-| [Themes](themes/README.md) | The eleven families, one Markdown file each, with the colors they set. `just bundle-themes` compiles them into [one bundle](src/assets/themes.md) the app reads at startup |
-| Third-party notices | [Heroicons](src/assets/Heroicons-MIT.md), [KaTeX](src/assets/KaTeX-MIT.md), [Lucide](src/assets/Lucide-ISC.md), [Noto](src/assets/Noto-OFL.md) — the licenses of what is vendored into the app |
+| [Themes](themes/README.md) | The eleven families, one Markdown file each, with the colors they set and the icon set they wear. `just bundle-themes` compiles them into [one bundle](src/assets/themes.md) the app reads at startup |
+| Third-party notices | [Feather](src/assets/Feather-MIT.md), [Heroicons](src/assets/Heroicons-MIT.md), [KaTeX](src/assets/KaTeX-MIT.md), [Lucide](src/assets/Lucide-ISC.md), [Noto](src/assets/Noto-OFL.md), [Phosphor](src/assets/Phosphor-MIT.md), [Remix Icon](src/assets/Remix-Apache.md), [Simple Icons](src/assets/SimpleIcons-CC0.md), [Tabler](src/assets/Tabler-MIT.md) — the licenses of what is vendored into the app |
 | Crawler files | [`robots.txt`](robots.txt), [`sitemap.xml`](sitemap.xml), [`sitemap-md.txt`](sitemap-md.txt), [`llms.txt`](llms.txt), [`llms-full.txt`](llms-full.txt) — generated from this file and `docs/` by `scripts/seo-gen.mjs` |

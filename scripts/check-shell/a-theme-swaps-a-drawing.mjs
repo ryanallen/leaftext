@@ -47,7 +47,7 @@ function painted(css, icon, family) {
 
 export function run() {
   const shipped = iconsCss();
-  // A pack block the way phase 3's generator will write one: one family, one drawing, everything else left to the root.
+  // A pack block the shape `bundle-icons` writes: one family, one drawing, everything else left to the root.
   const swapped = `${shipped}\n:root[data-leaf-theme="nightshade"] {\n  --lt-icon-back: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24'%3E%3Cpath d='M0 0'/%3E%3C/svg%3E");\n}\n`;
 
   check('every drawing is a value the root declares and the class reads', () => {

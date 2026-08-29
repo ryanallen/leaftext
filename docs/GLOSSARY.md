@@ -154,6 +154,10 @@ A force-directed map of how your documents link to each other. Each **node** is 
 
 What you see with no document open: **Choose file**, **New document**, and your [recent files](GLOSSARY.md#recent-files) — with your [favorites](01-features/02-navigation.md#favorites) in a column beside them once there are any. Standing in a [vault](01-features/03-library.md#vaults), the screen is that vault's: both lists are its own, and the small word above the headline is its name. Closing the last tab returns you here, and so does clicking the [leaf mark](GLOSSARY.md#leaf-mark).
 
+## Icon pack
+
+A whole set of the drawings the app's controls wear. Seven ship — Leaftext's own plus Feather, Lucide, Tabler, Remix Icon, Phosphor and Heroicons — and every [theme](GLOSSARY.md#theme-family) family wears one, so switching family changes the drawings along with the colors. There is nothing to pick separately. A control an outside pack has no drawing for keeps Leaftext's own. See [Themes → Icons](01-features/06-themes.md#icons).
+
 ## Image box
 
 What the image button in the [insert row](GLOSSARY.md#insert-row) opens: **Choose file**, or a field for a web address. A picked file is never copied anywhere — the picture stays where you keep it, and the document records where that is.
@@ -320,7 +324,7 @@ The XML format 84000 publishes Buddhist canon translations in. Leaftext gives it
 
 ## Theme family
 
-A palette plus its type — eleven ship: Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin and Sage. Each has a light and a dark variant, chosen by [appearance](GLOSSARY.md#appearance). Its font is fetched from Google Fonts the first time you pick it. See [Themes](01-features/06-themes.md).
+A palette plus its type and its [icon pack](GLOSSARY.md#icon-pack) — eleven ship: Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin and Sage. Each has a light and a dark variant, chosen by [appearance](GLOSSARY.md#appearance). Its font is fetched from Google Fonts the first time you pick it. See [Themes](01-features/06-themes.md).
 
 ## Theme picker
 

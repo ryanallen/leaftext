@@ -114,7 +114,7 @@ function decisionProblems({ name, audit, decided }, drawings) {
   return found;
 }
 
-// Everything one outside drawing can be wrong about, held to the box its own pack's row declares. Never the pack's weight: what is stamped is the icon row's, and only where the drawing has strokes to stamp — a filled glyph inside a stroked pack is a drawing, not a fault. A drawing borrowed from another pack arrives in that pack's box and is refused here, which is right while nothing records the borrow: the decision column that will record one is phase 5 of theme-icon-sets, and until it exists a borrowed job keeps the Leaftext drawing the reader already knows.
+// Everything one outside drawing can be wrong about, held to the box its own pack's row declares. Never the pack's weight: what is stamped is the icon row's, and only where the drawing has strokes to stamp — a filled glyph inside a stroked pack is a drawing, not a fault. A borrowed drawing arrives in the lending pack's box, so it is held to that row's box rather than the wearer's — which is why the decision column has to be read before the box is chosen.
 function packProblems(pack, icon, svg, drewIt = pack) {
   const from = PACKS.get(drewIt) ? drewIt : pack;
   const { box } = PACKS.get(from);
@@ -430,7 +430,7 @@ for (const pack of outsidePacks()) {
   );
 }
 
-// Every drawing is a value the page root declares and the class reads, which is what lets a theme family redeclare the ones its pack covers without touching a class. It is also smaller: written into the rule a drawing is stored twice, once for each of the two mask properties, and written as a value it is stored once. The bolder masks joined the same block — they have worked this way since before the rest did, for the same reason a rule that swaps to one belongs to the component with an active state rather than to the icon.
+// Every drawing is a value the page root declares and the class reads, which is what lets a theme family redeclare the ones its pack covers without touching a class. It is also smaller: written into the rule a drawing is stored twice, once for each of the two mask properties, and written as a value it is stored once. The bolder masks sit in the same block, because a rule that swaps to one belongs to the component with an active state rather than to the icon.
 const css = [
   ...head,
   '/* Every drawing, declared once, so a theme family can redeclare the ones its pack covers. */',
