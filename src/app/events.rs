@@ -13,6 +13,8 @@ pub(crate) enum UserEvent {
     OpenPath(PathBuf),
     /// The webview finished its first page load, so its render hooks now exist. Sent once on boot to flush a file passed on the command line, whose render would otherwise race the load.
     WebviewReady,
+    /// The launch window has waited long enough for the page and grows now whether or not it ever speaks. A page that threw while it loaded sends no `startupReady`, and there is nothing in a 256-pixel window for a reader to press.
+    StartupGrowDue,
     /// A second launch of the app forwarded a request to this (primary) instance but carried no file — bring the existing window to the front.
     FocusWindow,
     /// The file backing some tab changed on disk; the live-reload watcher sends this with the changed path. Only acted on when it is the active document.
@@ -308,6 +310,11 @@ pub(crate) enum IpcCommand {
         #[serde(rename = "lastLaunch")]
         last_launch: u32,
     },
+    /// The page has drawn the first document, or the home screen where the launch opens none. The window is put up small and holding the startup card, and this is what grows it into the one the reader left.
+    ///
+    /// `WebviewReady` cannot do it: that is sent when the page finishes loading, and the loop renders the first document inside that very arm — so a window grown there is a full-size window with an empty reader in it, which is the half of the complaint about stuff still loading.
+    #[serde(rename = "startupReady")]
+    StartupReady,
     /// Custom title-bar controls (the app bar is the title bar on frameless Windows).
     #[serde(rename = "windowDrag")]
     WindowDrag,

@@ -143,7 +143,12 @@ fn load_window_icon() -> Option<Icon> {
 }
 
 /// The smallest readable page, plus the strip the app is held off the window by so the shadow has room: the page inside stays the size it was pinned at rather than losing the band out of it. Named because a resize the host drives itself sets the size directly and goes around the limit the platform holds, so it has to clamp to the same pair.
+///
+/// Applied when the window grows rather than when it is built, because the launch window below is smaller than it and the platform would clamp that away. See `finish_startup` in `src/app/window_cmds.rs`.
 pub(crate) const MIN_INNER_SIZE: (f64, f64) = (380.0 + 40.0, 480.0 + 23.0);
+
+/// The window a launch puts up while the page is still coming: small, square, and holding the startup card. The window exists a few hundred milliseconds before the web view has drawn a pixel, so this is the whole of what a reader meets in the meantime — a small deliberate box rather than a full-size empty one. It grows into the window they left the moment the page says it has drawn something.
+pub(crate) const STARTUP_INNER_SIZE: (f64, f64) = (256.0, 256.0);
 
 /// Paint the native Windows frame to the page background, reported by the webview on theme change. The border is told to draw nothing: the app carries its own edge now, and with the window's client area running out to its own edge a frame line would trace the outside of the shadow band rather than the app. Caption/border/text colors need Windows 11 (build 22000+); older builds ignore the error, so it's a no-op there (dark mode still applies).
 #[cfg(windows)]
@@ -285,14 +290,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     event_loop.set_device_event_filter(DeviceEventFilter::Always);
     // `mut` is used only by the non-Windows icon block below.
     #[allow(unused_mut)]
+    // Built at the launch size, and neither the saved size, the saved maximized state nor the smallest size is asked for here: all three are applied together the moment the page says it has drawn something, by `finish_startup`. The limit especially cannot be set here — it is larger than the launch size, so the platform would clamp the small window straight back up to it.
     let mut window_builder = WindowBuilder::new()
         .with_title("Leaftext")
-        .with_inner_size(LogicalSize::new(
-            settings.window_width as f64,
-            settings.window_height as f64,
-        ))
-        .with_min_inner_size(LogicalSize::new(MIN_INNER_SIZE.0, MIN_INNER_SIZE.1))
-        .with_maximized(settings.window_maximized);
+        .with_inner_size(LogicalSize::new(STARTUP_INNER_SIZE.0, STARTUP_INNER_SIZE.1));
     // On Windows we drop the native title bar (removing just its icon falls back to a placeholder) for a custom one: the app bar is the drag region and carries our own window controls (wired via IPC); the taskbar leaf rides the exe icon. Others: native.
     //
     // The platform shadow goes with it, because the app draws its own — the dot lattice every floating surface inside it throws, over the outer strip of the page, which is why the window and the web view are see-through. `false` rather than left out: tao's flag is on unless something says otherwise, so omitting the call keeps the smooth halo, keeps the frame insets that make the window bigger than the page, and keeps a hit test that only finds the top edge. Clearing it hands back all four resize edges and makes the window exactly the page it holds.
@@ -486,6 +487,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
 
     // Last maximized state pushed to the webview, so the custom title bar's maximize/restore icon tracks maximize changes from any source (the button, a double-click, snap, or Win+Up), not just the button.
     let last_maximized = settings.window_maximized;
+    // Read before `settings` is moved into the context below, and the same value: the window is built windowed whatever this says, and it is applied when the window grows.
+    let settings_window_maximized = settings.window_maximized;
 
     let ctx = AppCtx {
         reader: Reader {
@@ -504,6 +507,12 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         file_watch,
         vault_state,
         last_windowed_size,
+        // Where the window is heading, applied in one step once the page says it has drawn something.
+        startup: StartupWindow {
+            size: last_windowed_size,
+            maximized: settings_window_maximized,
+            grown: false,
+        },
         last_maximized,
         // Nothing persists a full-screen state, so the window is built windowed; macOS restoring a full-screen space arrives as a resize, which corrects this.
         last_fullscreen: false,

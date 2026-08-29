@@ -1155,6 +1155,8 @@ function formatCount(value) {
 function formatCountLabel(value, singular, plural) {
   return `${formatCount(value)} ${Number(value) === 1 ? singular : plural}`;
 }
+// Every fragment is loaded, so a render from here on is a page somebody could use — which is what the startup card is waiting to be replaced by. theme.js renders once from inside its own load, long before this line, and that render is a page still being built.
+window.__leafBooted = true;
 window.leafSetState(window.__leafInitialState || { recent: [], favorites: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
 // Came up on defaults because the settings file would not read. Nothing on screen distinguishes that from a first launch, so say it; the file is left alone for its owner to look at.

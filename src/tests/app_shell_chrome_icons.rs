@@ -8,11 +8,11 @@ fn app_shell_inlines_one_leaf_mark_that_tracks_the_theme() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // The glyph is drawn once, as a mask class, and named twice: the header logomark and the library row template. The drawing itself is in the stylesheet, so neither site can carry a color of its own.
+    // The glyph is drawn once, as a mask class, and named three times: the header logomark, the library row template, and the startup card the window comes up holding. The drawing itself is in the stylesheet, so no site can carry a color of its own.
     assert_eq!(
         html.matches("lt-icon-leaf").count(),
-        2,
-        "the leaf mark should be named exactly twice: header logomark + library row template"
+        3,
+        "the leaf mark should be named exactly three times: header logomark, library row template, startup card"
     );
     assert_eq!(
         css.matches(r#"<path d=\'M59.7,60.1c-7.9-20.9"#).count(),

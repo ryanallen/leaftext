@@ -2593,6 +2593,43 @@ body.frameless.is-fullscreen::before {
       content-visibility var(--lt-duration-260) var(--lt-ease-decelerate) allow-discrete;
   }
 }
+/* The launch state, drawn before the app is: the leaf over a turning ring over the app's name, centered in the small window a launch puts up. It is the app surface's own color rather than a wash, because there is nothing underneath it a reader would want to see through — the reader, the bar and the tabs are all still being built. Held over every layer the app has for as long as it stands, and taken off whole rather than faded: the same step that removes it resizes the window, and a fade would run against a layout still finding its new width. */
+.startup-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-16);
+  background: var(--lt-background);
+  /* Over the bar, the sheets and their scrim alike: while this stands it is the whole of what the window shows, and every press meant for a control the page has not finished building stops here. */
+  z-index: var(--lt-z-51);
+}
+/* The UA sheet's own `[hidden]` rule cannot beat the display above, so the card would stay on screen with the attribute set. */
+.startup-card[hidden] {
+  display: none;
+}
+/* Large enough to read as the app's mark rather than as a toolbar icon, which is the whole job it has here. */
+.startup-card-mark {
+  width: 56px;
+  height: 56px;
+  color: var(--lt-primary);
+}
+/* Smaller than the reader's own loading ring: under the mark it is the second thing in the box, not the subject of it. */
+.startup-card-spinner {
+  width: 20px;
+  height: 20px;
+  border-color: color-mix(in srgb, var(--lt-foreground) 22%, transparent);
+  border-top-color: var(--lt-accent);
+}
+.startup-card-name {
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-040);
+  color: var(--lt-muted-foreground);
+}
 /* Every piece of app chrome — this bar, the library pane, its two bands, the search field — takes `--lt-surface` itself. No per-surface tint or mix: any variant shows up as a tone seam where two of them meet. */
 .app-bar {
   position: fixed;
@@ -9531,7 +9568,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 71 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 72 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -9553,7 +9590,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>163</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>63</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>71</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>72</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -9923,10 +9960,14 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">71 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">72 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
+</section>
+<section class="part">
+<header><h3>Startup screen</h3><code class="built">.startup-card</code><span class="built">app-shell.html, taken off by render-document.js when the host says the window has grown</span></header>
+<div class="stage"><div class="startup-card" style="position:static;height:200px"><span class="lt-icon lt-icon-leaf startup-card-mark"></span><span class="lt-spinner startup-card-spinner"></span><span class="startup-card-name">Leaftext</span></div></div>
 </section>
 <section class="part">
 <header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>

@@ -30,7 +30,7 @@ fn the_front_end_is_served_beside_the_shell_not_inside_it() {
     assert_contains(&page, "<script src=\"");
     // Anonymous mode is the request half of the CORS pair that lets a throw inside the script reach window.onerror with its place instead of the masked `Script error.`. The version query keeps a new binary out of an old binary's cache entry, whose stored headers would re-mask every throw.
     assert_contains(&page, "app.js?v=");
-    assert_contains(&page, "\" crossorigin=\"anonymous\"></script>");
+    assert_contains(&page, "\" crossorigin=\"anonymous\" defer></script>");
     // One tag, and no inline script: the fragments are one shared scope, so a second tag would be a second scope.
     assert_eq!(page.matches("<script src=").count(), 1);
     assert!(
@@ -59,6 +59,20 @@ fn the_front_end_is_served_beside_the_shell_not_inside_it() {
     assert_eq!(body, script.as_bytes());
     // Nothing answers to the old name.
     assert!(bundled_asset_bytes("leaf-asset://local/flow.js").is_none());
+}
+
+#[test]
+fn the_page_draws_before_the_front_end_runs() {
+    // What went wrong: a launch drew nothing until the whole front end had run. The tag sat at the end of the body with no `defer`, so the parser stopped on it for the length of the script's own execution — three launches each way put the first paint 20ms later and the page's interactive mark 100ms later than with it. A startup card behind that is a card nobody sees. The theme bootstrap in the head is the one script that still stops the parser on purpose: it settles the theme before a pixel is drawn.
+    let page = app_shell_html();
+    let tag = page
+        .lines()
+        .find(|line| line.contains("<script src="))
+        .expect("the shell links the front end");
+    assert!(
+        tag.contains(" defer"),
+        "the front-end script must not stop the parser before the page draws: {tag}"
+    );
 }
 
 #[test]

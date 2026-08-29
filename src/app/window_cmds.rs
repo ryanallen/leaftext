@@ -196,7 +196,7 @@ pub(crate) struct WindowState {
 pub(crate) fn window_state_lines(was: WindowState, now: WindowState) -> Vec<String> {
     let mut lines = Vec::new();
     if now.maximized != was.maximized {
-        lines.push(format!("window.leafSetWindowMaximized({});", now.maximized));
+        lines.push(window_maximized_line(now.maximized));
     }
     if now.fullscreen != was.fullscreen {
         lines.push(format!("window.leafSetFullscreen({});", now.fullscreen));
@@ -241,6 +241,104 @@ pub(crate) fn resize(
         ResizeDragStep::Forget => *held = None,
         ResizeDragStep::Nothing => {}
     }
+}
+
+/// The window the launch is heading for, held from the moment the small one is built until the page says it can have it.
+///
+/// The reader's own size and maximized state are read off settings at launch and applied here rather than at the builder, because the window put up while the page loads is 256 by 256 and neither of those belongs to it. `grown` is what makes the two ways in idempotent: the page's word and the deadline below both call `finish_startup`, and whichever arrives second must not resize a window the reader may already have moved.
+pub(crate) struct StartupWindow {
+    /// The inner size the reader left the window at.
+    pub(crate) size: LogicalSize<f64>,
+    /// Whether they left it maximized.
+    pub(crate) maximized: bool,
+    /// Whether the window has already been grown, by either of the two ways in.
+    pub(crate) grown: bool,
+}
+
+/// How long the window waits for the page before it grows anyway.
+///
+/// A fragment that throws while the front end loads leaves nobody to send `startupReady`, and a reader stranded in a 256-pixel window has no menu, no controls and no way to say so — the same fault `AGENTS.md` names about a skeleton that spun for ever in a browser. Long enough that a slow disk or a cold web view is not cut off, short enough that a broken page is not something anybody sits through.
+pub(crate) const STARTUP_GROW_DEADLINE: Duration = Duration::from_secs(4);
+
+/// Start the deadline that grows the window whether or not the page ever speaks.
+pub(crate) fn start_startup_timer(proxy: &EventLoopProxy<UserEvent>) {
+    let proxy = proxy.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(STARTUP_GROW_DEADLINE);
+        let _ = proxy.send_event(UserEvent::StartupGrowDue);
+    });
+}
+
+/// Everything the window has to be told when it stops being the launch window, in the order it has to be told it — or nothing at all where it has already been told. A value rather than a run of calls, so the order and the one-shot can be read by a test, which has no window to build.
+pub(crate) struct StartupGrowth {
+    /// The smallest the reader may drag it to.
+    pub(crate) min_size: LogicalSize<f64>,
+    /// The size they left it at.
+    pub(crate) size: LogicalSize<f64>,
+    /// Whether they left it maximized.
+    pub(crate) maximized: bool,
+}
+
+/// Whether a resize is a size the reader chose, and so the one the next launch should come back at.
+///
+/// The launch window is none of those things: it is 256 by 256 whatever the reader left behind, so a copy closed while its page was still loading would come back at the launch size for ever. Nor is a maximized or minimized window, which is why those two were already here.
+pub(crate) fn remembers_windowed_size(
+    grown: bool,
+    maximized: bool,
+    minimized: bool,
+    width: u32,
+    height: u32,
+) -> bool {
+    grown && !maximized && !minimized && width > 0 && height > 0
+}
+
+/// The line that tells the page which window it has. One place, because the resize below and the growth above both say it and a second spelling would drift.
+pub(crate) fn window_maximized_line(maximized: bool) -> String {
+    format!("window.leafSetWindowMaximized({maximized});")
+}
+
+/// The line that takes the startup card off the page, asked for in the same step that resizes the window so the card covers the resize. Guarded, because a page that threw while it loaded never defined it.
+pub(crate) fn startup_done_script() -> &'static str {
+    "window.leafStartupDone && window.leafStartupDone();"
+}
+
+/// The one growth this launch gets, or nothing where it has had it. Both ways in ask, so whichever arrives second changes nothing — and by then the reader may have moved the window themselves.
+pub(crate) fn startup_growth(startup: &mut StartupWindow) -> Option<StartupGrowth> {
+    if startup.grown {
+        return None;
+    }
+    startup.grown = true;
+    Some(StartupGrowth {
+        min_size: LogicalSize::new(MIN_INNER_SIZE.0, MIN_INNER_SIZE.1),
+        size: startup.size,
+        maximized: startup.maximized,
+    })
+}
+
+/// The launch window becomes the reader's own: the smallest size they may drag it to, the size they left it at, and their maximized state. Answers whether this call was the one that did it, so a second way in is a no-op rather than a resize.
+pub(crate) fn finish_startup(reader: &Reader, startup: &mut StartupWindow) -> bool {
+    let Some(growth) = startup_growth(startup) else {
+        return false;
+    };
+    // The limit goes on first and the maximize last. Both orders were watched: setting the limit after the maximize made Windows recompute the window and hand back a maximized-looking rectangle the platform no longer called maximized, so the page was told it was windowed while it filled the screen — a shadow band inside the screen edge, and a maximize button already spent. Nothing is lost by leading with it, since the limit is smaller than any size a reader can have left behind.
+    reader.window.set_min_inner_size(Some(growth.min_size));
+    // And the size before the maximize. A window maximized straight from the launch size keeps that as the size it restores to, so the first press of the restore button would hand back the launch window rather than the one they left.
+    reader.window.set_inner_size(growth.size);
+    if growth.maximized {
+        reader.window.set_maximized(true);
+    }
+    // Said outright rather than left to the resize the maximize causes. The window is built windowed whatever settings say, so the page has already been told it is not maximized by the resize that built the launch window — and a window telling the page it is not maximized while filling the screen draws its shadow band inside the screen edge and offers the reader a maximize button that is already spent.
+    run_page_script(
+        reader.page(),
+        &window_maximized_line(growth.maximized),
+        "Failed to tell the page which window it now has",
+    );
+    run_page_script(
+        reader.page(),
+        startup_done_script(),
+        "Failed to take the startup card off the page",
+    );
+    true
 }
 
 /// The window put away to the task bar.

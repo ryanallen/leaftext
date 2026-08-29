@@ -125,9 +125,10 @@ fn the_window_asks_for_no_platform_shadow_and_shows_what_is_behind_it() {
         (380.0 + 40.0, 480.0 + 23.0),
         "the smallest window lost the band out of its readable page"
     );
+    // Not at the builder: the launch window is smaller than this, so a limit asked for there would clamp it straight back up and there would be no small window at all. It is applied in the step that grows the window instead, which is the test below.
     assert!(
-        source.contains("with_min_inner_size(LogicalSize::new(MIN_INNER_SIZE.0, MIN_INNER_SIZE.1))"),
-        "the window is built with a smallest size of its own rather than the one the host clamps to"
+        !source.contains("with_min_inner_size("),
+        "the window is built with a smallest size again, which clamps the launch window away"
     );
     // Asking the web view to be see-through is a no-op on a Mac unless the manifest names the crate feature that compiles that call in — which is how the band shipped as a solid gray slab on every Mac while every assert above passed.
     let manifest = include_str!("../../../Cargo.toml");
@@ -491,5 +492,83 @@ fn a_window_started_where_nobody_can_see_it_comes_up_without_the_keyboard() {
     assert!(
         !source.contains("with_position"),
         "a position asked for through the builder is dropped for exactly the off-screen case"
+    );
+}
+
+#[test]
+fn a_launch_puts_up_the_small_window_and_grows_it_once_the_page_has_drawn() {
+    // What the reader met before this: a full-size window with nothing in it for the whole of the wait, which reads as broken rather than as a wait. The window exists a few hundred milliseconds before the web view has drawn a pixel, so it is built small and holding the startup card and becomes theirs afterwards.
+    assert_eq!(
+        STARTUP_INNER_SIZE,
+        (256.0, 256.0),
+        "the launch window is no longer the small square the card is drawn in"
+    );
+    // Smaller than the smallest window a reader may drag to, which is the whole reason that limit cannot be asked for at the builder: the platform would clamp the launch window straight back up to it.
+    assert!(STARTUP_INNER_SIZE.0 < MIN_INNER_SIZE.0 && STARTUP_INNER_SIZE.1 < MIN_INNER_SIZE.1);
+
+    // The reader's own window, in the order it has to be asked for: the limit, then the size, then the maximize.
+    let mut startup = StartupWindow {
+        size: LogicalSize::new(1080.0, 820.0),
+        maximized: true,
+        grown: false,
+    };
+    let growth = startup_growth(&mut startup).expect("the first ask grows the window");
+    assert_eq!(
+        (growth.min_size.width, growth.min_size.height),
+        MIN_INNER_SIZE,
+        "the smallest window a reader may drag to arrives with the growth or never"
+    );
+    assert_eq!((growth.size.width, growth.size.height), (1080.0, 820.0));
+    assert!(growth.maximized);
+    // Both ways in ask, and the second one must change nothing: by then the reader may have moved the window themselves.
+    assert!(
+        startup_growth(&mut startup).is_none(),
+        "the window is grown twice, so whichever of the page and the deadline came second resized a window the reader may already have moved"
+    );
+
+    // A window left windowed comes back windowed, at the size it was left at.
+    let mut windowed = StartupWindow {
+        size: LogicalSize::new(900.0, 640.0),
+        maximized: false,
+        grown: false,
+    };
+    let growth = startup_growth(&mut windowed).expect("the first ask grows the window");
+    assert!(!growth.maximized);
+    assert_eq!((growth.size.width, growth.size.height), (900.0, 640.0));
+
+    // The page is told which window it now has, rather than left to work it out from the resize: the launch window has already told it it is not maximized.
+    assert_eq!(
+        window_maximized_line(true),
+        "window.leafSetWindowMaximized(true);"
+    );
+    assert!(startup_done_script().contains("leafStartupDone"));
+
+    // The launch size is not a size anybody chose, so it must never be what the next launch comes back at — nor a maximized or minimized one, which is why those were already refused.
+    assert!(!remembers_windowed_size(false, false, false, 1080, 820));
+    assert!(remembers_windowed_size(true, false, false, 1080, 820));
+    assert!(!remembers_windowed_size(true, true, false, 1080, 820));
+    assert!(!remembers_windowed_size(true, false, true, 1080, 820));
+    assert!(!remembers_windowed_size(true, false, false, 0, 820));
+
+    // Two ways in, because a page that threw while it loaded says nothing at all and there is nothing in a 256-pixel window for a reader to press.
+    let said: IpcCommand = serde_json::from_str(r#"{"command":"startupReady"}"#)
+        .expect("the page can say it has drawn");
+    assert!(matches!(said, IpcCommand::StartupReady));
+    assert!(matches!(
+        UserEvent::StartupGrowDue,
+        UserEvent::StartupGrowDue
+    ));
+    // Long enough that a slow disk is not cut off, short enough that a broken page is not something anybody sits through.
+    assert_eq!(STARTUP_GROW_DEADLINE, Duration::from_secs(4));
+
+    // The page comes up holding the card, in markup rather than built by a script that has not run yet.
+    let page = app_shell_html();
+    assert!(
+        page.contains("id=\"startupCard\""),
+        "the page comes up without the startup card"
+    );
+    assert!(
+        page.contains("startup-card-spinner"),
+        "the startup card comes up without its ring"
     );
 }

@@ -55,6 +55,7 @@ export const COMMANDS = {
   setThemeMode: [ANSWERED],
   setThemeRandomBag: [ANSWERED],
   setHintState: [REFUSED, 'a first-run bubble is a once-per-install promise, and a reader meeting a document inside a product has installed nothing'],
+  startupReady: [REFUSED, 'a frame inside a page has no native Leaftext window to grow, and the product owns whatever it shows while its document arrives. The word is still sent, because the page says it once whatever is under it and never waits for the answer'],
   windowDrag: [REFUSED, 'a frame inside a page has no window frame to drag'],
   windowMinimize: [REFUSED, 'a frame inside a page has no window to minimize'],
   windowToggleMaximize: [REFUSED, 'a frame inside a page has no window to maximize'],

@@ -188,3 +188,40 @@ body.frameless.is-fullscreen::before {
       content-visibility var(--lt-duration-260) var(--lt-ease-decelerate) allow-discrete;
   }
 }
+/* The launch state, drawn before the app is: the leaf over a turning ring over the app's name, centered in the small window a launch puts up. It is the app surface's own color rather than a wash, because there is nothing underneath it a reader would want to see through — the reader, the bar and the tabs are all still being built. Held over every layer the app has for as long as it stands, and taken off whole rather than faded: the same step that removes it resizes the window, and a fade would run against a layout still finding its new width. */
+.startup-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-16);
+  background: var(--lt-background);
+  /* Over the bar, the sheets and their scrim alike: while this stands it is the whole of what the window shows, and every press meant for a control the page has not finished building stops here. */
+  z-index: var(--lt-z-51);
+}
+/* The UA sheet's own `[hidden]` rule cannot beat the display above, so the card would stay on screen with the attribute set. */
+.startup-card[hidden] {
+  display: none;
+}
+/* Large enough to read as the app's mark rather than as a toolbar icon, which is the whole job it has here. */
+.startup-card-mark {
+  width: 56px;
+  height: 56px;
+  color: var(--lt-primary);
+}
+/* Smaller than the reader's own loading ring: under the mark it is the second thing in the box, not the subject of it. */
+.startup-card-spinner {
+  width: 20px;
+  height: 20px;
+  border-color: color-mix(in srgb, var(--lt-foreground) 22%, transparent);
+  border-top-color: var(--lt-accent);
+}
+.startup-card-name {
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-040);
+  color: var(--lt-muted-foreground);
+}

@@ -578,6 +578,26 @@ function runHeldReadingLanding() {
   heldReadingLandingPath = null;
   runReadingLanding(path);
 }
+// The window comes up 256 pixels square holding the startup card, and this is what lets the host grow it into the one the reader left. Said once, after the reader has something on it — the page's own load event is too early, because the host renders the launch's first document inside the arm that event lands in, so a window grown there is a full-size window with an empty reader in it.
+//
+// Everything it remembers is on `window` rather than in a name of its own, because theme.js renders the page from inside its own load and that is long before this fragment is evaluated: a `let` or a `const` here is in its temporal dead zone at that moment, and reading one threw and took the rest of the front end down with it.
+function sayStartupDrawn(hasDocument) {
+  // That same early render is a page still being built, so the word waits for the bootstrap at the foot of the script.
+  if (!window.__leafBooted || window.__leafStartupSaid) return;
+  // A launch opening a document draws the home screen first, off the state the page boots with, so the word waits for the render that carries the document.
+  const opensADocument = !!(window.__leafInitialState && window.__leafInitialState.active != null);
+  if (opensADocument && !hasDocument) return;
+  window.__leafStartupSaid = true;
+  // Nothing waits on the answer, because there may not be one: a browser refuses this, and the page carries on either way.
+  send({ command: 'startupReady' });
+  // And where there is no native window to grow, nothing is ever coming back to take the card off — so the page takes it off itself. The desktop leaves it standing until the host has finished resizing, which is the whole of what it is covering.
+  if (!window.__leafFrameless && !window.__leafMacFrame) window.leafStartupDone();
+}
+// The host's call, made in the same step that grows the window, so the card covers the resize and goes once it is over. Taken off whole rather than faded, against a layout that is still finding its new width.
+window.leafStartupDone = () => {
+  const card = document.getElementById('startupCard');
+  if (card) card.hidden = true;
+};
 function renderState() {
   const state = currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
   disconnectMinimapPreviewObservers();
@@ -647,6 +667,7 @@ function renderState() {
     if (readerOffScreen()) heldReadingLandingPath = renderedPath;
     else runReadingLanding(renderedPath);
     updateEditingChrome();
+    sayStartupDrawn(true);
     return;
   }
   resetReaderScrollOnNextRender = false;
@@ -693,6 +714,7 @@ function renderState() {
   });
   // A list that changed under an open sheet — a file favorited from its own right-click menu — has to change in the sheet too, or the two disagree about one list.
   if (homeSheetShowing) openHomeSheet(homeSheetShowing);
+  sayStartupDrawn(false);
 }
 function renderNavigation() {
   // A published site has no strip to draw a state on: see dom.js.

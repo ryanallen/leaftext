@@ -106,6 +106,7 @@ export const COMMANDS = {
   setThemeMode: [ANSWERED],
   setThemeRandomBag: [ANSWERED],
   setHintState: [REFUSED, 'a first-run bubble is a once-per-install promise, and a reader landing on a page of a site has installed nothing — so a site draws none and nothing counts a launch'],
+  startupReady: [REFUSED, 'a browser tab has no native Leaftext window to grow out of the small one a launch puts up, and no startup card in the page to take off. The word is still sent, because the page says it once whatever is under it and never waits for the answer'],
   windowDrag: [REFUSED, 'a browser tab has no window frame to drag'],
   windowMinimize: [REFUSED, 'a browser tab has no window to minimize'],
   windowToggleMaximize: [REFUSED, 'a browser tab has no window to maximize'],

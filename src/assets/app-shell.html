@@ -13,6 +13,19 @@
 <body>
 <!-- One box that means "the app", holding everything the page has. It is what a fixed position is measured from and what a fixed position is clipped to, so a sheet, a scrim or a menu belongs to the app rather than to the window — which are the same rectangle today and are not once the window's outer edge is a shadow the app draws. Nothing is added beside it: see .app-surface in reading/base.css and appSurface in shell/state.js. -->
 <div id="appSurface" class="app-surface">
+<!-- What a launch shows while the page is still coming: the leaf, a turning ring
+     and the app's name, in a window 256 pixels square. It is first in the box and
+     over everything, because the app underneath it is still being built and there
+     is no half-drawn state worth showing. Nothing in it can be pressed and it has
+     no state of its own — the host takes it off in the same step that grows the
+     window into the one the reader left, so it never has to fade against a layout
+     that is still moving. Declared here rather than built in script, so it is in
+     the page from the first parse and is what the first pixel draws. -->
+<div id="startupCard" class="startup-card" role="status" aria-label="Leaftext is starting">
+  <span class="lt-icon lt-icon-leaf startup-card-mark" aria-hidden="true"></span>
+  <span class="lt-spinner startup-card-spinner" aria-hidden="true"></span>
+  <span class="startup-card-name">Leaftext</span>
+</div>
 <header id="appBar" class="app-bar">
   <div class="app-bar-lead">
     <button type="button" id="homeButton" class="brand-button" aria-label="Home" title="Home">
@@ -336,8 +349,16 @@
 <!-- The front-end, over the asset protocol rather than inline: the page is handed
      to WebView2 as one string with a ceiling on it and this was 88% of it. A plain
      script tag, not a module, because the fragments are written as one shared
-     scope. -->
-<script src="{{APP_SCRIPT_URL}}" crossorigin="anonymous"></script>
+     scope.
+
+     `defer` because running it is what the first pixel was waiting on: without it
+     the parser stops here for the whole of the script's own execution, and three
+     launches each way put the first paint 20ms later and the page's interactive
+     mark 100ms later. The startup card has to paint before this runs or it is not
+     a startup card at all. It still runs before DOMContentLoaded and still runs
+     last on the page, which is where it already sat. -->
+
+<script src="{{APP_SCRIPT_URL}}" crossorigin="anonymous" defer></script>
 </div>
 </body>
 </html>

@@ -15,6 +15,8 @@ pub(crate) struct AppCtx {
     pub(crate) file_watch: FileWatch,
     pub(crate) vault_state: VaultState,
     pub(crate) last_windowed_size: LogicalSize<f64>,
+    /// The window the launch is heading for, until the page says it can have it.
+    pub(crate) startup: StartupWindow,
     pub(crate) last_maximized: bool,
     pub(crate) last_fullscreen: bool,
 }
@@ -146,6 +148,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
         mut file_watch,
         mut vault_state,
         mut last_windowed_size,
+        mut startup,
         mut last_maximized,
         mut last_fullscreen,
     } = ctx;
@@ -159,6 +162,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
     // What the refresh remembers between passes: the token to ask with, how many refusals in a row, and which mirrors are being written into right now.
     let mut refresh_book = RefreshBook::default();
     start_refresh_timer(&proxy);
+    // The launch window grows on this even where the page never speaks, so a front end that threw as it loaded cannot leave a reader in a box with nothing in it.
+    start_startup_timer(&proxy);
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -170,12 +175,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 event: WindowEvent::Resized(size),
                 ..
             } => {
-                // Remember the size only while windowed; convert the physical event size to the logical size the next launch expects.
-                if !reader.window.is_maximized()
-                    && !reader.window.is_minimized()
-                    && size.width > 0
-                    && size.height > 0
-                {
+                // Remember the size only while windowed; convert the physical event size to the logical size the next launch expects. The launch window is not a size anybody chose, so nothing is remembered until it has grown — otherwise a copy closed while the page was still loading would come back at 256 by 256 for ever.
+                if remembers_windowed_size(
+                    startup.grown,
+                    reader.window.is_maximized(),
+                    reader.window.is_minimized(),
+                    size.width,
+                    size.height,
+                ) {
                     last_windowed_size = size.to_logical(reader.window.scale_factor());
                 }
                 let was = WindowState {
@@ -228,6 +235,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 // Once there is a page to tell: any cloud folder on this machine becomes a vault, and the page learns which folders they are. Off the loop, so a slow disk never delays the first paint.
                 request_cloud_folders(&proxy);
+            }
+            Event::UserEvent(UserEvent::StartupGrowDue) => {
+                if window_cmds::finish_startup(&reader, &mut startup) {
+                    // The page has just been told which window it has, so the next resize diffs against that rather than against the launch window's answer.
+                    last_maximized = startup.maximized;
+                }
             }
             Event::UserEvent(UserEvent::FocusWindow) => {
                 surface_window(&reader.window);
@@ -956,6 +969,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 | IpcCommand::SetGraphScope { .. }) => {
                     if apply_setting_command(&mut settings, command) {
                         persist_settings(&settings, settings_path.as_ref());
+                    }
+                }
+                IpcCommand::StartupReady => {
+                    if window_cmds::finish_startup(&reader, &mut startup) {
+                        // The page has just been told which window it has, so the next resize diffs against that rather than against the launch window's answer.
+                        last_maximized = startup.maximized;
                     }
                 }
                 IpcCommand::WindowDrag => window_cmds::drag(&reader),
