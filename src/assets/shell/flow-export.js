@@ -113,6 +113,7 @@ async function diagramDrawingSvg(source) {
   let root = new DOMParser().parseFromString(drawn, 'image/svg+xml').documentElement;
   let box = (root.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
   if (root.tagName !== 'svg' || box.length !== 4 || !(box[2] > 0)) return drawn;
+  // Only a title landing under a box pays for a second draw, and the reserve it gets is the overlap that was measured rather than a guess. Export is off the reading path, so nothing a reader is waiting on is behind it.
   const titleOverlap = diagramSubgraphTitleOverlap(root);
   if (titleOverlap <= 0) return finishDiagramDrawingSvg(drawn, root, box);
   const titleGap = config.flowchart.subGraphTitleMargin.bottom;
