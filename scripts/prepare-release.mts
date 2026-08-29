@@ -106,7 +106,7 @@ function normalizeVersion(version: string): string {
   return normalized;
 }
 
-// A release carries the work sitting in this checkout, so a clean tree is nothing to release — and the commit is the first thing to notice it, after the whole suite has run. The tags on HEAD say which of the two states this is: none, and nothing was written; one, and an earlier release committed and tagged this very commit before its push failed, which is the case where the tag must never go up again.
+// A release carries the work sitting in this checkout, so a clean tree is nothing to release, and this is where it is said rather than by the commit further down. The tags on HEAD say which of the two states this is: none, and nothing was written; one, and an earlier release committed and tagged this very commit before its push failed, which is the case where the tag must never go up again.
 function assertSomethingToRelease(host: ReleaseHost, changed: string[]): void {
   if (changed.length) {
     return;
@@ -245,7 +245,7 @@ function pathsFromEnvironment(): string[] {
   return [...new Set(parsed.map((path) => normalizePath((path as string).trim())))];
 }
 
-// The work in this checkout, onto main, now: staged by name, committed and pushed, with no gate, no version and no tag. Nothing here is checked, which is the point — the gate runs after, in the release, and until then another session can pull this and work beside it. A clean tree is not a failure: it means the last landing already took everything, and the release goes on from there.
+// The work in this checkout, onto main, now: staged by name, committed and pushed, with no version and no tag. It goes out before the page and comment passes that follow it, so another session can pull it and work beside it rather than waiting on them. A clean tree is not a failure: it means the last landing already took everything, and the release goes on from there.
 export function landWork(message: string, options: ReleaseOptions = { signCommit: true }): string[] {
   const named = requireMessage(message, "landing");
   const host = options.host ?? liveHost();
@@ -277,11 +277,10 @@ export function prepareRelease(version: string, message: string, options: Releas
   const tagArgs = options.signCommit
     ? ["tag", "-s", tag, "-m", `Release ${tag}`]
     : ["-c", "tag.gpgSign=false", "tag", "-a", "--no-sign", tag, "-m", `Release ${tag}`];
-  // Read before the gate for one job only: a clean tree is refused here, rather than an hour later by the commit.
+  // Read for one job only: a clean tree is refused here, rather than further down by the commit.
   const waiting = ownedChanges(host.changedPaths(), options.paths);
   assertSomethingToRelease(host, waiting);
   assertTagDoesNotExist(host, tag);
-  // The whole release is inside the copy, so nothing it does can be reached without the gate that passed first. The old release path was two processes — check and tag, then push after the first had exited — which is why a push could outlive whatever the gate had read.
   // The lockfile carries the package's own version, and nothing before this writes it: the build's one check ran before `Cargo.toml` was bumped, and a release runs no suite of its own. Both release builds pass `--locked`, so a lockfile still naming the version before dies on the build's first command with the tag already up and nothing published under it — v1.15.4 went out that way. It used to be rewritten by accident, as a side effect of the gate compiling, and read back on a second pass over the dirty tree; now it is written on purpose and read back here.
   host.writeLockfileVersion(normalized);
   assertLockfileVersion(host, normalized);
@@ -383,7 +382,7 @@ function refused(run: () => void): string {
   return "";
 }
 
-// git's own options come before the verb and these five carry their value as the next word, so the first plain word is the verb rather than the value. The same reading as the git gate's, for the same reason.
+// git's own options come before the verb and these five carry their value as the next word, so the first plain word is the verb rather than the value. The same reading the git gate makes, for the same reason.
 const GIT_VALUE_OPTIONS = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace"]);
 const RELEASE_WRITES = new Set(["add", "commit", "tag", "push"]);
 
@@ -430,7 +429,7 @@ function selfTest(): void {
     if (isTagWork(call)) fails.push(`${call} was read as tag work, so a refusal fails on something that writes nothing`);
   }
 
-  // A release that passes, in the order it is documented in: gate, then the old tags, then the commit, the tag, main, and the tag on its own.
+  // A release that passes, in the order it is documented in: the lockfile, then the old tags, then the commit, the tag, main, and the tag on its own.
   const clean = fixture((command, args) => {
     if (command === "gh" && args[0] === "release") return { status: 0, stdout: JSON.stringify([{ tagName: "v1.1.0" }]) };
     return args[0] === "tag" && args[1] === "-l" ? { status: 0, stdout: "v1.0.0\nv1.1.0\n" } : null;
@@ -586,7 +585,7 @@ function selfTest(): void {
     if (isTagWork(call)) fails.push(`a landing with a clean tree still ran ${call}`);
   }
 
-  // A clean tree: refused before the tag check and the gate, since the commit is otherwise the first thing to say so and it says it after the whole suite has run.
+  // A clean tree: refused before the tag check, since the commit is otherwise the first thing to say so and it says it after every reading above it.
   const empty = fixture(() => null, { changedPaths: () => [] });
   const emptyFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: empty.host }));
   if (!emptyFailed.includes("nothing to release")) fails.push(`a release with a clean tree was not told so: ${emptyFailed || "it passed"}`);
@@ -628,7 +627,7 @@ function selfTest(): void {
   const noEntryFailed = refused(() => prepareRelease("1.2.3", "The find bar ships", { signCommit: false, host: noEntry.host }));
   if (!noEntryFailed.includes("no version at all")) fails.push(`a lockfile with no entry for the app did not stop the release: ${noEntryFailed || "it passed"}`);
 
-  // A red Mac check on main: the release stops after the gate with nothing written, naming the failed run, so the tag is never the first reader of a Mac arm again.
+  // A red Mac check on main: the release stops with nothing written, naming the failed run, so the tag is never the first reader of a Mac arm again.
   const macRed = fixture((command, args) =>
     command === "gh" && args[0] === "run"
       ? { status: 0, stdout: JSON.stringify([{ conclusion: "failure", url: "https://github.com/example/runs/9" }]) }
