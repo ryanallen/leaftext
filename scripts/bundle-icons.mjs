@@ -190,7 +190,7 @@ const head = [
 // Every stroke in a drawing, set to one weight. The row decides; the number a file happens to carry is only a note, and the check below holds the two together.
 const STROKE_WIDTH = /stroke-width=(['"])[\d.]+\1/g;
 const atWeight = (svg, value) => svg.replace(STROKE_WIDTH, `stroke-width="${value}"`);
-// The weight a drawing actually takes. A number in the Stroke table is a thickness only alongside the box it was set for, so the same number in a wider box draws a thinner line: the window's hairline is 1 in 12 units, and a pack's 24-unit drawing took that 1 and came out at half the app's own line. The same box, or either box unknown, hands the row's own characters straight back, so an unchanged drawing compiles byte for byte.
+// The weight a drawing actually takes. A number in the Stroke table is a thickness only alongside the box it was set for, so the same number in a wider box draws a thinner line: the window's hairline is 1 in 12 units, and a pack's 24-unit drawing left at that 1 draws half the app's own line. The same box, or either box unknown, hands the row's own characters straight back, so an unchanged drawing compiles byte for byte.
 function weightInBox(value, setFor, drawnIn) {
   if (!value || !setFor || !drawnIn || setFor === drawnIn) return value;
   return String(Number(((Number(value) * Number(drawnIn)) / Number(setFor)).toFixed(4)));

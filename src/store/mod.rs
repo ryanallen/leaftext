@@ -162,6 +162,7 @@ pub(super) fn io_path(path: &Path) -> PathBuf {
     let bytes = text.as_bytes();
     // Drive-absolute like `C:\...`.
     if bytes.len() >= 2 && bytes[1] == b':' {
+        // A verbatim path is handed to the filesystem unparsed, so a forward slash in one is a character in a name rather than a separator and the walk stops at the first folder.
         let text = text.replace('/', r"\");
         return PathBuf::from(format!(r"\\?\{text}"));
     }
