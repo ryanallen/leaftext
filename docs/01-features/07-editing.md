@@ -404,7 +404,7 @@ The [live reload](02-navigation.md#reload) watcher keeps working alongside editi
 
 ## Formats
 
-The [code view](#code-view) edits every format Leaftext opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), and [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`).
+The [code view](#code-view) edits every format Leaftext opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`), [HTML](01-rendering.md#html-files) (`.html`, `.htm`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), and [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`).
 
 What the *reading view* offers differs by format, because a block can only be edited in place when the app knows the exact bytes it came from:
 
@@ -413,6 +413,7 @@ What the *reading view* offers differs by format, because a block can only be ed
 | Markdown text blocks | Edit WYSIWYG — type in the rendered page, styling intact. [Block gutter](#the-block-gutter) and [format bar](#the-format-bar) |
 | Markdown blocks that cannot round-trip losslessly | Edit their exact source in place. [Block gutter](#the-block-gutter) |
 | Markdown blocks the page never draws — an HTML comment, a `<script>` or `<style>` block | Nothing is drawn for them, so there is nothing to click; edited in the code view. Every other block in the document stays editable around them |
+| HTML | Read-only, and the page carries no padlock: sanitizing rewrites the markup before it is drawn, so no block can prove the bytes it came from. Edited in the code view |
 | XML blocks whose drawn words are the file's own bytes | Type on the words where they are drawn; the edit is spliced between the element's own tags. A comment is the same, between its `<!--` marks. [Block gutter](#the-block-gutter) |
 | An XML table's cells and column headings | Type on any value whose words are one element's own bytes, including one of several joined by a comma; a column heading opens onto the tag itself and renames that element in every record |
 | Every other XML block | Edit its exact source in place, with a line saying why the markup appeared. [Block gutter](#the-block-gutter) |

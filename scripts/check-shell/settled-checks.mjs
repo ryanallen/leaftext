@@ -42,7 +42,7 @@ export function run() {
 
   // ---- the page goes back between awaiting bodies -----------------------------
   //
-  // A synchronous check has always been handed the page the boot made, because the collector runs the boot's snapshot after every one. An awaiting body got nothing, so the next one started on whatever the last one left — once the queue put them in a row that became repeatable rather than random, and no easier to read, since the check that caused the failure is the one above it and passes. These two are the proof, and the first writes in three places on purpose: the page holds what it is in its tree, in the values on its root, and in its script's own top-level names, and a walk over one reaches nothing of the others.
+  // Every check, awaiting or not, is handed the page the boot made. Without it a body starts on what the one above it left, and that check passes — so the failure names the wrong test. The first of these two writes in three places on purpose: the page holds what it is in its tree, in the values on its root, and in its script's own top-level names, and a walk over one reaches nothing of the others.
 
   const asBooted = {};
   checkSettled('an awaiting check may leave the shared page anywhere it drove it', async () => {
