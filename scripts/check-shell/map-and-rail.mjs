@@ -316,7 +316,7 @@ export function run() {
     if (!frames.drain()) throw new Error('the pane finishing its motion never asked for the width it held back');
     if (!/^[\d.]+px$/.test(minimapWidth())) throw new Error(`the pane stopped and the rail was left at ${minimapWidth() || 'nothing'}`);
   });
-  // The rail is chrome in a grid column beside the box that scrolls, and the window's own scroll is gone — so a notch over the one strip the app draws in place of a scrollbar found nothing above it to move, in the very place a click or a drag on it leaves the pointer. What answers it is the column itself: it is a scroller, the web view moves it, and all the page does is carry the position across. Everything below drives the real listeners at the real column.
+  // The rail is chrome in a grid column beside the box that scrolls, and the window itself does not scroll — so with nothing scrollable under it, a notch over the one strip the app draws in place of a scrollbar has nothing to move, in the very place a click or a drag on it leaves the pointer. What answers it is the column itself: it is a scroller, the web view moves it, and the page only carries the position across. Everything below drives the real listeners at the real column.
   //
   // The column's range here is what a browser adds up: whatever the rail itself stands in, plus the spacer. So a spacer written straight from the reader's range and left there overshoots, which is what makes the read-back correction visible rather than assumed.
   const RAIL_CONTENT_HEIGHT = 730;

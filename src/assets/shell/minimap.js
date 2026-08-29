@@ -1118,9 +1118,9 @@ function cancelReaderScrollSettle() {
   }
   readerScrolling = false;
 }
-// A wheel over the rail moves the page the way a wheel over the page moves it, because the rail's column is a scroller and the web view is the one doing the scrolling. Nothing of ours is on that path: the app used to write the reader's new position outright, one whole jump a notch, and it was the only place in the app that moved the reader itself rather than asking the web view to.
+// A wheel over the rail moves the page the way a wheel over the page moves it, because the rail's column is a scroller and the web view is the one doing the scrolling. Nothing of ours is on that path: a notch answered by writing the reader's position outright lands as one whole jump where the page glides.
 //
-// So all that is left here is the mirror. The column's scroll writes the reader's, one to one, and the column travels exactly as far as the reader can — so the distance a notch carries is the page's own, and a notch at either end stops where the page stops. What a notch counted in lines or in pages is worth is the web view's arithmetic now, and so is the curve.
+// What is here is the mirror. The column's scroll writes the reader's, one to one, and the column travels exactly as far as the reader can — so the distance a notch carries is the page's own, and a notch at either end stops where the page stops. What a notch counted in lines or in pages is worth is the web view's arithmetic, and so is the curve.
 if (readerMinimap) {
   readerMinimap.addEventListener('scroll', () => {
     const top = readerMinimap.scrollTop;
