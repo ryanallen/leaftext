@@ -59,9 +59,9 @@ Walk both folders and write one row for every ticket there.
 
 Bundle status and `Devs with`, stamp the ranking and run the plan checks.
 
-### 11. Hand back the next skill
+### 11. Hand back
 
-Name only the host command that should run next and the fault it prevents.
+The whole reply is the owner's message repeated word for word.
 
 ## 1. Read first
 
@@ -194,7 +194,7 @@ If a cell needs more words, the ticket is what needs them.
 
 ## 7. Which folder a ticket sits in is the version it ships under
 
-`features/` takes the middle number up and the last back to zero; `refactor/` and `fixes/` take the last number up one. [`/git-release`](../git-release/SKILL.md) reads the folder and does what it says, so a ticket filed wrong ships under the wrong number — and this is the only pass that walks all three folders. `features/` is the app not doing something yet, `refactor/` is doing it differently, `fixes/` is doing it wrong today. Move it, fix its README row, say so in the hand-back. **No version number goes in `PLAN.md`.**
+`features/` takes the middle number up and the last back to zero; `refactor/` and `fixes/` take the last number up one. [`/git-release`](../git-release/SKILL.md) reads the folder and does what it says, so a ticket filed wrong ships under the wrong number — and this is the only pass that walks all three folders. `features/` is the app not doing something yet, `refactor/` is doing it differently, `fixes/` is doing it wrong today. Move it, fix its README row, and write the move into its row. **No version number goes in `PLAN.md`.**
 
 ## 8. The shipped file
 
@@ -228,7 +228,7 @@ The tree is read from whichever file somebody opens first, so each one names the
 
 ## 11. Hand back
 
-Say which rows moved and why, what tier 0 turned up, what is at the top now, and which number the next release moves. Nothing in the app moved; the tree stays dirty.
+The whole reply is the owner's message repeated word for word. Which rows moved and why, what tier 0 turned up and what is at the top now are all written into the list itself, which is where the owner reads them. Nothing in the app moved; the tree stays dirty.
 
 ## Reference
 

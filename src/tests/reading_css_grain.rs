@@ -125,6 +125,22 @@ fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
         rule_body(&css, ".document-body a.leaf-md-button {"),
         "cursor: pointer;",
     );
+    // The same button with an address this app will not follow is already drawn as plain words, so the pointer says so too.
+    assert_contains(
+        rule_body(&css, ".document-body a.leaf-md-button.link-goes-nowhere {"),
+        "cursor: default;",
+    );
+    // Source order is what makes that arrow win: both rules are the document button's, and the dead one takes the hand back only by coming last.
+    let live = css
+        .find(".document-body a.leaf-md-button {")
+        .expect("the live document button writes the hand");
+    let dead = css
+        .find(".document-body a.leaf-md-button.link-goes-nowhere {")
+        .expect("the dead document button writes the arrow");
+    assert!(
+        live < dead,
+        "the dead document button must come after the live one to take the hand back"
+    );
 
     // The arrows that used to sit on native buttons are gone, or they would outrank the shared rule and the hand would stop at whichever control wrote one.
     for selector in [

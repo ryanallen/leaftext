@@ -97,7 +97,7 @@ Only one thing is worth saying here: a change that needs a **real window, live s
 
 ### 6. Hand back
 
-Leave the tests uncommitted. Say which files gained a test, which changes are covered by an existing one, and what is left untestable here.
+Leave the tests uncommitted. The whole reply is the owner's message repeated word for word; what gained a test, what an existing one already covers and what cannot be tested here all go in the ticket.
 
 **Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
 

@@ -49,7 +49,7 @@ Read both plan files after `/pm`. Stop if the retired ticket still appears in `.
 
 Do not run git. Where a box never shipped, strike it with what is missing, so the file does not claim it.
 
-Hand back whether anything is broken and what the owner must press. If the ticket is released but not done, tell the owner to run `/done`.
+The whole reply is the owner's message repeated word for word.
 
 **Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md). Naming it in a reply instead is the failure `AGENTS.md` refuses: saying a thing is out of scope proves you found it and handed the filing back to the owner.
 

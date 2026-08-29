@@ -5355,6 +5355,8 @@ body:has(#readerToolbar:not([hidden])) {
   line-height: inherit;
   padding: 0;
   margin: 0;
+  /* The arrow, taking back the hand the button rule wrote: everything else here already says this is not a button, and the pointer was the last thing still promising a press. */
+  cursor: default;
 }
 .document-body strong {
   font-weight: var(--lt-weight-600);

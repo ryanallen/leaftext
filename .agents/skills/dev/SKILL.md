@@ -47,7 +47,7 @@ Build the phase's test box with its code, and write the test's name on the box i
 
 ### 5. File what building turned up beside the work, in the same pass
 
-Anything found while building that no phase in this ticket would have to build anyway is a second file, written before the reply that mentions it. The section below holds the rule and the sentences that break it.
+Anything found while building that no phase in this ticket would have to build anyway is a second file, written in the same pass and never mentioned in the reply. The section below holds the rule and the sentences that break it.
 
 ### 6. `/check` after each phase and at the end
 
@@ -59,13 +59,13 @@ Run [`/check`](../check/SKILL.md) after each phase and again at the end. A phase
 
 ### 7. Hand back at the owner's box
 
-Stop at the owner's box: never run `/done` or `/git-release` yourself, because retiring a ticket is the owner's word and nothing written in the ticket stands in for it. Hand back whether anything is broken and the gestures needed for it. If the work is complete but not shipped, say to run `/git-release` next.
+Stop at the owner's box: never run `/done` or `/git-release` yourself, because retiring a ticket is the owner's word and nothing written in the ticket stands in for it. The whole reply is the owner's message repeated word for word; whether anything is broken, and what is left before it ships, are both written in the ticket, which is where the owner reads them.
 
-**<!-- shared-rule: struck-owners-box -->A struck owner's box is not the owner's word.<!-- /shared-rule -->** A strike says the subject has nothing to press; it does not say the owner has looked at what was built, which is the only thing that retires a plan. So the last phase box is ticked, the ticket stays where it is, and the reply says to run `/done`. A build that closed its own ticket left the owner reading a shipped row for work they had never seen. **This sentence is the one every other file copies**: five other files state the same rule where their own reader needs it, `scripts/check-shared-rules.mjs` holds each of them to the bytes between the markers here, and a change to the rule is made here first and carried out with `node scripts/check-shared-rules.mjs --fix`.
+**<!-- shared-rule: struck-owners-box -->A struck owner's box is not the owner's word.<!-- /shared-rule -->** A strike says the subject has nothing to press; it does not say the owner has looked at what was built, which is the only thing that retires a plan. So the last phase box is ticked and the ticket stays where it is until the owner asks for it to be retired. A build that closed its own ticket left the owner reading a shipped row for work they had never seen. **This sentence is the one every other file copies**: five other files state the same rule where their own reader needs it, `scripts/check-shared-rules.mjs` holds each of them to the bytes between the markers here, and a change to the rule is made here first and carried out with `node scripts/check-shared-rules.mjs --fix`.
 
 ## What building turns up beside the work is its own ticket
 
-**The failure this section exists to stop is a sentence, not a missing file.** Saying "that needs a ticket", "that is out of scope", "that is a different feature", or "that would be its own work" in a hand-back is the whole fault: you found it, you named it, and you handed the filing back to the owner, who now has to ask for the thing you were already looking at. **Write the file first and let the reply name it.** That holds when the finding answers a question the owner asked, when it is one line, when it is obviously going to be refused, and when the current phase is not finished — a refused ticket is a decision recorded and an unfiled one is a decision nobody can find. It also holds for a thing the app simply cannot do yet: absent is a ticket exactly as broken is.
+**The failure this section exists to stop is a sentence, not a missing file.** Saying "that needs a ticket", "that is out of scope", "that is a different feature", or "that would be its own work" in a hand-back is the whole fault: you found it, you named it, and you handed the filing back to the owner, who now has to ask for the thing you were already looking at. **Write the file, and never mention it.** That holds when the finding answers a question the owner asked, when it is one line, when it is obviously going to be refused, and when the current phase is not finished — a refused ticket is a decision recorded and an unfiled one is a decision nobody can find. It also holds for a thing the app simply cannot do yet: absent is a ticket exactly as broken is.
 
 **Anything found while building that no phase in this ticket would have to build anyway is a second file, written in the same pass** — with [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, ranked by [`/pm`](../pm/SKILL.md), and named in this ticket's record so nobody reads it as covered. Never fixed in passing, never left in the hand-back. [`/ticket`](../ticket/SKILL.md) holds the rule; this is the pass that hits it hardest, because building is where the code is actually opened.
 

@@ -73,7 +73,7 @@ Renaming or deleting a class works the same way round: the check fails on a row 
 
 Edit the row, run the bundler, `just verify`. That is all — nothing else holds a copy.
 
-**A value change moves the interface**, so say so plainly in the hand-back: what looks different and where.
+**A value change moves the interface**, so the ticket says what looks different and where.
 
 ## What is not a token
 

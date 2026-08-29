@@ -3,6 +3,8 @@
 //
 // It enforces the half of Rule 1 that names its own words: the 500-character ceiling, the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
 //
+// Finished work is handed back as the owner's own message repeated word for word, so a block they typed is measured against nothing — the ceiling included, since the owner sets the length of their own message, and the phrases included, since a message asking whether something is out of scope would otherwise refuse its own echo.
+//
 // It also refuses a build whose boxes did not go in one at a time while its code was landing. `/dev` says to tick each box in the same edit as its code, and a rule nothing reads is one a build forgets — which leaves the owner asking whether one is happening at all, the question the plan tree exists to answer without being asked. Read off the samples gate-sample.mjs takes after every edit and every shell command, never off the ticket alone: a phase ticked all at once at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart. The rule is written per box, so the reading is the run rather than a count — every rise is exactly one box, and no two rises touch. Nothing is left over to make up at the end.
 //
 // Where no build message named a ticket there are no samples, and the older reading stands in: code moved in this checkout and nothing under the plan tree did. That one is satisfied by any plan file, which is why it is the weaker of the two and why the samples replace it wherever the exact ticket is known.
@@ -155,12 +157,14 @@ export function sweptPhase(held) {
 
 /// Each block on its own. Rule 1 caps a response, and a turn that says three things says three of them — joining first would fail a turn for the sum of twelve short lines and pass one that ended in an essay.
 ///
-/// `filed` is whether the plan tree was written this turn; it is the one thing here that is not in the reply, and it decides only the filing phrases.
-export function offenses(blocks, filed = true) {
+/// `filed` is whether the plan tree was written this turn; it is the one thing here that is not in the reply, and it decides only the filing phrases. `echo` is what the owner typed, and a block they wrote is not a block the reply wrote.
+export function offenses(blocks, filed = true, echo = '') {
   const out = [];
   for (const block of blocks) {
     const trimmed = block.trim();
     if (!trimmed) continue;
+    // The message back, word for word. Nothing in it is the reply's own words, so nothing in it is measured.
+    if (echo && echo.includes(trimmed)) continue;
     // The ceiling counts everything said. The phrases count only what the reply says in its own voice.
     if (trimmed.length > LIMIT) {
       out.push(`${trimmed.length} characters. Rule 1 caps a reply at ${LIMIT}. Cut it to the answer and stop.`);
@@ -213,6 +217,22 @@ export function blocksOf(lines) {
   return said;
 }
 
+/// The last thing the owner actually typed, as one string. The same read `blocksOf` makes from the same end, and for the same reason: tool results arrive as user turns too, so a turn only counts when it carries plain text.
+export function typedPrompt(lines) {
+  const entries = parse(lines);
+  for (let i = entries.length - 1; i >= 0; i -= 1) {
+    const entry = entries[i];
+    if (entry.type !== 'user') continue;
+    const content = entry.message?.content;
+    if (typeof content === 'string' && content.trim()) return content;
+    if (Array.isArray(content)) {
+      const text = content.filter((c) => c.type === 'text' && c.text).map((c) => c.text).join('\n');
+      if (text.trim()) return text;
+    }
+  }
+  return '';
+}
+
 /// True once the newest message in the transcript is something the assistant said, which is what a finished turn looks like.
 export function endsInSpeech(lines) {
   const entries = parse(lines).filter((e) => e.type === 'assistant' || e.type === 'user');
@@ -239,8 +259,8 @@ function nap(ms) {
 
 function selfTest() {
   const fails = [];
-  const check = (text, want, label, filed = true) => {
-    const got = offenses([text], filed).length > 0;
+  const check = (text, want, label, filed = true, echo = '') => {
+    const got = offenses([text], filed, echo).length > 0;
     if (got !== want) fails.push(`${label}: expected ${want ? 'blocked' : 'allowed'}`);
   };
   check('Log to a file: yes, all three.', false, 'short answer');
@@ -271,6 +291,13 @@ function selfTest() {
   check('The strip is not covered.', true, 'the not-covered phrase with nothing written', false);
   check('Filed as the pager ticket; the strip is out of scope for this one.', false, 'the same phrase once something was written', true);
   check('The pane opens on the second click.', false, 'a reply naming no work at all', false);
+
+  // The message back, word for word. Every rule above is the reply's own words, and none of these words are the reply's.
+  const long = `fix the pager ${'x'.repeat(LIMIT)}`;
+  check(long, false, 'the message back, over the ceiling', true, long);
+  check('is the strip out of scope', false, 'the filing phrase in the message back', false, 'is the strip out of scope');
+  check('No. But the pane still opens.', true, 'a walk-back the owner never typed', true, 'does the pane open');
+  check('x'.repeat(LIMIT + 1), true, 'a long reply against a short message', true, 'go');
 
   // Quoted material is not what the reply says. Rule 1 itself carries every phrase above, so a reply naming the rule would refuse itself.
   check('Rule 1 says a reply may not say "that needs a ticket".', false, 'the phrase inside quotation marks', false);
@@ -313,6 +340,8 @@ function selfTest() {
     'not json at all',
   ];
   if (blocksOf(transcript).join('') !== 'No.') fails.push('blocksOf: did not isolate the reply');
+  if (typedPrompt(transcript) !== 'does it work on mac') fails.push('typedPrompt: did not find what the owner typed');
+  if (typedPrompt([]) !== '') fails.push('typedPrompt: an empty transcript should say nothing');
   if (blocksOf([]).length) fails.push('blocksOf: empty transcript should say nothing');
   if (!endsInSpeech(transcript)) fails.push('endsInSpeech: a finished turn read as unfinished');
   if (endsInSpeech(transcript.slice(0, 4))) fails.push('endsInSpeech: a turn mid-tool read as finished');
@@ -462,7 +491,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half — keycodes)`);
+  console.log(`gate-voice: ok (${LIMIT}-character ceiling, ${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, the owner's own message measured against nothing, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half — keycodes)`);
 }
 
 // Only act when run directly: anything importing this for a function would otherwise read a stream nobody is writing, and the importer hangs with no message.
@@ -489,9 +518,12 @@ if (!args) {
   // Already blocked once this turn. Blocking again is how a stop hook spins.
   if (payload.stop_hook_active) process.exit(0);
   let blocks = [];
+  let echo = '';
   try {
     statSync(payload.transcript_path);
-    blocks = blocksOf(settled(payload.transcript_path, nap));
+    const lines = settled(payload.transcript_path, nap);
+    blocks = blocksOf(lines);
+    echo = typedPrompt(lines);
   } catch {
     process.exit(0);
   }
@@ -499,7 +531,7 @@ if (!args) {
   const session = sessionOf(raw);
   const record = read(session);
   const filed = filedSince(record?.startedAt);
-  const found = offenses(blocks, filed);
+  const found = offenses(blocks, filed, echo);
   // The boxes did not go in one at a time while the code was landing. Held whatever the reply says, because the reply is not where a box is ticked, and read off the run of samples rather than off the ticket — a phase swept at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart.
   const held = buildRecord(session);
   const swept = held ? sweptPhase(held) : null;

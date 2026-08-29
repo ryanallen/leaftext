@@ -37,7 +37,7 @@ Build Rust documentation after Rust comment edits, then run `/check`.
 
 ### 5. Hand back the comment pass
 
-Report only what the owner can act on, leaving the tree dirty.
+The whole reply is the owner's message repeated word for word, leaving the tree dirty.
 
 ## Scope
 

@@ -109,7 +109,7 @@ export function context(prompt, rule) {
   out.push('', hasReleaseLicense(prompt)
     ? '- A git-release command starts this message: one git write is authorized, for this turn only.'
     : '- No git-release command starts this message (`/git-release` in Claude, `$git-release` in Codex). Git writes are refused by scripts/gate-git.mjs. Do not offer or hint at one; a dirty tree is the correct end state.');
-  out.push('- Before handing work back: `just verify`. Say what changed in plain words. Never mention that the Mac build or the installer cannot be built here — it is true every time, it is already known, and saying it is the padding Rule 1 refuses.');
+  out.push('- Before handing work back: `just verify`. Then the whole reply is this message repeated word for word: nothing about what changed, nothing to try, no command after it. Never mention that the Mac build or the installer cannot be built here — it is true every time, it is already known, and saying it is the padding Rule 1 refuses.');
   return out.join('\n');
 }
 

@@ -1234,14 +1234,25 @@ function putElement(taken) {
 function takeSurroundings(context) {
   const own = new Map();
   for (const name of Object.getOwnPropertyNames(context)) {
-    if (name === '__leafTakenValues') continue;
     const at = Object.getOwnPropertyDescriptor(context, name);
-    if (at.get || at.set || !at.writable) continue;
+    if (at.get || at.set || !at.writable) {
+      own.set(name, null);
+      continue;
+    }
     // `window`, `self` and `globalThis` are the page itself, and taking one by contents would empty the page rather than copy it.
     own.set(name, { data: at.value === context ? { kind: 'value', ref: at.value } : takeValue(at.value), enumerable: at.enumerable, configurable: at.configurable });
   }
   return () => {
+    for (const name of Object.getOwnPropertyNames(context)) {
+      if (own.has(name)) continue;
+      try {
+        delete context[name];
+      } catch {
+        // A property the page cannot remove stays without breaking every check after it.
+      }
+    }
     for (const [name, was] of own) {
+      if (!was) continue;
       const value = putValue(was.data);
       if (context[name] !== value) context[name] = value;
     }
@@ -1253,7 +1264,6 @@ function takeSurroundings(context) {
  * The page's own values are read and written through scripts run in its context rather than off the context object, because a top-level `let` lives in the script's own scope and never reaches the global object — reading `context.name` for one answers undefined and writing it makes a second name the page cannot see. */
 export function pageSnapshot(context, script) {
   const elements = everyElement(context).map(takeElement);
-  const putSurroundings = takeSurroundings(context);
   const taken = Object.create(null);
   const names = topLevelNames(script).filter((name) => {
     try {
@@ -1265,6 +1275,7 @@ export function pageSnapshot(context, script) {
     }
   });
   context.__leafTakenValues = taken;
+  const putSurroundings = takeSurroundings(context);
   const putValues = new vm.Script(
     names.map((name) => `try { if (${name} !== __leafTakenValues.${name}) ${name} = __leafTakenValues.${name}; } catch {}`).join('\n'),
     { filename: 'put-page-values.js' },

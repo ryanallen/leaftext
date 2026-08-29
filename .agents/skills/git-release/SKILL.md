@@ -70,6 +70,6 @@ The push is the last write, but it is not the end. Read the workflow list once a
 
 If no run exists at all, the same command starts both release workflows against that tag. Never re-push a tag.
 
-After the release, tell the owner to test it and run the done skill, named with your host's own sign — `/done` in Claude, `$done` in Codex. If any ticket is already `Released`, stop and tell the owner to run it before another release.
+After the release, the whole reply is the owner's message repeated word for word. A ticket already `Released` stops the pass before it starts, and that refusal is said plainly, because it is a reason nothing happened rather than a report of what did.
 
 <!-- keycode: LEAF-4409 -->

@@ -43,7 +43,7 @@ Add the ticket to the running order and rebuild its derived cells.
 
 ### 8. Hand back the ticket
 
-Name the plan and the next host skill, with no app change claimed.
+The whole reply is the owner's message repeated word for word, with no app change claimed. The plan is a file the owner can open, so naming it in the reply says nothing the file does not.
 
 ## Where it goes
 
@@ -200,7 +200,7 @@ Drop the bundler line when the work is nowhere near `design/`.
 
 **It holds the gesture, never a stock line.** What the owner does to see the thing, written in what they will look at — the line above, never "confirm it works". A ticket whose subject genuinely has nothing to press writes the box and [strikes it](../../../../docs/GLOSSARY.md#struck-through) with that reason, the way a test box that cannot be built here is struck.
 
-**It stays unticked while a machine works the file.** [`/dev`](../dev/SKILL.md) stops there and hands back the gestures for it, [`/git-release`](../git-release/SKILL.md) refuses a ticket whose one open box sits anywhere else, and `scripts/check-docs.mjs` refuses a live plan with no such heading, one that keeps it anywhere but as the last `###` inside `## Phases`, and one writing a box that opens `The owner ` outside it — from the day it is written rather than from its first ticked box — a plan is easiest to write the box into while it is being scoped, and hardest from inside a half-built phase. Without the heading a plan goes fully ticked on machine work alone, and a machine agreeing with itself is not evidence — which is the whole of why the glossary calls the last box the owner's.
+**It stays unticked while a machine works the file.** [`/dev`](../dev/SKILL.md) stops there and leaves it open, [`/git-release`](../git-release/SKILL.md) refuses a ticket whose one open box sits anywhere else, and `scripts/check-docs.mjs` refuses a live plan with no such heading, one that keeps it anywhere but as the last `###` inside `## Phases`, and one writing a box that opens `The owner ` outside it — from the day it is written rather than from its first ticked box — a plan is easiest to write the box into while it is being scoped, and hardest from inside a half-built phase. Without the heading a plan goes fully ticked on machine work alone, and a machine agreeing with itself is not evidence — which is the whole of why the glossary calls the last box the owner's.
 
 ## What it writes — the ticket's footprint
 

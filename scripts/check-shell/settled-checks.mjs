@@ -1,7 +1,7 @@
 // The order the checks themselves run in: one awaiting check at a time against the one booted page.
 
 import vm from 'node:vm';
-import { check, checkSettled, createCollector, failures, record, settle } from './shared.mjs';
+import { check, checkSettled, createCollector, failures, pageSnapshot, record, runShell, settle, source } from './shared.mjs';
 
 export function run() {
   // ---- one awaiting check at a time -------------------------------------------
@@ -69,8 +69,7 @@ export function run() {
     if (vm.runInContext('codeViewActive', record.booted) !== asBooted.code) throw new Error('a page own value the awaiting check above wrote was left standing');
   });
 
-  // The edge of what the hand-back reaches, and the reason a handful of put-back lines are still written by hand. The snapshot takes the names the window had at boot and puts those back; it removes none, so a name a check adds outlives it — which is why every stand-in on `mermaid` is still taken down by the check that set it. Pinned here rather than trusted, because the day the snapshot learns to delete, those lines are the ones that can go.
-  checkSettled('the hand-back puts back the names the boot had and leaves a name a check added standing', async () => {
+  checkSettled('the hand-back puts back the names the boot had and removes a name a check added', async () => {
     const surroundings = 'leafCheckAddedName';
     if (surroundings in record.booted) throw new Error('the page already carries the name this check adds, so it proves nothing');
     const wasToast = record.booted.leafToast;
@@ -81,8 +80,27 @@ export function run() {
 
     record.restore();
     if (record.booted.leafToast !== wasToast) throw new Error('a name the boot had was not put back');
-    if (record.booted[surroundings] !== 'left behind') throw new Error('the hand-back removed a name a check added, so the put-back lines written for that case can go');
-    delete record.booted[surroundings];
+    if (surroundings in record.booted) throw new Error('the hand-back left standing a name the check added');
+  });
+
+  check('an added name the page cannot remove does not break the hand-back', () => {
+    const isolated = runShell(source);
+    const restore = pageSnapshot(isolated, source);
+    Object.defineProperty(isolated, 'leafCheckFixedName', { value: 'fixed', writable: true, configurable: false });
+
+    restore();
+
+    if (isolated.leafCheckFixedName !== 'fixed') throw new Error('the hand-back changed an added name the page cannot remove');
+  });
+
+  check('a removable read-only name present at boot is not mistaken for one a check added', () => {
+    const isolated = runShell(source);
+    Object.defineProperty(isolated, 'leafCheckReadOnlyName', { value: 'boot', writable: false, configurable: true });
+    const restore = pageSnapshot(isolated, source);
+
+    restore();
+
+    if (isolated.leafCheckReadOnlyName !== 'boot') throw new Error('the hand-back removed a read-only name the boot already carried');
   });
 
   checkSettled('a failed awaiting check does not lend its fault to the checks after it', async () => {
