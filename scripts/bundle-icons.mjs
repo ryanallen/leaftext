@@ -54,6 +54,8 @@ for (const line of packsSection[1].split('\n')) {
 if (!PACKS.has('leaftext')) throw new Error('design/icons.md has no leaftext row in its Packs table, so the app\'s own set is not a pack a family can name');
 /** Every pack but this app's own, which has no folder of drawings and takes the Stroke table's rule instead. */
 const outsidePacks = () => [...PACKS.keys()].filter((pack) => pack !== 'leaftext');
+/** What a borrow looks like in a decision cell: the pack that drew it, then that pack's own name for the drawing. One spelling, so the rule that refuses a bad borrow and the lookup that acts on a good one cannot disagree about what a borrow is. */
+const BORROW = /^([a-z][a-z0-9-]*):/;
 
 // An icon row is its drawing, then the label and one decision per outside pack, then the sentence saying where it is worn: five, one, six, one. Written down because the row is read positionally and a column added in the middle would otherwise slide the sentence into a decision.
 const ICON_COLUMNS = 6 + PACKS.size;
@@ -118,6 +120,16 @@ function decisionProblems({ name, audit, stroke, decided }, drawings) {
       found.push(`design/icons.md gives ${name} the ${pack} drawing "${said}", and a filled drawing takes no weight, so a hairline row beside the platform's chrome keeps the app's own measured mark unless ${pack} has been measured at that weight`);
       return;
     }
+    // The pack half of a borrow, which is the one thing nothing else reads back: both the box check and the stamped weight fall silently back to the wearing pack, so a misspelled pack leaves the drawing measured and weighted as if the wearer had made it.
+    const borrowed = BORROW.exec(said);
+    if (borrowed && !PACKS.has(borrowed[1])) {
+      found.push(`design/icons.md gives ${name} the ${pack} drawing "${said}", and ${borrowed[1]} is not a pack: the table carries ${[...PACKS.keys()].join(', ')}`);
+      return;
+    }
+    if (borrowed && borrowed[1] === pack) {
+      found.push(`design/icons.md borrows ${name} for ${pack} from ${pack}, which is "${said.slice(borrowed[0].length)}" written the long way`);
+      return;
+    }
     const has = (drawings.get(pack) || new Map()).has(name);
     if (said === 'leaftext' && has) found.push(`design/icons.md says ${name} keeps the Leaftext drawing under ${pack}, and src/assets/icon-packs/${pack}/${name}.svg is there`);
     if (said !== 'leaftext' && !has) found.push(`design/icons.md gives ${name} the ${pack} drawing "${said}", and src/assets/icon-packs/${pack}/${name}.svg is not there`);
@@ -144,7 +156,7 @@ function packProblems(pack, icon, svg, drewIt = pack) {
 function drewIt(pack, icon) {
   const row = rows.find((one) => one.name === icon);
   const said = row && row.decided[outsidePacks().indexOf(pack)];
-  const borrowed = said && /^([a-z][a-z0-9-]*):/.exec(said);
+  const borrowed = said && BORROW.exec(said);
   return borrowed ? borrowed[1] : pack;
 }
 
@@ -312,6 +324,8 @@ if (check) {
     ['a decision naming a drawing nobody vendored', decision('x', six('x', 'thing')), 'src/assets/icon-packs/lucide/x.svg is not there'],
     ['a fallback claimed where a drawing is vendored', decision('x', six('leaftext')), 'src/assets/icon-packs/feather/x.svg is there'],
     ['an outside drawing offered for one of the app\'s own marks', decision('leaf', six('leaf')), 'marks are never an outside pack'],
+    ['a borrow naming a pack nobody declared', decision('x', six('nobody:x')), 'nobody is not a pack'],
+    ['a borrow from the pack already wearing the drawing', decision('x', six('feather:x')), 'written the long way'],
   ];
   for (const [what, made, wanted] of refusesDecision) {
     const got = decisionProblems(made, drew).join(' ');
@@ -320,6 +334,7 @@ if (check) {
   for (const [what, made] of [
     ['a complete row whose every decision agrees with the disk', decision('x', six('x'))],
     ['a protected mark kept in every pack', decision('leaf', six(), 'logo')],
+    ['a borrow from a pack the table does carry', decision('x', six('lucide:x'))],
   ]) {
     const got = decisionProblems(made, drew);
     if (got.length) fails.push(`${what} was refused: ${got.join(' ')}`);
