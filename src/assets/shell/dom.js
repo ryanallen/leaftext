@@ -52,6 +52,7 @@ const viewReadingButton = document.getElementById('viewReadingButton');
 const viewCodeButton = document.getElementById('viewCodeButton');
 const viewGraphButton = document.getElementById('viewGraphButton');
 const readerViewTools = document.getElementById('readerViewTools');
+const readerToolTray = document.getElementById('readerToolTray');
 const readerLockButton = document.getElementById('readerLockButton');
 const speedReaderButton = document.getElementById('speedReaderButton');
 const codeIntelButton = document.getElementById('codeIntelButton');

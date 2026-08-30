@@ -67,9 +67,10 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
         &close.to_string(),
         "transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),",
     );
+    // The pointed state stands in for a hover the pointer never made again: the strip is rewritten whole under a still hand, and the cross is on a new element.
     assert_contains(
         css,
-        ".tab:not(:hover):not(:focus-within) .tab-close {\n  opacity: 0;\n  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);\n}",
+        ".tab:not(:hover):not(:focus-within):not(.is-pointed) .tab-close {\n  opacity: 0;\n  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);\n}",
     );
     // Keyed on the tab, not on the modified tab: the narrow rule this generalizes must not survive beside it.
     assert!(
@@ -131,7 +132,13 @@ fn both_corner_buttons_sit_above_the_name_they_cover() {
         label.contains("mask-image: linear-gradient(to right,"),
         "{label}"
     );
-    // And the strip's one listener answers both corners before it answers the label, so a click that lands on either never falls through to switching tabs.
+    // Both corners are answered on the press and the label on the click after it, so a press that lands on either is taken before anything can rewrite the strip under it, and never falls through to switching tabs.
+    let press_at = script
+        .find("tabBar.addEventListener('pointerdown', (event) => {\n  if (event.button !== 0) return;")
+        .expect("the strip answers a press on its corner controls");
+    let click_at = script
+        .find("tabBar.addEventListener('click', (event) => {")
+        .expect("the strip answers a click");
     let close_at = script
         .find("event.target.closest('[data-tab-close]')")
         .expect("the strip answers the close button");
@@ -142,8 +149,17 @@ fn both_corner_buttons_sit_above_the_name_they_cover() {
         .find("event.target.closest('[data-tab-index]')")
         .expect("the strip answers the label");
     assert!(
-        close_at < label_at && mark_at < label_at,
-        "a corner button must be answered before the tab it sits on"
+        press_at < close_at && close_at < mark_at && mark_at < click_at,
+        "both corner arms belong to the press listener"
+    );
+    assert!(
+        click_at < label_at,
+        "the label arm belongs to the click listener, so a press that begins a drag never switches tabs"
+    );
+    // Only the primary button: a click never came from the others, and a right-press on a corner opens the menu.
+    assert_contains(
+        script,
+        "  if (event.button !== 0) return;\n  const close = event.target.closest('[data-tab-close]');",
     );
 }
 
@@ -190,6 +206,17 @@ fn marking_from_the_tab_and_from_the_menu_take_the_same_path() {
         script,
         "  renderTabs(currentState);\n  send({ command: 'toggleFavorite'",
     );
+    // That rewrite destroys the button the press was delivered to, which is why the heart is answered on the press rather than on the click after it: a rewrite landing between a press going down and coming up leaves the browser nothing to resolve a click onto, and no click is dispatched at all.
+    let mark_at = script
+        .find("const mark = event.target.closest('[data-tab-favorite]');")
+        .expect("the strip answers the heart");
+    let click_at = script
+        .find("tabBar.addEventListener('click', (event) => {")
+        .expect("the strip answers a click");
+    assert!(
+        mark_at < click_at,
+        "the heart must be answered before the click listener is even declared"
+    );
 }
 
 #[test]
@@ -205,6 +232,8 @@ fn a_marked_tab_is_the_width_of_an_unmarked_one() {
         "an out-of-flow heart has no margin to push the row with: {mark}"
     );
     // Never drawn at rest, and every value of the fade a token: in decelerating, then a hold, then a shorter exit that accelerates. The colors ride behind the opacity leg in both rules; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.
+    //
+    // The pointed state is the third way in: the strip is rewritten whole when a mark is made, so the control under a still hand is a new element the pointer has never crossed, and without this the heart a reader just filled fades out under their finger.
     assert!(mark.contains("opacity: 0;"));
     assert_contains(
         &mark.to_string(),
@@ -212,7 +241,7 @@ fn a_marked_tab_is_the_width_of_an_unmarked_one() {
     );
     assert_contains(
         css,
-        ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite {\n  opacity: 1;\n  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),",
+        ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite,\n.tab.is-pointed .tab-favorite {\n  opacity: 1;\n  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),",
     );
     // A mark adds nothing to the tab's own padding, which is even: it is out of flow, and so is the cross in the opposite corner.
     let tab = rule_body(css, ".tab {");

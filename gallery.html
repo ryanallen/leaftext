@@ -3299,8 +3299,8 @@ body.frameless.is-fullscreen::before {
   height: 12px;
   pointer-events: none;
 }
-/* Never there at rest, so a strip of tabs is a row of names and the cross costs the tab no room. Focus counts as reaching, so the keyboard still gets to it. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival — the heart opposite goes the same way. */
-.tab:not(:hover):not(:focus-within) .tab-close {
+/* Never there at rest, so a strip of tabs is a row of names and the cross costs the tab no room. Focus counts as reaching, so the keyboard still gets to it. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival — the heart opposite goes the same way. The pointed state is the strip saying the hand is still on this tab across a redraw that replaced it: a control that vanishes the instant it is pressed reads as a press that did nothing. */
+.tab:not(:hover):not(:focus-within):not(.is-pointed) .tab-close {
   opacity: 0;
   transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
 }
@@ -3339,7 +3339,8 @@ body.frameless.is-fullscreen::before {
 }
 /* The shorthand replaces the one above, and this is the only state the heart can be pointed at in, so the colors are named here too or the hover is instant on the one control that shows. */
 .tab:hover .tab-favorite,
-.tab:focus-within .tab-favorite {
+.tab:focus-within .tab-favorite,
+.tab.is-pointed .tab-favorite {
   opacity: 1;
   transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
@@ -5090,15 +5091,75 @@ body:has(#readerToolbar:not([hidden])) {
   opacity: var(--lt-opacity-50);
   cursor: default;
 }
-/* Exactly as tall as a view button, so the recess and the buttons beside it share one top and one bottom edge and sit the same 4px off the bar's stroke; its own tools are smaller and center inside it. No margin on the left, where an inset of its own would land on top of the bar's padding and leave that side twice as deep as the other three. */
-.reader-view-tools {
-  display: inline-flex;
+/* The tray the view's tools ride in, and it is one element in one place: a small nub standing proud of the bar over the button whose tools it holds, which grows upward into the whole tray on hover or keyboard focus and shrinks back into the nub when both are gone. Never a second panel arriving over the page — the drawer is always there and only its height changes, which is what makes the nub read as the thing the tools come out of. Its foot sits inside the bar's border box behind the opaque face, so the two meet with no seam; its own overflow is what holds the tools until the growing edge has passed them. Placed by --reader-tray-left, the middle of the button of the view whose tools these are, written by renderViewTools: CSS anchor positioning is not on the Mac web view, so the offset is measured rather than declared. */
+.reader-tool-tray {
+  position: absolute;
+  /* Three pixels down inside the bar's border box, so the foot is covered and the nub stands six proud of it. It grows from here and never moves. Geometry of this one component. */
+  bottom: calc(100% - 3px);
+  left: var(--reader-tray-left, 50%);
+  display: flex;
+  flex-direction: column;
+  /* The tools ride at the top of the drawer and come out with it, the way the contents of a drawer do. */
+  justify-content: flex-start;
   align-items: center;
   box-sizing: border-box;
-  height: 30px;
+  /* Parked, it is the nub: the three sunk into the bar plus the six standing proud of it. A real height rather than a ceiling, because the spring on the way out has to carry the box past its resting size and a ceiling would simply stop at the content. Geometry of this one component. */
+  height: 9px;
+  /* No bottom edge to draw — that side is inside the bar — and only the corners that show are rounded, so the nub is the tray's own top and nothing else. */
+  /* One step in from every edge, which is what the reader sees. How proud the nub stands is not traded against it: the tools are carried down out of the nub while it is parked rather than held below it by a deeper step, so the two are free of each other. */
+  padding: var(--lt-space-2);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-bottom: none;
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
+  /* The bar's own face, carried up with the tray. The recess wash is a translucent black, which reads as a well only because something opaque is behind it — over a document the page would read straight through the tools. Opaque the whole time: there is no fade here, because a thing growing out of the bar was never somewhere else. */
+  background: var(--lt-surface);
+  box-shadow: var(--lt-shadow-raised);
+  /* What holds the tools inside the nub. Never display:none or visibility:hidden: both drop the padlock out of the Tab order, and focus arriving is one of the two ways the tray comes out. */
+  overflow: hidden;
+  /* The bar's own lower layer, in both states: the face is a later negative-layer child, so it covers the foot inside the bar's box and nothing above it. */
+  z-index: var(--lt-z-below);
+  transform: translateX(-50%);
+  /* The nub answers the pointer, which is how the tray is reached at all; clipped to the nub, it can take nothing else. */
+  pointer-events: auto;
+  transition: height var(--lt-duration-140) var(--lt-ease-accelerate);
+}
+.reader-tool-tray[hidden] {
+  display: none;
+}
+/* Out: the nub grown to hold what is in it, quick and with the spring the owner asked for — the overshoot curve runs about a tenth past the mark and settles back, which is the rubberband at the top. Two ways in besides the tray's own nub: the button of the view these tools belong to, and the keyboard reaching anything inside. */
+/* The keyboard is `:focus-visible` rather than `:focus-within` on purpose. A press leaves focus on the button it landed on, so plain focus pins the tray open until the reader clicks somewhere else — press the padlock, take your hand away, and it stays out. `:focus-visible` is exactly the distinction: Tab sets it, a press does not, so the tray closes on a press the way it closes on a hover that left. The one press that has to hold it is the graph size, whose list is a window of its own that the pointer leaves the tray to reach — a select keeps plain focus the whole time its list is up, which is what that last selector is for and why it names `select` rather than anything focused. */
+.reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray,
+.reader-tool-tray:hover,
+.reader-tool-tray:has(:focus-visible),
+.reader-tool-tray:has(select:focus) {
+  /* The tools' own height, measured by renderViewTools, plus the padding above and below them and the one edge the tray draws. A length rather than `auto`, because a height that is not a number cannot be animated to. */
+  height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1));
+  transition: height var(--lt-duration-200) var(--lt-ease-overshoot);
+}
+/* And the tools come up out of the bar with it, which is what the nub says is in there. */
+.reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray .reader-view-tools,
+.reader-tool-tray:hover .reader-view-tools,
+.reader-tool-tray:has(:focus-visible) .reader-view-tools,
+.reader-tool-tray:has(select:focus) .reader-view-tools {
+  transform: none;
+  transition: transform var(--lt-duration-200) var(--lt-ease-overshoot);
+}
+/* Exactly as wide as a view button is tall, so the tray is the width of one control and rises rather than widening the bar; its own tools are smaller and center inside it. A column, because the tray goes up. Everything below this line is the well it always was — the wash, the grain and the inset edge move across as they are. */
+.reader-view-tools {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  /* Never squashed to fit the nub. A flex item shrinks by default, so inside a tray clipped to its shortest the tools would compress to that height instead of standing behind it. */
+  flex: none;
+  /* Carried down out of the nub while it is parked, by exactly the height the tray grows by — so nothing of them is in the nub however proud it stands, and how proud it stands stops being traded against how far they are inset. The tray's own clip hides them the rest of the way, and this is a translate rather than a fade: the drawer's contents come out with the drawer. */
+  transform: translateY(calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1) - 9px));
+  transition: transform var(--lt-duration-140) var(--lt-ease-accelerate);
+  box-sizing: border-box;
+  /* As wide as a view button is tall where it holds icons, and as wide as it needs where it holds the graph's named list. The tray is out of the bar's row either way, so neither widens the bar. */
+  min-width: 30px;
   gap: var(--lt-space-1);
-  margin: 0 var(--lt-space-2) 0 0;
-  padding: 0 var(--lt-space-2);
+  margin: 0;
+  padding: var(--lt-space-2) 0;
   border-radius: var(--lt-radius-md);
   /* A well cut into the bar: a wash of shadow over its face, and more inside the top edge. Black at an alpha, never a mix toward the foreground — that lightens on a dark theme, which is a recess lit from inside. Not a shade mixed from the chrome token either, so the bar stays one color. */
   background-color: var(--lt-tint-recess);
@@ -5110,7 +5171,7 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-view-tools[hidden] {
   display: none;
 }
-/* The graph's one setting, the only labeled control in the recess: a named list of four sizes, so it reads rather than being clicked through. Same box as the panel dropdown it came from, one padding step shorter because it stands beside 24px buttons. */
+/* The graph's one setting: a named list of four sizes, so it reads rather than being clicked through. No words beside it — nothing else in the bar is labeled, the list says what it is, and the name it needs for a screen reader is on the control. Same box as the panel dropdown it came from, one padding step shorter because it stands beside 24px buttons. */
 .reader-subselect {
   display: inline-flex;
   align-items: center;
@@ -5120,12 +5181,6 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-subselect[hidden] {
   display: none;
 }
-.reader-subselect-label {
-  color: var(--lt-foreground);
-  font-size: var(--lt-text-12);
-  font-weight: var(--lt-weight-800);
-  white-space: nowrap;
-}
 .reader-subselect select {
   height: 26px;
   border: var(--lt-stroke-1) solid var(--lt-border);
@@ -5133,7 +5188,8 @@ body:has(#readerToolbar:not([hidden])) {
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   font-family: var(--app-font);
-  font-size: var(--lt-text-12);
+  /* The smallest the tokens carry: the list is the whole of what the tray holds on the map, and it stood wider than the bar under it. */
+  font-size: var(--lt-text-9);
   font-weight: var(--lt-weight-600);
   line-height: var(--lt-leading-1-2);
   padding-block: var(--lt-space-4);
@@ -10843,7 +10899,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Reader tool bar</h3><code class="built">.reader-tool</code><span class="built">app-shell.html</span></header>
-<div class="stage"><div class="reader-toolbar"><span class="reader-view-tools"><label class="reader-subselect leaf-select"><span class="reader-subselect-label">Graph size</span><select><option>Focus</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div>
+<div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-speed-reader-off"></span></button></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, one set of markup for both platforms — squares at the bar's right end on Windows, the app's own three dots at its left end on a Mac, where Apple's are turned off</span></header>

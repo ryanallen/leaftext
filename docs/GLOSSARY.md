@@ -108,7 +108,7 @@ The [library pane](GLOSSARY.md#library-pane)'s file list — one folder at a tim
 
 ## Floating toolbar
 
-The small bar over the foot of the page. It holds the three views — [reading](GLOSSARY.md#reading-view), [code](GLOSSARY.md#code-view) and [graph](GLOSSARY.md#graph-view) — with the one you are in filled in the accent color, plus the [padlock](GLOSSARY.md#padlock), the [speed reader](GLOSSARY.md#speed-reader), the [typing help](GLOSSARY.md#typing-help) wand, [Undo](GLOSSARY.md#undo) and [Save](GLOSSARY.md#save). No document, no bar.
+The small bar over the foot of the page. It holds the three views — [reading](GLOSSARY.md#reading-view), [code](GLOSSARY.md#code-view) and [graph](GLOSSARY.md#graph-view) — with the one you are in filled in the accent color, plus [Undo](GLOSSARY.md#undo) and [Save](GLOSSARY.md#save) when there is an edit to take back or write. The settings of the view you are in ride in a tray behind the bar instead of on it: the [padlock](GLOSSARY.md#padlock), the [speed reader](GLOSSARY.md#speed-reader), the [typing help](GLOSSARY.md#typing-help) wand and the [graph size](GLOSSARY.md#graph-size), whichever of them that view has. A small handle pokes above the button of the view you are in, and resting on it or reaching the tray with the Tab key slides it out over the page; moving away puts it back. No document, no bar.
 
 ## Flowchart editor
 
@@ -144,7 +144,7 @@ The shared `GLOSSARY.md` this page is one of. Leaftext finds it by walking up fr
 
 ## Graph size
 
-How much of your [vault](GLOSSARY.md#vault) the [graph view](GLOSSARY.md#graph-view) draws: **Focus** (the open document and its direct links), Medium, Large, or Everything. A labeled dropdown in the [floating toolbar](GLOSSARY.md#floating-toolbar), there only while the map is up. See [Settings](01-features/05-settings.md#graph-size).
+How much of your [vault](GLOSSARY.md#vault) the [graph view](GLOSSARY.md#graph-view) draws: **Focus** (the open document and its direct links), Medium, Large, or Everything. A labeled dropdown in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar), there only while the map is up; hover the handle above the graph button to bring it out. See [Settings](01-features/05-settings.md#graph-size).
 
 ## Graph view
 
@@ -248,7 +248,7 @@ The chevron menu the [app bar](GLOSSARY.md#app-bar)'s buttons fold into as the [
 
 ## Padlock
 
-The lock on the [floating toolbar](GLOSSARY.md#floating-toolbar) that says whether you can type into the view you are in. There are two — one for the [reading view](GLOSSARY.md#reading-view), one for the [code view](GLOSSARY.md#code-view) — and they are independent, so unlocking the page you read does not open the file's own text. Both start locked and both are remembered across restarts; a [new document](GLOSSARY.md#new-document) opens with the reading view's turned off for you. Checkboxes toggle either way.
+The lock in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar) that says whether you can type into the view you are in. There are two — one for the [reading view](GLOSSARY.md#reading-view), one for the [code view](GLOSSARY.md#code-view) — and they are independent, so unlocking the page you read does not open the file's own text. Both start locked and both are remembered across restarts; a [new document](GLOSSARY.md#new-document) opens with the reading view's turned off for you. Checkboxes toggle either way.
 
 ## Pager
 
@@ -300,7 +300,7 @@ The anchor id made from a heading — `Bottom Sheet` becomes `#bottom-sheet`. He
 
 ## Speed Reader
 
-A way of reading, toggled from the [floating toolbar](GLOSSARY.md#floating-toolbar): the page dims back and bold anchors mark the start of each word, so your eye follows the path down instead of hunting for it. See [Settings](01-features/05-settings.md#speed-reader).
+A way of reading, toggled from the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar): the page dims back and bold anchors mark the start of each word, so your eye follows the path down instead of hunting for it. See [Settings](01-features/05-settings.md#speed-reader).
 
 ## Sync button
 
@@ -336,7 +336,7 @@ The set of `--lt-*` color and type names every [theme family](GLOSSARY.md#theme-
 
 ## Typing help
 
-Suggestions while you write in the [code view](GLOSSARY.md#code-view), answered from your own notes: `[[` lists them, `[[Note#` lists that note's headings, `](#` lists the open document's anchors, hovering a [wikilink](GLOSSARY.md#wikilink) previews it, and a broken link gets a wavy underline. The wand on the [floating toolbar](GLOSSARY.md#floating-toolbar) turns it off.
+Suggestions while you write in the [code view](GLOSSARY.md#code-view), answered from your own notes: `[[` lists them, `[[Note#` lists that note's headings, `](#` lists the open document's anchors, hovering a [wikilink](GLOSSARY.md#wikilink) previews it, and a broken link gets a wavy underline. The wand in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar) turns it off.
 
 ## Undo
 

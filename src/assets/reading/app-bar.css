@@ -260,8 +260,8 @@
   height: 12px;
   pointer-events: none;
 }
-/* Never there at rest, so a strip of tabs is a row of names and the cross costs the tab no room. Focus counts as reaching, so the keyboard still gets to it. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival — the heart opposite goes the same way. */
-.tab:not(:hover):not(:focus-within) .tab-close {
+/* Never there at rest, so a strip of tabs is a row of names and the cross costs the tab no room. Focus counts as reaching, so the keyboard still gets to it. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival — the heart opposite goes the same way. The pointed state is the strip saying the hand is still on this tab across a redraw that replaced it: a control that vanishes the instant it is pressed reads as a press that did nothing. */
+.tab:not(:hover):not(:focus-within):not(.is-pointed) .tab-close {
   opacity: 0;
   transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
 }
@@ -300,7 +300,8 @@
 }
 /* The shorthand replaces the one above, and this is the only state the heart can be pointed at in, so the colors are named here too or the hover is instant on the one control that shows. */
 .tab:hover .tab-favorite,
-.tab:focus-within .tab-favorite {
+.tab:focus-within .tab-favorite,
+.tab.is-pointed .tab-favorite {
   opacity: 1;
   transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);

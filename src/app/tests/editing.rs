@@ -811,3 +811,65 @@ words no splice put here
 
     let _ = fs::remove_dir_all(&dir);
 }
+
+/// A reader working down a checklist pays for the vault's text once, not once a box. The first tick copies it only because a worker is off holding the text the vault was read with; what that copy leaves behind is the state's alone, so every tick after it moves that one in place.
+#[test]
+fn a_second_tick_refreshes_the_copy_the_first_one_left_rather_than_making_another() {
+    let source = "# Note
+
+- [ ] wash the kelpstone
+- [ ] fold the tideline
+";
+    let (dir, _note, mut workspace) = vault_with_an_open_note(
+        "a_second_tick_refreshes_the_copy_the_first_one_left_rather_than_making_another",
+        source,
+        source,
+    );
+    let root = plain_event_path(fs::canonicalize(&dir).expect("the fixture canonicalizes"));
+
+    let mut vaults = VaultState::load(None);
+    vaults.root = Some(root.clone());
+    vaults.corpus = Some(Arc::new(VaultCorpus::read(&root)));
+    let mut watch = FileWatch::default();
+
+    // What search, the map and the completion menu each do with the vault's text: carry it off the loop, holding the very read the state is still pointing at.
+    let worker = Arc::clone(vaults.corpus.as_ref().expect("the vault's text is held"));
+    let as_read = Arc::as_ptr(&worker);
+
+    if let Err(refused) = flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 0) {
+        panic!("the fixture is writable: {}", refused.why);
+    }
+    let after_first = Arc::as_ptr(vaults.corpus.as_ref().expect("the vault's text is held"));
+    assert_ne!(
+        after_first, as_read,
+        "the worker's text was moved under it rather than copied away from"
+    );
+
+    // The address rather than another clone: holding one here would itself be a second worker, and what is under test is the tick that has none.
+    if let Err(refused) = flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 1) {
+        panic!("the fixture is still writable: {}", refused.why);
+    }
+    assert_eq!(
+        Arc::as_ptr(vaults.corpus.as_ref().expect("the vault's text is held")),
+        after_first,
+        "the second tick copied the whole vault's text again, so a reader pays for the copy once a box"
+    );
+
+    assert!(
+        held_text_has(&vaults, "- [x] wash the kelpstone"),
+        "the first tick was not findable until the vault was read again"
+    );
+    assert!(
+        held_text_has(&vaults, "- [x] fold the tideline"),
+        "the second tick was not findable until the vault was read again"
+    );
+    assert!(
+        worker
+            .documents
+            .iter()
+            .all(|document| !document.text.contains("- [x]")),
+        "the text the worker is reading moved under it while it was reading"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}

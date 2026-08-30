@@ -566,7 +566,7 @@ export function run() {
   check('a wide table is read as a grid every time and becomes cards only when its lane cuts it', () => {
     const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
     const measure = decorate.slice(decorate.indexOf('function measureWideTables'), decorate.indexOf('function decorateBlockquoteLines'));
-    for (const part of ["classList.remove('is-cards')", "classList.add('no-cards')", "classList.toggle('is-cards', table.scrollWidth > lane.clientWidth + 2)", 'new ResizeObserver', 'document.fonts?.ready']) {
+    for (const part of ["classList.remove('is-cards')", "classList.add('no-cards')", 'table.scrollWidth > lane.clientWidth + 2', 'new ResizeObserver', 'document.fonts?.ready']) {
       if (!measure.includes(part)) throw new Error(`the card changeover lost: ${part}`);
     }
     if (/dataset\.leafTableWidth/.test(measure)) {
@@ -575,6 +575,40 @@ export function run() {
     const off = measure.indexOf("classList.add('no-cards')");
     if (off < 0 || off > measure.indexOf('table.scrollWidth')) {
       throw new Error('the width is read before the cards come off, so the decision reads the shape it chose last time');
+    }
+  });
+
+  // Every reset is written before any width is read, so one settled layout answers the whole delivery. Written lane by lane it is a class write and a grid read in turn, which flushes layout once a table: over the plan log's sixteen lanes that cost 71ms a width change against 10ms batched, four frames against under one.
+  check('a resize delivery writes every reset before it reads a width, and keeps no width after it', () => {
+    const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
+    const measure = decorate.slice(decorate.indexOf('function measureWideTables'), decorate.indexOf('function decorateBlockquoteLines'));
+    const once = (part) => {
+      const at = measure.indexOf(part);
+      if (at < 0) throw new Error(`the card changeover lost: ${part}`);
+      if (measure.indexOf(part, at + 1) >= 0) throw new Error(`the card changeover writes ${part} in two places, so the order of one says nothing about the other`);
+      return at;
+    };
+    const reset = once("classList.add('no-cards')");
+    const read = once('table.scrollWidth > lane.clientWidth + 2');
+    const apply = once("classList.toggle('is-cards'");
+    if (!(reset < read && read < apply)) {
+      throw new Error('the reset, the grid read and the card answer are no longer three passes in that order, so a class write sits between two reads and flushes layout again');
+    }
+    if (!/const cards = pairs\.map\(/.test(measure)) {
+      throw new Error('the grid answers are no longer collected before they are applied, so the delivery writes between its reads');
+    }
+    if (/entries\.forEach\(\s*\(entry\)\s*=>\s*decide\(/.test(measure)) {
+      throw new Error('the observer decides one entry at a time again, so a delivery of four lanes flushes layout four times');
+    }
+    if (!/new ResizeObserver\(\(entries\) => decide\(entries\.map\(/.test(measure)) {
+      throw new Error('the observer no longer hands its whole delivery to one decision');
+    }
+    for (const path of ['decide(lanes);', 'document.fonts.ready.then(() => decide(lanes))']) {
+      if (!measure.includes(path)) throw new Error(`the first render and the late font no longer take the same batched path: ${path}`);
+    }
+    const kept = measure.slice(0, measure.indexOf('const decide =')) + measure.slice(measure.indexOf('decide(lanes);'));
+    if (/(?:cards|widths|pairs)/.test(kept)) {
+      throw new Error('a grid width or card answer is held outside one decision, so a table that fits is carded the moment its lane narrows under the width it was measured at');
     }
   });
 

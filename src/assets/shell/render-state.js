@@ -224,6 +224,8 @@ function toggleFavorite(path, kind) {
   renderTabs(currentState);
   send({ command: 'toggleFavorite', path, kind: kind || 'document' });
 }
+// Which tab the pointer is standing on, so a redraw can hand its corner controls back. A mark that fades out the instant it is made reads as a press that did nothing. `var` rather than `let` because a fragment ahead of this one renders as it loads, and a `let` read before its own line has run throws the first paint away.
+var pointedTabPath = null;
 function renderTabs(state) {
   // A site's bar carries the folder trail in this box instead of a strip of tabs, so nothing here may write into it. The trail is what says which document is open, and the document changing is this call — so it is redrawn from here, where a tab label would have been.
   if (window.__leafSite) {
@@ -248,11 +250,25 @@ function renderTabs(state) {
     const name = String(label).split(/[\\/]/).pop() || '';
     return `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`;
   }).join('');
+  // The strip is rewritten whole, so the tab under a still hand is a new element that has never been pointed at. Mark it by the file it carries rather than by its place, since a close shifts every position along, and by name rather than by asking what is at the pointer, which would force a layout on every render.
+  if (pointedTabPath) {
+    Array.from(tabBar.children).forEach((tab) => {
+      if (tab.dataset && tab.dataset.tabPath === pointedTabPath) tab.classList.add('is-pointed');
+    });
+  }
   // A tab opening, closing, or changing title changes what the strip needs — refold so a longer title takes a button rather than getting clipped.
   refitAppBar();
 }
-// One listener on the bar answers for tabs that are rebuilt on every render.
-tabBar.addEventListener('click', (event) => {
+tabBar.addEventListener('pointermove', (event) => {
+  const tab = event.target.closest ? event.target.closest('.tab') : null;
+  pointedTabPath = tab ? tab.dataset.tabPath || null : null;
+});
+tabBar.addEventListener('pointerleave', () => {
+  pointedTabPath = null;
+});
+// Both corner controls answer the press rather than the click after it. The heart's own arm rewrites the whole strip inside the handler, and a rewrite landing between a press going down and coming up leaves the browser nothing to resolve a click onto — watched: no click is dispatched at all, no arm runs, and the press is spent. Only the primary button, since a click never came from the others.
+tabBar.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
   const close = event.target.closest('[data-tab-close]');
   if (close) {
     event.stopPropagation();
@@ -265,8 +281,10 @@ tabBar.addEventListener('click', (event) => {
     event.stopPropagation();
     const tab = (currentState.tabs || [])[Number(mark.dataset.tabFavorite)];
     toggleFavorite(tab ? tab.path : null, 'document');
-    return;
   }
+});
+// The label answers the click, because a press that begins a drag must not switch tabs.
+tabBar.addEventListener('click', (event) => {
   const label = event.target.closest('[data-tab-index]');
   if (!label || suppressTabClick) return;
   const index = Number(label.dataset.tabIndex);

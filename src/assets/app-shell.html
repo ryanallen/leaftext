@@ -153,17 +153,24 @@
      do". Its own grid cell placement, not a child of the scroller, or it would
      scroll away with the document. -->
 <div id="readerToolbar" class="reader-toolbar" role="toolbar" aria-label="Views and edits" hidden>
-  <div class="reader-tool-group" role="group" aria-label="Views">
-    <!-- What the view you are in can do, in one recess to the left of the three
-         view buttons rather than wedged between them, so reading / source /
-         graph always read as one unbroken group. The padlock is the app's one
-         answer to "can I type here", so it stands in both editable views; the
-         speed reader and the wand each belong to one, and the map's one setting
-         is how big a graph to draw. Sunk and grained rather than same-level
-         buttons, which would read as more views. -->
+  <!-- What the view you are in can do, held in a tray that stands as a small
+       nub above the bar's top edge over the button of the view whose tools
+       these are, and grows upward into the whole tray on hover or on the
+       keyboard reaching it. One element the whole time: the nub is the tray at
+       its shortest, so the tools come out of the thing that was already there
+       rather than arriving over the page. The padlock is the app's one answer
+       to "can I type here", so it stands in both editable views; the speed
+       reader and the wand each belong to one, and the map's one setting is how
+       big a graph to draw. Sunk and grained rather than same-level buttons,
+       which would read as more views. Absolutely positioned inside the bar, so
+       it is out of the row and the bar narrows by its width; graph.js anchors
+       it to the active button and measures what it grows to. -->
+  <div id="readerToolTray" class="reader-tool-tray" hidden>
     <span id="readerViewTools" class="reader-view-tools" role="group" aria-label="Editing tools" hidden>
+      <!-- No words beside it: nothing else in the bar is labeled, the list says
+           what it is, and the name it needs for a screen reader is on the
+           control rather than drawn in the tray. -->
       <label class="reader-subselect leaf-select" id="graphScopeTool" hidden>
-        <span class="reader-subselect-label">Graph size</span>
         <select id="graphScope" aria-label="Graph size" title="How many documents the graph view draws. Smaller is faster.">
           <option value="small">Focus</option>
           <option value="medium">Medium</option>
@@ -176,6 +183,8 @@
       <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off"><span class="lt-icon lt-icon-speed-reader-off"></span></span><span class="reader-swap-glyph reader-glyph-on"><span class="lt-icon lt-icon-speed-reader-on"></span></span></button>
       <button type="button" id="codeIntelButton" class="reader-subtool" aria-pressed="true" aria-label="Typing help" title="Typing help"><span class="lt-icon lt-icon-wand"></span></button>
     </span>
+  </div>
+  <div class="reader-tool-group" role="group" aria-label="Views">
     <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" aria-label="Reading" title="Reading"><span class="lt-icon lt-icon-document"></span></button>
     <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" aria-label="View source" title="View source"><span class="lt-icon lt-icon-code-view"></span></button>
     <button type="button" id="viewGraphButton" class="reader-tool" data-view="graph" aria-pressed="false" aria-label="Graph" title="Show how these documents link"><span class="lt-icon lt-icon-graph"></span></button>

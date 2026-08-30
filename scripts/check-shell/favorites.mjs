@@ -76,6 +76,55 @@ export function run() {
   });
 
 
+  check("one press on a background tab's heart marks it, and the front tab does not move", () => {
+    const sent = [];
+    const was = booted.ipc.postMessage;
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    const behind = 'C:\Notes\Behind.md';
+    const front = 'C:\Notes\Front.md';
+    try {
+      booted.leafSetState({ tabs: [{ path: behind }, { path: front }], active: 1, recent: [], favorites: [], document: null });
+      const bar = booted.document.getElementById('tabBar');
+      const heart = bar.querySelectorAll('[data-tab-favorite]')[0];
+      if (!heart) throw new Error('the tab behind drew no heart');
+
+      // The press, never the click after it: the heart's own arm rewrites the whole strip, and a rewrite landing between a press going down and coming up leaves the browser no element to resolve a click onto, so no click is dispatched and the press is spent.
+      let stopped = false;
+      for (const handler of bar.listeners.get('pointerdown') || []) {
+        handler({ button: 0, target: heart, stopPropagation: () => { stopped = true; } });
+      }
+      if (!stopped) throw new Error('the press fell through to the tab the heart sits on');
+      const marks = sent.filter((one) => one.command === 'toggleFavorite');
+      if (marks.length !== 1 || marks[0].path !== behind) {
+        throw new Error(`one press did not mark the tab behind: ${JSON.stringify(sent)}`);
+      }
+      // The reader is still reading what they were reading.
+      if (sent.some((one) => one.command === 'switchTab')) {
+        throw new Error('marking a background tab brought it to the front');
+      }
+      // Drawn off the page's own copy rather than waiting for the host, so the heart fills under the pointer.
+      const drawn = bar.querySelectorAll('[data-tab-favorite]')[0];
+      if (drawn.getAttribute('aria-pressed') !== 'true') {
+        throw new Error('the strip redrew without the mark the press just made');
+      }
+
+      // The click that follows the press asks for nothing, so one press can never mark twice.
+      const after = sent.length;
+      for (const handler of bar.listeners.get('click') || []) handler({ target: drawn, stopPropagation() {} });
+      if (sent.length !== after) {
+        throw new Error(`the click after the press asked for something too: ${JSON.stringify(sent.slice(after))}`);
+      }
+      // A right-press belongs to the menu: a click never came from that button, so neither may the mark.
+      for (const handler of bar.listeners.get('pointerdown') || []) {
+        handler({ button: 2, target: drawn, stopPropagation() {} });
+      }
+      if (sent.length !== after) throw new Error('a right-press on the heart marked the tab');
+    } finally {
+      booted.ipc.postMessage = was;
+      booted.leafSetState({ tabs: [], active: null, recent: [], favorites: [], document: null });
+    }
+  });
+
   check('a favorite whose file is not there is struck where it stands, with a way out', () => {
     const gone = 'C:\\Vaults\\Dharma\\A sutta.md';
     const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT }));

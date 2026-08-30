@@ -120,12 +120,20 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(
         html.contains(r#"<label class="reader-subselect leaf-select" id="graphScopeTool" hidden>"#)
     );
+    // No words beside it: nothing else in the bar is labeled, and the name it needs for a screen reader is on the control rather than drawn in the tray.
+    assert!(!html.contains("reader-subselect-label"));
+    assert!(!css.contains(".reader-subselect-label"));
+    // And the smallest text the tokens carry, because the list is the whole of what the tray holds on the map.
+    assert_contains(rule_body(css, ".reader-subselect select {"), "font-size: var(--lt-text-9);");
     assert!(html.contains(r#"id="readerLockButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="speedReaderButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="codeIntelButton" class="reader-subtool""#));
     assert!(html.contains("const editable = current === 'reading' || current === 'code';"));
     assert!(html.contains("const onGraph = current === 'graph';"));
-    assert!(html.contains("readerViewTools.hidden = !editable && !onGraph;"));
+    assert!(html.contains("const showTools = editable || onGraph;"));
+    assert!(html.contains("readerViewTools.hidden = !showTools;"));
+    // The tray comes and goes with what it holds, so a view with no tools leaves no nub above the bar to reach for.
+    assert!(html.contains("readerToolTray.hidden = !showTools;"));
     assert!(html.contains("graphScopeTool.hidden = !onGraph;"));
     // Four named sizes, read rather than clicked through, and the help sentence the panel spelled out is the dropdown's tooltip now.
     assert!(html.contains(r#"<option value="small">Focus</option>"#));
@@ -153,6 +161,79 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(css.contains(".reader-view-tools {"));
     assert!(css.contains("  box-shadow: var(--lt-shadow-inset);"));
     assert!(css.contains(".reader-view-tools[hidden] {"));
+
+    // The recess rides in a tray behind the bar rather than in its row, so the bar carries the three views and Save and is one width in every view. A column, because the tray rises rather than widening the bar.
+    assert!(html.contains(r#"<div id="readerToolTray" class="reader-tool-tray" hidden>"#));
+    // One element, not two: the nub is the tray at its shortest, so nothing is left standing under it once it has grown.
+    assert!(!html.contains("readerToolHandle"));
+    assert!(!css.contains(".reader-tool-handle"));
+    let recess = rule_body(css, ".reader-view-tools {");
+    assert_contains(recess, "flex-direction: column;");
+    assert_contains(recess, "min-width: 30px;");
+    // Parked, it is the nub: clipped to its own top few pixels, anchored inside the bar's border box so the negative-layer face covers its foot, and answering the pointer there because that nub is how the tray is reached. Still in the Tab order — display:none and visibility:hidden would both drop the padlock out of it, and focus arriving is one of the two ways the tray comes out.
+    let tray = rule_body(css, ".reader-tool-tray {");
+    assert_contains(tray, "z-index: var(--lt-z-below);");
+    assert_contains(tray, "height: 9px;");
+    assert_contains(tray, "overflow: hidden;");
+    assert_contains(tray, "bottom: calc(100% - 3px);");
+    assert_contains(tray, "pointer-events: auto;");
+    assert!(
+        !tray.contains("display: none;") && !tray.contains("visibility: hidden;"),
+        "a parked tray must stay in the Tab order: {tray}"
+    );
+    // No fade anywhere in it: a thing growing out of the bar was never somewhere else, and the owner met the fade as a second panel arriving over the page.
+    assert!(
+        !tray.contains("opacity:"),
+        "the tray grows rather than fades: {tray}"
+    );
+    // The tools ride at the top of the drawer and come out with it, held below the bar's own edge while it is the nub so that nub is a clean edge rather than a sliver of the padlock.
+    assert_contains(tray, "justify-content: flex-start;");
+    assert_contains(tray, "padding: var(--lt-space-2);");
+    // Nothing of the tools is in the nub, and it is the carry rather than a deeper step at the top that keeps them out — so how proud the nub stands and how far they are inset are free of each other, which they were not when evening the insets took the nub away.
+    assert_contains(
+        rule_body(css, ".reader-view-tools {"),
+        "transform: translateY(calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1) - 9px));",
+    );
+    assert!(css.contains(
+        ".reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray .reader-view-tools,
+"
+    ));
+    // Out over the document, so it carries the bar's own opaque face under the recess wash: that wash is translucent, and over a page the words would read through the tools.
+    assert_contains(tray, "background: var(--lt-surface);");
+    assert_contains(tray, "border: var(--lt-stroke-1) solid var(--lt-border);");
+    // Three ways in, and every one of them a rest rather than a press.
+    let out = rule_body(
+        css,
+        ".reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray,
+.reader-tool-tray:hover,
+.reader-tool-tray:has(:focus-visible),
+.reader-tool-tray:has(select:focus) {",
+    );
+    // The keyboard holds it out and a press does not: plain focus stays on the button a press landed on, so `:focus-within` pinned the tray open until the reader clicked somewhere else. The graph size is the one press that has to hold it, because its list is a window of its own the pointer leaves the tray to reach.
+    assert!(
+        !css.contains(".reader-tool-tray:focus-within"),
+        "a press inside the tray must not pin it open"
+    );
+    // Out is the same element grown to what it holds, measured because a height that is not a number cannot be animated to.
+    assert_contains(
+        out,
+        "height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1));",
+    );
+    assert!(
+        !out.contains("transform:") && !out.contains("opacity:"),
+        "the tray grows in place rather than moving or fading: {out}"
+    );
+    // Quick, with the spring at the top, and on a shared curve so the one stylesheet-wide Reduce Motion rule takes it to instant with everything else.
+    assert_contains(out, "var(--lt-ease-overshoot)");
+    assert_contains(out, "var(--lt-duration-200)");
+    // The tray stands over the button of the view whose tools it holds and grows to what it holds, both measured because anchor positioning is not on the Mac web view and a clipped box cannot report its own content height. The map is the exception: its tools are one named list wider than a button, so centered on the graph button they hang off the end of the bar, and that tray takes the bar's own middle instead.
+    assert!(html.contains(
+        "current === 'graph' ? readerToolbar.offsetWidth / 2 : button.offsetLeft + button.offsetWidth / 2;"
+    ));
+    assert!(html.contains("readerToolbar.style.setProperty('--reader-tray-left', `${Math.round(middle)}px`);"));
+    assert!(html.contains("readerToolbar.style.setProperty('--reader-tray-height', `${Math.round(readerViewTools.offsetHeight)}px`);"));
+    assert!(html.contains("  anchorToolTray(current);"));
+    assert_contains(tray, "left: var(--reader-tray-left, 50%);");
     // Both the recess and the buttons in it set a display of their own, which beats the browser's rule for [hidden] unless it is restated.
     assert!(css.contains(".reader-subtool[hidden] {"));
     // Never blue: the blue chip is how the bar says which view you are in, and a setting inside a view must not wear the same badge. It is lit instead -- a fill pushed off the page color, in a hairline frame, so which tools are on is answered without reading the glyphs.
