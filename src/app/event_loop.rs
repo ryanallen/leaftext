@@ -455,6 +455,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 &mut reader,
                 &mut file_watch,
                 &mut vault_state,
+                &mut refresh_book,
                 &path,
                 index,
                 &expect,
@@ -869,6 +870,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     &mut reader,
                     &mut file_watch,
                     &mut vault_state,
+                    &mut refresh_book,
                     index,
                     token,
                 ),
@@ -885,6 +887,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     &mut reader,
                     &mut file_watch,
                     &mut vault_state,
+                    &mut refresh_book,
                     &BlockEdit {
                         start,
                         end,

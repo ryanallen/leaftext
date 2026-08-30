@@ -65,18 +65,35 @@ function foldAppBar() {
   return raisedTheChevron;
 }
 // The bar's left zone measured on its own buttons, with both the pane's width and the zone's own floor out of it: an open pane pins the zone to the rail and the floor below holds it at the last answer, so a plain read gives back one of those rather than what is standing in the zone. `width: auto` is the value the closed state already asks for, taken for one read and put straight back. Held between reads because reading it forces a layout and the answer only moves when the zone's contents do.
+//
+// Written as three steps rather than one body, because the settle pass that runs at the end of the launch has to hold the unpin, the reading and the restore in three different stages — every write that has to land before a reading, then every reading, then every write those readings feed. Called all three in a row by `appBarLeadWidth` below, which is what every other caller still reaches for.
 let appBarLeadOwnWidth = 0;
+// What the zone's own style said before it came off its pin, or null while it is pinned as usual.
+let appBarLeadPin = null;
+function unpinAppBarLead() {
+  if (!appBarLead || appBarLeadOwnWidth || appBarLeadPin) return;
+  appBarLeadPin = { width: appBarLead.style.width || '', minWidth: appBarLead.style.minWidth || '' };
+  appBarLead.style.width = 'auto';
+  appBarLead.style.minWidth = '0px';
+}
+function readAppBarLeadOwnWidth() {
+  if (appBarLeadOwnWidth || !appBarLead) return appBarLeadOwnWidth;
+  appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;
+  return appBarLeadOwnWidth;
+}
+function repinAppBarLead() {
+  if (!appBarLead || !appBarLeadPin) return;
+  appBarLead.style.width = appBarLeadPin.width;
+  appBarLead.style.minWidth = appBarLeadPin.minWidth;
+  appBarLeadPin = null;
+}
 function appBarLeadWidth() {
   if (appBarLeadOwnWidth) return appBarLeadOwnWidth;
   if (!appBarLead) return 0;
-  const pinned = appBarLead.style.width || '';
-  const floored = appBarLead.style.minWidth || '';
-  appBarLead.style.width = 'auto';
-  appBarLead.style.minWidth = '0px';
-  appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;
-  appBarLead.style.width = pinned;
-  appBarLead.style.minWidth = floored;
-  return appBarLeadOwnWidth;
+  unpinAppBarLead();
+  const width = readAppBarLeadOwnWidth();
+  repinAppBarLead();
+  return width;
 }
 function forgetAppBarLeadWidth() {
   appBarLeadOwnWidth = 0;

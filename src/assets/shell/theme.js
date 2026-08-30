@@ -168,12 +168,14 @@ if (themeSheetBrowse) {
   });
 }
 // Tell the host what the page background resolves to so the native frame matches the page. Runs on every theme change, including system light/dark flips, so the OS chrome always tracks the document. No divider color: the app draws its own edge, and the frame is told to draw none — a line there would trace the outside of the shadow band rather than the app.
-function reportWindowChrome(theme) {
+//
+// Read and send are two functions rather than one, because the launch's first report goes through the settle pass, which takes every reading before it makes any write.
+function readWindowChromeColor() {
   const shell = document.getElementById('app');
-  if (!shell) {
-    return;
-  }
-  const parts = getComputedStyle(shell).backgroundColor.match(/\d+(?:\.\d+)?/g);
+  return shell ? getComputedStyle(shell).backgroundColor : '';
+}
+function sendWindowChrome(color, theme) {
+  const parts = String(color).match(/\d+(?:\.\d+)?/g);
   if (!parts || parts.length < 3) {
     return;
   }
@@ -185,16 +187,34 @@ function reportWindowChrome(theme) {
     dark: theme.resolvedTheme === 'dark',
   });
 }
-window.leafTheme.subscribe((theme) => {
+function reportWindowChrome(theme) {
+  sendWindowChrome(readWindowChromeColor(), theme);
+}
+// Everything a theme change does to the page, with the background it was told rather than one it reads for itself.
+function applyThemeToPage(theme, color) {
   updateThemeSelection();
-  reportWindowChrome(theme);
+  sendWindowChrome(color, theme);
   refreshGraphColors();
   // The code view is Monaco; repaint it (and its minimap) from our palette so it tracks the theme and light/dark like everything else.
   reskinMonacoForTheme();
+}
+// `subscribe` calls its listener at once, and that first call lands while the fragments are still loading — so it goes to the settle pass instead, which reads the background with every other reading and writes with every other write. Every later call is a theme somebody chose, long after the page is settled.
+let themeListenerArmed = false;
+window.leafTheme.subscribe((theme) => {
+  if (!themeListenerArmed) {
+    onSettle({ read: readWindowChromeColor, apply: (color) => applyThemeToPage(theme, color) });
+    return;
+  }
+  applyThemeToPage(theme, readWindowChromeColor());
 });
+themeListenerArmed = true;
+// The same first call, and this one is dropped rather than moved: it renders the whole page, and the boot tail renders it again from the same state a moment later. The subscription is what matters — the minimap being switched off and on again is a real render.
+let minimapListenerArmed = false;
 window.leafMinimap.subscribe(() => {
+  if (!minimapListenerArmed) return;
   renderState();
 });
+minimapListenerArmed = true;
 let composing = false;
 window.addEventListener('compositionstart', () => {
   composing = true;

@@ -1169,6 +1169,95 @@ export function run() {
     if (Math.abs(ring - (height + gap * 2) / 2) > 0.001) throw new Error('a pill does not stay a pill');
   });
 
+  // The probe is sixteen fill tests a box, and its answer belongs to the drawing rather than to the measurement: a zoom step measures the whole diagram again and a drag on the divider measures it on every pointer move, so relearning a radius that cannot have changed was a quarter of an eighty-box divider move. It is held against the group it was probed off, with everything the zoom touches left outside — and both halves are held here, because a cache answering a stale number at a new zoom looks exactly like one that worked.
+  check('a corner is probed once per drawing, and the held radius still follows the zoom', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const canvas = read('flowCanvas');
+    if (!canvas) throw new Error('the page has no flow canvas');
+    const names = ['A', 'B', 'C', 'D'];
+    const radii = [0, 5, 12, 28];
+    let probes = 0;
+    // A drawing the way mermaid leaves one: each box a group named its own way, holding an outline whose fill starts along the corner's diagonal and a smaller label plate for the widest-child search to pass over.
+    const drawing = () => {
+      const stage = fakeElement('');
+      stage.classList.add('flow-stage');
+      const svg = fakeElement('');
+      svg.tagName = 'svg';
+      svg.createSVGPoint = () => ({ x: 0, y: 0 });
+      stage.appendChild(svg);
+      radii.forEach((radius, at) => {
+        const group = fakeElement('flowchart-' + names[at] + '-0');
+        group.tagName = 'g';
+        group.classList.add('node');
+        group.getBoundingClientRect = () => ({ top: 0, left: 0, right: 120, bottom: 56, width: 120, height: 56 });
+        const plate = fakeElement('');
+        plate.tagName = 'rect';
+        plate.getBBox = () => ({ x: 20, y: 16, width: 80, height: 24 });
+        const outline = fakeElement('');
+        outline.tagName = 'path';
+        outline.getBBox = () => ({ x: 0, y: 0, width: 120, height: 56 });
+        outline.ownerSVGElement = svg;
+        // A circular corner of radius r begins filling along the diagonal at t = r(1 − 1/√2), which is the distance the walk is looking for.
+        const inset = radius * (1 - Math.SQRT1_2);
+        outline.isPointInFill = (point) => {
+          probes += 1;
+          return point.x >= inset;
+        };
+        group.appendChild(plate);
+        group.appendChild(outline);
+        svg.appendChild(group);
+      });
+      return stage;
+    };
+    const graph = { nodes: names.map((id) => ({ id })), edges: [], groups: [] };
+    const first = drawing();
+    try {
+      read(`flowSession = { save: null, text: '', graph: ${JSON.stringify(graph)} };`);
+      read('flowZoom = 1;');
+      canvas.appendChild(first);
+      booted.measureFlowDiagram();
+      const cost = probes;
+      if (!cost) throw new Error('the first measurement asked the drawing nothing');
+      const drawn = read('flowPlaced').nodes.map((node) => node.radius);
+      radii.forEach((radius, at) => {
+        if (Math.abs(drawn[at] - radius) > 0.05) throw new Error(`a corner of ${radius} was measured as ${drawn[at].toFixed(3)}`);
+      });
+
+      // The same drawing measured again — a zoom step, or one pointer move of a divider drag. Nothing is asked of it, and it answers the same radii.
+      probes = 0;
+      booted.measureFlowDiagram();
+      if (probes) throw new Error(`measuring the same drawing again went back for ${probes} fill tests`);
+      const again = read('flowPlaced').nodes.map((node) => node.radius);
+      if (again.join() !== drawn.join()) throw new Error(`the held radii came back as ${again.join(', ')} rather than ${drawn.join(', ')}`);
+
+      // What is held is in the drawing's own units, so the zoom and the pill clamp still land on it. The box is 56 tall, so 28 is where a corner stops getting rounder.
+      for (const zoom of [0.5, 1.5, 2.5]) {
+        probes = 0;
+        read(`flowZoom = ${zoom};`);
+        booted.measureFlowDiagram();
+        if (probes) throw new Error(`a zoom to ${zoom} went back for ${probes} fill tests`);
+        const scaled = read('flowPlaced').nodes.map((node) => node.radius);
+        radii.forEach((radius, at) => {
+          const want = Math.min(radius * zoom, 28);
+          if (Math.abs(scaled[at] - want) > 0.05) throw new Error(`at ${zoom} a corner of ${radius} read ${scaled[at].toFixed(3)} rather than ${want}`);
+        });
+      }
+
+      // A fresh render replaces the stage's markup, so the new groups are strangers and are probed like any other first sight of a drawing.
+      read('flowZoom = 1;');
+      first.remove();
+      canvas.appendChild(drawing());
+      probes = 0;
+      booted.measureFlowDiagram();
+      if (probes !== cost) throw new Error(`a new drawing took ${probes} fill tests where the first took ${cost}`);
+    } finally {
+      read('flowSession = null;');
+      read('flowPlaced = null;');
+      read('flowZoom = 1;');
+      for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
+    }
+  });
+
   // The sheet has one picture in it and mermaid draws it. Two would mean one of them is a lie, and it would be ours — so nothing in the flowchart code may draw a shape, and there is no second pane to draw it into.
   check('mermaid is the only thing that draws a flowchart', () => {
     const model = readFileSync(join(root, 'src/assets/shell/flow-model.js'), 'utf8');

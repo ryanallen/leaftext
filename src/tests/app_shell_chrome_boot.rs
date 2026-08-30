@@ -279,12 +279,18 @@ fn app_shell_hides_the_minimaps_decorative_marks_from_accessibility() {
 fn app_shell_reacts_to_minimap_and_theme_settings() {
     let html = app_shell_page();
 
-    // The rail still comes and goes with the document, so the subscription has to re-render the page — which is the whole of what it does.
+    // The rail still comes and goes with the document, so the subscription has to re-render the page — which is the whole of what it does. Its first call is the exception, and the exception is on purpose: subscribing calls the listener at once, while the fragments are still loading, and the boot tail renders the same state again a moment later.
     assert_contains(
         &html,
-        "window.leafMinimap.subscribe(() => {\n  renderState();",
+        "window.leafMinimap.subscribe(() => {\n  if (!minimapListenerArmed) return;\n  renderState();",
     );
+    assert_contains(&html, "minimapListenerArmed = true;");
     assert_contains(&html, "window.leafTheme.subscribe((theme) => {");
+    // The theme listener's first call goes to the settle pass instead of being dropped: it is what tells the host what color to draw the window frame.
+    assert_contains(
+        &html,
+        "onSettle({ read: readWindowChromeColor, apply: (color) => applyThemeToPage(theme, color) });",
+    );
     assert_contains(&html, "window.leafTheme.setMode(btn.dataset.mode)");
     assert_contains(&html, "window.leafTheme.setFamily(btn.dataset.family)");
 }

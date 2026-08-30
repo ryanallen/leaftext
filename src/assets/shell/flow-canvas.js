@@ -808,8 +808,23 @@ function flowCornerRadiusFrom(inset) {
   return inset / (1 - Math.SQRT1_2);
 }
 
-// How round the corners of the shape mermaid drew are, in stage pixels. Read off the drawing for the same reason everything else is: a table of radii here would be a second opinion about a shape we do not draw.
+// The radius a corner was probed at, in the drawing's own units, held against the group it was probed off. Probing is sixteen fill tests a box and the answer cannot change while that drawing is on the stage, so a zoom step and a drag on the divider — both of which measure the whole diagram again on every move — probe nothing. A fresh render replaces the stage's markup, so the old groups become unreachable and this empties itself with them; that is the whole of its lifetime.
+const flowProbedRadii = new WeakMap();
+
+// How round the corners of the shape mermaid drew are, in stage pixels. Read off the drawing for the same reason everything else is: a table of radii here would be a second opinion about a shape we do not draw. Everything the zoom touches is here rather than in the probe, so a held radius is right at whatever size the drawing is now.
 function flowDrawnRadius(group, rect) {
+  let probed = flowProbedRadii.get(group);
+  if (probed === undefined) {
+    probed = flowProbeDrawnRadius(group);
+    flowProbedRadii.set(group, probed);
+  }
+  const radius = probed * flowZoom;
+  // Nothing can be rounder than a pill. Measured against `rect`, which is screen pixels, so this cannot be held either.
+  return Number.isFinite(radius) ? Math.max(0, Math.min(radius, Math.min(rect.width, rect.height) / 2)) : 0;
+}
+
+// The probe itself, answering in the drawing's own units — nothing in here reads the zoom, which is what makes the answer worth keeping.
+function flowProbeDrawnRadius(group) {
   // The biggest thing in the group, not the first: a node holds its label's background and any decoration too, and document order does not say which one is the outline. The outline is the one that covers the others.
   let outline = null;
   let widest = 0;
@@ -856,9 +871,7 @@ function flowDrawnRadius(group, rect) {
     if (filled(box.x + mid, box.y + mid)) inside = mid;
     else outside = mid;
   }
-  const radius = flowCornerRadiusFrom(inside) * flowZoom;
-  // Nothing can be rounder than a pill.
-  return Number.isFinite(radius) ? Math.max(0, Math.min(radius, Math.min(rect.width, rect.height) / 2)) : 0;
+  return flowCornerRadiusFrom(inside);
 }
 
 // ---- the overlay -----------------------------------------------------------

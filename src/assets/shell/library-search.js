@@ -345,8 +345,11 @@ function filterMenuKeydown(event) {
 }
 librarySearch.addEventListener('input', () => openFilterMenu());
 librarySearch.addEventListener('blur', () => closeFilterMenu());
-// Paint the pane from the seeded settings, then ask for the folder on screen.
-renderLibrary();
-applyPaneLayout();
+// Paint the pane from the seeded settings, then ask for the folder on screen. The painting goes to the settle pass, which runs it as one prepare, one set of readings and one set of writes at the end of evaluation; the folder is asked for here, because a command is not a page reading.
+onSettle({
+  prepare: prepareSettledLibraryDraw,
+  read: readSettledLibraryDraw,
+  apply: applySettledLibraryDraw,
+});
 send({ command: 'getFolder', path: libraryProjectPath });
 const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;

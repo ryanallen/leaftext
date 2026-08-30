@@ -18,7 +18,7 @@ function persistLibraryLayout() {
 }
 // The widest the open pane may get while leaving the reader usable. Floored at SNAP_SHUT so an explicit open always shows a real pane.
 function maxOpenPaneWidth() {
-  return Math.max(SNAP_SHUT, libraryShell.clientWidth - MIN_READER_WIDTH);
+  return Math.max(SNAP_SHUT, leafShellWidth() - MIN_READER_WIDTH);
 }
 function clampOpenPaneWidth(width) {
   return Math.min(Math.max(width, SNAP_SHUT), maxOpenPaneWidth());
@@ -28,10 +28,21 @@ function openPaneFloor(width) {
   return Math.max(width, appBarLeadWidth());
 }
 // The width the pane comes back at, raised on the way in — only where it is still the width a pane opens at on its own. A Mac that has been run before has 240px written down and no migration to raise it; a width a reader dragged to is theirs at any size, and raising that takes the narrow pane away one restart later.
-if (libraryWidth === DEFAULT_PANE_WIDTH) libraryWidth = openPaneFloor(libraryWidth);
+//
+// Handed to the settle pass rather than measured here: the raise reads the bar's left zone, and a reading taken while the fragments are still loading lays the whole window out again. It runs before the pane is laid out below, because the pass keeps the order the fragments registered in.
+if (libraryWidth === DEFAULT_PANE_WIDTH) {
+  onSettle({
+    prepare: unpinAppBarLead,
+    read: readAppBarLeadOwnWidth,
+    apply: () => {
+      repinAppBarLead();
+      libraryWidth = openPaneFloor(libraryWidth);
+    },
+  });
+}
 // A window too narrow for both reader and pane shows the pane closed regardless of preference — a display fallback, not a saved state.
 function libraryTooNarrow() {
-  return libraryShell.clientWidth < SNAP_SHUT + MIN_READER_WIDTH;
+  return leafShellWidth() < SNAP_SHUT + MIN_READER_WIDTH;
 }
 function libraryIsClosed() {
   return libraryUserClosed || libraryTooNarrow();
@@ -596,37 +607,48 @@ function crumbElisionHtml(hidden) {
   const label = escapeAttr(`Skipped folders: ${names.join(' › ')}`);
   return `<button type="button" class="library-crumb is-elided" data-crumb-more="1" title="${label}" aria-label="${label}" aria-haspopup="menu" aria-expanded="false">…</button>`;
 }
-// What the trail was last laid out for. The library re-renders whenever a disk change touches the folder on screen, and rebuilding the crumbs throws away the "…" an open menu hangs off.
+// What the trail was last laid out for: its path chain and the width it was fitted at. The library re-renders whenever a disk change touches the folder on screen, and rebuilding the crumbs throws away the "…" an open menu hangs off.
 let libraryCrumbFitKey = null;
-function crumbFitKey(segments) {
-  return segments.map((segment) => segment.path + '>' + segment.name).join('|')
-    + '@' + libraryCrumbTrail.clientWidth;
+function crumbFitKey(segments, width) {
+  return segments.map((segment) => segment.path + '>' + segment.name).join('|') + '@' + width;
 }
-// Lay the trail out for a pane of this width. One measuring pass renders every crumb (plus the "…" button, so its cost is known) with shrinking disabled and reads the natural widths; the fit is then arithmetic, and the final markup is written once. Both writes happen inside the same task, so nothing intermediate paints.
-function fitLibraryCrumbs() {
-  if (!libraryCrumbTrail) return;
+// Lay the trail out for a pane of this width, in the three steps the settle pass orders: the measuring markup, then every reading of it, then the fit and the one final write. `fitLibraryCrumbs` below runs the three in a row, which is what every caller but the launch reaches for.
+//
+// Measure with shrinking off and the "…" in the row, so every box reports the width it actually wants. A closed pane measures zero — draw the whole path and let the reopen (which resizes the band) refit it.
+function prepareCrumbFit() {
+  if (!libraryCrumbTrail) return null;
   const segments = crumbSegments(libraryCrumbChain);
-  // The trail fills the band whatever is in it, so its width keys the fit safely.
-  const key = crumbFitKey(segments);
-  if (key === libraryCrumbFitKey) return;
-  libraryCrumbFitKey = key;
   const last = segments.length - 1;
   const fullHtml = segments.map((segment, index) => crumbHtml(segment, index === last)).join(CRUMB_SEP_HTML);
-  let hidden = [];
-  let shown = segments;
   // Past here the trail is rebuilt, so a menu hanging off the "…" loses the button under it. Only that one: the switcher stands outside the trail, and closing it here left it unopenable beside a git vault, where asking about the repository brings a watcher event round to shut the menu that asked.
   if (crumbMenuOwner && libraryCrumbTrail.contains(crumbMenuOwner)) hideCrumbMenu();
-  // Measure with shrinking off and the "…" in the row, so every box reports the width it actually wants. A closed pane measures zero — draw the whole path and let the reopen (which resizes the band) refit it.
   libraryCrumbTrail.classList.add('is-measuring');
   libraryCrumbTrail.innerHTML = fullHtml + CRUMB_SEP_HTML + crumbElisionHtml([]);
-  const avail = libraryCrumbTrail.clientWidth;
+  return segments;
+}
+// Every reading the fit needs, taken together: the room the trail has, each box's natural width, the elision button's, and the gap between them.
+function readCrumbFit(segments) {
+  if (!segments) return null;
   const parts = Array.from(libraryCrumbTrail.children);
   const widthOf = (el) => (el ? el.getBoundingClientRect().width : 0);
-  const crumbWidths = segments.map((_, index) => widthOf(parts[index * 2]));
-  const sepWidth = widthOf(parts[1]);
-  const moreWidth = widthOf(parts[parts.length - 1]);
-  const gap = parseFloat(getComputedStyle(libraryCrumbTrail).columnGap) || 0;
+  return {
+    segments,
+    // The trail fills the band whatever is in it, so its width keys the fit safely.
+    avail: libraryCrumbTrail.clientWidth,
+    crumbWidths: segments.map((_, index) => widthOf(parts[index * 2])),
+    sepWidth: widthOf(parts[1]),
+    moreWidth: widthOf(parts[parts.length - 1]),
+    gap: parseFloat(getComputedStyle(libraryCrumbTrail).columnGap) || 0,
+  };
+}
+// The fit is arithmetic off those readings, and the trail is written once.
+function applyCrumbFit(reading) {
+  if (!reading) return;
+  const { segments, avail, crumbWidths, sepWidth, moreWidth, gap } = reading;
+  libraryCrumbFitKey = crumbFitKey(segments, avail);
   libraryCrumbTrail.classList.remove('is-measuring');
+  let hidden = [];
+  let shown = segments;
   // Width of a row of boxes: the boxes plus the gaps between them.
   const rowWidth = (boxes) => boxes.reduce((sum, w) => sum + w, 0) + Math.max(0, boxes.length - 1) * gap;
   const full = rowWidth(crumbWidths.flatMap((w, index) => (index ? [sepWidth, w] : [w])));
@@ -649,6 +671,12 @@ function fitLibraryCrumbs() {
     : rendered.join(CRUMB_SEP_HTML);
   bindCrumbTrailButtons(hidden);
 }
+// The three in a row. A trail already laid out for this path at this width is left alone.
+function fitLibraryCrumbs() {
+  if (!libraryCrumbTrail) return;
+  if (crumbFitKey(crumbSegments(libraryCrumbChain), libraryCrumbTrail.clientWidth) === libraryCrumbFitKey) return;
+  applyCrumbFit(readCrumbFit(prepareCrumbFit()));
+}
 // The trail's folder links and its two menu buttons, wired after any rebuild.
 function bindCrumbTrailButtons(hidden) {
   libraryCrumbTrail.querySelectorAll('[data-crumb-path]').forEach((crumb) => {
@@ -665,10 +693,39 @@ function bindCrumbTrailButtons(hidden) {
     });
   }
 }
+// True only while the settle pass is holding the trail's three steps apart. A render inside that window writes the measuring markup and stops, because the readings and the fit are the pass's own next two stages.
+let crumbFitSettling = false;
+let crumbFitSettlingSegments = null;
 function renderLibraryCrumbs(chain) {
   if (!libraryCrumbTrail) return;
   libraryCrumbChain = window.__leafSite ? siteCrumbChain() : chain;
+  if (crumbFitSettling) {
+    crumbFitSettlingSegments = prepareCrumbFit();
+    return;
+  }
   fitLibraryCrumbs();
+}
+
+// The launch's own first draw of the pane, in the three stages the settle pass orders. Drawing the library measures the crumb trail and laying the pane out measures the window, and either reading taken while the fragments are still loading makes the browser lay the whole window out again from nothing. Registered by library-search.js, which is where the seeded pane used to be painted outright.
+function prepareSettledLibraryDraw() {
+  crumbFitSettling = true;
+  crumbFitSettlingSegments = null;
+  renderLibrary();
+  crumbFitSettling = false;
+}
+function readSettledLibraryDraw() {
+  return {
+    shell: libraryShell ? libraryShell.clientWidth : 0,
+    crumbs: readCrumbFit(crumbFitSettlingSegments),
+  };
+}
+function applySettledLibraryDraw(reading) {
+  // Held across both writes: the pane's widest open width and whether the window is too narrow for a pane at all both ask for it, and a second reading taken between them is a second layout.
+  holdShellWidth(reading.shell);
+  applyCrumbFit(reading.crumbs);
+  crumbFitSettlingSegments = null;
+  applyPaneLayout();
+  releaseShellWidth();
 }
 // One menu for the two buttons on the trail: the folders the "…" swallowed, and the vault switcher under the leftmost crumb. Same chrome as the file right-click menu.
 const crumbMenu = document.createElement('div');

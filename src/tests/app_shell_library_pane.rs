@@ -234,8 +234,21 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
         &html,
         "function openPaneFloor(width) {\n  return Math.max(width, appBarLeadWidth());\n}",
     );
-    // The zone's own floor comes off for that read beside the pane's pin: with a pixel floor standing, a zone that had just lost a button would measure its own stale floor and never come back down.
-    assert_contains(&html, "  appBarLead.style.width = 'auto';\n  appBarLead.style.minWidth = '0px';\n  appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;\n  appBarLead.style.width = pinned;\n  appBarLead.style.minWidth = floored;");
+    // The zone's own floor comes off for that read beside the pane's pin: with a pixel floor standing, a zone that had just lost a button would measure its own stale floor and never come back down. Written as three steps — the unpin, the reading, the restore — because the settle pass that runs at the end of the launch holds them in three different stages.
+    assert_contains(
+        &html,
+        "  appBarLead.style.width = 'auto';\n  appBarLead.style.minWidth = '0px';\n}",
+    );
+    assert_contains(
+        &html,
+        "  appBarLeadOwnWidth = appBarLead.getBoundingClientRect().width;",
+    );
+    assert_contains(&html, "  appBarLead.style.width = appBarLeadPin.width;\n  appBarLead.style.minWidth = appBarLeadPin.minWidth;");
+    // And run in that order by the one function every other caller reaches for.
+    assert_contains(
+        &html,
+        "  unpinAppBarLead();\n  const width = readAppBarLeadOwnWidth();\n  repinAppBarLead();",
+    );
     // And that measurement is written back as the zone's own floor, because `fit-content` is the one thing in the stylesheet's rule that is not a value — a Mac reads it as no floor at all and draws the tab strip over the leaf, the library button and both arrows.
     assert_contains(
         &html,
@@ -246,20 +259,22 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
         &html,
         "      forgetAppBarLeadWidth();\n      floorAppBarLead();",
     );
-    // Both paths a pane opens through: the width it comes back at, and the width the toggle opens it at.
+    // Both paths a pane opens through: the width it comes back at, and the width the toggle opens it at. The first goes through the settle pass, because reading the zone while the fragments are still loading lays the whole window out again.
+    assert_contains(&html, "      libraryWidth = openPaneFloor(libraryWidth);");
     assert_contains(
         &html,
-        "if (libraryWidth === DEFAULT_PANE_WIDTH) libraryWidth = openPaneFloor(libraryWidth);",
+        "if (libraryWidth === DEFAULT_PANE_WIDTH) {\n  onSettle({",
     );
     assert_contains(&html, "libraryWidth = openPaneFloor(DEFAULT_PANE_WIDTH);");
     // And nowhere else: flooring the drag at that zone takes every narrow pane away from a platform that never had the fault, so the drag reads the plain clamp and the snap is the snap.
     assert_contains(&html, "dividerDrag.pendingWidth = clampOpenPaneWidth(raw);");
     assert!(!html.contains("openPaneFloor(raw)"));
 
-    // The toggle flips the pane open/closed; layout applies on boot and on resize.
+    // The toggle flips the pane open/closed; layout applies on boot and on resize. The boot's goes through the settle pass, so the pane is drawn and measured in one laying out rather than four; the folder is still asked for outright, because a command is not a page reading.
     assert!(html.contains("libraryOpen.addEventListener('click', toggleLibrary);"));
-    assert!(html
-        .contains("applyPaneLayout();\nsend({ command: 'getFolder', path: libraryProjectPath });"));
+    assert!(html.contains(
+        "  apply: applySettledLibraryDraw,\n});\nsend({ command: 'getFolder', path: libraryProjectPath });"
+    ));
     // Several fragments watch a resize, so the pane's own is named by the frame it throttles itself to.
     assert!(html.contains(
         "window.addEventListener('resize', () => {
@@ -394,9 +409,10 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     assert!(!html.contains("window.leafSetScanProgress ="));
     assert!(html.contains("window.leafSetSearchResults ="));
     assert!(html.contains("const LEAF_SETTINGS = (window.__leafSettings"));
-    // Several places ask for a folder; the boot's is the one paired with the first paint.
-    assert!(html
-        .contains("applyPaneLayout();\nsend({ command: 'getFolder', path: libraryProjectPath });"));
+    // Several places ask for a folder; the boot's is the one paired with the first paint, which the settle pass now runs.
+    assert!(html.contains(
+        "  apply: applySettledLibraryDraw,\n});\nsend({ command: 'getFolder', path: libraryProjectPath });"
+    ));
 
     // The search field, its debounced request, and the result-open + jump.
     assert!(html.contains(r#"<input id="librarySearch" class="library-search""#));
@@ -507,8 +523,12 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(html.contains("run: () => setLibraryFolder(segment.path),"));
     assert!(css.contains(".crumb-menu {"));
     // A fit that would draw the same crumbs at the same width leaves the DOM alone, or a watcher tick would rebuild the trail under an open "…" menu.
-    assert!(html.contains("function crumbFitKey(segments)"));
-    assert!(html.contains("if (key === libraryCrumbFitKey) return;"));
+    assert!(html.contains("function crumbFitKey(segments, width)"));
+    assert!(html.contains(
+        "if (crumbFitKey(crumbSegments(libraryCrumbChain), libraryCrumbTrail.clientWidth) === libraryCrumbFitKey) return;"
+    ));
+    // And the fit itself is three steps — the measuring markup, every reading of it, then the one final write — so the settle pass can hold them apart at launch.
+    assert!(html.contains("applyCrumbFit(readCrumbFit(prepareCrumbFit()));"));
     // Entering a folder and opening a file both act on the mouse's press — a watcher rebuild between press and release replaces the button and swallows the click — while keyboard, touch and pen keep the click path. One helper serves both: the two kinds of row sit in one rebuilt list, and a file row left on the click while its neighbors moved to the press is exactly how this came back.
     assert!(html
         .contains("libraryTree.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);"));

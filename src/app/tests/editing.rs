@@ -262,9 +262,16 @@ fn every_command_sharing_the_seed_answers_why_rather_than_nothing_when_the_file_
     let mut ticking = missing();
     let mut watch = FileWatch::default();
     let mut vaults = VaultState::load(None);
-    let refusal = flip_task_and_save(None, &mut ticking, &mut watch, &mut vaults, 0)
-        .err()
-        .expect("and the checkbox, which had already drawn itself ticked");
+    let refusal = flip_task_and_save(
+        None,
+        &mut ticking,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    )
+    .err()
+    .expect("and the checkbox, which had already drawn itself ticked");
     assert_eq!(refusal.why, gone_reason);
     assert!(
         !refusal.held,
@@ -362,9 +369,16 @@ fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
     let gone = dir.join("elsewhere").join("tasks.md");
     let mut unread = Workspace::default();
     unread.open_path(gone);
-    let refusal = flip_task_and_save(None, &mut unread, &mut watch, &mut vaults, 0)
-        .err()
-        .expect("a file that cannot be read is written to by nobody");
+    let refusal = flip_task_and_save(
+        None,
+        &mut unread,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    )
+    .err()
+    .expect("a file that cannot be read is written to by nobody");
     assert_eq!(refusal.why, "the file could not be read");
     assert!(
         !refusal.held,
@@ -395,9 +409,16 @@ fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
     }
 
     // A plain list's box at a task number the document has not got: the buffer is there and it did not move.
-    let refusal = flip_task_and_save(None, &mut counted, &mut watch, &mut vaults, 7)
-        .err()
-        .expect("there is no eighth task");
+    let refusal = flip_task_and_save(
+        None,
+        &mut counted,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        7,
+    )
+    .err()
+    .expect("there is no eighth task");
     assert!(
         !refusal.held,
         "a task that is not there moves nothing, so the box comes back up"
@@ -414,9 +435,16 @@ fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
     fs::remove_dir_all(&dir).expect("the folder is deleted under the app");
 
     // A plain list's box the buffer took and the file refused.
-    let refusal = flip_task_and_save(None, &mut ticking, &mut watch, &mut vaults, 0)
-        .err()
-        .expect("the file cannot be written");
+    let refusal = flip_task_and_save(
+        None,
+        &mut ticking,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    )
+    .err()
+    .expect("the file cannot be written");
     assert!(
         refusal.held,
         "the tick is in the buffer, so the box on screen is right"
@@ -441,7 +469,14 @@ fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
         BlockEditOutcome::Refused(why) => panic!("the buffer is seeded: {why}"),
     }
     assert!(
-        autosave_active_buffer(&mut splicing, &mut watch, &mut vaults).is_err(),
+        autosave_active_buffer(
+            &mut splicing,
+            &mut watch,
+            &mut vaults,
+            &mut RefreshBook::default(),
+            None
+        )
+        .is_err(),
         "the write is refused, and it is answered rather than only logged"
     );
     assert!(
@@ -475,7 +510,14 @@ fn a_tick_the_file_refused_keeps_its_dirty_mark_rather_than_clearing_the_chrome(
     let mut vaults = VaultState::load(None);
     fs::remove_dir_all(&dir).expect("the folder is deleted under the app");
 
-    let answer = task_toggle_answer(None, &mut workspace, &mut watch, &mut vaults, 0);
+    let answer = task_toggle_answer(
+        None,
+        &mut workspace,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    );
     assert!(matches!(answer.chrome, TaskChrome::Resync));
     assert!(answer.held, "the page is told to leave its tick alone");
     let said = answer.said.expect("the reader is told the file is behind");
@@ -497,7 +539,14 @@ fn a_tick_the_file_refused_keeps_its_dirty_mark_rather_than_clearing_the_chrome(
     // And a tick with nothing behind it clears the chrome, which is the other half of the same decision.
     let mut unread = Workspace::default();
     unread.open_path(dir.join("elsewhere").join("tasks.md"));
-    let answer = task_toggle_answer(None, &mut unread, &mut watch, &mut vaults, 0);
+    let answer = task_toggle_answer(
+        None,
+        &mut unread,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    );
     assert!(matches!(answer.chrome, TaskChrome::Clear));
     assert!(!answer.held, "so the page puts its own tick back off");
     assert_eq!(
@@ -670,9 +719,16 @@ fn ticking_a_box_in_the_open_note_replaces_its_searchable_text_at_once() {
         "the vault was read with the box open, which is what the tick has to move"
     );
 
-    flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 0)
-        .map_err(|refusal| refusal.why)
-        .expect("the box is ticked and the file written");
+    flip_task_and_save(
+        None,
+        &mut workspace,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    )
+    .map_err(|refusal| refusal.why)
+    .expect("the box is ticked and the file written");
 
     assert!(
         held_text_has(&vaults, "- [x] wash the kelpstone"),
@@ -713,9 +769,16 @@ fn a_tick_the_file_refused_leaves_the_vaults_text_and_its_kept_paths_alone() {
     // The owner's own gesture, and the only way the write fails here: the folder goes while the app is still up.
     fs::remove_dir_all(&dir).expect("the folder is deleted under the app");
 
-    let refusal = flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 0)
-        .err()
-        .expect("the file cannot be written");
+    let refusal = flip_task_and_save(
+        None,
+        &mut workspace,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    )
+    .err()
+    .expect("the file cannot be written");
     assert!(
         refusal.held,
         "the tick is in the buffer, so the box on screen is right"
@@ -731,9 +794,16 @@ fn a_tick_the_file_refused_leaves_the_vaults_text_and_its_kept_paths_alone() {
 
     // The same refusal while a read is running, which is where a kept path would land in the finished vault.
     vaults.corpus_loading = true;
-    flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 0)
-        .err()
-        .expect("the file still cannot be written");
+    flip_task_and_save(
+        None,
+        &mut workspace,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    )
+    .err()
+    .expect("the file still cannot be written");
     assert!(
         !vaults.corpus_changes.contains(&note),
         "the refused tick was kept for the end of the read"
@@ -783,7 +853,14 @@ fn a_table_box_that_writes_itself_replaces_the_searchable_text_and_a_plain_splic
         BlockEditOutcome::Spliced { autosave, .. } => assert!(autosave, "a tick writes itself"),
         BlockEditOutcome::Refused(why) => panic!("the buffer is seeded: {why}"),
     }
-    autosave_active_buffer(&mut workspace, &mut watch, &mut vaults).expect("the table is written");
+    autosave_active_buffer(
+        &mut workspace,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        None,
+    )
+    .expect("the table is written");
     assert!(
         held_text_has(&vaults, "| [x] | kelpstone |"),
         "the ticked cell was not findable until the vault was read again"
@@ -836,7 +913,14 @@ fn a_second_tick_refreshes_the_copy_the_first_one_left_rather_than_making_anothe
     let worker = Arc::clone(vaults.corpus.as_ref().expect("the vault's text is held"));
     let as_read = Arc::as_ptr(&worker);
 
-    if let Err(refused) = flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 0) {
+    if let Err(refused) = flip_task_and_save(
+        None,
+        &mut workspace,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        0,
+    ) {
         panic!("the fixture is writable: {}", refused.why);
     }
     let after_first = Arc::as_ptr(vaults.corpus.as_ref().expect("the vault's text is held"));
@@ -846,7 +930,14 @@ fn a_second_tick_refreshes_the_copy_the_first_one_left_rather_than_making_anothe
     );
 
     // The address rather than another clone: holding one here would itself be a second worker, and what is under test is the tick that has none.
-    if let Err(refused) = flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 1) {
+    if let Err(refused) = flip_task_and_save(
+        None,
+        &mut workspace,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        1,
+    ) {
         panic!("the fixture is still writable: {}", refused.why);
     }
     assert_eq!(

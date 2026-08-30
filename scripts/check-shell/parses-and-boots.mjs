@@ -997,6 +997,99 @@ export function run() {
     if (glyph.parentElement !== null) throw new Error('the element that was written over still names a holder');
   });
 
+
+  // ---- 2w. nothing asks the page how big anything is until the settle pass ----
+  //
+  // A geometry reading taken after the fragment above wrote to the page makes the browser lay the whole window out again from nothing, and the launch was paying for twelve of those before a reader saw a frame. Every fragment that needs to know hands its steps to the settle pass instead, and the pass runs them stage by stage at the end of evaluation.
+  //
+  // The page is booted a second time for this, with every geometry answer the fake page gives wrapped in a recorder and `runSettlePass` wrapped beside it. The wrapping goes in ahead of the script rather than around it, because the fragments share one scope and a wrapper around them stops them declaring their names where the next one reads them. It reaches the two names it wraps because a top-level function declaration is a property of the page itself, hoisted before the first statement runs.
+
+  // What the recorder writes into: every reading with whether the pass was running, and the order the pass called the planted step's three parts in.
+  const GEOMETRY_WATCH = [
+    'globalThis.__watch = { readings: [], stages: [], passRan: false, inPass: false, booted: false };',
+    '(function () {',
+    '  var seen = new Set();',
+    '  var note = function (kind) { globalThis.__watch.readings.push({ kind: kind, inPass: globalThis.__watch.inPass, booted: globalThis.__watch.booted }); };',
+    "  var props = ['clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'scrollWidth', 'scrollHeight'];",
+    '  var wrap = function (el) {',
+    "    if (!el || typeof el !== 'object' || seen.has(el)) return el;",
+    '    seen.add(el);',
+    "    ['getBoundingClientRect', 'getClientRects'].forEach(function (call) {",
+    '      var was = el[call];',
+    "      if (typeof was !== 'function') return;",
+    '      Object.defineProperty(el, call, { configurable: true, writable: true, value: function () { note(call); return was.apply(this, arguments); } });',
+    '    });',
+    '    props.forEach(function (name) {',
+    '      var at = Object.getOwnPropertyDescriptor(el, name);',
+    '      if (!at || at.get) return;',
+    '      var held = at.value;',
+    '      Object.defineProperty(el, name, { configurable: true, get: function () { note(name); return held; }, set: function (value) { held = value; } });',
+    '    });',
+    "    ['querySelector', 'closest', 'createElement'].forEach(function (call) {",
+    '      var was = el[call];',
+    "      if (typeof was !== 'function') return;",
+    '      Object.defineProperty(el, call, { configurable: true, writable: true, value: function () { return wrap(was.apply(this, arguments)); } });',
+    '    });',
+    "    ['querySelectorAll'].forEach(function (call) {",
+    '      var was = el[call];',
+    "      if (typeof was !== 'function') return;",
+    '      Object.defineProperty(el, call, { configurable: true, writable: true, value: function () { var out = was.apply(this, arguments); for (var i = 0; i < (out || []).length; i += 1) wrap(out[i]); return out; } });',
+    '    });',
+    '    var kids = el.children || [];',
+    '    for (var i = 0; i < kids.length; i += 1) wrap(kids[i]);',
+    '    return el;',
+    '  };',
+    '  var style = globalThis.getComputedStyle;',
+    "  globalThis.getComputedStyle = function () { note('getComputedStyle'); return style.apply(this, arguments); };",
+    '  var byId = document.getElementById.bind(document);',
+    '  document.getElementById = function (id) { return wrap(byId(id)); };',
+    '  wrap(document);',
+    '  wrap(document.documentElement);',
+    '  wrap(document.body);',
+    '  // One planted step at each end of the list: the first registered here, before any fragment, and the last registered inside the wrapper below, after all of them. A pass that ran a step start to finish rather than stage by stage would put the first step\u2019s reading before the last step\u2019s prepare.',
+    '  var mark = function (what) { return function () { globalThis.__watch.stages.push(what); }; };',
+    '  // Planted on the first real registration rather than here: the page is one script, so a call made ahead of state.js reaches the pass before the values it keeps its steps in exist.',
+    '  var register = globalThis.onSettle;',
+    '  var planted = false;',
+    '  globalThis.onSettle = function () {',
+    '    if (!planted) {',
+    '      planted = true;',
+    "      register({ prepare: mark('first prepare'), read: mark('first read'), apply: mark('first apply') });",
+    '    }',
+    '    return register.apply(this, arguments);',
+    '  };',
+    '  // The boot tail is where the page a reader meets is drawn, and drawing it measures it — that is the one layout a launch has to pay for, so recording stops as the tail begins.',
+    '  var booted = false;',
+    "  Object.defineProperty(globalThis, '__leafBooted', { configurable: true, get: function () { return booted; }, set: function (value) { booted = value; globalThis.__watch.booted = true; } });",
+    '  var pass = globalThis.runSettlePass;',
+    '  globalThis.runSettlePass = function () {',
+    "    register({ prepare: mark('last prepare'), read: mark('last read'), apply: mark('last apply') });",
+    '    globalThis.__watch.inPass = true;',
+    '    try { return pass.apply(this, arguments); } finally { globalThis.__watch.inPass = false; globalThis.__watch.passRan = true; }',
+    '  };',
+    '})();',
+    '',
+  ].join('\n');
+
+  const watched = runShell(GEOMETRY_WATCH + source).__watch;
+
+  check('no fragment asks the page how big anything is while the front end is loading', () => {
+    if (!watched.passRan) throw new Error('the settle pass never ran, so nothing here was watched');
+    const loading = watched.readings.filter((one) => !one.booted);
+    if (!loading.length) throw new Error('the boot took no geometry reading before its first render, so this check is watching a page that answers nothing');
+    const early = loading.filter((one) => !one.inPass);
+    if (early.length) {
+      const kinds = [...new Set(early.map((one) => one.kind))].join(', ');
+      throw new Error(`${early.length} geometry readings are taken while the fragments load (${kinds}) — each one lays the whole window out again, so hand the step to onSettle instead`);
+    }
+  });
+
+  check('the settle pass takes every reading before it makes any write', () => {
+    const said = watched.stages.join(' / ');
+    const wanted = 'first prepare / last prepare / first read / last read / first apply / last apply';
+    if (said !== wanted) throw new Error(`the pass ran its steps as ${said} — every prepare has to land before the first reading, and every reading before the first write, or the alternation is back`);
+  });
+
   // ---- 2r. one node list, read under the name the page uses -------------------
   //
   // The page reads what a container is holding by `childNodes` and by its two ends, and a run of words counts as one of them: the selection toolbar's tag fold moves each child into a replacement until the first one is gone, so an end that skipped words would move the elements, drop the sentence, and read back as a fold that worked.

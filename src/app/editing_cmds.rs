@@ -296,13 +296,7 @@ pub(crate) fn save_active_document(
         },
     ) {
         Ok(()) => {
-            edit.mark_saved();
-            // Self-save suppression: reload_active_document skips when the hash matches, so our own write-back FileChanged won't clobber the buffer.
-            file_watch.active_hash = Some(content_hash(&text));
-            // The bytes are on this machine now, which is the whole guarantee: a document whose vault keeps its files somewhere else is sent on from here, and a send that fails cannot take back what was typed.
-            push_saved_document(vault_state, refresh_book, webview, &path);
-            // The watcher never brings this one back: the hash above is what makes our own write a no-op, and the active-document branch returns before the corpus patch. Unasked here, the note somebody just saved is unfindable until the vault is read again.
-            record_or_refresh_corpus_path(vault_state, &path);
+            after_document_saved(edit, &text, file_watch, vault_state, refresh_book, webview);
             (save_result_script(&path_str, true, None), Ok(()))
         }
         Err(error) => {
@@ -317,6 +311,21 @@ pub(crate) fn save_active_document(
 
     run_page_script(webview, &script, "Save: failed to report result");
     written
+}
+
+fn after_document_saved(
+    edit: &mut EditableDocument,
+    text: &str,
+    file_watch: &mut FileWatch,
+    vault_state: &mut VaultState,
+    refresh_book: &mut RefreshBook,
+    webview: Option<&WebView>,
+) {
+    edit.mark_saved();
+    file_watch.active_hash = Some(content_hash(text));
+    let path = edit.path.clone();
+    push_saved_document(vault_state, refresh_book, webview, &path);
+    record_or_refresh_corpus_path(vault_state, &path);
 }
 
 /// Seed the edit buffer from disk on the first edit, then splice a reading-view inline edit over `[start, end)`. The caller re-renders from the now-authoritative buffer, or takes the sentence saying why nothing was written and says it where the reader is looking.
@@ -451,6 +460,8 @@ pub(crate) fn autosave_active_buffer(
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     vault_state: &mut VaultState,
+    refresh_book: &mut RefreshBook,
+    webview: Option<&WebView>,
 ) -> Result<(), String> {
     let Some(edit) = workspace.active_edit_mut() else {
         return Ok(());
@@ -464,11 +475,7 @@ pub(crate) fn autosave_active_buffer(
         },
     ) {
         Ok(()) => {
-            edit.mark_saved();
-            file_watch.active_hash = Some(content_hash(&text));
-            // The same door for the same reason: a box inside a table is the third write that would otherwise hide from the vault's text.
-            let written = edit.path.clone();
-            record_or_refresh_corpus_path(vault_state, &written);
+            after_document_saved(edit, &text, file_watch, vault_state, refresh_book, webview);
             Ok(())
         }
         Err(error) => {
@@ -488,10 +495,18 @@ pub(crate) fn toggle_task_marker(
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     vault_state: &mut VaultState,
+    refresh_book: &mut RefreshBook,
     index: usize,
     token: Option<u64>,
 ) {
-    let answer = task_toggle_answer(webview, workspace, file_watch, vault_state, index);
+    let answer = task_toggle_answer(
+        webview,
+        workspace,
+        file_watch,
+        vault_state,
+        refresh_book,
+        index,
+    );
     match answer.chrome {
         TaskChrome::Sent => {}
         TaskChrome::Resync => resync_editing_state(webview, workspace),
@@ -526,9 +541,17 @@ pub(crate) fn task_toggle_answer(
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     vault_state: &mut VaultState,
+    refresh_book: &mut RefreshBook,
     index: usize,
 ) -> TaskToggleAnswer {
-    let refusal = match flip_task_and_save(webview, workspace, file_watch, vault_state, index) {
+    let refusal = match flip_task_and_save(
+        webview,
+        workspace,
+        file_watch,
+        vault_state,
+        refresh_book,
+        index,
+    ) {
         Ok(_) => {
             return TaskToggleAnswer {
                 chrome: TaskChrome::Sent,
@@ -604,6 +627,7 @@ pub(crate) fn flip_task_and_save(
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     vault_state: &mut VaultState,
+    refresh_book: &mut RefreshBook,
     index: usize,
 ) -> Result<serde_json::Value, EditRefused> {
     let (_, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
@@ -641,11 +665,7 @@ pub(crate) fn flip_task_and_save(
         },
     ) {
         Ok(()) => {
-            edit.mark_saved();
-            file_watch.active_hash = Some(content_hash(&text));
-            // The watcher never brings this one back either: the hash above makes our own write a no-op, and the active-document branch returns before the corpus patch. Unasked here, the box somebody just ticked is unfindable until the vault is read again.
-            let ticked = edit.path.clone();
-            record_or_refresh_corpus_path(vault_state, &ticked);
+            after_document_saved(edit, &text, file_watch, vault_state, refresh_book, webview);
         }
         // The marker moved in the buffer, so the tick on screen is right and the document is now dirty. Only the file is behind, which is what `held` carries out to the page: it takes no box back, and the chrome it gets says Save.
         Err(error) => {
@@ -798,6 +818,7 @@ pub(crate) fn pipe_toggle_task(
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
     vault_state: &mut VaultState,
+    refresh_book: &mut RefreshBook,
     path: &Path,
     index: usize,
     expect: &str,
@@ -809,8 +830,15 @@ pub(crate) fn pipe_toggle_task(
         return Err(stale_fingerprint(&holding));
     }
     // The asker on the pipe is told what happened, not what is held: it has no box on screen to put back.
-    flip_task_and_save(webview, workspace, file_watch, vault_state, index)
-        .map_err(|refusal| refusal.why)
+    flip_task_and_save(
+        webview,
+        workspace,
+        file_watch,
+        vault_state,
+        refresh_book,
+        index,
+    )
+    .map_err(|refusal| refusal.why)
 }
 
 /// The pipe's save: write the document at the front to its file, through the same host save the page's own Save runs.
@@ -1026,6 +1054,7 @@ pub(crate) fn task_toggled(
     reader: &mut Reader,
     file_watch: &mut FileWatch,
     vault_state: &mut VaultState,
+    refresh_book: &mut RefreshBook,
     index: usize,
     token: Option<u64>,
 ) {
@@ -1034,6 +1063,7 @@ pub(crate) fn task_toggled(
         &mut reader.workspace,
         file_watch,
         vault_state,
+        refresh_book,
         index,
         token,
     );
@@ -1046,13 +1076,22 @@ pub(crate) fn edit_block(
     reader: &mut Reader,
     file_watch: &mut FileWatch,
     vault_state: &mut VaultState,
+    refresh_book: &mut RefreshBook,
     asked: &BlockEdit,
     token: Option<u64>,
 ) {
     match edit_block_outcome(&mut reader.workspace, asked) {
         BlockEditOutcome::Spliced { autosave, render } => {
             let unwritten = if autosave {
-                autosave_active_buffer(&mut reader.workspace, file_watch, vault_state).err()
+                let webview = reader.webview.as_ref();
+                autosave_active_buffer(
+                    &mut reader.workspace,
+                    file_watch,
+                    vault_state,
+                    refresh_book,
+                    webview,
+                )
+                .err()
             } else {
                 None
             };
