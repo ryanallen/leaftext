@@ -204,7 +204,7 @@ fn a_write_through_the_pipe_is_guarded_by_the_fingerprint_and_lands_on_disk() {
 
     let mut workspace = Workspace::default();
     let mut file_watch = FileWatch::default();
-    let vaults = VaultState::load(None);
+    let mut vaults = VaultState::load(None);
     let mut book = RefreshBook::default();
 
     pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
@@ -251,7 +251,7 @@ fn a_write_through_the_pipe_is_guarded_by_the_fingerprint_and_lands_on_disk() {
         None,
         &mut workspace,
         &mut file_watch,
-        &vaults,
+        &mut vaults,
         &mut book,
         &note,
         &opened
@@ -261,7 +261,7 @@ fn a_write_through_the_pipe_is_guarded_by_the_fingerprint_and_lands_on_disk() {
         None,
         &mut workspace,
         &mut file_watch,
-        &vaults,
+        &mut vaults,
         &mut book,
         &note,
         &edited,
@@ -282,7 +282,7 @@ fn a_write_through_the_pipe_is_guarded_by_the_fingerprint_and_lands_on_disk() {
         None,
         &mut blank,
         &mut file_watch,
-        &vaults,
+        &mut vaults,
         &mut book,
         &untitled,
         empty["fingerprint"].as_str().expect("a fingerprint"),
@@ -498,7 +498,7 @@ fn a_document_written_through_the_pipe_keeps_the_spelling_it_arrived_with() {
 
     let mut workspace = Workspace::default();
     let mut file_watch = FileWatch::default();
-    let vaults = VaultState::load(None);
+    let mut vaults = VaultState::load(None);
     let mut book = RefreshBook::default();
 
     pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
@@ -521,7 +521,7 @@ fn a_document_written_through_the_pipe_keeps_the_spelling_it_arrived_with() {
         None,
         &mut workspace,
         &mut file_watch,
-        &vaults,
+        &mut vaults,
         &mut book,
         &note,
         written["fingerprint"].as_str().expect("a fingerprint"),
@@ -551,7 +551,7 @@ fn a_save_that_fails_comes_back_as_a_refusal_and_never_as_a_success() {
 
     let mut workspace = Workspace::default();
     let mut file_watch = FileWatch::default();
-    let vaults = VaultState::load(None);
+    let mut vaults = VaultState::load(None);
     let mut book = RefreshBook::default();
 
     pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
@@ -574,7 +574,7 @@ fn a_save_that_fails_comes_back_as_a_refusal_and_never_as_a_success() {
         None,
         &mut workspace,
         &mut file_watch,
-        &vaults,
+        &mut vaults,
         &mut book,
         &note,
         written["fingerprint"].as_str().expect("a fingerprint"),
@@ -888,7 +888,7 @@ fn the_pipes_refusals_name_the_file_and_the_operating_systems_words_and_write_no
             None,
             &mut opened_over(&gone),
             &mut FileWatch::default(),
-            &VaultState::load(None),
+            &mut VaultState::load(None),
             &mut RefreshBook::default(),
             &gone,
             unread,
@@ -911,7 +911,7 @@ fn the_pipes_refusals_name_the_file_and_the_operating_systems_words_and_write_no
         None,
         &mut opened_over(&gone),
         &mut FileWatch::default(),
-        &VaultState::load(None),
+        &mut VaultState::load(None),
         &mut RefreshBook::default(),
         &gone,
         unread,

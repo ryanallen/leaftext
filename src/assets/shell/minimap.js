@@ -446,8 +446,10 @@ function correctReaderScrollOrigin(source = app.querySelector('.document-body'))
   // >=2px dead-band: the ideal origin can fall on a half-pixel with no integer fixed point, flipping 1px each frame (e.g. 177<->178) and driving an endless relayout loop via the minimap ResizeObserver. Sub-2px jitter is invisible; ignore it.
   if (Math.abs(nextOrigin - origin) >= 2) {
     source.style.setProperty('--reader-scroll-origin', `${nextOrigin}px`);
+    // Only the write earns a second read, and that read is the expensive one: 27ms on a 224,478px page, because it is the layout the write just moved. Without a write nothing between the two reads can move anything — the first read already forced the flush — so returning it is the same answer for free.
+    return measureDocumentContent(source);
   }
-  return measureDocumentContent(source);
+  return content;
 }
 function measureReaderScrollRange(documentContent, viewportHeight) {
   const scrollHeight = Math.max(documentContent.height, Math.ceil(app.scrollHeight - documentContent.topOffset));

@@ -843,3 +843,167 @@ fn the_vaults_text_is_patched_for_every_format_the_watcher_reports() {
 
     fs::remove_dir_all(&dir).expect("fixture directory is removed");
 }
+
+/// One document as a slice of the read carries it, with the text the read found on disk before anything changed it.
+fn slice_document_at(path: &Path, text: &str) -> CorpusDocument {
+    CorpusDocument {
+        path: path.to_string_lossy().to_string(),
+        label: path
+            .file_stem()
+            .expect("the fixture document has a name")
+            .to_string_lossy()
+            .to_string(),
+        aliases: Vec::new(),
+        text: text.to_string(),
+    }
+}
+
+/// A change made while the vault is being read waits for the read to finish, then lands once. Patched in as it arrived, the slice that replaces the preview would throw it away and a slice arriving later would carry the file back as it was before the save.
+#[test]
+fn a_change_made_during_a_read_lands_once_when_the_read_ends() {
+    let dir = scratch_dir("a_change_made_during_a_read_lands_once_when_the_read_ends");
+    let canonical = fs::canonicalize(&dir).expect("fixture directory canonicalizes");
+    let root = plain_event_path(canonical.clone());
+    let note = plain_event_path(canonical.join("note.md"));
+    let sibling = plain_event_path(canonical.join("sibling.md"));
+    fs::write(&note, "the words the read found").expect("fixture note is written");
+    fs::write(&sibling, "the words the read found").expect("fixture sibling is written");
+    let note_as_read = slice_document_at(&note, "the words the read found");
+    let sibling_as_read = slice_document_at(&sibling, "the words the read found");
+
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus_loading = true;
+    let reading = state.corpus_read.claim();
+
+    // Saved before the read had handed over anything at all.
+    fs::write(&note, "the note says dharma").expect("the note is saved");
+    assert!(
+        !record_or_refresh_corpus_path(&mut state, &note),
+        "a change was patched into text the read still owns"
+    );
+
+    absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![note_as_read],
+        false,
+        Vec::new(),
+        true,
+        false,
+        reading,
+    )
+    .expect("the first sorted slice is kept");
+
+    // Saved again between slices, this time to a document the read has not reached.
+    fs::write(&sibling, "the sibling says dharma").expect("the sibling is saved");
+    assert!(!record_or_refresh_corpus_path(&mut state, &sibling));
+
+    let last = absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![sibling_as_read],
+        false,
+        Vec::new(),
+        false,
+        true,
+        reading,
+    )
+    .expect("the last slice is kept");
+
+    let text = |path: &Path| {
+        let key = path.to_string_lossy().to_string();
+        let found: Vec<&CorpusDocument> = last
+            .corpus
+            .documents
+            .iter()
+            .filter(|document| document.path == key)
+            .collect();
+        assert_eq!(
+            found.len(),
+            1,
+            "{key} is in the vault's text more than once"
+        );
+        found[0].text.clone()
+    };
+    assert!(
+        text(&note).contains("the note says dharma"),
+        "a save made before the read's first slice was lost"
+    );
+    assert!(
+        text(&sibling).contains("the sibling says dharma"),
+        "a save made between two slices was lost"
+    );
+    assert!(
+        state.corpus_changes.is_empty(),
+        "the finished read left its changes waiting for the next one"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+/// Changes kept for a read nobody is waiting on go with it. Replayed later they would name a vault the reader has left, or be read a second time into text the new read has already read fresh.
+#[test]
+fn changes_kept_for_an_abandoned_read_are_discarded() {
+    let root = PathBuf::from("/vault");
+    let changed = PathBuf::from("/vault/note.md");
+
+    let mut left = VaultState::load(None);
+    left.root = Some(root.clone());
+    left.corpus_loading = true;
+    left.corpus_read.claim();
+    record_or_refresh_corpus_path(&mut left, &changed);
+    assert!(!left.corpus_changes.is_empty(), "the change was not kept");
+    left.drop_corpus();
+    assert!(
+        left.corpus_changes.is_empty(),
+        "leaving the vault kept changes about somewhere else"
+    );
+
+    let mut reread = VaultState::load(None);
+    reread.root = Some(root);
+    reread.corpus_loading = true;
+    reread.corpus_read.claim();
+    record_or_refresh_corpus_path(&mut reread, &changed);
+    // The read that was running has to have let go before another can start.
+    reread.corpus_loading = false;
+    corpus_read_to_start(&mut reread).expect("the open vault starts a read");
+    assert!(
+        reread.corpus_changes.is_empty(),
+        "a replacement read kept changes it re-reads off the disk itself"
+    );
+}
+
+/// With no read running there is nothing for a change to wait behind, so it is read straight into the held text — which is what makes a save findable without switching vaults or saving again.
+#[test]
+fn a_change_after_the_read_refreshes_the_held_text_at_once() {
+    let dir = scratch_dir("a_change_after_the_read_refreshes_the_held_text_at_once");
+    let canonical = fs::canonicalize(&dir).expect("fixture directory canonicalizes");
+    let root = plain_event_path(canonical.clone());
+    let note = plain_event_path(canonical.join("note.md"));
+    fs::write(&note, "the words the read found").expect("fixture note is written");
+
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus = Some(Arc::new(VaultCorpus::read(&root)));
+
+    fs::write(&note, "the note says dharma").expect("the note is saved");
+    assert!(
+        record_or_refresh_corpus_path(&mut state, &note),
+        "a save against a finished vault moved nothing"
+    );
+    let corpus = state.corpus.as_ref().expect("the vault's text is held");
+    assert!(
+        corpus
+            .documents
+            .iter()
+            .any(|document| document.text.contains("the note says dharma")),
+        "the save was not findable until the vault was read again"
+    );
+    assert!(
+        state.corpus_changes.is_empty(),
+        "a change with no read running was kept instead of read"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}

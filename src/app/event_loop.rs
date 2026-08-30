@@ -459,7 +459,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             }) => pipe_asks::save(
                 &mut reader,
                 &mut file_watch,
-                &vault_state,
+                &mut vault_state,
                 &mut refresh_book,
                 &path,
                 &expect,
@@ -853,7 +853,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::SaveDocument { format } => editing_cmds::save_document(
                     &mut reader,
                     &mut file_watch,
-                    &vault_state,
+                    &mut vault_state,
                     &mut refresh_book,
                     format.as_deref(),
                 ),

@@ -33,6 +33,7 @@ import { run as runExportingThePage } from './check-shell/exporting-the-page.mjs
 import { run as runAPublishedSite } from './check-shell/a-published-site.mjs';
 import { run as runTheReadingRender } from './check-shell/the-reading-render.mjs';
 import { run as runReadingUnderTheMap } from './check-shell/reading-under-the-map.mjs';
+import { run as runTheReadersScrollOrigin } from './check-shell/the-readers-scroll-origin.mjs';
 import { run as runFilenamesAndTabs } from './check-shell/filenames-and-tabs.mjs';
 import { run as runVaultsAndRecent } from './check-shell/vaults-and-recent.mjs';
 import { run as runTheStartScreen } from './check-shell/the-start-screen.mjs';
@@ -84,6 +85,7 @@ runExportingThePage();
 runAPublishedSite();
 runTheReadingRender();
 runReadingUnderTheMap();
+runTheReadersScrollOrigin();
 runFilenamesAndTabs();
 runVaultsAndRecent();
 runTheStartScreen();

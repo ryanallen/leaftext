@@ -6,6 +6,8 @@
 
 use super::*;
 
+use std::collections::BTreeSet;
+
 /// The library pane's tree source while a vault is active, and the id the page was last told about. Held by the loop so a folder read that lands after a switch can be discarded.
 pub(crate) struct VaultState {
     /// Read-write connection to `manifest.db`. `open_db` applies the migrations on the way in, so the tables are already there.
@@ -28,6 +30,8 @@ pub(crate) struct VaultState {
     pub(crate) corpus_read: WorkGeneration,
     /// The text above is part of a vault, not all of it: the read has handed over some slices and not the last. An answer scanned over it is true of what has been read and no more, so it is never kept, and the pane keeps its ring.
     pub(crate) corpus_partial: bool,
+    /// Documents that changed while the read was running, to be re-read once it has finished. A change patched into partial text is thrown away by the slice that replaces the preview, or appended again by a slice that then reads the same file — so the change waits here instead, and the whole-vault seam replays it.
+    pub(crate) corpus_changes: BTreeSet<PathBuf>,
     /// What asked for the corpus while it was being read.
     pub(crate) pending_graph: Option<GraphRequest>,
     pub(crate) pending_search: Option<TypedQuery>,
@@ -72,6 +76,7 @@ impl VaultState {
             corpus_loading: false,
             corpus_read: WorkGeneration::default(),
             corpus_partial: false,
+            corpus_changes: BTreeSet::new(),
             pending_graph: None,
             pending_search: None,
             status_loading: HashSet::new(),
@@ -103,6 +108,8 @@ impl VaultState {
     pub(crate) fn drop_corpus(&mut self) {
         self.corpus = None;
         self.corpus_generation += 1;
+        // Changes kept for the read we just abandoned are about somewhere else now, and the vault they name is not the one being read into.
+        self.corpus_changes.clear();
         self.pending_graph = None;
         self.pending_search = None;
         self.last_graph = None;
@@ -483,6 +490,8 @@ pub(crate) fn corpus_read_to_start(state: &mut VaultState) -> Option<CorpusRead>
     }
     let root = state.root.clone()?;
     state.corpus_loading = true;
+    // The read about to start re-reads every document itself, so anything kept for the read before it would be replayed against text that already holds it.
+    state.corpus_changes.clear();
     Some(CorpusRead {
         root,
         wanted: state.corpus_read.claim(),
@@ -571,6 +580,10 @@ pub(crate) fn absorb_corpus_slice(
         }
     }
     state.corpus_partial = !last;
+    // The text is the whole vault now, so the changes held back while it was partial are read into it here — before the clone below, which is what the map, the filter hints and the final search all answer from.
+    if last {
+        replay_corpus_changes(state);
+    }
     // Every slice is a change to the text, which is what makes a kept answer and the narrowing shortcut refuse themselves: both turn on this number, so neither can hand back a whole vault's answer that saw half of it.
     state.corpus_generation += 1;
     let corpus = Arc::clone(state.corpus.as_ref()?);
@@ -724,7 +737,7 @@ pub(crate) fn corpus_change_redraw(
     changed: &Path,
     graph_showing: bool,
 ) -> GraphRedraw {
-    let corpus_moved = patch_vault_corpus(state, changed);
+    let corpus_moved = record_or_refresh_corpus_path(state, changed);
     if !graph_showing {
         return GraphRedraw::Nothing;
     }
@@ -749,6 +762,25 @@ pub(crate) fn corpus_change_redraw(
             }
         }
         _ => GraphRedraw::Nothing,
+    }
+}
+
+/// The one door every change to a document takes, whether it was saved here or written by something else: re-read it now against finished text, or keep it until the read filling that text has handed over its last slice.
+///
+/// Nothing is patched into a partial vault, because the read still owns it — the slice that replaces the preview would throw the change away, and a slice arriving later reads the same file off the disk as it was before the save. Says whether the held text actually moved, which is false for every kept path: the map is redrawn off this answer, and the vault it would be drawn from is half a vault.
+pub(crate) fn record_or_refresh_corpus_path(state: &mut VaultState, changed: &Path) -> bool {
+    if state.corpus_loading {
+        // A set, so a file saved five times during one read is one re-read at the end of it.
+        state.corpus_changes.insert(changed.to_path_buf());
+        return false;
+    }
+    patch_vault_corpus(state, changed)
+}
+
+/// Re-read every path kept while the read was running, now that the last slice has landed and the text is the whole vault. Each is read once however often it changed, and a path the read already carried in its final shape moves nothing.
+fn replay_corpus_changes(state: &mut VaultState) {
+    for changed in std::mem::take(&mut state.corpus_changes) {
+        patch_vault_corpus(state, &changed);
     }
 }
 

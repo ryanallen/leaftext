@@ -512,3 +512,33 @@ fn only_a_document_that_moved_redraws_the_map() {
         GraphRedraw::Nothing
     ));
 }
+
+/// A change reported while the vault is still being read never touches the held text, so it never redraws the map either: the map would be drawn off however much of the vault had arrived, and the reader would watch it tear down and rebuild once a slice.
+#[test]
+fn a_watched_change_during_a_read_neither_patches_the_text_nor_redraws_the_map() {
+    let mut state = VaultState::load(None);
+    state.root = Some(PathBuf::from("/vault"));
+    state.corpus = Some(Arc::new(VaultCorpus {
+        root: PathBuf::from("/vault"),
+        documents: Vec::new(),
+        truncated: false,
+        skipped: Vec::new(),
+    }));
+    state.last_graph = Some(PendingGraph {
+        document: None,
+        request: GraphRequest::default(),
+    });
+    state.corpus_loading = true;
+
+    assert!(
+        matches!(
+            corpus_change_redraw(&mut state, Path::new("/vault/other.md"), true),
+            GraphRedraw::Nothing
+        ),
+        "the map was rebuilt off however much of the vault had been read"
+    );
+    assert!(
+        state.corpus_changes.contains(Path::new("/vault/other.md")),
+        "the change was dropped rather than kept for the end of the read"
+    );
+}

@@ -272,7 +272,7 @@ pub(crate) fn save_active_document(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
-    vault_state: &VaultState,
+    vault_state: &mut VaultState,
     refresh_book: &mut RefreshBook,
 ) -> Result<(), String> {
     if let Some(said) = save_refusal_script(workspace) {
@@ -301,6 +301,8 @@ pub(crate) fn save_active_document(
             file_watch.active_hash = Some(content_hash(&text));
             // The bytes are on this machine now, which is the whole guarantee: a document whose vault keeps its files somewhere else is sent on from here, and a send that fails cannot take back what was typed.
             push_saved_document(vault_state, refresh_book, webview, &path);
+            // The watcher never brings this one back: the hash above is what makes our own write a no-op, and the active-document branch returns before the corpus patch. Unasked here, the note somebody just saved is unfindable until the vault is read again.
+            record_or_refresh_corpus_path(vault_state, &path);
             (save_result_script(&path_str, true, None), Ok(()))
         }
         Err(error) => {
@@ -806,7 +808,7 @@ pub(crate) fn pipe_save_document(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
-    vault_state: &VaultState,
+    vault_state: &mut VaultState,
     refresh_book: &mut RefreshBook,
     path: &Path,
     expect: &str,
@@ -984,7 +986,7 @@ pub(crate) fn lint_source(
 pub(crate) fn save_document(
     reader: &mut Reader,
     file_watch: &mut FileWatch,
-    vault_state: &VaultState,
+    vault_state: &mut VaultState,
     refresh_book: &mut RefreshBook,
     format: Option<&str>,
 ) {

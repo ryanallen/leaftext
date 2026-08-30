@@ -77,7 +77,7 @@ pub(crate) fn task(
 pub(crate) fn save(
     reader: &mut Reader,
     file_watch: &mut FileWatch,
-    vault_state: &VaultState,
+    vault_state: &mut VaultState,
     refresh_book: &mut RefreshBook,
     path: &Path,
     expect: &str,

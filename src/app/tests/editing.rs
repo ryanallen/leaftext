@@ -295,9 +295,9 @@ fn a_save_of_a_document_the_app_holds_no_buffer_for_says_so_rather_than_answerin
     workspace.open_path(gone);
 
     let mut watch = FileWatch::default();
-    let vaults = VaultState::load(None);
+    let mut vaults = VaultState::load(None);
     let mut book = RefreshBook::default();
-    let answer = save_active_document(None, &mut workspace, &mut watch, &vaults, &mut book);
+    let answer = save_active_document(None, &mut workspace, &mut watch, &mut vaults, &mut book);
 
     assert_eq!(
         answer,
@@ -501,6 +501,131 @@ fn a_tick_the_file_refused_keeps_its_dirty_mark_rather_than_clearing_the_chrome(
         answer.said.as_deref(),
         Some("tasks.md was not changed: the file could not be read."),
         "and the sentence says nothing happened, because nothing did"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// A vault with one note in it, open in the workspace with an edit buffer holding `typed`, ready to be saved.
+fn vault_with_an_open_note(
+    label: &str,
+    on_disk: &str,
+    typed: &str,
+) -> (PathBuf, PathBuf, Workspace) {
+    let dir = scratch_dir(label);
+    let note = dir.join("note.md");
+    fs::write(&note, on_disk).expect("the fixture note is written");
+    let mut workspace = Workspace::default();
+    workspace.open_path(note.clone());
+    workspace.tabs[0].edit = Some(EditableDocument::new(
+        note.clone(),
+        SourceText::utf8(typed.to_string()),
+    ));
+    (dir, note, workspace)
+}
+
+/// The note somebody just saved is findable straight away. The watcher never brings this one back — the save marks its own event as already seen — so unless Save says so, search answers out of the text the vault was read with.
+#[test]
+fn saving_the_open_note_replaces_its_searchable_text_at_once() {
+    let (dir, note, mut workspace) = vault_with_an_open_note(
+        "saving_the_open_note_replaces_its_searchable_text_at_once",
+        "# Note\n\nthe words the vault was read with\n",
+        "# Note\n\nthe note says dharma\n",
+    );
+    let root = plain_event_path(fs::canonicalize(&dir).expect("the fixture canonicalizes"));
+    let note = plain_event_path(fs::canonicalize(&note).expect("the note canonicalizes"));
+
+    let mut vaults = VaultState::load(None);
+    vaults.root = Some(root.clone());
+    vaults.corpus = Some(Arc::new(VaultCorpus::read(&root)));
+    let mut watch = FileWatch::default();
+    let mut book = RefreshBook::default();
+
+    save_active_document(None, &mut workspace, &mut watch, &mut vaults, &mut book)
+        .expect("the note is written");
+
+    assert!(
+        vaults
+            .corpus
+            .as_ref()
+            .expect("the vault's text is held")
+            .documents
+            .iter()
+            .any(|document| document.text.contains("the note says dharma")),
+        "the save was not findable until the vault was read again"
+    );
+    assert_eq!(
+        watch.active_hash,
+        Some(content_hash("# Note\n\nthe note says dharma\n")),
+        "the save stopped suppressing its own reload"
+    );
+    assert!(
+        !vaults.corpus_changes.contains(&note),
+        "a save with no read running was kept instead of read"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// Saved while the vault is still being read, the note waits rather than being patched into text the read owns — and the finished read carries it, once.
+#[test]
+fn saving_the_open_note_during_a_read_lands_once_when_the_read_ends() {
+    let (dir, note, mut workspace) = vault_with_an_open_note(
+        "saving_the_open_note_during_a_read_lands_once_when_the_read_ends",
+        "# Note\n\nthe words the vault was read with\n",
+        "# Note\n\nthe note says dharma\n",
+    );
+    let root = plain_event_path(fs::canonicalize(&dir).expect("the fixture canonicalizes"));
+    let note = plain_event_path(fs::canonicalize(&note).expect("the note canonicalizes"));
+    let as_read = CorpusDocument {
+        path: note.to_string_lossy().to_string(),
+        label: "note".to_string(),
+        aliases: Vec::new(),
+        text: "# Note\n\nthe words the vault was read with\n".to_string(),
+    };
+
+    let mut vaults = VaultState::load(None);
+    vaults.root = Some(root.clone());
+    vaults.corpus_loading = true;
+    let reading = vaults.corpus_read.claim();
+    let mut watch = FileWatch::default();
+    let mut book = RefreshBook::default();
+
+    save_active_document(None, &mut workspace, &mut watch, &mut vaults, &mut book)
+        .expect("the note is written");
+    assert!(
+        vaults.corpus_changes.contains(&note),
+        "a save made mid-read was not kept for the end of it"
+    );
+
+    // The read reaches the note it was already walking towards, and hands over the bytes it found before the save.
+    let last = absorb_corpus_slice(
+        &mut vaults,
+        &root,
+        vec![as_read],
+        false,
+        Vec::new(),
+        true,
+        true,
+        reading,
+    )
+    .expect("the last slice is kept");
+
+    let saved: Vec<&CorpusDocument> = last
+        .corpus
+        .documents
+        .iter()
+        .filter(|document| document.text.contains("the note says dharma"))
+        .collect();
+    assert_eq!(
+        saved.len(),
+        1,
+        "the note saved during the read is missing from the finished vault, or in it twice"
+    );
+    assert_eq!(
+        last.corpus.documents.len(),
+        1,
+        "the replay added a second row for a file the read had already carried"
     );
 
     let _ = fs::remove_dir_all(&dir);
