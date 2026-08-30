@@ -14,7 +14,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button |
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out; every folder you open appears at once |
-| [The open document's headings](#the-open-documents-headings) | Open a document and the pane holds its outline instead of the files, with the heading you are reading lit; a back row puts the files back |
+| [The open document's headings](#the-open-documents-headings) | Open a document and the pane holds its outline instead of the files, the page's own title first and the heading you are reading lit; a back row puts the files back |
 | [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault |
 | [Skipped folders](#skipped-folders) | A folder a machine filled — build output, a package cache — is listed and openable, and not read or watched. The search line says when one was left out |
@@ -96,7 +96,7 @@ Each call reads exactly one directory, so nothing below what you opened is ever 
 
 ### The open document's headings
 
-Opening a document swaps the file list for that document's [outline](02-navigation.md#outline) — its headings, in order, indented by level, with the one you are reading lit as you scroll. Clicking a row jumps to that heading.
+Opening a document swaps the file list for that document's [outline](02-navigation.md#outline) — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit as you scroll. Clicking a row jumps to that heading.
 
 - A back row above the list wears the folder's name and puts the files back, the same way the row above a folder listing steps out of it.
 - Under that row, **On this page** names the list, with how many headings it holds at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
