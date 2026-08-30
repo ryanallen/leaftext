@@ -968,6 +968,8 @@ function loadFlowChips() {
           flowChipCache.set(shape.id, '');
         }
       }
+      // The grid the picker built before any of this landed holds forty-seven empty buttons, so it goes rather than being held blank for the rest of the session.
+      forgetFlowShapeGrid();
       if (flowSession) drawFlowPicker();
     })
     .catch(() => {});

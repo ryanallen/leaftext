@@ -22,12 +22,20 @@ const SPEED_READER_SKIP_SELECTOR = [
   '[data-speed-reader-skip]',
   '.speed-reader-anchor',
 ].join(',');
-const speedReaderSegmenter = (typeof Intl !== 'undefined' && Intl.Segmenter)
-  ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-  : null;
+// Building the splitter is the browser standing a language service up, and that is nearly the whole of what it costs — so it waits for the first word a reader actually starts on rather than being paid by every launch. Kept from that call on; `null` where the browser has no `Intl.Segmenter`, which is why the held answer is told apart by `undefined` rather than by being falsy.
+let speedReaderSegmenterHeld;
+function speedReaderSegmenter() {
+  if (speedReaderSegmenterHeld === undefined) {
+    speedReaderSegmenterHeld = (typeof Intl !== 'undefined' && Intl.Segmenter)
+      ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+      : null;
+  }
+  return speedReaderSegmenterHeld;
+}
 function speedReaderGraphemes(text) {
-  if (speedReaderSegmenter) {
-    return Array.from(speedReaderSegmenter.segment(text), (part) => part.segment);
+  const segmenter = speedReaderSegmenter();
+  if (segmenter) {
+    return Array.from(segmenter.segment(text), (part) => part.segment);
   }
   return Array.from(text);
 }

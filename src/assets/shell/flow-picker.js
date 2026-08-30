@@ -50,7 +50,10 @@ function drawFlowPicker(options) {
   const graph = flowSession && flowSession.graph;
   const selection = flowSelection;
   flowPickerHead.textContent = '';
-  flowPickerBody.textContent = '';
+  // Only what the selection draws goes. The shape grid is left standing where it is: nothing about it changes with the selection but which one button is marked.
+  for (const child of [...flowPickerBody.children]) {
+    if (!flowShapeHeld || !flowShapeHeld.has(child)) child.remove();
+  }
   const node = graph && selection && selection.kind === 'node' ? flowFindNode(graph, selection.id) : null;
   const edge = graph && selection && selection.kind === 'edge' ? flowFindEdge(graph, selection.id) : null;
   const adding = !!flowPickerAdd && !!graph;
@@ -65,25 +68,27 @@ function drawFlowPicker(options) {
   flowPickerHead.appendChild(adding ? flowPickerNameField() : flowPickerField(graph, node, edge));
 
   // A box picks its shape; a line picks its style and what sits at its tips. Every group is generated from the table it belongs to.
-  if (adding) {
-    const make = flowPickerAdd;
-    for (const family of flowShapeFamilies()) {
-      flowPickerChoices(family.name, family.shapes, null, (id) => flowShapeChip(id), (id) => {
-        const named = flowPickerName;
-        flowPickerAdd = null;
-        flowPickerName = '';
-        make(id, named);
-      });
-    }
-  } else if (node) {
-    for (const extra of FLOW_NODE_EXTRAS) flowPickerExtraField(graph, node, extra);
-    for (const family of flowShapeFamilies()) {
-      flowPickerChoices(family.name, family.shapes, node.shape, (id) => flowShapeChip(id), (id) => {
-        node.shape = id;
-        flowGraphChanged();
-      });
-    }
+  if (adding || node) {
+    // Written again on every draw, and asked for as the button is pressed. A held button cannot carry the closure a redraw made, and one that did would put the shape on the box that was selected two clicks ago.
+    flowShapePress = adding
+      ? (id) => {
+          const make = flowPickerAdd;
+          const named = flowPickerName;
+          flowPickerAdd = null;
+          flowPickerName = '';
+          if (make) make(id, named);
+        }
+      : (id) => {
+          node.shape = id;
+          flowGraphChanged();
+        };
+    if (node) for (const extra of FLOW_NODE_EXTRAS) flowPickerExtraField(graph, node, extra);
+    flowShapeGridStands();
+    markFlowShape(node ? node.shape : null);
   } else {
+    // A line has two grids of its own, so the shape grid steps out of the body until a box is picked again.
+    flowShapePress = null;
+    flowShapeGridStandsDown();
     // An invisible line is the one style that takes no ends — mermaid spells it `~~~` and nothing else. Picking it drops the ends; picking an end back makes the line solid again, rather than offering a spelling that is not.
     flowPickerChoices('Line', FLOW_EDGE_LINES, edge.line, (id) => flowEdgeChip(id, 'none'), (id) => {
       edge.line = id;
@@ -153,10 +158,7 @@ const FLOW_NODE_EXTRAS = [
 
 // Typed, not picked: a link and a picture are addresses, and an icon is one of fifty-seven names — none of them a short row of chips.
 function flowPickerExtraField(graph, node, extra) {
-  const heading = document.createElement('div');
-  heading.className = 'flow-menu-heading';
-  heading.textContent = extra.label;
-  flowPickerBody.appendChild(heading);
+  flowPickerPlace(flowPickerHeading(extra.label));
   const field = document.createElement('input');
   field.type = 'text';
   field.className = 'flow-field';
@@ -173,31 +175,104 @@ function flowPickerExtraField(graph, node, extra) {
     queueFlowDiagram();
   });
   field.addEventListener('change', () => flowGraphChanged());
-  flowPickerBody.appendChild(field);
+  flowPickerPlace(field);
 }
 
-// One heading and the run of choices under it, each drawn by `chip` and applied by `apply`. The same rows the right-click menu is built from, so a shape reads the same wherever it is offered.
+// One heading and the run of choices under it, each drawn by `chip` and applied by `apply`. The same rows the right-click menu is built from, so a shape reads the same wherever it is offered. Only the line and its ends are drawn this way: their pictures come from the style the selected line carries, so they really do change with the selection.
 function flowPickerChoices(caption, options, current, chip, apply) {
   if (!options.length) return;
+  flowPickerPlace(flowPickerHeading(caption));
+  for (const option of options) {
+    const button = flowPickerChoice(caption, option, chip(option.id), apply);
+    if (option.id === current) button.classList.add('is-current');
+    flowPickerPlace(button);
+  }
+}
+
+function flowPickerHeading(caption) {
   const heading = document.createElement('div');
   heading.className = 'flow-menu-heading';
   heading.textContent = caption;
-  flowPickerBody.appendChild(heading);
-  for (const option of options) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'flow-menu-item' + (option.id === current ? ' is-current' : '');
-    button.title = option.hint ? option.label + ' — ' + option.hint : option.label;
-    button.setAttribute('aria-label', caption + ': ' + option.label);
-    button.innerHTML = chip(option.id);
-    const text = document.createElement('span');
-    text.textContent = option.label;
-    button.appendChild(text);
-    button.addEventListener('click', () => apply(option.id));
-    if (option.hint) {
-      button.addEventListener('pointerenter', () => setFlowHint(option.label + ' — ' + option.hint));
-      button.addEventListener('pointerleave', restoreFlowHint);
-    }
-    flowPickerBody.appendChild(button);
+  return heading;
+}
+
+function flowPickerChoice(caption, option, chip, apply) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'flow-menu-item';
+  button.title = option.hint ? option.label + ' — ' + option.hint : option.label;
+  button.setAttribute('aria-label', caption + ': ' + option.label);
+  button.innerHTML = chip;
+  const text = document.createElement('span');
+  text.textContent = option.label;
+  button.appendChild(text);
+  button.addEventListener('click', () => apply(option.id));
+  if (option.hint) {
+    button.addEventListener('pointerenter', () => setFlowHint(option.label + ' — ' + option.hint));
+    button.addEventListener('pointerleave', restoreFlowHint);
   }
+  return button;
+}
+
+// Where a part drawn from the selection goes: in front of the held grid while it is standing, so the first heading in the body is the one that was always first and still wears no top margin, and on the end while it is not. The delete button is the one thing appended past the grid.
+function flowPickerPlace(element) {
+  const first = flowShapeGrid && flowShapeGrid.length && flowShapeGrid[0].parentElement === flowPickerBody ? flowShapeGrid[0] : null;
+  if (first) flowPickerBody.insertBefore(element, first);
+  else flowPickerBody.appendChild(element);
+}
+
+// ---- the shape grid, built once --------------------------------------------
+//
+// Eight headings and forty-seven buttons, each with a whole SVG parsed into it. None of it depends on the selection: the shape table, the families and the pictures are fixed for the life of the app, and the only per-selection fact in the grid is which one button wears `is-current`. Rebuilding it on every redraw cost a click from box to box 13.2ms of a 16.7ms frame; leaving it standing costs 0.7ms.
+//
+// Held here rather than in state.js because this fragment is the only thing that touches it. flow-canvas.js reaches the throwaway below by name, and a function declaration is there whichever way round the two fragments are served.
+let flowShapeGrid = null;
+let flowShapeHeld = null;
+let flowShapeButtons = null;
+let flowShapeMarked = null;
+let flowShapePress = null;
+
+function flowShapeGridStands() {
+  if (!flowShapeGrid) {
+    flowShapeGrid = [];
+    flowShapeButtons = new Map();
+    for (const family of flowShapeFamilies()) {
+      if (!family.shapes.length) continue;
+      flowShapeGrid.push(flowPickerHeading(family.name));
+      for (const shape of family.shapes) {
+        const button = flowPickerChoice(family.name, shape, flowShapeChip(shape.id), (id) => {
+          if (flowShapePress) flowShapePress(id);
+        });
+        flowShapeButtons.set(shape.id, button);
+        flowShapeGrid.push(button);
+      }
+    }
+    flowShapeHeld = new Set(flowShapeGrid);
+    flowShapeMarked = null;
+  }
+  if (flowShapeGrid.length && flowShapeGrid[0].parentElement === flowPickerBody) return;
+  for (const element of flowShapeGrid) flowPickerBody.appendChild(element);
+}
+
+function flowShapeGridStandsDown() {
+  if (!flowShapeGrid) return;
+  for (const element of flowShapeGrid) element.remove();
+}
+
+// The mark moves rather than being written into forty-seven class strings.
+function markFlowShape(id) {
+  const button = (id && flowShapeButtons && flowShapeButtons.get(id)) || null;
+  if (flowShapeMarked === button) return;
+  if (flowShapeMarked) flowShapeMarked.classList.remove('is-current');
+  if (button) button.classList.add('is-current');
+  flowShapeMarked = button;
+}
+
+// The first grid of a session is built before mermaid has drawn one picture, so every button in it is empty. It is thrown away the moment the pictures land; held instead, it would keep forty-seven blank buttons for the rest of the session.
+function forgetFlowShapeGrid() {
+  flowShapeGridStandsDown();
+  flowShapeGrid = null;
+  flowShapeHeld = null;
+  flowShapeButtons = null;
+  flowShapeMarked = null;
 }

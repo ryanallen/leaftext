@@ -1090,6 +1090,94 @@ export function run() {
     if (said !== wanted) throw new Error(`the pass ran its steps as ${said} — every prepare has to land before the first reading, and every reading before the first write, or the alternation is back`);
   });
 
+  // ---- 2x. no language service is built while the front end is loading -------
+  //
+  // Standing a collator or a grapheme splitter up is the browser building a language service, and the first one of any kind a page asks for pays a one-time bootstrap of about six milliseconds before its own cost is added on top. Neither the shape picker's alphabetical order nor the speed reader's grapheme walk is wanted by the document being opened, so neither is built until somebody opens the feature that reads it — the launch used to spend nearly nine milliseconds on the pair for a picker and a reader nobody had started.
+  //
+  // The page is booted again with a counting stand-in for `Intl` handed in as an extra, so what is counted is what the fragments actually built rather than what they could have built.
+
+  const segmentersBuilt = { count: 0 };
+  const countingIntl = {
+    Segmenter: class extends Intl.Segmenter {
+      constructor(...args) {
+        super(...args);
+        segmentersBuilt.count += 1;
+      }
+    },
+    Collator: Intl.Collator,
+    NumberFormat: Intl.NumberFormat,
+    DateTimeFormat: Intl.DateTimeFormat,
+  };
+  const counting = runShell(source, { Intl: countingIntl });
+  const splittersAtLoad = segmentersBuilt.count;
+
+  check('the front end builds no grapheme splitter while it loads, and one on the first word it splits', () => {
+    if (splittersAtLoad) throw new Error(`a grapheme splitter was built while the fragments loaded (${splittersAtLoad} of them) — that is a language service every launch pays for and nothing on screen asked for`);
+    counting.speedReaderGraphemes('word');
+    if (segmentersBuilt.count !== 1) throw new Error(`splitting the first word built ${segmentersBuilt.count} splitters rather than one`);
+    counting.speedReaderGraphemes('another');
+    if (segmentersBuilt.count !== 1) throw new Error('splitting a second word built another splitter, so the first one is not being kept');
+    // Both are written as escapes: each is a run of code points an editor draws as one mark, so the characters themselves would leave the source saying nothing about what is being counted.
+    const family = counting.speedReaderGraphemes('\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}');
+    if (family.length !== 1) throw new Error(`a family emoji came back as ${family.length} pieces rather than one grapheme`);
+    const accented = counting.speedReaderGraphemes('e\u0301');
+    if (accented.length !== 1) throw new Error(`a letter and its accent came back as ${accented.length} pieces rather than one grapheme`);
+  });
+
+  // A browser with no splitter at all: the published site and an embedded document run these same fragments, so the walk by code point behind the splitter is proved rather than assumed.
+  const withoutIntl = runShell(source, { Intl: undefined });
+
+  check('a browser with no grapheme splitter still splits a word into its characters', () => {
+    const word = withoutIntl.speedReaderGraphemes('caf\u00e9');
+    if (word.join('|') !== 'c|a|f|\u00e9') throw new Error(`the fallback split "caf\u00e9" as ${word.join('|')}`);
+    const emoji = withoutIntl.speedReaderGraphemes('\u{1F600}');
+    if (emoji.length !== 1) throw new Error(`the fallback split one emoji into ${emoji.length} pieces rather than walking it by code point`);
+    const accented = withoutIntl.speedReaderGraphemes('e\u0301');
+    if (accented.length !== 2) throw new Error(`the fallback answered ${accented.length} pieces for a letter and its accent — with no splitter it walks code points, so this run is not the fallback at all`);
+  });
+
+  // The collator behind the shape picker's alphabetical order is stood up by `localeCompare` rather than by a name the counting stand-in above could stand in for, so this half is read off the assembled script instead of off a boot. It holds every kind at once: a sort, an `Intl` service of any sort, and the locale-aware number and date spellings.
+
+  /** Every top-level statement that stands a language service up: the block a line at the start of a line opens, with the indented lines under it, less the `function` and `class` declarations, whose bodies are paid for by whoever calls them. */
+  const languageServicesAtLoad = (script) => {
+    const lines = script.split('\n');
+    const found = [];
+    for (let at = 0; at < lines.length; at += 1) {
+      const head = lines[at];
+      // A statement of its own starts at the start of a line, which is the rule the top-level name scan above reads by too: everything inside a block is indented.
+      if (!head || /^\s/.test(head)) continue;
+      const block = [head];
+      for (let under = at + 1; under < lines.length && (lines[under] === '' || /^\s/.test(lines[under])); under += 1) block.push(lines[under]);
+      if (/^(?:async\s+)?function\b|^class\b/.test(head)) continue;
+      for (const line of block) {
+        // A line comment is prose about the code rather than the code, and the comments beside these very lines carry the names being looked for.
+        const code = line.replace(/\/\/.*$/, '');
+        if (/localeCompare|new Intl\.|\.toLocale/.test(code)) found.push({ head: head.trim(), line: code.trim() });
+      }
+    }
+    return found;
+  };
+
+  check('no language service is stood up while the front end loads', () => {
+    // The planted source comes first, because a scan that finds nothing because it is broken passes exactly like one that finds nothing because the tree is clean.
+    const planted = [
+      'const sorted = labels.slice().sort((a, b) => a.localeCompare(b));',
+      'function later() {',
+      '  const also = labels.slice().sort((a, b) => a.localeCompare(b));',
+      '  return also.length + new Intl.Segmenter().segment(labels[0]).length;',
+      '}',
+    ].join('\n');
+    const plantedFound = languageServicesAtLoad(planted);
+    if (!plantedFound.some((one) => one.head.startsWith('const sorted'))) throw new Error('this scan missed a language service stood up at the top level');
+    if (plantedFound.some((one) => one.head.startsWith('function later'))) throw new Error('this scan named a language service inside a function body, which is paid for by whoever calls it rather than by the launch');
+
+    const built = languageServicesAtLoad(source);
+    if (built.length) {
+      const named = built.map((one) => one.line).join('; ');
+      throw new Error(`a language service is stood up while the front end loads (${built.length} of them): ${named} — the first of any kind costs the launch about six milliseconds of bootstrap before its own cost, so hold it behind a function that builds it on its first call`);
+    }
+  });
+
   // ---- 2r. one node list, read under the name the page uses -------------------
   //
   // The page reads what a container is holding by `childNodes` and by its two ends, and a run of words counts as one of them: the selection toolbar's tag fold moves each child into a replacement until the first one is gone, so an end that skipped words would move the elements, drop the sentence, and read back as a fold that worked.

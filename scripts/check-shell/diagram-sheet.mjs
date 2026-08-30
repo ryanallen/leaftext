@@ -1258,6 +1258,104 @@ export function run() {
     }
   });
 
+  // Nothing in the shape grid is drawn from the selection: the table, the eight families and the little pictures are all fixed for the life of the app, so the same forty-seven buttons answer every draw and the one fact that moves is which of them is marked. Rebuilding them spent 13.2ms of a 16.7ms frame on a click from one box to the next; the same redraw with the grid left standing is 0.7. The proof is identity — the same objects come back — because a grid rebuilt out of the same table would pass every count.
+  check('the shape grid is built once, and a redraw moves only the mark', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const body = read('flowPickerBody');
+    if (!body) throw new Error('the page has no picker body');
+    const chip = '<svg class="flow-chip"></svg>';
+    const spot = (element) => [...body.children].indexOf(element);
+    const wearing = (button) => [...button.children].some((child) => child.classList && child.classList.contains('flow-chip'));
+    const press = (button) => {
+      for (const handler of button.listeners.get('click') || []) handler({ preventDefault() {}, stopPropagation() {} });
+    };
+    const marked = () => {
+      const on = [...read('flowShapeButtons').entries()].filter(([, button]) => button.classList.contains('is-current'));
+      if (on.length > 1) throw new Error(`${on.length} shape buttons are marked at once`);
+      return on.length ? on[0][0] : null;
+    };
+    try {
+      read(`flowSession = { save: null, text: 'flowchart TD\\n  A["a"] --> B{"b"}', graph: null };`);
+      read('flowSession.graph = parseFlow(flowSession.text);');
+      const boxes = read('flowSession.graph.nodes').map((one) => one.id);
+      const line = read('flowSession.graph.edges')[0].id;
+      if (boxes.length !== 2) throw new Error(`the stand parsed ${boxes.length} boxes`);
+
+      read(`flowSelection = { kind: 'node', id: '${boxes[0]}' };`);
+      booted.drawFlowPicker();
+      const grid = read('flowShapeGrid');
+      const buttons = read('flowShapeButtons');
+      const shapes = read('flowShapeCatalog()').length;
+      if (buttons.size !== shapes) throw new Error(`the grid holds ${buttons.size} buttons against ${shapes} shapes`);
+      if (grid.length !== shapes + 8) throw new Error(`the grid holds ${grid.length} elements, which is not eight headings and ${shapes} buttons`);
+      if (marked() !== 'rect') throw new Error(`the first box is marked ${marked()}`);
+      // Everything drawn from the selection stands in front of the grid, so the body's first heading is still the one wearing no top margin. Delete is the one thing past it.
+      if (spot(grid[0]) < 3) throw new Error(`the grid starts at ${spot(grid[0])}, ahead of the fields the selection draws`);
+      const last = [...body.children].pop();
+      if (!last.classList.contains('flow-delete')) throw new Error('delete is not the last thing in the body');
+      if (buttons.get('rect').innerHTML.includes('svg')) throw new Error('a button carried a picture before any was drawn');
+
+      // The second box: the same buttons answer, and the mark has moved to the one it names.
+      read(`flowSelection = { kind: 'node', id: '${boxes[1]}' };`);
+      booted.drawFlowPicker();
+      if (read('flowShapeGrid') !== grid) throw new Error('a second draw built a new grid');
+      if (read('flowShapeButtons').get('rect') !== buttons.get('rect')) throw new Error('a second draw replaced the buttons');
+      if (marked() !== 'diam') throw new Error(`the second box is marked ${marked()}`);
+
+      // A line has two grids of its own and no shapes at all, so the held grid steps out of the body and comes back when a box is picked again.
+      read(`flowSelection = { kind: 'edge', id: '${line}' };`);
+      booted.drawFlowPicker();
+      if (grid.some((element) => spot(element) >= 0)) throw new Error('the shape grid stayed in the body under a selected line');
+      const captions = [...body.children].filter((one) => one.classList.contains('flow-menu-heading')).map((one) => one.textContent);
+      if (captions.join() !== 'Line,Ends') throw new Error(`a selected line drew the headings ${captions.join(', ')}`);
+      read(`flowSelection = { kind: 'node', id: '${boxes[0]}' };`);
+      booted.drawFlowPicker();
+      if (read('flowShapeGrid') !== grid) throw new Error('coming back to a box built a new grid');
+      if (spot(grid[0]) < 3) throw new Error('coming back to a box left the grid out of the body, or ahead of the fields');
+      if (marked() !== 'rect') throw new Error(`coming back to the first box marked ${marked()}`);
+
+      // A press asks what it means now, rather than carrying what it meant when the button was built: a held closure would put the shape on the box selected two clicks ago.
+      read(`flowSelection = { kind: 'node', id: '${boxes[1]}' };`);
+      booted.drawFlowPicker();
+      press(buttons.get('cyl'));
+      const shaped = read('flowSession.graph.nodes').map((one) => one.shape);
+      if (shaped.join() !== 'rect,cyl') throw new Error(`pressing a shape after a redraw left the boxes ${shaped.join(', ')}`);
+      if (marked() !== 'cyl') throw new Error(`the press left the mark on ${marked()}`);
+
+      // The pictures land after the first grid was built out of an empty cache, so that grid goes rather than holding forty-seven blank buttons for the rest of the session.
+      for (const shape of read('flowShapeCatalog()')) read('flowChipCache').set(shape.id, chip);
+      booted.forgetFlowShapeGrid();
+      booted.drawFlowPicker();
+      const filled = read('flowShapeButtons');
+      if (filled === buttons) throw new Error('the grid survived the pictures landing');
+      const bare = [...filled.values()].filter((button) => !wearing(button));
+      if (bare.length) throw new Error(`${bare.length} buttons came back without their picture`);
+      if (marked() !== 'cyl') throw new Error(`the rebuilt grid marked ${marked()}`);
+
+      // The same buttons serve the add path, where a press carries the name that was typed and clears both, so the sheet is not still adding once the box has landed.
+      const made = [];
+      booted.openFlowAddPicker((id, named) => made.push([id, named]));
+      read(`flowPickerName = 'Read the file';`);
+      booted.drawFlowPicker();
+      if (marked() !== null) throw new Error(`the add grid marked ${marked()}`);
+      press(filled.get('cyl'));
+      if (made.length !== 1 || made[0][0] !== 'cyl' || made[0][1] !== 'Read the file') {
+        throw new Error(`the add press made ${JSON.stringify(made)}`);
+      }
+      if (read('flowPickerAdd') || read('flowPickerName')) throw new Error('the add press left the sheet still adding');
+    } finally {
+      read('flowPickerAdd = null;');
+      read(`flowPickerName = '';`);
+      read('flowSession = null;');
+      read('flowSelection = null;');
+      read('flowChipCache.clear();');
+      booted.forgetFlowShapeGrid();
+      read(`flowPickerBody.textContent = '';`);
+      read(`flowPickerHead.textContent = '';`);
+      booted.__frames.drain();
+    }
+  });
+
   // The divider between the text and the picture only moves the canvas around the drawing. The stage is sized from the diagram's own box and every position on the overlay is recorded against the stage's own origin, so nothing inside it moves — which is why a width change measures nothing. The proof is a sentinel: the reading is stamped, the divider is taken from its ceiling to its floor, and the stamp has to survive.
   check('a width change leaves the reading alone', () => {
     const read = (expression) => vm.runInContext(expression, booted);

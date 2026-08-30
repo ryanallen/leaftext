@@ -76,8 +76,14 @@ for (const shape of FLOW_SHAPES) {
   for (const name of shape.also || []) FLOW_SHAPES_BY_NAME.set(name, shape);
 }
 
-// The order every list of shapes is shown in. Alphabetical, so a shape sits where you last saw it; the table above keeps the order the parser wants.
-const FLOW_SHAPES_BY_LABEL = FLOW_SHAPES.slice().sort((a, b) => a.label.localeCompare(b.label));
+// The order every list of shapes is shown in. Alphabetical, so a shape sits where you last saw it; the table above keeps the order the parser wants. Putting them in that order is the browser standing a collator up, and that is nearly the whole of what it costs — so it waits for the first list somebody opens rather than being paid by every launch, and is kept from that call on.
+let flowShapesByLabelHeld = null;
+function flowShapesByLabel() {
+  if (!flowShapesByLabelHeld) {
+    flowShapesByLabelHeld = FLOW_SHAPES.slice().sort((a, b) => a.label.localeCompare(b.label));
+  }
+  return flowShapesByLabelHeld;
+}
 
 // Forty-seven shapes in one alphabetical run is a list nobody reads to the end of, so the picker shows them under headings. The everyday six come first; after that the headings are what a shape is *for*, and inside each one it is alphabetical again. Every shape sits under exactly one — the harness holds that, because a shape in no family would simply never be offered.
 const FLOW_SHAPE_FAMILIES = [
@@ -94,7 +100,7 @@ const FLOW_SHAPE_FAMILIES = [
 function flowShapeFamilies() {
   return FLOW_SHAPE_FAMILIES.map((name) => ({
     name,
-    shapes: FLOW_SHAPES_BY_LABEL.filter((shape) => shape.family === name),
+    shapes: flowShapesByLabel().filter((shape) => shape.family === name),
   }));
 }
 
