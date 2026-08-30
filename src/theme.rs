@@ -172,8 +172,8 @@ pub(crate) const LEAF_ICON_PACK_RANGES: &[(&str, usize, usize)] = &[
     ("lucide", 50343, 77640),
     ("tabler", 77640, 106689),
     ("remix", 106689, 135816),
-    ("phosphor", 135816, 160331),
-    ("heroicons", 160331, 180822),
+    ("phosphor", 135816, 159482),
+    ("heroicons", 159482, 179973),
 ];
 // END GENERATED ICON PACKS
 

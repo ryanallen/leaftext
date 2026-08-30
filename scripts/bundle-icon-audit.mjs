@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// design/icons.md holds the decision — one label and one answer per outside pack, on every icon row — and this draws it: three sheets putting each of the app's own drawings beside what the same job looks like in six candidate packs, and three photographs of them for a ticket to carry.
+// design/icons.md names each drawing and the compiled stylesheet supplies what ships; this draws three sheets putting each of the app's own drawings beside the same job in six candidate packs, and three photographs of them for a ticket to carry.
 //
 //   node scripts/bundle-icon-audit.mjs           write the three pages and photograph each at its own height
 //   node scripts/bundle-icon-audit.mjs --check   fail on drift in the pages, offline, with no browser (`just verify`)
 //
-// The chart is the generated view of the app's source rather than a list beside it. A pack's cell reads its vendored drawing off `src/assets/icon-packs/<pack>/`; a cell saying `leaftext` repeats the app's own mask and says so, because a blank in this chart is a decision nobody made and that is how share and network shapes ended up where the app draws a graph.
+// The chart is the generated view of the app's source rather than a list beside it. Every cell reads its drawing from `src/assets/icons.css`; design/icons.md supplies the caption, because the compiled mask cannot say what a borrowed drawing is called.
 //
 // **The verification path never opens a browser.** The pages are HTML this file writes, so drift in them is a string compare; whether a photograph reaches the last row is not a question a parser can answer, and putting a browser launch on every `just verify` would spend one on every check in the tree. `--write` measures each page and photographs it at its own content height; `--check` reads the pages alone.
 //
-// Every drawing arrives as a mask and is never rewritten. An earlier pass inserted raw SVG into the page and then edited its fills and strokes, which reduced a multipart drawing such as the sidepanel to one part and made every comparison beside it untrustworthy.
+// Keep every drawing as a mask: rewriting raw SVG can drop parts of a multipart drawing and make the comparison untrustworthy.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -68,14 +68,22 @@ function rows() {
 // The mask each class compiles to, read out of the generated stylesheet rather than off the `.svg`: what this chart has to show is the drawing that ships, weight stamped and all, and the file on disk is only what it was saved as.
 function compiledMasks() {
   const css = readFileSync(join(root, 'src/assets/icons.css'), 'utf8');
-  const at = css.indexOf('\n:root {');
-  const block = css.slice(at, css.indexOf('\n}', at));
-  return new Map([...block.matchAll(/--lt-icon-([a-z0-9-]+): (url\("[^"]*"\));/g)].map((hit) => [hit[1], hit[2]]));
+  const declarations = (selector) => {
+    const at = css.indexOf(selector);
+    if (at < 0) throw new Error(`src/assets/icons.css has no ${selector} block`);
+    const open = css.indexOf('{', at);
+    const block = css.slice(open, css.indexOf('\n}', open));
+    return new Map([...block.matchAll(/--lt-icon-([a-z0-9-]+): (url\("[^"]*"\));/g)].map((hit) => [hit[1], hit[2]]));
+  };
+  return {
+    root: declarations('\n:root {'),
+    packs: new Map(OUTSIDE.map((pack) => [pack, declarations(`[data-leaf-pack="${pack}"]`)])),
+  };
 }
 
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-// A mask goes into a `style` attribute here, so it is base64 rather than percent-encoded: a drawing carries quotes of its own either way, and one written raw closes the attribute it sits in. The bytes are the drawing's, said in another alphabet — nothing about it is rewritten, which is the whole rule this chart broke once already.
+// A mask is base64 in a `style` attribute so quotes inside the drawing cannot close the attribute.
 const asMask = (svg) => {
   const body = svg.replace(/currentColor/g, '#000').replace(/\s*\n\s*/g, ' ').replace(/>\s+</g, '><').trim();
   return `url('data:image/svg+xml;base64,${Buffer.from(body, 'utf8').toString('base64')}')`;
@@ -86,17 +94,17 @@ const asAttribute = (uri) => asMask(decodeURIComponent(uri.replace(/^url\("data:
 
 const STYLE = `*{box-sizing:border-box}body{margin:0;background:#f6f7f9;color:#15181d;font:14px/1.35 Inter,Segoe UI,sans-serif}.sheet{width:1900px;padding:34px 42px 42px}.eyebrow{margin:0 0 4px;color:#596274;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}h1{margin:0 0 8px;font-size:29px}.intro{margin:0 0 24px;color:#596274;font-size:15px}table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;background:white;border:1px solid #d9dee7;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(33,42,57,.08)}th,td{border-right:1px solid #e4e7ed;border-bottom:1px solid #e4e7ed}thead th{height:64px;padding:10px 8px;background:#eef1f5;text-align:center;font-size:14px}thead th:first-child{width:270px;text-align:left;padding-left:18px}thead th:nth-child(2){background:#e4e8ef}thead small{display:block;margin-top:3px;color:#6c7482;font-size:11px;font-weight:500}tbody th{width:270px;padding:10px 14px;text-align:left;vertical-align:middle}tbody th strong{display:block;margin-left:32px;font-size:15px}tbody th small{display:block;margin:3px 0 0 32px;color:#6c7482;font-size:10px;font-weight:400;line-height:1.25}.number{float:left;display:grid;width:24px;height:24px;place-items:center;border-radius:50%;background:#222a37;color:#fff;font-size:11px}td{height:84px;padding:8px;text-align:center;vertical-align:middle}.current{background:#f4f6f9}.fallback{background:#f8f3e8}.icon{display:grid;height:38px;place-items:center}.glyph{display:block;width:30px;height:30px;background:#171a1f;-webkit-mask:var(--glyph) center/contain no-repeat;mask:var(--glyph) center/contain no-repeat}td small{display:block;overflow:hidden;margin-top:4px;color:#667080;font:10px/1.15 ui-monospace,SFMono-Regular,Consolas,monospace;text-overflow:ellipsis;white-space:nowrap}tr:last-child th,tr:last-child td{border-bottom:0}th:last-child,td:last-child{border-right:0}`;
 
-/** What one cell shows and what it is called: the pack's own vendored drawing, a borrow it names, or the Leaftext mask it keeps. */
+/** What one cell shows from the compiled sheet and what design/icons.md calls it. */
 function cell(row, pack, masks) {
   const said = row.decided[OUTSIDE.indexOf(pack)];
+  const compiled = masks.packs.get(pack)?.get(row.name);
+  const mask = asAttribute(compiled ?? masks.root.get(row.name));
   if (said === 'leaftext') {
-    return { mask: asAttribute(masks.get(row.name)), said: `keep Leaftext · ${row.file} · ${row.source}`, kept: true };
+    return { mask, said: `keep Leaftext · ${row.file} · ${row.source}`, kept: !compiled };
   }
-  const at = join(root, 'src/assets/icon-packs', pack, `${row.name}.svg`);
-  if (!existsSync(at)) throw new Error(`design/icons.md gives ${row.name} the ${pack} drawing "${said}", and ${pack}/${row.name}.svg is not there`);
   const borrowed = /^([a-z][a-z0-9-]*):(.+)$/.exec(said);
   const name = borrowed ? `${borrowed[1][0].toUpperCase()}${borrowed[1].slice(1)} · ${borrowed[2]}` : said;
-  return { mask: asMask(readFileSync(at, 'utf8')), said: name, kept: false };
+  return { mask, said: name, kept: !compiled };
 }
 
 /** One sheet of the chart, as the whole page. */
@@ -112,18 +120,24 @@ function sheet(n, mine, masks) {
         const { mask, said, kept } = cell(row, pack, masks);
         return `<td${kept ? ' class="fallback"' : ''}><div class="icon"><span class="glyph" style="--glyph:${mask}"></span></div><small>${escape(said)}</small></td>`;
       }).join('');
-      const own = `<td class="current"><div class="icon"><span class="glyph" style="--glyph:${asAttribute(masks.get(row.name))}"></span></div><small>${escape(`${row.file} · ${row.source}`)}</small></td>`;
+      const own = `<td class="current"><div class="icon"><span class="glyph" style="--glyph:${asAttribute(masks.root.get(row.name))}"></span></div><small>${escape(`${row.file} · ${row.source}`)}</small></td>`;
       return `<tr><th scope="row"><span class="number">${at}</span><strong>${escape(row.audit)}</strong><small>${escape(row.worn)}</small></th>${own}${cells}</tr>`;
     })
     .join('');
   return `<!doctype html><html><head><meta charset="utf-8"><title>Leaftext icon audit ${n}</title><style>\n  ${STYLE}</style></head><body><main class="sheet"><p class="eyebrow">Complete app audit · sheet ${n} of ${SHEETS}</p><h1>Every Leaftext icon beside ${OUTSIDE.length} candidate packs</h1><p class="intro">Leaftext is the app's own mixed set and a theme pack of its own. Each outside column shows that pack's drawing for the same job, a borrow it names, or the Leaftext drawing it keeps.</p><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></main></body></html>`;
 }
 
-// The drawing rules prove themselves on a made-up row before the real sixty-three are read: a check that has only ever seen good rows is one nobody has watched refuse anything, and a row reaching the app without reaching this chart is the exact thing the chart exists to stop.
+// A made-up row proves the chart's drawing rules before the real rows are read.
 function selfTest() {
   const fails = [];
-  const masks = new Map([['x', `url("data:image/svg+xml,${encodeURIComponent('<svg viewBox="0 0 24 24"><path d="M0 0"/></svg>')}")`]]);
-  const kept = OUTSIDE.map(() => 'leaftext');
+  const rootMask = `url("data:image/svg+xml,${encodeURIComponent('<svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M0 0"/></svg>')}")`;
+  const compiledPackMask = `url("data:image/svg+xml,${encodeURIComponent('<svg viewBox="0 0 24 24" stroke-width="1"><path d="M0 0"/></svg>')}")`;
+  const savedPackMask = asMask('<svg viewBox="0 0 24 24" stroke-width="2"><path d="M0 0"/></svg>');
+  const masks = {
+    root: new Map([['x', rootMask]]),
+    packs: new Map(OUTSIDE.map((pack, at) => [pack, new Map(at === 0 ? [['x', compiledPackMask]] : [])])),
+  };
+  const kept = OUTSIDE.map((_, at) => (at === 0 ? 'saved drawing' : at === 1 ? 'borrowed drawing' : 'leaftext'));
   const row = { name: 'x', file: 'x.svg', source: 'leaftext', audit: 'Made up', decided: kept, worn: 'Nowhere; this row is a test.' };
   const html = sheet(1, [{ row, at: 1 }], masks);
 
@@ -132,15 +146,11 @@ function selfTest() {
   if (drawn.some((said) => !said)) fails.push('a made-up row left a cell with no drawing named, and a blank here is a decision nobody made');
   if (!html.includes('<strong>Made up</strong>')) fails.push('the chart printed something other than the audit label the row carries');
   if (!html.includes("--glyph:url('data:image/svg+xml;base64,")) fails.push('a drawing reached the page as something other than a mask a style attribute can carry');
-
-  // And a row whose decision names a drawing nobody vendored, which is how an icon lands in the app under one theme and nowhere else.
-  const missing = { ...row, decided: OUTSIDE.map((_, at) => (at === 0 ? 'plus' : 'leaftext')) };
-  try {
-    sheet(1, [{ row: missing, at: 1 }], masks);
-    fails.push('a decision naming a drawing nobody vendored was drawn rather than refused');
-  } catch (error) {
-    if (!String(error.message).includes('is not there')) fails.push(`a missing drawing was refused for the wrong reason: ${error.message}`);
-  }
+  if (!html.includes(`--glyph:${asAttribute(compiledPackMask)}`)) fails.push('a compiled pack mask with its shipped stroke did not reach the chart');
+  if (html.includes(`--glyph:${savedPackMask}`)) fails.push('a pack cell drew the saved stroke instead of the compiled one');
+  const uncovered = cell(row, OUTSIDE[1], masks);
+  if (uncovered.mask !== asAttribute(rootMask)) fails.push('an uncovered pack row did not use the root mask');
+  if (!uncovered.kept) fails.push('an uncovered pack row was not shaded as a fallback');
   return fails;
 }
 
@@ -155,7 +165,7 @@ const all = rows();
 if (all.length < 30) throw new Error(`design/icons.md gave only ${all.length} icons`);
 const masks = compiledMasks();
 for (const row of all) {
-  if (!masks.has(row.name)) throw new Error(`src/assets/icons.css declares no drawing for ${row.name} — run \`just bundle-icons\``);
+  if (!masks.root.has(row.name)) throw new Error(`src/assets/icons.css declares no drawing for ${row.name} — run \`just bundle-icons\``);
 }
 const per = Math.ceil(all.length / SHEETS);
 const pages = [];

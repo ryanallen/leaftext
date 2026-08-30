@@ -96,7 +96,9 @@ function rowProblems({ name, file, source, stroke }, svg, notices) {
 //
 // The `leaftext` half is the one that has to agree with the disk, and it is the only half that can: a decision naming a drawing is a name in somebody else's pack, and nothing here can look it up. So `leaftext` must have no file and anything else must have one.
 const PROTECTED = new Set(['leaf', 'windows', 'apple']);
-function decisionProblems({ name, audit, decided }, drawings) {
+// A hairline row sits in the title bar beside the platform's own chrome, so its weight is a match to somebody else's buttons rather than a house style — and a filled drawing takes no stamp, so nothing can bring one to that weight after the fact. Which filled pack keeps its own is decided by measuring the drawing at the 12px it is worn at: Remix's minimize measures 0.996px and stays, Phosphor's measured 0.753px and now falls back the way its restore always did. A filled pack not named here takes the app's own marks on every hairline row.
+const FILLED_KEEPS_ITS_HAIRLINE = new Set(['remix']);
+function decisionProblems({ name, audit, stroke, decided }, drawings) {
   const found = [];
   if (!audit) found.push(`design/icons.md gives ${name} no audit label, so the chart has nothing to call it`);
   const packs = outsidePacks();
@@ -109,6 +111,11 @@ function decisionProblems({ name, audit, decided }, drawings) {
     if (!said) return found.push(`design/icons.md leaves ${name} undecided under ${pack}`);
     if (PROTECTED.has(name) && said !== 'leaftext') {
       found.push(`design/icons.md gives ${name} the ${pack} drawing "${said}", and the app's own marks are never an outside pack's`);
+      return;
+    }
+    const filled = PACKS.get(pack) && !PACKS.get(pack).stroked;
+    if (stroke === 'hairline' && filled && !FILLED_KEEPS_ITS_HAIRLINE.has(pack) && said !== 'leaftext') {
+      found.push(`design/icons.md gives ${name} the ${pack} drawing "${said}", and a filled drawing takes no weight, so a hairline row beside the platform's chrome keeps the app's own measured mark unless ${pack} has been measured at that weight`);
       return;
     }
     const has = (drawings.get(pack) || new Map()).has(name);
@@ -317,6 +324,15 @@ if (check) {
     const got = decisionProblems(made, drew);
     if (got.length) fails.push(`${what} was refused: ${got.join(' ')}`);
   }
+  // The window rows, whose weight belongs to the platform's chrome rather than to us. Both directions, because the rule is a measurement and not a ban: an unmeasured filled pack falls back, and the one that was measured at the weight keeps its own drawing.
+  const drewFilled = new Map([...drew, ['remix', new Map([['w', '<svg/>']])], ['phosphor', new Map()]]);
+  const hairline = (decided) => ({ name: 'w', audit: 'w', stroke: 'hairline', decided });
+  const unmeasured = decisionProblems(hairline(['leaftext', 'leaftext', 'leaftext', 'subtract', 'minus', 'leaftext']), drewFilled).join(' ');
+  if (!unmeasured.includes('a filled drawing takes no weight')) {
+    fails.push(`an unmeasured filled pack was left drawing a hairline window mark (got "${unmeasured || 'nothing'}")`);
+  }
+  const atWeightKeepsIt = decisionProblems(hairline(['leaftext', 'leaftext', 'leaftext', 'subtract', 'leaftext', 'leaftext']), drewFilled);
+  if (atWeightKeepsIt.length) fails.push(`a hairline row was refused for keeping the filled drawing measured at its weight: ${atWeightKeepsIt.join(' ')}`);
 
   // A pack row owes a license notice, exactly as a row's Source does. Read here off the same table the compile reads, so a row that stopped naming one is caught before a single drawing of it ships.
   for (const [pack, { notice }] of PACKS) {
