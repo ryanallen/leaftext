@@ -96,7 +96,7 @@ function rowProblems({ name, file, source, stroke }, svg, notices) {
 //
 // The `leaftext` half is the one that has to agree with the disk, and it is the only half that can: a decision naming a drawing is a name in somebody else's pack, and nothing here can look it up. So `leaftext` must have no file and anything else must have one.
 const PROTECTED = new Set(['leaf', 'windows', 'apple']);
-// A hairline row sits in the title bar beside the platform's own chrome, so its weight is a match to somebody else's buttons rather than a house style — and a filled drawing takes no stamp, so nothing can bring one to that weight after the fact. Which filled pack keeps its own is decided by measuring the drawing at the 12px it is worn at: Remix's minimize measures 0.996px and stays, Phosphor's measured 0.753px and now falls back the way its restore always did. A filled pack not named here takes the app's own marks on every hairline row.
+// A hairline row sits in the title bar beside the platform's own chrome, so its weight is a match to somebody else's buttons rather than a house style — and a filled drawing takes no stamp, so nothing can bring one to that weight after the fact. Which filled pack keeps its own is decided by measuring the drawing at the 12px it is worn at: Remix's minimize measures 0.996px and stays, Phosphor's measures 0.753px and falls back the way its restore does. A filled pack not named here takes the app's own marks on every hairline row.
 const FILLED_KEEPS_ITS_HAIRLINE = new Set(['remix']);
 function decisionProblems({ name, audit, stroke, decided }, drawings) {
   const found = [];

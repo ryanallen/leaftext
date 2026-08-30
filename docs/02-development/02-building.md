@@ -115,7 +115,7 @@ Each step in the verification pipeline can also be run on its own:
 | Themes check | `just check-themes`         | Verify `src/assets/themes.md` matches the `themes/` folder |
 | Values check | `just check-tokens`         | Verify the color contract and the fixed values match `design/` |
 | Icons check  | `just check-icons`          | Verify the icon classes match `design/icons.md`, and every row names a licensed pack and a drawing in its weight's box |
-| Icon audit check | `just check-icon-audit` | Verify the three icon-audit sheets match `design/icons.md` — every row drawn, every pack decision named, and each sheet photographed |
+| Icon audit check | `just check-icon-audit` | Verify the three icon-audit sheets match the drawings that ship — every row drawn from the compiled icon sheet, every cell captioned with the decision `design/icons.md` names, and each sheet photographed |
 | Gallery check | `just check-gallery`       | Verify `gallery.html` matches `design/` |
 | Design docs check | `just check-design-docs` | Verify [Design system](05-design-system.md) matches `design/` |
 | Classes check | `just check-classes`       | Fail on a class in `src/assets/reading/` that `design/components.md` does not account for |
