@@ -1102,7 +1102,7 @@ function appBarSelfTest() {
 //
 // Offline and parser-only on purpose: the sheets are HTML in the plan tree and the names come from `design/icons.md`, so nothing renders and no browser starts. Whether a photograph shows the last row is the audit bundler's to prove, not this one's.
 //
-// A row's label on the chart is its own `Audit` cell and nothing else — the bundler prints that cell, so this reader asks the same table rather than holding a second list beside it, which is how one row printed a name the table never asked for.
+// A row's label on the chart is its own `Audit` cell and nothing else — the bundler prints that cell, so this reader asks the same table rather than holding a second list beside it.
 const AUDIT_SHEETS = [1, 2, 3].map((n) => `imgs/wireframes/theme-icon-sets-audit-${n}.html`);
 const AUDIT_PACKS = ['Feather', 'Lucide', 'Tabler', 'Remix', 'Phosphor', 'Heroicons'];
 
@@ -1146,7 +1146,7 @@ const auditRow = (label, cells) => `<tr><th scope="row"><span class="number">1</
 const auditSheet = (rows, packs = AUDIT_PACKS) => `<thead><tr><th scope="col">Icon and where it is worn</th><th scope="col">Leaftext<small>Mixed pack</small></th>${packs.map((p) => `<th scope="col">${p}<small>1.0.0</small></th>`).join('')}</tr></thead><tbody>${rows}</tbody>`;
 const AUDIT_WHOLE = auditSheet(auditRow('back', AUDIT_CELL.replace('<td>', '<td class="current">') + AUDIT_CELL.repeat(5) + AUDIT_KEPT));
 
-// A row as `iconRows` answers it: the drawing's name, and the chart label its `Audit` cell asks for, which is the name again wherever the table says nothing else.
+// A row as `iconRows` answers it, so a case says the chart label out loud only where the table asks for something other than the name.
 const icon = (name, audit = name) => ({ name, audit });
 
 const AUDIT_CASES = [
