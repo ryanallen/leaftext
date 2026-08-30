@@ -570,10 +570,10 @@ function centerFlowCanvas() {
 
 // ---- how much room the text gets -------------------------------------------
 
-// The text pane is dragged to whatever width suits what you are doing: mostly drawing, mostly typing, or halfway. Arrow keys move it too, so it is not a mouse-only control. Nothing is remeasured after: the stage is sized from the drawing's own box and every position on the overlay is recorded against the stage's own origin, so a width change slides the canvas around the picture without moving one box inside it.
+// A width change moves the canvas, not the diagram.
 const FLOW_CODE_MIN = 180;
 
-// `held` is the sheet's own width, and a drag hands over the one it read when the pointer went down: reading it here instead would force the whole sheet to lay out again for the width the move before just wrote. Left out, it is read fresh — which is what a key press and a double-click want, since the window can be resized between two of those and cannot be during a drag.
+// Dragging holds this width; keys and reset read it fresh.
 function setFlowCodeWidth(pixels, held) {
   if (!flowSheet) return;
   const room = held || flowSheet.clientWidth || 900;
@@ -591,7 +591,7 @@ if (flowSplit) {
     event.preventDefault();
     const start = event.clientX;
     const was = flowCodeWidth();
-    // The sheet cannot be resized while the pointer is held down on it, so its room is read once here and carried for the whole gesture.
+    // A held pointer cannot resize the window.
     const room = (flowSheet && flowSheet.clientWidth) || 900;
     const move = (moved) => setFlowCodeWidth(was - (moved.clientX - start), room);
     const done = () => {

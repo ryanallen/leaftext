@@ -414,7 +414,7 @@ pub fn image_refresh_script() -> String {
     "window.leafRefreshImages();".to_string()
 }
 
-/// Tell the page the link answers it remembers may be older than the files. Sent when the watcher sees a change: the page keeps what it has, so a rest still draws at once, and asks again behind what it drew.
+/// Tells the page to refresh remembered link answers.
 pub fn age_link_previews_script() -> String {
     "window.leafAgeLinkPreviews();".to_string()
 }

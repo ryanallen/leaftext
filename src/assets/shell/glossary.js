@@ -161,7 +161,7 @@ const lineCountCache = new Map();
 const pendingLineTokens = new Map();
 const linkPreviewCache = new Map();
 const pendingPreviewTokens = new Map();
-// Addresses whose remembered answers may now be older than the files behind them. The watcher tells the host, the host tells the page, and nothing is thrown away: a rest on one of these draws what it had and asks again behind it, so the reader never meets a spinner for a card they have already seen. Held here alone — no other fragment reads it.
+// A stale card keeps its answer while the host refreshes it.
 const staleLinkAnswers = new Set();
 window.leafAgeLinkPreviews = () => {
   for (const key of linkPreviewCache.keys()) staleLinkAnswers.add(key);
@@ -193,7 +193,7 @@ function setLinkHoverLines(count) {
 }
 window.leafLineCount = (token, lines) => {
   const key = pendingLineTokens.get(token);
-  // The count the card is already showing, on an ask made only because the watcher aged it. Answered the same, the card is left alone rather than rewritten with what it says.
+  // Skip an unchanged stale count.
   let alreadyDrawn = false;
   if (key !== undefined) {
     pendingLineTokens.delete(token);
@@ -509,7 +509,7 @@ function requestLinkPreview(key, token) {
   linkHoverPreviewTimer = window.setTimeout(() => {
     linkHoverPreviewTimer = 0;
     if (token !== activeHoverToken || linkHoverTip.hidden) return;
-    // An answer that arrived while the wait ran, and is not one the watcher has aged: nothing to ask for.
+    // A fresh cached answer needs no ask.
     if (linkPreviewCache.has(key) && !staleLinkAnswers.has(key)) {
       applyLinkHoverPreview(linkPreviewCache.get(key));
       return;
@@ -548,7 +548,7 @@ function linkPreviewSectionHtml(html, href) {
 window.leafLinkPreview = (token, html) => {
   const key = pendingPreviewTokens.get(token);
   let note = html;
-  // The words the card is already showing, on an ask made only because the watcher aged them. Answered the same, the card keeps what it drew rather than being rebuilt and placed again for nothing.
+  // Skip an unchanged stale preview.
   let alreadyDrawn = false;
   if (key !== undefined) {
     pendingPreviewTokens.delete(token);
@@ -659,7 +659,7 @@ function startLinkHover(event) {
   if (entry || info.kind === 'Another page' || info.kind === 'Full glossary') {
     // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string. A glossary link goes as it was written instead: the scheme carries the term, and a relative address read back off the page resolves against the page rather than against the document the host joins it onto.
     const key = entry ? rawHref : (typeof link.href === 'string' && link.href) || rawHref;
-    // Something on disk moved since this answer was taken, so the card draws what it has and the host is asked again behind it.
+    // A stale card redraws first, then refreshes.
     const aged = staleLinkAnswers.has(key);
     if (linkPreviewCache.has(key)) {
       // Seen already: straight back up rendered, so a return to a link never blinks its spinner — and a page the host could not draw raises no box at all.

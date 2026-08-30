@@ -260,7 +260,7 @@ fn glossary_failed_script_gives_the_page_a_reason_to_show() {
     );
 }
 
-/// One call and nothing composed into it. The page holds every address it has an answer for, so the host has nothing to name — and the page is asked to keep those answers rather than drop them, which is what stops a card the reader has already seen blinking back to its spinner.
+/// The page refreshes every remembered link answer.
 #[test]
 fn aging_the_link_cards_is_one_call_carrying_no_address() {
     assert_eq!(age_link_previews_script(), "window.leafAgeLinkPreviews();");

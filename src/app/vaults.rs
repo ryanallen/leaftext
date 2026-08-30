@@ -846,7 +846,7 @@ pub(crate) enum WatchedChangeStep {
     PatchCorpus { redraw_graph: bool },
     /// A picture rather than a document: the text is unchanged, so only the page's images are refreshed.
     RefreshImages,
-    /// Something on disk moved, so every link answer the page remembers may be out of date. It keeps them, so a rest still draws at once, and asks again behind what it drew.
+    /// Tells the page its remembered link answers may be stale.
     AgeLinkPreviews,
 }
 
@@ -860,7 +860,7 @@ pub(crate) fn watched_change_steps(
     if let Some(id) = vault_to_reread(state) {
         steps.push(WatchedChangeStep::RereadVaultStatus(id));
     }
-    // Above the split: a change to the open document is a change to a file other documents link to, and its card is remembered under its own address like any other.
+    // The active-document branch returns before later steps.
     steps.push(WatchedChangeStep::AgeLinkPreviews);
     if is_active_document {
         steps.push(WatchedChangeStep::ReloadActiveDocument);

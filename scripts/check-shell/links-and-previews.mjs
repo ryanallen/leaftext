@@ -1225,7 +1225,7 @@ export function run() {
       delete booted.__newLink;
     }
   });
-  // A file changing outside the app is what makes a remembered card wrong, and the watcher is how the app hears about it. The card opens on what it had — a spinner over a page the reader was just looking at costs more than the fault — and corrects itself behind that.
+  // A stale card redraws before it refreshes.
   check('a card the watcher aged draws what it had and takes the fresh answer behind it', () => {
     const tip = vm.runInContext('linkHoverTip', booted);
     const preview = vm.runInContext('linkHoverTipPreview', booted);
@@ -1278,7 +1278,7 @@ export function run() {
     }
   });
 
-  // The other half of the same rule: marking every address is only cheap because an unmarked one still costs nothing, so a rest on one has to send no ask at all, or the promise above passes by asking every time.
+  // An unmarked card makes no host ask.
   check('an answer the watcher never aged still costs no ask at all', () => {
     const tip = vm.runInContext('linkHoverTip', booted);
     const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
