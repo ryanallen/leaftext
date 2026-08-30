@@ -194,6 +194,8 @@ A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — r
 
 A table wider than the text uses the reader's full width rather than the reading measure, staying centered and holding a strip clear either side for the block handle. Wider still and it scrolls sideways on its own bar; a horizontal trackpad gesture or Control or Command plus a vertical wheel over the table moves it sideways too, and the column at the cut fades into the page — the near edge only once you have scrolled past it, the far edge until you reach the last column. Those two marks stay under [Reduce Motion](05-settings.md#reduce-motion), because they only move when you scroll the table. A table that fits the text is left where it is.
 
+Narrow the reader far enough that the grid no longer fits and the table stops being one: every row becomes a card, the heading row goes, and each cell carries its own column heading in front of its value — so no column is dropped and nothing is guessed about which one matters. Cells share a line where their widths fit and a long one takes a line of its own. The changeover is measured against what the table itself needs rather than a fixed window size, so a table that still fits stays a grid however narrow the window is. A column alignment is ignored while it is cards, since an alignment is about a column and cards have none, and the corner button still opens the table on the whole window, where it is a grid again. The record tables read out of [XML](#any-xml) and [data files](#data-files-json-and-yaml) fold the same way. The [frontmatter](#frontmatter) block is already a key and a value per row, so it is left as it is, and paper keeps its grid.
+
 ### Task lists
 
 - [x] Render a page
