@@ -3,7 +3,7 @@
 //
 //   node scripts/check-doc-modules.mjs   fail on a module the file map does not name (`just verify`)
 //
-// The pointer to the page is already held: `scripts/gate-rules.mjs` fails when `AGENTS.md` stops calling that page the file map. This is the other half — the page held to what is actually under `src/`.
+// The pointer to the page is already held: `scripts/check-agent-settings.mjs` fails when `AGENTS.md` stops calling that page the file map. This is the other half — the page held to what is actually under `src/`.
 //
 // **The section is written two ways on purpose, so this cannot ask for one entry per file.** A single-file concern gets its own bold entry; a directory gets one entry whose prose names each sibling, and most modules in the tree are named only that way. Asking for an entry each would fail on scores of files that are working as written.
 //

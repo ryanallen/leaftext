@@ -87,6 +87,31 @@ function selfTestProblems(justfileText, names) {
   return names.filter((name) => !run.has(name)).map((name) => `the justfile's check-hooks recipe never runs scripts/${name} --check, so its self-test runs nowhere`);
 }
 
+// One section's body, up to the next heading at its own level or above.
+function sectionBody(markdown, heading, depth) {
+  const lines = markdown.split('\n');
+  const start = lines.findIndex((line) => heading.test(line));
+  if (start < 0) return '';
+  const stop = new RegExp(`^#{1,${depth}}\\s`);
+  const body = [];
+  for (const line of lines.slice(start + 1)) {
+    if (stop.test(line) || /^---\s*$/.test(line)) break;
+    body.push(line);
+  }
+  return body.join('\n').trim();
+}
+
+// The layout section is two things: a pointer to the architecture page, which is the file map, and the cross-cutting rules the guide carries itself. Under one heading the rules read as a second file map, so each half owes a heading saying which it is.
+export function layoutFaults(markdown) {
+  const layout = sectionBody(markdown, /^##\s+Layout\b/, 2);
+  if (!layout) return ['AGENTS.md: no `## Layout` section'];
+  const faults = [];
+  if (!/^###\s+The file map\s*$/m.test(layout)) faults.push('AGENTS.md: the layout section has no `### The file map` heading');
+  if (!/docs\/02-development\/01-architecture\.md/.test(layout)) faults.push('AGENTS.md: the layout section no longer points at the architecture page, which is the file map');
+  if (!/^###\s+Rules the file map does not carry\s*$/m.test(layout)) faults.push('AGENTS.md: the cross-cutting rules have no heading of their own, so they read as a second file map');
+  return faults;
+}
+
 // The guide's ## Hooks section is the third hand list of the same scripts, and it had already drifted — six bullets while scripts/ held seven. The count stays out of the sentence above the bullets; a sentence with no number has no number to rot.
 function guideProblems(agentsText, names) {
   const section = /^## Hooks\r?\n([\s\S]*?)(?=\r?\n## |(?![\s\S]))/m.exec(agentsText)?.[1] ?? '';
@@ -139,6 +164,19 @@ const RECIPE = 'check-hooks:\n    node scripts/gate-a.mjs --check\n\nother:\n   
 if (selfTestProblems(RECIPE, ['gate-a.mjs']).length) problems.push('this check misses a --check line that is in the recipe');
 if (!selfTestProblems(RECIPE, ['gate-b.mjs']).length) problems.push("this check reads a --check line in another recipe as check-hooks's");
 
+const AGENTS = readFileSync(join(root, 'AGENTS.md'), 'utf8');
+problems.push(...layoutFaults(AGENTS));
+// The three cases mutate the real guide rather than a fixture, so renaming a heading fails here instead of passing against a copy.
+if (!layoutFaults(AGENTS.replace(/^### The file map$/m, '### Where things live')).length) {
+  problems.push('this check passes a guide whose file map lost its heading');
+}
+if (!layoutFaults(AGENTS.replace(/docs\/02-development\/01-architecture\.md/g, 'docs/02-development/')).length) {
+  problems.push('this check passes a guide that stopped naming the architecture page');
+}
+if (!layoutFaults(AGENTS.replace(/^### Rules the file map does not carry$/m, '### More')).length) {
+  problems.push('this check passes a guide whose cross-cutting rules lost their heading');
+}
+
 const GUIDE = '## Hooks\n\nOne sentence.\n\n- `gate-a.mjs` — what it holds.\n\n## Next\n';
 if (guideProblems(GUIDE, ['gate-a.mjs']).length) problems.push('this check misses a bullet that is in the guide');
 if (!guideProblems(GUIDE, ['gate-b.mjs']).length) problems.push('this check passes a gate script with no bullet in the guide');
@@ -166,7 +204,7 @@ problems.push(...settingsProblems(settingsText));
 problems.push(...hookProblems(settingsText, (name) => existsSync(join(root, 'scripts', name))));
 problems.push(...reachProblems(settingsText, gateSources));
 problems.push(...selfTestProblems(readFileSync(join(root, 'justfile'), 'utf8'), [...gateSources.keys()]));
-problems.push(...guideProblems(readFileSync(join(root, 'AGENTS.md'), 'utf8'), [...gateSources.keys()]));
+problems.push(...guideProblems(AGENTS, [...gateSources.keys()]));
 problems.push(...importProblems());
 
 if (problems.length) {
@@ -174,4 +212,4 @@ if (problems.length) {
   for (const problem of problems) console.error(`  ${problem}`);
   process.exit(1);
 }
-console.log('agent settings: every hook row runs a script that is here, every gate script is reached, self-tested and in the guide, and every one imports without acting');
+console.log('agent settings: every hook row runs a script that is here, every gate script is reached, self-tested and in the guide, every one imports without acting, and both halves of the layout section in the guide still say which half they are');

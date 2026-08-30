@@ -7,7 +7,7 @@
 //   node scripts/gate-keycode.mjs --required            what this turn owes
 //   node scripts/gate-keycode.mjs --check               self-test (`just verify`)
 //
-// A wrong or missing code is refused by the Stop hook, which is the only thing here that can actually stop a turn. gate-rules.mjs sets the demand at the start of each message and clears the record; gate-voice.mjs holds the turn to it.
+// A wrong or missing code is refused by the Stop hook, which is the only thing here that can actually stop a turn. gate-checklist.mjs sets the demand at the start of each message and clears the record; gate-voice.mjs holds the turn to it.
 //
 // The record lives in the OS temp folder and is deleted every message, so it never grows and never reaches a context window.
 
@@ -115,7 +115,7 @@ export function outstanding(record) {
 function report(file, code) {
   const record = read();
   if (!record) {
-    console.error('no turn is open — gate-rules.mjs writes the record on each message');
+    console.error('no turn is open — gate-checklist.mjs writes the record on each message');
     process.exit(1);
   }
   const want = codeOf(file);
@@ -245,7 +245,7 @@ function selfTest() {
   console.log(`gate-keycode: ok (${keyedFiles().length} keyed files, all distinct)`);
 }
 
-// Only act when run directly: gate-rules.mjs and gate-voice.mjs import this for its functions, and an import must not run a self-test or a report.
+// Only act when run directly: gate-checklist.mjs and gate-voice.mjs import this for its functions, and an import must not run a self-test or a report.
 const invoked = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
 const args = invoked === import.meta.url ? process.argv.slice(2) : [];
 if (args.includes('--check')) {

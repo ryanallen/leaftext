@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Stop hook. Measures the reply against Rule 1 and refuses to end the turn when it breaks. Printing a rule does not enforce it: gate-rules.mjs is the reminder, this is the check.
+// Stop hook. Measures the reply against Rule 1 and refuses to end the turn when it breaks. Printing a rule does not enforce it: this is the check.
 //
 // It enforces the half of Rule 1 that names its own words: the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
 //

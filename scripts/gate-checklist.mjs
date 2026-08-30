@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // UserPromptSubmit hook. Writes this turn's checklist before the message is read: the numbered steps of the skill the message names with its host's sign, one bullet each, so the order is on disk instead of in a memory that drops whichever step came last.
 //
+// It also holds the two records the rest of the gate reads off a message, because a hook that fires on the prompt is the only place either can be written: the git license, granted only when the message starts with `/git-release` or `$git-release` and read by scripts/gate-git.mjs, which never sees a prompt of its own; and this turn's keycode record, which scripts/gate-voice.mjs holds the turn to.
+//
 // **A bullet is never work.** It is one step of one skill and it dies with the message; work is the ticket's boxes, which outlive the session. A find that turns up while a bullet is being worked belongs in a ticket, not in a bullet.
 //
 //   node scripts/gate-checklist.mjs           the hook payload on stdin
@@ -11,14 +13,48 @@
 // The list is one file per session in the OS temp folder, rewritten at the start of every message the way the keycode record is, so it never grows and never reaches a context window.
 
 import { execFileSync } from 'node:child_process';
-import { closeSync, existsSync, fstatSync, openSync, readFileSync, readSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { keyedFiles } from './gate-keycode.mjs';
-import { TURN_MS, keep, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
+import { ALWAYS, close, extend, keyedFiles, read, recordPath, requiredFor } from './gate-keycode.mjs';
+import { KEEP, LICENSE_DIR, RING, TURN_MS, keep, licensePath, ringLines, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+// Messages that are host commands rather than work. They owe no keycode, but they still revoke the git license — otherwise a `/clear` after a release keeps it.
+const META = ['/clear', '/help', '/config', '/cost', '/compact', '/init', '/skills',
+  '/agents', '/permissions', '/status', '/release-notes', '/upgrade', '/mcp',
+  '/login', '/logout', '/exit', '/quit'];
+
+export function isMeta(prompt) {
+  const first = prompt.split(/\s+/, 1)[0].toLowerCase();
+  return META.some((m) => first === m || first.startsWith(m + ':'));
+}
+
+// `git-release` typed as this message's command — Claude's slash or Codex's dollar — and nothing else, authorizes a git write. Anchored to the start because a mention anywhere would let a quoted transcript grant one.
+export function hasReleaseLicense(prompt) {
+  return /^[$\/]git-release\b/i.test(prompt.trim());
+}
+
+// This session's license, and no other agent's. With no session id there is nowhere to write it, and the git gate then refuses every write.
+function writeLicense(granted, prompt, session) {
+  const path = licensePath(session);
+  if (!path) return;
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, JSON.stringify({
+      state: granted ? 'granted' : 'denied',
+      at: new Date().toISOString(),
+      session,
+      prompt: prompt.slice(0, 120),
+    }) + '\n');
+    // Nothing ever deleted a license: a stale one was only ignored on its age when something read it, and one file per session is a folder that grows.
+    sweep(LICENSE_DIR, 'git-license');
+  } catch {
+    // A license that cannot be written reads as denied, which is the safe way round.
+  }
+}
 
 /// Enough transcript to reach the turn before the message without reading a whole session history.
 const TRANSCRIPT_TAIL_BYTES = 64 * 1024;
@@ -163,6 +199,77 @@ export function heldBy(left, session) {
 
 function selfTest() {
   const fails = [];
+
+  // The license, which scripts/gate-git.mjs reads and nothing else writes.
+  const licenseCases = [
+    ['plain message', false],
+    ['$git-release', true],
+    ['$git-release 0.1.441', true],
+    ['  $git-release  ', true],
+    ['/git-release', true],
+    ['/git-release 0.1.441', true],
+    // v0.1.442: the release ran off a message that only quoted the transcript. A mention is not an instruction, wherever in the message it sits.
+    ['ship it with $git-release please', false],
+    ['i ran $git-release and you refused, why', false],
+    ['> $git-release\n\n● Running the pre-steps', false],
+    ['read .agents/skills/git-release/SKILL.md', false],
+    ['tell me about git-release', false],
+  ];
+  for (const [prompt, want] of licenseCases) {
+    if (hasReleaseLicense(prompt) !== want) fails.push(`license: ${JSON.stringify(prompt)} -> ${!want}`);
+  }
+  if (!isMeta('/clear')) fails.push('meta: /clear not recognized');
+  if (isMeta('clear the cache')) fails.push('meta: prose treated as a command');
+
+  // The ring every hook writes to. Per hook, because the tool gate fires on every command and would otherwise push the one prompt of the turn out before anyone read it back.
+  const line = (hook, n) => JSON.stringify({ hook, n });
+  const crowded = [];
+  for (let n = 0; n < 30; n += 1) crowded.push(line('PreToolUse', n));
+  crowded.push(line('Stop', 0));
+  const rung = ringLines(crowded, 'PreToolUse', line('PreToolUse', 30));
+  const mine = rung.filter((l) => JSON.parse(l).hook === 'PreToolUse');
+  if (mine.length !== KEEP) fails.push(`ring: kept ${mine.length} payloads of one hook, not ${KEEP}`);
+  if (JSON.parse(mine.at(-1)).n !== 30) fails.push('ring: the newest payload was not kept');
+  if (JSON.parse(mine[0]).n !== 30 - KEEP + 1) fails.push('ring: it dropped the newest end, not the oldest');
+  if (!rung.some((l) => JSON.parse(l).hook === 'Stop')) fails.push('ring: one hook pushed another hook out');
+
+  // Nothing arrived is not an answer worth a line, and a line every turn would push out the ones that carry one.
+  const beforeRing = existsSync(RING) ? readFileSync(RING, 'utf8') : null;
+  keep('SelfTest', '   ');
+  const afterRing = existsSync(RING) ? readFileSync(RING, 'utf8') : null;
+  if (afterRing !== beforeRing) fails.push('ring: an empty payload still wrote a line');
+
+  // The keycode record and the license, through the real entry point. A record still standing is a turn still running, and this is the one place that decision is wired: swapping the fold back to `open` passes every test that reaches the record directly, so it is proved here by firing the hook twice.
+  const MID = `gate-checklist-record-${process.pid}`;
+  const DEV = '.agents/skills/dev/SKILL.md';
+  const fire = (prompt) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
+    input: JSON.stringify({ session_id: MID, prompt }),
+    encoding: 'utf8',
+  });
+  try {
+    fire('/dev the ticket');
+    const opened = read(MID);
+    if (!opened?.required?.includes(DEV)) fails.push('hook: a skill-named message did not owe that skill');
+    if (!existsSync(licensePath(MID))) fails.push('hook: no license was written for the message');
+    else if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'denied') fails.push('hook: a message with no release command was licensed');
+    fire('/git-release 1.2.3');
+    if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'granted') fails.push('hook: a release command was not licensed');
+    fire('/clear');
+    if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'denied') fails.push('hook: a host command after a release kept the license');
+    opened.reported = { [ALWAYS]: 'LEAF-REPORTED' };
+    writeFileSync(recordPath(MID), JSON.stringify(opened) + '\n');
+    fire('also check the footer wording');
+    const sentence = read(MID);
+    if (sentence?.reported?.[ALWAYS] !== 'LEAF-REPORTED') fails.push('hook: a sentence typed mid-turn wiped a code already reported');
+    if (sentence?.startedAt !== opened.startedAt) fails.push('hook: a sentence typed mid-turn moved the stamp the turn began at');
+    if (!sentence?.required?.includes(DEV)) fails.push('hook: a sentence typed mid-turn dropped the skill the pass is running');
+  } catch (error) {
+    fails.push(`hook: ${error.message}`);
+  } finally {
+    close(MID);
+    clear(MID);
+    rmSync(licensePath(MID), { force: true });
+  }
 
   const skill = ['---', 'name: check', '---', '', '# Check', '', 'Prose.', '', '## Process', '', '### 1. Tests first', '', 'Run it.', '', '### 2. `just verify`', '', '## Reference', '', '- a link'].join('\n');
   const steps = stepsIn(skill);
@@ -358,6 +465,15 @@ if (!args) {
     process.exit(0);
   }
   const session = sessionOf(raw);
+  writeLicense(hasReleaseLicense(prompt), prompt, session);
+  if (prompt && !isMeta(prompt)) {
+    // What this message owes, folded into this session's record. A record still standing is a turn still running, because the reply gate deletes it when one ends — so a sentence typed into a running pass adds to what is owed and leaves the codes it has given and the moment it began where they are.
+    try {
+      extend(requiredFor(prompt), session);
+    } catch {
+      // A record that cannot be written owes nothing, which is the safe way round: a broken hook must never stop a turn.
+    }
+  }
   try {
     if (interruptedBeforeMessage(payload.transcript_path, payload.prompt_id)) clear(session);
   } catch {

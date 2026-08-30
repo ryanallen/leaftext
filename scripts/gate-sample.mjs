@@ -191,7 +191,7 @@ function selfTest() {
       forget(SIX);
     }
 
-    // Through the real entry point and into the real ring: an edit and a shell command have to come out under a name each, which is the whole ticket. Two lines rather than twenty — filling a bucket past its limit is `ringLines`' own claim and scripts/gate-rules.mjs makes it in memory, where a proof cannot flush the live diagnostic it is proving.
+    // Through the real entry point and into the real ring: an edit and a shell command have to come out under a name each, which is the whole ticket. Two lines rather than twenty — filling a bucket past its limit is `ringLines`' own claim and scripts/gate-checklist.mjs makes it in memory, where a proof cannot flush the live diagnostic it is proving.
     //
     // Only this run's own lines are read, which `ownRingNames` says why. What that filter cannot answer is the ring dropping this run's line outright — and a line missing says nothing about how the buckets are named, so there is nothing to fail on yet and the pair is fired again under a fresh name, three tries in all. Two lines named wrong still fail on the spot: the second write is only ever for lines the ring did not keep, never for lines it kept and spelled differently.
     const SEVEN = `gate-sample-selftest-ring-${process.pid}`;

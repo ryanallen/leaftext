@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse hook on the shell tools. Refuses a git write unless the message being answered said `/git-release` (Claude) or `$git-release` (Codex). This is the one rule reading cannot hold, so a script holds it: scripts/gate-rules.mjs writes a license on every turn, because a PreToolUse hook never sees the prompt.
+// PreToolUse hook on the shell tools. Refuses a git write unless the message being answered said `/git-release` (Claude) or `$git-release` (Codex). This is the one rule reading cannot hold, so a script holds it: scripts/gate-checklist.mjs writes a license on every turn, because a PreToolUse hook never sees the prompt.
 //
 // One license file per session, because two agents can work this checkout at once and a license keyed on the machine is a license the other agent can spend.
 //

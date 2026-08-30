@@ -59,7 +59,7 @@ The ticket tree is `leaftext/docs/`, the folder beside the app — not `app/docs
 | `../docs/features/` | the app cannot do this yet |
 | `../docs/refactor/` | the app already does it; this changes how |
 | `../docs/fixes/` | something is wrong and this is the fix |
-| `../docs/refactor/workflow/` | a skill, a hook or a check — how the work gets done, rather than what the app does |
+| `../docs/on-hold/workflow/` | a skill, a hook, a check, a script, the plan tree — how the work gets done, rather than what the app does. **Held on the owner's standing word**: build upkeep is filed straight here, not into the live folders |
 | `../docs/on-hold/` | paused by the owner. [`/pm`](../pm/SKILL.md) moves work in and out and records the live folder it returns to |
 | `../docs/done/` | shipped. Move it here when the last box is ticked |
 | `../docs/canceled/` | decided against. Keep the reasoning |
@@ -264,7 +264,9 @@ A file is carrying two when its summary sentence needs an *and* to stay true, wh
 
 **A skill, a hook, a check or anything else about how the work gets done is a ticket like any other**, written the moment it is asked for and closed the moment it ships. Without one there is no record of why the rule exists — and a rule nobody can trace is the first one somebody deletes. These are usually written and built in the same pass, so the file is short: what went wrong, what the rule is now, and a box per file changed.
 
-- **It goes in `../docs/refactor/workflow/`**, its own subject folder beside the app's, because it changes how the work is done rather than what the app does. It takes a row in the README and a row in the running order like everything else, and [`/done`](../done/SKILL.md) moves it to `../docs/done/repo/` once it is shipped.
+- **It goes straight into `../docs/on-hold/workflow/`, held, and never into the running order.** The owner holds every build-upkeep plan on a standing word: the ranking is for the app, and a list of the machinery's own faults crowds out the work somebody using Leaftext would notice. So the ticket takes its README row under **On hold**, a step of [`Process upkeep`](../../../../docs/TRACKS.md#process-upkeep), and a row in [the on-hold list](../../../../docs/on-hold/PLAN.md) recording `refactor/workflow/` as where it returns to. It gets no position and no tier, and no pass restores it — only the owner does. [`/done`](../done/SKILL.md) moves it to `../docs/done/repo/` if it is ever built.
+- **The one exception is a bug in the app itself.** Where the machinery is only how the fault was found, the ticket is about what the app does wrong, it is filed under `../docs/fixes/` in the subject folder for the part of the app it breaks, and it is ranked. A gate that goes red, a check that misses something, a script that mangles a commit message: all machinery, all held.
+- **A footprint that is entirely `app/scripts/`, `app/.agents/`, `app/Justfile`, `AGENTS.md` or the plan tree is the test.** It is the same line `AGENTS.md` already draws for what takes a version number, so a plan that ships no installer is a plan the owner holds.
 - **The trigger is the same as any other fix**: something was missed, went wrong twice, or has to be remembered. What the rule prevents goes in the file, in the words of what went wrong.
 - **A rule that already cost a version number belongs in `AGENTS.md` as well** — the ticket says why it was added; that file says what to do.
 

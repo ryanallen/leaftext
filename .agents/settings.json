@@ -6,11 +6,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-rules.mjs\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
             "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/gate-checklist.mjs\"",
             "timeout": 10
           },
