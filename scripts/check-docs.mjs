@@ -341,6 +341,8 @@ function drawingOwed(file, text) {
 const OWNER_HEADING = /^###[ \t]+The owner[’']s box[ \t]*$/;
 
 const BOX = /^\s*- \[( |x)\]\s*(.*)$/;
+const DESIGN_PASS_NOTE = /^\*.*\bDone in the design pass\.\*\s*$/;
+const BUILD_PROOF = /\*\*(?:Building since|Built work confirmed)\s+\d/;
 
 // A strike that closes, and whatever follows it — the reason the box was retired. The closing pair keeps the count in step with the page: Markdown draws `~~moved` as ordinary text with two tildes in front of it, so reading the opening alone drops a box a person can still see.
 const STRUCK = /^~~.*?~~(.*)$/;
@@ -370,6 +372,49 @@ function strikesWithoutReason(text) {
 /** Every box in a document, in order, as its state. */
 function boxStates(text) {
   return text.split('\n').map(boxState).filter(Boolean);
+}
+
+/** The phase headings holding completed design work that does not say design completed it. */
+function designTicksWithoutNote(text) {
+  const opening = text.split(/^##(?!#)/m)[0];
+  if (!/\*\*Designed\s+\d/.test(opening) || BUILD_PROOF.test(opening)) return [];
+  const faults = [];
+  let phase = null;
+  for (const line of text.split('\n')) {
+    const heading = /^###\s+(Phase\s+\d+.*?)\s*$/.exec(line);
+    if (heading) {
+      if (phase?.ticked && !phase.noted) faults.push(phase.name);
+      phase = { name: heading[1], noted: false, ticked: false };
+      continue;
+    }
+    if (/^#{1,3}\s/.test(line)) {
+      if (phase?.ticked && !phase.noted) faults.push(phase.name);
+      phase = null;
+      continue;
+    }
+    if (!phase) continue;
+    if (DESIGN_PASS_NOTE.test(line)) phase.noted = true;
+    const box = BOX.exec(line);
+    if (box?.[1] === 'x' && !STRUCK.test(box[2])) phase.ticked = true;
+  }
+  if (phase?.ticked && !phase.noted) faults.push(phase.name);
+  return faults;
+}
+
+const DESIGN_TICK_CASES = [
+  ['a designed phase with completed work and the design note', '# A plan\n\n> **Designed 29 August 2026, 7:00pm.**\n\n## Phases\n\n### Phase 1 — measure\n\n*Why first. Done in the design pass.*\n\n- [x] Measure\n', []],
+  ['a designed phase with completed work and no design note', '# A plan\n\n> **Designed 29 August 2026, 7:00pm.**\n\n## Phases\n\n### Phase 1 — measure\n\n*Why first.*\n\n- [x] Measure\n', ['Phase 1 — measure']],
+  ['a building ticket does not owe the design note', '# A plan\n\n> **Designed 29 August 2026, 7:00pm.**\n\n> **Building since 29 August 2026, 7:01pm.**\n\n## Phases\n\n### Phase 1 — build\n\n- [x] Build\n', []],
+  ['a confirmed legacy ticket does not owe the design note', '# A plan\n\n> **Designed 29 August 2026, 7:00pm.**\n\n> **Built work confirmed 29 August 2026, 7:01pm.**\n\n## Phases\n\n### Phase 1 — build\n\n- [x] Build\n', []],
+];
+
+function designTickSelfTest() {
+  const fails = [];
+  for (const [name, text, want] of DESIGN_TICK_CASES) {
+    const got = designTicksWithoutNote(text);
+    if (got.join(',') !== want.join(',')) fails.push(`${name}: got ${got.join(',') || 'nothing'}, want ${want.join(',') || 'nothing'}`);
+  }
+  return fails;
 }
 
 /** Every box under the owner's own heading, as its state. Empty where the section is missing or carries none, which approves nothing either way. */
@@ -1305,6 +1350,13 @@ if (strikeFails.length) {
   process.exit(1);
 }
 
+const designTickFails = designTickSelfTest();
+if (designTickFails.length) {
+  console.error('design-pass ticks: the reader is wrong, so nothing was read:');
+  for (const line of designTickFails) console.error(`  ${line}`);
+  process.exit(1);
+}
+
 const appBarFails = appBarSelfTest();
 if (appBarFails.length) {
   console.error('the app bar order: the reader is wrong, so nothing was read:');
@@ -1375,6 +1427,7 @@ const unapprovable = [];
 const misplaced = [];
 const loose = [];
 const reasonless = [];
+const undesignatedTicks = [];
 const footprintless = [];
 const misspelled = [];
 
@@ -1393,6 +1446,7 @@ for (const file of rows.map(([f]) => f)) {
   if (!livePlan(file)) continue;
   const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
   for (const at of strikesWithoutReason(text)) reasonless.push(`${file}:${at}`);
+  for (const phase of designTicksWithoutNote(text)) undesignatedTicks.push(`${file}: ${phase}`);
   for (const at of looseOwnerBoxes(file, text)) loose.push(`${file}:${at}`);
   if (ownerSectionMisplaced(file, text)) misplaced.push(file);
   const states = boxStates(text);
@@ -1499,6 +1553,13 @@ if (reasonless.length) {
   console.error('a struck box is out of every count that decides when a plan is finished, so the reason');
   console.error('written after the strike is the only record the work existed. Put it on the same line —');
   console.error('what moved it, or what it became. See "Struck through" in ../docs/GLOSSARY.md.');
+  process.exit(1);
+}
+
+if (undesignatedTicks.length) {
+  console.error('these designed tickets tick completed work without saying the design pass did it:');
+  for (const fault of undesignatedTicks) console.error(`  ${fault}`);
+  console.error('put `Done in the design pass.` in the phase\'s italic reason, or record the ticket\'s dated building proof.');
   process.exit(1);
 }
 

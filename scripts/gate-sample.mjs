@@ -65,6 +65,22 @@ export function unrowedTools(settingsText, names = SAMPLED_TOOLS) {
   return names.filter((name) => !matchers.some((matcher) => matcher.test(name)));
 }
 
+/// The hook names one session put in the ring, in the order they were written. The ring is one file for the whole checkout and every hook of every live session rewrites it whole, so its last lines belong to whoever wrote last: a proof reading them reads another session's hook name, or a line caught part-way through a rewrite, and fails on a tree that is fine. Every line already records the session it came from, so the reading simply drops the ones it did not write — which takes the torn line with it, since a line nothing can parse carries no session either.
+export function ownRingNames(lines, session) {
+  const mine = String(session ?? '');
+  if (!mine) return []; // No session is no way to tell one line from another, and claiming every line would be worse than claiming none.
+  const names = [];
+  for (const line of lines ?? []) {
+    try {
+      const entry = JSON.parse(line);
+      if (String(entry.session ?? '') === mine) names.push(String(entry.hook ?? ''));
+    } catch {
+      // A line stopping mid-payload says nothing about who wrote it, so it is not this session's.
+    }
+  }
+  return names;
+}
+
 /// Every `### Phase` section of a ticket, with its boxes counted. Any other heading ends the section, so the owner's box and the per-phase `/check` box — each under a heading of its own — are never counted as a phase's work.
 export function phasesOf(ticket) {
   const phases = [];
@@ -176,29 +192,52 @@ function selfTest() {
     }
 
     // Through the real entry point and into the real ring: an edit and a shell command have to come out under a name each, which is the whole ticket. Two lines rather than twenty — filling a bucket past its limit is `ringLines`' own claim and scripts/gate-rules.mjs makes it in memory, where a proof cannot flush the live diagnostic it is proving.
+    //
+    // Only this run's own lines are read, which `ownRingNames` says why. What that filter cannot answer is the ring dropping this run's line outright — and a line missing says nothing about how the buckets are named, so there is nothing to fail on yet and the pair is fired again under a fresh name, three tries in all. Two lines named wrong still fail on the spot: the second write is only ever for lines the ring did not keep, never for lines it kept and spelled differently.
     const SEVEN = `gate-sample-selftest-ring-${process.pid}`;
-    const ringNames = () => {
+    const RING_TRIES = 3;
+    const ringLinesOnDisk = () => {
       try {
-        return readFileSync(RING, 'utf8').split('\n').filter(Boolean).map((line) => {
-          try {
-            return JSON.parse(line).hook;
-          } catch {
-            return '';
-          }
-        });
+        return readFileSync(RING, 'utf8').split('\n').filter(Boolean);
       } catch {
-        return []; // No ring to read is no proof either way, and the line below says so.
+        return []; // No ring to read is a write the ring did not keep, which the tries below make again before anything fails.
       }
     };
-    try {
-      firedAs(SEVEN, 'Edit', { file_path: onDisk }, '--after');
-      firedAs(SEVEN, 'Bash', { command: 'ls' }, '--after');
-      const landed = ringNames().slice(-2).join(' then ');
-      if (landed !== 'PostToolUse-edit then PostToolUse-shell') {
-        fails.push(`an edit and a shell command reached the ring as ${landed || 'nothing at all'} rather than under a bucket each, so twenty commands would push the edit payload out`);
+    const firedPair = (name, between = () => {}) => {
+      for (let attempt = 1; attempt <= RING_TRIES; attempt += 1) {
+        const session = `${name}-${attempt}`;
+        try {
+          firedAs(session, 'Edit', { file_path: onDisk }, '--after');
+          between();
+          firedAs(session, 'Bash', { command: 'ls' }, '--after');
+          const own = ownRingNames(ringLinesOnDisk(), session);
+          if (own.length >= 2) return own.slice(-2).join(' then ');
+        } finally {
+          forget(session);
+        }
       }
-    } finally {
-      forget(SEVEN);
+      return null; // Three tries and the ring kept fewer than two of them, which the caller says is unproven rather than wrong.
+    };
+    const landed = firedPair(SEVEN);
+    if (landed === null) {
+      fails.push(`the ring kept fewer than two of this run's own payloads on ${RING_TRIES} tries, so nothing here says whether an edit and a shell command reach it under a bucket each`);
+    } else if (landed !== 'PostToolUse-edit then PostToolUse-shell') {
+      fails.push(`an edit and a shell command reached the ring as ${landed} rather than under a bucket each, so twenty commands would push the edit payload out`);
+    }
+
+    // The collision made on purpose rather than waited for: another session's payload through the real entry point, between this run's two. Read the file's last two lines and the shell command answering is somebody else's, which is the red gate on a green tree this whole case exists to stop.
+    const CROWD = `gate-sample-selftest-ring-other-${process.pid}`;
+    const crowded = firedPair(`gate-sample-selftest-ring-crowded-${process.pid}`, () => {
+      try {
+        firedAs(CROWD, 'Bash', { command: 'ls' }, '--after');
+      } finally {
+        forget(CROWD);
+      }
+    });
+    if (crowded === null) {
+      fails.push(`the ring kept fewer than two of this run's own payloads on ${RING_TRIES} tries with a second session writing between them`);
+    } else if (crowded !== 'PostToolUse-edit then PostToolUse-shell') {
+      fails.push(`another session's payload landing between the two fires read back as ${crowded}, so the gate still goes red on a tree that is fine`);
     }
   } catch (error) {
     fails.push(`cycle: ${error.message}`);
@@ -222,6 +261,25 @@ function selfTest() {
   }
   if (bucketOf('PostToolUse', '{ not a payload') !== 'PostToolUse-other') fails.push('a payload nothing can parse was not filed under -other, where the largest and most worth keeping of them belong');
   if (bucketOf('PreToolUse', JSON.stringify({})) !== 'PreToolUse-other') fails.push('a payload naming no tool was not filed under -other');
+
+  // The ring read, over made-up lines. What it drops is the whole fix: another session's hook name, and a line caught part-way through somebody's rewrite. One of its own lines coming back has to read as one — a write the ring lost, which the case above fires again — rather than as a bucket named wrong, which it fails on.
+  const ringLine = (session, hook) => JSON.stringify({ at: '', hook, session, env: '', raw: '' });
+  const MINE = 'gate-sample-selftest-mine';
+  const THEIRS = 'gate-sample-selftest-theirs';
+  const mixed = [
+    ringLine(THEIRS, 'Stop'),
+    ringLine(MINE, 'PostToolUse-edit'),
+    ringLine(THEIRS, 'PostToolUse-shell'),
+    `{"hook":"PostToolUse-edit","session":"${MINE}"`,
+    ringLine(MINE, 'PostToolUse-shell'),
+  ];
+  if (ownRingNames(mixed, MINE).join(' then ') !== 'PostToolUse-edit then PostToolUse-shell') {
+    fails.push("the ring read did not step over another session's lines and a line stopping mid-payload to answer this run's own two in the order they were written");
+  }
+  if (ownRingNames(mixed, THEIRS).join(' then ') !== 'Stop then PostToolUse-shell') fails.push('the ring read did not answer a second session the lines that session wrote');
+  if (ownRingNames([ringLine(MINE, 'PostToolUse-edit')], MINE).length !== 1) fails.push("one of this run's own lines coming back did not read as one, so a write the ring lost would fail as a bucket named wrong");
+  if (ownRingNames(mixed, '').length) fails.push('the ring read with no session to match claimed lines it cannot have written');
+  if (ownRingNames([], MINE).length) fails.push('an empty ring answered a line');
 
   // The row direction on settings files invented here, before the real one is opened. `rowed` is a pretend settings file: one `PostToolUse` row per matcher, each running this hook.
   const rowed = (...matchers) => JSON.stringify({

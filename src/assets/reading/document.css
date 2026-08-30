@@ -28,8 +28,8 @@
   border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
   border-radius: var(--lt-radius-lg);
   color: var(--lt-markdown-foreground);
-  /* The one control left out of the shared hover fade at the top of the file: its hover swaps a dot lattice and the custom property painting it, and neither a `background-image` nor an unregistered property interpolates — so a fade here would drift the border and the ink around a lattice that had already snapped. */
-  transition: none;
+  /* The halftone this card throws rides a `::before` in `panels.css`, and an absolutely positioned layer needs a positioned host. */
+  position: relative;
 }
 .docs-pager-skeleton {
   flex: 1 1 0;
@@ -75,16 +75,12 @@
     opacity: var(--lt-opacity-55);
   }
 }
-/* The page's own lattice rather than the flat wash: this button is wide enough that a tint reads as a slab laid over the grained code blocks and table heads beside it. Window-anchored so the dots stay in phase across its edge, and nothing may set `background` after this — at equal weight the shorthand blanks the image. */
+/* The same fill the chrome buttons take, so the biggest target on the page answers the pointer the way the smallest ones do. It replaces a dot lattice, which the app spends everywhere else on saying a thing is quiet — over a card this wide that read as switched off. What keeps it from being a slab is the halftone `panels.css` throws around it. */
 .document-body .docs-pager a:hover,
 .document-body .docs-pager a:focus-visible {
-  --lt-grain-dot: var(--lt-grain-hover);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
-  background-repeat: repeat;
-  background-attachment: fixed;
-  border-color: var(--lt-markdown-link);
-  color: var(--lt-markdown-link);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
   text-decoration: none;
 }
 .docs-pager .docs-pager-next {
@@ -95,6 +91,12 @@
   font-size: 0.74rem;
   color: var(--lt-muted-foreground);
   margin-bottom: var(--lt-space-2);
+}
+/* Quiet, on a filled surface: the ink the title inverts to, at three quarters. The muted gray above is chosen against the page and disappears on a saturated fill. */
+.document-body .docs-pager a:hover .docs-pager-label,
+.document-body .docs-pager a:focus-visible .docs-pager-label {
+  color: var(--lt-primary-foreground);
+  opacity: var(--lt-opacity-75);
 }
 @media (max-width: 700px) {
   .docs-pager {

@@ -5,7 +5,7 @@
 //   node scripts/check-plan-stage.mjs --check   self-test the reading, then check the real files
 //   node scripts/check-plan-stage.mjs --write   write every live row's Status cell from its ticket
 //
-// Four stages, each resting on a dated line the ticket carries and one pass writes: `Designed` on /design's, `Dev` on the `Building since` line /dev writes when it opens a phase, `Released` on /git-release's, and `Ready` on a ticket with none of them, which claims nothing. Every one of those lines is in the ticket's own file, which has one writer, so a build writes its stage where it already writes its boxes.
+// Four stages, each resting on a dated line the ticket carries and one pass writes: `Designed` on /design's, `Dev` on the `Building since` line /dev writes when it opens a phase or the legacy confirmation line, `Released` on /git-release's, and `Ready` on a ticket with none of them, which claims nothing. Every one of those lines is in the ticket's own file, which has one writer, so a build writes its stage where it already writes its boxes.
 //
 // A cell is refused for disagreeing with the ticket rather than only for claiming too much: a row saying `Designed` over a build that started is as misleading as one saying `Dev` over a plan nobody read, and the owner reads this file to see whether a build is happening.
 
@@ -26,13 +26,10 @@ export function isDesigned(ticket) {
   return /\*\*Designed\s+\d/.test(ticket);
 }
 
-// The other proof a build has started, and one every ticket already carries. The dated line covers only the stretch before the first box goes in, which is the longest part of a build and the stretch a reader most needs an answer for.
-const TICKED = /^[ \t]*- \[x\]/mi;
-
-// The dated line the two stages above `Designed` rest on, richest first. `Designed` is not in here: it is the floor a designed ticket falls back to once neither of these nor a ticked box has answered.
+// The dated lines the two stages above `Designed` rest on, richest first. `Built work confirmed` records the one migrated ticket whose work landed before /dev wrote building lines. `Designed` is not in here: it is the floor a designed ticket falls back to once neither of these has answered.
 const LINES = [
   ['Released', /\*\*Released\s+\d/],
-  ['Dev', /\*\*Building since\s+\d/],
+  ['Dev', /\*\*(?:Building since|Built work confirmed)\s+\d/],
 ];
 
 /** What a ticket's own dated lines say its stage is. `Ready` is the answer for a ticket carrying none of them, which is a plan nobody has opened yet.
@@ -42,7 +39,7 @@ export function stageOf(ticket) {
   const opening = ticket.split(/^##(?!#)/m)[0];
   for (const [stage, line] of LINES) if (line.test(opening)) return stage;
   if (!isDesigned(opening)) return 'Ready';
-  return TICKED.test(ticket) ? 'Dev' : 'Designed';
+  return 'Designed';
 }
 
 /** The running order with every live row's Status cell written from its ticket. A row whose ticket cannot be opened keeps the cell it has: a link pointing at nothing is check-plan.mjs's to name, and blanking the cell would hide it. */
@@ -98,6 +95,7 @@ const HEAD = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | 
 const DESIGNED = '# A plan\n\n> **Designed 19 August 2026, 7:07pm.** Citations opened.\n';
 const PLAIN = '# A plan\n\n> **Not built.** A plan.\n';
 const BUILDING = `${DESIGNED}> **Building since 19 August 2026, 8:02pm.**\n`;
+const CONFIRMED = `${DESIGNED}> **Built work confirmed 19 August 2026, 8:03pm.** The alignment boxes landed before building lines existed.\n`;
 const TICKING = `${DESIGNED}\n## Phases\n\n- [x] the first box\n- [ ] the second\n`;
 const SHIPPED = `${BUILDING}> **Released 19 August 2026, 9:40pm, v1.2.3.**\n`;
 // A ticket quoting another's dated line below its first heading, which is what the record and the measured table are full of.
@@ -105,6 +103,7 @@ const QUOTING = `${PLAIN}\n## Why\n\nIt cites > **Designed 14 August 2026.** as 
 const TICKETS = {
   'refactor/a/designed.md': DESIGNED,
   'refactor/a/building.md': BUILDING,
+  'refactor/a/confirmed.md': CONFIRMED,
   'refactor/a/ticking.md': TICKING,
   'refactor/a/shipped.md': SHIPPED,
   'refactor/a/quoting.md': QUOTING,
@@ -120,11 +119,12 @@ const CASES = [
   ['a Dev row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Dev | — | — | — | — | first |`, true],
   ['a Released row whose ticket was never designed', `${HEAD}| 1 | [p](refactor/a/plain.md) | Released | — | — | — | — | first |`, true],
   ['a Dev row whose ticket is dated as building', `${HEAD}| 1 | [b](refactor/a/building.md) | Dev | — | — | — | — | first |`, false],
-  ['a Dev row whose ticket has a box ticked', `${HEAD}| 1 | [t](refactor/a/ticking.md) | Dev | — | — | — | — | first |`, false],
+  ['a Dev row whose ticket has confirmed legacy work', `${HEAD}| 1 | [c](refactor/a/confirmed.md) | Dev | — | — | — | — | first |`, false],
+  ['a Designed row whose ticket has a box ticked', `${HEAD}| 1 | [t](refactor/a/ticking.md) | Designed | — | — | — | — | first |`, false],
   ['a Released row whose ticket carries the shipped line', `${HEAD}| 1 | [s](refactor/a/shipped.md) | Released | — | — | — | — | first |`, false],
   ['a Ready row whose ticket only quotes a dated line below its first heading', `${HEAD}| 1 | [q](refactor/a/quoting.md) | Ready | — | — | — | — | first |`, false],
   ['a Designed row whose ticket is dated as building', `${HEAD}| 1 | [b](refactor/a/building.md) | Designed | — | — | — | — | first |`, true],
-  ['a Designed row whose ticket has a box ticked', `${HEAD}| 1 | [t](refactor/a/ticking.md) | Designed | — | — | — | — | first |`, true],
+  ['a Dev row whose ticket has a box ticked', `${HEAD}| 1 | [t](refactor/a/ticking.md) | Dev | — | — | — | — | first |`, true],
   ['a Dev row whose ticket has shipped', `${HEAD}| 1 | [s](refactor/a/shipped.md) | Dev | — | — | — | — | first |`, true],
   ['a Ready row whose ticket has been designed', `${HEAD}| 1 | [d](refactor/a/designed.md) | Ready | — | — | — | — | first |`, true],
 ];

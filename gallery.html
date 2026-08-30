@@ -3718,7 +3718,7 @@ body.is-maximized #winMaximize .wc-restore {
 .update-button-spinner[hidden] {
   display: none;
 }
-/* Every floating surface's shadow, said once: the same 2px dot lattice the two toolbars throw, in shadow ink, thinning out under an ellipse — a halftone, never a smooth blur. The second mask layer punches the host's own box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ellipse` — the punch inside out. */
+/* Every surface that throws a shadow, said once — the floating ones and, at the foot of a page, the Previous / Next card: the same 2px dot lattice the two toolbars throw, in shadow ink, thinning out under an ellipse — a halftone, never a smooth blur. The second mask layer punches the host's own box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ellipse` — the punch inside out. */
 .app-overflow-panel::before,
 .context-menu::before,
 .rename-box::before,
@@ -3730,7 +3730,8 @@ body.is-maximized #winMaximize .wc-restore {
 .home-row-ghost::before,
 .find-bar::before,
 .confirm-dialog::before,
-.leaf-sheet::before {
+.leaf-sheet::before,
+.document-body .docs-pager a::before {
   content: '';
   position: absolute;
   z-index: var(--lt-z-below);
@@ -3776,6 +3777,29 @@ body.is-maximized #winMaximize .wc-restore {
       transparent 100%
     ),
     linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+}
+/* The one host on that list sitting inside the document rather than over it, which makes two lines of the shared rule wrong for it. `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. And the shared fade runs across the whole box, which on a card the width of the measure leaves the whole ring in the transparent tail, so it takes the link card's stops. The mask's second layer still punches the card's own face out, which is what keeps a dot off the words. */
+.document-body .docs-pager a::before {
+  z-index: 0;
+  /* Drawn at rest and revealed, never written under `:hover`: the lattice gate refuses a background image inside a hovered rule in any ink but the hover ink, and this one is the shadow ink. The fade matches the shared hover fade, so the ring arrives with the fill rather than snapping over it. */
+  opacity: 0;
+  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  -webkit-mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) calc(100% - 34px),
+      transparent 100%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) calc(100% - 34px),
+      transparent 100%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+}
+.document-body .docs-pager a:hover::before,
+.document-body .docs-pager a:focus-visible::before {
+  opacity: 1;
 }
 /* Every spinner in the app: a ring with one lit edge, turning. The shape and the turn are here; a site keeps only its own size and colors, because those are what differ — a 12px ring in a settings row, a 34px one on an empty reader. */
 .lt-spinner {
@@ -3889,9 +3913,11 @@ button:disabled:hover {
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
 }
+/* Chrome, so it lights up like the four chrome buttons above rather than washing to see-through and letting the app bar's own grain show through it. The arrow is a mask, so the inverted color paints it. */
 .history-button:hover:not(:disabled) {
-  border-color: transparent;
-  background: var(--lt-wash-hover);
+  border-color: var(--lt-navigation-button-hover-background);
+  background: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
 }
 .history-button:disabled,
 .history-button:disabled:hover {
@@ -5572,8 +5598,8 @@ body:has(#readerToolbar:not([hidden])) {
   border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
   border-radius: var(--lt-radius-lg);
   color: var(--lt-markdown-foreground);
-  /* The one control left out of the shared hover fade at the top of the file: its hover swaps a dot lattice and the custom property painting it, and neither a `background-image` nor an unregistered property interpolates — so a fade here would drift the border and the ink around a lattice that had already snapped. */
-  transition: none;
+  /* The halftone this card throws rides a `::before` in `panels.css`, and an absolutely positioned layer needs a positioned host. */
+  position: relative;
 }
 .docs-pager-skeleton {
   flex: 1 1 0;
@@ -5619,16 +5645,12 @@ body:has(#readerToolbar:not([hidden])) {
     opacity: var(--lt-opacity-55);
   }
 }
-/* The page's own lattice rather than the flat wash: this button is wide enough that a tint reads as a slab laid over the grained code blocks and table heads beside it. Window-anchored so the dots stay in phase across its edge, and nothing may set `background` after this — at equal weight the shorthand blanks the image. */
+/* The same fill the chrome buttons take, so the biggest target on the page answers the pointer the way the smallest ones do. It replaces a dot lattice, which the app spends everywhere else on saying a thing is quiet — over a card this wide that read as switched off. What keeps it from being a slab is the halftone `panels.css` throws around it. */
 .document-body .docs-pager a:hover,
 .document-body .docs-pager a:focus-visible {
-  --lt-grain-dot: var(--lt-grain-hover);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
-  background-repeat: repeat;
-  background-attachment: fixed;
-  border-color: var(--lt-markdown-link);
-  color: var(--lt-markdown-link);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
   text-decoration: none;
 }
 .docs-pager .docs-pager-next {
@@ -5639,6 +5661,12 @@ body:has(#readerToolbar:not([hidden])) {
   font-size: 0.74rem;
   color: var(--lt-muted-foreground);
   margin-bottom: var(--lt-space-2);
+}
+/* Quiet, on a filled surface: the ink the title inverts to, at three quarters. The muted gray above is chosen against the page and disappears on a saturated fill. */
+.document-body .docs-pager a:hover .docs-pager-label,
+.document-body .docs-pager a:focus-visible .docs-pager-label {
+  color: var(--lt-primary-foreground);
+  opacity: var(--lt-opacity-75);
 }
 @media (max-width: 700px) {
   .docs-pager {

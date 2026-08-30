@@ -180,7 +180,7 @@
 .update-button-spinner[hidden] {
   display: none;
 }
-/* Every floating surface's shadow, said once: the same 2px dot lattice the two toolbars throw, in shadow ink, thinning out under an ellipse — a halftone, never a smooth blur. The second mask layer punches the host's own box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ellipse` — the punch inside out. */
+/* Every surface that throws a shadow, said once — the floating ones and, at the foot of a page, the Previous / Next card: the same 2px dot lattice the two toolbars throw, in shadow ink, thinning out under an ellipse — a halftone, never a smooth blur. The second mask layer punches the host's own box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ellipse` — the punch inside out. */
 .app-overflow-panel::before,
 .context-menu::before,
 .rename-box::before,
@@ -192,7 +192,8 @@
 .home-row-ghost::before,
 .find-bar::before,
 .confirm-dialog::before,
-.leaf-sheet::before {
+.leaf-sheet::before,
+.document-body .docs-pager a::before {
   content: '';
   position: absolute;
   z-index: var(--lt-z-below);
@@ -238,4 +239,27 @@
       transparent 100%
     ),
     linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+}
+/* The one host on that list sitting inside the document rather than over it, which makes two lines of the shared rule wrong for it. `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. And the shared fade runs across the whole box, which on a card the width of the measure leaves the whole ring in the transparent tail, so it takes the link card's stops. The mask's second layer still punches the card's own face out, which is what keeps a dot off the words. */
+.document-body .docs-pager a::before {
+  z-index: 0;
+  /* Drawn at rest and revealed, never written under `:hover`: the lattice gate refuses a background image inside a hovered rule in any ink but the hover ink, and this one is the shadow ink. The fade matches the shared hover fade, so the ring arrives with the fill rather than snapping over it. */
+  opacity: 0;
+  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  -webkit-mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) calc(100% - 34px),
+      transparent 100%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  mask-image: radial-gradient(
+      ellipse farthest-side at 50% 55%,
+      var(--lt-mask-opaque) calc(100% - 34px),
+      transparent 100%
+    ),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+}
+.document-body .docs-pager a:hover::before,
+.document-body .docs-pager a:focus-visible::before {
+  opacity: 1;
 }

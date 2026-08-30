@@ -110,9 +110,11 @@ button:disabled:hover {
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
 }
+/* Chrome, so it lights up like the four chrome buttons above rather than washing to see-through and letting the app bar's own grain show through it. The arrow is a mask, so the inverted color paints it. */
 .history-button:hover:not(:disabled) {
-  border-color: transparent;
-  background: var(--lt-wash-hover);
+  border-color: var(--lt-navigation-button-hover-background);
+  background: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
 }
 .history-button:disabled,
 .history-button:disabled:hover {

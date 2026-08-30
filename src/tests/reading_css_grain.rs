@@ -91,7 +91,7 @@ fn every_hover_fills_with_the_one_wash() {
         ".crumb-menu-edit:hover",
         ".reader-tool:hover",
         ".reader-subtool:hover",
-        ".history-button:hover:not(:disabled)",
+        // Back and Forward are not on this list: they are chrome, and chrome under the pointer is a colored state rather than a wash. Their own test below holds it.
     ] {
         assert!(
             rule_after(selector).contains("background: var(--lt-wash-hover);"),
@@ -112,6 +112,37 @@ fn every_hover_fills_with_the_one_wash() {
     );
 }
 
+#[test]
+fn the_history_buttons_fill_with_the_theme_rather_than_uncovering_the_bar() {
+    // Back and Forward paint no grain of their own: they rest on an opaque chip, and a see-through hover wash simply stopped covering the app bar's lattice, so the pointer looked like it was switching the button off. An opaque theme fill is what covers the bar again, and it is the same fill the four chrome buttons beside them already wear.
+    let css = reading_mode_css();
+
+    let hover = rule_body(&css, ".history-button:hover:not(:disabled) {");
+    assert_contains(
+        hover,
+        "background: var(--lt-navigation-button-hover-background);",
+    );
+    assert_contains(
+        hover,
+        "border-color: var(--lt-navigation-button-hover-background);",
+    );
+    // The arrow is a mask, so the button's own color paints it and the glyph inverts on the fill for free.
+    assert_contains(hover, "color: var(--lt-primary-foreground);");
+    assert!(
+        !hover.contains("var(--lt-wash-hover)") && !hover.contains("transparent"),
+        "a see-through hover is what let the bar's grain through, so neither the wash nor a transparent fill may come back"
+    );
+
+    // The rest state stays opaque for the same reason, and the disabled pair keeps saying the button cannot be pressed.
+    assert_contains(
+        rule_body(&css, ".history-button {"),
+        "background: var(--lt-surface-elevated);",
+    );
+    assert_contains(
+        rule_body(&css, ".history-button:disabled,"),
+        "background: var(--lt-surface-elevated);",
+    );
+}
 #[test]
 fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
     // The hand says "this can be pressed", so an enabled button wears it and the shared `button` rule is where it is written — a control added later takes it without anybody remembering. The rule is deliberately weak: a single-class rule still beats it, which is what leaves a control whose gesture is a drag or a draw wearing its own shape, and what leaves the app's own furniture at the top of the window wearing the arrow.
@@ -299,26 +330,40 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
 }
 
 #[test]
-fn the_pager_button_grains_under_the_pointer_and_keeps_its_label_unmarked() {
+fn the_pager_card_fills_with_the_theme_and_throws_the_halftone_instead_of_graining() {
     let css = reading_mode_css();
 
-    // The fill is the page's own lattice in the one ink a hover has, on the same window-anchored grid every grained surface uses — a box-anchored one falls out of phase with the code block above it at the button's edge.
+    // It used to fill with the heaviest lattice in the tree, which is the app's own way of saying a thing is quiet — across a card the width of the measure that read as switched off. It takes the fill the chrome buttons take instead, and the halftone it throws is what keeps it from being a slab.
     let hover = rule_body(
         css,
         ".document-body .docs-pager a:hover,\n.document-body .docs-pager a:focus-visible {",
     );
     for expected in [
-        "--lt-grain-dot: var(--lt-grain-hover);",
-        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
-        "background-size: 2px 2px;",
-        "background-attachment: fixed;",
+        "background: var(--lt-navigation-button-hover-background);",
+        "border-color: var(--lt-navigation-button-hover-background);",
+        "color: var(--lt-primary-foreground);",
         "text-decoration: none;",
     ] {
         assert_contains(hover, expected);
     }
+    assert!(
+        !hover.contains("radial-gradient") && !hover.contains("--lt-grain-dot"),
+        "the lattice is what made the card read as disabled: {hover}"
+    );
 
-    // The ink is black at an alpha like every other grain, so the button sinks on a light family and a dark one alike rather than lifting on one of them.
-    assert_contains(css, "--lt-grain-hover: rgba(0, 0, 0, 0.55);");
+    // The kicker is a gray chosen against the page, so on a saturated fill it needs the inverted ink at three quarters or it vanishes.
+    let label = rule_body(
+        css,
+        ".document-body .docs-pager a:hover .docs-pager-label,\n.document-body .docs-pager a:focus-visible .docs-pager-label {",
+    );
+    assert_contains(label, "color: var(--lt-primary-foreground);");
+    assert_contains(label, "opacity: var(--lt-opacity-75);");
+
+    // The halftone rides an absolutely positioned layer, which needs a positioned host.
+    assert_contains(
+        rule_body(css, ".document-body .docs-pager a {"),
+        "position: relative;",
+    );
 
     // Both pager rules are scoped under the document. Unscoped they weigh the same as the blanket link rule and lose to it for sitting earlier, which underlines the page name and takes its color.
     for scoped in [
@@ -332,14 +377,72 @@ fn the_pager_button_grains_under_the_pointer_and_keeps_its_label_unmarked() {
         "an unscoped pager rule loses the underline fight to .document-body a:hover"
     );
 
-    // And nothing may set a background after it: at equal weight a later `background:` shorthand blanks the image.
+    // And nothing may set a background after it: at equal weight a later `background:` shorthand blanks the fill.
     let at = css
         .find(".document-body .docs-pager a:hover,")
         .expect("the pager hover rule");
     assert!(
         !css[at..].contains(".docs-pager a {"),
-        "a later pager fill would blank the lattice"
+        "a later pager fill would blank this one"
     );
+}
+
+#[test]
+fn the_pagers_halftone_sits_above_the_reading_page_rather_than_below_it() {
+    let css = reading_mode_css();
+
+    // It joins the one shared list rather than copying the geometry, and then overrides the two lines that are right for a panel hanging over the page and wrong for a card sitting inside it.
+    assert_contains(css, ".document-body .docs-pager a::before {");
+    let own = rule_body(
+        css,
+        ".document-body .docs-pager a::before {
+  z-index: 0;",
+    );
+
+    // The shared depth is negative, which drops the layer behind the opaque reading and library shells — neither opens a stacking context — so it never draws at all.
+    assert_contains(own, "z-index: 0;");
+    assert!(
+        !own.contains("var(--lt-z-below)"),
+        "a negative layer inside the document body renders nowhere: {own}"
+    );
+
+    // The shared ellipse fades across the whole box, which on a card this wide leaves the whole ring in the transparent tail. These are the link card's stops, which put the fade inside the band.
+    assert_contains(own, "var(--lt-mask-opaque) calc(100% - 34px),");
+    assert_contains(own, "mask-image: radial-gradient(");
+
+    // Drawn at rest and revealed, because the literal gate refuses a lattice inside a hovered rule in any ink but the hover ink — and the halftone's is the shadow ink.
+    assert_contains(own, "opacity: 0;");
+    assert_contains(
+        rule_body(
+            css,
+            ".document-body .docs-pager a:hover::before,\n.document-body .docs-pager a:focus-visible::before {",
+        ),
+        "opacity: 1;",
+    );
+}
+
+#[test]
+fn the_shared_halftone_list_still_holds_every_floating_surface() {
+    let css = reading_mode_css();
+
+    // The pager joining the list may not become a rewrite of it: every surface that threw the halftone before still throws it.
+    for surface in [
+        ".app-overflow-panel::before,",
+        ".context-menu::before,",
+        ".rename-box::before,",
+        ".update-panel::before,",
+        ".app-toast::before,",
+        ".flow-menu::before,",
+        ".link-hover-tip::before,",
+        ".block-drag-ghost::before,",
+        ".home-row-ghost::before,",
+        ".find-bar::before,",
+        ".confirm-dialog::before,",
+        ".leaf-sheet::before,",
+    ] {
+        assert_contains(css, surface);
+    }
+    assert_contains(css, ".document-body .docs-pager a::before {");
 }
 
 #[test]
@@ -386,7 +489,7 @@ fn every_floating_surface_throws_the_dot_halftone() {
         ".link-hover-tip::before,",
         ".block-drag-ghost::before,",
         ".find-bar::before,",
-        ".leaf-sheet::before {",
+        ".leaf-sheet::before,",
     ] {
         assert_contains(css, surface);
     }
@@ -483,17 +586,22 @@ fn a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot() {
         );
     }
 
-    // The one control taken out by name: its hover swaps a dot lattice and the custom property painting it, and neither interpolates, so a fade would drift the border and the ink around a lattice that had already snapped.
+    // The pager card was the one control taken out by name, back when its hover swapped a dot lattice and the custom property painting it and neither interpolated. A flat fill does, so it is back on the shared fade and writes no clock of its own.
+    let pager = rule_body(css, ".document-body .docs-pager a {");
+    assert!(
+        !pager.contains("transition"),
+        "the pager fades off the shared rule now that it fills flat: {pager}"
+    );
+
+    // Its halftone is the exception, and it says so by name: the shared rule covers three colors and this is an opacity, so without its own clock the ring would snap in under a fill that was still fading.
     assert_contains(
-        rule_body(css, ".document-body .docs-pager a {"),
-        "transition: none;",
+        rule_body(
+            css,
+            ".document-body .docs-pager a::before {
+  z-index: 0;",
+        ),
+        "transition: opacity var(--lt-duration-120) var(--lt-ease);",
     );
-    let pager_hover = rule_body(
-        css,
-        ".document-body .docs-pager a:hover,\n.document-body .docs-pager a:focus-visible {",
-    );
-    assert_contains(pager_hover, "--lt-grain-dot: var(--lt-grain-hover);");
-    assert_contains(pager_hover, "background-image: radial-gradient(");
 
     // A plain link is the opposite: its ink fades off the shared rule, and the underline it also gains is not a color and still switches.
     let link_hover = rule_body(css, ".document-body a:hover {");

@@ -9,6 +9,10 @@ user-invocable: true
 
 Build a ticket from its path, phase by phase, and stop at the owner's box.
 
+## 🛑 Only the owner starts a build
+
+**This skill runs only when the message being answered right now was typed by the owner and carries `/dev` or `$dev`; nothing else authorizes one.**
+
 ## Process
 
 ### 1. Read the ticket, its row and the running order
@@ -19,7 +23,7 @@ Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` be
 
 ### 2. Date the ticket as building and run `just bundle-plan-status`, before anything else is touched
 
-**Write `> **Building since 18 August 2026, 9:11pm.**` under the ticket's dated `Designed` line before anything else is touched** — the ticket is read, the line is written, and no phase is opened until it is. Never "when implementation starts": reading the code and weighing an option are implementation starting and neither writes anything down, so the running order keeps saying `Designed` through the longest part of a build and the owner has to ask whether one is happening at all, which is the question the whole tree is written to answer without being asked. The clock is read rather than remembered (`Get-Date`). **The line goes in the ticket and never in the running order**: that file is one ranked list two builds must not both write, and the `Status` cell is computed off this line — `just bundle-plan-status` writes it and `just check-plan-stage` refuses a cell that disagrees, so there is nothing here to keep synchronized. A ticked box says `Dev` too, so the line is what covers the stretch before the first box goes in.
+**Write `> **Building since 18 August 2026, 9:11pm.**` under the ticket's dated `Designed` line before anything else is touched** — the ticket is read, the line is written, and no phase is opened until it is. Never "when implementation starts": reading the code and weighing an option are implementation starting and neither writes anything down, so the running order keeps saying `Designed` through the longest part of a build and the owner has to ask whether one is happening at all, which is the question the whole tree is written to answer without being asked. The clock is read rather than remembered (`Get-Date`). **The line goes in the ticket and never in the running order**: that file is one ranked list two builds must not both write, and the `Status` cell is computed off this line — `just bundle-plan-status` writes it and `just check-plan-stage` refuses a cell that disagrees, so there is nothing here to keep synchronized. It is the proof of `Dev` from the moment a build starts.
 
 **Then run `just bundle-plan-status` in the same breath, before a phase is opened.** Writing the line without it leaves the running order saying `Designed` for the whole build, which is the exact thing the line was written to stop — the owner reads the running order, not the ticket, and a stale cell there tells them nobody has started. The recipe is not an authored write: it reads every ticket and stamps the one computed column, so it is safe beside another build in a way `/pm` is not.
 

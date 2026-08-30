@@ -232,7 +232,7 @@ Every `z-index` of 20 or more is a page layer and takes a token. Values of 11 or
 
 Everything the app puts in a `box-shadow`. None of them is a cast shadow: a floating surface throws the dot halftone the stylesheet draws instead. Each takes a color from the contract or mixes one, so it still belongs to its theme.
 
-**The halftone shadow** is the one cast shadow, and it is not a token because only its ink is a value — the geometry is one shared rule in `src/assets/reading/panels.css`. Every floating surface — menu, toast, dialog, sheet, find bar, rename box, drag ghost, link card — joins that rule's selector list rather than writing a shadow of its own: the strong grain ink on a thin band around the surface, thinning out under an ellipse, with the surface's own box punched back out so no dot lands on its face. The ellipse fades across a fraction of the box, so a surface as small as the link card lands its whole visible band in the nearly transparent tail and shows nothing; a surface that small keeps the shared rule and overrides only the fade stops, moving the fade into the band itself.
+**The halftone shadow** is the one cast shadow, and it is not a token because only its ink is a value — the geometry is one shared rule in `src/assets/reading/panels.css`. Every floating surface — menu, toast, dialog, sheet, find bar, rename box, drag ghost, link card — and the Previous / Next card at the foot of a page joins that rule's selector list rather than writing a shadow of its own: the strong grain ink on a thin band around the surface, thinning out under an ellipse, with the surface's own box punched back out so no dot lands on its face. The ellipse fades across a fraction of the box, so a surface as small as the link card lands its whole visible band in the nearly transparent tail and shows nothing; a surface that small keeps the shared rule and overrides only the fade stops, moving the fade into the band itself, and the pager card takes the same stops from the other end, being wide enough that the ellipse lands its ring in the tail too. That card is also the one host sitting inside the document rather than over it, so it is the one that overrides the layer as well: the shared negative depth falls behind the opaque reading shell and never draws.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -254,7 +254,7 @@ The dot lattice's ink. Only the ink is a token: each rule writes the circles int
 | lt-grain-dark | `rgba(0, 0, 0, 0.35)` | A dark theme's chrome: it needs more alpha to show against an already-dark surface. |
 | lt-grain-dark-heavy | `rgba(0, 0, 0, 0.72)` | A dark theme's inactive tab. |
 | lt-grain-lift | `rgba(255, 255, 255, 0.07)` | The one grain that goes the other way: the darkest table row, where black has nowhere left to go. |
-| lt-grain-hover | `rgba(0, 0, 0, 0.55)` | The pager button under the pointer. Black like the rest, so the box sinks on a light family and a dark one alike; heavier than the chrome's because dots cover about a quarter of what they fill, which lands the filled box about as far off its surface as [the wash](#the-hover-wash) moves a row. |
+| lt-grain-hover | `rgba(0, 0, 0, 0.55)` | The gap a dragged row on the home screen will land in. Black like the rest, so the box sinks on a light family and a dark one alike; heavier than the chrome's because dots cover about a quarter of what they fill, which lands the filled box about as far off its surface as [the wash](#the-hover-wash) moves a row. |
 
 ## Fixed colors
 

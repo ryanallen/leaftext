@@ -150,6 +150,8 @@ If a fix changes what gets built rather than how it is described, choose among t
 
 **A phase with no test box is a phase this pass writes one for.** [ticket](../ticket/SKILL.md) holds the shape; adding a missing test box is describing the same work more honestly, not changing it, so it does not wait on a question. `just verify` runs the tests that exist and nothing else asks whether the change made one necessary — which is why a plan is the cheapest place to catch it.
 
+**A completed, unstruck box this pass ticks carries `Done in the design pass.` in its phase's italic reason.** Write the sentence before ticking the box, so a designed ticket with no building proof says that design completed the work rather than claiming a build started. Retired work remains unticked and struck with its reason.
+
 **Search the suite before writing the box.** The same reading this skill already does, aimed at the tests:
 
 ```bash
