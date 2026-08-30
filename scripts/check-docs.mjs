@@ -1102,10 +1102,10 @@ function appBarSelfTest() {
 //
 // Offline and parser-only on purpose: the sheets are HTML in the plan tree and the names come from `design/icons.md`, so nothing renders and no browser starts. Whether a photograph shows the last row is the audit bundler's to prove, not this one's.
 //
-// Two rows wear a label the reader sees rather than the class name behind them — the folder menu's arrow is Back and the header logomark is Logo — because an app-wide class rename is not the price of an honest chart.
+// One row wears a label the reader sees rather than the class name behind it: the header logomark is Logo. Every other row is audited under its own name.
 const AUDIT_SHEETS = [1, 2, 3].map((n) => `imgs/wireframes/theme-icon-sets-audit-${n}.html`);
 const AUDIT_PACKS = ['Feather', 'Lucide', 'Tabler', 'Remix', 'Phosphor', 'Heroicons'];
-const AUDIT_LABELS = { 'back-long': 'back', leaf: 'logo' };
+const AUDIT_LABELS = { leaf: 'logo' };
 
 /** Every icon name `design/icons.md` holds, in the order its table holds them, which is the audit's row order too. */
 export function iconNames(text) {
@@ -1152,7 +1152,7 @@ const AUDIT_CASES = [
   ['a row short of a pack is refused', [auditSheet(auditRow('back', AUDIT_CELL.repeat(6)))], ['back'], ['back shows 6 of 7 packs']],
   ['a cell naming no drawing is refused', [AUDIT_WHOLE.replace('<small>arrow-left</small>', '<small></small>')], ['back'], ['back names no Leaftext drawing']],
   ['a fallback that never says what it keeps is refused', [AUDIT_WHOLE.replace('keep Leaftext · back.svg · heroicons', 'arrow-left')], ['back'], ['back falls back under Heroicons without saying what it keeps']],
-  ['the folder menu\'s arrow is audited as Back, and the logomark as Logo', [AUDIT_WHOLE + auditRow('logo', AUDIT_CELL.repeat(7))], ['back-long', 'leaf'], []],
+  ['the logomark is audited as Logo, and every other row under its own name', [AUDIT_WHOLE + auditRow('logo', AUDIT_CELL.repeat(7))], ['back', 'leaf'], []],
 ];
 
 function auditSelfTest() {

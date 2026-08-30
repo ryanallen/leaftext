@@ -486,6 +486,23 @@ export function run() {
     if (rows().length !== 1) throw new Error(`a move landing on one still running left ${rows().length} rows on screen`);
   });
 
+  check('the row out of a folder wears the plain back arrow', () => {
+    const tree = booted.document.getElementById('libraryTree');
+    booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work', 'Work', [
+      { kind: 'folder', name: 'notes', path: 'C:\Vaults\Work\notes' },
+    ]));
+    ((tree.querySelector('[data-folder-path]').listeners.get('pointerdown') || [])[0])({ pointerType: 'mouse', button: 0 });
+    booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work\notes', 'notes', [
+      { kind: 'file', name: 'A note.md', path: 'C:\Vaults\Work\notes\A note.md' },
+    ]));
+
+    // `back` is the full-headed arrow, `back-long` the app bar's thin-headed one. Nothing else says which of the two the pane draws here.
+    const up = tree.querySelector('.library-nav-up');
+    if (!up) throw new Error('a folder one level in drew no way back out');
+    if (!up.querySelector('.lt-icon-back')) throw new Error('the row out of a folder does not wear the plain back arrow');
+    if (up.querySelector('.lt-icon-back-long')) throw new Error('the row out of a folder wears the app bar long arrow');
+  });
+
   check('a folder read again leaves the rows it already drew standing', () => {
     const tree = booted.document.getElementById('libraryTree');
     const same = () => booted.leafSetLibraryFolder(libraryFolderPayload('C:\Vaults\Work', 'Work', [

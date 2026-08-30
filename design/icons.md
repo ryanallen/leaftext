@@ -43,8 +43,8 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 
 | Name | File | Source | Stroke | Heavy | Audit | Feather | Lucide | Tabler | Remix | Phosphor | Heroicons | Where it is worn |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| back | arrow-left.svg | heroicons | regular | — | back | arrow-left | move-left | arrow-narrow-left | arrow-left-long | arrow-left | arrow-long-left | The app bar's Back button. |
-| forward | arrow-right.svg | heroicons | regular | — | forward | arrow-right | move-right | arrow-narrow-right | arrow-right-long | arrow-right | arrow-long-right | Forward, beside it. |
+| back-long | back-long.svg | heroicons | regular | — | back-long | arrow-left | move-left | arrow-narrow-left | arrow-left-long | arrow-left | arrow-long-left | The app bar's Back button. A small head on a shaft the full width of the box, which is what makes it read as the long one of the two. |
+| forward-long | forward-long.svg | heroicons | regular | — | forward-long | arrow-right | move-right | arrow-narrow-right | arrow-right-long | arrow-right | arrow-long-right | Forward, beside it. The mirror of the app bar's Back, drawn to match it. |
 | settings | adjustments-vertical.svg | heroicons | regular | — | settings | sliders | sliders-horizontal | adjustments-horizontal | equalizer | sliders-horizontal | adjustments-horizontal | A vault row's own settings — the sliders that open everything you can do to that vault. |
 | update | bell.svg | lucide | regular | — | update | bell | bell | bell | notification-3 | bell | bell | The update bell, in the app bar only while an update is downloading or waiting to install. |
 | open-library | panel.svg | leaftext | regular | — | open-library | sidebar | panel-left | layout-sidebar | layout-left-2 | sidebar-simple | leaftext | The library toggle, left of Back. |
@@ -100,7 +100,7 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | tab-close | tab-close.svg | lucide | heavy | — | tab-close | x | x | x | close | x | x-mark | A tab's close cross. Its own drawing rather than `close`, because at that size a 1.5 stroke disappears. |
 | favorite-off | heart.svg | heroicons | regular | — | favorite-off | heart | heart | heart | heart | heart | heart | The heart in a tab's other corner, on a file that is not a favorite. |
 | favorite-on | heart-filled.svg | heroicons | — | — | favorite-on | heart filled | heart filled | heart-filled | heart-fill | heart-fill | heart-filled | The same heart, filled, on one that is. A fill is a different drawing, not a bolder line, which is why it is its own row rather than the heavy weight. |
-| back-long | back-long.svg | heroicons | regular | — | back | arrow-left | arrow-left | arrow-left | arrow-left | arrow-left | arrow-left | The menu row that goes up a folder. A longer arrow than the app bar's Back, which is why it is not the same icon. |
+| back | back.svg | heroicons | regular | — | back | arrow-left | arrow-left | arrow-left | arrow-left | arrow-left | arrow-left | The menu row that goes up a folder. A full head on the same shaft, which is the ordinary back arrow. |
 | trash | trash.svg | heroicons | regular | — | trash | trash-2 | trash-2 | trash | delete-bin | trash | trash | Remove vault, in the vault settings menu. |
 | copy | copy.svg | heroicons | regular | — | copy | copy | copy | copy | file-copy | copy | square2-stack | Copy a code block. |
 | leaf | leaf.svg | leaftext | — | — | logo | leaftext | leaftext | leaftext | leaftext | leaftext | leaftext | The header logomark, and a Markdown file's badge in the pane. |

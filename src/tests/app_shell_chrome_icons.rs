@@ -64,17 +64,26 @@ fn app_shell_preserves_tokenized_svg_icon_colors() {
 fn app_shell_back_icon_uses_current_color_and_keeps_no_square_fallback() {
     let html = app_shell_page();
 
-    // The back arrow is a mask class now, so the page names it and the stylesheet holds the drawing. `currentColor` still governs, one level out: the base class paints the mask in the control's own color.
-    assert_contains(&html, r#"class="lt-icon lt-icon-back""#);
+    // The back arrow is a mask class, so the page names it and the stylesheet holds the drawing. `currentColor` governs one level out: the base class paints the mask in the control's own color.
+    assert_contains(&html, r#"class="lt-icon lt-icon-back-long""#);
     let css = reading_mode_css();
     // The drawing is a value the page root declares and the class reads, which is what a theme pack replaces. Both halves are asserted: the same arrow reaching the root, and the class still taking it — either one alone passes on a drawing that never arrives.
     assert_contains(
         css,
-        "--lt-icon-back: url(\"data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18' fill='none' stroke='%23000'",
+        "--lt-icon-back-long: url(\"data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18' fill='none' stroke='%23000'",
     );
     assert_contains(
-        rule_body(css, ".lt-icon-back {"),
-        "mask-image: var(--lt-icon-back);",
+        rule_body(css, ".lt-icon-back-long {"),
+        "mask-image: var(--lt-icon-back-long);",
+    );
+    // The app bar wears the small head on a full shaft, the folder menu's up row the full head. Both ends are pinned, or swapping the two passes.
+    assert!(
+        !html.contains(r#"class="lt-icon lt-icon-back""#),
+        "the app bar took the folder menu's plain back arrow"
+    );
+    assert_contains(
+        css,
+        "--lt-icon-back: url(\"data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18' fill='none' stroke='%23000'",
     );
     assert_contains(
         rule_body(css, ".lt-icon {"),

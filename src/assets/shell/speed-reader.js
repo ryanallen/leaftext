@@ -178,7 +178,7 @@ const MENU_PLUS_SVG = '<span class="lt-icon library-action-icon lt-icon-new"></s
 // The button on a vault row that opens everything you can do to it — the same sliders the app's own Settings wears, because that panel is this vault's settings. Visible on the row, not behind a right-click: a menu you have to guess at is a menu nobody finds.
 const MENU_SETTINGS_SVG = `<span class="lt-icon lt-icon-settings"></span>`;
 const MENU_TRASH_SVG = '<span class="lt-icon library-action-icon lt-icon-trash"></span>';
-const BACK_ARROW_SVG = '<span class="lt-icon library-action-icon lt-icon-back-long"></span>';
+const BACK_ARROW_SVG = '<span class="lt-icon library-action-icon lt-icon-back"></span>';
 // Vaults. A vault is a folder the app treats as a library root; nothing is written into it, the app just remembers the choice. The host owns the list and seeds it before the first paint. Rows are keyed on id, never on name.
 const LEAF_VAULTS = (window.__leafVaults && typeof window.__leafVaults === 'object') ? window.__leafVaults : {};
 leafVaults = Array.isArray(LEAF_VAULTS.vaults) ? LEAF_VAULTS.vaults : [];
