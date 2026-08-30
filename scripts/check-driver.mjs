@@ -477,6 +477,9 @@ const LAUNCHER = [
   ['close it by asking down its own pipe', /--ask '\{\\"ask\\":\\"quit\\"\}'/],
   ['wait for that pipe to go away rather than for a process', /Wait-LeafPipe \$name \$false/],
   ['keep the work folder rather than empty it, so a saved window size comes back', /A work folder is kept rather than emptied/],
+  // The measured front end is asked for by an environment variable the copy inherits, and only behind the switch: set unconditionally, every probe copy would time itself and no launch here would be the launch a reader gets.
+  ['ask for the measured front end only when it was told to', /if \(\$Evaluation\) \{ \$env:LEAFTEXT_FRONT_END_EVALUATION = '1' \}/],
+  ['put that variable back, so the next launch from the same shell is an ordinary one', /\$env:LEAFTEXT_FRONT_END_EVALUATION = \$null/],
 ];
 // What the one command behind `just probe-copy` and `just probe-close` owes on either path. The pointer is written only after the launch has come back clean and removed only when the close has: a pointer written past a failure sends every later ask at a copy that is not there, which is the false answer the whole thing exists to remove.
 const WRAPPER = [
@@ -484,6 +487,8 @@ const WRAPPER = [
   ['write the pointer only after a launch that came back clean', /remember\(\{ name, pid \}\)/],
   ['remove it when the copy goes', /forget\(\)/],
   ['stop before either of those on a launcher that failed', /if \(run\.status !== 0\) process\.exit/],
+  // The measured front end reaches a copy through one flag and nothing else. Dropped here, `just probe-evaluation` launches an ordinary copy that times nothing, and the run fails a long way from the cause.
+  ['pass the evaluation mode through to the launcher', /if \(evaluation\) args\.push\('-Evaluation'\)/],
 ];
 for (const [what, pattern] of WRAPPER) {
   if (!pattern.test(wrapperText)) problems.push(`the probe command no longer knows how to ${what}`);

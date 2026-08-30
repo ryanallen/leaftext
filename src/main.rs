@@ -16,7 +16,7 @@ use leaftext::store::{
     vault_holds, DocumentGraph, GraphRequest, SearchResults, Vault, VaultKind,
 };
 use leaftext::{
-    all_document_extensions, app_data_dir, app_shell_html, blocks_resynced_script,
+    all_document_extensions, app_data_dir, app_shell_html_with_front_end, blocks_resynced_script,
     bundled_asset_response, clone_into_vault, cloud_folders, cloud_folders_script,
     cloud_folders_to_register, code_intel_headings_script, code_intel_hover_script,
     code_intel_lint_script, code_intel_notes_script, code_view_fetch_script, code_view_payload,
@@ -241,6 +241,22 @@ fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<
     Ok(format!("{width}x{height}  {before} -> {} bytes", png.len()))
 }
 
+/// Which of the two front-end assets this launch is served. `just probe-evaluation` sets the variable on the copy it starts and nothing else does, so every reader's window is served the ordinary join exactly as it always was. The read is here rather than in the library because the library renders in a browser too, where there is no environment to ask.
+fn front_end_asset() -> &'static str {
+    front_end_asset_for(std::env::var(FRONT_END_EVALUATION_ENV).ok().as_deref())
+}
+
+/// The choice on its own, so it can be read back without a test setting a variable on the whole process. Only the exact word asks for the measured front end: a variable left behind empty, or holding anything else, is a reader's ordinary launch.
+fn front_end_asset_for(asked: Option<&str>) -> &'static str {
+    match asked == Some("1") {
+        true => leaftext::APP_SHELL_EVALUATION_SCRIPT_ASSET,
+        false => leaftext::APP_SHELL_SCRIPT_ASSET,
+    }
+}
+
+/// The variable that asks for the measured front end. Named here and in `scripts/probe-launch.ps1`, which is the only thing that sets it.
+const FRONT_END_EVALUATION_ENV: &str = "LEAFTEXT_FRONT_END_EVALUATION";
+
 fn run_app() -> Result<(), Box<dyn Error>> {
     // First, so everything below has somewhere to print. Not in the tool modes above (`--squeeze-png`, `--dump-css`): those are run from a terminal that is already watching stderr.
     journal::start();
@@ -386,7 +402,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     let builder = WebViewBuilder::new_with_web_context(&mut web_context)
         // See-through, so the strip of page the app is held off the window by shows what is behind the window and the app's own shadow can fall on it. Both halves are needed: a transparent window over an opaque web view shows nothing.
         .with_transparent(true)
-        .with_html(app_shell_html())
+        .with_html(app_shell_html_with_front_end(front_end_asset()))
         .with_initialization_script(initial_settings_script(&settings))
         .with_initialization_script(settings_unreadable_script(settings_unreadable))
         // The operating system's own accessibility answer, not one of the app's switches, so it is read here at launch rather than persisted.

@@ -12,9 +12,10 @@ export const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 function shellSource() {
   const lib = readFileSync(join(root, 'src/lib.rs'), 'utf8');
   const partsNamed = (constant) => {
-    const list = lib.match(new RegExp(constant + ': &\\[&str\\] = &\\[([\\s\\S]*?)\\];'));
+    const list = lib.match(new RegExp(constant + ': &\\[ShellFragment\\] = shell_fragments!\\[([\\s\\S]*?)\\];'));
     if (!list) throw new Error(`could not find ${constant} in src/lib.rs`);
-    return [...list[1].matchAll(/include_str!\("assets\/(.*?)"\)/g)].map((m) => m[1]);
+    // Anchored at the start of a line, so a path written into one of the list's own comments is not read as a fragment.
+    return [...list[1].matchAll(/^\s*"assets\/(.*?)",/gm)].map((m) => m[1]);
   };
   // One list, served as one file behind the page's one script tag — so booting them joined in this order is exactly what the web view does.
   const names = partsNamed('APP_SHELL_SCRIPT_PARTS');

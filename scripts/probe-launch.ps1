@@ -19,6 +19,8 @@ param(
   # A name, not a path: two probes are two names. Reused across launches on purpose.
   [string]$Work = 'default',
   [switch]$Close,
+  # Serve this copy the timed front end instead of the ordinary one. Behind `just probe-evaluation`, and the only thing anywhere that asks for it.
+  [switch]$Evaluation,
   [string]$Exe,
   # How long to wait for the copy to answer its pipe, or to stop answering it.
   [int]$TimeoutMs = 30000
@@ -171,8 +173,16 @@ try {
   }
 
   # The place, and the process id a later ask needs to tell a probe that is still up from a pointer left behind by a session that crashed. The copy outlives this script: CreateProcessW makes an independent process, and both handles are closed before this returns.
+  #
+  # The variable is set on this process rather than passed as an argument, because CreateProcessW hands the copy the environment it was started from. It is put back afterwards so a second launch from the same shell is an ordinary one.
   $spot = Get-OffScreenSpot
-  $launchedPid = Start-LeafOffScreen $Exe $Doc $spot.X $spot.Y
+  if ($Evaluation) { $env:LEAFTEXT_FRONT_END_EVALUATION = '1' }
+  try {
+    $launchedPid = Start-LeafOffScreen $Exe $Doc $spot.X $spot.Y
+  }
+  finally {
+    $env:LEAFTEXT_FRONT_END_EVALUATION = $null
+  }
   if (-not (Wait-LeafPipe $name $true $TimeoutMs)) {
     throw "the copy launched under $name never answered its pipe"
   }

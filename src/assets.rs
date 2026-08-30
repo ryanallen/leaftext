@@ -151,6 +151,11 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
             "text/javascript; charset=utf-8",
             app_shell_script().as_bytes(),
         )),
+        // The same front-end with a stopwatch on every part of it, served only to a copy `just probe-evaluation` launched. Nothing but that copy's page names it, so a reader's launch is the byte-for-byte join above.
+        APP_SHELL_EVALUATION_SCRIPT_ASSET => Some((
+            "text/javascript; charset=utf-8",
+            app_shell_evaluation_script().as_bytes(),
+        )),
         "mermaid.min.js" => Some(("text/javascript; charset=utf-8", MERMAID_JS)),
         "pixi.min.js" => Some(("text/javascript; charset=utf-8", PIXI_JS)),
         "pixi-unsafe-eval.min.js" => Some(("text/javascript; charset=utf-8", PIXI_UNSAFE_EVAL_JS)),
@@ -167,6 +172,108 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
                 .map(|(_, bytes)| ("font/woff2", *bytes))
         }
     }
+}
+
+/// The two names the desktop page can give the front end: the one every reader is served, and the probe-only one whose every part is timed.
+pub const APP_SHELL_SCRIPT_ASSET: &str = "app.js";
+pub const APP_SHELL_EVALUATION_SCRIPT_ASSET: &str = "app-evaluation.js";
+
+/// Where the last fragment stops building the page and starts making it usable. Everything from this line on is the boot tail, and the evaluation asset times its statements one at a time: they run after every fragment has been evaluated, so they are the last thing between a launch and a window somebody can use.
+const BOOT_TAIL_FIRST_LINE: &str = "window.__leafBooted = true;";
+
+/// The prefix every mark and measure the evaluation asset writes carries, so the probe can tell its own from whatever else the page timed.
+const EVALUATION_MEASURE_PREFIX: &str = "leaf-evaluation";
+
+/// The front-end as a copy launched to measure it is served: the same fragments from the same list, in the same order and in the one shared scope, with a measure around each of them and around each statement of the boot tail.
+///
+/// The regions are statements between the fragments rather than a wrapper around them, because a fragment wrapped in a function stops declaring its names where the next fragment reads them — the shared scope is the thing being measured. The page is handed the ordered region names as well, so the probe reads what should have been timed off the same build that timed it rather than off a second list of its own.
+pub fn app_shell_evaluation_script() -> &'static str {
+    static SCRIPT: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    SCRIPT.get_or_init(|| {
+        let regions = evaluation_regions();
+        let mut script = String::with_capacity(app_shell_script().len() + 16 * 1024);
+        script.push_str(";window.__leafEvaluationRegions = [");
+        for (at, (name, _)) in regions.iter().enumerate() {
+            if at > 0 {
+                script.push(',');
+            }
+            script.push_str(&js_string(name));
+        }
+        script.push_str("];\n");
+        for (name, body) in &regions {
+            let mark = js_string(&format!("{EVALUATION_MEASURE_PREFIX}-start:{name}"));
+            script.push_str(&format!(";performance.mark({mark});\n"));
+            script.push_str(body);
+            let measure = js_string(&format!("{EVALUATION_MEASURE_PREFIX}:{name}"));
+            script.push_str(&format!("\n;performance.measure({measure}, {mark});\n"));
+        }
+        script
+    })
+}
+
+/// Every region the evaluation asset times, in the order it evaluates them: one per fragment, then one per boot-tail statement in place of the last fragment's tail.
+pub(crate) fn evaluation_regions() -> Vec<(String, &'static str)> {
+    let mut regions: Vec<(String, &'static str)> = Vec::new();
+    for (name, source) in APP_SHELL_SCRIPT_PARTS {
+        match source.find(BOOT_TAIL_FIRST_LINE) {
+            None => regions.push(((*name).to_string(), source)),
+            Some(at) => {
+                regions.push(((*name).to_string(), &source[..at]));
+                regions.extend(boot_tail_regions(&source[at..]));
+            }
+        }
+    }
+    regions
+}
+
+/// The boot tail split into the statements it is written as. A line starting hard against the left margin opens a statement; an indented line, a closing brace and a comment all belong to the statement above them, which is what keeps a multi-line `if` whole.
+fn boot_tail_regions(tail: &'static str) -> Vec<(String, &'static str)> {
+    let mut regions: Vec<(String, &'static str)> = Vec::new();
+    let mut start = 0;
+    let mut at = 0;
+    let cut = |from: usize, to: usize, regions: &mut Vec<(String, &'static str)>| {
+        let body = &tail[from..to];
+        let opening = body
+            .lines()
+            .next()
+            .unwrap_or_default()
+            .trim_end_matches(" {");
+        regions.push((format!("boot tail {}: {opening}", regions.len() + 1), body));
+    };
+    for line in tail.split_inclusive('\n') {
+        let opens = !line.starts_with(char::is_whitespace)
+            && !line.starts_with('}')
+            && !line.starts_with("//");
+        if opens && at > start {
+            cut(start, at, &mut regions);
+            start = at;
+        }
+        at += line.len();
+    }
+    if at > start {
+        cut(start, at, &mut regions);
+    }
+    regions
+}
+
+/// A JavaScript string literal for a name written into the evaluation asset. The boot-tail names are source lines, so they carry quotes and backslashes of their own.
+pub(crate) fn js_string(value: &str) -> String {
+    let mut out = String::with_capacity(value.len() + 2);
+    out.push('"');
+    for character in value.chars() {
+        match character {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            // Both are line terminators to a JavaScript parser and neither ends a string literal, so a name carrying one would end the statement mid-word.
+            '\u{2028}' => out.push_str("\\u2028"),
+            '\u{2029}' => out.push_str("\\u2029"),
+            _ => out.push(character),
+        }
+    }
+    out.push('"');
+    out
 }
 
 /// Webview URL for a bundled asset (mirrors the local-image URL rewrite).

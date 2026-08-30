@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Behind `just probe-copy` and `just probe-close`: launch a copy of the app beside the owner's and leave it up, then close it when the build is done with it.
 //
-//   node scripts/probe.mjs open [<document>] [--work <name>]
+//   node scripts/probe.mjs open [<document>] [--work <name>] [--evaluation]
 //   node scripts/probe.mjs close [--work <name>]
+//
+// `--evaluation` serves that copy the timed front end rather than the ordinary one, which is what `just probe-evaluation` launches with and nothing else does.
 //
 // Here rather than as one line in the Justfile for the reason scripts/drive.mjs is, written out there: spawning PowerShell from node passes each argument as one argument.
 //
@@ -20,14 +22,17 @@ const argv = process.argv.slice(2).map(unquote);
 
 const verb = argv.shift();
 if (verb !== 'open' && verb !== 'close') {
-  console.error('usage: node scripts/probe.mjs open [<document>] [--work <name>]   |   node scripts/probe.mjs close [--work <name>]');
+  console.error('usage: node scripts/probe.mjs open [<document>] [--work <name>] [--evaluation]   |   node scripts/probe.mjs close [--work <name>]');
   process.exit(1);
 }
 
 let work = 'default';
 let doc = '';
+let evaluation = false;
 for (let i = 0; i < argv.length; i++) {
-  if (argv[i] === '--work') {
+  if (argv[i] === '--evaluation') {
+    evaluation = true;
+  } else if (argv[i] === '--work') {
     work = argv[++i] ?? '';
     if (!work) {
       console.error('--work wants a name');
@@ -48,7 +53,10 @@ if (process.platform !== 'win32') {
 
 const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(root, 'scripts/probe-launch.ps1'), '-Work', work];
 if (verb === 'close') args.push('-Close');
-else if (doc) args.push('-Doc', doc);
+else {
+  if (doc) args.push('-Doc', doc);
+  if (evaluation) args.push('-Evaluation');
+}
 
 const run = spawnSync('powershell', args, { encoding: 'utf8' });
 if (run.error) {

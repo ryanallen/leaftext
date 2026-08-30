@@ -561,8 +561,8 @@ fn a_launch_puts_up_the_small_window_and_grows_it_once_the_page_has_drawn() {
     // Long enough that a slow disk is not cut off, short enough that a broken page is not something anybody sits through.
     assert_eq!(STARTUP_GROW_DEADLINE, Duration::from_secs(4));
 
-    // The page comes up holding the card, in markup rather than built by a script that has not run yet.
-    let page = app_shell_html();
+    // The page comes up holding the card, in markup rather than built by a script that has not run yet. Named through the library because the binary reaches the page through `front_end_asset`, which is a launch's environment rather than this test's.
+    let page = leaftext::app_shell_html();
     assert!(
         page.contains("id=\"startupCard\""),
         "the page comes up without the startup card"
@@ -570,5 +570,27 @@ fn a_launch_puts_up_the_small_window_and_grows_it_once_the_page_has_drawn() {
     assert!(
         page.contains("startup-card-spinner"),
         "the startup card comes up without its ring"
+    );
+}
+
+#[test]
+fn only_the_word_the_launcher_writes_asks_for_the_measured_front_end() {
+    // Every copy anybody downloads is served the ordinary join, and one variable set by one launcher is the whole of what changes that. A variable left behind empty, or holding anything else, is a reader's launch — otherwise a stale name in somebody's environment would quietly serve them a front end that times itself.
+    assert_eq!(front_end_asset_for(None), leaftext::APP_SHELL_SCRIPT_ASSET);
+    assert_eq!(
+        front_end_asset_for(Some("")),
+        leaftext::APP_SHELL_SCRIPT_ASSET
+    );
+    assert_eq!(
+        front_end_asset_for(Some("0")),
+        leaftext::APP_SHELL_SCRIPT_ASSET
+    );
+    assert_eq!(
+        front_end_asset_for(Some("true")),
+        leaftext::APP_SHELL_SCRIPT_ASSET
+    );
+    assert_eq!(
+        front_end_asset_for(Some("1")),
+        leaftext::APP_SHELL_EVALUATION_SCRIPT_ASSET
     );
 }

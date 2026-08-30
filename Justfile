@@ -426,6 +426,23 @@ probe-close *args:
 probe-motion selector *trigger:
     node scripts/probe-motion.mjs {{ selector }} {{ trigger }}
 
+# Measure what each part of the front end costs a launch. It launches a copy served
+# the timed front end, waits for the page to say it has booted, reads the measure
+# that front end wrote around every fragment and every boot-tail statement, closes
+# the copy and does it again from cold — three times, because one launch on a busy
+# machine says almost nothing. The table lands in the ticket that asked for it.
+#   just probe-evaluation
+#   just probe-evaluation --launches 5
+probe-evaluation *args:
+    node scripts/probe-evaluation.mjs {{ args }}
+
+# Fail if that measurement cannot refuse a run that is not the launch it claims: a
+# region nothing timed, one timed twice, one timed that is no region at all, or
+# measures that came back out of the order the front end is joined in. Offline:
+# the judging is read back with no app and no window.
+check-probe-evaluation:
+    node scripts/check-probe-evaluation.mjs
+
 # Fail if the provers cannot read their own arguments back: a driver verb that no
 # longer parses, an unknown one accepted, an attached run accepting a flag that
 # would write over the owner's settings, or the motion probe taking a run with an
@@ -565,7 +582,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

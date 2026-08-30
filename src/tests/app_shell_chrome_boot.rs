@@ -646,3 +646,92 @@ fn the_app_carries_no_gallery_of_its_own() {
     // What the app does owe the gallery is its stylesheet, which only Rust can compile — that is what `--dump-css` is for.
     assert_contains(reading_mode_css(), "--lt-background:");
 }
+
+#[test]
+fn the_measured_front_end_is_the_ordinary_one_with_a_stopwatch_on_it() {
+    // A number is only worth reading if it timed the launch a reader gets. So the timed regions are the ordinary script cut up, and joining them back is that script byte for byte: a fragment dropped, reordered or edited on the way fails here rather than reporting a number for a front-end nobody runs.
+    let regions = evaluation_regions();
+    let rejoined: String = regions.iter().map(|(_, body)| *body).collect();
+    assert_eq!(
+        rejoined,
+        app_shell_script(),
+        "the measured front-end is no longer the ordinary one cut into regions"
+    );
+
+    // Every fragment names itself, in the list's own order, ahead of any boot-tail statement.
+    let named: Vec<&str> = regions.iter().map(|(name, _)| name.as_str()).collect();
+    let fragments: Vec<&str> = APP_SHELL_SCRIPT_PARTS
+        .iter()
+        .map(|(name, _)| *name)
+        .collect();
+    assert_eq!(
+        named[..fragments.len()],
+        fragments[..],
+        "the measured front-end times its fragments in a different order from the list it is built from"
+    );
+    assert!(
+        named[fragments.len()..]
+            .iter()
+            .all(|name| name.starts_with("boot tail ")),
+        "something other than the boot tail is timed after the last fragment"
+    );
+    // The boot tail is the last thing between a launch and a usable window, so it is timed a statement at a time rather than as one lump.
+    assert!(
+        named.len() > fragments.len() + 1,
+        "the boot tail came back as a single region, so its own operations cannot be told apart"
+    );
+
+    // What the page is told to expect, so the probe reads the list off the same build that timed it rather than off one of its own.
+    let declared = app_shell_evaluation_script()
+        .lines()
+        .next()
+        .expect("the measured front-end opens with the regions it is about to time");
+    for name in &named {
+        assert!(
+            declared.contains(&js_string(name)),
+            "the page is never told about the region {name}"
+        );
+    }
+}
+
+#[test]
+fn only_the_measured_front_end_carries_a_stopwatch() {
+    // The reader's launch is the whole point of the number, so it is served the join it always was: not one mark, not one measure, and a page naming the ordinary asset.
+    assert!(
+        !app_shell_script().contains("leaf-evaluation"),
+        "the ordinary front-end is timing itself in every copy that ships"
+    );
+    // One measure per region and no more: a mark left in without its pair times nothing, and a second measure over the same region would double a number the table reports.
+    assert_eq!(
+        app_shell_evaluation_script()
+            .matches("performance.measure(")
+            .count(),
+        evaluation_regions().len()
+    );
+
+    let ordinary = app_shell_html();
+    assert_contains(&ordinary, "app.js?v=");
+    assert!(!ordinary.contains("app-evaluation.js"));
+    let measured = app_shell_html_with_front_end(APP_SHELL_EVALUATION_SCRIPT_ASSET);
+    assert_eq!(
+        measured.matches("app-evaluation.js?v=").count(),
+        1,
+        "the measured page names the timed front-end once, in its loader"
+    );
+
+    // Served, and served as script: a wrong content type is a silent no-op.
+    let (content_type, body) = bundled_asset_bytes("leaf-asset://local/app-evaluation.js")
+        .expect("the measured front-end is a bundled asset");
+    assert_eq!(content_type, "text/javascript; charset=utf-8");
+    assert_eq!(body, app_shell_evaluation_script().as_bytes());
+
+    // One fragment carries the boot tail. Two would split the wrong one and time a region that is not the tail at all.
+    let carrying = APP_SHELL_SCRIPT_PARTS
+        .iter()
+        .filter(|(_, source)| source.contains("window.__leafBooted = true;"))
+        .count();
+    assert_eq!(
+        carrying, 1,
+        "the line the boot tail is found by is written in more than one fragment"
+    );
+}

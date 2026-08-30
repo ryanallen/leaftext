@@ -36,7 +36,8 @@ pub use minimap::{
 mod assets;
 pub(crate) use assets::*;
 pub use assets::{
-    bundled_asset_response, source_payload_url, BundledAsset, KATEX_CSS, KATEX_FONTS,
+    app_shell_evaluation_script, bundled_asset_response, source_payload_url, BundledAsset,
+    APP_SHELL_EVALUATION_SCRIPT_ASSET, APP_SHELL_SCRIPT_ASSET, KATEX_CSS, KATEX_FONTS,
     LOCAL_ASSET_PROTOCOL,
 };
 mod format;
@@ -127,63 +128,71 @@ use url::Url;
 const MAX_RECENT_FILES: usize = 50;
 const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 
+/// One fragment of the front end: the path it is included from, and its source. The path is the name [`app_shell_evaluation_script`] marks that fragment's boundaries with, so a measurement names a file somebody can open.
+pub(crate) type ShellFragment = (&'static str, &'static str);
+
+/// Writes the fragment list from one path per file. Both halves of a [`ShellFragment`] come out of that single literal, so the name a measurement carries can never drift from the source it stands for.
+macro_rules! shell_fragments {
+    ($($path:literal,)*) => { &[$(($path, include_str!($path)),)*] };
+}
+
 /// The front-end script as ordered fragments, concatenated into one script sharing one scope — the page has no module loader. Order is load-bearing: the last fragment ends with the bootstrap call that must run after everything else.
-const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
+pub(crate) const APP_SHELL_SCRIPT_PARTS: &[ShellFragment] = shell_fragments![
     // The error handlers lead, so a fragment that throws as it loads is reported instead of vanishing. Nothing above them could catch it.
-    include_str!("assets/shell/journal.js"),
+    "assets/shell/journal.js",
     // Shared state follows the journal and leads every subject that reaches it.
-    include_str!("assets/shell/state.js"),
+    "assets/shell/state.js",
     // Then the flowchart sheet, in seven: the grammar, the sheet that asks it, then five more of that sheet. Mermaid draws the canvas, so there is no layout of ours in between, and the grammar leads because everything else calls into it.
-    include_str!("assets/shell/flow-model.js"),
-    include_str!("assets/shell/flow-canvas.js"),
+    "assets/shell/flow-model.js",
+    "assets/shell/flow-canvas.js",
     // Then the rest of the sheet, all of it reaching back into the canvas, the graph and the redraw above. flow-export.js reads FLOW_SVG_NS out of flow-pointer.js, so it comes after it.
-    include_str!("assets/shell/flow-pointer.js"),
-    include_str!("assets/shell/flow-menu.js"),
-    include_str!("assets/shell/flow-rename.js"),
-    include_str!("assets/shell/flow-picker.js"),
-    include_str!("assets/shell/flow-export.js"),
-    include_str!("assets/shell/dom.js"),
+    "assets/shell/flow-pointer.js",
+    "assets/shell/flow-menu.js",
+    "assets/shell/flow-rename.js",
+    "assets/shell/flow-picker.js",
+    "assets/shell/flow-export.js",
+    "assets/shell/dom.js",
     // The first-run bubble, ahead of every fragment that registers a hint against it. It needs `send` from dom.js and nothing else.
-    include_str!("assets/shell/hints.js"),
-    include_str!("assets/shell/overflow.js"),
-    include_str!("assets/shell/context-menu.js"),
-    include_str!("assets/shell/navigation.js"),
-    include_str!("assets/shell/settings.js"),
-    include_str!("assets/shell/speed-reader.js"),
-    include_str!("assets/shell/library.js"),
-    include_str!("assets/shell/graph.js"),
-    include_str!("assets/shell/graph-scene.js"),
-    include_str!("assets/shell/library-search.js"),
-    include_str!("assets/shell/updater.js"),
-    include_str!("assets/shell/theme.js"),
-    include_str!("assets/shell/render-state.js"),
-    include_str!("assets/shell/code-view.js"),
-    include_str!("assets/shell/code-intel.js"),
-    include_str!("assets/shell/code-sticky.js"),
-    include_str!("assets/shell/reading-blocks.js"),
-    include_str!("assets/shell/dom-to-markdown.js"),
-    include_str!("assets/shell/reading-edits.js"),
+    "assets/shell/hints.js",
+    "assets/shell/overflow.js",
+    "assets/shell/context-menu.js",
+    "assets/shell/navigation.js",
+    "assets/shell/settings.js",
+    "assets/shell/speed-reader.js",
+    "assets/shell/library.js",
+    "assets/shell/graph.js",
+    "assets/shell/graph-scene.js",
+    "assets/shell/library-search.js",
+    "assets/shell/updater.js",
+    "assets/shell/theme.js",
+    "assets/shell/render-state.js",
+    "assets/shell/code-view.js",
+    "assets/shell/code-intel.js",
+    "assets/shell/code-sticky.js",
+    "assets/shell/reading-blocks.js",
+    "assets/shell/dom-to-markdown.js",
+    "assets/shell/reading-edits.js",
     // The one part of a table that is in no part of the file: its column heading. Here because the same ranges the cells above are wired from are what decide it.
-    include_str!("assets/shell/xml-table-heading.js"),
+    "assets/shell/xml-table-heading.js",
     // The field block at the top of a note, beside the reading view's other edit path: it needs the padlock and `send`, and reading-edits.js calls into it once a document has rendered.
-    include_str!("assets/shell/frontmatter-fields.js"),
-    include_str!("assets/shell/block-controls.js"),
-    include_str!("assets/shell/selection-toolbar.js"),
+    "assets/shell/frontmatter-fields.js",
+    "assets/shell/block-controls.js",
+    "assets/shell/selection-toolbar.js",
     // Find, after both views' own code: it drives Monaco through code-view.js's editor and splices through reading-edits.js's edit path.
-    include_str!("assets/shell/find-bar.js"),
-    include_str!("assets/shell/render-document.js"),
-    include_str!("assets/shell/glossary.js"),
+    "assets/shell/find-bar.js",
+    "assets/shell/render-document.js",
+    "assets/shell/glossary.js",
     // Generated from design/icons.md, and data only: the icon set the next fragment hands to mermaid so `A@{ icon: "leaf:back" }` draws the app's own drawing rather than mermaid's off-theme blue square.
-    include_str!("assets/mermaid-icons.js"),
+    "assets/mermaid-icons.js",
     // Every color a diagram is drawn in, before the file that draws one: decorate.js calls its runtime config and nothing in it reaches back.
-    include_str!("assets/shell/mermaid-theme.js"),
-    include_str!("assets/shell/decorate.js"),
-    include_str!("assets/shell/table-sheet.js"),
+    "assets/shell/mermaid-theme.js",
+    "assets/shell/decorate.js",
+    "assets/shell/table-sheet.js",
     // Beside it: the same surface pointed at a picture, and after decorate.js because the paragraph it hangs an opener on is the one decorate.js marks.
-    include_str!("assets/shell/image-sheet.js"),
+    "assets/shell/image-sheet.js",
     // After decorate.js: the full-window diagram borrows its zoom group builder and its delegated pan, wheel and click.
-    include_str!("assets/shell/diagram-view.js"),
-    include_str!("assets/shell/minimap.js"),
+    "assets/shell/diagram-view.js",
+    "assets/shell/minimap.js",
 ];
 
 /// The whole front-end, joined and served as `app.js` over the asset protocol.
@@ -191,7 +200,12 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
 /// The page goes to WebView2 as one string with a ~2 MB ceiling, and the script was 505,232 of its 576,693 characters. Served instead, the page is a skeleton — and because no fragment carries a placeholder, this is a join and nothing else: no substitution pass, and one file on the wire rather than two.
 pub fn app_shell_script() -> &'static str {
     static SCRIPT: OnceLock<String> = OnceLock::new();
-    SCRIPT.get_or_init(|| APP_SHELL_SCRIPT_PARTS.concat())
+    SCRIPT.get_or_init(|| {
+        APP_SHELL_SCRIPT_PARTS
+            .iter()
+            .map(|(_, source)| *source)
+            .collect()
+    })
 }
 pub const LOCAL_IMAGE_PROTOCOL: &str = "leaf-image";
 const LOCAL_IMAGE_HOST: &str = "local";
@@ -1056,8 +1070,13 @@ pub(crate) fn nearest_glossary_terms(doc_dir: &Path) -> Vec<GlossaryTerm> {
 ///
 /// The card is literal markup and needs no script, so the only thing between a laid-out page and its first pixel was the front end's own execution — measured at 157ms on a page that was interactive at 15ms. The loader is what closes that: it is inline, it preloads the same joined script as parsing ends, and it appends it from the second animation-frame callback, one painted frame later.
 pub fn app_shell_html() -> String {
+    app_shell_html_with_front_end(APP_SHELL_SCRIPT_ASSET)
+}
+
+/// The same page, naming whichever of the two front-end assets this launch is being served — the ordinary one, or the measured one a copy launched to time itself asks for. The binary is what reads which; nothing here knows about the environment it was started in.
+pub fn app_shell_html_with_front_end(script_asset: &str) -> String {
     let host = DesktopHost::default();
-    app_shell_page_for_host(&host, &desktop_front_end_loader_html(&host))
+    app_shell_page_for_host(&host, &desktop_front_end_loader_html(&host, script_asset))
 }
 
 /// The same page, with the asset URLs the host chooses and the front-end tag every host but the desktop carries. A browser serves them over http; the desktop over its own protocol.
@@ -1090,14 +1109,14 @@ fn front_end_tag_html(host: &dyn LeafHost) -> String {
 }
 
 /// The front-end as the desktop carries it: the loader in `assets/desktop-front-end-loader.js`, inline, naming that same script. It holds the one thing only the host knows — where `app.js` is served from — and nothing else, so the whole of the timing is a file the shell check can read.
-fn desktop_front_end_loader_html(host: &dyn LeafHost) -> String {
+fn desktop_front_end_loader_html(host: &dyn LeafHost, script_asset: &str) -> String {
     const DESKTOP_FRONT_END_LOADER_JS: &str = include_str!("assets/desktop-front-end-loader.js");
 
     format!(
         "<script>{}</script>",
         DESKTOP_FRONT_END_LOADER_JS.replace(
             "{{APP_SCRIPT_URL}}",
-            &host.asset_url("app.js").unwrap_or_default()
+            &host.asset_url(script_asset).unwrap_or_default()
         )
     )
 }
