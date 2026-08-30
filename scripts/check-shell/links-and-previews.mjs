@@ -1225,4 +1225,94 @@ export function run() {
       delete booted.__newLink;
     }
   });
+  // A file changing outside the app is what makes a remembered card wrong, and the watcher is how the app hears about it. The card opens on what it had — a spinner over a page the reader was just looking at costs more than the fault — and corrects itself behind that.
+  check('a card the watcher aged draws what it had and takes the fresh answer behind it', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const preview = vm.runInContext('linkHoverTipPreview', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const lines = vm.runInContext('linkHoverTipLines', booted);
+    const address = 'file:///notes/aged.md';
+    const link = {
+      href: address,
+      getAttribute: (name) => (name === 'href' ? './aged.md' : null),
+      getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }),
+    };
+    link.closest = () => link;
+    const wasSend = booted.ipc.postMessage;
+    const wasTimeout = booted.setTimeout;
+    const wasRect = tip.getBoundingClientRect;
+    try {
+      tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 240, bottom: 120, width: 240, height: 120 });
+      previewDocument.scrollHeight = 100;
+      const sent = [];
+      const waiting = [];
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.setTimeout = (fn) => waiting.push(fn);
+      vm.runInContext('linkPreviewCache.clear(); lineCountCache.clear(); staleLinkAnswers.clear(); linkPreviewCache.set("file:///notes/aged.md", "<p>Before.</p>"); lineCountCache.set("file:///notes/aged.md", 3);', booted);
+      booted.window.leafAgeLinkPreviews();
+      if (vm.runInContext('staleLinkAnswers.size', booted) !== 1) throw new Error('the watcher’s word never reached the answers the page remembers');
+
+      booted.__hoverEvent = { target: link, relatedTarget: { body: true }, clientX: 240, clientY: 210 };
+      vm.runInContext('activeHoverLink = null; startLinkHover(__hoverEvent);', booted);
+      if (previewDocument.innerHTML !== '<p>Before.</p>' || !preview.classList.contains('is-loaded')) throw new Error('an aged card blinked its spinner at a page the reader had already seen');
+      if (lines.textContent !== '3 lines') throw new Error('an aged card dropped the count it was holding while it waited for a fresh one');
+
+      waiting.forEach((fn) => fn());
+      const asked = sent.filter((one) => one.command === 'previewLink');
+      const counted = sent.filter((one) => one.command === 'countLines');
+      if (asked.length !== 1) throw new Error(`an aged card sent ${asked.length} preview asks`);
+      if (counted.length !== 1) throw new Error(`an aged card sent ${counted.length} count asks`);
+      if (asked[0].href !== address || counted[0].href !== address) throw new Error('a fresh ask carried an address the card was not drawn for');
+
+      booted.window.leafLinkPreview(asked[0].token, '<p>After.</p>');
+      booted.window.leafLineCount(counted[0].token, 5);
+      if (previewDocument.innerHTML !== '<p>After.</p>') throw new Error('the card kept words the file no longer holds');
+      if (lines.textContent !== '5 lines') throw new Error('the card kept a count the file no longer has');
+      if (vm.runInContext('staleLinkAnswers.size', booted) !== 0) throw new Error('an answered address stayed marked, so every rest after it asks again for nothing');
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      booted.setTimeout = wasTimeout;
+      tip.getBoundingClientRect = wasRect;
+      vm.runInContext('hideLinkHoverTip(); endLinkHoverFade(); activeHoverLink = null; linkHoverPointer = null; hideLinkHoverPreview(); linkPreviewCache.clear(); lineCountCache.clear(); staleLinkAnswers.clear(); pendingPreviewTokens.clear(); pendingLineTokens.clear(); activeHoverToken += 1;', booted);
+      delete booted.__hoverEvent;
+    }
+  });
+
+  // The other half of the same rule: marking every address is only cheap because an unmarked one still costs nothing, so a rest on one has to send no ask at all, or the promise above passes by asking every time.
+  check('an answer the watcher never aged still costs no ask at all', () => {
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const previewDocument = vm.runInContext('linkHoverTipPreviewDocument', booted);
+    const lines = vm.runInContext('linkHoverTipLines', booted);
+    const link = {
+      href: 'file:///notes/settled.md',
+      getAttribute: (name) => (name === 'href' ? './settled.md' : null),
+      getBoundingClientRect: () => ({ top: 200, left: 200, right: 300, bottom: 220, width: 100, height: 20 }),
+    };
+    link.closest = () => link;
+    const wasSend = booted.ipc.postMessage;
+    const wasTimeout = booted.setTimeout;
+    const wasRect = tip.getBoundingClientRect;
+    try {
+      tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 240, bottom: 120, width: 240, height: 120 });
+      previewDocument.scrollHeight = 100;
+      const sent = [];
+      const waiting = [];
+      booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+      booted.setTimeout = (fn) => waiting.push(fn);
+      vm.runInContext('linkPreviewCache.clear(); lineCountCache.clear(); staleLinkAnswers.clear(); linkPreviewCache.set("file:///notes/settled.md", "<p>Settled.</p>"); lineCountCache.set("file:///notes/settled.md", 7);', booted);
+
+      booted.__hoverEvent = { target: link, relatedTarget: { body: true }, clientX: 240, clientY: 210 };
+      vm.runInContext('activeHoverLink = null; startLinkHover(__hoverEvent);', booted);
+      waiting.forEach((fn) => fn());
+      if (previewDocument.innerHTML !== '<p>Settled.</p>') throw new Error('a settled answer stopped being drawn from what the page remembers');
+      if (lines.textContent !== '7 lines') throw new Error('a settled count stopped being drawn from what the page remembers');
+      if (sent.length !== 0) throw new Error(`a rest on an answer nothing aged still asked the host: ${sent.map((one) => one.command).join(', ')}`);
+    } finally {
+      booted.ipc.postMessage = wasSend;
+      booted.setTimeout = wasTimeout;
+      tip.getBoundingClientRect = wasRect;
+      vm.runInContext('hideLinkHoverTip(); endLinkHoverFade(); activeHoverLink = null; linkHoverPointer = null; hideLinkHoverPreview(); linkPreviewCache.clear(); lineCountCache.clear(); staleLinkAnswers.clear(); pendingPreviewTokens.clear(); pendingLineTokens.clear(); activeHoverToken += 1;', booted);
+      delete booted.__hoverEvent;
+    }
+  });
 }

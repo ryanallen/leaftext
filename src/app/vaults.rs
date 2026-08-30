@@ -846,6 +846,8 @@ pub(crate) enum WatchedChangeStep {
     PatchCorpus { redraw_graph: bool },
     /// A picture rather than a document: the text is unchanged, so only the page's images are refreshed.
     RefreshImages,
+    /// Something on disk moved, so every link answer the page remembers may be out of date. It keeps them, so a rest still draws at once, and asks again behind what it drew.
+    AgeLinkPreviews,
 }
 
 /// What the watcher does about a changed path, in the order it has to happen. The status read comes above the split, or it misses the commonest change of all — saving the document you are reading takes the active-document branch. Unfiltered on purpose: a containment check here compares the watcher's canonicalised path against the registry's plain one and so discards every event, and one `git status`, off the loop, on an already-debounced event, is cheaper than being wrong.
@@ -858,6 +860,8 @@ pub(crate) fn watched_change_steps(
     if let Some(id) = vault_to_reread(state) {
         steps.push(WatchedChangeStep::RereadVaultStatus(id));
     }
+    // Above the split: a change to the open document is a change to a file other documents link to, and its card is remembered under its own address like any other.
+    steps.push(WatchedChangeStep::AgeLinkPreviews);
     if is_active_document {
         steps.push(WatchedChangeStep::ReloadActiveDocument);
         return steps;

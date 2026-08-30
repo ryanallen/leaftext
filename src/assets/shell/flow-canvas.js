@@ -570,17 +570,15 @@ function centerFlowCanvas() {
 
 // ---- how much room the text gets -------------------------------------------
 
-// The text pane is dragged to whatever width suits what you are doing: mostly drawing, mostly typing, or halfway. Arrow keys move it too, so it is not a mouse-only control. The canvas re-fits after, since its room just changed.
+// The text pane is dragged to whatever width suits what you are doing: mostly drawing, mostly typing, or halfway. Arrow keys move it too, so it is not a mouse-only control. Nothing is remeasured after: the stage is sized from the drawing's own box and every position on the overlay is recorded against the stage's own origin, so a width change slides the canvas around the picture without moving one box inside it.
 const FLOW_CODE_MIN = 180;
 
-function setFlowCodeWidth(pixels) {
+// `held` is the sheet's own width, and a drag hands over the one it read when the pointer went down: reading it here instead would force the whole sheet to lay out again for the width the move before just wrote. Left out, it is read fresh — which is what a key press and a double-click want, since the window can be resized between two of those and cannot be during a drag.
+function setFlowCodeWidth(pixels, held) {
   if (!flowSheet) return;
-  const room = flowSheet.clientWidth || 900;
+  const room = held || flowSheet.clientWidth || 900;
   const width = Math.round(Math.max(FLOW_CODE_MIN, Math.min(room - 320, pixels)));
   flowSheet.style.setProperty('--flow-code-width', width + 'px');
-  sizeFlowStage();
-  measureFlowDiagram();
-  drawFlowOverlay();
 }
 
 function flowCodeWidth() {
@@ -593,7 +591,9 @@ if (flowSplit) {
     event.preventDefault();
     const start = event.clientX;
     const was = flowCodeWidth();
-    const move = (moved) => setFlowCodeWidth(was - (moved.clientX - start));
+    // The sheet cannot be resized while the pointer is held down on it, so its room is read once here and carried for the whole gesture.
+    const room = (flowSheet && flowSheet.clientWidth) || 900;
+    const move = (moved) => setFlowCodeWidth(was - (moved.clientX - start), room);
     const done = () => {
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', done);

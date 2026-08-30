@@ -297,6 +297,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             &image_refresh_script(),
                             "Live reload: failed to refresh images",
                         ),
+                        WatchedChangeStep::AgeLinkPreviews => run_page_script(
+                            reader.page(),
+                            &age_link_previews_script(),
+                            "Live reload: failed to age the link cards",
+                        ),
                     }
                 }
             }

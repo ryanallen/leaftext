@@ -161,6 +161,12 @@ const lineCountCache = new Map();
 const pendingLineTokens = new Map();
 const linkPreviewCache = new Map();
 const pendingPreviewTokens = new Map();
+// Addresses whose remembered answers may now be older than the files behind them. The watcher tells the host, the host tells the page, and nothing is thrown away: a rest on one of these draws what it had and asks again behind it, so the reader never meets a spinner for a card they have already seen. Held here alone — no other fragment reads it.
+const staleLinkAnswers = new Set();
+window.leafAgeLinkPreviews = () => {
+  for (const key of linkPreviewCache.keys()) staleLinkAnswers.add(key);
+  for (const key of lineCountCache.keys()) staleLinkAnswers.add(key);
+};
 let linkHoverPreviewTimer = 0;
 let linkHoverHideTimer = 0;
 let linkHoverShowFrame = 0;
@@ -187,10 +193,17 @@ function setLinkHoverLines(count) {
 }
 window.leafLineCount = (token, lines) => {
   const key = pendingLineTokens.get(token);
+  // The count the card is already showing, on an ask made only because the watcher aged it. Answered the same, the card is left alone rather than rewritten with what it says.
+  let alreadyDrawn = false;
   if (key !== undefined) {
     pendingLineTokens.delete(token);
-    if (typeof lines === 'number' && lines >= 0) lineCountCache.set(key, lines);
+    if (typeof lines === 'number' && lines >= 0) {
+      alreadyDrawn = staleLinkAnswers.has(key) && lineCountCache.get(key) === lines;
+      lineCountCache.set(key, lines);
+      staleLinkAnswers.delete(key);
+    }
   }
+  if (alreadyDrawn) return;
   if (token === activeHoverToken && typeof lines === 'number' && lines >= 0) {
     setLinkHoverLines(lines);
   }
@@ -496,7 +509,8 @@ function requestLinkPreview(key, token) {
   linkHoverPreviewTimer = window.setTimeout(() => {
     linkHoverPreviewTimer = 0;
     if (token !== activeHoverToken || linkHoverTip.hidden) return;
-    if (linkPreviewCache.has(key)) {
+    // An answer that arrived while the wait ran, and is not one the watcher has aged: nothing to ask for.
+    if (linkPreviewCache.has(key) && !staleLinkAnswers.has(key)) {
       applyLinkHoverPreview(linkPreviewCache.get(key));
       return;
     }
@@ -534,14 +548,19 @@ function linkPreviewSectionHtml(html, href) {
 window.leafLinkPreview = (token, html) => {
   const key = pendingPreviewTokens.get(token);
   let note = html;
+  // The words the card is already showing, on an ask made only because the watcher aged them. Answered the same, the card keeps what it drew rather than being rebuilt and placed again for nothing.
+  let alreadyDrawn = false;
   if (key !== undefined) {
     pendingPreviewTokens.delete(token);
     // The section rather than the whole file, so many links into one page cost that many sections rather than that many copies of the page.
     if (typeof html === 'string') {
       note = html === '' ? html : linkPreviewSectionHtml(html, key);
+      alreadyDrawn = staleLinkAnswers.has(key) && linkPreviewCache.get(key) === note;
       linkPreviewCache.set(key, note);
+      staleLinkAnswers.delete(key);
     }
   }
+  if (alreadyDrawn) return;
   if (token !== activeHoverToken || linkHoverTip.hidden || typeof html !== 'string') return;
   applyLinkHoverPreview(note);
 };
@@ -640,18 +659,21 @@ function startLinkHover(event) {
   if (entry || info.kind === 'Another page' || info.kind === 'Full glossary') {
     // A drawing's link answers an object here where an ordinary one answers text, and the host drops a message whose address is not a string. A glossary link goes as it was written instead: the scheme carries the term, and a relative address read back off the page resolves against the page rather than against the document the host joins it onto.
     const key = entry ? rawHref : (typeof link.href === 'string' && link.href) || rawHref;
+    // Something on disk moved since this answer was taken, so the card draws what it has and the host is asked again behind it.
+    const aged = staleLinkAnswers.has(key);
     if (linkPreviewCache.has(key)) {
       // Seen already: straight back up rendered, so a return to a link never blinks its spinner — and a page the host could not draw raises no box at all.
       applyLinkHoverPreview(linkPreviewCache.get(key));
+      if (aged) requestLinkPreview(key, token);
     } else {
       showLinkHoverPreviewPlaceholder();
       requestLinkPreview(key, token);
     }
     // A term is the one link with no count: the number would be the whole glossary's above three blocks of one entry. A link to the whole glossary is that file, so its count is the file's and right.
     if (!entry) {
-      if (lineCountCache.has(key)) {
-        setLinkHoverLines(lineCountCache.get(key));
-      } else {
+      const counted = lineCountCache.has(key);
+      if (counted) setLinkHoverLines(lineCountCache.get(key));
+      if (!counted || aged) {
         pendingLineTokens.set(token, key);
         send({ command: 'countLines', href: key, token });
       }

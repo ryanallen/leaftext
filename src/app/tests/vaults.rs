@@ -210,6 +210,7 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
         watched_change_steps(&state, Path::new("/vault/notes.md"), true),
         vec![
             WatchedChangeStep::RereadVaultStatus(3),
+            WatchedChangeStep::AgeLinkPreviews,
             WatchedChangeStep::ReloadActiveDocument,
         ],
         "the status read comes above the split, or it only fires for files you are not editing"
@@ -226,6 +227,28 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
     state.active = 0;
     assert_eq!(
         watched_change_steps(&state, Path::new("/vault/notes.md"), true),
-        vec![WatchedChangeStep::ReloadActiveDocument]
+        vec![
+            WatchedChangeStep::AgeLinkPreviews,
+            WatchedChangeStep::ReloadActiveDocument,
+        ]
+    );
+}
+
+/// The card a rest over a link draws is remembered in the page under that link's address, and nothing but this step ever takes one back.
+#[test]
+fn a_change_on_disk_ages_the_link_cards_whichever_side_of_the_split_it_falls() {
+    // Above the split on purpose. The document you are reading is linked to from other documents, so saving it has to age its card as much as a change beside it does — and the active branch returns early, so a step written below it would never run for the commonest change there is.
+    let mut state = VaultState::load(None);
+    state.active = 0;
+
+    assert!(
+        watched_change_steps(&state, Path::new("/vault/notes.md"), true)
+            .contains(&WatchedChangeStep::AgeLinkPreviews),
+        "a change to the open document left every card that links to it saying what the file used to say"
+    );
+    assert!(
+        watched_change_steps(&state, Path::new("/vault/beside-it.md"), false)
+            .contains(&WatchedChangeStep::AgeLinkPreviews),
+        "a change beside the open document left the card over its link saying what that file used to say"
     );
 }

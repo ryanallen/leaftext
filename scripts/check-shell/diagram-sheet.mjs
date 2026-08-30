@@ -1258,6 +1258,56 @@ export function run() {
     }
   });
 
+  // The divider between the text and the picture only moves the canvas around the drawing. The stage is sized from the diagram's own box and every position on the overlay is recorded against the stage's own origin, so nothing inside it moves — which is why a width change measures nothing. The proof is a sentinel: the reading is stamped, the divider is taken from its ceiling to its floor, and the stamp has to survive.
+  check('a width change leaves the reading alone', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const { drag, widthWritten, restore } = dividerStand(booted);
+    try {
+      read('flowPlaced = { sentinel: "the reading that was already there", nodes: [], edges: [], groups: [] };');
+      // The whole travel: the 680px ceiling this sheet's room gives, down through the middle, onto the 180px floor and past it.
+      drag(340, [-400, -100, 0, 200, 340, 500]);
+      const held = read('flowPlaced');
+      if (!held || held.sentinel !== 'the reading that was already there') {
+        throw new Error('dragging the divider measured the diagram again');
+      }
+      // The last move asked for 340 − 500 = −160, which the floor takes to 180.
+      if (widthWritten() !== '180px') throw new Error(`the divider ended at ${widthWritten() || 'nothing'} rather than 180px`);
+      // And the ceiling, so the clamp is read at both ends rather than only where it happens to bite.
+      drag(340, [-900]);
+      if (widthWritten() !== '680px') throw new Error(`the ceiling wrote ${widthWritten() || 'nothing'} rather than 680px`);
+    } finally {
+      read('flowPlaced = null;');
+      restore();
+    }
+  });
+
+  // Reading the sheet's own width after the move before wrote one forces the whole sheet to lay out again, which was the last cost left in a move once the measurement had gone. A held pointer cannot resize the window, so a drag reads it once and carries it; a key press can have a resize before it, so it reads fresh every time.
+  check('a drag reads the sheet once however many moves it sends', () => {
+    const { drag, pressArrow, doubleClick, roomReads, widthWritten, restore } = dividerStand(booted);
+    try {
+      roomReads.count = 0;
+      drag(340, [-40, -80, -120, -160, -200, -240, -280, -320, 0, 40, 80, 120]);
+      if (roomReads.count !== 1) throw new Error(`twelve moves read the sheet's width ${roomReads.count} times rather than once`);
+      // The room it carried is the real one, or the clamp would be measured against 900 and the ceiling would come out at 580.
+      drag(340, [-900]);
+      if (widthWritten() !== '680px') throw new Error(`the carried room clamped at ${widthWritten() || 'nothing'} rather than 680px`);
+
+      // A key press is not a held gesture, so it goes back to the sheet.
+      roomReads.count = 0;
+      pressArrow('ArrowLeft', 340);
+      if (roomReads.count !== 1) throw new Error(`an arrow key read the sheet's width ${roomReads.count} times rather than once`);
+      if (widthWritten() !== '364px') throw new Error(`the arrow key wrote ${widthWritten() || 'nothing'} rather than 364px`);
+
+      // Neither is the double-click reset, and it is the other gesture the hoisted read had to be kept away from.
+      roomReads.count = 0;
+      doubleClick();
+      if (roomReads.count !== 1) throw new Error(`the double-click reset read the sheet's width ${roomReads.count} times rather than once`);
+      if (widthWritten() !== '340px') throw new Error(`the double-click reset wrote ${widthWritten() || 'nothing'} rather than 340px`);
+    } finally {
+      restore();
+    }
+  });
+
   // The sheet has one picture in it and mermaid draws it. Two would mean one of them is a lie, and it would be ours — so nothing in the flowchart code may draw a shape, and there is no second pane to draw it into.
   check('mermaid is the only thing that draws a flowchart', () => {
     const model = readFileSync(join(root, 'src/assets/shell/flow-model.js'), 'utf8');
@@ -1335,4 +1385,49 @@ export function run() {
       throw new Error(`the failed diagram's words are measured against ${printedOn.join(', ') || 'nothing'}, and printed on ${fill}`);
     }
   });
+}
+
+/** The divider between the text pane and the picture, and a way to drag it. The sheet is given a room of its own so the clamp lands on numbers a reader can check by eye — a 680px ceiling and the 180px floor — and the pane is given the width the drag starts from. Every drag ends with its pointerup, or the move listener it left on the document would be called again by the next one. */
+function dividerStand(booted, { room = 1000 } = {}) {
+  const sheet = booted.document.getElementById('flowSheet');
+  const split = booted.document.getElementById('flowSplit');
+  const code = booted.document.getElementById('flowCode');
+  if (!sheet || !split || !code) throw new Error('the page has no divider to drag');
+  const wasRoom = sheet.clientWidth;
+  const wasRect = code.getBoundingClientRect;
+  // How wide the sheet is, and how wide the text pane is standing when the drag begins: the two numbers `setFlowCodeWidth` reads.
+  const roomReads = { count: 0 };
+  Object.defineProperty(sheet, 'clientWidth', {
+    configurable: true,
+    get() {
+      roomReads.count += 1;
+      return room;
+    },
+  });
+  const raiseOnDocument = (type, event) => {
+    for (const handler of [...(booted.document.listeners.get(type) || [])]) handler(event);
+  };
+  const drag = (from, moves) => {
+    code.getBoundingClientRect = () => ({ top: 0, left: 0, right: from, bottom: 0, width: from, height: 0 });
+    // The divider is grabbed at 0, so a move's clientX is the distance dragged: leftward widens the pane, which is why the numbers below are negative for a widening.
+    for (const handler of [...(split.listeners.get('pointerdown') || [])]) {
+      handler({ button: 0, clientX: 0, preventDefault() {} });
+    }
+    for (const at of moves) raiseOnDocument('pointermove', { clientX: at });
+    raiseOnDocument('pointerup', {});
+  };
+  const pressArrow = (key, from) => {
+    code.getBoundingClientRect = () => ({ top: 0, left: 0, right: from, bottom: 0, width: from, height: 0 });
+    for (const handler of [...(split.listeners.get('keydown') || [])]) handler({ key, preventDefault() {} });
+  };
+  const doubleClick = () => {
+    for (const handler of [...(split.listeners.get('dblclick') || [])]) handler({});
+  };
+  const widthWritten = () => sheet.style.getPropertyValue('--flow-code-width');
+  const restore = () => {
+    Object.defineProperty(sheet, 'clientWidth', { configurable: true, writable: true, value: wasRoom });
+    code.getBoundingClientRect = wasRect;
+    sheet.style.removeProperty('--flow-code-width');
+  };
+  return { sheet, split, drag, pressArrow, doubleClick, roomReads, widthWritten, restore };
 }
