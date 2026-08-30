@@ -75,7 +75,7 @@
     opacity: var(--lt-opacity-55);
   }
 }
-/* The same fill the chrome buttons take, so the biggest target on the page answers the pointer the way the smallest ones do. It replaces a dot lattice, which the app spends everywhere else on saying a thing is quiet — over a card this wide that read as switched off. What keeps it from being a slab is the halftone `panels.css` throws around it. */
+/* The same fill the chrome buttons take, so the biggest target on the page answers the pointer the way the smallest ones do. Never a dot lattice: the app spends that everywhere else on saying a thing is quiet, and over a card this wide it reads as switched off. What keeps the fill from being a slab is the halftone `panels.css` throws around it. */
 .document-body .docs-pager a:hover,
 .document-body .docs-pager a:focus-visible {
   background: var(--lt-navigation-button-hover-background);

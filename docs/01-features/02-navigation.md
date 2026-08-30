@@ -22,9 +22,9 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, the opening of a linked note, and a glossary term's whole entry |
 | [The pointer](#the-pointer) | The hand means this goes somewhere — a link, a button written into a document, and the controls that carry you between documents; the arrow stays over the icons the app bar draws for itself and over anything you cannot press right now |
-| [What a control does under the pointer](#what-a-control-does-under-the-pointer) | The buttons at the top right, the file rows in the pane and a button written into a document answer with their color over the same beat, and with nothing else — none of them lifts, changes shape or moves |
+| [What a control does under the pointer](#what-a-control-does-under-the-pointer) | The buttons at either end of the bar, the file rows in the pane and a button written into a document answer with their color over the same beat, and with nothing else — none of them lifts, changes shape or moves. The [Previous / Next](#pager) card answers with its color and a dotted shadow around it, and is the one control that adds anything |
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
-| [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the page's own dot texture under the pointer |
+| [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the theme's color under the pointer and throwing a dotted shadow around themselves |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
 | [When the bar runs out of room](#when-the-bar-runs-out-of-room) | On a window too narrow for the whole app bar, its buttons fold into a chevron menu one at a time — and the window's own close, minimize and maximize stay on the bar |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
@@ -274,7 +274,7 @@ Reading order follows the same depth-first walk the docs viewer uses: inside eac
 
 Working out the Previous / Next links means scanning the folder tree, so Leaftext does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
-Point at either button and it fills with the same fine dot texture the code blocks and table headers on that page wear, so it reads as one of the page's own surfaces rather than a panel laid over it, and the document name on it stays plain. The [hover tooltip](#link-hints) gives it the same card any other document link gets — that it opens another page, the address of that page, and how long it is — and sits clear of the button rather than over it. A middle click and the right-click menu treat it as a page too.
+Point at either button and it fills with the theme's own color, the way the buttons on the app bar do, with the document name and the word above it reversed out of the fill. Around the card the app's dotted shadow comes up, the same band every menu and panel throws, so the card reads as lifting off the page while staying exactly where it rests. The [hover tooltip](#link-hints) gives it the same card any other document link gets — that it opens another page, the address of that page, and how long it is — and sits clear of the button rather than over it. A middle click and the right-click menu treat it as a page too.
 
 The pager is always there; it is not a [setting](05-settings.md#pager).
 
@@ -317,9 +317,11 @@ Every other shape still does its own work, because it describes a gesture rather
 
 ### What a control does under the pointer
 
-Point at one of the icon buttons at the top right of the bar, at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The fill, the ink and the edge arrive over a beat, as they do on every control in the app.
+Point at one of the icon buttons at either end of the bar — [Back and Forward](#history) at the left, the palette, Open, **+** and Export at the right — at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The fill goes to the theme's own color, the glyph reverses out of it, and the ink and the edge arrive over the same beat, as they do on every control in the app.
 
-That is the whole answer. Nothing casts a shadow, nothing changes shape, nothing slides: the control stays exactly the box, the corner and the place it rests at, so the thing you aimed at is the thing under the pointer and no row changes height. The color reverses the moment the pointer leaves, and with [Reduce Motion](05-settings.md#reduce-motion) on it arrives in one frame.
+That is the whole answer. Nothing changes shape, nothing slides: the control stays exactly the box, the corner and the place it rests at, so the thing you aimed at is the thing under the pointer and no row changes height. The color reverses the moment the pointer leaves, and with [Reduce Motion](05-settings.md#reduce-motion) on it arrives in one frame.
+
+One control adds something, and it is the widest one: the [Previous / Next](#pager) card takes the same fill and also throws the app's own dotted shadow around itself, the band every menu and panel casts. It stays the size and the place it rests at like everything else — the shadow falls outside the card rather than moving it.
 
 The file you have open keeps its own tint while you point elsewhere, so what is open still reads as open, and the keyboard's own ring is unchanged.
 
