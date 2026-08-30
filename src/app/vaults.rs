@@ -108,7 +108,7 @@ impl VaultState {
     pub(crate) fn drop_corpus(&mut self) {
         self.corpus = None;
         self.corpus_generation += 1;
-        // Changes kept for the read we just abandoned are about somewhere else now, and the vault they name is not the one being read into.
+        // Every caller is a vault move, so a path kept for the old root would be replayed into the new one's text.
         self.corpus_changes.clear();
         self.pending_graph = None;
         self.pending_search = None;
