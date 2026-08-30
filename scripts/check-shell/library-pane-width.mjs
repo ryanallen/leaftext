@@ -87,7 +87,7 @@ export function run() {
 
   // ---- 3a3. a release applies the width the drag was left at -----------------
   //
-  // Width writes are thrown onto an animation frame so the pane's grid does not relay out on every pointer event, which is right. The release was not: it canceled the frame that was still pending and the last stretch of the drag went with it, so a hand that lets go the moment it stops leaves the pane short of the pointer — and the same short number is what `persistLibraryLayout` then saves, so it comes back that way. These two leave the frame queue alone on purpose: draining it after every move is what kept the drag check above from ever seeing this.
+  // Width writes are thrown onto an animation frame so the pane's grid does not relay out on every pointer event. A release has to flush the frame still pending or the last stretch of the drag goes with it, leaving the pane short of where the hand stopped — and `persistLibraryLayout` saves that short number, so it comes back that way. These two leave the frame queue alone on purpose: draining it after every move is what keeps the drag check above from seeing any of it.
 
   /** A booted page with a divider that can be dragged and every command it sends recorded. */
   function dragStand(settings = {}) {

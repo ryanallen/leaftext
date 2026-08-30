@@ -408,7 +408,7 @@ sequenceDiagram
 
 Key details:
 
-- The file watcher debounces events with a 200 ms window.
+- The file watcher debounces events with a 200 ms window, and everything that changed inside one window is handled together rather than one file at a time — so a branch switch, a folder sync or a pull that rewrites thousands of files leaves the window answering while they land.
 - Leaftext hashes the file contents to skip duplicate reloads, and skips a reload outright when the file already holds exactly what is on screen — the hash is unknown right after a document opens, and the whole folder is watched, so the first event to arrive is usually about something else.
 - Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, [JSON and YAML](01-rendering.md#data-files-json-and-yaml) stay themselves, [email](01-rendering.md#email-eml) stays email, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
