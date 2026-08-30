@@ -253,6 +253,13 @@ fn data_leaf_attribute_prefixes_survive_sanitizing() {
 }
 
 #[test]
+fn table_column_labels_survive_sanitizing() {
+    let rendered = render_markdown_document("| Name |\n| --- |\n| Ada |\n", "people.md");
+
+    assert_contains(&rendered.html, r#"data-leaf-col="Name">Ada</td>"#);
+}
+
+#[test]
 fn a_block_that_reaches_the_page_as_nothing_is_told_from_one_that_draws() {
     // The block map drops a block this answers yes for, so a yes on something the page really draws would leave an element with no source range and take the whole document's editing with it. A closing tag is the case to keep saying no to: the page steps over it itself.
     for nothing in [

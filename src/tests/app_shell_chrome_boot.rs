@@ -27,12 +27,15 @@ fn the_front_end_is_served_beside_the_shell_not_inside_it() {
     let page = app_shell_html();
     let script = app_shell_script();
 
-    assert_contains(&page, "<script src=\"");
-    // Anonymous mode is the request half of the CORS pair that lets a throw inside the script reach window.onerror with its place instead of the masked `Script error.`. The version query keeps a new binary out of an old binary's cache entry, whose stored headers would re-mask every throw.
+    // The version query keeps a new binary out of an old binary's cache entry, whose stored headers would re-mask every throw.
     assert_contains(&page, "app.js?v=");
-    assert_contains(&page, "\" crossorigin=\"anonymous\" defer></script>");
-    // One tag, and no inline script: the fragments are one shared scope, so a second tag would be a second scope.
-    assert_eq!(page.matches("<script src=").count(), 1);
+    // The desktop names that file from its loader rather than from a tag the parser reaches: a tag here would run before the startup card is painted, which is the whole of what the loader is for.
+    assert!(
+        !page.contains("<script src="),
+        "the desktop page carries a front-end tag the parser runs before it draws"
+    );
+    // Two inline scripts and no more: the theme bootstrap in the head and the loader at the foot. The fragments are one shared scope, so a third would be a second scope.
+    assert_eq!(page.matches("<script>").count(), 2);
     assert!(
         !page.contains(
             "
@@ -63,16 +66,20 @@ fn the_front_end_is_served_beside_the_shell_not_inside_it() {
 
 #[test]
 fn the_page_draws_before_the_front_end_runs() {
-    // What went wrong: a launch drew nothing until the whole front end had run. The tag sat at the end of the body with no `defer`, so the parser stopped on it for the length of the script's own execution — three launches each way put the first paint 20ms later and the page's interactive mark 100ms later than with it. A startup card behind that is a card nobody sees. The theme bootstrap in the head is the one script that still stops the parser on purpose: it settles the theme before a pixel is drawn.
+    // What went wrong: a launch drew nothing until the whole front end had run. `defer` fixed the parser stopping on the tag — three launches each way put the first paint 20ms later and the page's interactive mark 100ms later without it — and left the rest, because a deferred script still runs before the browser draws anything: a page interactive at 15ms had no pixel until the script finished at 157ms. A startup card behind that is a card nobody sees. So the desktop appends the script itself, one painted frame late. The theme bootstrap in the head is the one script that still stops the parser on purpose: it settles the theme before a pixel is drawn.
     let page = app_shell_html();
-    let tag = page
-        .lines()
-        .find(|line| line.contains("<script src="))
-        .expect("the shell links the front end");
-    assert!(
-        tag.contains(" defer"),
-        "the front-end script must not stop the parser before the page draws: {tag}"
+
+    // Preloaded as parsing ends, so the local fetch stays alongside the first frame rather than moving behind it.
+    assert_contains(&page, "preload.rel = 'preload'");
+    assert_contains(&page, "preload.as = 'script'");
+    // Two callbacks, not one: the first runs before the frame it was queued for is drawn, so only the second is past a painted card.
+    assert_contains(
+        &page,
+        "requestAnimationFrame(() => requestAnimationFrame(runFrontEnd))",
     );
+    // Anonymous mode on both, or the preloaded response is not the one the script reuses — and a throw inside the front end goes back to the masked `Script error.` with no place on it.
+    assert_contains(&page, "preload.crossOrigin = 'anonymous'");
+    assert_contains(&page, "script.crossOrigin = 'anonymous'");
 }
 
 #[test]

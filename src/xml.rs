@@ -540,13 +540,17 @@ fn table_group<'a>(
 }
 
 /// One `<td>`. The range sits on whatever element holds exactly one value's words: the cell itself where one thing drew it, and a span of its own per value where several folded into it — so the `, ` between them sits in no span and answers a press with nothing, which is what it is.
-fn cell_html(cell: Option<&Cell>) -> String {
+fn cell_html(cell: Option<&Cell>, label: &str) -> String {
     let stamp = |range: Option<DrawnBytes>| range.map(DrawnBytes::attrs).unwrap_or_default();
+    let label = encode_double_quoted_attribute(label);
     let Some(cell) = cell else {
-        return "<td></td>".to_string();
+        return format!("<td data-leaf-col=\"{label}\"></td>");
     };
     if let [(value, range)] = cell.parts.as_slice() {
-        return format!("<td{}>{value}</td>", stamp(*range));
+        return format!(
+            "<td data-leaf-col=\"{label}\"{}>{value}</td>",
+            stamp(*range)
+        );
     }
     let parts: Vec<String> = cell
         .parts
@@ -556,7 +560,7 @@ fn cell_html(cell: Option<&Cell>) -> String {
             None => value.clone(),
         })
         .collect();
-    format!("<td>{}</td>", parts.join(", "))
+    format!("<td data-leaf-col=\"{label}\">{}</td>", parts.join(", "))
 }
 
 /// Render a run of records as one table, one row per record.
@@ -574,9 +578,9 @@ fn render_table<'a>(rows: &[Node<'a, 'a>], columns: &[(String, String)], ctx: &m
     for row in rows {
         let cells = row_cells(*row);
         html.push_str("<tr>");
-        for (key, _) in columns {
+        for (key, label) in columns {
             let cell = cells.iter().find(|cell| &cell.key == key);
-            html.push_str(&cell_html(cell));
+            html.push_str(&cell_html(cell, label));
         }
         html.push_str("</tr>\n");
     }

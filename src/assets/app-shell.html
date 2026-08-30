@@ -346,17 +346,20 @@
 <div id="diagramPrint" class="diagram-print" aria-hidden="true"></div>
 <!-- Where a picture in the document goes to be printed on its own. The export puts a copy of the picture in this box at its own size and raises `leaf-paper-picture`, which takes everything else off the sheet. Empty and out of the layout the rest of the time. See .picture-print in reading/print.css. -->
 <div id="picturePrint" class="picture-print" aria-hidden="true"></div>
-<!-- The front-end, over the asset protocol rather than inline: the page is handed
-     to WebView2 as one string with a ceiling on it and this was 88% of it. A plain
-     script tag, not a module, because the fragments are written as one shared
-     scope.
+<!-- Where the front-end arrives, filled by the host rather than written here. Both
+     fills name the same joined app.js over the asset protocol — the page is handed
+     to WebView2 as one string with a ceiling on it and this was 88% of it — and
+     both load it as a plain script rather than a module, because the fragments are
+     written as one shared scope.
 
-     `defer` because the parser otherwise stops here for the whole of the script's
-     own execution: three launches each way put the first paint 20ms later and the
-     page's interactive mark 100ms later without it. It still runs before
-     DOMContentLoaded and still last on the page, which is where it sits. -->
+     A browser host gets the deferred tag: it runs before DOMContentLoaded and last
+     on the page, and the host's own module boot starts underneath it. The desktop
+     gets the loader in desktop-front-end-loader.js instead, which preloads that
+     same file and appends it one painted frame later, so the startup card above is
+     already drawn rather than sitting blank for the whole of the script's own
+     execution. See app_shell_html and app_shell_html_for_host in lib.rs. -->
 
-<script src="{{APP_SCRIPT_URL}}" crossorigin="anonymous" defer></script>
+{{FRONT_END}}
 </div>
 </body>
 </html>

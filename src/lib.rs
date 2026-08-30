@@ -1052,16 +1052,24 @@ pub(crate) fn nearest_glossary_terms(doc_dir: &Path) -> Vec<GlossaryTerm> {
         .collect()
 }
 
-/// The page, with the five things only the host knows filled in: the script, the theme bootstrap, the theme picker's cards, and two asset URLs whose scheme is the platform's to choose. No icon is substituted — every one is a class in `icons.css`, so the drawings are served with the stylesheet instead of pasted into this string.
+/// The desktop's page: the one every host is served, with the front-end held back until the startup card already in it has been painted.
+///
+/// The card is literal markup and needs no script, so the only thing between a laid-out page and its first pixel was the front end's own execution — measured at 157ms on a page that was interactive at 15ms. The loader is what closes that: it is inline, it preloads the same joined script as parsing ends, and it appends it from the second animation-frame callback, one painted frame later.
 pub fn app_shell_html() -> String {
-    app_shell_html_for_host(&DesktopHost::default())
+    let host = DesktopHost::default();
+    app_shell_page_for_host(&host, &desktop_front_end_loader_html(&host))
 }
 
-/// The same page, with the asset URLs the host chooses. A browser serves them over http; the desktop over its own protocol.
+/// The same page, with the asset URLs the host chooses and the front-end tag every host but the desktop carries. A browser serves them over http; the desktop over its own protocol.
 pub fn app_shell_html_for_host(host: &dyn LeafHost) -> String {
+    app_shell_page_for_host(host, &front_end_tag_html(host))
+}
+
+/// The page, with the five things only the host knows filled in: the front-end, the theme bootstrap, the theme picker's cards, and two asset URLs whose scheme is the platform's to choose. No icon is substituted — every one is a class in `icons.css`, so the drawings are served with the stylesheet instead of pasted into this string.
+fn app_shell_page_for_host(host: &dyn LeafHost, front_end: &str) -> String {
     let asset = |name: &str| host.asset_url(name).unwrap_or_default();
     APP_SHELL_HTML
-        .replace("{{APP_SCRIPT_URL}}", &asset("app.js"))
+        .replace("{{FRONT_END}}", front_end)
         .replace(
             "{{THEME_BOOTSTRAP_SCRIPT}}",
             &theme_bootstrap_script_for_host(host),
@@ -1069,6 +1077,29 @@ pub fn app_shell_html_for_host(host: &dyn LeafHost) -> String {
         .replace("{{APP_CSS_URL}}", &asset("app.css"))
         .replace("{{THEME_ITEMS}}", &theme_items_html())
         .replace("{{KATEX_CSS_URL}}", &asset("katex/katex.min.css"))
+}
+
+/// The front-end as a browser host carries it: one deferred tag at the foot of the page.
+///
+/// `defer` because the parser otherwise stops on it for the whole of the script's own execution: three launches each way put the first paint 20ms later and the page's interactive mark 100ms later without it. It still runs before `DOMContentLoaded` and still last on the page, which is where a published site's own module boot expects to find it. Anonymous mode is the request half of the CORS pair that lets a throw inside the script reach `window.onerror` with its place instead of the masked `Script error.`
+fn front_end_tag_html(host: &dyn LeafHost) -> String {
+    format!(
+        "<script src=\"{}\" crossorigin=\"anonymous\" defer></script>",
+        host.asset_url("app.js").unwrap_or_default()
+    )
+}
+
+/// The front-end as the desktop carries it: the loader in `assets/desktop-front-end-loader.js`, inline, naming that same script. It holds the one thing only the host knows — where `app.js` is served from — and nothing else, so the whole of the timing is a file the shell check can read.
+fn desktop_front_end_loader_html(host: &dyn LeafHost) -> String {
+    const DESKTOP_FRONT_END_LOADER_JS: &str = include_str!("assets/desktop-front-end-loader.js");
+
+    format!(
+        "<script>{}</script>",
+        DESKTOP_FRONT_END_LOADER_JS.replace(
+            "{{APP_SCRIPT_URL}}",
+            &host.asset_url("app.js").unwrap_or_default()
+        )
+    )
 }
 
 /// The document as a page of its own: what a reader hands to somebody who does not have Leaftext.

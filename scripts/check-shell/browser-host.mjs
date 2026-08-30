@@ -715,8 +715,8 @@ export function run() {
       'assets/settings.js',
       // Only then the paint.
       'window.__leafThemeResolved',
-      // The app's own script, and the host's loader under it.
-      '{{APP_SCRIPT_URL}}',
+      // The app's own front-end, and the host's loader under it. The seam rather than a filled tag, because this page is built from the template with only the bootstrap stood in.
+      '{{FRONT_END}}',
       'assets/boot.js',
     ];
     let at = -1;

@@ -21,6 +21,74 @@ fn a_note_that_asked_for_a_full_width_page_gets_the_whole_lane() {
 }
 
 #[test]
+fn narrow_tables_become_labeled_cards_only_on_a_screen() {
+    let css = reading_mode_css();
+    let cards = rule_body(&css, ".document-body table.is-cards {");
+    assert_contains(cards, "width: 100%;");
+    assert_contains(cards, "overflow: visible;");
+    // The row wraps rather than gridding: equal tracks handed a one-character column the room a paragraph needs.
+    let rows = rule_body(&css, ".document-body table.is-cards tr {");
+    assert_contains(rows, "display: flex;");
+    assert_contains(rows, "flex-wrap: wrap;");
+    // And the cell is a block, so everything in it stays one run: a flex box made every link and comma a column of its own.
+    let cells = rule_body(&css, ".document-body table.is-cards td {");
+    assert_contains(cells, "display: block;");
+    assert_contains(cells, "overflow-wrap: anywhere;");
+    assert_contains(cells, "background: none;");
+    let labels = rule_body(&css, ".document-body table.is-cards td::before {");
+    assert_contains(labels, "content: attr(data-leaf-col);");
+    assert_contains(labels, "display: inline-block;");
+    // Two conditions, one number: the window reads the reader's own room, and the two published sites, which make no query container at all, read the window.
+    assert_contains(&css, "@container (max-width: 720px)");
+    assert_contains(&css, "@media screen and (max-width: 720px)");
+    // And both are screen-only, or a printed sheet cards every table it has room to draw. The reader is still a query container on paper and a printed lane is written as a pixel width off the chosen paper, so the container query needs the same guard the media query already wears. Every one of them opens on the line under `@media screen {`.
+    let mut previous = "";
+    let mut guarded = 0;
+    for line in css.lines() {
+        if line
+            .trim_start()
+            .starts_with("@container (max-width: 720px)")
+        {
+            assert_eq!(
+                previous.trim(),
+                "@media screen {",
+                "a card container query is not inside @media screen, so paper would card its tables"
+            );
+            guarded += 1;
+        }
+        if !line.trim().is_empty() {
+            previous = line;
+        }
+    }
+    assert!(guarded >= 1, "no card container query is in the stylesheet");
+}
+
+/// A run of repeated records is drawn as a table of its own, and it fails the same way a written one does: cramped rather than cut. So the card rules are keyed on the table and never narrowed away from that one, and the rule that wraps its long cells sets no display of its own to fight them with.
+#[test]
+fn a_record_table_is_carded_by_the_same_rules() {
+    let css = reading_mode_css();
+    assert!(
+        !css.contains("table:not(.data-table)"),
+        "the card rules are keyed away from a record table, so a JSON array of records is left cramped at a phone width"
+    );
+    let wrapping = rule_body(&css, ".document-body .data-table td {");
+    assert_contains(wrapping, "overflow-wrap: anywhere;");
+    assert!(
+        !wrapping.contains("display:"),
+        "the record table's cell rule names a display, so it fights the card shape it is meant to sit inside"
+    );
+    // The field block is the one table left out, and it has to be handed back every part of the shape — the table's own display alone left its rows folding into cards and its keys stacking above their values.
+    for tail in ["{", "tbody {", "tr {", "th,"] {
+        let selector = format!(".document-body .frontmatter table:not(.no-cards) {tail}");
+        assert_eq!(
+            css.matches(selector.as_str()).count(),
+            2,
+            "the field block's opt-out is not written for both the container query and the width query: {selector}"
+        );
+    }
+}
+
+#[test]
 fn reading_mode_css_defines_document_typography() {
     let css = reading_mode_css();
 

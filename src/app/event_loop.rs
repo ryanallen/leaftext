@@ -451,7 +451,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 index,
                 expect,
                 reply,
-            }) => pipe_asks::task(&mut reader, &mut file_watch, &path, index, &expect, &reply),
+            }) => pipe_asks::task(
+                &mut reader,
+                &mut file_watch,
+                &mut vault_state,
+                &path,
+                index,
+                &expect,
+                &reply,
+            ),
             Event::UserEvent(UserEvent::PipeSave {
                 path,
                 expect,
@@ -857,9 +865,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     &mut refresh_book,
                     format.as_deref(),
                 ),
-                IpcCommand::ToggleTask { index, token } => {
-                    editing_cmds::task_toggled(&mut reader, &mut file_watch, index, token)
-                }
+                IpcCommand::ToggleTask { index, token } => editing_cmds::task_toggled(
+                    &mut reader,
+                    &mut file_watch,
+                    &mut vault_state,
+                    index,
+                    token,
+                ),
                 IpcCommand::EditBlock {
                     start,
                     end,
@@ -872,6 +884,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 } => editing_cmds::edit_block(
                     &mut reader,
                     &mut file_watch,
+                    &mut vault_state,
                     &BlockEdit {
                         start,
                         end,

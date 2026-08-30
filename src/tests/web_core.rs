@@ -429,6 +429,31 @@ fn the_page_takes_its_asset_addresses_from_the_host() {
     assert_contains(&app_shell_html(), "leaf-asset");
 }
 
+/// A browser host boots after the app's own front end, and that order is the host's rather than ours to move.
+///
+/// The desktop appends its front end a painted frame after the page draws, which is the whole of [the first-screen work](../../../docs/refactor/reading/the-page-draws-its-first-screen-before-the-front-end-runs.md) — and a browser page must not follow it there. A published site puts its module boot under this tag and an embedded document puts its own host under it, both of them counting on the front end already standing; delayed, the two would start against a page with no app in it. So the tag stays where it has always been, deferred, last on the page and reached by the parser.
+#[test]
+fn a_browser_page_keeps_the_front_end_tag_the_parser_reaches() {
+    struct ServedHost;
+    impl LeafHost for ServedHost {
+        fn asset_url(&self, name: &str) -> Option<String> {
+            Some(format!("assets/{name}"))
+        }
+    }
+
+    let served = app_shell_html_for_host(&ServedHost);
+
+    assert_contains(
+        &served,
+        r#"<script src="assets/app.js" crossorigin="anonymous" defer></script>"#,
+    );
+    // Nothing appends it instead: the desktop's loader is the desktop's alone.
+    assert!(
+        !served.contains("runFrontEnd"),
+        "the desktop's loader reached a page that is not the desktop's:\n{served}"
+    );
+}
+
 /// A glossary reaches a host with no disk as text, so the reading has to work on text alone — it is the same reading either way.
 #[test]
 fn a_glossary_is_read_from_text_the_same_as_from_a_file() {
@@ -516,10 +541,12 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
 /// The markdown one has moved since, on purpose: it is the only fixture with a leading field block, and its two fences were reported as blocks the page has no element for, which cost that document every editable range it had. Same title, same HTML, two fewer blocks.
 ///
 /// So has the xml one: every value the file keeps inside a tag now carries the bytes between its quotes, and the values composed into one run are drawn in an element each so a press can name one of them. Same title, same blocks, more names on the markup.
+///
+/// And the markdown one again: every body cell of a table now carries its column's heading, which is what lets a narrowed table draw its rows as labeled cards on all three hosts. Same title, same blocks, an attribute on each cell.
 const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "markdown",
-        "1e836f606aaebf4e88ea876b3d54cc0d7d22dbe942f81736668a99abd19e7a88",
+        "fd446abfa5be716de89c4d49257927a85a433d30bf7ed390fde5fc52893a9003",
     ),
     (
         "mermaid",

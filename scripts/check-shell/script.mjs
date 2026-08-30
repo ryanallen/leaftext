@@ -21,8 +21,11 @@ function shellSource() {
   if (names.length < 10) throw new Error(`expected the whole fragment list, got ${names.length}`);
   const page = readFileSync(join(root, 'src/assets/app-shell.html'), 'utf8');
   const tags = (page.match(/<script/g) || []).length;
-  // The theme bootstrap is the other one, and it runs before this in its own scope.
-  if (tags !== 2) throw new Error(`the page should carry two script tags, found ${tags}`);
+  // The theme bootstrap, which runs before this in its own scope, is the only tag the template writes itself. The front-end is a seam the host fills — a deferred tag for a browser, the loader for the desktop — so the template carries none for it and the seam is what has to be there.
+  if (tags !== 1) throw new Error(`the page should carry one script tag, found ${tags}`);
+  if (!page.includes('{{FRONT_END}}')) {
+    throw new Error('the page no longer carries the seam a host fills the front-end into');
+  }
   return {
     names,
     source: names.map((name) => readFileSync(join(root, 'src/assets', name), 'utf8')).join(''),

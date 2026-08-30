@@ -562,6 +562,96 @@ export function run() {
     if (!render.includes('laneWideTables();')) throw new Error('nothing calls laneWideTables on a render');
   });
 
+  // The decision is taken on the grid, never on the cards it chose last time and never on a number kept from an earlier width: a table that fits reports its lane, so a remembered width cards it as soon as the lane narrows under the one it was measured at.
+  check('a wide table is read as a grid every time and becomes cards only when its lane cuts it', () => {
+    const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
+    const measure = decorate.slice(decorate.indexOf('function measureWideTables'), decorate.indexOf('function decorateBlockquoteLines'));
+    for (const part of ["classList.remove('is-cards')", "classList.add('no-cards')", "classList.toggle('is-cards', table.scrollWidth > lane.clientWidth + 2)", 'new ResizeObserver', 'document.fonts?.ready']) {
+      if (!measure.includes(part)) throw new Error(`the card changeover lost: ${part}`);
+    }
+    if (/dataset\.leafTableWidth/.test(measure)) {
+      throw new Error('the changeover keeps a width between decisions again, so a table that fits is carded the moment its lane narrows under the width it was first measured at');
+    }
+    const off = measure.indexOf("classList.add('no-cards')");
+    if (off < 0 || off > measure.indexOf('table.scrollWidth')) {
+      throw new Error('the width is read before the cards come off, so the decision reads the shape it chose last time');
+    }
+  });
+
+  // The card shape, read as the three copies it has to be: the window's container query, the two sites' width query and the measured class. Every fault this catches was watched in a running copy — a cell of links shredded into a column each, a path hanging out of the card, and every second card shaded because the striping is written for a grid and carries the same weight as these selectors.
+  check('a card is one surface and a cell inside it is one run of words', () => {
+    const css = readingCss();
+    const grain = css.lastIndexOf('.document-body tr:nth-child(2n + 1) td {');
+    const cards = css.indexOf('/* Cards, and the last word on a cell:');
+    if (grain < 0 || cards < 0) throw new Error('the row grain or the card block is gone');
+    if (cards < grain) {
+      throw new Error('the card block is written above the striping and the grain, so every second card is shaded and every cell in it wears a box of its own');
+    }
+    const region = css.slice(cards, css.indexOf('.document-body kbd {', cards));
+    const bodies = (selector) => {
+      const found = [];
+      let at = 0;
+      for (;;) {
+        const opened = region.indexOf(selector, at);
+        if (opened < 0) return found;
+        found.push(region.slice(opened, region.indexOf('}', opened)));
+        at = opened + selector.length;
+      }
+    };
+    const both = (tail) => [...bodies(`table:not(.no-cards) ${tail}`), ...bodies(`table.is-cards ${tail}`)];
+    const rows = both('tr {');
+    const cells = both('td {');
+    const labels = both('td::before {');
+    const heads = both('thead {');
+    if (rows.length !== 3 || cells.length !== 3 || labels.length !== 3 || heads.length !== 3) {
+      throw new Error(`the card shape is written ${rows.length} times for the row, ${cells.length} for the cell, ${labels.length} for the label and ${heads.length} for the heading row; each needs all three`);
+    }
+    for (const row of rows) {
+      if (!/display:\s*flex/.test(row) || !/flex-wrap:\s*wrap/.test(row)) {
+        throw new Error('a card no longer wraps its cells, so nothing decides where a line ends');
+      }
+      if (/grid-template-columns/.test(row)) {
+        throw new Error('a card is back on equal tracks, which hand a one-character column the room a paragraph needs');
+      }
+    }
+    for (const cell of cells) {
+      if (!/display:\s*block/.test(cell)) throw new Error('a card cell is a flex box again, so every link and comma in it becomes a column of its own');
+      if (!/overflow-wrap:\s*anywhere/.test(cell)) throw new Error('a value with nothing to break on runs out past the card again');
+      if (!/background:\s*none/.test(cell)) throw new Error('a card cell paints a fill of its own, so the card is not one surface');
+      if (!/min-width:\s*0/.test(cell)) throw new Error('a card cell cannot shrink under its longest word again');
+      if (!/text-align:\s*left/.test(cell)) throw new Error('a column alignment still reaches a card, where there are no columns');
+    }
+    for (const label of labels) {
+      if (!/display:\s*inline-block/.test(label)) throw new Error('the label is a flex item again, which is what shredded the value beside it');
+      if (!/content:\s*attr\(data-leaf-col\)/.test(label)) throw new Error('the label no longer comes from the column the renderer stamped on the cell');
+    }
+    for (const head of heads) {
+      if (!/display:\s*none/.test(head)) throw new Error('the heading row is drawn above cards that each carry their own labels');
+    }
+    for (const flat of [...bodies('.table-lane:has(> table:not(.no-cards)) {'), ...bodies('.table-lane:has(> table.is-cards) {')]) {
+      if (!/width:\s*100%/.test(flat) || !/transform:\s*none/.test(flat) || !/max-width:\s*none/.test(flat)) {
+        throw new Error('the lane keeps its widened, centered shape under cards, so the cards shrink-wrap to the grid width they replaced');
+      }
+    }
+  });
+
+  // The field block is the one table that is already a card, so the card rules have to be handed back in full. Giving the table its own display and stopping left its rows still folding into cards and its keys still stacking above their values, at every width under the changeover.
+  check('the frontmatter block keeps its rows under the card width', () => {
+    const css = readingCss();
+    const at = css.indexOf('.document-body .frontmatter table:not(.no-cards) {');
+    if (at < 0) throw new Error('the frontmatter block no longer opts out of the cards');
+    const region = css.slice(at, css.indexOf('.document-body .frontmatter tr th,', at));
+    for (const [what, value] of [['its rows group', 'table-row-group'], ['its rows', 'table-row'], ['its keys and values', 'table-cell']]) {
+      const found = region.split(`display: ${value};`).length - 1;
+      if (found !== 2) {
+        throw new Error(`the frontmatter opt-out gives ${what} back ${found} times, and both the container query and the width query need it`);
+      }
+    }
+    if (!region.includes('table:not(.no-cards) th,')) {
+      throw new Error('the frontmatter key cell is never given its display back, so a key stacks above its value');
+    }
+  });
+
   // A box that folds in the flow wears `folds` and slides to its new height, so the mark and the rule are held to each other here: only the two together make it move, and a box that loses the mark snaps open with every other check still green.
   check('both boxes that fold in place wear the mark the stylesheet slides', () => {
     const css = readingCss();

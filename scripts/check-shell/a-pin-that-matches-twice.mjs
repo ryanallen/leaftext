@@ -10,8 +10,10 @@ import { check, pageMarkup, root, source } from './shared.mjs';
 
 // ---- the haystacks ----------------------------------------------------------
 
-// The four Rust builders this file rebuilds a string from, named once.
-const PAGE_BUILDER = 'app_shell_html_for_host';
+// The five Rust builders this file rebuilds a string from, named once. The page builder is the one both hosts share; the two front-end builders are what each of them hands it, which is the one seam whose value is markup rather than a host's answer.
+const PAGE_BUILDER = 'app_shell_page_for_host';
+const DESKTOP_FRONT_END_BUILDER = 'desktop_front_end_loader_html';
+const BROWSER_FRONT_END_BUILDER = 'front_end_tag_html';
 const BOOTSTRAP_BUILDER = 'theme_bootstrap_script_for_host';
 const VENDORED_ASSETS_BUILDER = 'vendored_asset_urls_json_for_host';
 const MINIMAP_BUILDER = 'exported_page_minimap_script';
@@ -39,9 +41,8 @@ function filledThemeBootstrap(lib) {
   return script;
 }
 
-// What `app_shell_html()` hands a test, with every name the host fills filled — so a pin over it is counted in the string the test reads rather than in a copy short of it. The seams are read out of the Rust that fills them and never typed here, because a hand-made copy that drifts throws nothing: it stops holding the lines the tests pin, every pin over it counts nowhere, and the check reports green.
-function pageAlone() {
-  const lib = rustSource();
+// The page both hosts share, with every name the host fills filled and the front-end seam left to the caller — so a pin over either host's page is counted in the string that host's own test reads rather than in a copy short of it. The seams are read out of the Rust that fills them and never typed here, because a hand-made copy that drifts throws nothing: it stops holding the lines the tests pin, every pin over it counts nowhere, and the check reports green.
+function pageWithFrontEnd(lib, frontEnd) {
   const bootstrap = filledThemeBootstrap(lib);
   let page = pageMarkup();
   for (const seam of substitutionsIn(lib, PAGE_BUILDER)) {
@@ -54,7 +55,19 @@ function pageAlone() {
     if (value === null) continue;
     page = page.replace(`{{${seam.placeholder}}}`, () => value);
   }
-  return page;
+  return page.replace(`{{${frontEndPlaceholder(lib)}}}`, () => frontEnd);
+}
+
+/** What `app_shell_html()` hands a test: that page with the desktop's loader in it. */
+function pageAlone() {
+  const lib = rustSource();
+  return pageWithFrontEnd(lib, desktopFrontEnd(lib));
+}
+
+/** What `app_shell_html_for_host()` hands a test: the same page with the deferred tag a browser host keeps. */
+function pageForHost() {
+  const lib = rustSource();
+  return pageWithFrontEnd(lib, browserFrontEnd(lib));
 }
 
 // What `app_shell_page()` hands a test: that page and the script joined, which is what the web view ends up with.
@@ -79,6 +92,7 @@ function exportedPageMinimapScript() {
 const HAYSTACKS = [
   { builder: 'app_shell_page', build: joinedPage },
   { builder: 'app_shell_html', build: pageAlone },
+  { builder: 'app_shell_html_for_host', build: pageForHost },
   { builder: 'app_shell_script', build: () => source },
   { builder: 'exported_page_minimap_script', build: exportedPageMinimapScript },
   {
@@ -293,6 +307,59 @@ function substitutionsIn(lib, builder) {
   return found;
 }
 
+/**
+ * The one seam the page builder fills with markup rather than with a host's answer: the front-end, which is a deferred tag for a browser and the loader for the desktop.
+ *
+ * Read out of the Rust rather than spelled here for the same reason every other name is, and told apart from the rest by what fills it — a plain argument, where the others are all `&something(…)`. An unreadable seam is refused: a page left carrying the placeholder is a page holding neither host's front-end, and every pin in either one would count nowhere.
+ */
+function frontEndPlaceholder(lib, builder = PAGE_BUILDER) {
+  const body = rustFunctionBody(lib, builder);
+  if (!body) throw new Error(`could not find fn ${builder} in src/lib.rs`);
+  const named = /\.replace\(\s*"\{\{(\w+)\}\}"\s*,\s*(\w+)\s*\)/.exec(body.text);
+  if (!named) {
+    throw new Error(
+      `fn ${builder} no longer fills one {{NAME}} from a value handed to it, so this check cannot tell which seam either host's front-end goes into`,
+    );
+  }
+  return named[1];
+}
+
+/**
+ * A front-end as the Rust that composes it composes one: the wrapper its `format!` writes, with the one file or URL it fills read out of the same function.
+ *
+ * Two shapes, one reader. The desktop's wraps a file whose own placeholder is filled with the asset URL; the browser's wraps nothing and is the tag itself. Either way the wrapper is the Rust literal rather than a copy of it, so a tag that gains an attribute or a loader that changes file is read here rather than drifting silently. The loader arrives as `{ name, text }` rather than as a path, so the rules below can be proved on a made-up one before the real file is opened.
+ */
+function frontEndFrom(lib, builder, loader = null) {
+  const body = rustFunctionBody(lib, builder);
+  if (!body) throw new Error(`could not find fn ${builder} in src/lib.rs`);
+  const wrapper = literalAfter(body.text, body.text.indexOf('format!('));
+  if (!wrapper || !wrapper.value.includes('{}')) {
+    throw new Error(
+      `fn ${builder} no longer reads as one format! this check can rebuild, so the page it fills would carry a front-end no test reads`,
+    );
+  }
+  if (!loader) return wrapper.value.replace('{}', () => standInAssetUrl('app.js'));
+  const named = /\.replace\(\s*"\{\{(\w+)\}\}"/.exec(body.text);
+  if (!named) throw new Error(`fn ${builder} fills no {{NAME}} into the file it wraps`);
+  if (!loader.text.includes(`{{${named[1]}}}`)) {
+    throw new Error(
+      `fn ${builder} fills {{${named[1]}}}, which ${loader.name} no longer carries — the rebuild here has already stopped being the string that builder hands a test`,
+    );
+  }
+  return wrapper.value.replace('{}', () =>
+    loader.text.replace(`{{${named[1]}}}`, () => standInAssetUrl('app.js')),
+  );
+}
+
+const DESKTOP_LOADER_FILE = 'src/assets/desktop-front-end-loader.js';
+
+const desktopFrontEnd = (lib) =>
+  frontEndFrom(lib, DESKTOP_FRONT_END_BUILDER, {
+    name: DESKTOP_LOADER_FILE,
+    text: readFileSync(join(root, DESKTOP_LOADER_FILE), 'utf8'),
+  });
+const browserFrontEnd = (lib) => frontEndFrom(lib, BROWSER_FRONT_END_BUILDER);
+
 /** The vendored runtimes a Rust builder names, as `[key, file]` pairs — the keys the page reads them back by and the files they are served from. Empty is refused for the same reason. */
 function vendoredAssetsIn(lib, builder) {
   const body = rustFunctionBody(lib, builder);
@@ -483,14 +550,34 @@ fn a_haystack_no_row_names_is_refused() {
 `;
 
 // The made-up Rust the seam readers are proved on, before `src/lib.rs` is opened — so a reader that has quietly stopped matching fails the build rather than filling a copy of the page with nothing.
-const MADE_UP_RUST = `pub fn a_page_for_host(host: &dyn LeafHost) -> String {
+const MADE_UP_RUST = `pub fn a_page_for_host(host: &dyn LeafHost, made_up_front_end: &str) -> String {
     let asset = |name: &str| host.asset_url(name).unwrap_or_default();
     MADE_UP_HTML
+        .replace("{{MADE_UP_FRONT_END}}", made_up_front_end)
         .replace("{{MADE_UP_SCRIPT_URL}}", &asset("made-up.js"))
         .replace(
             "{{MADE_UP_COMPOSED}}",
             &made_up_composed_html(),
         )
+}
+
+fn a_made_up_tag(host: &dyn LeafHost) -> String {
+    format!(
+        "<made-up src=\\"{}\\"></made-up>",
+        host.asset_url("app.js").unwrap_or_default()
+    )
+}
+
+fn a_made_up_loader(host: &dyn LeafHost) -> String {
+    const MADE_UP_LOADER_JS: &str = include_str!("assets/made-up-loader.js");
+
+    format!(
+        "<made-up>{}</made-up>",
+        MADE_UP_LOADER_JS.replace(
+            "{{MADE_UP_SCRIPT_URL}}",
+            &host.asset_url("app.js").unwrap_or_default()
+        )
+    )
 }
 
 fn made_up_asset_urls_for_host(host: &dyn LeafHost) -> String {
@@ -563,6 +650,33 @@ export function run() {
     const expected = 'MADE_UP_SCRIPT_URL=asset(made-up.js) MADE_UP_COMPOSED=made_up_composed_html()';
     if (read !== expected) {
       throw new Error(`the seams should read ${expected}, got ${read}`);
+    }
+    // The one seam filled with markup rather than a host's answer, told apart from the rest by the plain value handed in.
+    const seam = frontEndPlaceholder(MADE_UP_RUST, 'a_page_for_host');
+    if (seam !== 'MADE_UP_FRONT_END') {
+      throw new Error(`the front-end seam should read MADE_UP_FRONT_END, got ${seam}`);
+    }
+    if (!refused(() => frontEndPlaceholder(MADE_UP_RUST, 'a_builder_that_fills_nothing'))) {
+      throw new Error('a page builder handing no front-end in should be refused, not read as having no seam');
+    }
+    const tag = frontEndFrom(MADE_UP_RUST, 'a_made_up_tag');
+    if (tag !== `<made-up src="${standInAssetUrl('app.js')}"></made-up>`) {
+      throw new Error(`the browser's front-end should be the wrapped URL, got ${tag}`);
+    }
+    const loader = frontEndFrom(MADE_UP_RUST, 'a_made_up_loader', {
+      name: 'made-up-loader.js',
+      text: 'const url = "{{MADE_UP_SCRIPT_URL}}";',
+    });
+    if (loader !== `<made-up>const url = "${standInAssetUrl('app.js')}";</made-up>`) {
+      throw new Error(`the desktop's front-end should be the wrapped loader, got ${loader}`);
+    }
+    // A loader that no longer carries the name its Rust fills is refused: the wrapper would go on producing a front-end naming nothing.
+    if (
+      !refused(() =>
+        frontEndFrom(MADE_UP_RUST, 'a_made_up_loader', { name: 'made-up-loader.js', text: 'const url = null;' }),
+      )
+    ) {
+      throw new Error('a loader missing the name its builder fills should be refused');
     }
     const assets = JSON.stringify(vendoredAssetsIn(MADE_UP_RUST, 'made_up_asset_urls_for_host'));
     const expectedAssets = '[["madeUp","made-up.min.js"],["alsoMadeUp","also/made-up.min.css"]]';

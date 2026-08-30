@@ -382,7 +382,11 @@ console.log(message);
         r#"<a href="https://example.com/leaf" rel="noopener noreferrer">enlace al proyecto</a>"#,
     );
     assert_contains(&rendered.html, "<li>Leer <code>README.md</code></li>");
-    assert_contains(&rendered.html, "<td>Vista previa</td>");
+    // The column label a card draws from is the heading's own words, accents and all.
+    assert_contains(
+        &rendered.html,
+        r#"<td data-leaf-col="Función">Vista previa</td>"#,
+    );
     assert_contains(
         &rendered.html,
         r#"<pre class="highlight" data-language="TypeScript"><code class="language-typescript">"#,
@@ -415,7 +419,18 @@ Already linked [https://example.net](https://example.net) stays one link.
     assert_contains(&rendered.html, "<th align=\"left\">Left</th>");
     assert_contains(&rendered.html, "<th align=\"center\">Center</th>");
     assert_contains(&rendered.html, "<th align=\"right\">Right</th>");
-    assert_contains(&rendered.html, "<td align=\"center\">b</td>");
+    assert_contains(
+        &rendered.html,
+        "<td align=\"left\" data-leaf-col=\"Left\">a</td>",
+    );
+    assert_contains(
+        &rendered.html,
+        "<td align=\"center\" data-leaf-col=\"Center\">b</td>",
+    );
+    assert_contains(
+        &rendered.html,
+        "<td align=\"right\" data-leaf-col=\"Right\">c</td>",
+    );
     assert!(!rendered.html.contains("style="));
     assert_contains(&rendered.html, "<del>struck</del>");
     assert_contains(&rendered.html, r#"<input disabled="" type="checkbox">"#);
@@ -442,6 +457,16 @@ Already linked [https://example.net](https://example.net) stays one link.
 }
 
 #[test]
+fn table_column_labels_follow_their_headings_and_skip_missing_ones() {
+    let markdown = "| [Name](https://example.com) | `Count` |\n| --- | --- |\n| Ada | 3 |\n";
+    let rendered = render_markdown_document(markdown, "people.md");
+
+    assert_contains(&rendered.html, r#"data-leaf-col="Name">Ada</td>"#);
+    assert_contains(&rendered.html, r#"data-leaf-col="Count">3</td>"#);
+    assert!(!rendered.html.contains("data-leaf-col=\"\""));
+}
+
+#[test]
 fn renders_task_markers_inside_table_cells_as_checkboxes() {
     let markdown = r#"| Recipe | Learned | Notes |
 | --- | --- | --- |
@@ -453,10 +478,14 @@ fn renders_task_markers_inside_table_cells_as_checkboxes() {
 
     let rendered = render_markdown_document(markdown, "recipes.md");
 
-    assert_contains(&rendered.html, r#"<td><input disabled="" type="checkbox">"#);
+    // Every cell carries its column's heading, so a card can label the box the way the grid's heading row does.
     assert_contains(
         &rendered.html,
-        r#"<td><input disabled="" type="checkbox" checked="">"#,
+        r#"<td data-leaf-col="Learned"><input disabled="" type="checkbox">"#,
+    );
+    assert_contains(
+        &rendered.html,
+        r#"<td data-leaf-col="Learned"><input disabled="" type="checkbox" checked="">"#,
     );
     assert_eq!(
         rendered
@@ -465,8 +494,14 @@ fn renders_task_markers_inside_table_cells_as_checkboxes() {
             .count(),
         2
     );
-    assert_contains(&rendered.html, "<td>keep [ ] as text</td>");
-    assert_contains(&rendered.html, "<td><code>[ ]</code></td>");
+    assert_contains(
+        &rendered.html,
+        r#"<td data-leaf-col="Notes">keep [ ] as text</td>"#,
+    );
+    assert_contains(
+        &rendered.html,
+        r#"<td data-leaf-col="Learned"><code>[ ]</code></td>"#,
+    );
 }
 
 // --- Source-anchored editing foundation (Markdown + XML) -------------------

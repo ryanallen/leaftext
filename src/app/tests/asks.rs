@@ -305,6 +305,8 @@ fn a_task_toggle_through_the_pipe_refuses_before_it_writes_anything() {
 
     let mut workspace = Workspace::default();
     let mut file_watch = FileWatch::default();
+    // No vault is open here, so the door these refusals never reach has nothing to hold anyway.
+    let mut vaults = VaultState::load(None);
     pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
     let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
     let good = read["fingerprint"]
@@ -317,6 +319,7 @@ fn a_task_toggle_through_the_pipe_refuses_before_it_writes_anything() {
         None,
         &mut workspace,
         &mut file_watch,
+        &mut vaults,
         &note,
         0,
         "0000000000000000",
@@ -324,16 +327,32 @@ fn a_task_toggle_through_the_pipe_refuses_before_it_writes_anything() {
     .expect_err("a fingerprint that is not the buffer's is refused");
     assert!(stale.contains("changed since that fingerprint"), "{stale}");
 
-    let missing = pipe_toggle_task(None, &mut workspace, &mut file_watch, &note, 9, &good)
-        .expect_err("an index naming no task is refused");
+    let missing = pipe_toggle_task(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &mut vaults,
+        &note,
+        9,
+        &good,
+    )
+    .expect_err("an index naming no task is refused");
     assert!(
         missing.contains("no task 9") && missing.contains("has 2"),
         "{missing}"
     );
 
     // The document at the front is the note, so an ask aimed at the other file is refused before it can land on this one.
-    let elsewhere = pipe_toggle_task(None, &mut workspace, &mut file_watch, &plain, 0, &good)
-        .expect_err("a document that is not at the front is refused");
+    let elsewhere = pipe_toggle_task(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &mut vaults,
+        &plain,
+        0,
+        &good,
+    )
+    .expect_err("a document that is not at the front is refused");
     assert!(
         elsewhere.contains("is the document at the front"),
         "{elsewhere}"
@@ -351,6 +370,7 @@ fn a_task_toggle_through_the_pipe_refuses_before_it_writes_anything() {
         None,
         &mut workspace,
         &mut file_watch,
+        &mut vaults,
         &plain,
         0,
         other["fingerprint"].as_str().expect("a fingerprint"),
@@ -383,6 +403,8 @@ fn a_task_toggle_through_the_pipe_moves_one_marker_and_keeps_the_file_spelling()
 
     let mut workspace = Workspace::default();
     let mut file_watch = FileWatch::default();
+    // The note is outside any vault, so the door moves no held text; what this test is about is the file's own bytes.
+    let mut vaults = VaultState::load(None);
     pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
     let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
 
@@ -390,6 +412,7 @@ fn a_task_toggle_through_the_pipe_moves_one_marker_and_keeps_the_file_spelling()
         None,
         &mut workspace,
         &mut file_watch,
+        &mut vaults,
         &note,
         1,
         read["fingerprint"].as_str().expect("a fingerprint"),
@@ -424,6 +447,7 @@ fn a_task_toggle_through_the_pipe_moves_one_marker_and_keeps_the_file_spelling()
         None,
         &mut workspace,
         &mut file_watch,
+        &mut vaults,
         &note,
         1,
         after["fingerprint"].as_str().expect("a fingerprint"),

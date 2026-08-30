@@ -238,7 +238,10 @@ fn sitemap_records_render_as_a_table_of_links() {
     // Repeated flat records become one table, with spelled-out column headings.
     assert_contains(&html, "<table class=\"data-table\"");
     assert_contains(&html, "<th>URL</th><th>Last modified</th>");
-    assert_contains(&html, ">https://leaftext.com/</a></td><td data-cell-start=");
+    assert_contains(
+        &html,
+        ">https://leaftext.com/</a></td><td data-leaf-col=\"Last modified\" data-cell-start=",
+    );
     assert_contains(&html, ">2026-07-24</td>");
     // And nothing of the TEI renderer's leaks through.
     assert!(!html.contains("No TEI body"), "{html}");
@@ -313,7 +316,7 @@ fn a_table_cell_carries_the_bytes_of_the_element_it_was_drawn_from() {
         spans.iter().all(|tag| tag.contains("data-cell-start")),
         "{spans:?}"
     );
-    assert_contains(&html, "<td><span data-cell-start=");
+    assert_contains(&html, "<td data-leaf-col=\"Tag\"><span data-cell-start=");
     assert_contains(&html, "</span>, <span data-cell-start=");
     // And never the names a block is found by, or the gutter would offer a cell a drag handle.
     assert!(
@@ -720,7 +723,10 @@ fn json_reads_its_shape_into_a_title_fields_a_list_and_a_table() {
     assert_contains(&html, "<li>markdown</li>");
     assert_contains(&html, "<table class=\"data-table\"");
     assert_contains(&html, "<thead><tr><th>Name</th><th>Email</th></tr></thead>");
-    assert_contains(&html, "<tr><td>Ada</td><td>ada@example.com</td></tr>");
+    assert_contains(
+        &html,
+        "<tr><td data-leaf-col=\"Name\">Ada</td><td data-leaf-col=\"Email\">ada@example.com</td></tr>",
+    );
 }
 
 #[test]
@@ -1075,8 +1081,14 @@ fn yaml_stream_of_several_documents_reads_as_a_list_of_them() {
     // Two flat records of the same shape are a table, whether they arrived as one sequence or as two documents.
     assert_contains(&html, "<table class=\"data-table\"");
     assert_contains(&html, "<th>Kind</th>");
-    assert_contains(&html, "<tr><td>Service</td><td>web</td></tr>");
-    assert_contains(&html, "<tr><td>Deployment</td><td>api</td></tr>");
+    assert_contains(
+        &html,
+        "<tr><td data-leaf-col=\"Kind\">Service</td><td data-leaf-col=\"Name\">web</td></tr>",
+    );
+    assert_contains(
+        &html,
+        "<tr><td data-leaf-col=\"Kind\">Deployment</td><td data-leaf-col=\"Name\">api</td></tr>",
+    );
 }
 
 #[test]

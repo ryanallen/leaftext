@@ -993,14 +993,17 @@ fn render_table(items: &[DataNode], columns: &[(String, String)], ctx: &mut Data
             continue;
         };
         html.push_str("<tr>");
-        for (key, _) in columns {
+        for (key, label) in columns {
             let value = pairs
                 .iter()
                 .find(|(name, _)| name == key)
                 .and_then(|(_, node)| node.as_scalar())
                 .map(linkify)
                 .unwrap_or_default();
-            html.push_str(&format!("<td>{value}</td>"));
+            html.push_str(&format!(
+                "<td data-leaf-col=\"{}\">{value}</td>",
+                encode_double_quoted_attribute(label)
+            ));
         }
         html.push_str("</tr>\n");
     }

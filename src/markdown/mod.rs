@@ -69,6 +69,7 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     let events = register_markdown_extensions(events, source.source_path, source.host);
     let body = render_markdown_events_to_html(events);
     let body = table_alignment_as_attribute(&body);
+    let body = table_column_labels_as_attributes(&body);
     let body = resolve_rendered_html_image_urls(&body, source.source_path, source.host);
     // Before the sanitizer, which parses an address before it judges it: a whole path from a drive letter arrives carrying that letter as its scheme, and no scheme list can reach it.
     let body = drive_letter_hrefs_as_file_urls(&body);
@@ -90,6 +91,110 @@ fn table_alignment_as_attribute(html: &str) -> String {
             &format!(" align=\"{side}\""),
         );
     }
+    out
+}
+
+/// Markdown tables keep their headings only in the first row, so card layouts need the renderer to carry each heading down to its cells before the browser sees it.
+fn table_column_labels_as_attributes(html: &str) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+    const OPEN: &str = "<table><thead><tr>";
+
+    while let Some(table_start) = rest.find(OPEN) {
+        let (before, table) = rest.split_at(table_start);
+        out.push_str(before);
+        let Some(table_end) = table.find("</table>") else {
+            out.push_str(table);
+            return out;
+        };
+        let (table, after) = table.split_at(table_end + "</table>".len());
+        out.push_str(&label_markdown_table_cells(table));
+        rest = after;
+    }
+
+    out.push_str(rest);
+    out
+}
+
+fn label_markdown_table_cells(table: &str) -> String {
+    let Some(head_end) = table.find("</thead><tbody>") else {
+        return table.to_string();
+    };
+    let headings = html_table_cells(&table["<table><thead><tr>".len()..head_end], "th");
+    if headings.is_empty() {
+        return table.to_string();
+    }
+
+    let (head, body) = table.split_at(head_end + "</thead><tbody>".len());
+    let mut out = String::with_capacity(table.len());
+    out.push_str(head);
+    let mut rest = body;
+
+    while let Some(row_start) = rest.find("<tr>") {
+        let (before, row) = rest.split_at(row_start);
+        out.push_str(before);
+        let Some(row_end) = row.find("</tr>") else {
+            out.push_str(row);
+            return out;
+        };
+        let (row, after) = row.split_at(row_end + "</tr>".len());
+        out.push_str(&label_table_row(row, &headings));
+        rest = after;
+    }
+    out.push_str(rest);
+    out
+}
+
+fn html_table_cells(html: &str, tag: &str) -> Vec<String> {
+    let mut cells = Vec::new();
+    let mut rest = html;
+    let open = format!("<{tag}");
+    let close = format!("</{tag}>");
+    while let Some(start) = rest.find(&open) {
+        let tag_end = match rest[start..].find('>') {
+            Some(end) => start + end,
+            None => break,
+        };
+        let content_start = tag_end + 1;
+        let Some(content_end) = rest[content_start..].find(&close) else {
+            break;
+        };
+        let content_end = content_start + content_end;
+        let label = html_escape::decode_html_entities(&headings::strip_html_tags(
+            &rest[content_start..content_end],
+        ))
+        .trim()
+        .to_string();
+        cells.push(label);
+        rest = &rest[content_end + close.len()..];
+    }
+    cells
+}
+
+fn label_table_row(row: &str, headings: &[String]) -> String {
+    let mut out = String::with_capacity(row.len());
+    let mut rest = row;
+    for heading in headings {
+        let Some(cell_start) = rest.find("<td") else {
+            break;
+        };
+        let (before, cell) = rest.split_at(cell_start);
+        out.push_str(before);
+        let Some(tag_end) = cell.find('>') else {
+            out.push_str(cell);
+            return out;
+        };
+        if heading.is_empty() {
+            out.push_str(&cell[..tag_end + 1]);
+        } else {
+            out.push_str(&cell[..tag_end]);
+            out.push_str(" data-leaf-col=\"");
+            out.push_str(&html_escape::encode_double_quoted_attribute(heading));
+            out.push_str("\">");
+        }
+        rest = &cell[tag_end + 1..];
+    }
+    out.push_str(rest);
     out
 }
 

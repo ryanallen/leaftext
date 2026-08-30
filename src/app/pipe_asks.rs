@@ -57,6 +57,7 @@ pub(crate) fn edit(
 pub(crate) fn task(
     reader: &mut Reader,
     file_watch: &mut FileWatch,
+    vault_state: &mut VaultState,
     path: &Path,
     index: usize,
     expect: &str,
@@ -66,6 +67,7 @@ pub(crate) fn task(
         reader.webview.as_ref(),
         &mut reader.workspace,
         file_watch,
+        vault_state,
         path,
         index,
         expect,

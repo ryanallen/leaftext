@@ -261,7 +261,8 @@ fn every_command_sharing_the_seed_answers_why_rather_than_nothing_when_the_file_
 
     let mut ticking = missing();
     let mut watch = FileWatch::default();
-    let refusal = flip_task_and_save(None, &mut ticking, &mut watch, 0)
+    let mut vaults = VaultState::load(None);
+    let refusal = flip_task_and_save(None, &mut ticking, &mut watch, &mut vaults, 0)
         .err()
         .expect("and the checkbox, which had already drawn itself ticked");
     assert_eq!(refusal.why, gone_reason);
@@ -355,12 +356,13 @@ fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
     let mut splicing = seeded();
     let mut counted = seeded();
     let mut watch = FileWatch::default();
+    let mut vaults = VaultState::load(None);
 
     // A plain list's box over a file that cannot be read: nothing is seeded, so nothing is held.
     let gone = dir.join("elsewhere").join("tasks.md");
     let mut unread = Workspace::default();
     unread.open_path(gone);
-    let refusal = flip_task_and_save(None, &mut unread, &mut watch, 0)
+    let refusal = flip_task_and_save(None, &mut unread, &mut watch, &mut vaults, 0)
         .err()
         .expect("a file that cannot be read is written to by nobody");
     assert_eq!(refusal.why, "the file could not be read");
@@ -393,7 +395,7 @@ fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
     }
 
     // A plain list's box at a task number the document has not got: the buffer is there and it did not move.
-    let refusal = flip_task_and_save(None, &mut counted, &mut watch, 7)
+    let refusal = flip_task_and_save(None, &mut counted, &mut watch, &mut vaults, 7)
         .err()
         .expect("there is no eighth task");
     assert!(
@@ -412,7 +414,7 @@ fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
     fs::remove_dir_all(&dir).expect("the folder is deleted under the app");
 
     // A plain list's box the buffer took and the file refused.
-    let refusal = flip_task_and_save(None, &mut ticking, &mut watch, 0)
+    let refusal = flip_task_and_save(None, &mut ticking, &mut watch, &mut vaults, 0)
         .err()
         .expect("the file cannot be written");
     assert!(
@@ -439,7 +441,7 @@ fn a_tick_answers_whether_the_buffer_holds_it_for_both_kinds_of_box() {
         BlockEditOutcome::Refused(why) => panic!("the buffer is seeded: {why}"),
     }
     assert!(
-        autosave_active_buffer(&mut splicing, &mut watch).is_err(),
+        autosave_active_buffer(&mut splicing, &mut watch, &mut vaults).is_err(),
         "the write is refused, and it is answered rather than only logged"
     );
     assert!(
@@ -470,9 +472,10 @@ fn a_tick_the_file_refused_keeps_its_dirty_mark_rather_than_clearing_the_chrome(
         SourceText::utf8(source.to_string()),
     ));
     let mut watch = FileWatch::default();
+    let mut vaults = VaultState::load(None);
     fs::remove_dir_all(&dir).expect("the folder is deleted under the app");
 
-    let answer = task_toggle_answer(None, &mut workspace, &mut watch, 0);
+    let answer = task_toggle_answer(None, &mut workspace, &mut watch, &mut vaults, 0);
     assert!(matches!(answer.chrome, TaskChrome::Resync));
     assert!(answer.held, "the page is told to leave its tick alone");
     let said = answer.said.expect("the reader is told the file is behind");
@@ -494,7 +497,7 @@ fn a_tick_the_file_refused_keeps_its_dirty_mark_rather_than_clearing_the_chrome(
     // And a tick with nothing behind it clears the chrome, which is the other half of the same decision.
     let mut unread = Workspace::default();
     unread.open_path(dir.join("elsewhere").join("tasks.md"));
-    let answer = task_toggle_answer(None, &mut unread, &mut watch, 0);
+    let answer = task_toggle_answer(None, &mut unread, &mut watch, &mut vaults, 0);
     assert!(matches!(answer.chrome, TaskChrome::Clear));
     assert!(!answer.held, "so the page puts its own tick back off");
     assert_eq!(
@@ -522,6 +525,17 @@ fn vault_with_an_open_note(
         SourceText::utf8(typed.to_string()),
     ));
     (dir, note, workspace)
+}
+
+/// Whether the vault's held text — what search, the completion menu and the next map are read out of — carries these words anywhere in it.
+fn held_text_has(vaults: &VaultState, words: &str) -> bool {
+    vaults
+        .corpus
+        .as_ref()
+        .expect("the vault's text is held")
+        .documents
+        .iter()
+        .any(|document| document.text.contains(words))
 }
 
 /// The note somebody just saved is findable straight away. The watcher never brings this one back — the save marks its own event as already seen — so unless Save says so, search answers out of the text the vault was read with.
@@ -626,6 +640,173 @@ fn saving_the_open_note_during_a_read_lands_once_when_the_read_ends() {
         last.corpus.documents.len(),
         1,
         "the replay added a second row for a file the read had already carried"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// The box somebody just ticked is findable straight away. A tick writes the file itself and marks its own change as already seen, so unless the tick says so, `task:done` answers out of the text the vault was read with and the reader is told nothing is finished.
+#[test]
+fn ticking_a_box_in_the_open_note_replaces_its_searchable_text_at_once() {
+    let source = "# Note
+
+- [ ] wash the kelpstone
+";
+    let (dir, note, mut workspace) = vault_with_an_open_note(
+        "ticking_a_box_in_the_open_note_replaces_its_searchable_text_at_once",
+        source,
+        source,
+    );
+    let root = plain_event_path(fs::canonicalize(&dir).expect("the fixture canonicalizes"));
+    let note = plain_event_path(fs::canonicalize(&note).expect("the note canonicalizes"));
+
+    let mut vaults = VaultState::load(None);
+    vaults.root = Some(root.clone());
+    vaults.corpus = Some(Arc::new(VaultCorpus::read(&root)));
+    let mut watch = FileWatch::default();
+
+    assert!(
+        held_text_has(&vaults, "- [ ] wash the kelpstone"),
+        "the vault was read with the box open, which is what the tick has to move"
+    );
+
+    flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 0)
+        .map_err(|refusal| refusal.why)
+        .expect("the box is ticked and the file written");
+
+    assert!(
+        held_text_has(&vaults, "- [x] wash the kelpstone"),
+        "the tick was not findable until the vault was read again"
+    );
+    assert!(
+        !held_text_has(&vaults, "- [ ] wash the kelpstone"),
+        "the open box is still there to be found, so task:open answers over a box that is ticked"
+    );
+    assert!(
+        !vaults.corpus_changes.contains(&note),
+        "a tick with no read running was kept instead of read"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// A tick the file refused moves nothing. The disk still holds the box open, so patching the held text off a write that never happened is the same staleness pointing the other way — and during a cold read, keeping the path would replay a change that was never made.
+#[test]
+fn a_tick_the_file_refused_leaves_the_vaults_text_and_its_kept_paths_alone() {
+    let source = "# Note
+
+- [ ] wash the kelpstone
+";
+    let (dir, note, mut workspace) = vault_with_an_open_note(
+        "a_tick_the_file_refused_leaves_the_vaults_text_and_its_kept_paths_alone",
+        source,
+        source,
+    );
+    let root = plain_event_path(fs::canonicalize(&dir).expect("the fixture canonicalizes"));
+    let note = plain_event_path(fs::canonicalize(&note).expect("the note canonicalizes"));
+
+    let mut vaults = VaultState::load(None);
+    vaults.root = Some(root.clone());
+    vaults.corpus = Some(Arc::new(VaultCorpus::read(&root)));
+    let mut watch = FileWatch::default();
+
+    // The owner's own gesture, and the only way the write fails here: the folder goes while the app is still up.
+    fs::remove_dir_all(&dir).expect("the folder is deleted under the app");
+
+    let refusal = flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 0)
+        .err()
+        .expect("the file cannot be written");
+    assert!(
+        refusal.held,
+        "the tick is in the buffer, so the box on screen is right"
+    );
+    assert!(
+        held_text_has(&vaults, "- [ ] wash the kelpstone"),
+        "the disk still holds the box open, and the vault's text now says otherwise"
+    );
+    assert!(
+        vaults.corpus_changes.is_empty(),
+        "a refused tick was kept for the end of a read that would replay a change nobody made"
+    );
+
+    // The same refusal while a read is running, which is where a kept path would land in the finished vault.
+    vaults.corpus_loading = true;
+    flip_task_and_save(None, &mut workspace, &mut watch, &mut vaults, 0)
+        .err()
+        .expect("the file still cannot be written");
+    assert!(
+        !vaults.corpus_changes.contains(&note),
+        "the refused tick was kept for the end of the read"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// A box inside a table is the one splice in the app that writes itself, and its write hid from the vault's text the same way a tick in a list did. The other half is the rule: a splice that does not auto-save has written no file, so the held text must not move for it.
+#[test]
+fn a_table_box_that_writes_itself_replaces_the_searchable_text_and_a_plain_splice_does_not() {
+    let source = "# Note
+
+| task | who |
+| --- | --- |
+| [ ] | kelpstone |
+";
+    let (dir, note, mut workspace) = vault_with_an_open_note(
+        "a_table_box_that_writes_itself_replaces_the_searchable_text_and_a_plain_splice_does_not",
+        source,
+        source,
+    );
+    let root = plain_event_path(fs::canonicalize(&dir).expect("the fixture canonicalizes"));
+
+    let mut vaults = VaultState::load(None);
+    vaults.root = Some(root.clone());
+    vaults.corpus = Some(Arc::new(VaultCorpus::read(&root)));
+    let mut watch = FileWatch::default();
+    assert!(
+        held_text_has(&vaults, "| [ ] | kelpstone |"),
+        "the vault was read with the cell open, which is what the write has to move"
+    );
+
+    // The marker is the whole cell, which is the only shape the reader draws a checkbox over.
+    let cell = source.find("[ ]").expect("the fixture holds the open box");
+    let splice = |text: &'static str, autosave: bool| BlockEdit {
+        start: cell,
+        end: cell + 3,
+        text,
+        autosave,
+        live: false,
+        continuing: false,
+        cell: None,
+    };
+
+    match edit_block_outcome(&mut workspace, &splice("[x]", true)) {
+        BlockEditOutcome::Spliced { autosave, .. } => assert!(autosave, "a tick writes itself"),
+        BlockEditOutcome::Refused(why) => panic!("the buffer is seeded: {why}"),
+    }
+    autosave_active_buffer(&mut workspace, &mut watch, &mut vaults).expect("the table is written");
+    assert!(
+        held_text_has(&vaults, "| [x] | kelpstone |"),
+        "the ticked cell was not findable until the vault was read again"
+    );
+
+    // A splice with auto-save off writes no file, so nothing may reach the vault's text off it. The door reads the disk, so the disk has to say something new or the test cannot tell.
+    fs::write(
+        &note,
+        "# Note
+
+words no splice put here
+",
+    )
+    .expect("the file moves underneath");
+    match edit_block_outcome(&mut workspace, &splice("[ ]", false)) {
+        BlockEditOutcome::Spliced { autosave, .. } => {
+            assert!(!autosave, "this one waits for the reader to save")
+        }
+        BlockEditOutcome::Refused(why) => panic!("the buffer is seeded: {why}"),
+    }
+    assert!(
+        !held_text_has(&vaults, "words no splice put here"),
+        "a splice that wrote no file still sent the vault off to re-read one"
     );
 
     let _ = fs::remove_dir_all(&dir);

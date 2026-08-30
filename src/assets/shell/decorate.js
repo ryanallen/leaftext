@@ -1126,6 +1126,7 @@ function renderMathElements() {
       console.error(error);
     });
 }
+let wideTableResizeObserver;
 // Put each body table in a lane of its own, so it can use the reader's width and so the bands that dissolve a sliced column into the page have a box to be painted in — a mask on the table can only take ink away, never lay the dot screen on. The lane belongs to the reader, not the document, so everything that walks the body's blocks sees through it: `attachMarkdownBlockRanges` stamps the table inside, and `unwrapTableLane` in block-controls.js gives the gutter the table it wraps.
 function laneWideTables(root = app) {
   const body = root.querySelector('.document-body');
@@ -1136,6 +1137,30 @@ function laneWideTables(root = app) {
     lane.className = 'table-lane';
     table.replaceWith(lane);
     lane.appendChild(table);
+  }
+  measureWideTables(root);
+}
+
+// A carded table has no grid width left in the layout, so every decision takes the cards off first and reads the grid a reader would have seen. Nothing is kept between decisions: the width a table that fits reports is its lane, so a remembered one turns the table into cards the moment the lane narrows under whatever it happened to be measured at, however much room the grid still has.
+function measureWideTables(root = app) {
+  if (wideTableResizeObserver) wideTableResizeObserver.disconnect();
+  const lanes = Array.from(root.querySelectorAll('.table-lane'));
+  const decide = (lane) => {
+    const table = lane.querySelector('table');
+    if (!table) return;
+    table.classList.remove('is-cards');
+    table.classList.add('no-cards');
+    // The same 2px dead band the minimap keeps, and for the same reason: a lane sitting exactly on the width the grid wants would flip on every fractional resize.
+    table.classList.toggle('is-cards', table.scrollWidth > lane.clientWidth + 2);
+  };
+  lanes.forEach(decide);
+  if (typeof ResizeObserver !== 'undefined') {
+    wideTableResizeObserver = new ResizeObserver((entries) => entries.forEach((entry) => decide(entry.target)));
+    lanes.forEach((lane) => wideTableResizeObserver.observe(lane));
+  }
+  // A font arriving late changes what the grid wants, so the answer is taken again once it has.
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => lanes.forEach(decide));
   }
 }
 // Mark a paragraph holding nothing but a picture, so the stylesheet can widen it to the reader's lane the way a table's is. No wrapper, so nothing walking the body learns a new shape. The mark is stamped here because CSS counts elements and never text: `p:has(> img:only-child)` matches a sentence with one picture in it just as it matches a picture alone. One picture and no words of its own is the test, so the opener the whole-window view appends is not counted either.

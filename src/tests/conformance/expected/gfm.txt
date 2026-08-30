@@ -67,6 +67,16 @@ meaning example-477 strong nests where GFM flattens it
 # A table with no body rows still gets an empty one. Nothing shows either way.
 meaning example-205 an empty table body is still written
 
+# Every body cell carries its column's heading as `data-leaf-col`, which is what
+# lets a narrowed table draw each row as labeled cards. It is an attribute the
+# specification does not write and a reader never sees.
+meaning example-198 a body cell carries its column heading
+meaning example-199 a body cell carries its column heading
+meaning example-200 a body cell carries its column heading
+meaning example-201 a body cell carries its column heading
+meaning example-202 a body cell carries its column heading
+meaning example-204 a body cell carries its column heading
+
 # A task list's checkbox is followed by a newline where GFM writes a space, and
 # `checked` is written after `type` rather than before. Neither changes what a
 # reader sees.
