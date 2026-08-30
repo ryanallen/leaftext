@@ -392,7 +392,42 @@ export function run() {
     const railCss = readFileSync(join(root, 'src/assets/reading/minimap.css'), 'utf8');
     const opensPin = railCss.indexOf('.document-minimap {');
     const pinned = railCss.slice(opensPin, railCss.indexOf('}', opensPin));
-    if (!/position:\s*sticky/.test(pinned) || !/top:\s*var\(--app-bar-height\)/.test(pinned)) throw new Error('the rail rides the column\u2019s scroll instead of staying pinned to the top of it');
+    if (!/position:\s*sticky/.test(pinned)) throw new Error('the rail rides the column\u2019s scroll instead of staying pinned to the top of it');
+  });
+
+  // The thumbnail started an app bar below the top of the page card, because a sticky offset is measured from the scrollport's content edge and the column's top padding has already moved that down by the bar \u2014 so naming the bar's height on the pin stacked on the padding rather than standing in for it. Watched in a running copy: the bar's bottom at 54 and the thumbnail's top at 94, and zero put it on 54.
+  check('the rail\u2019s thumbnail is pinned level with the top of the page card', () => {
+    const columnCss = readFileSync(join(root, 'src/assets/reading/library.css'), 'utf8');
+    const opensColumn = columnCss.indexOf('.reader-minimap {');
+    if (opensColumn < 0) throw new Error('the rail column has no rule of its own');
+    const column = columnCss.slice(opensColumn, columnCss.indexOf('}', opensColumn));
+    // The padding is what places the thumbnail level with the card; the pin's offset must not be a second copy of it.
+    if (!/padding-top:\s*var\(--app-bar-height\)/.test(column)) throw new Error('the column no longer holds its contents off the bar, so the pin\u2019s offset is not the whole placement any more');
+    const railCss = readFileSync(join(root, 'src/assets/reading/minimap.css'), 'utf8');
+    const opensPin = railCss.indexOf('.document-minimap {');
+    const pinned = railCss.slice(opensPin, railCss.indexOf('}', opensPin));
+    const offset = /top:\s*([^;]+);/.exec(pinned);
+    if (!offset) throw new Error('the pin names no offset at all, so where it holds the thumbnail is the browser\u2019s guess');
+    if (offset[1].trim() !== '0') throw new Error(`the pin's offset is ${offset[1].trim()}, which stacks on the column's top padding and starts the thumbnail an app bar below the top of the page card`);
+  });
+
+  // The pin is what keeps the column's travel off the rail's own parts. A fake page runs no sticky, so what is provable here is the other half of it: the column's scroll writes the reader's position and nothing else \u2014 nothing in that path moves the thumbnail, the track or the box, so with the offset at zero the pin is the only thing placing them.
+  check('the column\u2019s scroll moves the reader and never the rail\u2019s own parts', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      const thumb = stand.rail.querySelector('.document-minimap');
+      if (!thumb) throw new Error('the rail drew no thumbnail to hold still');
+      const placedBefore = `${thumb.style.top || ''}|${thumb.style.transform || ''}|${thumb.style.marginTop || ''}`;
+      stand.rail.scrollTop = 4000;
+      stand.columnScroll({});
+      booted.__frames.drain();
+      if (Math.round(stand.app.scrollTop) !== 4000) throw new Error(`the column's scroll left the reader at ${stand.app.scrollTop}`);
+      const placedAfter = `${thumb.style.top || ''}|${thumb.style.transform || ''}|${thumb.style.marginTop || ''}`;
+      if (placedAfter !== placedBefore) throw new Error('the column\u2019s scroll moved the thumbnail itself, so the pin is not what places it');
+    } finally {
+      stand.done();
+    }
   });
 
   // A notch over the rail has to carry the page exactly what the same notch carries it over the page, which is the one thing the handler this replaces already got right. A column that travels a different distance than the reader spends every notch at a different rate.

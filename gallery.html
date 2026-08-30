@@ -7444,11 +7444,11 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 /* Lives in the shell's own column, outside the page — so no bleed and nothing to out-stack: it never overlaps the bar or the card.
 
-   Pinned to the top of that column, which scrolls: the column's travel is what carries a wheel over the rail, and the pin is what keeps that travel off the rail's own parts — the thumbnail, the track and the box stay where the click jump and the box drag read them. The offset is the column's own top padding, so the pin holds it exactly where the flow already put it. */
+   Pinned to the top of that column, which scrolls: the column's travel is what carries a wheel over the rail, and the pin is what keeps that travel off the rail's own parts — the thumbnail, the track and the box stay where the click jump and the box drag read them. Zero, because a sticky offset is measured from the scrollport's content edge and the column's own top padding has already moved that down by the app bar — so naming the bar's height here stacks on the padding rather than standing in for it, and the thumbnail starts an app bar below the top of the page card. */
 .document-minimap {
   width: var(--minimap-width);
   position: sticky;
-  top: var(--app-bar-height);
+  top: 0;
 }
 /* The height here is the frames before the first measurement; JS writes the real one onto this element. Never a custom property on the rail above: it would inherit down into the clone, and re-resolving style across a couple of thousand cloned elements is 91ms where writing here is a fraction of one. */
 .document-minimap-track {
