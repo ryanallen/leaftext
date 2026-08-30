@@ -124,7 +124,10 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(!html.contains("reader-subselect-label"));
     assert!(!css.contains(".reader-subselect-label"));
     // And the smallest text the tokens carry, because the list is the whole of what the tray holds on the map.
-    assert_contains(rule_body(css, ".reader-subselect select {"), "font-size: var(--lt-text-9);");
+    assert_contains(
+        rule_body(css, ".reader-subselect select {"),
+        "font-size: var(--lt-text-9);",
+    );
     assert!(html.contains(r#"id="readerLockButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="speedReaderButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="codeIntelButton" class="reader-subtool""#));
@@ -230,7 +233,9 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(html.contains(
         "current === 'graph' ? readerToolbar.offsetWidth / 2 : button.offsetLeft + button.offsetWidth / 2;"
     ));
-    assert!(html.contains("readerToolbar.style.setProperty('--reader-tray-left', `${Math.round(middle)}px`);"));
+    assert!(html.contains(
+        "readerToolbar.style.setProperty('--reader-tray-left', `${Math.round(middle)}px`);"
+    ));
     assert!(html.contains("readerToolbar.style.setProperty('--reader-tray-height', `${Math.round(readerViewTools.offsetHeight)}px`);"));
     assert!(html.contains("  anchorToolTray(current);"));
     assert_contains(tray, "left: var(--reader-tray-left, 50%);");

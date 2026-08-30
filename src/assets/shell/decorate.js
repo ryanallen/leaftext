@@ -1141,8 +1141,7 @@ function laneWideTables(root = app) {
   measureWideTables(root);
 }
 
-// A carded table has no grid width left in the layout, so every decision takes the cards off first and reads the grid a reader would have seen. Nothing is kept between decisions: the width a table that fits reports is its lane, so a remembered one turns the table into cards the moment the lane narrows under whatever it happened to be measured at, however much room the grid still has.
-// The resets are all written before any width is read, so one settled layout answers every lane: over the plan log's sixteen lanes a delivery cost 71ms deciding lane by lane, each class write flushing layout for its own grid read, and costs 10ms read against one flush — from four frames a width change to under one.
+// A carded table has no grid width left in the layout, so every decision takes the cards off first and reads the grid a reader would have seen. Nothing is kept between decisions: the width a table that fits reports is its lane, so a remembered one turns the table into cards the moment the lane narrows under whatever it happened to be measured at, however much room the grid still has. The resets are all written before any width is read, so one settled layout answers every lane: over the plan log's sixteen lanes a delivery cost 71ms deciding lane by lane, each class write flushing layout for its own grid read, and costs 10ms read against one flush — from four frames a width change to under one.
 function measureWideTables(root = app) {
   if (wideTableResizeObserver) wideTableResizeObserver.disconnect();
   const lanes = Array.from(root.querySelectorAll('.table-lane'));

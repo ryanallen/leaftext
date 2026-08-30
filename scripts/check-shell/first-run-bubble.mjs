@@ -136,10 +136,43 @@ export function run() {
   });
 
   // Only one hint ships, so a pacing check with nothing to pace against passes by having no second hint to hold back — green, and proving nothing. This registers its own.
+  check('the view-tools hint retires when its tray starts to open', () => {
+    const { sent, built, restore } = hintHarness();
+    try {
+      booted.leafResetHints();
+      booted.retireHint('libraryVault');
+      const tray = booted.document.getElementById('readerToolTray');
+      const button = booted.document.getElementById('viewReadingButton');
+      if (!tray || !button) throw new Error('the view-tools hint has no tray or view button');
+      tray.hidden = false;
+      tray.getBoundingClientRect = () => ({ left: 480, top: 120, right: 516, bottom: 134, width: 36, height: 14 });
+
+      built.length = 0;
+      sent.length = 0;
+      booted.runHintPass();
+      const bubble = bubbles(built)[0];
+      if (!bubble) throw new Error('the view-tools hint drew no bubble');
+      const words = bubble.children.map((child) => child.textContent).join('');
+      if (!words.includes('view tools live under this edge')) throw new Error(`the bubble said "${words}"`);
+
+      for (const handler of button.listeners.get('pointerenter') || []) handler();
+      const state = hintStates(sent).pop();
+      if (!state?.seen.includes('viewTools')) throw new Error(`met hints were ${JSON.stringify(state?.seen)}`);
+
+      built.length = 0;
+      booted.runHintPass();
+      if (bubbles(built).length !== 0) throw new Error('the view-tools hint returned after the tray opened');
+    } finally {
+      booted.leafResetHints();
+      restore();
+    }
+  });
+
   check('a launch rests between bubbles, and meeting one early frees nothing sooner', () => {
     const { sent, built, restore } = hintHarness();
     try {
       booted.leafResetHints();
+      booted.retireHint('viewTools');
       const button = booted.document.getElementById('libraryVaultSwitch');
       button.getBoundingClientRect = () => ({ left: 8, top: 700, right: 40, bottom: 726, width: 32, height: 26 });
       const second = fakeElement('secondTarget');

@@ -580,27 +580,13 @@ fn the_bar_is_measured_against_the_page_and_the_map_together() {
 #[test]
 fn the_graph_size_box_uses_the_wells_inset_on_every_side() {
     let css = reading_mode_css();
-    let px = |source: &str, property: &str| {
-        source
-            .lines()
-            .find_map(|line| {
-                line.trim()
-                    .strip_prefix(property)?
-                    .strip_suffix("px;")?
-                    .parse::<u32>()
-                    .ok()
-            })
-            .unwrap_or_else(|| panic!("{property} should carry a pixel value"))
-    };
-    let well = rule_body(css, ".reader-view-tools {");
+    let tray = rule_body(css, ".reader-tool-tray {");
     let label = rule_body(css, ".reader-subselect {");
     let select = rule_body(css, ".reader-subselect select {");
-    let side_inset = px(css, "--lt-space-2: ");
-    let vertical_inset = (px(well, "height: ") - px(select, "height: ")) / 2;
 
-    assert_contains(well, "padding: 0 var(--lt-space-2);");
+    assert_contains(tray, "padding: var(--lt-space-2);");
     assert!(!label.contains("padding:"));
-    assert_eq!(vertical_inset, side_inset);
+    assert_contains(select, "height: 26px;");
 }
 
 #[test]

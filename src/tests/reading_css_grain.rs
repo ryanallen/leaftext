@@ -552,7 +552,10 @@ fn a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot() {
         (".tab-close {", "background-color"),
         (".tab-close {", "border-color"),
         (".tab-favorite {", "background-color"),
-        (".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite {", "color"),
+        (
+            ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite,\n.tab.is-pointed .tab-favorite {",
+            "color",
+        ),
         (".crumb-menu-edit {", "background-color"),
         (
             ".crumb-menu-row:hover .crumb-menu-edit,\n.crumb-menu-row:focus-within .crumb-menu-edit {",

@@ -136,6 +136,14 @@ function renderViewTools(current) {
   renderCodeTools(current === 'code');
   anchorToolTray(current);
 }
+function retireViewToolsHint() {
+  retireHint('viewTools');
+}
+for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
+  if (button) button.addEventListener('pointerenter', retireViewToolsHint);
+}
+if (readerToolTray) readerToolTray.addEventListener('pointerenter', retireViewToolsHint);
+registerHint('viewTools', () => readerToolTray && !readerToolTray.hidden ? readerToolTray : null, 'The view tools live under this edge.');
 // The tray stands over the button of the view whose tools it holds, so the nub says where they went. Measured rather than declared: CSS anchor positioning is not on the Mac web view. It joins a path that already forces a whole-page layout through refitAppBar and holdViewButtonsStill, and the guard in code-view.js keeps that path off the per-keystroke run after the first character, so this reaches neither first paint nor typing.
 function anchorToolTray(current) {
   if (!readerToolTray || readerToolTray.hidden) return;
