@@ -1169,7 +1169,7 @@ export function run() {
     if (Math.abs(ring - (height + gap * 2) / 2) > 0.001) throw new Error('a pill does not stay a pill');
   });
 
-  // The probe is sixteen fill tests a box, and its answer belongs to the drawing rather than to the measurement: a zoom step measures the whole diagram again and a drag on the divider measures it on every pointer move, so relearning a radius that cannot have changed was a quarter of an eighty-box divider move. It is held against the group it was probed off, with everything the zoom touches left outside — and both halves are held here, because a cache answering a stale number at a new zoom looks exactly like one that worked.
+  // The radius belongs to a drawing; zoom stays outside the cache.
   check('a corner is probed once per drawing, and the held radius still follows the zoom', () => {
     const read = (expression) => vm.runInContext(expression, booted);
     const canvas = read('flowCanvas');
@@ -1177,7 +1177,7 @@ export function run() {
     const names = ['A', 'B', 'C', 'D'];
     const radii = [0, 5, 12, 28];
     let probes = 0;
-    // A drawing the way mermaid leaves one: each box a group named its own way, holding an outline whose fill starts along the corner's diagonal and a smaller label plate for the widest-child search to pass over.
+    // Match Mermaid's node group, outline, and label plate.
     const drawing = () => {
       const stage = fakeElement('');
       stage.classList.add('flow-stage');
@@ -1197,7 +1197,7 @@ export function run() {
         outline.tagName = 'path';
         outline.getBBox = () => ({ x: 0, y: 0, width: 120, height: 56 });
         outline.ownerSVGElement = svg;
-        // A circular corner of radius r begins filling along the diagonal at t = r(1 − 1/√2), which is the distance the walk is looking for.
+        // A circular corner begins on the diagonal at the searched inset.
         const inset = radius * (1 - Math.SQRT1_2);
         outline.isPointInFill = (point) => {
           probes += 1;
@@ -1223,14 +1223,14 @@ export function run() {
         if (Math.abs(drawn[at] - radius) > 0.05) throw new Error(`a corner of ${radius} was measured as ${drawn[at].toFixed(3)}`);
       });
 
-      // The same drawing measured again — a zoom step, or one pointer move of a divider drag. Nothing is asked of it, and it answers the same radii.
+      // A drawing's cached radii answer again without probing.
       probes = 0;
       booted.measureFlowDiagram();
       if (probes) throw new Error(`measuring the same drawing again went back for ${probes} fill tests`);
       const again = read('flowPlaced').nodes.map((node) => node.radius);
       if (again.join() !== drawn.join()) throw new Error(`the held radii came back as ${again.join(', ')} rather than ${drawn.join(', ')}`);
 
-      // What is held is in the drawing's own units, so the zoom and the pill clamp still land on it. The box is 56 tall, so 28 is where a corner stops getting rounder.
+      // Zoom and the pill clamp apply after the cached reading.
       for (const zoom of [0.5, 1.5, 2.5]) {
         probes = 0;
         read(`flowZoom = ${zoom};`);
@@ -1243,7 +1243,7 @@ export function run() {
         });
       }
 
-      // A fresh render replaces the stage's markup, so the new groups are strangers and are probed like any other first sight of a drawing.
+      // Fresh groups need fresh probes.
       read('flowZoom = 1;');
       first.remove();
       canvas.appendChild(drawing());

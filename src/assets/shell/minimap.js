@@ -74,9 +74,7 @@ const MONACO_LINE_NUMBER_MIN_DIGITS = 5;
 const MONACO_DECORATIONS_WIDTH = 10 + 16;
 const MONACO_LINE_HEIGHT_RATIO = 1.35;
 
-// The code font at Monaco's size, measured the way Monaco measures it: the width of an 'n', and of the widest digit. Off the page in a run of copies, divided back down, so the answer keeps its fractions. Measured on demand rather than kept, because a theme brings its own code font and a face lands after the page has asked for it.
-//
-// Eleven rulers rather than one re-lettered eleven times: writing a glyph into a ruler and then asking how wide it came out is a page write followed by a page reading, so one ruler cost eleven complete layouts of the window. Standing them all up first and reading them together costs one, and the three steps are what the settle pass orders at launch.
+// Measure Monaco's narrow letter and widest digit in one layout pass.
 const MONACO_MEASURE_RUN = 32;
 const MONACO_MEASURE_GLYPHS = ['n', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 let monacoFontRulers = null;
@@ -112,7 +110,7 @@ function clearMonacoFontRulers() {
   monacoFontRulers.remove();
   monacoFontRulers = null;
 }
-// True while the settle pass has the rulers standing: taking them down is a page write, and a write in the middle of the pass's readings is the layout the pass exists to avoid. The pass takes them down itself, one stage later.
+// Keep rulers through the reading stage; removal is a later write.
 let monacoFontRulersHeld = false;
 function monacoCodeFontWidths() {
   if (monacoFontRulersHeld) return readMonacoFontRulers();
@@ -152,7 +150,7 @@ function monacoMinimapWidth() {
   );
 }
 
-// Hand it to the stylesheet, which sizes the rail and the page's column from it. Left alone when it can't be worked out, so the stylesheet's own figure stands. The reading and the write are two functions so the settle pass can hold them in its two stages.
+// Keep the reading and style write separate for the launch pass.
 function applyMinimapWidth(width) {
   if (width > 0) {
     document.documentElement.style.setProperty('--minimap-width', `${width}px`);
@@ -181,7 +179,7 @@ if (document.fonts && document.fonts.addEventListener) {
 if (window.ResizeObserver && app) {
   new ResizeObserver(scheduleMinimapWidthSync).observe(app);
 }
-// Handed to the settle pass, in its second round: the editor's width is the window less the pane, and the pane's own width is written by the pass's first round — so this reading is of something the pass itself decides, which is the one case a round exists for.
+// The rail reads the pane written in round zero, so it runs in round one.
 onSettle({
   round: 1,
   prepare: () => {
@@ -1241,7 +1239,7 @@ function formatCount(value) {
 function formatCountLabel(value, singular, plural) {
   return `${formatCount(value)} ${Number(value) === 1 ? singular : plural}`;
 }
-// Every fragment is loaded, and nothing has asked the page how big anything is yet — every fragment that needed to know handed its steps to the settle pass instead. This is where the pass runs: every write that has to land before a reading, then every reading, then every write those readings feed, so the window is laid out once and laid out complete before the render below draws it.
+// Settle layout before the first render.
 runSettlePass();
 // Every fragment is loaded, so a render from here on is a page somebody could use — which is what the startup card is waiting to be replaced by.
 window.__leafBooted = true;

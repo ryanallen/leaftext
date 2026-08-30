@@ -201,16 +201,12 @@ let undoableDelete = null;
 
 // ---- the one layout the launch pays for (library.js, library-search.js, theme.js, minimap.js, overflow.js)
 
-// No fragment asks the page how big something is while the front end is loading. A geometry reading taken after the fragment above wrote to the page makes the browser lay the whole window out again from nothing, and the launch was paying for twelve of those before a reader saw a frame. A fragment registers its steps here instead, and one pass at the end of evaluation runs every prepare, then every reading, then every write — so the page is laid out once, and it is laid out complete, because the pass finishes before the boot tail draws.
-//
-// A step is three optional parts. `prepare` is a write that has to be on the page before its reading can be taken at all — the crumb trail's measuring markup, the bar's left zone coming off its pin, the font rulers. `read` takes the reading and its answer is handed to `apply`, which is the write that reading feeds.
-//
-// `round` is for the one case a stage order cannot hold: a step whose reading is of something another step's write decides. The minimap's rail reads the pane's width back off the page, and the pane is written by this same pass — so that step asks for round 1 and the whole three stages run again for it. Two layouts rather than one, and rounds are the exception: a step that can compute what it needs instead of reading it back should.
+// Register writes, readings, and dependent writes for the launch layout pass.
 const SETTLE_ROUNDS = 2;
 const settleSteps = [];
 let settlePassRan = false;
 function onSettle(step) {
-  // Once the pass is behind us the page is laid out and settled, so a late registration has nothing to wait for: running it now costs the one layout it would cost either way.
+  // Late work runs now because the launch pass already settled the page.
   if (settlePassRan) return runSettleStep(step);
   settleSteps.push(step);
 }
@@ -219,7 +215,7 @@ function runSettleStep(step) {
   const answer = step.read ? step.read() : undefined;
   if (step.apply) step.apply(answer);
 }
-// Every registered step, in the order the fragments registered them, stage by stage. Called once, from the end of the last fragment.
+// Run each registered stage in fragment order.
 function runSettlePass() {
   settlePassRan = true;
   for (let round = 0; round < SETTLE_ROUNDS; round += 1) {
@@ -232,13 +228,13 @@ function runSettlePass() {
   settleSteps.length = 0;
 }
 
-// The app shell's own width, held for as long as one round of the pass is reading. Three things ask for it inside a single round — the pane's widest open width, whether the window is too narrow for a pane at all, and the code view's editor width — and a second reading of it taken between two of the pass's own writes is a second layout, which is the whole thing the pass exists to stop.
+// Hold the shell width through a reading round to avoid another layout.
 let settledShellWidth = null;
 function leafShellWidth() {
   if (settledShellWidth !== null) return settledShellWidth;
   return libraryShell ? libraryShell.clientWidth : 0;
 }
-// Null rather than zero for "nothing held": a window under the map measures zero, and a zero that means both "held at nothing" and "holding nothing" reads the page again in the middle of the pass.
+// Null distinguishes no held value from a measured zero.
 function holdShellWidth(width) {
   settledShellWidth = width;
 }
