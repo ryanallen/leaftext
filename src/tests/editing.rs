@@ -339,8 +339,10 @@ fn the_reading_view_has_no_gutter_line_numbers() {
             "the reading view counts no lines; found {absent}"
         );
     }
-    // Headings keep their slug ids, so the TOC and #slug deep links still resolve.
-    assert!(html.contains("if (!h.id) h.id = 'section-' + (i + 1);"));
+    // Headings keep their slug ids, so the TOC and #slug deep links still resolve. A heading with none is named for its own place in the complete list — the title counted — and steps on past any id the page already carries, so no two rows share a target.
+    assert!(html.contains(
+        "headings.forEach((h, i) => { if (!h.id) { let at = i + 1; while (taken.has('section-' + at)) at += 1; h.id = 'section-' + at; taken.add(h.id); } });"
+    ));
 }
 
 #[test]

@@ -1214,13 +1214,16 @@ function readOutlineHeadingText(h) {
   clone.querySelectorAll('.footnote-ref').forEach((n) => n.remove());
   return (clone.textContent || '').replace(/\s+/g, ' ').trim();
 }
-// The document's sections as plain rows — `{ level, text, id }` under the title, in document order — and nothing at all for a document that is a title and no more. Apart from the drawing because more than one thing draws them; it also stamps `section-N` on any heading with no id, so the anchors exist whoever draws.
+// A generated name for a heading with none: its own place in the document, stepped on past every id the page already carries, so a heading somebody named `section-2` cannot take another heading's target.
+function stampOutlineHeadingIds(headings, taken) {
+  headings.forEach((h, i) => { if (!h.id) { let at = i + 1; while (taken.has('section-' + at)) at += 1; h.id = 'section-' + at; taken.add(h.id); } });
+}
+// The document's rows as plain data — `{ level, text, id }`, its main title first and every section under it in document order — and nothing at all for a document that is a title and no more, which gives a reader nowhere within the page to jump. Apart from the drawing because more than one thing draws them; it also stamps a name on any heading with no id, so the anchors exist whoever draws.
 function collectDocumentOutlineRows(body) {
   const headings = documentOutlineHeadings(body);
   if (headings.length < 2) return [];
-  const rest = headings.slice(1);
-  rest.forEach((h, i) => { if (!h.id) h.id = 'section-' + (i + 1); });
-  return rest.map((h) => ({ level: Number(h.tagName.slice(1)) || 1, text: readOutlineHeadingText(h), id: h.id }));
+  stampOutlineHeadingIds(headings, new Set(Array.from(body.querySelectorAll('[id]'), (n) => n.id)));
+  return headings.map((h) => ({ level: Number(h.tagName.slice(1)) || 1, text: readOutlineHeadingText(h), id: h.id }));
 }
 // Read the open document's sections and hand them to whatever draws them, which is the library pane. Run before bindDocumentLinks, and on every render — a document with none clears what the last one left.
 function publishDocumentOutline() {

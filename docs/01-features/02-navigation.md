@@ -248,12 +248,13 @@ In the rendered view a replace is written to the file's source, not to the page.
 
 ### Outline
 
-![The library pane holding the open document's headings: the back row naming its folder, an On this page line with the heading count at its right, and the heading rows indented by level and stepping down in size, with the one being read lit](../../imgs/outline.png)
+![The library pane holding the open document's headings: the back row naming its folder, an On this page line with the heading count at its right, the page's own title as the first row, and the sections indented under it and stepping down in size, with the one being read lit](../../imgs/outline.png)
 
-Open a document and the [library pane](03-library.md) swaps its file list for that document's **Outline** — its headings, in order, indented by level, with the one you are reading lit. The lit row moves as you scroll, so the pane says where you are as well as what is there.
+Open a document and the [library pane](03-library.md) swaps its file list for that document's **Outline** — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit. The lit row moves as you scroll, so the pane says where you are as well as what is there.
 
 - Above the list, a back row wearing the folder's name puts the files back.
 - Under it, **On this page** names the list, with how many headings are in it at its right — **23 headings** — counted off the rows drawn below, so the number and the list can never disagree.
+- **The page's own title is the first row**, so every section below it hangs under something you can see, and it is counted with them.
 - **The levels look like levels.** The shallowest headings read largest and boldest; each level in is a step smaller and lighter, and from the third level in they sit in the page's quieter ink. So the shape of a document shows in the type as well as in the indenting, which matters most in a narrow pane where the indents run out.
 - Clicking a row jumps to that heading, and the jump joins scroll history, so Back returns to where you were reading. The row you clicked is the row that lights, with its heading still on screen — the lit row is read from the line a document is read from, under the app bar, rather than from the top edge of the reader behind it.
 - Typing in the pane's [search box](03-library.md#search) replaces the outline with the results; clearing the box brings it back.

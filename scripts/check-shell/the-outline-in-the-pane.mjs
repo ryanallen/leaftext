@@ -19,7 +19,7 @@ export function run() {
   //
   // The rows are what more than one thing draws from, so the walk is proved on its own: the levels it reports, the order, the ids it stamps, and the three kinds of heading that are not sections at all.
 
-  check('the heading walk reports every level under the title, in order, and stamps the ids', () => {
+  check('the heading walk begins at the page title, reports every level under it in order, and stamps the ids', () => {
     const rows = booted.collectDocumentOutlineRows(
       bodyOf(
         '<h1>Title</h1>' +
@@ -35,19 +35,29 @@ export function run() {
     );
 
     const said = rows.map((row) => `${row.level}:${row.text}`).join(' ');
-    if (said !== '2:Named 3:Three 4:Four 5:Five 6:Six 2:Back up') throw new Error(`the walk read the document as: ${said}`);
-    // The title is what the outline hangs under, so it is never a row of its own.
-    if (rows.some((row) => row.text === 'Title')) throw new Error('the title came back as a section');
-    // A heading that already has an id keeps it; the rest are stamped by their place under the title.
+    if (said !== '1:Title 2:Named 3:Three 4:Four 5:Five 6:Six 2:Back up') throw new Error(`the walk read the document as: ${said}`);
+    // The title is the root every section hangs under, so it is the first row and never dropped.
+    if (rows[0].text !== 'Title') throw new Error(`the first row is: ${rows[0].text}`);
+    // A heading that already has an id keeps it; the rest are stamped by their own place in the document, the title included.
     const ids = rows.map((row) => row.id).join(' ');
-    if (ids !== 'named section-2 section-3 section-4 section-5 section-6') throw new Error(`the ids the walk stamped: ${ids}`);
+    if (ids !== 'section-1 named section-3 section-4 section-5 section-6 section-7') throw new Error(`the ids the walk stamped: ${ids}`);
+  });
+
+  check('a generated name steps past an id the page already carries', () => {
+    // Two headings named the way the walk names them, taking the places the third and fifth headings would otherwise be stamped with.
+    const rows = booted.collectDocumentOutlineRows(
+      bodyOf('<h1>Title</h1><h2 id="section-3">Named three</h2><h2>Third</h2><p id="section-5">A paragraph somebody named.</p><h2>Fourth</h2><h2>Fifth</h2>')
+    );
+    const ids = rows.map((row) => row.id).join(' ');
+    if (ids !== 'section-1 section-3 section-4 section-6 section-7') throw new Error(`the ids the walk stamped: ${ids}`);
+    if (new Set(ids.split(' ')).size !== rows.length) throw new Error('two rows were given the same target');
   });
 
   check('the heading walk leaves the footnote markers out of what a row says', () => {
     const rows = booted.collectDocumentOutlineRows(
       bodyOf('<h1>Title</h1><h2>A section<sup class="footnote-ref"><a href="#fn1">1</a></sup></h2>')
     );
-    if (rows.length !== 1 || rows[0].text !== 'A section') throw new Error(`the row says: ${JSON.stringify(rows.map((row) => row.text))}`);
+    if (rows.map((row) => row.text).join(' | ') !== 'Title | A section') throw new Error(`the rows say: ${JSON.stringify(rows.map((row) => row.text))}`);
   });
 
   check('a document that is a title and no more has no outline at all', () => {
@@ -198,6 +208,29 @@ export function run() {
     if (said.includes('1 headings')) throw new Error('one heading was counted in the plural');
   });
 
+  check('a title and the one section under it draw two rows, count two headings, and the title row jumps like any other', () => {
+    const page = paneShowingAnOutline([
+      { level: 1, text: 'Title', id: 'section-1' },
+      { level: 2, text: 'One', id: 'one' },
+    ]);
+    // The title is the shallowest row, so it takes depth zero and the section steps in under it.
+    const said = outlineRowsOf(page).join(' | ');
+    if (said !== '0:Title | 1:One') throw new Error(`the pane drew: ${said}`);
+    const count = page.outline.querySelector('.library-outline-count').textContent;
+    if (!count.includes('2 headings')) throw new Error(`the line above the headings counts: ${count}`);
+
+    const sent = [];
+    const wasSend = page.context.ipc.postMessage;
+    page.context.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      for (const handler of page.outline.querySelectorAll('.library-outline-row')[0].listeners.get('click') || []) handler({});
+    } finally {
+      page.context.ipc.postMessage = wasSend;
+    }
+    const jump = sent.find((message) => message.command === 'openLink');
+    if (!jump || jump.href !== '#section-1') throw new Error(`the title row jumped to: ${JSON.stringify(jump)}`);
+  });
+
   check('the pane shows one list at a time, and a live query outranks the outline', () => {
     const page = paneShowingAnOutline();
     const showing = () => [page.results.hidden ? '' : 'results', page.outline.hidden ? '' : 'outline', page.tree.hidden ? '' : 'files'].filter(Boolean).join(' and ');
@@ -319,7 +352,7 @@ export function run() {
     if (body.querySelectorAll('.document-outline').length) throw new Error('the render put an outline back between the title and the first sentence');
     // The headings themselves survive the box going: they are what the pane draws.
     const rows = page.context.readDocumentOutlineRows().map((row) => row.text);
-    if (rows.join(' ') !== 'One') throw new Error(`the render published: ${JSON.stringify(rows)}`);
+    if (rows.join(' | ') !== 'Title | One') throw new Error(`the render published: ${JSON.stringify(rows)}`);
 
     const blocks = [
       { id: 0, kind: 'heading', start: 0, end: 7, editable: true },

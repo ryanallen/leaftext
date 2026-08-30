@@ -174,10 +174,15 @@ fn app_shell_draws_the_documents_headings_in_the_library_pane() {
     assert_contains(&html, "function documentOutlineHeadings(body) {");
     assert_contains(&html, "function collectDocumentOutlineRows(body) {");
     assert_contains(&html, "if (headings.length < 2) return [];");
-    assert_contains(&html, "if (!h.id) h.id = 'section-' + (i + 1);");
+    assert_contains(&html, "function stampOutlineHeadingIds(headings, taken) {");
+    // The complete list, so the page's own title is the first row rather than a remainder sliced out from under it.
     assert_contains(
         &html,
-        "return rest.map((h) => ({ level: Number(h.tagName.slice(1)) || 1, text: readOutlineHeadingText(h), id: h.id }));",
+        "stampOutlineHeadingIds(headings, new Set(Array.from(body.querySelectorAll('[id]'), (n) => n.id)));",
+    );
+    assert_contains(
+        &html,
+        "return headings.map((h) => ({ level: Number(h.tagName.slice(1)) || 1, text: readOutlineHeadingText(h), id: h.id }));",
     );
     // Read on every render and handed on, so a document with no headings clears what the last one left.
     assert_contains(&html, "function publishDocumentOutline() {");
