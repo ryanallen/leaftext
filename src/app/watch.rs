@@ -26,10 +26,12 @@ impl FileWatch {
             Duration::from_millis(200),
             move |result: DebounceEventResult| {
                 if let Ok(events) = result {
-                    for event in events {
-                        if let Some(changed) = watched_change(event.path, &handler_reading_in) {
-                            let _ = proxy.send_event(UserEvent::FileChanged(changed));
-                        }
+                    let changed = watched_changes(
+                        events.into_iter().map(|event| event.path),
+                        &handler_reading_in,
+                    );
+                    if !changed.is_empty() {
+                        let _ = proxy.send_event(UserEvent::FileChanged(changed));
                     }
                 }
             },
@@ -188,6 +190,17 @@ pub(crate) fn watched_change(
         return None;
     }
     Some(plain_event_path(path))
+}
+
+/// Keep every useful path from one debounced batch together for the loop.
+pub(crate) fn watched_changes(
+    paths: impl IntoIterator<Item = PathBuf>,
+    reading_in: &Arc<Mutex<Option<PathBuf>>>,
+) -> Vec<PathBuf> {
+    paths
+        .into_iter()
+        .filter_map(|path| watched_change(path, reading_in))
+        .collect()
 }
 
 /// An event's path in the plain form the rest of the app compares against.

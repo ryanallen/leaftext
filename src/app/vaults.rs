@@ -691,16 +691,14 @@ pub(crate) fn deliver_corpus(
     absorbed.hints
 }
 
-/// A file changed on disk: patch the vault's text if the vault holds it, and redraw the map if one is on screen.
-///
-/// The graph is redrawn only when it is the view on screen. Rebuilding it for a pane nobody is looking at turns a burst of saves into a locked window, and rebuilding it *here* rather than on a worker makes each one cost the whole vault.
-pub(crate) fn refresh_corpus_path(
+/// Patch every changed path in one batch, then rebuild the map at most once.
+pub(crate) fn refresh_corpus_paths(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
-    changed: &Path,
+    changed: &[PathBuf],
     graph_showing: bool,
 ) {
-    match corpus_change_redraw(state, changed, graph_showing) {
+    match corpus_changes_redraw(state, changed, graph_showing) {
         GraphRedraw::Vault {
             root,
             corpus,
@@ -731,13 +729,15 @@ pub(crate) enum GraphRedraw {
     Nothing,
 }
 
-/// Patch the vault's held text for one changed path and say what the map then owes. State alone and no worker, which is what lets a test ask it.
-pub(crate) fn corpus_change_redraw(
+/// Patch every path in one watcher batch and say what one map redraw then owes.
+pub(crate) fn corpus_changes_redraw(
     state: &mut VaultState,
-    changed: &Path,
+    changed: &[PathBuf],
     graph_showing: bool,
 ) -> GraphRedraw {
-    let corpus_moved = record_or_refresh_corpus_path(state, changed);
+    let corpus_moved = changed
+        .iter()
+        .any(|path| record_or_refresh_corpus_path(state, path));
     if !graph_showing {
         return GraphRedraw::Nothing;
     }
@@ -755,7 +755,11 @@ pub(crate) fn corpus_change_redraw(
             None => GraphRedraw::Nothing,
         },
         // A document's map holds no cache to compare against, so "did this change anything" cannot be answered here. Rebuild for any document that could be in the picture and let the page drop the redraw: it compares what arrives against what it is already drawing, and an identical graph never reaches the scene.
-        Some(GraphSource::Document(seed)) if crate::is_supported_document_path(changed) => {
+        Some(GraphSource::Document(seed))
+            if changed
+                .iter()
+                .any(|path| crate::is_supported_document_path(path)) =>
+        {
             GraphRedraw::Document {
                 seed,
                 request: pending.request,
@@ -843,7 +847,10 @@ pub(crate) enum WatchedChangeStep {
     /// The pane lists this one folder off the disk, and the change is in it.
     RereadPaneFolder(String),
     /// Patch the vault's own text, redrawing the graph only where the graph is the view on screen.
-    PatchCorpus { redraw_graph: bool },
+    PatchCorpus {
+        paths: Vec<PathBuf>,
+        redraw_graph: bool,
+    },
     /// A picture rather than a document: the text is unchanged, so only the page's images are refreshed.
     RefreshImages,
     /// Tells the page its remembered link answers may be stale.
@@ -870,9 +877,60 @@ pub(crate) fn watched_change_steps(
         steps.push(WatchedChangeStep::RereadPaneFolder(state.folder.clone()));
     }
     steps.push(WatchedChangeStep::PatchCorpus {
+        paths: vec![changed.to_path_buf()],
         redraw_graph: state.graph_open,
     });
     if is_local_image_path(changed) {
+        steps.push(WatchedChangeStep::RefreshImages);
+    }
+    steps
+}
+
+/// What one debounced watcher batch does, keeping the per-path branches and folding shared work.
+pub(crate) fn watched_batch_steps(
+    state: &VaultState,
+    changed: impl IntoIterator<Item = (PathBuf, bool)>,
+) -> Vec<WatchedChangeStep> {
+    let mut status = None;
+    let mut age_link_previews = false;
+    let mut reload_active_document = false;
+    let mut reread_pane_folder = None;
+    let mut corpus_paths = Vec::new();
+    let mut refresh_images = false;
+
+    for (path, is_active_document) in changed {
+        for step in watched_change_steps(state, &path, is_active_document) {
+            match step {
+                WatchedChangeStep::RereadVaultStatus(id) => status = Some(id),
+                WatchedChangeStep::AgeLinkPreviews => age_link_previews = true,
+                WatchedChangeStep::ReloadActiveDocument => reload_active_document = true,
+                WatchedChangeStep::RereadPaneFolder(folder) => reread_pane_folder = Some(folder),
+                WatchedChangeStep::PatchCorpus { paths, .. } => corpus_paths.extend(paths),
+                WatchedChangeStep::RefreshImages => refresh_images = true,
+            }
+        }
+    }
+
+    let mut steps = Vec::new();
+    if let Some(id) = status {
+        steps.push(WatchedChangeStep::RereadVaultStatus(id));
+    }
+    if age_link_previews {
+        steps.push(WatchedChangeStep::AgeLinkPreviews);
+    }
+    if reload_active_document {
+        steps.push(WatchedChangeStep::ReloadActiveDocument);
+    }
+    if let Some(folder) = reread_pane_folder {
+        steps.push(WatchedChangeStep::RereadPaneFolder(folder));
+    }
+    if !corpus_paths.is_empty() {
+        steps.push(WatchedChangeStep::PatchCorpus {
+            paths: corpus_paths,
+            redraw_graph: state.graph_open,
+        });
+    }
+    if refresh_images {
         steps.push(WatchedChangeStep::RefreshImages);
     }
     steps

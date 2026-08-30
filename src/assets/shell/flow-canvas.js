@@ -41,6 +41,9 @@ let flowLastFocus = null;
 let flowSize = null;
 let flowZoom = 1;
 let flowPlaced = null;
+
+// Everything measured, in mermaid's own coordinates. Kept so a wheel notch scales it rather than reading every box off the drawing again: a zoom changes how big the drawing is shown, and only a fresh render changes where anything in it sits.
+let flowNatural = null;
 // Steps back and forward, and the state as of the last settled point. `before` is what a change undoes to, re-taken after every change — which is how one place can record a step without every caller having to remember to.
 const flowHistory = { past: [], future: [] };
 let flowBefore = null;
@@ -533,9 +536,9 @@ function setFlowZoom(next) {
   if (Math.abs(clamped - flowZoom) < 0.001) return;
   closeFlowLabelBox(true);
   flowZoom = clamped;
-  // The drawing is the same drawing, only bigger — so it is resized rather than asked for again, and only the measurements have to be taken afresh.
+  // The drawing is the same drawing, only bigger — so it is resized rather than asked for again, and the measurements are scaled rather than taken afresh.
   sizeFlowStage();
-  measureFlowDiagram();
+  placeFlowDiagram();
   drawFlowOverlay();
 }
 
@@ -690,6 +693,7 @@ function drawFlowDiagram() {
   if ((graph && !graph.nodes.length) || !text.trim()) {
     flowCanvas.innerHTML = '';
     flowPlaced = null;
+    flowNatural = null;
     flowSize = null;
     flowDrawError = '';
     drawFlowNotice();
@@ -739,16 +743,19 @@ function sizeFlowStage() {
   stage.style.height = height + 'px';
 }
 
-// Where mermaid put everything, in pixels relative to the stage. Read off the drawing rather than worked out, which is the whole point of the swap.
+// Where mermaid put everything, in the drawing's own coordinates. Read off the drawing rather than worked out, because nothing here knows what mermaid draws — and read only when a render has replaced the drawing, since that is the one event that moves anything in it.
 function measureFlowDiagram() {
   const graph = flowSession && flowSession.graph;
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   const svg = stage && stage.querySelector('svg');
   if (!graph || !svg) {
+    flowNatural = null;
     flowPlaced = null;
     return;
   }
   const origin = stage.getBoundingClientRect();
+  // Everything below comes off the drawing at the size it is shown, so it is divided back out here and multiplied in again when it is placed.
+  const shown = flowZoom;
   const known = new Set(graph.nodes.map((node) => node.id));
   const nodes = [];
   // Every group carrying a `data-id`. Mermaid names a box either by the id you wrote or by its own `flowchart-<id>-<n>` spelling depending on the renderer it took, so both are read rather than one being assumed.
@@ -759,11 +766,11 @@ function measureFlowDiagram() {
     if (!rect.width && !rect.height) return;
     nodes.push({
       id,
-      x: rect.left - origin.left,
-      y: rect.top - origin.top,
-      width: rect.width,
-      height: rect.height,
-      radius: flowDrawnRadius(group, rect),
+      x: (rect.left - origin.left) / shown,
+      y: (rect.top - origin.top) / shown,
+      width: rect.width / shown,
+      height: rect.height / shown,
+      radius: flowDrawnRadius(group, rect.width / shown, rect.height / shown),
     });
   });
   // The boxes around boxes. Mermaid draws each one as `g.cluster`, named the way it names a node, so the same two spellings are read — and a cluster is measured only to put a title strip on it, never a handle: the whole of what the canvas does to a group is rename it, empty it out, or take it away.
@@ -776,10 +783,10 @@ function measureFlowDiagram() {
     if (!rect.width && !rect.height) return;
     groups.push({
       id,
-      x: rect.left - origin.left,
-      y: rect.top - origin.top,
-      width: rect.width,
-      height: rect.height,
+      x: (rect.left - origin.left) / shown,
+      y: (rect.top - origin.top) / shown,
+      width: rect.width / shown,
+      height: rect.height / shown,
     });
   });
   const edges = [];
@@ -794,13 +801,43 @@ function measureFlowDiagram() {
     if (!path || typeof path.getTotalLength !== 'function') continue;
     const at = (length) => {
       const point = path.getPointAtLength(length).matrixTransform(path.getScreenCTM());
-      return { x: point.x - origin.left, y: point.y - origin.top };
+      return { x: (point.x - origin.left) / shown, y: (point.y - origin.top) / shown };
     };
     const total = path.getTotalLength();
     edges.push({ id: edge.id, path, from: at(0), to: at(total), at: at(total / 2) });
   }
-  flowPlaced = { nodes, edges, groups };
+  flowNatural = { nodes, edges, groups };
   flowLostBoxes = graph.nodes.length && !nodes.length;
+  placeFlowDiagram();
+}
+
+// The measured drawing at the size it is shown at now: one multiply per box, group and line end. A wheel notch runs this instead of measuring, so a notch costs arithmetic rather than a layout read of every shape on the canvas.
+function placeFlowDiagram() {
+  if (!flowNatural) {
+    flowPlaced = null;
+    return;
+  }
+  const shown = flowZoom;
+  const point = (at) => ({ x: at.x * shown, y: at.y * shown });
+  const box = (drawn) => ({
+    id: drawn.id,
+    x: drawn.x * shown,
+    y: drawn.y * shown,
+    width: drawn.width * shown,
+    height: drawn.height * shown,
+  });
+  flowPlaced = {
+    nodes: flowNatural.nodes.map((node) => ({ ...box(node), radius: node.radius * shown })),
+    // The path is the element mermaid drew, which the overlay colors and the pointer matches on, so it travels rather than being looked up again.
+    edges: flowNatural.edges.map((edge) => ({
+      id: edge.id,
+      path: edge.path,
+      from: point(edge.from),
+      to: point(edge.to),
+      at: point(edge.at),
+    })),
+    groups: flowNatural.groups.map(box),
+  };
 }
 
 // A corner's radius from how far in along its diagonal the fill starts. Its own function because the constant is easy to get wrong and impossible to see when it is — the Euclidean gap, (√2 − 1), is the wrong one and misses by that factor. The harness holds it.
@@ -808,19 +845,18 @@ function flowCornerRadiusFrom(inset) {
   return inset / (1 - Math.SQRT1_2);
 }
 
-// The radius a corner was probed at, in the drawing's own units, held against the group it was probed off. Probing is sixteen fill tests a box and the answer cannot change while that drawing is on the stage, so a zoom step and a drag on the divider — both of which measure the whole diagram again on every move — probe nothing. A fresh render replaces the stage's markup, so the old groups become unreachable and this empties itself with them; that is the whole of its lifetime.
+// The radius a corner was probed at, in the drawing's own units, held against the group it was probed off. Probing is sixteen fill tests a box and the answer cannot change while that drawing is on the stage, so a second measurement of the same drawing probes nothing. A fresh render replaces the stage's markup, so the old groups become unreachable and this empties itself with them; that is the whole of its lifetime.
 const flowProbedRadii = new WeakMap();
 
-// How round the corners of the shape mermaid drew are, in stage pixels. Read off the drawing for the same reason everything else is: a table of radii here would be a second opinion about a shape we do not draw. Everything the zoom touches is here rather than in the probe, so a held radius is right at whatever size the drawing is now.
-function flowDrawnRadius(group, rect) {
-  let probed = flowProbedRadii.get(group);
-  if (probed === undefined) {
-    probed = flowProbeDrawnRadius(group);
-    flowProbedRadii.set(group, probed);
+// How round the corners of the shape mermaid drew are, in the drawing's own units. Read off the drawing for the same reason everything else is: a table of radii here would be a second opinion about a shape we do not draw. The zoom is applied where every other coordinate takes it, so a held radius suits whatever size the drawing is shown at.
+function flowDrawnRadius(group, width, height) {
+  let radius = flowProbedRadii.get(group);
+  if (radius === undefined) {
+    radius = flowProbeDrawnRadius(group);
+    flowProbedRadii.set(group, radius);
   }
-  const radius = probed * flowZoom;
-  // Nothing can be rounder than a pill. Measured against `rect`, which is screen pixels, so this cannot be held either.
-  return Number.isFinite(radius) ? Math.max(0, Math.min(radius, Math.min(rect.width, rect.height) / 2)) : 0;
+  // Nothing can be rounder than a pill.
+  return Number.isFinite(radius) ? Math.max(0, Math.min(radius, Math.min(width, height) / 2)) : 0;
 }
 
 // The probe itself, answering in the drawing's own units — nothing in here reads the zoom, which is what makes the answer worth keeping.

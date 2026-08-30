@@ -259,6 +259,19 @@ fn the_watcher_translates_at_its_own_boundary() {
 }
 
 #[test]
+fn one_watcher_path_keeps_the_same_answer_inside_a_batch() {
+    let nothing_open: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(None));
+    let path = PathBuf::from(r"\\?\C:\notes\mail.eml");
+
+    assert_eq!(
+        watched_changes([path.clone()], &nothing_open),
+        watched_change(path, &nothing_open)
+            .into_iter()
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn a_write_inside_git_is_not_a_change_the_app_can_act_on() {
     // Git's own bookkeeping is the one thing under a watched vault that is never news: no document to reload, no row to draw — and reading the vault's git state is what writes it.
     assert!(is_git_bookkeeping(Path::new("/vault/.git/index")));
@@ -480,7 +493,7 @@ fn only_a_document_that_moved_redraws_the_map() {
     });
     assert!(
         matches!(
-            corpus_change_redraw(&mut state, Path::new("/vault/.git/index"), true),
+            corpus_changes_redraw(&mut state, &[PathBuf::from("/vault/.git/index")], true),
             GraphRedraw::Nothing
         ),
         "a refresh that changed nothing reached the vault graph rebuild"
@@ -493,14 +506,14 @@ fn only_a_document_that_moved_redraws_the_map() {
     });
     assert!(
         matches!(
-            corpus_change_redraw(&mut state, Path::new("/vault/.git/index"), true),
+            corpus_changes_redraw(&mut state, &[PathBuf::from("/vault/.git/index")], true),
             GraphRedraw::Nothing
         ),
         "a document map rebuilt for a path that is not a document"
     );
     assert!(
         matches!(
-            corpus_change_redraw(&mut state, Path::new("/vault/other.md"), true),
+            corpus_changes_redraw(&mut state, &[PathBuf::from("/vault/other.md")], true),
             GraphRedraw::Document { .. }
         ),
         "a document map stopped rebuilding for a document that could be in the picture"
@@ -508,7 +521,7 @@ fn only_a_document_that_moved_redraws_the_map() {
 
     // And a map nobody is looking at is never rebuilt, whatever moved.
     assert!(matches!(
-        corpus_change_redraw(&mut state, Path::new("/vault/other.md"), false),
+        corpus_changes_redraw(&mut state, &[PathBuf::from("/vault/other.md")], false),
         GraphRedraw::Nothing
     ));
 }
@@ -532,7 +545,7 @@ fn a_watched_change_during_a_read_neither_patches_the_text_nor_redraws_the_map()
 
     assert!(
         matches!(
-            corpus_change_redraw(&mut state, Path::new("/vault/other.md"), true),
+            corpus_changes_redraw(&mut state, &[PathBuf::from("/vault/other.md")], true),
             GraphRedraw::Nothing
         ),
         "the map was rebuilt off however much of the vault had been read"

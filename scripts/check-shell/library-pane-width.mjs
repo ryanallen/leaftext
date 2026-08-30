@@ -85,6 +85,77 @@ export function run() {
     }
   });
 
+  // ---- 3a3. a release applies the width the drag was left at -----------------
+  //
+  // Width writes are thrown onto an animation frame so the pane's grid does not relay out on every pointer event, which is right. The release was not: it canceled the frame that was still pending and the last stretch of the drag went with it, so a hand that lets go the moment it stops leaves the pane short of the pointer — and the same short number is what `persistLibraryLayout` then saves, so it comes back that way. These two leave the frame queue alone on purpose: draining it after every move is what kept the drag check above from ever seeing this.
+
+  /** A booted page with a divider that can be dragged and every command it sends recorded. */
+  function dragStand(settings = {}) {
+    const context = bootWithLead(WINDOWS_LEAD, settings);
+    const divider = context.document.getElementById('libraryDivider');
+    const shell = context.document.getElementById('libraryShell');
+    shell.getBoundingClientRect = () => ({ left: 0, top: 0, right: VIEW_WIDTH, bottom: VIEW_HEIGHT, width: VIEW_WIDTH, height: VIEW_HEIGHT });
+    const sent = [];
+    context.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    const pointer = (clientX) => ({ pointerId: 7, button: 0, buttons: 1, clientX, clientY: 300, target: divider, preventDefault() {}, stopPropagation() {} });
+    const raise = (type, clientX) => {
+      for (const handler of [...(context.document.listeners.get(type) || [])]) handler(pointer(clientX));
+    };
+    const grab = (clientX) => {
+      for (const handler of [...(divider.listeners.get('pointerdown') || [])]) handler(pointer(clientX));
+    };
+    /** The last layout the page saved, which is what reaches the settings file. */
+    const saved = () => [...sent].reverse().find((one) => one.command === 'setLibraryLayout');
+    return { context, grab, raise, saved };
+  }
+
+  check('a pane released between frames rests under the pointer, and saves that width', () => {
+    const { context, grab, raise, saved } = dragStand();
+    grab(247);
+    // One move that got its frame, so the pane is somewhere real before the stretch that must not be lost.
+    raise('pointermove', 320);
+    context.__frames.drain();
+    if (railWidth(context) !== '320px') throw new Error(`a drag to 320px with a frame behind it rested at ${railWidth(context)}`);
+    // And the ordinary ending of a drag: a last move, then the release, with no frame in between.
+    raise('pointermove', 430);
+    const armed = [...context.__frames.queue.keys()];
+    raise('pointerup', 430);
+    if (railWidth(context) !== '430px') throw new Error(`a pointer released at 430px left the pane at ${railWidth(context)}`);
+    const layout = saved();
+    if (!layout || layout.width !== 430) throw new Error(`the release saved ${JSON.stringify(layout)} rather than a 430px pane`);
+    // And the frame that move armed is gone rather than left waiting on a drag that is over. Named by its own id, not counted: the flush refits the breadcrumb, which arms a frame of its own, so a count answers the same either way. The flush also zeroes the drag's record of its frame, so the id has to be taken before the flush or there is nothing left to cancel.
+    const stale = armed.filter((id) => context.__frames.queue.has(id));
+    if (stale.length) throw new Error(`the release left the frame it armed waiting on a drag that had ended`);
+  });
+
+  check('a pointer canceled between frames rests under it too', () => {
+    // A canceled pointer is a drag that ended without a release — the pane still belongs where the last move put it, not one frame behind.
+    const { context, grab, raise, saved } = dragStand();
+    grab(247);
+    raise('pointermove', 320);
+    context.__frames.drain();
+    raise('pointermove', 505);
+    raise('pointercancel', 505);
+    if (railWidth(context) !== '505px') throw new Error(`a canceled pointer at 505px left the pane at ${railWidth(context)}`);
+    const layout = saved();
+    if (!layout || layout.width !== 505) throw new Error(`the cancel saved ${JSON.stringify(layout)} rather than a 505px pane`);
+  });
+
+  check('a drag past the snap closes the pane rather than resting on the sliver it was dragged away from', () => {
+    // The snap is the one ending that must not take the pending width: what it holds is the last move still above the threshold, so a flush here saves a sliver the reader was dragging past, and the pane comes back as one.
+    const { context, grab, raise, saved } = dragStand();
+    grab(430);
+    raise('pointermove', 430);
+    context.__frames.drain();
+    // Above the threshold, and never drawn — this is the value a flush would wrongly write.
+    raise('pointermove', 120);
+    raise('pointermove', 10);
+    if (railWidth(context) !== '0px') throw new Error(`a drag past the snap left the pane at ${railWidth(context)}`);
+    const layout = saved();
+    if (!layout || layout.closed !== true) throw new Error(`a drag past the snap saved ${JSON.stringify(layout)} rather than a closed pane`);
+    if (layout.width === 120) throw new Error('a drag past the snap saved the 120px sliver it was dragged away from');
+  });
+
   check('the zone floor follows the buttons out of the bar and back in', () => {
     // One write is only enough because the floor is rewritten wherever the measurement behind it is thrown away. A fold takes two arrows out of the zone and the floor has to come down with them, or a narrow window keeps holding space for buttons that are in the chevron menu.
     const context = bootWithLead(MAC_LEAD, { libraryClosed: true });

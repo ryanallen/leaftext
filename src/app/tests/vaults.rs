@@ -252,3 +252,51 @@ fn a_change_on_disk_ages_the_link_cards_whichever_side_of_the_split_it_falls() {
         "a change beside the open document left the card over its link saying what that file used to say"
     );
 }
+
+#[test]
+fn a_watcher_batch_raises_shared_steps_once_and_carries_every_corpus_path() {
+    let mut state = VaultState::load(None);
+    state.active = 3;
+    state.folder = "/vault".to_owned();
+
+    assert_eq!(
+        watched_batch_steps(
+            &state,
+            [
+                (PathBuf::from("/vault/notes.md"), true),
+                (PathBuf::from("/vault/other.md"), false),
+                (PathBuf::from("/vault/cover.png"), false),
+            ],
+        ),
+        vec![
+            WatchedChangeStep::RereadVaultStatus(3),
+            WatchedChangeStep::AgeLinkPreviews,
+            WatchedChangeStep::ReloadActiveDocument,
+            WatchedChangeStep::RereadPaneFolder("/vault".to_owned()),
+            WatchedChangeStep::PatchCorpus {
+                paths: vec![
+                    PathBuf::from("/vault/other.md"),
+                    PathBuf::from("/vault/cover.png"),
+                ],
+                redraw_graph: false,
+            },
+            WatchedChangeStep::RefreshImages,
+        ]
+    );
+}
+
+#[test]
+fn a_watcher_batch_without_pane_or_image_changes_does_not_raise_them() {
+    let state = VaultState::load(None);
+
+    assert_eq!(
+        watched_batch_steps(&state, [(PathBuf::from("/elsewhere/notes.md"), false)],),
+        vec![
+            WatchedChangeStep::AgeLinkPreviews,
+            WatchedChangeStep::PatchCorpus {
+                paths: vec![PathBuf::from("/elsewhere/notes.md")],
+                redraw_graph: false,
+            },
+        ]
+    );
+}

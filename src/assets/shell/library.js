@@ -166,9 +166,12 @@ function applyPendingDividerWidth() {
     scheduleCrumbFit();
   }
 }
-function endDividerDrag() {
+// `flushPendingWidth` because a drag ends between frames: the last stretch of it is only in `pendingWidth`, and dropping it leaves the pane short of where the pointer stopped and saves it there. The snap shut is the one caller that must not ask — what it holds is the last move still above the threshold, so a flush there would save a sliver the reader was dragging past.
+function endDividerDrag(flushPendingWidth) {
   if (!dividerDrag) return;
-  if (dividerDrag.frame) cancelAnimationFrame(dividerDrag.frame);
+  const frame = dividerDrag.frame;
+  if (flushPendingWidth) applyPendingDividerWidth();
+  if (frame) cancelAnimationFrame(frame);
   leafReleasePointer(libraryDivider, dividerDrag.pointerId);
   dividerDrag = null;
   document.body.classList.remove('library-resizing');
@@ -197,12 +200,13 @@ document.addEventListener('pointermove', (event) => {
 });
 document.addEventListener('pointerup', (event) => {
   if (!dividerDrag || event.pointerId !== dividerDrag.pointerId) return;
-  endDividerDrag();
+  endDividerDrag(true);
   persistLibraryLayout();
 });
 document.addEventListener('pointercancel', (event) => {
   if (!dividerDrag || event.pointerId !== dividerDrag.pointerId) return;
-  endDividerDrag();
+  // A canceled pointer is a drag that ended without a release, so the pane still belongs where the last move put it.
+  endDividerDrag(true);
   persistLibraryLayout();
 });
 // On resize, re-clamp the open width and re-evaluate the too-narrow fallback. The auto-hide is display-only; the saved preference is never overwritten, so widening restores the pane.

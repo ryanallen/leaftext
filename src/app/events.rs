@@ -17,8 +17,8 @@ pub(crate) enum UserEvent {
     StartupGrowDue,
     /// A second launch of the app forwarded a request to this (primary) instance but carried no file — bring the existing window to the front.
     FocusWindow,
-    /// The file backing some tab changed on disk; the live-reload watcher sends this with the changed path. Only acted on when it is the active document.
-    FileChanged(PathBuf),
+    /// Files changed on disk in one debounced watcher batch.
+    FileChanged(Vec<PathBuf>),
     /// The git panel's next whole state, already serialized on the worker thread.
     VaultGitReady { json: String },
     /// Just the folder's own git state, for the header's sync button.

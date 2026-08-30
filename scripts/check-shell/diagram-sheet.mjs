@@ -1258,6 +1258,145 @@ export function run() {
     }
   });
 
+  // A zoom step shows the same drawing bigger. Mermaid has not laid anything out again, so reading every box, group and line off the SVG a second time buys nothing and costs a layout pass per notch — and the notches arrive faster than the screen draws. The measurements are kept in mermaid's own coordinates and multiplied by the zoom, so a notch is arithmetic.
+  check('a wheel notch scales the measured drawing rather than reading it again', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const canvas = read('flowCanvas');
+    if (!canvas) throw new Error('the page has no flow canvas');
+    let rectReads = 0;
+    // One box, one group around it and one line: everything the measurement records.
+    const drawing = () => {
+      const stage = fakeElement('');
+      stage.classList.add('flow-stage');
+      const counted = (rect) => () => {
+        rectReads += 1;
+        return rect;
+      };
+      stage.getBoundingClientRect = counted({ top: 0, left: 0, right: 300, bottom: 200, width: 300, height: 200 });
+      const svg = fakeElement('');
+      svg.tagName = 'svg';
+      svg.setAttribute('viewBox', '0 0 300 200');
+      svg.createSVGPoint = () => ({ x: 0, y: 0 });
+      stage.appendChild(svg);
+
+      const group = fakeElement('flowchart-A-0');
+      group.tagName = 'g';
+      group.classList.add('node');
+      group.getBoundingClientRect = counted({ top: 40, left: 60, right: 180, bottom: 96, width: 120, height: 56 });
+      const outline = fakeElement('');
+      outline.tagName = 'path';
+      outline.getBBox = () => ({ x: 0, y: 0, width: 120, height: 56 });
+      outline.ownerSVGElement = svg;
+      const inset = 12 * (1 - Math.SQRT1_2);
+      outline.isPointInFill = (point) => point.x >= inset;
+      group.appendChild(outline);
+      svg.appendChild(group);
+
+      const cluster = fakeElement('box');
+      cluster.tagName = 'g';
+      cluster.classList.add('cluster');
+      cluster.getBoundingClientRect = counted({ top: 20, left: 40, right: 220, bottom: 130, width: 180, height: 110 });
+      svg.appendChild(cluster);
+
+      const line = fakeElement('');
+      line.tagName = 'path';
+      line.setAttribute('data-id', 'L_A_B_0');
+      line.getTotalLength = () => 100;
+      line.getScreenCTM = () => ({});
+      line.getPointAtLength = (length) => {
+        const at = { x: 10 + length, y: 70, matrixTransform: () => at };
+        return at;
+      };
+      svg.appendChild(line);
+
+      const overlay = fakeElement('');
+      overlay.classList.add('flow-overlay');
+      stage.appendChild(overlay);
+      return stage;
+    };
+    const graph = {
+      direction: 'LR',
+      nodes: [{ id: 'A', text: 'A' }, { id: 'B', text: 'B' }],
+      edges: [{ id: 'e1', from: 'A', to: 'B' }],
+      groups: [{ id: 'box', text: 'box' }],
+    };
+    const spin = (deltaY) => {
+      for (const handler of [...(canvas.listeners.get('wheel') || [])]) {
+        handler({ ctrlKey: true, deltaY, preventDefault() {} });
+      }
+    };
+    // Every number the overlay and the pointer read, flattened so two placements can be compared whole.
+    const placement = () => {
+      const placed = read('flowPlaced');
+      if (!placed) throw new Error('nothing was placed');
+      const node = placed.nodes[0];
+      const group = placed.groups[0];
+      const edge = placed.edges[0];
+      if (!node || !group || !edge) throw new Error('a box, a group or a line went missing');
+      return [
+        node.x, node.y, node.width, node.height, node.radius,
+        group.x, group.y, group.width, group.height,
+        edge.from.x, edge.from.y, edge.at.x, edge.at.y, edge.to.x, edge.to.y,
+      ];
+    };
+    const first = drawing();
+    try {
+      read(`flowSession = { save: null, text: '', graph: ${JSON.stringify(graph)} };`);
+      read('flowZoom = 1;');
+      canvas.appendChild(first);
+      booted.measureFlowDiagram();
+      if (!rectReads) throw new Error('the first measurement read nothing off the drawing');
+      const life = placement();
+      // The box sits 60 across and 40 down from the stage, is 120 by 56, and its corners were probed at 12.
+      const want = [60, 40, 120, 56, 12, 40, 20, 180, 110, 10, 70, 60, 70, 110, 70];
+      want.forEach((number, at) => {
+        if (Math.abs(life[at] - number) > 0.05) throw new Error(`at life size the drawing measured ${life[at].toFixed(2)} where ${number} was drawn`);
+      });
+
+      // Two notches in, two back out — the path a hand on the wheel takes.
+      let zoom = 1;
+      for (const step of [1.1, 1.1, 1 / 1.1, 1 / 1.1, 1.1]) {
+        zoom *= step;
+        rectReads = 0;
+        spin(step > 1 ? -120 : 120);
+        if (rectReads) throw new Error(`a wheel notch went back to the drawing for ${rectReads} measurements`);
+        const at = read('flowZoom');
+        if (Math.abs(at - zoom) > 0.001) throw new Error(`the wheel reached ${at} rather than ${zoom}`);
+        const scaled = placement();
+        life.forEach((number, spot) => {
+          if (Math.abs(scaled[spot] - number * at) > 0.05) {
+            throw new Error(`at ${at.toFixed(3)} a measurement of ${number} was placed at ${scaled[spot].toFixed(2)} rather than ${(number * at).toFixed(2)}`);
+          }
+        });
+      }
+
+      // The line the overlay colors and the pointer matches on is the element mermaid drew, not a copy of it.
+      if (read('flowPlaced').edges[0].path !== read('flowNatural').edges[0].path) {
+        throw new Error('the placed line lost the path it was measured off');
+      }
+
+      // A fresh drawing is the one thing that does measure again.
+      first.remove();
+      canvas.appendChild(drawing());
+      rectReads = 0;
+      booted.measureFlowDiagram();
+      if (!rectReads) throw new Error('a fresh render measured nothing');
+
+      // And a canvas with no drawing on it drops the coordinates as well as the placement, or the next notch would put handles back over a diagram that has gone.
+      for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
+      booted.measureFlowDiagram();
+      spin(-120);
+      if (read('flowPlaced') || read('flowNatural')) throw new Error('an empty canvas kept its measurements');
+    } finally {
+      read('flowSession = null;');
+      read('flowPlaced = null;');
+      read('flowNatural = null;');
+      read('flowSize = null;');
+      read('flowZoom = 1;');
+      for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
+    }
+  });
+
   // Nothing in the shape grid is drawn from the selection: the table, the eight families and the little pictures are all fixed for the life of the app, so the same forty-seven buttons answer every draw and the one fact that moves is which of them is marked. Rebuilding them spent 13.2ms of a 16.7ms frame on a click from one box to the next; the same redraw with the grid left standing is 0.7. The proof is identity — the same objects come back — because a grid rebuilt out of the same table would pass every count.
   check('the shape grid is built once, and a redraw moves only the mark', () => {
     const read = (expression) => vm.runInContext(expression, booted);

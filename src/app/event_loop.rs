@@ -269,16 +269,26 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 );
             }
             Event::UserEvent(UserEvent::FileChanged(changed)) => {
-                // A refresh writing its own mirror is not somebody editing. Measured at 2,020 events for a 2,000-file folder, and the very next line spends a thread on `git status` for each one — so the app's own writes are dropped while the pass that made them is still running.
-                if refresh_book.is_our_own_write(&changed) {
+                // A 2,000-file folder rewrite arrives as 2,020 paths in one batch; its shared work runs once after the app's own paths leave the batch.
+                let changed: Vec<_> = changed
+                    .into_iter()
+                    .filter(|path| !refresh_book.is_our_own_write(path))
+                    .collect();
+                if changed.is_empty() {
                     return;
                 }
                 // The active document live-reloads; a sibling change instead refreshes the pane and the corpus so both stay in sync without a full rescan.
-                let is_active_document = reader
-                    .workspace
-                    .active_file()
-                    .is_some_and(|current| paths_refer_to_same_document(&changed, current));
-                for step in watched_change_steps(&vault_state, &changed, is_active_document) {
+                let active_file = reader.workspace.active_file().map(PathBuf::from);
+                let changed: Vec<_> = changed
+                    .into_iter()
+                    .map(|path| {
+                        let is_active_document = active_file
+                            .as_deref()
+                            .is_some_and(|current| paths_refer_to_same_document(&path, current));
+                        (path, is_active_document)
+                    })
+                    .collect();
+                for step in watched_batch_steps(&vault_state, changed) {
                     match step {
                         WatchedChangeStep::RereadVaultStatus(id) => {
                             refresh_vault_status(&mut vault_state, &proxy, id)
@@ -289,9 +299,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         WatchedChangeStep::RereadPaneFolder(folder) => {
                             request_folder(&vault_state, &proxy, folder)
                         }
-                        WatchedChangeStep::PatchCorpus { redraw_graph } => {
-                            refresh_corpus_path(&mut vault_state, &proxy, &changed, redraw_graph)
-                        }
+                        WatchedChangeStep::PatchCorpus {
+                            paths,
+                            redraw_graph,
+                        } => refresh_corpus_paths(&mut vault_state, &proxy, &paths, redraw_graph),
                         WatchedChangeStep::RefreshImages => run_page_script(
                             reader.page(),
                             &image_refresh_script(),
