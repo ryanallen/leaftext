@@ -33,9 +33,10 @@ let findMatches = [];
 let findCurrent = -1;
 let findTruncated = false;
 let findInvalidPattern = false;
-// The page's visible text as one string, and the map back to the text nodes it came from — a match found in a string has to become a DOM range before it can be drawn or replaced.
+// The page's visible text as one string, and the map back to the text nodes it came from — a match found in a string has to become a DOM range before it can be drawn or replaced. It is a picture of the page rather than of the query, so it is kept until something redraws: a letter typed in the field changes what counts as a match, never what the page says.
 let findFlatText = '';
 let findTextNodes = [];
+let findTextValid = false;
 // What "find in selection" narrows to: a DOM range in the reading view, a Monaco range in the source view. Captured when the toggle goes on, because focusing the field is what takes the page's selection away.
 let findScopeRange = null;
 let findMonacoScope = null;
@@ -70,11 +71,18 @@ function findRenderedBody() {
   return app.querySelector('.document-body');
 }
 
-// Flatten the page's text, keeping where each piece came from.
+// Something redrew the page, so the flattening is a picture of a page that is gone and the next search rebuilds before it reads.
+function forgetRenderedText() {
+  findTextValid = false;
+}
+
+// Flatten the page's text, keeping where each piece came from — once per redraw, not once per letter. On a megabyte document the walk is a third of what a keystroke costs, and nothing between two letters has moved the page.
 function collectRenderedText() {
+  if (findTextValid) return;
   findFlatText = '';
   findTextNodes = [];
   const body = findRenderedBody();
+  // No page to flatten yet: nothing to keep either, so the next call looks again.
   if (!body) return;
   const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -83,6 +91,7 @@ function collectRenderedText() {
     findTextNodes.push({ node, start: findFlatText.length, end: findFlatText.length + text.length });
     findFlatText += text;
   }
+  findTextValid = true;
 }
 
 // The piece of text holding flat offset `at`. On a boundary either neighbor is the same DOM position, so whichever the search lands on is right.
@@ -375,17 +384,23 @@ function toggleFindFlag(name) {
 }
 
 // A re-render replaces the page under the bar, so the matches are recomputed rather than trusted.
+//
+// The flattening is forgotten the moment a mutation is seen rather than inside the deferred refresh: a letter typed in that 50 ms would otherwise search a page that has already been replaced. Nothing the bar itself does trips this — the bar is a sibling of the reader, not inside it.
 function watchFindRender() {
   if (findRenderObserver || typeof MutationObserver !== 'function') return;
+  // Whatever redrew while the bar was shut went unwatched, so the bar opens on a fresh flattening.
+  forgetRenderedText();
   let queued = 0;
   findRenderObserver = new MutationObserver(() => {
+    forgetRenderedText();
     if (queued) return;
     queued = window.setTimeout(() => {
       queued = 0;
       if (findOpen && !findInSourceView()) refreshFind();
     }, 50);
   });
-  findRenderObserver.observe(app, { childList: true, subtree: true });
+  // Words typed into the page are a `characterData` change and nothing else, so a watch on the child list alone would leave the flattening describing a paragraph that has since been retyped — and a match's offset into a node that has grown shorter is a range the browser refuses outright.
+  findRenderObserver.observe(app, { childList: true, characterData: true, subtree: true });
 }
 
 function unwatchFindRender() {

@@ -3,8 +3,10 @@
 import { join } from 'node:path';
 import vm from 'node:vm';
 import {
+  bootReading,
   check,
   record,
+  registrationsOn,
   source,
 } from './shared.mjs';
 
@@ -44,6 +46,85 @@ export function run() {
     if (booted.findCountText() !== 'Bad expression') throw new Error('a bad expression is not named');
     toggleFindFlag('regex');
     field.value = '';
+  });
+
+  // The flattened page is a picture of the page, not of the query, so letters typed into the field walk it no times at all. On a megabyte document the walk is about a third of what a keystroke costs, and nothing between two letters has moved the page — but a page that did move under the bar is walked again before the next search, or a match lands on a node that is gone.
+  check('six letters walk the page no times, and a redraw walks it once', () => {
+    const { context } = bootReading({ path: 'C:\Notes\long.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }] });
+    const field = context.document.getElementById('findInput');
+    const appEl = context.document.getElementById('app');
+    let walks = 0;
+    let words = 'a needle here and a needle there';
+    // The fake page renders nothing, so the walk is stood in: one run of words, counted every time it is asked for.
+    context.document.createTreeWalker = () => {
+      walks += 1;
+      let handed = false;
+      return {
+        nextNode: () => {
+          if (handed) return null;
+          handed = true;
+          return { nodeType: 3, nodeValue: words, textContent: words };
+        },
+      };
+    };
+    const typed = () => (field.listeners.get('input') || []).forEach((handler) => handler({}));
+    // `findMatches` is a `let` in the page's one scope, so it is read the way the page reads it rather than off the context object.
+    const found = () => vm.runInContext('findMatches.length', context);
+    const type = (word) => {
+      field.value = '';
+      typed();
+      for (let at = 1; at <= word.length; at += 1) {
+        field.value = word.slice(0, at);
+        typed();
+      }
+    };
+
+    // Opening the bar walks the page once, because whatever redrew while it was shut went unwatched.
+    walks = 0;
+    context.openFindBar();
+    if (walks !== 1) throw new Error(`opening the bar walked the page ${walks} times`);
+    walks = 0;
+    type('needle');
+    if (walks !== 0) throw new Error(`six letters walked the page ${walks} times`);
+    if (found() !== 2) throw new Error(`the kept flattening found ${found()} matches`);
+
+    // The page is redrawn under the open bar: the watcher on the reader forgets the flattening the moment it sees the change, rather than inside its deferred refresh, so a letter typed in that gap searches the page that is there rather than the one that was.
+    const [watch] = registrationsOn(context.__watchers, 'MutationObserver', appEl);
+    if (!watch) throw new Error('the open bar does not watch the reader for a redraw');
+    // Words typed into the page are a `characterData` change and nothing else. A watch on the child list alone would leave the flattening describing a paragraph that has since been retyped, and a match's offset into a node that has grown shorter is a range the browser refuses outright.
+    if (!watch.options.characterData) throw new Error('the watcher does not see words typed into the page');
+    if (!watch.options.childList || !watch.options.subtree) throw new Error('the watcher does not see the page redrawn');
+    words = 'one needle only';
+    walks = 0;
+    watch.callback([], watch);
+    type('needle');
+    if (walks !== 1) throw new Error(`a redrawn page walked ${walks} times over six letters`);
+    if (found() !== 1) throw new Error(`the redrawn page found ${found()} matches`);
+
+    // Mermaid swaps a diagram's source text for its drawn labels and says so at once, so the search lands on the label rather than on the node it replaced.
+    words = 'needle needle needle';
+    walks = 0;
+    context.mermaidPageTextChanged();
+    type('needle');
+    if (walks !== 1) throw new Error(`a diagram's new labels walked ${walks} times over six letters`);
+    if (found() !== 3) throw new Error(`the drawn labels found ${found()} matches`);
+
+    // The query and the toggles decide what counts as a match rather than what the page says, so each still recomputes the list — off the one flattening, without walking again.
+    walks = 0;
+    field.value = 'NEEDLE';
+    typed();
+    if (found() !== 3) throw new Error('a case-blind query lost its matches');
+    context.toggleFindFlag('matchCase');
+    if (found() !== 0) throw new Error('match case did not recompute the list');
+    context.toggleFindFlag('matchCase');
+    field.value = 'need';
+    typed();
+    if (found() !== 3) throw new Error('a shorter query lost its matches');
+    context.toggleFindFlag('wholeWord');
+    if (found() !== 0) throw new Error('whole word did not recompute the list');
+    context.toggleFindFlag('wholeWord');
+    if (walks !== 0) throw new Error(`the query and the toggles walked the page ${walks} times`);
+    context.closeFindBar();
   });
 
   check('a replace in the reading view rewrites the block, or refuses it whole', () => {

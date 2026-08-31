@@ -555,8 +555,13 @@ impl<'a> YamlBuilder<'a> {
             None => self.documents.push(node),
             Some(Frame::Sequence { items, .. }) => items.push(node),
             Some(Frame::Mapping { pairs, key, .. }) => match key.take() {
-                // A mapping alternates key, value, key, value.
-                None => *key = Some(node.as_scalar().unwrap_or_default().to_string()),
+                // A mapping alternates key, value, key, value. The node is dropped here after `remember` cloned any anchor, so its scalar text can become the key without another allocation.
+                None => {
+                    *key = Some(match node.value {
+                        DataValue::Scalar(text) => text,
+                        _ => String::new(),
+                    })
+                }
                 Some(name) if name == "<<" => merge_into(pairs, node),
                 Some(name) => pairs.push((name, node)),
             },

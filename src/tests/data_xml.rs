@@ -1171,6 +1171,37 @@ jobs:
 }
 
 #[test]
+fn a_collection_used_as_a_yaml_key_keeps_its_values_range() {
+    let yaml = "? [a, b]\n: paired\n";
+
+    let (tree, _walked) = parse_yaml_counting_walk(yaml);
+    let tree = tree.expect("the YAML parses");
+    let (_title, _html, blocks) = render_yaml_document(yaml, None);
+
+    assert_eq!(
+        tree,
+        DataNode::mapping(vec![(
+            String::new(),
+            DataNode::scalar("paired".to_string(), Some(11..17)),
+        )])
+    );
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "paired");
+}
+
+#[test]
+fn an_anchored_yaml_key_still_resolves_its_later_alias() {
+    let yaml = "&k name: v\necho: *k\n";
+
+    let (_title, html, blocks) = render_yaml_document(yaml, None);
+
+    assert_contains(&html, "<dt>Echo</dt>");
+    assert_contains(&html, ">name</dd>");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "v");
+}
+
+#[test]
 fn an_alias_holds_the_anchors_value_but_not_its_place_in_the_file() {
     // `*x` is a reference; the text it stands for is up where `&x` is. Stamping both blocks with 6..11 meant editing `b` overwrote `a`'s value and left `*x` on the page untouched.
     let yaml = "a: &x hello\nb: *x\n";

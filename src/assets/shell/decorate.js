@@ -532,6 +532,7 @@ function recycleMermaidDiagram(diagram) {
 // Drawing swaps a diagram's source out for its labels, so Ctrl+F re-walks and re-lands on the drawn label where the source was.
 function mermaidPageTextChanged() {
   readerAnchorBlocks = null;
+  forgetRenderedText();
   refreshFind();
 }
 
