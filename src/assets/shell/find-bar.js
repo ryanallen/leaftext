@@ -418,7 +418,7 @@ function setFindFlag(name, on) {
   if (button) button.setAttribute('aria-pressed', on ? 'true' : 'false');
 }
 
-// "Find in selection" narrows to the last thing the reader highlighted, not to the selection as it stands: opening the bar focuses the field, and by the time this runs the page's own selection is gone. The source view still reads live, because Monaco keeps its selection across a focus change.
+// The reading view narrows to the kept highlight rather than to the selection as it stands, for the reason above it. The source view still reads live, because Monaco keeps its selection across a focus change.
 function captureFindScope() {
   if (findInSourceView()) {
     const range = monacoEditor.getSelection();

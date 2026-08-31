@@ -76,6 +76,7 @@ There is no INI standard — dialects disagree about nearly everything — so Le
 | The first `=` splits the line | A `:` delimiter is Python's, not the Windows original, and taking both makes any URL-valued key ambiguous |
 | The key and the value are trimmed | Nothing else is touched: no unquoting, no unescaping, no joining lines |
 | `[name]` alone on a line opens a section | Keys written before the first one are drawn at the top, which is where a `.gitconfig`-shaped file puts its first lines |
+| A `title` or `name` key written before the first section heads the page | It becomes the page's big heading rather than a row in that list, the same as in a [JSON or YAML](#data-files-json-and-yaml) file, so the file's own name for itself is not said twice |
 | A repeated key draws twice, in order | The point is to show the file as written rather than to model it — a repeated section opens a second heading too |
 | A key keeps its own spelling | `font_size` draws `font_size`, not "Font size", because that is a name somebody chose |
 | A line that is none of these is drawn with no name | Its words are in the file, so they are on the page |

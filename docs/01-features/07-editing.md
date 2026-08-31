@@ -22,7 +22,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Picking a section](#deleting) | `Ctrl+A` with the caret in a block widens a step per press: the block, then the heading and everything under it, then the page |
 | [The fields at the top](#the-fields-at-the-top-of-a-note) | Click a value in a note's field block and change it, pick a date, tick a box, add and drop tag chips, rename a key, add a field or take one away — and start a block on a note that has none |
 | [Renaming from the heading](#renaming-from-the-heading) | A document that names no title of its own is headed with its file name; press that heading to rename the file |
-| [The title a data file names](#editing-data-files) | A [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file that names its own title heads the page with it; press that heading and the value itself opens for editing, quotes and all |
+| [The title a data file names](#editing-data-files) | A [JSON, YAML](01-rendering.md#data-files-json-and-yaml) or [INI](01-rendering.md#ini-files) file that names its own title heads the page with it; press that heading and the value itself opens for editing, quotes and all |
 | [A quoted YAML value](#editing-data-files) | A value written in quotes opens its own source at a press, quotes and all, the way the same value in JSON does |
 | [A press that cannot open says why](#editing-data-files) | Where a data file is written a way the page cannot place exactly, pressing it raises a line naming the source view rather than answering with nothing |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
@@ -91,7 +91,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 
 A document that names no title of its own — a sitemap, a feed, a `package.json`, an [email](01-rendering.md#email-eml) with no subject — is headed with its file name, because there is nothing else to head it with. That heading is the file's name, so pressing it opens the same rename box the [library pane](03-library.md#file-actions) opens, anchored over the heading and holding the real file name with everything before the extension already selected. `Enter` renames the file; `Escape` leaves it alone. An empty name, one already taken, and one carrying a folder separator are all refused, exactly as they are in the pane.
 
-The heading, the tab and the pane all move to the new name, unsaved typing stays where it was, and every [history step](02-navigation.md#history) standing on that file follows it too. With the [source view](#code-view) open, it stays at the place you were reading rather than going back to line one. A heading the document does write for itself — an XML `<title>`, a message's `Subject`, a [JSON or YAML](#editing-data-files) `title` or `name` key — is not a file name, so pressing it edits that value instead of opening the rename box. The XML and email ones take a caret in the words; a data file's opens the value's own source, the way every other value in one does.
+The heading, the tab and the pane all move to the new name, unsaved typing stays where it was, and every [history step](02-navigation.md#history) standing on that file follows it too. With the [source view](#code-view) open, it stays at the place you were reading rather than going back to line one. A heading the document does write for itself — an XML `<title>`, a message's `Subject`, a [JSON, YAML or INI](#editing-data-files) `title` or `name` key — is not a file name, so pressing it edits that value instead of opening the rename box. The XML and email ones take a caret in the words; a data file's opens the value's own source, the way every other value in one does.
 
 ### Editing an email
 
@@ -424,6 +424,8 @@ What the *reading view* offers differs by format, because a block can only be ed
 | YAML plain and quoted values | Edit their exact source in place — a quoted one with its quotes, the way a JSON string opens |
 | YAML lists, tables, block scalars, and a quoted value the file spells another way | Read-only, and a press says why; edited in the code view |
 | YAML aliases (`*name`) and keys with no value | Read-only, and a press says why; edited in the code view |
+| INI values | Edit their exact source in place |
+| An INI section heading and the name to the left of a value | Read-only, and a press says why; edited in the code view |
 | Email lines and paragraphs the page can write back byte for byte | Type on the words where they are drawn |
 | Every other part of a message — a packed body, a folded or coded header line | Read-only in the page, and a press says so; edited in the code view |
 
