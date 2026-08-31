@@ -193,6 +193,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Saved as `hints_seen` (the ones you have met), `hint_launches` (launches that had one to show) and `hint_last_launch` (the launch the last bubble showed at, which is what puts a quiet launch between two of them)
 - The [pane's vault introduction](03-library.md#your-first-vault) is remembered in the same `hints_seen` list, though it is a box in the pane rather than a bubble
 - A launch with nothing to point at — the pane shut — is not counted, so it costs you nothing
+- A [sheet](03-library.md#the-bubble-on-your-first-launch) taking a bubble down writes nothing: the name stays out of `hints_seen`, so the bubble returns when the last sheet closes and again on the next launch if it was never met
 - Emptying `hints_seen` and setting both numbers to `0` puts the bubbles back
 
 ### Reduce Motion

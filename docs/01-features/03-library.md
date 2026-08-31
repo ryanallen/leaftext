@@ -11,7 +11,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | Feature | What you get |
 | --- | --- |
 | [Vaults](#vaults) | A folder you name as a library root. The switcher beside the breadcrumb creates, edits and moves between them |
-| [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button |
+| [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button. A sheet takes it down, unmet, and it returns once the last one closes |
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out; every folder you open appears at once |
 | [The open document's headings](#the-open-documents-headings) | Open a document and the pane holds its outline instead of the files, the page's own title first and the heading you are reading lit; a back row puts the files back |
@@ -55,6 +55,8 @@ A caret and a mark is not much to go on, so the first time you open Leaftext wit
 It goes the moment you point at the button, and it never comes back — pressing the button does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it, and a [menu](#file-actions) opened into the space it is standing in is drawn over it rather than under. There is no close button and no timer.
 
 One bubble per launch at most, with a quiet launch in between, and nothing at all once you have met them. With the pane shut there is no bubble, and that launch is not spent — you get it the next time the pane is open.
+
+A sheet takes it down while the sheet is up. The glossary, the theme picker, the start screen's list and the flowchart editor all slide over the whole window, so a bubble left standing would point at a button the sheet is covering, with no way to reach it and no way to put the bubble away. It steps aside instead, unmet, and comes back against wherever its button now is once the last sheet has closed — a sheet opened on top of another keeps it away until both have gone. The launch is not spent, and the promise is still there to meet.
 
 ### Your first vault
 
@@ -449,7 +451,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | Folders not read | A folder that declares itself a cache, and eleven names a build tool picks. See [Skipped folders](#skipped-folders) |
 | Search results | Top 50 |
 | Folder listing | One directory per click |
-| First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again |
+| First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again. A [sheet](#the-bubble-on-your-first-launch) takes it down, unmet, until the last one closes |
 | The pane's vault introduction | Shown once, to a reader with no vault outside their cloud folders; retired by picking a folder or opening the vault list |
 
 > [!NOTE]

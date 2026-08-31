@@ -54,7 +54,7 @@ Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice
 
 | Token | Where it grains |
 |---|---|
-| `--app-bar-grain` | App bar, library pane, and the reading card's corners |
+| `--app-bar-grain` | App bar, library pane, the reading card's corners, and the bottom sheets — the glossary, the theme picker, the start screen's list, and the flowchart editor's shape picker |
 | `--library-header-grain` | Heavier, so an inactive tab reads as a darker cell without an outline |
 | `--reader-surface-grain` | Lighter, for the reading view's code blocks, outline panel, table headers, and the tinted table rows — body text sits on these |
 | `--reader-row-grain` | The *untinted* table rows. Dark appearances only; transparent on light ones |
@@ -73,9 +73,11 @@ The reading and code views borrow the lattice for a different job. The page slid
 
 A document's first line therefore has to open below the band, or it starts out half dissolved. `--reader-content-top-gap` is where it opens, measured from the reader's own top edge so the app bar's height is inside the number. The reading view reaches it by parking its scroll origin there; the [code view](../01-features/07-editing.md#code-view) hands the remainder to the editor as its own top padding, inside the editor's scroll height so no line can ever sit in the wash. One token, so the two views open at the same height and both clear the band.
 
-Every grained surface tiles from the app rather than from its own box (`background-attachment: fixed`, anchored to the one contained element everything in the page sits inside), so they all share one lattice — including both table stripes, so the dots run straight down the page across a stripe instead of breaking at each row edge. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
+Every grained surface that holds still tiles from the app rather than from its own box (`background-attachment: fixed`, anchored to the one contained element everything in the page sits inside), so they all share one lattice — including both table stripes, so the dots run straight down the page across a stripe instead of breaking at each row edge. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
 
-The [minimap](../01-features/04-minimap.md#how-it-works)'s clone is the one place that anchor is taken back off. A fixed background resolves against the nearest scaled ancestor rather than the window, and the clone wears a `scale(...)` — so inside it every grained cell leaves the shared lattice and becomes a raster of its own to repaint, which measured 31.5 milliseconds a scroll frame on a four hundred row table against 7.2 with the clone's cells scrolling their texture with them. The rail's own stylesheet unanchors them; the page's cells keep the anchor and the seam it buys, and the thumbnail is drawn the same either way.
+A surface carrying a transform of its own is the exception, and it is not a choice: a transform re-anchors a fixed background to the element itself, so the rule tiles from that box whatever it declares. A bottom sheet is always transformed — the translate holding it below the window at rest, the one seating it when open — and so are a tab, a file row being dragged onto, and the reader's floating tools. Those rules leave the anchor out rather than writing one the engine cannot keep, and a surface that slides up over the page carrying its own texture is what a sheet should read as anyway.
+
+The [minimap](../01-features/04-minimap.md#how-it-works)'s clone takes the anchor back off for a different reason. A fixed background resolves against the nearest scaled ancestor rather than the window, and the clone wears a `scale(...)` — so inside it every grained cell leaves the shared lattice and becomes a raster of its own to repaint, which measured 31.5 milliseconds a scroll frame on a four hundred row table against 7.2 with the clone's cells scrolling their texture with them. The rail's own stylesheet unanchors them; the page's cells keep the anchor and the seam it buys, and the thumbnail is drawn the same either way.
 
 > [!NOTE]
 > The frontmatter table is the one table that carries no chrome, and its opt-out ties with the row rules on specificity — it wins only by coming later in the stylesheet. A row rule added after it would put a speckled stripe through it.

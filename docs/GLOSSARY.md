@@ -48,7 +48,7 @@ The folder path across the top of the [library pane](GLOSSARY.md#library-pane) �
 
 ## Bubble
 
-A small box that floats over the window on a first launch with a chevron aimed at one control, saying what pressing that control does. It goes the moment you point at that control, or press it, and never comes back. The bubble itself ignores the pointer, so crossing it takes nothing away and blocks nothing. One per launch at most, with a quiet launch between two of them, and nothing at all once you have met them. See [Library](01-features/03-library.md#the-bubble-on-your-first-launch).
+A small box that floats over the window on a first launch with a chevron aimed at one control, saying what pressing that control does. It goes the moment you point at that control, or press it, and never comes back. The bubble itself ignores the pointer, so crossing it takes nothing away and blocks nothing. One per launch at most, with a quiet launch between two of them, and nothing at all once you have met them. A [sheet](GLOSSARY.md#sheet) takes it down while it is up, without counting it met, and it comes back once the last sheet has closed. See [Library](01-features/03-library.md#the-bubble-on-your-first-launch).
 
 ## Byte order mark
 
@@ -293,6 +293,10 @@ How Leaftext remembers a reading position: the nearest heading above the top edg
 ## Settings
 
 A plain JSON file on your machine, not a panel: there is nowhere to open. Every control stands where it applies — the palette in the [app bar](GLOSSARY.md#app-bar) for [theme](GLOSSARY.md#theme) and [appearance](GLOSSARY.md#appearance), the [graph view](GLOSSARY.md#graph-view)'s own toolbar for [graph size](GLOSSARY.md#graph-size) — and each one saves the moment you use it. See [Settings](01-features/05-settings.md).
+
+## Sheet
+
+A panel that slides up from the bottom edge over the whole window, dimming the page behind it and standing until you dismiss it: the [glossary](GLOSSARY.md#glossary), the [theme picker](GLOSSARY.md#theme-picker), the start screen's file list, and the flowchart editor with the shape picker inside it. Drag its top edge down to put it away. It wears the same [dot grain](02-development/04-theming.md#surface-grain) as the [app bar](GLOSSARY.md#app-bar), tiled from its own top edge because it moves, and while one is up a first-launch [bubble](GLOSSARY.md#bubble) steps aside.
 
 ## Single window
 
