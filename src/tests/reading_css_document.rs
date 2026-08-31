@@ -295,10 +295,13 @@ fn the_print_block_hands_the_whole_document_to_the_paper() {
         "padding-bottom: var(--reader-content-pad);",
     );
 
-    // The break-out lanes are what shrank the paper: the print render measures overflow on the untransformed box, so a lane slid half a measure right hung past the sheet and the renderer shrank the whole page to fit the phantom width — the foot of the sheet unpainted. On paper a lane is a plain block at the width the page wrote down, centered by margins, nothing slid and nothing transformed.
+    // The break-out lanes are what shrank the paper: the print render measures overflow on the untransformed box, so a lane slid half a measure right hung past the sheet and the renderer shrank the whole page to fit the phantom width — the foot of the sheet unpainted. On paper a lane is a plain block at the width the page wrote down, centered by margins, nothing slid and nothing transformed. The table's lane arrives untransformed already, centered inside a bay for the sake of the lattice its cells wear, so on paper the bay stands down to the measure and the lane's own arithmetic is the one that runs.
+    let bay = rule_body(print, "body.leaf-paper .document-body > .table-bay {");
+    assert_contains(bay, "width: 100%;");
+    assert_contains(bay, "margin-inline: 0;");
     let lanes = rule_body(
         print,
-        "body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {",
+        "body.leaf-paper .table-bay > .table-lane,\nbody.leaf-paper .document-body > p.image-lane {",
     );
     assert_contains(lanes, "position: static;");
     assert_contains(lanes, "transform: none;");
@@ -313,15 +316,37 @@ fn the_print_block_hands_the_whole_document_to_the_paper() {
     );
 
     // The exported page wears `leaf-paper` for ever — no script runs there to take it off — so `leaf-web` hands its lanes back the screen width. Inside the screen media on purpose: the class cannot come off for a print, and a print that got this rule shrank the whole page to fit a slid lane's phantom width.
-    let adjacency = "@media screen {\n  body.leaf-paper.leaf-web .document-body > :is(.table-lane, p.image-lane) {";
-    assert_contains(print, adjacency);
-    let web_lanes = rule_body(print, adjacency);
-    assert_contains(web_lanes, "position: relative;");
+    let web_bay = "@media screen {\n  body.leaf-paper.leaf-web .document-body > .table-bay {";
+    assert_contains(print, web_bay);
+    let web_bay = rule_body(print, web_bay);
     assert_contains(
-        web_lanes,
+        web_bay,
+        "width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));",
+    );
+    assert_contains(
+        web_bay,
+        "margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);",
+    );
+    // A published document gets the bay rather than the transform, so its table headers wear the app's own lattice instead of one tiled from a box that moves.
+    let web_lane = rule_body(
+        print,
+        "  body.leaf-paper.leaf-web .table-bay > .table-lane {",
+    );
+    assert_contains(web_lane, "transform: none;");
+    assert_contains(web_lane, "margin-inline: auto;");
+    assert_contains(web_lane, "max-width: 100%;");
+    // A picture's lane carries no grain, so it keeps the percentage transform it centers with.
+    let web_pictures = rule_body(
+        print,
+        "  body.leaf-paper.leaf-web .document-body > p.image-lane {",
+    );
+    assert_contains(web_pictures, "position: relative;");
+    assert_contains(web_pictures, "transform: translateX(-50%);");
+    assert_contains(
+        web_pictures,
         "max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));",
     );
-    assert_contains(web_lanes, "margin-left: 0;");
+    assert_contains(web_pictures, "margin-left: 0;");
 }
 
 #[test]

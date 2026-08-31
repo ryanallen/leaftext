@@ -521,17 +521,27 @@ function requestLinkPreview(key, token) {
 // The last answer the host sent, parsed once — one file's render is parsed once however many of its sections are rested on, and it is only read from, so holding it between rests is safe.
 let linkPreviewParsedHtml = null;
 let linkPreviewParsedRoot = null;
-// The section of the host's answer that the address names, as words the card can draw. The answer is a base and one `article` the card measures the note by, so the opening the host wrote is kept and only what stands inside it is swapped. A glossary link names its term through the scheme, which has no `#` to cut at, so that is read first. An address naming no section is the whole answer; a glossary term the answer has not got is nothing at all, because a whole glossary is not what that reader was promised.
+// How much of the answer the card is given. The box shows 176 pixels and throws the rest away, so a whole file put into it is laid out entire to draw a strip: on a 400-row table document the answer was 148 KB and 35ms of layout, and cutting it here takes that to 68 KB and 18ms. The cut is on whole top-level blocks so the card can never draw half a table or an unclosed element, which is also why a first block already past the ceiling is taken whole — that one table is what the 18ms still is.
+const LINK_PREVIEW_OPENING_BYTES = 4096;
+function linkPreviewOpeningHtml(blocks) {
+  let taken = '';
+  for (const block of blocks) {
+    taken += block.outerHTML;
+    if (taken.length >= LINK_PREVIEW_OPENING_BYTES) break;
+  }
+  return taken;
+}
+// The part of the host's answer the card draws, as words. The answer is a base and one `article` the card measures the note by, so the opening the host wrote is kept and only what stands inside it is swapped. A glossary link names its term through the scheme, which has no `#` to cut at, so that is read first. An address naming a section gets that section, one naming none gets the file's own opening, and both are then cut to what the box can show. A glossary term the answer has not got is nothing at all, because a whole glossary is not what that reader was promised; an ordinary address naming nothing keeps the whole answer, since the file is still what the press opens.
 function linkPreviewSectionHtml(html, href) {
   const term = glossaryAnchorFromHref(href);
   let anchor = term;
   if (!anchor) {
     const hashAt = String(href || '').indexOf('#');
-    if (hashAt < 0) return html;
-    anchor = String(href).slice(hashAt + 1);
-    try { anchor = decodeURIComponent(anchor); } catch (e) {}
+    if (hashAt >= 0) {
+      anchor = String(href).slice(hashAt + 1);
+      try { anchor = decodeURIComponent(anchor); } catch (e) {}
+    }
   }
-  if (!anchor) return html;
   const opens = html.indexOf('<article');
   const opened = opens < 0 ? -1 : html.indexOf('>', opens);
   if (opened < 0) return html;
@@ -541,9 +551,9 @@ function linkPreviewSectionHtml(html, href) {
     linkPreviewParsedHtml = html;
   }
   const note = linkPreviewParsedRoot.querySelector('article') || linkPreviewParsedRoot;
-  const blocks = documentSectionBlocks(note, anchor);
-  if (!blocks) return term ? '' : html;
-  return html.slice(0, opened + 1) + blocks.map((block) => block.outerHTML).join('') + '</article>';
+  const blocks = anchor ? documentSectionBlocks(note, anchor) : [...note.children];
+  if (!blocks || !blocks.length) return term ? '' : html;
+  return html.slice(0, opened + 1) + linkPreviewOpeningHtml(blocks) + '</article>';
 }
 window.leafLinkPreview = (token, html) => {
   const key = pendingPreviewTokens.get(token);

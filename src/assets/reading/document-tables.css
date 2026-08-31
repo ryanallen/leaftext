@@ -48,14 +48,19 @@
   width: max-content;
   max-width: 100%;
 }
-/* A wide table reads through the reader's whole lane, less the strip the block controls need, and the wrapper is what widens rather than the table: the bands that dissolve a sliced column into the page have to be painted over the table, and a mask can only take ink away. `100cqi` is the room inside .reader-layout's padding, so this rides that container query and nothing else; `max(100%, ...)` hands a narrow window back to the measure it has today. Centering is a percentage transform because CSS cannot read the table's used width. decorate.js wraps only a body table that is not a data table, so a frontmatter table, a data file's wrapping table and a table inside <div align="center"> keep their width. */
-.document-body > .table-lane {
+/* A wide table reads through the reader's whole lane, less the strip the block controls need, and the wrapper is what widens rather than the table: the bands that dissolve a sliced column into the page have to be painted over the table, and a mask can only take ink away. `100cqi` is the room inside .reader-layout's padding, so this rides that container query and nothing else; `max(100%, ...)` hands a narrow window back to the measure it has today. decorate.js wraps only a body table that is not a data table, so a frontmatter table, a data file's wrapping table and a table inside <div align="center"> keep their width. */
+/* The bay is the box the centering arithmetic can name, and it exists for nothing else: it draws no paint, holds no grain and takes no gesture. Its width is a length rather than the lane's `max-content`, so the margin that centers it is computable — half the room the measure does not cover, which is zero on a window too narrow for a lane to break out at all. Never a transform: a transform makes its own box the containing block for every `background-attachment: fixed` inside it, which is what dragged the dots in a scrolled table's header sideways with the columns, and what shrank a printed sheet to fit a slid lane's phantom width. print.css carries the same arithmetic for paper off a width the render wrote down. */
+.document-body > .table-bay {
+  width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+  margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
+}
+/* And the lane keeps its own box inside the bay, so everything keyed on it — the bands, the corner control, the hover that reveals it, the wheel, the full-window sheet — lands where it always did. Auto margins center it because it can no longer be wider than its parent; a block box wider than its containing block has them treated as zero, which is why they cannot center the lane against the measure directly. */
+.table-bay > .table-lane {
   position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  /* The table's own width, capped. A block box at `auto` fills the measure and a `max-width` alone can only cap it, never let it grow past its parent. */
+  margin-inline: auto;
+  /* The table's own width, capped by the bay. A block box at `auto` fills the bay and a `max-width` alone can only cap it. */
   width: max-content;
-  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+  max-width: 100%;
   /* The bands sit here and the scroll is the table's, one box down, so the timeline has to be published up to this element for them to name it. */
   timeline-scope: --lt-table-scroll;
 }
@@ -119,7 +124,7 @@
   background: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), var(--lt-surface-elevated);
   color: var(--lt-foreground);
 }
-/* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The lattice anchors to the wrapper rather than to the window: a transformed element is the containing block for its own fixed background. */
+/* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The first layer is the app's own lattice and the second is the wash, which is what the paired `fixed, scroll` says; nothing between here and the app surface is transformed, so the dots fall in phase with the page the band dissolves into. */
 .table-lane::before,
 .table-lane::after {
   content: "";
@@ -298,10 +303,13 @@
     .document-body table:not(.no-cards) td:not([data-leaf-col])::before {
       display: none;
     }
+    /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
+    .document-body > .table-bay:has(table:not(.no-cards)) {
+      width: 100%;
+      margin-inline: 0;
+    }
     .document-body .table-lane:has(> table:not(.no-cards)) {
-      left: auto;
       max-width: none;
-      transform: none;
       width: 100%;
     }
     .document-body .table-lane:has(> table:not(.no-cards))::before,
@@ -400,10 +408,13 @@
 .document-body table.is-cards td:not([data-leaf-col])::before {
   display: none;
 }
+/* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
+.document-body > .table-bay:has(table.is-cards) {
+  width: 100%;
+  margin-inline: 0;
+}
 .document-body .table-lane:has(> table.is-cards) {
-  left: auto;
   max-width: none;
-  transform: none;
   width: 100%;
 }
 .document-body .table-lane:has(> table.is-cards)::before,

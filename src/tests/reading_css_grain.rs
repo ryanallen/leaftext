@@ -661,14 +661,51 @@ fn the_confirmation_throws_the_shared_dot_shadow_rather_than_a_blur_of_its_own()
     assert_contains(dialog, "z-index: var(--lt-z-41);");
 }
 
+/// The `background-attachment` a rule declares, as written — one value or a list. Read off the rule with its comments taken out: every comment about the lattice in this stylesheet names the declaration in prose, and the prose has no semicolon to stop at.
+fn declared_attachment(rule: &str) -> Option<String> {
+    let rule = strip_css_comments(rule);
+    let at = rule.find("background-attachment:")? + "background-attachment:".len();
+    let end = rule[at..].find(';')? + at;
+    Some(rule[at..end].trim().to_string())
+}
+
+/// Whether the dot layer of this rule is anchored to the app rather than tiled from the box. The dot gradient is always the first `background-image` layer, so the answer is the first entry of the attachment that applies — read off this rule, or off a rule naming the same selectors, which is where the table's edge bands keep theirs while the layer list lives one rule down.
+fn dot_layer_is_anchored(css: &str, rule: &str, selector: &str) -> bool {
+    let mut list = declared_attachment(rule);
+    if list.is_none() {
+        for (at, _) in css.match_indices("background-attachment:") {
+            let opens = css[..at].rfind('}').map_or(0, |brace| brace + 1);
+            let shuts = at + css[at..].find('}').expect("the rule closes");
+            let other = &css[opens..shuts];
+            let head = strip_css_comments(other);
+            let head = head
+                .split('{')
+                .next()
+                .unwrap_or_default()
+                .trim()
+                .to_string();
+            // Every selector the dot layer's rule names has to be one this rule names too, or the attachment it declares is somebody else's.
+            let covers = selector
+                .split(',')
+                .all(|one| head.split(',').any(|other| other.trim() == one.trim()));
+            if covers {
+                list = declared_attachment(other);
+            }
+        }
+    }
+    list.as_deref()
+        .and_then(|written| written.split(',').next())
+        .is_some_and(|first| first.trim() == "fixed")
+}
+
 #[test]
 fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
-    // The grain is anchored rather than tiled from each box, so two surfaces meeting share one lattice and the seam between them cannot show. `contain: paint` moves what "anchored" means for everything inside it — from the window to the app surface — which costs nothing while every anchored surface is inside that box, and puts one lattice out of phase with all the others the moment one is not. Four boxes tile from themselves on purpose and are named here, so a fifth is a decision somebody made rather than a drift.
-    const OWN_BOX: [&str; 4] = [
+    // The grain is anchored rather than tiled from each box, so two surfaces meeting share one lattice and the seam between them cannot show. `contain: paint` moves what "anchored" means for everything inside it — from the window to the app surface — which costs nothing while every anchored surface is inside that box, and puts one lattice out of phase with all the others the moment one is not. Three boxes tile from themselves on purpose and are named here, so a fourth is a decision somebody made rather than a drift.
+    const OWN_BOX: [&str; 3] = [
         ".tab",
-        ".table-lane::before",
-        ".table-lane::after",
         ".home-list-scroll li.is-dropzone",
+        // The tools ride down out of the tray's nub on a transform, and the tray itself is centered by another, so a fixed attachment here is a lattice the web view cannot hold. The well floats over the tray's own ungrained face and meets no other grain, so it has no seam to show.
+        ".reader-view-tools",
     ];
     let css = reading_mode_css();
     let lattice = "background-image: radial-gradient(circle, var(--lt-grain-dot)";
@@ -679,7 +716,7 @@ fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
         let rule = &css[opens..shuts];
         let selector = strip_css_comments(rule);
         let selector = selector.split('{').next().unwrap_or_default().trim();
-        if !rule.contains("background-attachment: fixed;") {
+        if !dot_layer_is_anchored(css, rule, selector) {
             assert!(
                 OWN_BOX.contains(&selector),
                 "a new grained surface tiles from its own box rather than the shared lattice: {selector}"
@@ -710,6 +747,41 @@ fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
         ),
         "background-attachment: scroll;",
     );
+}
+
+#[test]
+fn the_table_lane_centers_without_a_transform_so_its_cells_keep_the_page_lattice() {
+    // Every cell of a wide table wears the app's lattice, and a transform anywhere above it makes the web view tile those dots from a box inside the transform — so a table scrolled sideways dragged the dots in its header along with the columns while the page behind them stayed put. CSS cannot read the used width of a `max-content` box and a box wider than its parent has its auto margins treated as zero, so the lane keeps its own box and gains a bay whose width is a length the arithmetic can name. Watched in a launched copy: with the bay the wide lane and the narrow one both landed on the pixels the transform gave them, and the header cells fell on the same lattice columns as a code block outside the lane.
+    let css = reading_mode_css();
+
+    let bay = rule_body(&css, ".document-body > .table-bay {");
+    assert_contains(
+        bay,
+        "width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));",
+    );
+    assert_contains(
+        bay,
+        "margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);",
+    );
+    assert!(
+        !bay.contains("transform"),
+        "the bay is the box the arithmetic names, so it may never carry a transform: {bay}"
+    );
+
+    let lane = rule_body(&css, ".table-bay > .table-lane {");
+    assert_contains(lane, "margin-inline: auto;");
+    assert_contains(lane, "width: max-content;");
+    assert_contains(lane, "max-width: 100%;");
+    for slid in ["transform", "left:"] {
+        assert!(
+            !lane.contains(slid),
+            "the lane centers inside its bay, so nothing here may slide or transform it: {lane}"
+        );
+    }
+    // A carded table needs no room past the writing, so the bay stands down to the measure rather than the lane growing to the bay.
+    let carded = rule_body(&css, ".document-body > .table-bay:has(table.is-cards) {");
+    assert_contains(carded, "width: 100%;");
+    assert_contains(carded, "margin-inline: 0;");
 }
 
 #[test]

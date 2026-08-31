@@ -345,9 +345,14 @@ function unwrapEmailBody(el) {
   return wraps ? Array.from(el.children) : [el];
 }
 
-// The lane a wide table sits in belongs to the reader, not the document — the block is the table inside it, and everything here works on blocks.
+// The bay and the lane a wide table sits in belong to the reader, not the document — the block is the table inside them, and everything here works on blocks. Two boxes deep, because the bay is what centers the lane and the lane is what the bands are painted in.
 function unwrapTableLane(el) {
-  return el.classList && el.classList.contains('table-lane') ? el.firstElementChild || el : el;
+  let at = el;
+  while (at && at.classList && (at.classList.contains('table-bay') || at.classList.contains('table-lane'))) {
+    if (!at.firstElementChild) return at;
+    at = at.firstElementChild;
+  }
+  return at || el;
 }
 
 // Whether the gutter has anything to say about this element at all. A range, even an empty one, means the document put it here; no range means the page did.
@@ -740,9 +745,11 @@ function runBlockInsert(target, option) {
 // The run of siblings a block can move within: the blocks sharing its parent, in document order. The ranges come back from the shared test (`blockRunRanges`), which refuses a run the host would refuse.
 function blockSiblingRun(target) {
   if (!blockGutterFormatAllowed() || !blockGutterTargetAllowed(target)) return null;
-  // A laned table's siblings are the body's, not the lane's one child.
-  const lane = target.parentElement;
-  const parent = lane && lane.classList.contains('table-lane') ? lane.parentElement : lane;
+  // A laned table's siblings are the body's, not the lane's one child — and the lane is itself the one child of its bay, so the climb is two boxes rather than one.
+  let parent = target.parentElement;
+  while (parent && parent.classList && (parent.classList.contains('table-lane') || parent.classList.contains('table-bay'))) {
+    parent = parent.parentElement;
+  }
   if (!parent) return null;
   // A zero-length range is a block that exists only in the DOM — a blank line waiting for its first keystroke. It holds no text to drag and contributes no source, so it is left out of the run rather than allowed to invalidate it; `target` then fails the membership test below and gets no handle.
   const elements = Array.from(parent.children).map(unwrapTableLane).filter(blockHasSource);

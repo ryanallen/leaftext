@@ -141,6 +141,42 @@ export function run() {
     if (body.children[4].dataset.editable !== 'true') throw new Error('the last block of the file cannot be edited');
   });
 
+  // A wide table sits two boxes deep in the body — a bay that centers it and a lane the bands are painted in, both the reader's own furniture. The walk has to reach the table through both: stamp a wrapper instead and an edit serializes a `<div>` and finds no rows in it, and stamp neither and the whole note goes read-only, because one element with no block throws every range away.
+  check('a table two reader boxes deep is stamped, and neither box round it is', () => {
+    const source = 'Before.\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\nAfter.\n';
+    const shown = ['Before.', '| a | b |\n| --- | --- |\n| 1 | 2 |', 'After.'];
+    const blocks = shown.map((text, id) => ({
+      id,
+      kind: id === 1 ? 'table' : 'paragraph',
+      start: source.indexOf(text),
+      end: source.indexOf(text) + text.length,
+      editable: true,
+    }));
+    const element = (tag, className, children = []) => ({
+      nodeType: 1,
+      tagName: tag,
+      dataset: {},
+      children,
+      classList: { contains: (name) => className !== '' && name === className },
+    });
+    const table = element('TABLE', '');
+    const lane = element('DIV', 'table-lane', [table]);
+    const bay = element('DIV', 'table-bay', [lane]);
+    const body = { children: [element('P', ''), bay, element('P', '')] };
+    booted.attachMarkdownBlockRanges(body, blocks, source);
+
+    for (const [name, box] of [['bay', bay], ['lane', lane]]) {
+      if ('srcStart' in box.dataset) throw new Error(`the ${name} took the table's source range, so an edit would write the wrapper back into the file`);
+    }
+    if (source.slice(Number(table.dataset.srcStart), Number(table.dataset.srcEnd)) !== shown[1]) {
+      throw new Error(`the table's range does not slice back to the table: ${JSON.stringify(table.dataset)}`);
+    }
+    const [before, , after] = body.children;
+    for (const [name, block] of [['paragraph above', before], ['paragraph below', after]]) {
+      if (!('srcStart' in block.dataset)) throw new Error(`the ${name} was left unstamped, so the whole note is read-only`);
+    }
+  });
+
   // The count guard only fires on a block left over or an element with no block, and a list that drifted out of order keeps both counts equal — so a kind that can only ever be one tag is the second thing held to the element it landed on. Four kinds and no others: the rest have more than one tag each and would refuse documents that are fine.
   check('a block whose kind cannot be the element it landed on stamps nothing', () => {
     const source = 'A paragraph.\n\n---\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n';

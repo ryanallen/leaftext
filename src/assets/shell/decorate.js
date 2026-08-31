@@ -1128,15 +1128,18 @@ function renderMathElements() {
     });
 }
 let wideTableResizeObserver;
-// Put each body table in a lane of its own, so it can use the reader's width and so the bands that dissolve a sliced column into the page have a box to be painted in — a mask on the table can only take ink away, never lay the dot screen on. The lane belongs to the reader, not the document, so everything that walks the body's blocks sees through it: `attachMarkdownBlockRanges` stamps the table inside, and `unwrapTableLane` in block-controls.js gives the gutter the table it wraps.
+// Put each body table in a lane of its own, so it can use the reader's width and so the bands that dissolve a sliced column into the page have a box to be painted in — a mask on the table can only take ink away, never lay the dot screen on. Two boxes rather than one: the bay outside is what the centering arithmetic can name, because CSS cannot read the lane's `max-content` width and a box wider than its parent has its auto margins treated as zero — and the lane inside must stay untransformed, or the web view tiles the dots in every header cell from a box that moves. Both belong to the reader, not the document, so everything that walks the body's blocks sees through them: `attachMarkdownBlockRanges` stamps the table inside, and `unwrapTableLane` in block-controls.js gives the gutter the table they wrap.
 function laneWideTables(root = app) {
   const body = root.querySelector('.document-body');
   if (!body) return;
   for (const table of Array.from(body.children)) {
     if (table.tagName !== 'TABLE' || table.classList.contains('data-table')) continue;
+    const bay = document.createElement('div');
+    bay.className = 'table-bay';
     const lane = document.createElement('div');
     lane.className = 'table-lane';
-    table.replaceWith(lane);
+    table.replaceWith(bay);
+    bay.appendChild(lane);
     lane.appendChild(table);
   }
   measureWideTables(root);

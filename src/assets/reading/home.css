@@ -144,7 +144,7 @@
   color: var(--lt-navigation-recent-item-hover-foreground);
 }
 /* Both lists under the two buttons. One column at rest; the container query below is what puts them side by side, so the fold is measured off this section. */
-/* The pair sizes to what is in it and sits centered. It may grow out past the writing's own column — a path is longer than a line of prose — as far as the reader, and no further; stretched to the reader it left two thin columns at opposite edges with nothing between them, because a file name never fills that. The break-out is `.table-lane`'s: CSS cannot read a used width, so the centering is a percentage transform. */
+/* The pair sizes to what is in it and sits centered. It may grow out past the writing's own column — a path is longer than a line of prose — as far as the reader, and no further; stretched to the reader it left two thin columns at opposite edges with nothing between them, because a file name never fills that. The break-out is the table lane's, sized the same way; the centering is a percentage transform because CSS cannot read a used width, which the lane answers with a parent whose width is a length instead — nothing here carries the app's lattice, so there is no seam for the transform to break. */
 .home-list-grid {
   position: relative;
   left: 50%;

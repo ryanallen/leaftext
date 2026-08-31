@@ -5162,10 +5162,10 @@ body:has(#readerToolbar:not([hidden])) {
   padding: var(--lt-space-2) 0;
   border-radius: var(--lt-radius-md);
   /* A well cut into the bar: a wash of shadow over its face, and more inside the top edge. Black at an alpha, never a mix toward the foreground — that lightens on a dark theme, which is a recess lit from inside. Not a shade mixed from the chrome token either, so the bar stays one color. */
+  /* The one grained surface in the reader that tiles from its own box rather than the app's shared lattice, and it says so: the tray is centered by a transform and this well is carried down out of the nub by another, and a transform re-anchors a fixed background to the moving box. The well floats over an ungrained tray face, so it meets no other grain and has no seam to show — asking for the shared lattice here only claimed a phase it could not hold. */
   background-color: var(--lt-tint-recess);
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
-  background-attachment: fixed;
   box-shadow: var(--lt-shadow-inset);
 }
 .reader-view-tools[hidden] {
@@ -7112,14 +7112,19 @@ body.is-block-dragging .document-body [data-src-start] {
   width: max-content;
   max-width: 100%;
 }
-/* A wide table reads through the reader's whole lane, less the strip the block controls need, and the wrapper is what widens rather than the table: the bands that dissolve a sliced column into the page have to be painted over the table, and a mask can only take ink away. `100cqi` is the room inside .reader-layout's padding, so this rides that container query and nothing else; `max(100%, ...)` hands a narrow window back to the measure it has today. Centering is a percentage transform because CSS cannot read the table's used width. decorate.js wraps only a body table that is not a data table, so a frontmatter table, a data file's wrapping table and a table inside <div align="center"> keep their width. */
-.document-body > .table-lane {
+/* A wide table reads through the reader's whole lane, less the strip the block controls need, and the wrapper is what widens rather than the table: the bands that dissolve a sliced column into the page have to be painted over the table, and a mask can only take ink away. `100cqi` is the room inside .reader-layout's padding, so this rides that container query and nothing else; `max(100%, ...)` hands a narrow window back to the measure it has today. decorate.js wraps only a body table that is not a data table, so a frontmatter table, a data file's wrapping table and a table inside <div align="center"> keep their width. */
+/* The bay is the box the centering arithmetic can name, and it exists for nothing else: it draws no paint, holds no grain and takes no gesture. Its width is a length rather than the lane's `max-content`, so the margin that centers it is computable — half the room the measure does not cover, which is zero on a window too narrow for a lane to break out at all. Never a transform: a transform makes its own box the containing block for every `background-attachment: fixed` inside it, which is what dragged the dots in a scrolled table's header sideways with the columns, and what shrank a printed sheet to fit a slid lane's phantom width. print.css carries the same arithmetic for paper off a width the render wrote down. */
+.document-body > .table-bay {
+  width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+  margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
+}
+/* And the lane keeps its own box inside the bay, so everything keyed on it — the bands, the corner control, the hover that reveals it, the wheel, the full-window sheet — lands where it always did. Auto margins center it because it can no longer be wider than its parent; a block box wider than its containing block has them treated as zero, which is why they cannot center the lane against the measure directly. */
+.table-bay > .table-lane {
   position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  /* The table's own width, capped. A block box at `auto` fills the measure and a `max-width` alone can only cap it, never let it grow past its parent. */
+  margin-inline: auto;
+  /* The table's own width, capped by the bay. A block box at `auto` fills the bay and a `max-width` alone can only cap it. */
   width: max-content;
-  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+  max-width: 100%;
   /* The bands sit here and the scroll is the table's, one box down, so the timeline has to be published up to this element for them to name it. */
   timeline-scope: --lt-table-scroll;
 }
@@ -7183,7 +7188,7 @@ body.is-block-dragging .document-body [data-src-start] {
   background: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), var(--lt-surface-elevated);
   color: var(--lt-foreground);
 }
-/* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The lattice anchors to the wrapper rather than to the window: a transformed element is the containing block for its own fixed background. */
+/* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The first layer is the app's own lattice and the second is the wash, which is what the paired `fixed, scroll` says; nothing between here and the app surface is transformed, so the dots fall in phase with the page the band dissolves into. */
 .table-lane::before,
 .table-lane::after {
   content: "";
@@ -7362,10 +7367,13 @@ body.is-block-dragging .document-body [data-src-start] {
     .document-body table:not(.no-cards) td:not([data-leaf-col])::before {
       display: none;
     }
+    /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
+    .document-body > .table-bay:has(table:not(.no-cards)) {
+      width: 100%;
+      margin-inline: 0;
+    }
     .document-body .table-lane:has(> table:not(.no-cards)) {
-      left: auto;
       max-width: none;
-      transform: none;
       width: 100%;
     }
     .document-body .table-lane:has(> table:not(.no-cards))::before,
@@ -7464,10 +7472,13 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body table.is-cards td:not([data-leaf-col])::before {
   display: none;
 }
+/* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
+.document-body > .table-bay:has(table.is-cards) {
+  width: 100%;
+  margin-inline: 0;
+}
 .document-body .table-lane:has(> table.is-cards) {
-  left: auto;
   max-width: none;
-  transform: none;
   width: 100%;
 }
 .document-body .table-lane:has(> table.is-cards)::before,
@@ -7974,7 +7985,7 @@ body.is-block-dragging .document-body [data-src-start] {
   color: var(--lt-navigation-recent-item-hover-foreground);
 }
 /* Both lists under the two buttons. One column at rest; the container query below is what puts them side by side, so the fold is measured off this section. */
-/* The pair sizes to what is in it and sits centered. It may grow out past the writing's own column — a path is longer than a line of prose — as far as the reader, and no further; stretched to the reader it left two thin columns at opposite edges with nothing between them, because a file name never fills that. The break-out is `.table-lane`'s: CSS cannot read a used width, so the centering is a percentage transform. */
+/* The pair sizes to what is in it and sits centered. It may grow out past the writing's own column — a path is longer than a line of prose — as far as the reader, and no further; stretched to the reader it left two thin columns at opposite edges with nothing between them, because a file name never fills that. The break-out is the table lane's, sized the same way; the centering is a percentage transform because CSS cannot read a used width, which the lane answers with a parent whose width is a length instead — nothing here carries the app's lattice, so there is no seam for the transform to break. */
 .home-list-grid {
   position: relative;
   left: 50%;
@@ -9146,7 +9157,7 @@ body.is-home-row-dragging .home-list-scroll li {
   flex: 1;
   min-height: 0;
   display: grid;
-  /* How wide the text pane is, dragged by the bar between the two. The min() is what keeps the picture: grid resolves it on every layout, so a window made smaller takes the room out of the text rather than out of the drawing, and the dragged width is still there when the window is widened again. */
+  /* How wide the text pane is, dragged by the bar between the two. The min() is what keeps the picture: grid resolves it on every layout, so a smaller window takes its room out of the text while the property still holds the width that was dragged to. */
   grid-template-columns: minmax(0, 1fr) 5px min(var(--flow-code-width, 340px), 100% - var(--flow-picture-floor));
 }
 /* The bar between the picture and the text. Thin ink, a wide grab area. */
@@ -10133,17 +10144,34 @@ body.leaf-paper .library-shell .reader-shell {
 body.leaf-paper .document-body {
   padding-bottom: var(--reader-content-pad);
 }
-/* The lanes a wide picture or table break out of the text measure into are what shrank the paper. On screen the lane sizes itself with `100cqi` and centers itself by sliding half a measure right and transforming back; the print render measures overflow on the untransformed box, so the slid lane hung past the sheet, the renderer shrank the whole page to fit that phantom width, and the shrunken page stopped a fifth short of the sheet's foot, unpainted white — the container query is also self-referential there, growing with the very overflow it causes. So on paper a lane is a plain block: as wide as the room the page wrote down when it measured the sheet, centered by margin arithmetic the render was measured computing exactly, with nothing slid and nothing transformed. The fallback is the text measure, for a page printed before any script has run. */
-body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {
+/* The lanes a wide picture or table break out of the text measure into are what shrank the paper. On screen a picture's lane sizes itself with `100cqi` and centers itself by sliding half a measure right and transforming back; the print render measures overflow on the untransformed box, so the slid lane hung past the sheet, the renderer shrank the whole page to fit that phantom width, and the shrunken page stopped a fifth short of the sheet's foot, unpainted white — the container query is also self-referential there, growing with the very overflow it causes. So on paper a lane is a plain block: as wide as the room the page wrote down when it measured the sheet, centered by margin arithmetic the render was measured computing exactly, with nothing slid and nothing transformed. The fallback is the text measure, for a page printed before any script has run. A table's lane already arrives untransformed, centered inside a bay for the same reason; here the bay stands down to the measure so the lane's own arithmetic is the one that runs. */
+body.leaf-paper .document-body > .table-bay {
+  width: 100%;
+  margin-inline: 0;
+}
+body.leaf-paper .table-bay > .table-lane,
+body.leaf-paper .document-body > p.image-lane {
   position: static;
   transform: none;
   width: var(--leaf-paper-lane, 100%);
   max-width: none;
   margin-left: calc((100% - var(--leaf-paper-lane, 100%)) / 2);
+  margin-right: 0;
 }
-/* The exported page wears `leaf-paper` for ever — the one script it runs is the rail below, which never touches that class, so nothing there can raise it for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. */
+/* The exported page wears `leaf-paper` for ever — the one script it runs is the rail below, which never touches that class, so nothing there can raise it for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. The table's bay comes back with it rather than the transform, so a published document wears the app's own lattice under its table headers instead of one tiled from a box that moves. */
 @media screen {
-  body.leaf-paper.leaf-web .document-body > :is(.table-lane, p.image-lane) {
+  body.leaf-paper.leaf-web .document-body > .table-bay {
+    width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+    margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
+  }
+  body.leaf-paper.leaf-web .table-bay > .table-lane {
+    position: relative;
+    transform: none;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  body.leaf-paper.leaf-web .document-body > p.image-lane {
     position: relative;
     transform: translateX(-50%);
     width: max-content;
@@ -10903,7 +10931,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Table lane</h3><code class="built">.table-lane</code><span class="built">decorate.js</span></header>
-<div class="stage"><div class="document-body"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th></tr></thead><tbody><tr><td>North</td><td>Q1</td><td>412000</td></tr><tr><td>South</td><td>Q1</td><td>501000</td></tr></tbody></table></div><table class="is-cards"><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th><th>Owners</th><th>Note</th></tr></thead><tbody><tr><td data-leaf-col="Region">North</td><td data-leaf-col="Quarter">Q1</td><td data-leaf-col="Pipeline">412000</td><td data-leaf-col="Owners"><a href="#components">Ada Okonkwo</a>, <a href="#components">Bo Lindqvist</a> (6 in all)</td><td data-leaf-col="Note">Short cells share a line and a sentence takes one of its own, and a path nothing can break — <code>app/src/assets/reading/document-tables.css</code> — breaks inside the card rather than running out of it.</td></tr><tr><td data-leaf-col="Region">South</td><td data-leaf-col="Quarter">Q1</td><td data-leaf-col="Pipeline">501000</td><td data-leaf-col="Owners"><a href="#components">Ravi Menon</a> (2 in all)</td><td data-leaf-col="Note">Every cell keeps the label of the column it came from.</td></tr></tbody></table></div></div>
+<div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th></tr></thead><tbody><tr><td>North</td><td>Q1</td><td>412000</td></tr><tr><td>South</td><td>Q1</td><td>501000</td></tr></tbody></table></div></div><div class="table-bay"><div class="table-lane"><table class="is-cards"><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th><th>Owners</th><th>Note</th></tr></thead><tbody><tr><td data-leaf-col="Region">North</td><td data-leaf-col="Quarter">Q1</td><td data-leaf-col="Pipeline">412000</td><td data-leaf-col="Owners"><a href="#components">Ada Okonkwo</a>, <a href="#components">Bo Lindqvist</a> (6 in all)</td><td data-leaf-col="Note">Short cells share a line and a sentence takes one of its own, and a path nothing can break — <code>app/src/assets/reading/document-tables.css</code> — breaks inside the card rather than running out of it.</td></tr><tr><td data-leaf-col="Region">South</td><td data-leaf-col="Quarter">Q1</td><td data-leaf-col="Pipeline">501000</td><td data-leaf-col="Owners"><a href="#components">Ravi Menon</a> (2 in all)</td><td data-leaf-col="Note">Every cell keeps the label of the column it came from.</td></tr></tbody></table></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Picture lane</h3><code class="built">.image-lane</code><span class="built">decorate.js</span></header>

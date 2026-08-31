@@ -407,9 +407,11 @@ export function run() {
   // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.
   const tableLaneRule = () => {
     const css = readingCss();
-    const opened = css.indexOf('.document-body > .table-lane {');
-    if (opened < 0) throw new Error('no rule widens a table lane to the reader lane');
-    return { css, rule: css.slice(opened, css.indexOf('}', opened)) };
+    const opened = css.indexOf('.table-bay > .table-lane {');
+    if (opened < 0) throw new Error('no rule sizes a table lane inside its bay');
+    const bayAt = css.indexOf('.document-body > .table-bay {');
+    if (bayAt < 0) throw new Error('no rule widens a table bay to the reader lane');
+    return { css, rule: css.slice(opened, css.indexOf('}', opened)), bay: css.slice(bayAt, css.indexOf('}', bayAt)) };
   };
 
   check('Control or Command wheel scrolls only an overflowing table lane sideways', () => {
@@ -482,9 +484,9 @@ export function run() {
 
   // The inset is the room the drag handle and plus occupy, written once in the stylesheet and once in the script that places them.
   check('the table lane leaves exactly the block controls their margin', () => {
-    const { css, rule } = tableLaneRule();
-    if (!rule.includes('var(--reader-lane-inset)')) {
-      throw new Error('the lane no longer keeps the block controls their strip');
+    const { css, bay } = tableLaneRule();
+    if (!bay.includes('var(--reader-lane-inset)')) {
+      throw new Error('the bay no longer keeps the block controls their strip');
     }
     const declared = css.match(/--reader-lane-inset:\s*(\d+)px/);
     if (!declared) throw new Error('--reader-lane-inset is not declared');
@@ -534,24 +536,38 @@ export function run() {
 
   // Frontmatter scrolls on its own wrapper and a data file's table wraps its cells on purpose; neither may be pulled into a lane. The gutter reads the body's own children, so a lane with no source range is furniture it steps over and the table loses its handle.
   check('only a body table is laned, and the lane carries its source range', () => {
-    const { rule } = tableLaneRule();
-    if (!/transform:\s*translateX\(-50%\)/.test(rule) || !/left:\s*50%/.test(rule)) {
-      throw new Error('the lane is no longer centered on its own width');
+    const { rule, bay } = tableLaneRule();
+    // The bay is the box the centering arithmetic can name, and the lane inside it may carry neither a slide nor a transform: a transform makes its own box the containing block for every fixed background under it, which tiled the dots in each header cell from a box that moves sideways with the columns.
+    if (/transform/.test(rule) || /left:/.test(rule)) {
+      throw new Error('the lane is centered by a transform again, so its cells tile their grain from a box that moves');
     }
+    if (!/margin-inline:\s*auto/.test(rule)) throw new Error('the lane no longer centers inside its bay');
+    if (!/margin-inline:\s*calc\(\(100% - max\(100%, 100cqi - 2 \* var\(--reader-lane-inset\)\)\) \/ 2\)/.test(bay)) {
+      throw new Error('the bay no longer centers itself on the arithmetic its own width gives');
+    }
+    if (/transform/.test(bay)) throw new Error('the bay carries a transform, which is the thing it exists to avoid');
     const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
     const wrap = decorate.slice(decorate.indexOf('function laneWideTables'), decorate.indexOf('function decorateBlockquoteLines'));
     if (!wrap) throw new Error('nothing wraps a table in a lane');
-    for (const guard of ["tagName !== 'TABLE'", "classList.contains('data-table')", 'body.children']) {
+    for (const guard of ["tagName !== 'TABLE'", "classList.contains('data-table')", 'body.children', "'table-bay'", "'table-lane'"]) {
       if (!wrap.includes(guard)) throw new Error(`the wrap no longer checks: ${guard}`);
     }
-    // The lane is the reader's box, not the document's: everything that walks the body's blocks has to see through it, or an edit serializes the wrapper and finds no rows in it.
+    // The bay and the lane are the reader's boxes, not the document's: everything that walks the body's blocks has to see through both, or an edit serializes a wrapper and finds no rows in it.
     const blocks = readFileSync(join(root, 'src/assets/shell/reading-blocks.js'), 'utf8');
-    if (!blocks.includes("el.classList.contains('table-lane')")) {
-      throw new Error('the range walk stamps the lane instead of the table inside it');
+    for (const box of ['table-bay', 'table-lane']) {
+      if (!blocks.includes(`el.classList.contains('${box}')`)) {
+        throw new Error(`the range walk stamps the ${box} instead of the table inside it`);
+      }
     }
     const controls = readFileSync(join(root, 'src/assets/shell/block-controls.js'), 'utf8');
     if ((controls.match(/unwrapTableLane/g) || []).length < 3) {
       throw new Error('the block gutter no longer sees through the lane to the table');
+    }
+    const run = controls.slice(controls.indexOf('function blockSiblingRun'), controls.indexOf('function blockDropIndex'));
+    for (const box of ['table-lane', 'table-bay']) {
+      if (!run.includes(`'${box}'`)) {
+        throw new Error(`a laned table's sibling run stops at the ${box} rather than climbing to the body`);
+      }
     }
     // The 62px strip is measured from the reader's edge, and the gutter from the text measure — so a widened table's handle lands on its first column unless it rides the lane.
     const place = controls.slice(controls.indexOf('function positionBlockGutter'), controls.indexOf('function blockGutterAnchorY'));
@@ -663,9 +679,18 @@ export function run() {
       if (!/display:\s*none/.test(head)) throw new Error('the heading row is drawn above cards that each carry their own labels');
     }
     for (const flat of [...bodies('.table-lane:has(> table:not(.no-cards)) {'), ...bodies('.table-lane:has(> table.is-cards) {')]) {
-      if (!/width:\s*100%/.test(flat) || !/transform:\s*none/.test(flat) || !/max-width:\s*none/.test(flat)) {
-        throw new Error('the lane keeps its widened, centered shape under cards, so the cards shrink-wrap to the grid width they replaced');
+      if (!/width:\s*100%/.test(flat) || !/max-width:\s*none/.test(flat)) {
+        throw new Error('the lane keeps its widened shape under cards, so the cards shrink-wrap to the grid width they replaced');
       }
+    }
+    // And the break-out itself is the bay's, so the bay is what stands down to the measure: left wide, the lane would fill it and the cards would spread across the whole reader.
+    for (const stood of [...bodies('.table-bay:has(table:not(.no-cards)) {'), ...bodies('.table-bay:has(table.is-cards) {')]) {
+      if (!/width:\s*100%/.test(stood) || !/margin-inline:\s*0/.test(stood)) {
+        throw new Error('the bay keeps its widened, centered shape under cards, so the cards spread past the writing they replaced');
+      }
+    }
+    if (bodies('.table-bay:has(table.is-cards) {').length === 0) {
+      throw new Error('nothing stands the bay down under cards');
     }
   });
 

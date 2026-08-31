@@ -45,17 +45,34 @@ body.leaf-paper .library-shell .reader-shell {
 body.leaf-paper .document-body {
   padding-bottom: var(--reader-content-pad);
 }
-/* The lanes a wide picture or table break out of the text measure into are what shrank the paper. On screen the lane sizes itself with `100cqi` and centers itself by sliding half a measure right and transforming back; the print render measures overflow on the untransformed box, so the slid lane hung past the sheet, the renderer shrank the whole page to fit that phantom width, and the shrunken page stopped a fifth short of the sheet's foot, unpainted white — the container query is also self-referential there, growing with the very overflow it causes. So on paper a lane is a plain block: as wide as the room the page wrote down when it measured the sheet, centered by margin arithmetic the render was measured computing exactly, with nothing slid and nothing transformed. The fallback is the text measure, for a page printed before any script has run. */
-body.leaf-paper .document-body > :is(.table-lane, p.image-lane) {
+/* The lanes a wide picture or table break out of the text measure into are what shrank the paper. On screen a picture's lane sizes itself with `100cqi` and centers itself by sliding half a measure right and transforming back; the print render measures overflow on the untransformed box, so the slid lane hung past the sheet, the renderer shrank the whole page to fit that phantom width, and the shrunken page stopped a fifth short of the sheet's foot, unpainted white — the container query is also self-referential there, growing with the very overflow it causes. So on paper a lane is a plain block: as wide as the room the page wrote down when it measured the sheet, centered by margin arithmetic the render was measured computing exactly, with nothing slid and nothing transformed. The fallback is the text measure, for a page printed before any script has run. A table's lane already arrives untransformed, centered inside a bay for the same reason; here the bay stands down to the measure so the lane's own arithmetic is the one that runs. */
+body.leaf-paper .document-body > .table-bay {
+  width: 100%;
+  margin-inline: 0;
+}
+body.leaf-paper .table-bay > .table-lane,
+body.leaf-paper .document-body > p.image-lane {
   position: static;
   transform: none;
   width: var(--leaf-paper-lane, 100%);
   max-width: none;
   margin-left: calc((100% - var(--leaf-paper-lane, 100%)) / 2);
+  margin-right: 0;
 }
-/* The exported page wears `leaf-paper` for ever — the one script it runs is the rail below, which never touches that class, so nothing there can raise it for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. */
+/* The exported page wears `leaf-paper` for ever — the one script it runs is the rail below, which never touches that class, so nothing there can raise it for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. The table's bay comes back with it rather than the transform, so a published document wears the app's own lattice under its table headers instead of one tiled from a box that moves. */
 @media screen {
-  body.leaf-paper.leaf-web .document-body > :is(.table-lane, p.image-lane) {
+  body.leaf-paper.leaf-web .document-body > .table-bay {
+    width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+    margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
+  }
+  body.leaf-paper.leaf-web .table-bay > .table-lane {
+    position: relative;
+    transform: none;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  body.leaf-paper.leaf-web .document-body > p.image-lane {
     position: relative;
     transform: translateX(-50%);
     width: max-content;

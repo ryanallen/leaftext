@@ -432,12 +432,11 @@ export function run() {
   const PREVIEW_SECTION_OPENING = '<base href="file:///notes/"><article class="document-body">';
   const previewSectionHtml = PREVIEW_SECTION_OPENING + previewSectionBlocks.join('') + '</article>';
   // The parse the page holds between rests, handed over ready-made because the lift is what is being read, not the browser's parser.
-  const seedPreviewParse = () => {
+  const seedPreviewParse = (html = previewSectionHtml) => {
     const parsed = booted.document.createElement('div');
-    parsed.innerHTML = previewSectionHtml;
-    const note = parsed.querySelector('article');
+    parsed.innerHTML = html;
     booted.__previewProbeRoot = parsed;
-    booted.__previewProbeHtml = previewSectionHtml;
+    booted.__previewProbeHtml = html;
     vm.runInContext('linkPreviewParsedRoot = __previewProbeRoot; linkPreviewParsedHtml = __previewProbeHtml;', booted);
   };
   const forgetPreviewParse = () => {
@@ -484,6 +483,49 @@ export function run() {
       if (whole !== previewSectionHtml) throw new Error('an address naming no section at all was cut down to one');
     } finally {
       vm.runInContext('activeHoverToken = 0;', booted);
+      forgetPreviewParse();
+    }
+  });
+
+  // A file long enough to matter is 16,192 pixels of layout for the 176 the card shows, so what the card is handed is the opening it can draw. The cut is on whole top-level blocks: what is kept opens where the file opens, ends on an element that closed, and holds nothing of the tail. A named section is chosen first and then cut the same way, so a heading link into a long page costs a rest what its opening costs.
+  const previewLongBlocks = [
+    '<h1 id="long">Long</h1>',
+    ...Array.from({ length: 40 }, (unused, at) => `<p id="para-${at}">${'word '.repeat(40)}${at}</p>`),
+    '<h2 id="far-down">Far down</h2>',
+    ...Array.from({ length: 40 }, (unused, at) => `<p id="deep-${at}">${'more '.repeat(40)}${at}</p>`),
+  ];
+  const previewLongHtml = PREVIEW_SECTION_OPENING + previewLongBlocks.join('') + '</article>';
+  check('a long answer reaches the card as its first whole blocks, and a section deep inside one is cut the same way', () => {
+    try {
+      seedPreviewParse(previewLongHtml);
+      vm.runInContext('linkHoverTip.hidden = true; pendingPreviewTokens.set(48, "notes/long.md"); pendingPreviewTokens.set(49, "notes/long.md#far-down");', booted);
+      booted.window.leafLinkPreview(48, previewLongHtml);
+      booted.window.leafLinkPreview(49, previewLongHtml);
+      const ceiling = vm.runInContext('LINK_PREVIEW_OPENING_BYTES', booted);
+      const widest = previewLongHtml.length - PREVIEW_SECTION_OPENING.length;
+      const opening = vm.runInContext('linkPreviewCache.get("notes/long.md")', booted);
+      const section = vm.runInContext('linkPreviewCache.get("notes/long.md#far-down")', booted);
+      for (const [name, kept] of [['the opening', opening], ['the section', section]]) {
+        if (kept.length >= previewLongHtml.length) throw new Error(`${name} was handed the whole answer to lay out`);
+        // The ceiling plus the one block that crossed it, which is kept whole however big it is.
+        if (kept.length > PREVIEW_SECTION_OPENING.length + ceiling + widest / 40) throw new Error(`${name} ran past the opening the card can draw`);
+        if (!kept.endsWith('</p></article>')) throw new Error(`${name} was cut inside a block rather than between two`);
+      }
+      if (!opening.includes('id="long"') || !opening.includes('id="para-0"')) throw new Error('the opening did not start where the file starts');
+      if (opening.includes('id="far-down"')) throw new Error('the opening ran on past what the card can show');
+      if (!section.includes('id="far-down"') || !section.includes('id="deep-0"')) throw new Error('the section did not start at the heading its address named');
+      if (section.includes('id="para-0"')) throw new Error('the section opened at the file rather than at the heading');
+      if (section.includes('id="deep-39"')) throw new Error('the section kept the tail the card would never draw');
+
+      // A block already past the ceiling is taken whole, because half a table is markup the card would have to close itself. It is the one answer the cut cannot shorten.
+      const wide = PREVIEW_SECTION_OPENING + `<table id="wide"><tbody>${'<tr><td>a cell wide enough to matter</td></tr>'.repeat(200)}</tbody></table><p id="after">After.</p>` + '</article>';
+      seedPreviewParse(wide);
+      vm.runInContext('pendingPreviewTokens.set(50, "notes/wide.md");', booted);
+      booted.window.leafLinkPreview(50, wide);
+      const whole = vm.runInContext('linkPreviewCache.get("notes/wide.md")', booted);
+      if (!whole.includes('</tbody></table>')) throw new Error('a block bigger than the ceiling was cut inside itself');
+      if (whole.includes('id="after"')) throw new Error('the cut ran on past the block that crossed the ceiling');
+    } finally {
       forgetPreviewParse();
     }
   });
