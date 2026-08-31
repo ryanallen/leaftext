@@ -177,7 +177,7 @@ Every command the page can send, one row each — the whole list, held to `IpcCo
 | `openGlossary`         | Glossary link click (opens the term in a bottom sheet) |
 | `openExternal`         | Open a web address in the system browser (unattached to any document): a node on the [graph](../01-features/03-library.md#graph), the theme sheet's GitHub link, the library's git-download prompt |
 | `countLines`           | Link hover: read the linked document and report its line count for the tooltip |
-| `previewLink`          | Link hover, once the tooltip is up: render the linked document for the card, which takes the section the address names, or the file's opening where it names none, and cuts it to whole blocks through 4 KB. A token rides along so a hover that has already moved on cannot rewrite the card under the pointer |
+| `previewLink`          | Link hover, once the tooltip is up: render the linked document for the card, which takes the section the address names, or the file's opening where it names none, and cuts it to whole blocks through 4 KB — a first block bigger than that whole opening is shortened structurally against a clone, taking complete descendants while they fit and trimming a text leaf last, so a huge table or code block reaches the card as closed markup at about the same size as any other opening. A token rides along so a hover that has already moved on cannot rewrite the card under the pointer |
 | `setThemeFamily`       | Theme family button in the theme picker |
 | `setThemeMode`         | Appearance control in the theme picker |
 | `setThemeRandomBag`    | The [Random theme](../01-features/06-themes.md#random) draw: persist the families already shown in the current no-repeat cycle |
