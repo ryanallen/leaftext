@@ -319,7 +319,7 @@ export function run() {
         if (onSurface().length !== 1) throw new Error(`${naming} did not put the bubble back as it left`);
       }
 
-      // A view taken off the window without its own close. It never says it is hidden, so a record listening for that alone holds the bubble down for the rest of the launch — which is what the render used to leave behind.
+      // A view taken off the window without its own close. It never says it is hidden, so a record listening for that alone holds the bubble down for the rest of the launch.
       booted.openImageSheet(picture, null);
       if (onSurface().length !== 0) throw new Error('the bubble stood over the picture it was handed to');
       app.querySelector('.image-sheet-overlay').remove();

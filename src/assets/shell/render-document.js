@@ -603,7 +603,7 @@ function renderState() {
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   cancelReaderScrollSettle();
-  // All three full-window views live inside `app`, so the render below would take one away with nothing knowing — the diagram's Escape handler still listening, a term raised out of a table left standing over a document it never came from, and the bubble each of them holds down never handed back.
+  // All three full-window views live inside `app`, so the render below would sweep one away with its handlers still listening, a term raised out of a table left over a document it never came from, and the bubble it holds down never handed back.
   closeDiagramOverlay();
   closeTableSheet();
   closeImageSheet();

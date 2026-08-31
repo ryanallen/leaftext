@@ -48,7 +48,7 @@ The folder path across the top of the [library pane](GLOSSARY.md#library-pane) �
 
 ## Bubble
 
-A small box that floats over the window on a first launch with a chevron aimed at one control, saying what pressing that control does. It goes the moment you point at that control, or press it, and never comes back. The bubble itself ignores the pointer, so crossing it takes nothing away and blocks nothing. One per launch at most, with a quiet launch between two of them, and nothing at all once you have met them. A [sheet](GLOSSARY.md#sheet) takes it down while it is up, without counting it met, and it comes back once the last sheet has closed. See [Library](01-features/03-library.md#the-bubble-on-your-first-launch).
+A small box that floats over the window on a first launch with a chevron aimed at one control, saying what pressing that control does. It goes the moment you point at that control, or press it, and never comes back. The bubble itself ignores the pointer, so crossing it takes nothing away and blocks nothing. One per launch at most, with a quiet launch between two of them, and nothing at all once you have met them. Anything standing over the whole window takes it down while it is up, without counting it met — a [sheet](GLOSSARY.md#sheet), and a picture, a table or a [diagram](GLOSSARY.md#mermaid-diagram) opened on the whole window — and it comes back once the last of them has gone. See [Library](01-features/03-library.md#the-bubble-on-your-first-launch).
 
 ## Byte order mark
 

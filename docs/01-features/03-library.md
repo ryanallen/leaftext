@@ -56,7 +56,7 @@ It goes the moment you point at the button, and it never comes back — pressing
 
 One bubble per launch at most, with a quiet launch in between, and nothing at all once you have met them. With the pane shut there is no bubble, and that launch is not spent — you get it the next time the pane is open.
 
-A sheet takes it down while the sheet is up. The glossary, the theme picker, the start screen's list and the flowchart editor all slide over the whole window, so a bubble left standing would point at a button the sheet is covering, with no way to reach it and no way to put the bubble away. It steps aside instead, unmet, and comes back against wherever its button now is once the last sheet has closed — a sheet opened on top of another keeps it away until both have gone. The launch is not spent, and the promise is still there to meet.
+Anything that stands over the whole window takes it down while it is up. The glossary, the theme picker, the start screen's list and the flowchart editor all slide over the window, and a [picture](01-rendering.md#images), a [table](07-editing.md#inline-editing-the-reading-view) or a [diagram](01-rendering.md#mermaid-diagrams) opened on the whole window covers it the same way — so a bubble left standing would point at a button that view is covering, with no way to reach it and no way to put the bubble away. It steps aside instead, unmet, and comes back against wherever its button now is once the last of them has gone — one opened on top of another keeps it away until both have gone. The launch is not spent, and the promise is still there to meet.
 
 ### Your first vault
 
