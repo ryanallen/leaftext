@@ -1006,6 +1006,8 @@ function loadFlowChips() {
       }
       // The grid the picker built before any of this landed holds forty-seven empty buttons, so it goes rather than being held blank for the rest of the session.
       forgetFlowShapeGrid();
+      // And its pictured replacement is built right here, where nobody is waiting on a click. Left to the first draw that wants it, the same 4.4ms lands on somebody's first click on a box.
+      flowShapeGridPrepared();
       if (flowSession) drawFlowPicker();
     })
     .catch(() => {});

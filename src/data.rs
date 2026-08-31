@@ -7,6 +7,7 @@
 //! `BlockSpan::editable` stays false regardless; it gates the Markdown WYSIWYG path, which the `data_*` block kinds also keep these blocks out of.
 
 use crate::*;
+use std::fmt::Write as _;
 use std::ops::Range;
 use yaml_rust2::parser::{Event as YamlEvent, MarkedEventReceiver, Parser as YamlEventParser};
 use yaml_rust2::scanner::{Marker, TScalarStyle};
@@ -752,23 +753,6 @@ impl DataCtx {
         self.out.push_str(markup);
     }
 
-    /// Record a block and return the `data-*` attributes for its opening tag. A node with no proven range still gets an id and a kind, just no `data-src-*` — and so no entry in the map, which indexes source ranges.
-    fn block_attrs(&mut self, kind: &'static str, span: Option<Range<usize>>) -> String {
-        let id = self.next_block_id;
-        self.next_block_id += 1;
-        match span {
-            Some(range) => {
-                self.blocks
-                    .push(BlockSpan::new(id, kind, range.start, range.end));
-                format!(
-                    " data-block-id=\"{id}\" data-src-start=\"{}\" data-src-end=\"{}\" data-block-kind=\"{kind}\"",
-                    range.start, range.end
-                )
-            }
-            None => format!(" data-block-id=\"{id}\" data-block-kind=\"{kind}\""),
-        }
-    }
-
     fn unique_slug(&mut self, text: &str) -> String {
         let base = tei_slugify(text);
         let count = self.seen.entry(base.clone()).or_insert(0);
@@ -788,15 +772,49 @@ impl DataCtx {
             return;
         }
         let id = self.unique_slug(text);
-        let mut attrs = self.block_attrs("data_heading", span);
+        write!(&mut self.out, "<h{level}").expect("writing into a string");
+        write_block_attrs(
+            &mut self.out,
+            &mut self.blocks,
+            &mut self.next_block_id,
+            "data_heading",
+            span,
+        );
         if borrowed {
-            attrs.push_str(BORROWED_TITLE_ATTR);
+            self.out.push_str(BORROWED_TITLE_ATTR);
         }
-        self.push(&format!(
-            "<h{level}{attrs} id=\"{}\">{}</h{level}>\n",
+        write!(
+            &mut self.out,
+            " id=\"{}\">{}</h{level}>\n",
             encode_double_quoted_attribute(&id),
             encode_text(text)
-        ));
+        )
+        .expect("writing into a string");
+    }
+}
+
+/// Stamp one opening tag while recording the matching source range.
+fn write_block_attrs(
+    out: &mut String,
+    blocks: &mut Vec<BlockSpan>,
+    next_block_id: &mut usize,
+    kind: &'static str,
+    span: Option<Range<usize>>,
+) {
+    let id = *next_block_id;
+    *next_block_id += 1;
+    match span {
+        Some(range) => {
+            blocks.push(BlockSpan::new(id, kind, range.start, range.end));
+            write!(
+                out,
+                " data-block-id=\"{id}\" data-src-start=\"{}\" data-src-end=\"{}\" data-block-kind=\"{kind}\"",
+                range.start, range.end
+            )
+            .expect("writing into a string");
+        }
+        None => write!(out, " data-block-id=\"{id}\" data-block-kind=\"{kind}\"")
+            .expect("writing into a string"),
     }
 }
 
@@ -832,13 +850,8 @@ pub(crate) fn render_data_document(
 
     match &root.value {
         DataValue::Mapping(pairs) => {
-            let skip = title.is_some().then_some(title_key).flatten();
-            let kept: Vec<(String, DataNode)> = pairs
-                .iter()
-                .filter(|(name, _)| Some(name) != skip.as_ref())
-                .cloned()
-                .collect();
-            render_mapping(&kept, &mut ctx, 0);
+            let skip = title.is_some().then_some(title_key.as_deref()).flatten();
+            render_mapping(pairs, &mut ctx, 0, skip);
         }
         _ => render_node(root, &mut ctx, 0),
     }
@@ -865,14 +878,19 @@ fn title_key_of(root: &DataNode) -> Option<String> {
 
 fn render_node(node: &DataNode, ctx: &mut DataCtx, depth: usize) {
     match &node.value {
-        DataValue::Mapping(pairs) => render_mapping(pairs, ctx, depth),
+        DataValue::Mapping(pairs) => render_mapping(pairs, ctx, depth, None),
         DataValue::Sequence(items) => render_sequence(items, ctx, depth),
         DataValue::Scalar(text) => render_prose(text, node.span.clone(), ctx),
     }
 }
 
 /// Render a mapping: consecutive scalar keys collapse into one field list, and anything holding more structure becomes a section.
-fn render_mapping(pairs: &[(String, DataNode)], ctx: &mut DataCtx, depth: usize) {
+fn render_mapping(
+    pairs: &[(String, DataNode)],
+    ctx: &mut DataCtx,
+    depth: usize,
+    skipped_key: Option<&str>,
+) {
     let mut index = 0;
     while index < pairs.len() {
         if pairs[index].1.as_scalar().is_some() {
@@ -880,7 +898,7 @@ fn render_mapping(pairs: &[(String, DataNode)], ctx: &mut DataCtx, depth: usize)
             while end < pairs.len() && pairs[end].1.as_scalar().is_some() {
                 end += 1;
             }
-            render_fields(&pairs[index..end], ctx);
+            render_fields(&pairs[index..end], ctx, skipped_key);
             index = end;
             continue;
         }
@@ -933,23 +951,33 @@ fn record_label(node: &DataNode) -> Option<String> {
 }
 
 /// Render scalar-valued keys as one label/value list, skipping the ones that say nothing (a `null`, an empty string) as the XML renderer skips empty elements.
-fn render_fields(pairs: &[(String, DataNode)], ctx: &mut DataCtx) {
-    let mut rows = String::new();
+fn render_fields(pairs: &[(String, DataNode)], ctx: &mut DataCtx, skipped_key: Option<&str>) {
+    let mut opened = false;
     for (key, node) in pairs {
+        if Some(key.as_str()) == skipped_key {
+            continue;
+        }
         let Some(text) = node.as_scalar().filter(|text| !text.trim().is_empty()) else {
             continue;
         };
-        let attrs = ctx.block_attrs("data_field", node.span.clone());
-        rows.push_str(&format!(
-            "<dt>{}</dt><dd{attrs}>{}</dd>\n",
-            encode_text(&ctx.label(key)),
-            linkify(text)
-        ));
+        if !opened {
+            ctx.push("<dl class=\"data-fields\">\n");
+            opened = true;
+        }
+        let label = ctx.label(key);
+        write!(&mut ctx.out, "<dt>{}</dt><dd", encode_text(&label)).expect("writing into a string");
+        write_block_attrs(
+            &mut ctx.out,
+            &mut ctx.blocks,
+            &mut ctx.next_block_id,
+            "data_field",
+            node.span.clone(),
+        );
+        write!(&mut ctx.out, ">{}</dd>\n", linkify(text)).expect("writing into a string");
     }
-    if rows.is_empty() {
-        return;
+    if opened {
+        ctx.push("</dl>\n");
     }
-    ctx.push(&format!("<dl class=\"data-fields\">\n{rows}</dl>\n"));
 }
 
 /// Render a scalar as a paragraph.
@@ -957,8 +985,15 @@ fn render_prose(text: &str, span: Option<Range<usize>>, ctx: &mut DataCtx) {
     if text.trim().is_empty() {
         return;
     }
-    let attrs = ctx.block_attrs("data_prose", span);
-    ctx.push(&format!("<p{attrs}>{}</p>\n", linkify(text)));
+    ctx.push("<p");
+    write_block_attrs(
+        &mut ctx.out,
+        &mut ctx.blocks,
+        &mut ctx.next_block_id,
+        "data_prose",
+        span,
+    );
+    write!(&mut ctx.out, ">{}</p>\n", linkify(text)).expect("writing into a string");
 }
 
 /// Render a run of scalars as a bulleted list.
@@ -975,8 +1010,15 @@ fn render_list(items: &[DataNode], ctx: &mut DataCtx) {
     let span = (values.len() == items.len())
         .then(|| enclosing_span(items))
         .flatten();
-    let attrs = ctx.block_attrs("data_list", span);
-    let mut html = format!("<ul class=\"data-list\"{attrs}>\n");
+    let mut html = String::from("<ul class=\"data-list\"");
+    write_block_attrs(
+        &mut html,
+        &mut ctx.blocks,
+        &mut ctx.next_block_id,
+        "data_list",
+        span,
+    );
+    html.push_str(">\n");
     for value in values {
         html.push_str(&format!("<li>{}</li>\n", linkify(value)));
     }
@@ -1016,8 +1058,15 @@ fn table_columns(items: &[DataNode], labels: LabelStyle) -> Option<Vec<(String, 
 
 /// Render records as one table, one row each.
 fn render_table(items: &[DataNode], columns: &[(String, String)], ctx: &mut DataCtx) {
-    let attrs = ctx.block_attrs("data_table", enclosing_span(items));
-    let mut html = format!("<table class=\"data-table\"{attrs}>\n<thead><tr>");
+    let mut html = String::from("<table class=\"data-table\"");
+    write_block_attrs(
+        &mut html,
+        &mut ctx.blocks,
+        &mut ctx.next_block_id,
+        "data_table",
+        enclosing_span(items),
+    );
+    html.push_str(">\n<thead><tr>");
     for (_, label) in columns {
         html.push_str(&format!("<th>{}</th>", encode_text(label)));
     }

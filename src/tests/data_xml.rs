@@ -2,6 +2,63 @@
 
 use super::*;
 
+fn one_megabyte_data_source(line: &str) -> String {
+    let mut source = String::new();
+    while source.len() + line.len() <= 1024 * 1024 {
+        source.push_str(line);
+    }
+    source
+}
+
+#[test]
+#[ignore = "release-build measurement"]
+fn measure_one_megabyte_json_render() {
+    let source = one_megabyte_data_source("\"setting\": \"https://example.com/page\",\n");
+    let source = format!("{{\n{source}}}\n");
+    let started = std::time::Instant::now();
+    let (_title, html, _blocks) = render_json_document(&source, Some("One megabyte"));
+    let elapsed = started.elapsed();
+    assert_contains(&html, "example.com");
+    eprintln!(
+        "1 MB JSON render: {elapsed:?} ({} source bytes)",
+        source.len()
+    );
+}
+
+#[test]
+#[ignore = "release-build measurement"]
+fn measure_one_megabyte_yaml_render() {
+    let source = one_megabyte_data_source("setting: https://example.com/page\n");
+    let started = std::time::Instant::now();
+    let (_title, html, _blocks) = render_yaml_document(&source, Some("One megabyte"));
+    let elapsed = started.elapsed();
+    assert_contains(&html, "example.com");
+    eprintln!(
+        "1 MB YAML render: {elapsed:?} ({} source bytes)",
+        source.len()
+    );
+}
+
+#[test]
+#[ignore = "release-build measurement"]
+fn measure_one_megabyte_ini_renderer_and_open() {
+    let source = one_megabyte_data_source("setting = https://example.com/page\n");
+
+    let started = std::time::Instant::now();
+    let (_title, html, _blocks) = render_ini_document(&source, Some("One megabyte"));
+    let rendered = started.elapsed();
+    assert_contains(&html, "example.com");
+
+    let started = std::time::Instant::now();
+    let document = opened_document_from_source(&source, "one-megabyte.ini");
+    let opened = started.elapsed();
+    assert_contains(&document.html, "example.com");
+    eprintln!(
+        "1 MB INI renderer: {rendered:?}; open: {opened:?} ({} source bytes)",
+        source.len()
+    );
+}
+
 #[test]
 fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>

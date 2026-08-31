@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, fakeElement, readingCss, record, root, source } from './shared.mjs';
+import { check, checkSettled, fakeElement, readingCss, record, root, settle, source } from './shared.mjs';
 
 // The flowchart sheet, every fragment of it. The two negative guards below read the lot rather than whichever file kept the name, or a later cut quietly takes lines out of their reach.
 const SHEET_FRAGMENTS = [
@@ -1513,6 +1513,46 @@ export function run() {
       booted.forgetFlowShapeGrid();
       read(`flowPickerBody.textContent = '';`);
       read(`flowPickerHead.textContent = '';`);
+      booted.__frames.drain();
+    }
+  });
+
+  // Building the grid costs 4.4ms and placing it costs nothing, so the build goes where nobody is waiting: the moment the forty-seven pictures land, which the sheet already spends waiting. The draw still asks for one, and the only copy that takes it up is the one whose mermaid never answered.
+  checkSettled('the shape grid is built when the pictures land, not on the first click on a box', async () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const body = read('flowPickerBody');
+    const shapes = read('flowShapeCatalog()').length;
+    const held = booted.window.mermaid;
+    const placed = () => read('flowShapeWrap').parentElement === body;
+    try {
+      booted.window.mermaid = { initialize: () => {}, render: () => Promise.resolve({ svg: '<svg></svg>' }) };
+      booted.forgetFlowShapeGrid();
+      read('flowChipCache.clear(); flowChipsAsked = false;');
+      booted.loadFlowChips();
+      await settle();
+      // Built and pictured, and nowhere near the body: the sheet is shut, so there is nothing yet to place it behind.
+      const grid = read('flowShapeGrid');
+      if (!grid) throw new Error('the pictures landed and no grid was prepared');
+      const buttons = read('flowShapeButtons');
+      if (buttons.size !== shapes) throw new Error(`the prepared grid holds ${buttons.size} buttons against ${shapes} shapes`);
+      if (!buttons.get('rect').innerHTML.includes('svg')) throw new Error('the prepared buttons came without their pictures');
+      if (placed()) throw new Error('the prepared grid was placed in a shut sheet');
+      // So the first click on a box only places what is already standing.
+      read(`flowSession = { save: null, text: 'flowchart TD\\n  A["a"]', graph: null }; flowSession.graph = parseFlow(flowSession.text); flowSelection = { kind: 'node', id: flowSession.graph.nodes[0].id };`);
+      booted.drawFlowPicker();
+      if (read('flowShapeGrid') !== grid) throw new Error('the first click on a box built the grid again');
+      if (!placed()) throw new Error('the first click on a box never placed the grid');
+      // And where mermaid never answered, that first box still gets every named shape under its eight headings.
+      read('flowChipCache.clear();');
+      booted.forgetFlowShapeGrid();
+      booted.drawFlowPicker();
+      if (read('flowShapeButtons').size !== shapes) throw new Error('a copy with no pictures drew a short grid');
+      if (read('flowShapeGrid').length !== shapes + 8) throw new Error('a copy with no pictures lost its headings');
+      if (!placed()) throw new Error('a copy with no pictures never placed its grid');
+    } finally {
+      booted.window.mermaid = held;
+      read(`flowSession = null; flowSelection = null; flowChipCache.clear(); flowChipsAsked = false; flowPickerBody.textContent = ''; flowPickerHead.textContent = '';`);
+      booted.forgetFlowShapeGrid();
       booted.__frames.drain();
     }
   });

@@ -231,28 +231,33 @@ let flowShapeButtons = null;
 let flowShapeMarked = null;
 let flowShapePress = null;
 
-function flowShapeGridStands() {
-  if (!flowShapeGrid) {
-    flowShapeGrid = [];
-    flowShapeButtons = new Map();
-    // One wrapper around the lot, laid out as the same two columns the body is, so a button comes back at the x and the width it had loose in the body. It is what lets the grid stay in the page and merely collapse: fifty-five elements taken out and put back are a fresh layout of forty-seven SVGs, which is 8.0ms of a click from a line onto a box against 1.3ms.
-    flowShapeWrap = document.createElement('div');
-    flowShapeWrap.className = 'flow-shape-grid';
-    for (const family of flowShapeFamilies()) {
-      if (!family.shapes.length) continue;
-      flowShapeGrid.push(flowPickerHeading(family.name));
-      for (const shape of family.shapes) {
-        const button = flowPickerChoice(family.name, shape, flowShapeChip(shape.id), (id) => {
-          if (flowShapePress) flowShapePress(id);
-        });
-        button.tabIndex = 0;
-        flowShapeButtons.set(shape.id, button);
-        flowShapeGrid.push(button);
-      }
+// Building the buttons and putting them in the body are two jobs, because only the second one has somebody's click behind it. Preparing costs 4.4ms of the first draw of a session; the pictures landing is a moment nobody is waiting on, so that is where the build is asked for. A draw that finds one prepared merely places it.
+function flowShapeGridPrepared() {
+  if (flowShapeGrid) return;
+  flowShapeGrid = [];
+  flowShapeButtons = new Map();
+  // One wrapper around the lot, laid out as the same two columns the body is, so a button comes back at the x and the width it had loose in the body. It is what lets the grid stay in the page and merely collapse: fifty-five elements taken out and put back are a fresh layout of forty-seven SVGs, which is 8.0ms of a click from a line onto a box against 1.3ms.
+  flowShapeWrap = document.createElement('div');
+  flowShapeWrap.className = 'flow-shape-grid';
+  for (const family of flowShapeFamilies()) {
+    if (!family.shapes.length) continue;
+    flowShapeGrid.push(flowPickerHeading(family.name));
+    for (const shape of family.shapes) {
+      const button = flowPickerChoice(family.name, shape, flowShapeChip(shape.id), (id) => {
+        if (flowShapePress) flowShapePress(id);
+      });
+      button.tabIndex = 0;
+      flowShapeButtons.set(shape.id, button);
+      flowShapeGrid.push(button);
     }
-    for (const element of flowShapeGrid) flowShapeWrap.appendChild(element);
-    flowShapeMarked = null;
   }
+  for (const element of flowShapeGrid) flowShapeWrap.appendChild(element);
+  flowShapeMarked = null;
+}
+
+function flowShapeGridStands() {
+  // Still built here where the pictures never arrived, so a copy whose mermaid load failed shows a sheet full of named shapes rather than an empty one.
+  flowShapeGridPrepared();
   if (flowShapeWrap.parentElement !== flowPickerBody) flowPickerBody.appendChild(flowShapeWrap);
   if (!flowShapeWrap.classList.contains('is-collapsed')) return;
   flowShapeWrap.classList.remove('is-collapsed');
