@@ -6,10 +6,17 @@
 
 const sourceByteEncoder = new TextEncoder();
 const sourceByteDecoder = new TextDecoder();
+// The bytes of the last source asked for. Replace-all takes two ranges per match group and a column rename two per cell, so a long document was encoded whole a thousand times over for a few kilobytes of answer. Keyed on the string handed in rather than kept beside `currentDocumentSource`, which also moves after a live splice and after a buffer re-sync.
+let sourceByteCacheOf = null;
+let sourceByteCache = null;
 // The raw source between two UTF-8 byte offsets. Block ranges are byte offsets (Rust), but JS strings are UTF-16, so slice on the encoded bytes.
 function sliceSourceBytes(source, start, end) {
-  const bytes = sourceByteEncoder.encode(source || '');
-  return sourceByteDecoder.decode(bytes.slice(start, end));
+  const text = source || '';
+  if (sourceByteCache === null || text !== sourceByteCacheOf) {
+    sourceByteCache = sourceByteEncoder.encode(text);
+    sourceByteCacheOf = text;
+  }
+  return sourceByteDecoder.decode(sourceByteCache.slice(start, end));
 }
 
 // The source ranges of a run of blocks, in document order — or null unless every one is present, ordered and non-overlapping. The host refuses a run the same way, and a drifted map must not be given the chance to shred a file. Shared by the gutter's drag and the cross-block delete, which both hand the host one run.

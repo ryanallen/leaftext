@@ -330,6 +330,32 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
 }
 
 #[test]
+fn the_minimap_tiles_grained_cells_inside_its_scaled_copy() {
+    let css = reading_mode_css();
+    let minimap = rule_body(
+        css,
+        ".document-minimap-preview.document-body .document-outline,",
+    );
+
+    for selector in [
+        ".document-minimap-preview.document-body .document-outline,",
+        ".document-minimap-preview.document-body .tei-front,",
+        ".document-minimap-preview.document-body pre,",
+        ".document-minimap-preview.document-body th,",
+        ".document-minimap-preview.document-body tr:nth-child(2n) td,",
+        ".document-minimap-preview.document-body tr:nth-child(2n + 1) td,",
+        ".document-minimap-preview.document-body td {",
+    ] {
+        assert_contains(css, selector);
+    }
+    assert_contains(minimap, "background-attachment: scroll;");
+    assert!(
+        minimap.starts_with(".document-minimap-preview.document-body"),
+        "the minimap rule needs two class selectors to outrank the document grain rules"
+    );
+}
+
+#[test]
 fn the_pager_card_fills_with_the_theme_and_throws_the_halftone_instead_of_graining() {
     let css = reading_mode_css();
 
@@ -676,6 +702,13 @@ fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
     assert!(
         anchored >= 10,
         "the stylesheet should still anchor the dot lattice on the app's surfaces ({anchored} found)"
+    );
+    assert_contains(
+        rule_body(
+            css,
+            ".document-minimap-preview.document-body .document-outline,",
+        ),
+        "background-attachment: scroll;",
     );
 }
 

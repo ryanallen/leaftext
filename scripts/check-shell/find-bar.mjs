@@ -75,6 +75,54 @@ export function run() {
     field.value = '';
   });
 
+  // Every caller slices the one document, so the helper keeps the bytes of the source it was last handed. A block rewrite that encoded the whole file again per slice made replace-all cost the document once per match rather than once.
+  check('one source is encoded once however many blocks are rewritten', () => {
+    const { findRewriteBlock, sliceSourceBytes } = booted;
+    const field = booted.document.getElementById('findInput');
+    field.value = 'dharma';
+    const encodes = () => vm.runInContext('__encodeCalls', booted);
+    const reset = () => vm.runInContext('__encodeCalls = 0', booted);
+    vm.runInContext(
+      '__realEncode = TextEncoder.prototype.encode; __encodeCalls = 0; TextEncoder.prototype.encode = function (text) { __encodeCalls += 1; return __realEncode.call(this, text); };',
+      booted
+    );
+    try {
+      const first = '# Notes\n\nThe dharma talk, and the dharma book.\n';
+      booted.window.leafBlocksResynced({ source: first });
+      const group = { start: first.indexOf('The'), end: first.length - 1, ranks: [0, 1], total: 2 };
+      reset();
+      for (let round = 0; round < 20; round += 1) findRewriteBlock(group, 'sutra');
+      if (encodes() !== 1) throw new Error(`twenty rewrites of one source encoded it ${encodes()} times`);
+
+      // A second source is encoded once more and answers out of its own bytes. Its heading carries an o-umlaut, so the paragraph starts one byte later than it starts characters — the reading that goes wrong first if the cache ever hands back the source before it.
+      const second = '# Nötes\n\nThe dharma talk, and the dharma book.\n';
+      booted.window.leafBlocksResynced({ source: second });
+      const bytes = new TextEncoder();
+      const at = bytes.encode(second.slice(0, second.indexOf('The'))).length;
+      const to = bytes.encode(second).length - 1;
+      if (at !== second.indexOf('The') + 1) throw new Error('the second source does not push the block off its character offset');
+      reset();
+      const rewritten = findRewriteBlock({ start: at, end: to, ranks: [0, 1], total: 2 }, 'sutra');
+      if (encodes() !== 1) throw new Error(`a source the helper had not seen encoded ${encodes()} times`);
+      if (rewritten !== 'The sutra talk, and the sutra book.') throw new Error(`the second source rewrote: ${rewritten}`);
+
+      // And the first source is a fresh one again, because only the last is kept.
+      reset();
+      if (sliceSourceBytes(first, group.start, group.end) !== 'The dharma talk, and the dharma book.') {
+        throw new Error('the first source came back wrong after a second one');
+      }
+      if (encodes() !== 1) throw new Error(`going back to the first source encoded ${encodes()} times`);
+
+      // An empty source is still an empty answer rather than a throw, which is what every caller with no document open hands in.
+      reset();
+      if (sliceSourceBytes('', 0, 0) !== '') throw new Error('an empty source did not slice to nothing');
+      if (sliceSourceBytes(null, 0, 4) !== '') throw new Error('a missing source did not slice to nothing');
+    } finally {
+      vm.runInContext('TextEncoder.prototype.encode = __realEncode;', booted);
+      field.value = '';
+    }
+  });
+
   check('a locked view finds and refuses to replace', () => {
     const { replaceInReading, replaceInSource } = booted;
     const posted = [];

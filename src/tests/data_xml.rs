@@ -2,47 +2,154 @@
 
 use super::*;
 
-fn one_megabyte_data_source(line: &str) -> String {
-    let mut source = String::new();
-    while source.len() + line.len() <= 1024 * 1024 {
-        source.push_str(line);
+/// One document in the three spellings a data page arrives in, grown to at least `bytes` of YAML.
+struct NestedDataSources {
+    yaml: String,
+    json: String,
+    ini: String,
+}
+
+/// A config file's shape — sections of three scalar keys each — written the three ways a data page reads. The nesting is what a measurement needs: the YAML scanner reports a section's block mapping past the indentation of the key that opens it, so every section sends the marker backwards, where a flat repeated key nests nowhere and shows none of that cost.
+fn nested_data_sources(bytes: usize) -> NestedDataSources {
+    let mut yaml = String::new();
+    let mut sections = 0;
+    while yaml.len() < bytes {
+        yaml.push_str(&format!(
+            "section{sections}:\n  name: value{sections}\n  url: https://example.com/page{sections}\n  count: '{sections}'\n"
+        ));
+        sections += 1;
     }
-    source
+    let mut json = String::from("{\n");
+    let mut ini = String::new();
+    for section in 0..sections {
+        let comma = if section + 1 == sections { "" } else { "," };
+        json.push_str(&format!(
+            "  \"section{section}\": {{ \"name\": \"value{section}\", \"url\": \"https://example.com/page{section}\", \"count\": \"{section}\" }}{comma}\n"
+        ));
+        ini.push_str(&format!(
+            "[section{section}]\nname = value{section}\nurl = https://example.com/page{section}\ncount = {section}\n"
+        ));
+    }
+    json.push_str("}\n");
+    NestedDataSources { yaml, json, ini }
+}
+
+/// How many top-level sections a measured document parsed to, so a reading says what it was taken over.
+fn tree_sections(tree: &DataNode) -> usize {
+    match &tree.value {
+        DataValue::Mapping(pairs) => pairs.len(),
+        DataValue::Sequence(items) => items.len(),
+        DataValue::Scalar(_) => 0,
+    }
+}
+
+#[test]
+fn a_nested_yaml_document_costs_the_cursor_about_a_step_a_byte() {
+    // Every section sends the marker backwards, and answering that by rescanning from the top made the walk quadratic — about 1,260 characters a byte here, where keeping the place and stepping back is 1.08. The count is asserted rather than the time because it is the same number on every machine and in every profile.
+    let yaml = nested_data_sources(256 * 1024).yaml;
+
+    let (tree, walked) = parse_yaml_counting_walk(&yaml);
+
+    assert!(tree.is_ok(), "{tree:?}");
+    assert!(
+        walked < yaml.len() * 2,
+        "{walked} characters walked over {} source bytes",
+        yaml.len()
+    );
+}
+
+#[test]
+fn the_same_document_as_yaml_and_as_json_parses_to_one_tree() {
+    // The backward walk must not buy its speed by handing back a different document. Ranges are dropped from both because the two spellings put the same values at different offsets, and where each range lands is the multi-byte test's job.
+    let sources = nested_data_sources(16 * 1024);
+
+    let mut from_yaml = parse_yaml(&sources.yaml).expect("the YAML parses");
+    let mut from_json = parse_json(&sources.json).expect("the JSON parses");
+    from_yaml.strip_spans();
+    from_json.strip_spans();
+
+    assert_eq!(from_yaml, from_json);
+}
+
+#[test]
+fn multi_byte_characters_move_every_proved_range_by_their_own_bytes() {
+    // The whole reason for the cursor: the scanner counts characters and every range in the app is a byte offset. With wide characters before a scalar, inside it and after it, the same scalars are proved and each range still cuts its own value — which is the first thing that breaks if the walk ever steps by bytes.
+    let wide = "# café — a note\nsection:\n  name: café — value\n  url: https://example.com/page\nafter: café — last\n";
+    let plain = wide.replace("café — ", "");
+
+    let sliced = |source: &str| {
+        let (_title, _html, blocks) = render_yaml_document(source, None);
+        blocks
+            .iter()
+            .map(|block| source[block.start..block.end].to_string())
+            .collect::<Vec<String>>()
+    };
+
+    let wide_slices = sliced(wide);
+    assert_eq!(
+        wide_slices,
+        vec!["café — value", "https://example.com/page", "café — last"]
+    );
+    assert_eq!(
+        wide_slices
+            .iter()
+            .map(|slice| slice.replace("café — ", ""))
+            .collect::<Vec<String>>(),
+        sliced(&plain)
+    );
 }
 
 #[test]
 #[ignore = "release-build measurement"]
 fn measure_one_megabyte_json_render() {
-    let source = one_megabyte_data_source("\"setting\": \"https://example.com/page\",\n");
-    let source = format!("{{\n{source}}}\n");
+    let source = nested_data_sources(1024 * 1024).json;
+
     let started = std::time::Instant::now();
-    let (_title, html, _blocks) = render_json_document(&source, Some("One megabyte"));
-    let elapsed = started.elapsed();
+    let tree = parse_json(&source).expect("the JSON parses");
+    let parsed = started.elapsed();
+
+    // The render is timed on the tree the parse built rather than through `render_json_document`, which would parse a second time and report both halves as one figure.
+    let started = std::time::Instant::now();
+    let (_title, html, _blocks) =
+        render_data_document(&tree, Some("One megabyte"), LabelStyle::Humanized);
+    let rendered = started.elapsed();
+
     assert_contains(&html, "example.com");
     eprintln!(
-        "1 MB JSON render: {elapsed:?} ({} source bytes)",
-        source.len()
+        "1 MB JSON parse: {parsed:?}; render: {rendered:?} ({} source bytes, {} sections)",
+        source.len(),
+        tree_sections(&tree)
     );
 }
 
 #[test]
 #[ignore = "release-build measurement"]
 fn measure_one_megabyte_yaml_render() {
-    let source = one_megabyte_data_source("setting: https://example.com/page\n");
+    let source = nested_data_sources(1024 * 1024).yaml;
+
     let started = std::time::Instant::now();
-    let (_title, html, _blocks) = render_yaml_document(&source, Some("One megabyte"));
-    let elapsed = started.elapsed();
+    let (tree, walked) = parse_yaml_counting_walk(&source);
+    let parsed = started.elapsed();
+    let tree = tree.expect("the YAML parses");
+
+    // As above: the render is taken over the parsed tree, so the two figures are the two halves rather than one and one-and-a-half.
+    let started = std::time::Instant::now();
+    let (_title, html, _blocks) =
+        render_data_document(&tree, Some("One megabyte"), LabelStyle::Humanized);
+    let rendered = started.elapsed();
+
     assert_contains(&html, "example.com");
     eprintln!(
-        "1 MB YAML render: {elapsed:?} ({} source bytes)",
-        source.len()
+        "1 MB YAML parse: {parsed:?} ({walked} characters walked); render: {rendered:?} ({} source bytes, {} sections)",
+        source.len(),
+        tree_sections(&tree)
     );
 }
 
 #[test]
 #[ignore = "release-build measurement"]
 fn measure_one_megabyte_ini_renderer_and_open() {
-    let source = one_megabyte_data_source("setting = https://example.com/page\n");
+    let source = nested_data_sources(1024 * 1024).ini;
 
     let started = std::time::Instant::now();
     let (_title, html, _blocks) = render_ini_document(&source, Some("One megabyte"));

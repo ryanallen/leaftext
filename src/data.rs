@@ -38,7 +38,7 @@ impl DataNode {
     }
 
     /// Drop every range in this node and everything under it. A YAML alias is a copy of the anchored value, and the anchor's text is where the anchor is — keeping the ranges gives two blocks one slice, so editing the alias rewrites the anchor's line. Recursive because a collection is `None` at its top while every scalar inside it still holds a real range.
-    fn strip_spans(&mut self) {
+    pub(crate) fn strip_spans(&mut self) {
         self.span = None;
         match &mut self.value {
             DataValue::Scalar(_) => {}
@@ -401,21 +401,32 @@ fn line_of(source: &str, offset: usize) -> usize {
 
 /// Parse YAML into the shared tree, driving the parser's event stream so the tree keeps source order and byte ranges. A stream holding several documents becomes a sequence of them.
 pub(crate) fn parse_yaml(source: &str) -> Result<DataNode, DataError> {
+    parse_yaml_counting_walk(source).0
+}
+
+/// The same parse, with the number of characters the cursor stepped over reaching every marker. That count is what proves the cursor stays linear in the file's size, and it is the same number on every machine and in every profile where a wall-clock reading is neither.
+pub(crate) fn parse_yaml_counting_walk(source: &str) -> (Result<DataNode, DataError>, usize) {
     let mut builder = YamlBuilder::new(source);
     let mut parser = YamlEventParser::new_from_str(source);
-    parser.load(&mut builder, true).map_err(|error| DataError {
+    let loaded = parser.load(&mut builder, true).map_err(|error| DataError {
         message: error.to_string(),
         // The scanner's message already names the line and column, and its own index counts characters rather than bytes.
         line: None,
-    })?;
-    builder.finish()
+    });
+    let walked = builder.cursor.walked;
+    match loaded {
+        Err(error) => (Err(error), walked),
+        Ok(()) => (builder.finish(), walked),
+    }
 }
 
-/// Marker indices from the YAML scanner count *characters*; every block range in the app is a byte offset. Events arrive in source order, so one forward-only cursor converts them without building a table over the whole file.
+/// Marker indices from the YAML scanner count *characters*; every block range in the app is a byte offset. Events arrive close to source order, so one cursor that keeps its place converts them without building a table over the whole file.
 struct CharCursor<'a> {
     source: &'a str,
     characters: usize,
     bytes: usize,
+    /// Characters stepped over, either way, across every marker so far.
+    walked: usize,
 }
 
 impl<'a> CharCursor<'a> {
@@ -424,14 +435,19 @@ impl<'a> CharCursor<'a> {
             source,
             characters: 0,
             bytes: 0,
+            walked: 0,
         }
     }
 
     fn byte_of(&mut self, character_index: usize) -> usize {
-        // Ordered input never rewinds, but a restart costs one scan and keeps this correct if the parser ever hands back an earlier marker.
-        if character_index < self.characters {
-            self.characters = 0;
-            self.bytes = 0;
+        // Markers do step back, once per nested block mapping: the scanner reports a mapping past the indentation of the key that opens it. Walking those few characters back keeps the place; dropping it rescanned everything read so far, which cost a nested megabyte 5.2 billion character steps of a 1.1 million step job.
+        while self.characters > character_index {
+            let Some(character) = self.source[..self.bytes].chars().next_back() else {
+                break;
+            };
+            self.bytes -= character.len_utf8();
+            self.characters -= 1;
+            self.walked += 1;
         }
         while self.characters < character_index {
             let Some(character) = self.source[self.bytes..].chars().next() else {
@@ -439,6 +455,7 @@ impl<'a> CharCursor<'a> {
             };
             self.bytes += character.len_utf8();
             self.characters += 1;
+            self.walked += 1;
         }
         self.bytes
     }

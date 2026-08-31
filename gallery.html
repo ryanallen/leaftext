@@ -7787,6 +7787,16 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0 !important;
   pointer-events: none;
 }
+/* Scaling takes the clone off the shared lattice: 31.5ms a frame before, 7.2ms after. */
+.document-minimap-preview.document-body .document-outline,
+.document-minimap-preview.document-body .tei-front,
+.document-minimap-preview.document-body pre,
+.document-minimap-preview.document-body th,
+.document-minimap-preview.document-body tr:nth-child(2n) td,
+.document-minimap-preview.document-body tr:nth-child(2n + 1) td,
+.document-minimap-preview.document-body td {
+  background-attachment: scroll;
+}
 /* The clone is inert; clicks belong to the rail, which handles jump/drag. */
 .document-minimap-preview,
 .document-minimap-preview * {
