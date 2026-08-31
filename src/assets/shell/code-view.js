@@ -1058,8 +1058,10 @@ function renderCodeView(state) {
   disconnectReaderReflowObserver();
   // A pass the map's reveal queued would land after the line below has replaced the document with the editor, find nothing to measure, and write that nothing over the reader's place.
   cancelReaderLayoutUpdate();
-  // Same as a document render: what is in `app` goes, so the overlay has to be taken down rather than swept away underneath its own handlers.
+  // Same as a document render: what is in `app` goes, so each full-window view has to be taken down rather than swept away underneath its own handlers.
   closeDiagramOverlay();
+  closeTableSheet();
+  closeImageSheet();
   readerAnchorBlocks = null;
   app.className = 'reader-shell has-document code-view-monaco-shell';
   // Flag the code view at the document root so the header's active tab (a sibling of the reader, not a descendant) can match the code surface color.

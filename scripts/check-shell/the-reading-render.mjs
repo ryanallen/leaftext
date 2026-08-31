@@ -104,6 +104,69 @@ export function run() {
     if (read('pendingCodeViewSrcOffset') !== 0) throw new Error(`the top of the document took the offset ${read('pendingCodeViewSrcOffset')}`);
   });
 
+  // A full-window table, picture or diagram is built inside the reading view, so the write below takes it away whether or not anything was told. Only the diagram was, which left a term raised out of a table standing over a document it never came from — and, once the bubble is handed to one of these, a view nobody ever closed holding it down for the rest of the launch.
+  check('a render takes a full-window table and picture down through their own closes before it replaces the reading view', () => {
+    const { context, app, body } = bootReading({ path: 'C:\Notes\wide.md', blocks: [{ srcStart: 0 }] });
+    const glossary = context.document.getElementById('glossarySheet');
+    // A close waits out its exit animation, and nothing here ever tells a sheet its animation ended, so the fallback runs where it stands.
+    const wasTimeout = context.setTimeout;
+    context.setTimeout = (fn) => { fn(); return 0; };
+    // What was still standing on the reading view at the one moment the render replaces it. A view swept away answers here; a view closed first does not.
+    const own = Object.getOwnPropertyDescriptor(app, 'innerHTML');
+    const sweeps = [];
+    Object.defineProperty(app, 'innerHTML', {
+      get: own.get,
+      set: (value) => {
+        sweeps.push(app.children.map((child) => String(child.className || '')).join(' '));
+        own.set(value);
+      },
+      configurable: true,
+      enumerable: true,
+    });
+    try {
+      body.innerHTML = '<table data-block-kind="table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>One</td></tr></tbody></table><img src="leaf-asset://one.png" alt="One">';
+      const table = body.querySelector('table');
+      const picture = body.querySelector('img');
+      if (!table || !picture) throw new Error('the document was drawn without a table or a picture to open');
+
+      context.openTableSheet(table, null);
+      if (!app.querySelector('.table-sheet-overlay')) throw new Error('the full-window table did not open');
+      // A term raised out of that table, which only the table's own close dismisses.
+      context.showGlossary();
+      if (glossary.hidden) throw new Error('the term raised out of the table did not come up');
+
+      sweeps.length = 0;
+      renderReadingDocument(context, { path: 'C:\Notes\other.md', blocks: [{ srcStart: 0 }] });
+      if (sweeps.length !== 1) throw new Error(`the render replaced the reading view ${sweeps.length} times`);
+      if (sweeps[0].includes('table-sheet-overlay')) throw new Error('the render swept the full-window table away rather than closing it');
+      if (!glossary.hidden) throw new Error('the term raised out of the table was left standing over a document it never came from');
+
+      const fresh = context.document.getElementById('app').querySelector('.document-body');
+      fresh.innerHTML = '<img src="leaf-asset://two.png" alt="Two">';
+      context.openImageSheet(fresh.querySelector('img'), null);
+      if (!app.querySelector('.image-sheet-overlay')) throw new Error('the full-window picture did not open');
+
+      sweeps.length = 0;
+      renderReadingDocument(context, { path: 'C:\Notes\third.md', blocks: [{ srcStart: 0 }] });
+      if (sweeps.length !== 1) throw new Error(`the second render replaced the reading view ${sweeps.length} times`);
+      if (sweeps[0].includes('image-sheet-overlay')) throw new Error('the render swept the full-window picture away rather than closing it');
+
+      // The swap into the code view replaces the same reading view, so it owes the same three closes.
+      const third = context.document.getElementById('app').querySelector('.document-body');
+      third.innerHTML = '<table data-block-kind="table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>One</td></tr></tbody></table>';
+      context.openTableSheet(third.querySelector('table'), null);
+      if (!app.querySelector('.table-sheet-overlay')) throw new Error('the full-window table did not open again');
+
+      sweeps.length = 0;
+      context.renderCodeView({ text: 'one\ntwo\nthree\n' });
+      if (sweeps.length !== 1) throw new Error(`the swap into the code view replaced the reading view ${sweeps.length} times`);
+      if (sweeps[0].includes('table-sheet-overlay')) throw new Error('the swap into the code view swept the full-window table away rather than closing it');
+    } finally {
+      Object.defineProperty(app, 'innerHTML', own);
+      context.setTimeout = wasTimeout;
+    }
+  });
+
   // ---- 4d. every way of opening a page draws one page and queues nothing -----
   //
   // A copy of the page being left laid over the one arriving delays every destination and moves a document after its bytes are ready, so the write that draws the new page is the whole of it: one layer, at full strength, with no clone, no direction and nothing waiting to be cleaned up afterwards.

@@ -129,9 +129,11 @@ function suspendHintForSheet(sheet) {
 }
 
 // Whether any of them is still on the window, asked of the sheets themselves rather than of a tally of closes: the flowchart editor hides its own shape picker instead of closing it, so a count would wait for ever on a close nobody is going to make.
+//
+// Two ways of having gone, because the things that stand over the window leave two ways. A sheet is hidden where it is; a full-window table, picture or diagram is taken out of the page and never says it is hidden at all, so one of those held by its own name alone would keep the bubble down for the rest of the launch.
 function hintSheetsStanding() {
   for (const sheet of [...hintSheets]) {
-    if (sheet.hidden) hintSheets.delete(sheet);
+    if (sheet.hidden || sheet.isConnected === false) hintSheets.delete(sheet);
   }
   return hintSheets.size > 0;
 }

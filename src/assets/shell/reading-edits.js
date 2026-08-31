@@ -1649,7 +1649,7 @@ function wireEmailClosedParts(body) {
 }
 
 // The shapes a data document draws a block as. Read with dataBlockKindOf, which is what says whether the element this finds is a block at all.
-const DATA_BLOCK_SHAPES = 'h1, h2, h3, h4, h5, h6, dd, ul.data-list, table.data-table, p';
+const DATA_BLOCK_SHAPES = 'h1, h2, h3, h4, h5, h6, dt, dd, ul.data-list, table.data-table, p';
 
 // A data block's kind, worked out from the tag and the class the renderer drew it as. Spelled out in an attribute on every block it weighs a megabyte on a megabyte of config; the tag already says it, and one press is the only thing that ever asks.
 function dataBlockKindOf(el) {
@@ -1657,6 +1657,7 @@ function dataBlockKindOf(el) {
   const tag = el.tagName;
   if (/^H[1-6]$/.test(tag)) return 'data_heading';
   const holds = (node, name) => !!node && !!node.classList && node.classList.contains(name);
+  if (tag === 'DT') return holds(el.parentElement, 'data-fields') ? 'data_field_name' : null;
   if (tag === 'DD') return holds(el.parentElement, 'data-fields') ? 'data_field' : null;
   if (tag === 'UL') return holds(el, 'data-list') ? 'data_list' : null;
   if (tag === 'TABLE') return holds(el, 'data-table') ? 'data_table' : null;
@@ -1684,6 +1685,11 @@ function wireDataClosedParts(body) {
     // A heading is a key's name as often as it is a value, and the page anchors none of the names — so it says where the words came from rather than claiming something about how a value is spelled.
     if (kind === 'data_heading') {
       leafToast('This heading comes from the file. Edit it in the source view.');
+      return;
+    }
+    // A name and a section heading are one key drawn at two depths, so this is the heading's own sentence in the reader's word for what they pressed.
+    if (kind === 'data_field_name') {
+      leafToast('This name comes from the file. Edit it in the source view.');
       return;
     }
     leafToast('This value is written a way the page cannot place in the file. Edit it in the source view.');

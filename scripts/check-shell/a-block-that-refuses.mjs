@@ -66,6 +66,8 @@ export function run() {
     // The blocks as the renderer draws them: nothing but the tag, the class and the parent the kind is read back from.
     const wearing = (...names) => ({ contains: (one) => names.includes(one) });
     const heading = { tagName: 'H2', classList: wearing() };
+    const name = { tagName: 'DT', classList: wearing(), parentElement: { classList: wearing('data-fields') } };
+    const looseName = { tagName: 'DT', classList: wearing(), parentElement: { classList: wearing() } };
     const field = { tagName: 'DD', classList: wearing(), parentElement: { classList: wearing('data-fields') } };
     const list = { tagName: 'UL', classList: wearing('data-list') };
     const table = { tagName: 'TABLE', classList: wearing('data-table') };
@@ -102,12 +104,19 @@ export function run() {
         throw new Error(`a heading was told it was a value: ${JSON.stringify(said)}`);
       }
 
-      // A block that opens answers for itself, the big heading over a file with no title of its own opens the rename box, a press on nothing at all is not a block, and the parse-error notice is the page talking rather than a value anybody can edit.
+      // A key's name is the same key as a heading one depth down, so it gets the heading's sentence in the reader's own word for what they pressed.
+      press({ target: at([], name) });
+      if (said.length !== 5 || !said[4].includes('This name comes from the file')) {
+        throw new Error(`a key's name did not say where its words came from: ${JSON.stringify(said)}`);
+      }
+
+      // A block that opens answers for itself, the big heading over a file with no title of its own opens the rename box, a definition outside a field list is not a data block, a press on nothing at all is not a block, and the parse-error notice is the page talking rather than a value anybody can edit.
       press({ target: at(['[data-src-start]'], field) });
       press({ target: at(['[data-borrowed-title]'], heading) });
+      press({ target: at([], looseName) });
       press({ target: at([], null) });
       press({ target: at([], notice) });
-      if (said.length !== 4) throw new Error(`a block that answers was growled at: ${JSON.stringify(said)}`);
+      if (said.length !== 5) throw new Error(`a block that answers was growled at: ${JSON.stringify(said)}`);
       // And the page wires it: a data document reaching the reading editor gets the same answer, or the lines above are a function nothing ever calls.
       const inApp = read('app');
       const wasQuery = inApp.querySelector;
@@ -146,6 +155,7 @@ export function run() {
     const drawn = [
       { tagName: 'H1', classList: wearing(), dataset: { blockKind: 'data_heading' } },
       { tagName: 'H6', classList: wearing(), dataset: { blockKind: 'data_heading' } },
+      { tagName: 'DT', classList: wearing(), parentElement: fields, dataset: { blockKind: 'data_field_name' } },
       { tagName: 'DD', classList: wearing(), parentElement: fields, dataset: { blockKind: 'data_field' } },
       { tagName: 'UL', classList: wearing('data-list'), dataset: { blockKind: 'data_list' } },
       { tagName: 'TABLE', classList: wearing('data-table'), dataset: { blockKind: 'data_table' } },
@@ -158,12 +168,13 @@ export function run() {
       }
     }
 
-    // And nothing that is not a block is read as one: the parse-error notice, a list or a table of the document's own, a definition outside a field list, and nothing at all.
+    // And nothing that is not a block is read as one: the parse-error notice, a list or a table of the document's own, a definition or a name outside a field list, and nothing at all.
     const none = [
       { tagName: 'P', classList: wearing('data-error') },
       { tagName: 'UL', classList: wearing() },
       { tagName: 'TABLE', classList: wearing() },
       { tagName: 'DD', classList: wearing(), parentElement: { classList: wearing() } },
+      { tagName: 'DT', classList: wearing(), parentElement: { classList: wearing() } },
       { tagName: 'DIV', classList: wearing() },
       null,
     ];

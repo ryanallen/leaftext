@@ -603,8 +603,10 @@ function renderState() {
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   cancelReaderScrollSettle();
-  // The full-window diagram lives inside `app`, so the render below would take it away with nothing knowing — including the Escape handler still listening.
+  // All three full-window views live inside `app`, so the render below would take one away with nothing knowing — the diagram's Escape handler still listening, a term raised out of a table left standing over a document it never came from, and the bubble each of them holds down never handed back.
   closeDiagramOverlay();
+  closeTableSheet();
+  closeImageSheet();
   // The hover card floats beside `app`, so the render below would strand it over a page it does not describe.
   dismissLinkHoverTip();
   readerAnchorBlocks = null;

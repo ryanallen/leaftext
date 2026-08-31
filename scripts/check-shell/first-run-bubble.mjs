@@ -273,6 +273,69 @@ export function run() {
     }
   });
 
+  check('each full-window view takes the bubble down unmet, and one that left the page cannot hold it down', () => {
+    const app = booted.document.getElementById('app');
+    const held = app.children.slice();
+    // Built before the recording page goes in, so each view is opened from an element of the page's own rather than from one the harness made.
+    const holder = booted.document.createElement('div');
+    holder.innerHTML = '<table data-block-kind="table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>One</td></tr></tbody></table><img src="leaf-asset://one.png" alt="One">';
+    const table = holder.querySelector('table');
+    const picture = holder.querySelector('img');
+    const diagram = booted.document.createElement('pre');
+    diagram.className = 'mermaid';
+    diagram.__mermaidSource = 'flowchart TD\n  A --> B';
+    const { sent, built, restore } = hintHarness();
+    const wasTimeout = booted.setTimeout;
+    try {
+      booted.leafResetHints();
+      const surface = booted.document.getElementById('appSurface');
+      const button = booted.document.getElementById('libraryVaultSwitch');
+      if (!surface || !button || !table || !picture) throw new Error('the page has no surface, vault switch, table or picture');
+      button.getBoundingClientRect = () => ({ left: 8, top: 700, right: 40, bottom: 726, width: 32, height: 26 });
+      const watches = new Map();
+      button.addEventListener = (name, handler) => watches.set(name, handler);
+      button.removeEventListener = (name) => watches.delete(name);
+      // A close waits out its exit animation, and nothing here ever tells a sheet its animation ended, so the fallback runs where it stands.
+      booted.setTimeout = (fn) => { fn(); return 0; };
+      const onSurface = () => surface.children.filter((child) => child.classes && child.classes.has('hint-bubble'));
+      const met = () => hintStates(sent).some((state) => state.seen.includes('libraryVault'));
+
+      built.length = 0;
+      sent.length = 0;
+      booted.runHintPass();
+      if (onSurface().length !== 1) throw new Error('the launch drew no bubble to take down');
+
+      // None of the three is a sheet: each builds its own overlay inside the reading view and takes it out again.
+      const views = [
+        ['the full-window table', () => booted.openTableSheet(table, null), () => booted.closeTableSheet()],
+        ['the full-window picture', () => booted.openImageSheet(picture, null), () => booted.closeImageSheet()],
+        ['the full-window diagram', () => booted.openDiagramOverlay(diagram, null), () => booted.closeDiagramOverlay()],
+      ];
+      for (const [naming, open, close] of views) {
+        open();
+        if (onSurface().length !== 0) throw new Error(`the bubble stood over ${naming}`);
+        if (met()) throw new Error(`${naming} covering the control counted as the reader meeting it`);
+        close();
+        if (onSurface().length !== 1) throw new Error(`${naming} did not put the bubble back as it left`);
+      }
+
+      // A view taken off the window without its own close. It never says it is hidden, so a record listening for that alone holds the bubble down for the rest of the launch — which is what the render used to leave behind.
+      booted.openImageSheet(picture, null);
+      if (onSurface().length !== 0) throw new Error('the bubble stood over the picture it was handed to');
+      app.querySelector('.image-sheet-overlay').remove();
+      // A sheet coming and going beside it is what asks the record what is still standing.
+      booted.openThemeSheet();
+      booted.closeThemeSheet();
+      if (onSurface().length !== 1) throw new Error('a view that left the page held the bubble down after it had gone');
+      if (met()) throw new Error('a view that covered the control counted as the reader meeting it');
+    } finally {
+      booted.setTimeout = wasTimeout;
+      booted.leafResetHints();
+      restore();
+      for (const child of app.children.slice()) if (!held.includes(child)) child.remove();
+    }
+  });
+
   check('the bubble takes the first side that fits the window whole', () => {
     const view = { width: 1080, height: 820 };
     const size = { width: 260, height: 60 };

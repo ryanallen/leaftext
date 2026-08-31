@@ -13,6 +13,8 @@ function closeTableSheet() {
   overlay.remove();
   if (scrim) scrim.remove();
   leafFocusForKeyboard(opener);
+  // Only now is the overlay actually off the window, which is what the held bubble is waiting on.
+  restoreHintAfterSheet(overlay);
 }
 
 function tableSheetGrid(table) {
@@ -68,6 +70,8 @@ function openTableSheet(table, opener) {
   grid.addEventListener('wheel', scrollTableSheetHorizontally, { passive: false });
   overlay.append(head, grid);
   app.append(scrim, overlay);
+  // It covers the whole window, so whatever the first-run bubble is pointing at is behind it. Down unmet, the way a sheet takes it down.
+  suspendHintForSheet(overlay);
   if (window.__leafFrameless || window.__leafMacFrame) dragWindowFrom(head);
   window.requestAnimationFrame(() => {
     scrim.classList.add('open');

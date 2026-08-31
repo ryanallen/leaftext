@@ -30,6 +30,8 @@ function openDiagramOverlay(diagram, opener) {
   overlay.appendChild(stage);
   app.appendChild(scrim);
   app.appendChild(overlay);
+  // It covers the whole window, so whatever the first-run bubble is pointing at is behind it. Down unmet, the way a sheet takes it down.
+  suspendHintForSheet(overlay);
   window.requestAnimationFrame(() => {
     scrim.classList.add('open');
     overlay.classList.add('open');
@@ -44,6 +46,8 @@ function closeDiagramOverlay() {
   overlay.remove();
   if (overlay.__diagramScrim) overlay.__diagramScrim.remove();
   leafFocusForKeyboard(overlay.__diagramOpener);
+  // Only now is the overlay actually off the window, which is what the held bubble is waiting on.
+  restoreHintAfterSheet(overlay);
 }
 
 // Escape, in the capture pass: it has to beat the handlers registered before this fragment, or closing the overlay also closes whatever is under it.

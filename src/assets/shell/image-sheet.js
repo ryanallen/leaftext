@@ -11,6 +11,8 @@ function closeImageSheet() {
   overlay.remove();
   if (scrim) scrim.remove();
   leafFocusForKeyboard(opener);
+  // Only now is the overlay actually off the window, which is what the held bubble is waiting on.
+  restoreHintAfterSheet(overlay);
 }
 
 // Opening is reading, so the padlock is not asked. A marked missing picture has nothing behind the mark to show, so it never gets here.
@@ -49,6 +51,8 @@ function openImageSheet(picture, opener) {
   });
   overlay.append(shown, corner);
   app.append(scrim, overlay);
+  // It covers the whole window, so whatever the first-run bubble is pointing at is behind it. Down unmet, the way a sheet takes it down.
+  suspendHintForSheet(overlay);
   window.requestAnimationFrame(() => {
     scrim.classList.add('open');
     overlay.classList.add('open');
