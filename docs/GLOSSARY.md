@@ -60,7 +60,7 @@ A fenced run of code (```` ``` ````). Tag it with a language for [syntax highlig
 
 ## Code view
 
-The document as its raw source — Markdown, XML, JSON, YAML or a raw email — colored, line-numbered and editable. Reach it from the [floating toolbar](GLOSSARY.md#floating-toolbar). It is [Monaco](GLOSSARY.md#monaco) underneath, and it edits every format Leaftext opens. See [Editing](01-features/07-editing.md#code-view).
+The document as its raw source — line-numbered, editable, and colored for Markdown, HTML, XML, YAML and JSON, with every other format Leaftext reads drawn as plain text here. Reach it from the [floating toolbar](GLOSSARY.md#floating-toolbar). It is [Monaco](GLOSSARY.md#monaco) underneath, and it edits every format Leaftext opens. See [Editing](01-features/07-editing.md#code-view).
 
 ## Collapsible section
 
@@ -162,6 +162,10 @@ A whole set of the drawings the app's controls wear. Seven ship — Leaftext's o
 
 What the image button in the [insert row](GLOSSARY.md#insert-row) opens: **Choose file**, or a field for a web address. A picked file is never copied anywhere — the picture stays where you keep it, and the document records where that is.
 
+## INI file
+
+An `.ini` file. Leaftext reads it as a page of `[section]` headings with their keys and values under each, every key drawn with the spelling it was written with and every value ready to be typed into. See [Rendering](01-features/01-rendering.md#ini-files).
+
 ## Inline editing
 
 Editing the rendered page itself: click into a sentence and type, `Enter` to split a [block](GLOSSARY.md#block), `Backspace` at the start to merge it upward, click a checkbox to tick it. Every change is spliced back into the exact bytes it came from. See [Editing](01-features/07-editing.md#inline-editing-the-reading-view).
@@ -246,6 +250,10 @@ The open document's headings, listed in the [library pane](GLOSSARY.md#library-p
 
 The chevron menu the [app bar](GLOSSARY.md#app-bar)'s buttons fold into as the [tab](GLOSSARY.md#tab) strip fills, or as the bar itself runs wider than the window — trailing actions first, then Back and Forward, then the window controls. Both are watched, so a narrow window with nothing open keeps its own close, minimize and maximize on the bar; an empty strip has nothing to run out of. Tabs are never squeezed to make room. The [leaf mark](GLOSSARY.md#leaf-mark) and the [library pane](GLOSSARY.md#library-pane) button never fold. What the menu *reads* in is its own order, with the window controls at the foot: see [When the bar runs out of room](01-features/02-navigation.md#when-the-bar-runs-out-of-room).
 
+## Plain text file
+
+A `.txt` file. Leaftext draws it as one block kept exactly as typed — every space and every line break, nothing reflowed and nothing parsed. See [Rendering](01-features/01-rendering.md#plain-text-files).
+
 ## Padlock
 
 The lock in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar) that says whether you can type into the view you are in. There are two — one for the [reading view](GLOSSARY.md#reading-view), one for the [code view](GLOSSARY.md#code-view) — and they are independent, so unlocking the page you read does not open the file's own text. Both start locked and both are remembered across restarts; a [new document](GLOSSARY.md#new-document) opens with the reading view's turned off for you. Checkboxes toggle either way.
@@ -297,6 +305,10 @@ The two things browsing leaves out, now that every other folder is listed: the o
 ## Slug
 
 The anchor id made from a heading — `Bottom Sheet` becomes `#bottom-sheet`. Headings get one automatically, which is what makes the [outline](GLOSSARY.md#outline), in-page links and glossary links land.
+
+## Source file
+
+A script or configuration file — TypeScript, JavaScript, CSS, shell, TOML, Rust, Python, SQL, GraphQL, a diff, a dotenv file, a Dockerfile and the rest. Leaftext draws one as its file name over a single [highlighted](GLOSSARY.md#syntax-highlighting) block. It opens when you choose it or follow a link to it, and stays out of the [library pane](GLOSSARY.md#library-pane), [vault search](GLOSSARY.md#vault-search), the [graph](GLOSSARY.md#graph-view) and the [pager](GLOSSARY.md#pager), so a folder of code does not become a library of it. See [Rendering](01-features/01-rendering.md#source-files).
 
 ## Speed Reader
 

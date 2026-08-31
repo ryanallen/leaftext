@@ -75,6 +75,13 @@ export function appExtensions(root) {
   return documentRows(readFileSync(join(root, 'src/format.rs'), 'utf8')).flatMap(([, spellings]) => spellings);
 }
 
+/** The endings a folder, pager, corpus or published set lists. Every format the app reads except the source rows, which open when they are named and are never listed — the same split `is_listed_document_path` makes in `src/format.rs`. */
+export function listedExtensions(root) {
+  const source = readFileSync(join(root, 'src/format.rs'), 'utf8');
+  const opened = new Set(sourceExtensions(source));
+  return appExtensions(root).filter((extension) => !opened.has(extension));
+}
+
 const WELL_FORMED = `
 impl DocumentFormat {
     pub const ALL: [Self; 3] = [Self::Markdown, Self::Xml, Self::Eml];

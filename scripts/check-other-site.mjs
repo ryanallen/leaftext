@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // The one table of what the app reads, asked rather than restated: the walk below has to know which files in a documentation folder are documents.
-import { appExtensions } from './app-formats.mjs';
+import { listedExtensions } from './app-formats.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -189,7 +189,7 @@ function selfTest() {
   const scratch = join(tmpdir(), `leaf-other-site-${process.pid}`);
   const a = join(scratch, 'here');
   const b = join(scratch, 'there');
-  const extensions = appExtensions(root);
+  const extensions = listedExtensions(root);
   try {
     // The trees are built from what the walked folders actually hold, never from `FILES`: a self-test that writes the list back out passes by agreeing with the list it is checking, which is the blindness this whole check exists to end.
     for (const side of [a, b]) {
@@ -290,7 +290,7 @@ function selfTest() {
 if (process.argv[1] && fileURLToPath(import.meta.url) === join(process.argv[1])) {
   const check = process.argv.includes('--check');
   // The list is read against the folder before the self-test, because the self-test builds its trees from that same folder: a file with no row would otherwise stop it with a stack trace instead of the sentence saying which four answers it may be given.
-  const strays = [...unrowed(root, appExtensions(root)), ...unheld(root)];
+  const strays = [...unrowed(root, listedExtensions(root)), ...unheld(root)];
   if (strays.length) {
     console.error('the table of shared files and the folders it is read against disagree:');
     for (const problem of strays) console.error(`  ${problem}`);

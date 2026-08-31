@@ -50,8 +50,7 @@ impl DocumentFormat {
             Self::Text => &["txt"],
             // A config file is a page of sections rather than a colored block, so it has its own reader and its own arm — which is why `SOURCE_DEFINITIONS` below does not name it.
             Self::Ini => &["ini"],
-            // Source endings come from `SOURCE_DEFINITIONS`; the file dialog asks
-            // `source_extensions` so this arm cannot become a second list.
+            // Source endings come from `SOURCE_DEFINITIONS`; the file dialog asks `source_extensions` so this arm cannot become a second list.
             Self::Code => &[],
         }
     }
@@ -276,8 +275,7 @@ pub fn is_supported_document_path(path: &Path) -> bool {
     DocumentFormat::for_path(path).is_some()
 }
 
-/// True when `path` belongs in a folder, pager, corpus, or graph. Source files
-/// open when named, without turning a repository into a library of its code.
+/// True when `path` belongs in a folder, pager, corpus, or graph. Source files open when named, without turning a repository into a library of its code.
 pub fn is_listed_document_path(path: &Path) -> bool {
     matches!(DocumentFormat::for_path(path), Some(format) if format != DocumentFormat::Code)
 }

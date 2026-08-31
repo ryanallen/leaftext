@@ -397,7 +397,7 @@ fn a_link_opened_as_a_new_page_lands_behind_the_one_being_read() {
     assert!(workspace.tabs[2].code_view);
 }
 
-/// A link from a note to the plain text file beside it opens a tab rather than being handed to the OS. Before `.txt` was a format, clicking one left the app and nothing came back.
+/// A link from a note to the plain text file beside it opens a tab rather than being handed to the OS.
 #[test]
 fn a_link_to_a_text_file_opens_in_the_app() {
     let current = fixture_source_path("guide/chapter/README.md");

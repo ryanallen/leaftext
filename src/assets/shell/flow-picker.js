@@ -50,7 +50,7 @@ function drawFlowPicker(options) {
   const graph = flowSession && flowSession.graph;
   const selection = flowSelection;
   flowPickerHead.textContent = '';
-  // Only what the selection draws goes. The shape grid's wrapper is left standing where it is: nothing inside it changes with the selection but which one button is marked, and taking it out is the whole cost this sheet used to pay.
+  // Only what the selection draws goes. The shape grid's wrapper is left standing where it is: nothing inside it changes with the selection but which one button is marked.
   for (const child of [...flowPickerBody.children]) {
     if (child !== flowShapeWrap) child.remove();
   }

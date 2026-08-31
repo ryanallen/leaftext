@@ -907,7 +907,7 @@ fn an_ini_file_is_offered_by_its_one_spelling_and_never_imposed() {
     );
     assert!(!entry.contains("<key>LSItemContentTypes</key>"));
 
-    // And exactly one entry claims it: a config file read as a page of sections is not the source-code entry's any more.
+    // And exactly one entry claims it: a config file read as a page of sections is not the source-code entry's.
     let claiming = entries
         .iter()
         .filter(|entry| {

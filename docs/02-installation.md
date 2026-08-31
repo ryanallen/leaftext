@@ -1,6 +1,6 @@
 # Installation
 
-> Download the installer for your platform, run it, and open a Markdown, HTML, XML, JSON, YAML, or email file.
+> Download the installer for your platform, run it, and open a Markdown, HTML, XML, JSON, YAML, plain text, config, source, or email file.
 
 Leaftext is free, and it ships ready to run on macOS and Windows. There's no account to create, no plugins to pick, and no runtime to install first — download it, open it, and it works.
 

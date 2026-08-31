@@ -270,7 +270,7 @@ The outline lists the sections within the current document, which makes it a com
 
 When you open a Markdown, [XML](01-rendering.md#xml), [JSON, YAML](01-rendering.md#data-files-json-and-yaml), or [email](01-rendering.md#email-eml) document that sits inside a folder tree connected by `README.md` files, Leaftext appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
 
-Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README documents come first (every renderable format together — Markdown, XML, JSON, YAML, and email — sorted by name), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README` and `GLOSSARY` files (either extension) are never standalone entries in the sequence.
+Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README documents come first (every format the pane lists together — Markdown, HTML, XML, JSON, YAML, plain text, INI, and email — sorted by name; a [source file](01-rendering.md#source-files) is not one of them), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README` and `GLOSSARY` files (either extension) are never standalone entries in the sequence.
 
 Working out the Previous / Next links means scanning the folder tree, so Leaftext does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
@@ -293,7 +293,7 @@ A [Mermaid diagram](01-rendering.md#mermaid-diagrams) in that opening is drawn i
 | Glossary entry | A `glossary:` term link, or a link to `GLOSSARY.md#term`. The entry itself is drawn in the card |
 | Full glossary | A bare `glossary:` link that opens the whole glossary. It draws the file's opening and its length, the same as that file linked by name |
 | In-page jump | A `#fragment` link to a heading on the current page |
-| Another page | A link to any document Leaftext reads — `.md`, [`.xml`](01-rendering.md#xml), [`.json`, `.yaml`](01-rendering.md#data-files-json-and-yaml), [`.eml`](01-rendering.md#email-eml) — including a [Previous / Next](#pager) button (its line count is shown too) |
+| Another page | A link to any document Leaftext reads — `.md`, [`.xml`](01-rendering.md#xml), [`.json`, `.yaml`](01-rendering.md#data-files-json-and-yaml), [`.txt`](01-rendering.md#plain-text-files), [`.ini`](01-rendering.md#ini-files), [`.eml`](01-rendering.md#email-eml), and a [source file](01-rendering.md#source-files) — including a [Previous / Next](#pager) button (its line count is shown too) |
 | External site | An `http://` or `https://` link |
 | Email link | A `mailto:` link |
 | Opens in another app | A link to a local file Leaftext does not read — a PDF, a picture, a saved web page, a spreadsheet. The address under it is where that file actually sits, worked out from the folder the document is in, so you can tell a live link from one pointing at nothing |

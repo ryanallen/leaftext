@@ -1162,7 +1162,7 @@ await check('the loader over the stand-in module', async () => {
   for (const extension of extensions) want(leaf.opens(`a/document.${extension}`), `the loader says it cannot open a .${extension}, which its own format list names`);
   want(leaf.opens('README.MD'), 'an extension in capitals was refused, and a real folder holds those');
   want(leaf.opens('page.md#a-heading') && leaf.opens('page.md?v=2'), 'an anchor or a query stopped a document being a document');
-  want(!leaf.opens('notes.txt') && !leaf.opens('mdown'), 'the loader opens a file the app cannot read');
+  want(!leaf.opens('notes.docx') && !leaf.opens('mdown'), 'the loader opens a file the app cannot read');
   const drawn = leaf.render('# A document\n\nA paragraph.', 'notes.md');
   want(drawn && drawn.title === 'A document', `the loader drew ${drawn ? JSON.stringify(drawn.title) : 'nothing'} as the title`);
   want(drawn.html.includes('<h1 id="a-document">'), 'the drawn document came back without the heading the module rendered');

@@ -2,7 +2,7 @@
 
 > Read without the noise. Leaftext renders your Markdown the way GitHub does — code, diagrams, math, callouts, footnotes, emoji, your own images — and opens your structured files too: 84000-style TEI translations through a reader that knows the format, any other XML through a generic one, JSON or YAML as readable pages, plain text exactly as you typed it, config files as a page of sections, and saved emails as the message they carry.
 
-Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml-84000-translations), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does, and `.ini` goes to [its own reader](#ini-files) and then through that same renderer. `.txt` is [kept exactly as typed](#plain-text-files) and needs no parser at all. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml). All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, and email sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
+Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml-84000-translations), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does, and `.ini` goes to [its own reader](#ini-files) and then through that same renderer. `.txt` is [kept exactly as typed](#plain-text-files) and needs no parser at all. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml), and a [source file](#source-files) is drawn as one highlighted block under its own name. All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, and email sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
 
 ## Summary
 
@@ -51,6 +51,8 @@ flowchart LR
 
 ## Plain text files
 
+![A .txt file of release notes opened in Leaftext: the file name as the page heading, then the whole file as one block with its indented lists, its ruled headings and a box drawn in plus and minus signs all still lined up](../../imgs/plain-text.png)
+
 Leaftext opens a `.txt` file as **one block, kept exactly as typed** — every space, every line break, every column of an ASCII banner. Nothing is reflowed, nothing is parsed, and nothing is guessed at, because the app was never told what shape the file holds. An indented list stays indented, a hand-drawn table stays lined up, and a hand-wrapped paragraph keeps the width somebody chose for it.
 
 That is a deliberate pick over reading a text file as prose. Reflowing blank-line-separated paragraphs would read better for a note and would take apart everything drawn with spaces, which is a great deal of what is in a `.txt` file. If you want prose, the app's own Markdown is a rename away.
@@ -60,6 +62,8 @@ The block wears the same border, dot texture, and **Copy** button every code blo
 Installing Leaftext offers it under **Open with** for `.txt` without replacing Notepad or TextEdit as the default. See [File associations](../02-installation.md#file-associations).
 
 ## INI files
+
+![An .ini settings file opened in Leaftext: the file name as the page heading, the keys written before the first section as an aligned label and value list, then a heading per section with its own keys under it and the two web addresses drawn as links](../../imgs/ini.png)
 
 Leaftext opens an `.ini` file as the page a JSON file already draws: each `[section]` is a heading, and the keys under it are a label-and-value list, with a value that looks like a link drawn as one.
 
@@ -81,6 +85,8 @@ There is no INI standard — dialects disagree about nearly everything — so Le
 Installing Leaftext offers it under **Open with** for `.ini` without taking the extension from whatever opens it today.
 
 ## Source files
+
+![A Rust file opened in Leaftext: the file name as the page heading, then the whole source as one block colored in the theme, with the language named in the block corner beside a Copy button](../../imgs/source-file.png)
 
 Leaftext opens source and configuration files as a file-name heading above one highlighted source block. It recognizes TypeScript, TSX, JavaScript, JSX, JSONC, CSS, SCSS, shell, TOML, Rust, Python, SQL, diff, dotenv, GraphQL, and Dockerfile files. JSON, HTML, XML, YAML, INI, plain text, and Markdown keep their dedicated reading views. Source files open when you choose one or follow a link, and stay out of folder listings, vault search, graphs, and Previous/Next pages.
 

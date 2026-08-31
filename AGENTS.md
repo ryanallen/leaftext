@@ -70,7 +70,7 @@ Self-contained. Ignore the **parent** `Studio/` config — its `AGENTS.md`/`CLAU
 
 ## What it is
 
-Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document first, editable in place (inline in the page, or the raw-source code view; nothing saves without an explicit Save). `tao` + `wry` (native window hosting a system web view); `pulldown-cmark` parses, `ammonia` sanitizes. CommonMark, GFM, and GitHub extras (highlighting, issue/PR refs, emoji, footnotes, alerts, Mermaid, math). Tabs, history, recent files, vaults, system light/dark. The interface is English only, and adding a translation layer back is not a small change.
+Rust desktop app for reading Markdown, HTML, XML, JSON, YAML, plain text, INI, email and source files — rendered document first, editable in place (inline in the page, or the raw-source code view; nothing saves without an explicit Save). `tao` + `wry` (native window hosting a system web view); `pulldown-cmark` parses, `ammonia` sanitizes. CommonMark, GFM, and GitHub extras (highlighting, issue/PR refs, emoji, footnotes, alerts, Mermaid, math). Tabs, history, recent files, vaults, system light/dark. The interface is English only, and adding a translation layer back is not a small change.
 
 ## Layout
 

@@ -4,9 +4,9 @@
 
 ![The Leaftext window with a Markdown document open: the library pane at left holding the document's headings, the rendered page in the middle, and the minimap rail down the right edge](../imgs/leaftext.png)
 
-Leaftext turns the files you already have into pages you actually want to read. Open a Markdown, [XML](01-features/01-rendering.md#xml), [JSON, or YAML](01-features/01-rendering.md#data-files-json-and-yaml) document — or a [saved email](01-features/01-rendering.md#email-eml) — on macOS or Windows and it renders clean and calm. Keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When something needs changing, [click into the sentence and type](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — then [save](01-features/07-editing.md#save) when you're ready.
+Leaftext turns the files you already have into pages you actually want to read. Open a Markdown, [HTML](01-features/01-rendering.md#html-files), [XML](01-features/01-rendering.md#xml), [JSON, or YAML](01-features/01-rendering.md#data-files-json-and-yaml) document — a [plain text](01-features/01-rendering.md#plain-text-files) or [config](01-features/01-rendering.md#ini-files) file, a [source file](01-features/01-rendering.md#source-files), or a [saved email](01-features/01-rendering.md#email-eml) — on macOS or Windows and it renders clean and calm. Keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When something needs changing, [click into the sentence and type](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — then [save](01-features/07-editing.md#save) when you're ready.
 
-**Your thoughts stay yours.** No account, no cloud, no telemetry. Your documents never leave your device, and they stay plain Markdown, XML, JSON, YAML, and email files that any other app can open, so you're never locked in.
+**Your thoughts stay yours.** No account, no cloud, no telemetry. Your documents never leave your device, and they stay plain Markdown, HTML, XML, JSON, YAML, text, config, source, and email files that any other app can open, so you're never locked in.
 
 New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GLOSSARY.md#frontmatter) link into the [glossary](GLOSSARY.md#glossary) — clicking one opens its entry in a [bottom sheet](GLOSSARY.md#bottom-sheet) over this page instead of taking you away from it. The glossary carries one entry per feature and subfeature, so it doubles as an index of the whole app.
 
@@ -71,7 +71,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 
 ```mermaid
 flowchart LR
-    A[Open Markdown, XML, JSON, YAML, or email file] --> B[Rendered reading view]
+    A[Open Markdown, HTML, XML, JSON, YAML, text, config, source, or email file] --> B[Rendered reading view]
     B --> C[Minimap]
     B --> D[Tabs]
     B --> E[Back / Forward history]

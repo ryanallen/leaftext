@@ -366,7 +366,7 @@ fn the_file_list_starts_with_a_way_back_out() {
     assert!(html.contains("const label = `Back to ${parent.name}`;"));
 }
 
-/// A plain text file is a document a person reads, so the pane lists it beside the notes. Before it was a format, a folder of `.txt` files read as a folder with nothing in it.
+/// A plain text file is a document a person reads, so the pane lists it beside the notes.
 #[test]
 fn a_text_file_is_a_row_in_the_pane() {
     let dir = tree_dir("text-rows");
