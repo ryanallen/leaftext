@@ -576,11 +576,21 @@ function centerFlowCanvas() {
 // A width change moves the canvas, not the diagram.
 const FLOW_CODE_MIN = 180;
 
-// Dragging holds this width; keys and reset read it fresh.
+// The room the text may take, and the floor the picture keeps out of it. The floor is the stylesheet's own number, so a drag stops exactly where the grid's min() does instead of five pixels short of it; a page that cannot answer leaves the drag uncapped rather than inventing a second one.
+function flowRoom() {
+  const room = (flowSheet && flowSheet.clientWidth) || 900;
+  const floor = flowSheet
+    ? parseFloat(getComputedStyle(flowSheet).getPropertyValue('--flow-picture-floor'))
+    : NaN;
+  return { room, floor };
+}
+
+// Dragging holds this room; keys and reset read it fresh.
 function setFlowCodeWidth(pixels, held) {
   if (!flowSheet) return;
-  const room = held || flowSheet.clientWidth || 900;
-  const width = Math.round(Math.max(FLOW_CODE_MIN, Math.min(room - 320, pixels)));
+  const { room, floor } = held || flowRoom();
+  const ceiling = Number.isFinite(floor) ? room - floor : Infinity;
+  const width = Math.round(Math.max(FLOW_CODE_MIN, Math.min(ceiling, pixels)));
   flowSheet.style.setProperty('--flow-code-width', width + 'px');
 }
 
@@ -594,9 +604,9 @@ if (flowSplit) {
     event.preventDefault();
     const start = event.clientX;
     const was = flowCodeWidth();
-    // A held pointer cannot resize the window.
-    const room = (flowSheet && flowSheet.clientWidth) || 900;
-    const move = (moved) => setFlowCodeWidth(was - (moved.clientX - start), room);
+    // A held pointer cannot resize the window, and the floor is a constant, so both are read once and carried.
+    const held = flowRoom();
+    const move = (moved) => setFlowCodeWidth(was - (moved.clientX - start), held);
     const done = () => {
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', done);

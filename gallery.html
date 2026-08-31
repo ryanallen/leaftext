@@ -9069,6 +9069,8 @@ body.is-home-row-dragging .home-list-scroll li {
   display: none;
 }
 .flow-sheet {
+  /* The least room the picture keeps: the 320px it is drawn in plus the 5px the divider spends. */
+  --flow-picture-floor: 325px;
   position: fixed;
   inset: 16px;
   z-index: var(--lt-z-43);
@@ -9144,8 +9146,8 @@ body.is-home-row-dragging .home-list-scroll li {
   flex: 1;
   min-height: 0;
   display: grid;
-  /* How wide the text pane is, dragged by the bar between the two. */
-  grid-template-columns: minmax(0, 1fr) 5px var(--flow-code-width, 340px);
+  /* How wide the text pane is, dragged by the bar between the two. The min() is what keeps the picture: grid resolves it on every layout, so a window made smaller takes the room out of the text rather than out of the drawing, and the dragged width is still there when the window is widened again. */
+  grid-template-columns: minmax(0, 1fr) 5px min(var(--flow-code-width, 340px), 100% - var(--flow-picture-floor));
 }
 /* The bar between the picture and the text. Thin ink, a wide grab area. */
 .flow-split {

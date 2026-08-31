@@ -36,6 +36,8 @@ let findInvalidPattern = false;
 // The page's visible text as one string, and the map back to the text nodes it came from — a match found in a string has to become a DOM range before it can be drawn or replaced. It is a picture of the page rather than of the query, so it is kept until something redraws: a letter typed in the field changes what counts as a match, never what the page says.
 let findFlatText = '';
 let findTextNodes = [];
+// The same records again, keyed on the text node, so asking where a node sits in the flat string is a read rather than a walk.
+let findNodeRecords = new Map();
 let findTextValid = false;
 // What "find in selection" narrows to: a DOM range in the reading view, a Monaco range in the source view. Captured when the toggle goes on, because focusing the field is what takes the page's selection away.
 let findScopeRange = null;
@@ -81,6 +83,7 @@ function collectRenderedText() {
   if (findTextValid) return;
   findFlatText = '';
   findTextNodes = [];
+  findNodeRecords = new Map();
   const body = findRenderedBody();
   // No page to flatten yet: nothing to keep either, so the next call looks again.
   if (!body) return;
@@ -88,7 +91,9 @@ function collectRenderedText() {
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = node.nodeValue || '';
     if (!text) continue;
-    findTextNodes.push({ node, start: findFlatText.length, end: findFlatText.length + text.length });
+    const record = { node, start: findFlatText.length, end: findFlatText.length + text.length };
+    findTextNodes.push(record);
+    findNodeRecords.set(node, record);
     findFlatText += text;
   }
   findTextValid = true;
@@ -118,6 +123,41 @@ function findRangeFor(match) {
   return range;
 }
 
+// The first or last piece of text inside a subtree, as the flattening recorded it. An element end of the selection points at a child rather than at a letter, so this is what turns it into one.
+function findEdgeRecord(node, last) {
+  if (!node) return null;
+  if (node.nodeType === 3) return findNodeRecords.get(node) || null;
+  const children = node.childNodes;
+  if (!children || !children.length) return null;
+  for (let step = 0; step < children.length; step += 1) {
+    const record = findEdgeRecord(children[last ? children.length - 1 - step : step], last);
+    if (record) return record;
+  }
+  return null;
+}
+
+// Where one end of the captured selection sits in the flat text: a text node is its record plus the offset, an element is the edge of the child the offset points at.
+function findFlatPoint(container, offset, atEnd) {
+  if (!container) return null;
+  if (container.nodeType === 3) {
+    const record = findNodeRecords.get(container);
+    return record ? Math.min(record.start + offset, record.end) : null;
+  }
+  const children = container.childNodes;
+  if (!children) return null;
+  const record = findEdgeRecord(children[atEnd ? offset - 1 : offset], atEnd);
+  return record ? (atEnd ? record.end : record.start) : null;
+}
+
+// "Find in selection" as a pair of places in the flat text, read once a search: a candidate is then two integers compared rather than a DOM range built and asked. Null where either end is somewhere the flattening never walked, and the loop asks the DOM the way it always did.
+function findScopeFlatBounds() {
+  if (!findScopeRange) return null;
+  const low = findFlatPoint(findScopeRange.startContainer, findScopeRange.startOffset, false);
+  const high = findFlatPoint(findScopeRange.endContainer, findScopeRange.endOffset, true);
+  if (low === null || high === null || high < low) return null;
+  return { low, high };
+}
+
 // Only matches inside the range "find in selection" captured.
 function findWithinScope(range) {
   if (!range) return false;
@@ -137,6 +177,8 @@ function collectRenderedMatches() {
   const found = [];
   findTruncated = false;
   if (!pattern) return found;
+  // Where the selection sits, read once for the whole search rather than a range built per candidate. A candidate the selection rejects never reached the cap, so that path was the document's occurrence count rather than 999 — a dropped frame a letter on a megabyte.
+  const scope = findScopeFlatBounds();
   for (let match = pattern.exec(findFlatText); match; match = pattern.exec(findFlatText)) {
     // An expression that can match nothing would spin here forever.
     if (match[0] === '') {
@@ -144,7 +186,12 @@ function collectRenderedMatches() {
       continue;
     }
     const hit = { start: match.index, end: match.index + match[0].length };
-    if (!findScopeRange || findWithinScope(findRangeFor(hit))) found.push(hit);
+    const kept = !findScopeRange
+      ? true
+      : scope
+        ? hit.start >= scope.low && hit.end <= scope.high
+        : findWithinScope(findRangeFor(hit));
+    if (kept) found.push(hit);
     if (found.length >= FIND_MATCH_CAP) {
       findTruncated = true;
       break;

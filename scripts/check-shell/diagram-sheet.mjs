@@ -1588,7 +1588,7 @@ export function run() {
     const { drag, widthWritten, restore } = dividerStand(booted);
     try {
       read('flowPlaced = { sentinel: "the reading that was already there", nodes: [], edges: [], groups: [] };');
-      // The whole travel: the 680px ceiling this sheet's room gives, down through the middle, onto the 180px floor and past it.
+      // The whole travel: the 675px ceiling this sheet's room gives, down through the middle, onto the 180px floor and past it.
       drag(340, [-400, -100, 0, 200, 340, 500]);
       const held = read('flowPlaced');
       if (!held || held.sentinel !== 'the reading that was already there') {
@@ -1598,7 +1598,7 @@ export function run() {
       if (widthWritten() !== '180px') throw new Error(`the divider ended at ${widthWritten() || 'nothing'} rather than 180px`);
       // And the ceiling, so the clamp is read at both ends rather than only where it happens to bite.
       drag(340, [-900]);
-      if (widthWritten() !== '680px') throw new Error(`the ceiling wrote ${widthWritten() || 'nothing'} rather than 680px`);
+      if (widthWritten() !== '675px') throw new Error(`the ceiling wrote ${widthWritten() || 'nothing'} rather than 675px`);
     } finally {
       read('flowPlaced = null;');
       restore();
@@ -1612,9 +1612,9 @@ export function run() {
       roomReads.count = 0;
       drag(340, [-40, -80, -120, -160, -200, -240, -280, -320, 0, 40, 80, 120]);
       if (roomReads.count !== 1) throw new Error(`twelve moves read the sheet's width ${roomReads.count} times rather than once`);
-      // The room it carried is the real one, or the clamp would be measured against 900 and the ceiling would come out at 580.
+      // The room it carried is the real one, or the clamp would be measured against 900 and the ceiling would come out at 575.
       drag(340, [-900]);
-      if (widthWritten() !== '680px') throw new Error(`the carried room clamped at ${widthWritten() || 'nothing'} rather than 680px`);
+      if (widthWritten() !== '675px') throw new Error(`the carried room clamped at ${widthWritten() || 'nothing'} rather than 675px`);
 
       // A key press is not a held gesture, so it goes back to the sheet.
       roomReads.count = 0;
@@ -1627,6 +1627,46 @@ export function run() {
       doubleClick();
       if (roomReads.count !== 1) throw new Error(`the double-click reset read the sheet's width ${roomReads.count} times rather than once`);
       if (widthWritten() !== '340px') throw new Error(`the double-click reset wrote ${widthWritten() || 'nothing'} rather than 340px`);
+    } finally {
+      restore();
+    }
+  });
+
+  // A window made smaller is not a gesture on the divider, so nothing runs and the text pane goes on asking for the width it was dragged to. The grid is what holds the picture's floor instead: the track is capped against the sheet's own inline size, so the room comes out of the text every layout and the dragged width is still remembered when the window is widened again. Read as text on purpose — this harness is a fake page with no layout engine, so it can prove the rule is written and cannot resolve what grid does with it; the resolved tracks are watched in a real window.
+  check('the picture keeps a floor the grid holds on every layout', () => {
+    const css = readingCss();
+    const sheet = css.slice(css.indexOf('.flow-sheet {'));
+    const rule = sheet.slice(0, sheet.indexOf('}'));
+    if (!/--flow-picture-floor:\s*325px/.test(rule)) throw new Error('the sheet no longer declares the picture’s floor');
+    const panes = css.slice(css.indexOf('.flow-sheet-panes {'));
+    const track = (panes.slice(0, panes.indexOf('}')).match(/grid-template-columns:([^;]+);/) || [])[1];
+    if (!track) throw new Error('the panes no longer name their columns');
+    if (!track.includes('min(var(--flow-code-width, 340px), 100% - var(--flow-picture-floor))')) {
+      throw new Error(`the text column is ${track.trim()}, so a smaller window still takes the room out of the picture`);
+    }
+  });
+
+  // One number, in the stylesheet, read by both. The drag's ceiling used to be a literal of its own that forgot the 5px the divider spends, so a drag to the ceiling left the picture 315px against a floor the CSS holds at 320px. This is what fails if a second number comes back: 675px is the sheet's 1000px less the floor written on it, and a literal would write 680px.
+  check('the drag stops where the stylesheet stops', () => {
+    const { drag, floorReads, widthWritten, restore } = dividerStand(booted);
+    try {
+      drag(340, [-900]);
+      if (widthWritten() !== '675px') throw new Error(`the ceiling wrote ${widthWritten() || 'nothing'} rather than the 675px the floor on the sheet gives`);
+      // And it is read the way the room is: once for the gesture, not once a frame. Asking the page for a computed value flushes the style it was just written, so a floor read left inside the write would put that cost back on every move of the drag.
+      floorReads.count = 0;
+      drag(340, [-40, -80, -120, -160, -200, -240, -280, -320, 0, 40, 80, 120]);
+      if (floorReads.count !== 1) throw new Error(`twelve moves read the floor ${floorReads.count} times rather than once`);
+    } finally {
+      restore();
+    }
+  });
+
+  // A page that cannot answer for the property reads as an empty string, which `parseFloat` takes to NaN — and a NaN ceiling would write `NaNpx` and leave the pane with no width at all. So a missing floor leaves the drag uncapped rather than reintroducing a number of its own: 340 dragged 900 to the left is the 1240px asked for.
+  check('a sheet with no floor on it still drags', () => {
+    const { drag, widthWritten, restore } = dividerStand(booted, { floor: null });
+    try {
+      drag(340, [-900]);
+      if (widthWritten() !== '1240px') throw new Error(`a sheet with no floor wrote ${widthWritten() || 'nothing'} rather than the 1240px asked for`);
     } finally {
       restore();
     }
@@ -1711,14 +1751,23 @@ export function run() {
   });
 }
 
-/** The divider between the text pane and the picture, and a way to drag it. The sheet is given a room of its own so the clamp lands on numbers a reader can check by eye — a 680px ceiling and the 180px floor — and the pane is given the width the drag starts from. Every drag ends with its pointerup, or the move listener it left on the document would be called again by the next one. */
-function dividerStand(booted, { room = 1000 } = {}) {
+/** The divider between the text pane and the picture, and a way to drag it. The sheet is given a room of its own so the clamp lands on numbers a reader can check by eye — a 675px ceiling and the 180px floor — and the pane is given the width the drag starts from. The floor is written onto the sheet the way the stylesheet writes it, because that is where the ceiling is read from; `floor: null` is the sheet of a page that cannot answer. Every drag ends with its pointerup, or the move listener it left on the document would be called again by the next one. */
+function dividerStand(booted, { room = 1000, floor = '325px' } = {}) {
   const sheet = booted.document.getElementById('flowSheet');
   const split = booted.document.getElementById('flowSplit');
   const code = booted.document.getElementById('flowCode');
   if (!sheet || !split || !code) throw new Error('the page has no divider to drag');
   const wasRoom = sheet.clientWidth;
   const wasRect = code.getBoundingClientRect;
+  // The fake page's getComputedStyle reads inline style, so this is how the stand says what the stylesheet says.
+  if (floor) sheet.style.setProperty('--flow-picture-floor', floor);
+  // How often the floor is asked for: the same thing `roomReads` counts, for the other number a gesture reads.
+  const floorReads = { count: 0 };
+  const wasRead = sheet.style.getPropertyValue.bind(sheet.style);
+  sheet.style.getPropertyValue = (name) => {
+    if (name === '--flow-picture-floor') floorReads.count += 1;
+    return wasRead(name);
+  };
   // How wide the sheet is, and how wide the text pane is standing when the drag begins: the two numbers `setFlowCodeWidth` reads.
   const roomReads = { count: 0 };
   Object.defineProperty(sheet, 'clientWidth', {
@@ -1751,7 +1800,9 @@ function dividerStand(booted, { room = 1000 } = {}) {
   const restore = () => {
     Object.defineProperty(sheet, 'clientWidth', { configurable: true, writable: true, value: wasRoom });
     code.getBoundingClientRect = wasRect;
+    sheet.style.getPropertyValue = wasRead;
     sheet.style.removeProperty('--flow-code-width');
+    sheet.style.removeProperty('--flow-picture-floor');
   };
-  return { sheet, split, drag, pressArrow, doubleClick, roomReads, widthWritten, restore };
+  return { sheet, split, drag, pressArrow, doubleClick, roomReads, floorReads, widthWritten, restore };
 }

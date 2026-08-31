@@ -127,6 +127,83 @@ export function run() {
     context.closeFindBar();
   });
 
+  // "Find in selection" once turned every occurrence in the whole document into a DOM range and asked it where it sat, and a candidate the selection rejected never counted toward the 999 cap — so the work was the document's occurrence count. The flattening already knows where each piece of text starts, so the selection is a pair of numbers and a candidate is a comparison.
+  check('a find narrowed to a selection compares places, and falls back to ranges only where it cannot', () => {
+    const { context } = bootReading({ path: 'C:\Notes\scope.md', blocks: [{ srcStart: 0 }] });
+    const field = context.document.getElementById('findInput');
+    const pieces = ['alpha needle one ', 'beta needle two ', 'gamma needle three'];
+    const nodes = pieces.map((text) => ({ nodeType: 3, nodeValue: text, textContent: text }));
+    const starts = [];
+    pieces.reduce((at, text) => (starts.push(at), at + text.length), 0);
+    context.document.createTreeWalker = () => {
+      let at = 0;
+      return { nextNode: () => (at < nodes.length ? nodes[at++] : null) };
+    };
+    // Every range the page builds, counted: this is the number the whole phase is about.
+    let ranges = 0;
+    context.document.createRange = () => {
+      ranges += 1;
+      const range = {
+        startContainer: null,
+        startOffset: 0,
+        endContainer: null,
+        endOffset: 0,
+        setStart(node, offset) {
+          range.startContainer = node;
+          range.startOffset = offset;
+        },
+        setEnd(node, offset) {
+          range.endContainer = node;
+          range.endOffset = offset;
+        },
+      };
+      return range;
+    };
+    // The selection holds the middle piece and nothing else. Its own comparePoint is the answer the range path would have given, so both paths are asked the same question.
+    const flatOf = (node, offset) => starts[nodes.indexOf(node)] + offset;
+    const low = flatOf(nodes[1], 0);
+    const high = flatOf(nodes[1], pieces[1].length);
+    const comparePoint = (node, offset) => {
+      const point = flatOf(node, offset);
+      if (point < low) return -1;
+      if (point > high) return 1;
+      return 0;
+    };
+    const scoped = (range) => {
+      context.__scope = range;
+      vm.runInContext('findScopeRange = __scope;', context);
+      ranges = 0;
+      return vm.runInContext('collectRenderedMatches()', context);
+    };
+    const places = (found) => found.map((hit) => `${hit.start}-${hit.end}`).join(' ');
+
+    field.value = 'needle';
+    // The selection as the page usually hands it over: both ends inside one piece of text.
+    const byPlace = scoped({ startContainer: nodes[1], startOffset: 0, endContainer: nodes[1], endOffset: pieces[1].length, comparePoint });
+    if (ranges !== 0) throw new Error(`a narrowed search built ${ranges} ranges`);
+    if (byPlace.length !== 1) throw new Error(`the selection kept ${byPlace.length} of the three matches`);
+
+    // A selection that names a child rather than a letter: the end resolves to the first or last piece of text inside the child it points at.
+    const paragraph = { nodeType: 1, childNodes: [nodes[1]] };
+    const byElement = scoped({ startContainer: paragraph, startOffset: 0, endContainer: paragraph, endOffset: 1, comparePoint });
+    if (ranges !== 0) throw new Error(`an element-ended selection built ${ranges} ranges`);
+    if (places(byElement) !== places(byPlace)) throw new Error(`an element-ended selection found ${places(byElement)}`);
+
+    // And a selection anchored where the flattening never walked: the bounds will not resolve, so the loop asks the DOM the way it always did and finds the same match.
+    const elsewhere = { nodeType: 3, nodeValue: pieces[1] };
+    const byRange = scoped({ startContainer: elsewhere, startOffset: 0, endContainer: elsewhere, endOffset: pieces[1].length, comparePoint });
+    if (ranges !== nodes.length) throw new Error(`the fallback built ${ranges} ranges for ${nodes.length} candidates`);
+    if (places(byRange) !== places(byPlace)) throw new Error(`the fallback found ${places(byRange)}, not ${places(byPlace)}`);
+
+    // With no selection at all every occurrence is kept, and still no range is built to decide it.
+    context.__scope = null;
+    vm.runInContext('findScopeRange = __scope;', context);
+    ranges = 0;
+    const all = vm.runInContext('collectRenderedMatches()', context);
+    if (all.length !== nodes.length) throw new Error(`an unnarrowed search found ${all.length} matches`);
+    if (ranges !== 0) throw new Error(`an unnarrowed search built ${ranges} ranges`);
+  });
+
   check('a replace in the reading view rewrites the block, or refuses it whole', () => {
     const { findRewriteBlock, toggleFindFlag } = booted;
     const field = booted.document.getElementById('findInput');
