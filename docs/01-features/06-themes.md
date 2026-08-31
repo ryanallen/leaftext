@@ -168,7 +168,7 @@ Every fill under the pointer — a menu row, a toolbar button, a file in the lib
 - **Labels** are set in the theme's body font, the same face as the words around the diagram.
 - **Text printed inside a colored fill** — a Gantt bar's label, a plotted point — takes whichever of the theme's inks reads best on that fill, measured for contrast rather than assumed. A brand color is often a mid tone that neither white nor black sits comfortably on, so the ink is chosen per color and per theme.
 
-Switching theme redraws the diagrams on the page: an SVG already drawn holds its colors as literal values, so the only way to recolor one is to draw it again. The ones still waiting as blocks are simply drawn in the new theme when you reach them.
+Switching theme redraws the diagrams on the page: an SVG already drawn holds its colors as literal values, so the only way to recolor one is to draw it again. The ones still waiting as blocks are simply drawn in the new theme when you reach them. The little pictures on the [flowchart sheet](07-editing.md#the-flowchart-editor)'s shape buttons are drawings of the same kind and are kept for the session, so they go too: a sheet that is open draws them again in the new theme, and a shut one draws them the next time it opens.
 
 Every theme is gated on this. `theme_compiler_gates_diagram_colors_for_every_source` re-derives the pairs a diagram makes across all 22 sources — labels at 4.5:1, arrows at 3:1, and every colored fill required to have a readable ink — so a palette that would make diagrams unreadable fails `just verify` rather than shipping.
 

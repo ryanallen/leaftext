@@ -63,7 +63,7 @@ fn narrow_tables_become_labeled_cards_only_on_a_screen() {
     assert!(guarded >= 1, "no card container query is in the stylesheet");
 }
 
-/// Cards are the answer for a reader with no room and only for one, so the width is a flag the lane publishes and the changeover reads: the lane rests at `--reader-table-cards: 0` and the container query that already draws the cards turns it to `1`. Written twice the measured answer and the width fallback could disagree about which reader gets which reading, which is the whole fault this replaces.
+/// Cards are the answer for a reader with no room and only for one, so the width is a flag the lane publishes and the changeover reads: the lane rests at `--reader-table-cards: 0` and the container query that already draws the cards turns it to `1`. Written twice the measured answer and the width fallback could disagree about which reader gets which reading.
 #[test]
 fn the_card_width_is_one_number_published_on_the_lane() {
     let css = reading_mode_css();

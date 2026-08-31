@@ -1054,6 +1054,7 @@ function loadFlowChips() {
     .catch(() => {});
 }
 
+// A drawn SVG holds its colors as literal values, so a theme change is the one thing that makes a kept picture wrong. The version number is what a draw already in flight is measured against, since it would otherwise land forty-seven pictures of the old theme into the cleared store. A sheet that is open draws again here; a shut one draws at its next open.
 function refreshFlowChipsForTheme() {
   flowChipThemeVersion += 1;
   flowChipCache.clear();
