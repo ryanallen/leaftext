@@ -239,6 +239,7 @@ Where your machine is set to always show scrollbars — the accessibility settin
 - Every match is washed in the theme's accent color; the one you are on takes the primary, so stepping through is a mark that moves rather than a page of identical stripes.
 - Four toggles: **Aa** match case (`Alt+C`), **ab|** whole word (`Alt+W`), **.\*** regular expression (`Alt+R`), and find inside the text you had highlighted (`Alt+L`). A half-typed expression reads `Bad expression` rather than `No results`.
 - Every control on the bar is the same size as the buttons in the app bar above it, and on a narrow window the bar keeps itself whole: the field shrinks first, then the buttons wrap under it, and on a window as narrow as a phone the bar spans the page instead of floating in the corner.
+- **Typing keeps pace however long the document is.** The page's words are read once when the bar opens and again whenever the page redraws, rather than once for every letter you type, so a letter costs the same in a megabyte of Markdown as in a paragraph. Edit the page while the bar is open and the count catches up with what you just typed.
 
 Replacing needs the [padlock](07-editing.md#the-padlock) lifted for the view you are in, and the padlocks are separate: unlocking the page you read is not consent to rewrite the file by hand. **Replace** rewrites the match you are on, **All** rewrites every one, and either way it is a single edit — one `Ctrl+Z` puts the whole thing back.
 

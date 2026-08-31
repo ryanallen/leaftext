@@ -48,7 +48,7 @@ export function run() {
     field.value = '';
   });
 
-  // The flattened page is a picture of the page, not of the query, so letters typed into the field walk it no times at all. On a megabyte document the walk is about a third of what a keystroke costs, and nothing between two letters has moved the page — but a page that did move under the bar is walked again before the next search, or a match lands on a node that is gone.
+  // The flattened page is a picture of the page, not of the query, so letters typed into the field walk it no times at all — and a page that did move under the bar is walked again before the next search, or a match lands on a node that is gone.
   check('six letters walk the page no times, and a redraw walks it once', () => {
     const { context } = bootReading({ path: 'C:\Notes\long.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }] });
     const field = context.document.getElementById('findInput');
