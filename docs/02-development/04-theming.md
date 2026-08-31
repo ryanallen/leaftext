@@ -75,6 +75,8 @@ A document's first line therefore has to open below the band, or it starts out h
 
 Every grained surface tiles from the app rather than from its own box (`background-attachment: fixed`, anchored to the one contained element everything in the page sits inside), so they all share one lattice — including both table stripes, so the dots run straight down the page across a stripe instead of breaking at each row edge. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
 
+The [minimap](../01-features/04-minimap.md#how-it-works)'s clone is the one place that anchor is taken back off. A fixed background resolves against the nearest scaled ancestor rather than the window, and the clone wears a `scale(...)` — so inside it every grained cell leaves the shared lattice and becomes a raster of its own to repaint, which measured 31.5 milliseconds a scroll frame on a four hundred row table against 7.2 with the clone's cells scrolling their texture with them. The rail's own stylesheet unanchors them; the page's cells keep the anchor and the seam it buys, and the thumbnail is drawn the same either way.
+
 > [!NOTE]
 > The frontmatter table is the one table that carries no chrome, and its opt-out ties with the row rules on specificity — it wins only by coming later in the stylesheet. A row rule added after it would put a speckled stripe through it.
 

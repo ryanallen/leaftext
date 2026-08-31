@@ -440,7 +440,7 @@ impl<'a> CharCursor<'a> {
     }
 
     fn byte_of(&mut self, character_index: usize) -> usize {
-        // Markers do step back, once per nested block mapping: the scanner reports a mapping past the indentation of the key that opens it. Walking those few characters back keeps the place; dropping it rescanned everything read so far, which cost a nested megabyte 5.2 billion character steps of a 1.1 million step job.
+        // Markers do step back, once per nested block mapping: the scanner reports a mapping past the indentation of the key that opens it. Walking those few characters back keeps the place; dropping it rescans everything read so far, which costs a nested megabyte 5.2 billion character steps of a 1.1 million step job.
         while self.characters > character_index {
             let Some(character) = self.source[..self.bytes].chars().next_back() else {
                 break;
