@@ -75,7 +75,7 @@ impl Suite {
     }
 }
 
-/// Which suites cover a format. No wildcard arm on purpose: a sixth format has
+/// Which suites cover a format. No wildcard arm on purpose: a new format has
 /// to answer this before the tests compile, which is the rule `format.rs` already
 /// states for every other match on `DocumentFormat`.
 fn suites_for(format: DocumentFormat) -> &'static [Suite] {
@@ -88,7 +88,11 @@ fn suites_for(format: DocumentFormat) -> &'static [Suite] {
         DocumentFormat::Yaml => &[Suite::Yaml],
         // Nothing comparable is published for mail. If one ever is, this is where
         // it goes.
-        DocumentFormat::Eml | DocumentFormat::Html => &[],
+        DocumentFormat::Eml
+        | DocumentFormat::Html
+        | DocumentFormat::Text
+        | DocumentFormat::Ini
+        | DocumentFormat::Code => &[],
     }
 }
 
@@ -403,7 +407,11 @@ pub(super) fn read_case(suite: Suite, case: &Case) {
         DocumentFormat::Yaml => {
             let _ = render_yaml_document(&case.source, None);
         }
-        DocumentFormat::Eml | DocumentFormat::Html => {}
+        DocumentFormat::Eml
+        | DocumentFormat::Html
+        | DocumentFormat::Text
+        | DocumentFormat::Ini
+        | DocumentFormat::Code => {}
     }
 }
 

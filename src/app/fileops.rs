@@ -1282,7 +1282,10 @@ pub(crate) fn open_window_filters(on_a_mac: bool) -> Vec<WindowFilter> {
         return Vec::new();
     }
     let mut filters = vec![("Documents", all_document_extensions())];
-    for format in DocumentFormat::ALL {
+    for format in DocumentFormat::ALL
+        .into_iter()
+        .filter(|format| *format != DocumentFormat::Code)
+    {
         filters.push((format.display_name(), format.extensions().to_vec()));
     }
     filters.push(all_files_row());

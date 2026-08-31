@@ -170,10 +170,11 @@ pub fn initial_document_exts_script() -> String {
     )
 }
 
-/// Every readable format as `window.__leafDocumentFormats` — the words a reader is offered, and the ending each one writes. Off the same table as the flat list above, in the order the save window offers them, because a Mac panel shows none of them and the menu the page draws instead is the only place they are ever said. A sixth format appears there the day it is added here.
+/// Every readable format as `window.__leafDocumentFormats` — the words a reader is offered, and the ending each one writes. Off the same table as the flat list above, in the order the save window offers them, because a Mac panel shows none of them and the menu the page draws instead is the only place they are ever said. A new format appears there the day it is added here.
 pub fn initial_document_formats_script() -> String {
     let formats: Vec<serde_json::Value> = DocumentFormat::ALL
         .iter()
+        .filter(|format| **format != DocumentFormat::Code)
         .map(|format| {
             serde_json::json!({
                 "label": format.display_name(),

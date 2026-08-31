@@ -18,7 +18,7 @@ Free · Windows 10+ and macOS Universal · **[Windows `.msi`](https://github.com
 
 Your notes deserve better than a text editor. Open a file in Leaftext and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
 
-There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [HTML](docs/01-features/01-rendering.md#html-files), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) — formats every other app can read, so you're never locked in.
+There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [source files](docs/01-features/01-rendering.md#source-files), [HTML](docs/01-features/01-rendering.md#html-files), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml), [plain text](docs/01-features/01-rendering.md#plain-text-files) and [config files](docs/01-features/01-rendering.md#ini-files) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) — formats every other app can read, so you're never locked in.
 
 Free, on macOS and Windows.
 
@@ -72,6 +72,14 @@ An `.eml` from Gmail, Outlook, or Apple Mail opens as the message it carries: he
 ### HTML without the web page taking over
 
 A saved report, exported note, or hand-written `.html` page opens in Leaftext's own reading view. Scripts, styles, forms, buttons, event handlers, and unsafe addresses are removed; the source view keeps the original file for editing. **[HTML →](docs/01-features/01-rendering.md#html-files)**
+
+### Plain text, exactly as you typed it
+
+A `.txt` opens as one block with every space and every line break kept, so an ASCII banner stays lined up and an indented list stays indented. Nothing is reflowed and nothing is guessed at. **[Plain text →](docs/01-features/01-rendering.md#plain-text-files)**
+
+### Config files as a page
+
+An `.ini` opens as sections with their keys and values under each, every value ready to be typed into and written straight back. Each key is drawn the way it was written, because `font_size` is a name somebody chose. **[INI →](docs/01-features/01-rendering.md#ini-files)**
 
 ### Read faster when you need to
 
@@ -260,7 +268,7 @@ If a small box says **the system administrator has set policies to prevent this 
 
 ### Opening files with it
 
-Installing registers Leaftext for every extension it reads — `.md`, `.markdown`, `.mdown`, `.mdc`, `.html`, `.htm`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, `.mhtml` — so those files carry the leaf icon. HTML stays with the browser unless you choose Leaftext; an extension another app already owns keeps its app until you say otherwise. **[File associations →](docs/02-installation.md#file-associations)**
+Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text and `.ini` stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
 
 ## Learn it
 

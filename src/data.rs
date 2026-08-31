@@ -48,6 +48,16 @@ impl DataNode {
         }
     }
 
+    /// A scalar carrying the exact byte range of its own value, or none where the reader cannot vouch for one. The door another reader — `ini.rs` — builds this tree through.
+    pub(crate) fn scalar(text: String, span: Option<Range<usize>>) -> Self {
+        Self::new(DataValue::Scalar(text), span)
+    }
+
+    /// A mapping in the order its keys were written, repeats and all.
+    pub(crate) fn mapping(pairs: Vec<(String, Self)>) -> Self {
+        Self::new(DataValue::Mapping(pairs), None)
+    }
+
     fn as_scalar(&self) -> Option<&str> {
         match &self.value {
             DataValue::Scalar(text) => Some(text),
@@ -668,7 +678,7 @@ pub(crate) fn render_json_document(
     fallback_title: Option<&str>,
 ) -> (Option<String>, String, Vec<BlockSpan>) {
     match parse_json(source) {
-        Ok(root) => render_data_document(&root, fallback_title),
+        Ok(root) => render_data_document(&root, fallback_title, LabelStyle::Humanized),
         Err(error) => (None, error.to_html("JSON"), Vec::new()),
     }
 }
@@ -679,7 +689,7 @@ pub(crate) fn render_yaml_document(
     fallback_title: Option<&str>,
 ) -> (Option<String>, String, Vec<BlockSpan>) {
     match parse_yaml(source) {
-        Ok(root) => render_data_document(&root, fallback_title),
+        Ok(root) => render_data_document(&root, fallback_title, LabelStyle::Humanized),
         Err(error) => (None, error.to_html("YAML"), Vec::new()),
     }
 }
@@ -698,21 +708,44 @@ pub(crate) fn yaml_block_source_map(source: &str) -> Vec<BlockSpan> {
 // Renderer
 // ---------------------------------------------------------------------------
 
+/// How a key is drawn. A document whose keys are somebody's own prose — a sitemap's `lastmod`, a package file's `devDependencies` — reads better sentence-cased, which is what JSON, YAML and XML have always done. A config file's keys are names the person who wrote the file chose, so `font_size` is drawn `font_size` and a key called `url` is not relabeled "Link".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LabelStyle {
+    Humanized,
+    AsWritten,
+}
+
+impl LabelStyle {
+    fn label(self, key: &str) -> String {
+        match self {
+            Self::Humanized => friendly_label(key),
+            Self::AsWritten => key.to_string(),
+        }
+    }
+}
+
 struct DataCtx {
     out: String,
     blocks: Vec<BlockSpan>,
     next_block_id: usize,
     seen: HashMap<String, usize>,
+    labels: LabelStyle,
 }
 
 impl DataCtx {
-    fn new() -> Self {
+    fn new(labels: LabelStyle) -> Self {
         Self {
             out: String::new(),
             blocks: Vec::new(),
             next_block_id: 0,
             seen: HashMap::new(),
+            labels,
         }
+    }
+
+    /// The words a key is drawn with, which is the document's own choice rather than the renderer's.
+    fn label(&self, key: &str) -> String {
+        self.labels.label(key)
     }
 
     fn push(&mut self, markup: &str) {
@@ -768,11 +801,12 @@ impl DataCtx {
 }
 
 /// Render a parsed tree: the title heading, then the root's contents.
-fn render_data_document(
+pub(crate) fn render_data_document(
     root: &DataNode,
     fallback_title: Option<&str>,
+    labels: LabelStyle,
 ) -> (Option<String>, String, Vec<BlockSpan>) {
-    let mut ctx = DataCtx::new();
+    let mut ctx = DataCtx::new(labels);
 
     // A title-ish key at the root titles the document, and is then left out of the body so it isn't said twice.
     let title_key = title_key_of(root);
@@ -855,7 +889,7 @@ fn render_mapping(pairs: &[(String, DataNode)], ctx: &mut DataCtx, depth: usize)
         if depth >= MAX_DEPTH {
             render_prose(&flatten_text(value), value.span.clone(), ctx);
         } else {
-            ctx.heading((2 + depth).min(6), &friendly_label(key), None, false);
+            ctx.heading((2 + depth).min(6), &ctx.label(key), None, false);
             render_node(value, ctx, depth + 1);
         }
         index += 1;
@@ -864,7 +898,7 @@ fn render_mapping(pairs: &[(String, DataNode)], ctx: &mut DataCtx, depth: usize)
 
 /// Render a sequence: uniform records become a table, all-scalar items become a list, and anything else renders in turn, each named by its own title key when it has one.
 fn render_sequence(items: &[DataNode], ctx: &mut DataCtx, depth: usize) {
-    if let Some(columns) = table_columns(items) {
+    if let Some(columns) = table_columns(items, ctx.labels) {
         render_table(items, &columns, ctx);
         return;
     }
@@ -908,7 +942,7 @@ fn render_fields(pairs: &[(String, DataNode)], ctx: &mut DataCtx) {
         let attrs = ctx.block_attrs("data_field", node.span.clone());
         rows.push_str(&format!(
             "<dt>{}</dt><dd{attrs}>{}</dd>\n",
-            encode_text(&friendly_label(key)),
+            encode_text(&ctx.label(key)),
             linkify(text)
         ));
     }
@@ -951,7 +985,7 @@ fn render_list(items: &[DataNode], ctx: &mut DataCtx) {
 }
 
 /// Whether `items` is a run of repeated records worth rendering as a table, and if so its columns. A record qualifies when it is a flat mapping of short scalars — the same test the XML renderer applies to repeated elements.
-fn table_columns(items: &[DataNode]) -> Option<Vec<(String, String)>> {
+fn table_columns(items: &[DataNode], labels: LabelStyle) -> Option<Vec<(String, String)>> {
     if items.len() < 2 {
         return None;
     }
@@ -969,7 +1003,7 @@ fn table_columns(items: &[DataNode]) -> Option<Vec<(String, String)>> {
                 return None;
             }
             if !columns.iter().any(|(name, _)| name == key) {
-                columns.push((key.clone(), friendly_label(key)));
+                columns.push((key.clone(), labels.label(key)));
             }
         }
         if columns.len() > MAX_TABLE_COLUMNS {

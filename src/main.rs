@@ -637,6 +637,7 @@ fn pick_document_file() -> Option<PathBuf> {
 fn pick_save_path(current: &Path, format: Option<&str>) -> Option<PathBuf> {
     let readable: Vec<(&'static str, &'static [&'static str])> = DocumentFormat::ALL
         .iter()
+        .filter(|format| **format != DocumentFormat::Code)
         .map(|format| (format.display_name(), format.extensions()))
         .collect();
     let stem = current

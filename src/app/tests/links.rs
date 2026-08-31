@@ -396,3 +396,17 @@ fn a_link_opened_as_a_new_page_lands_behind_the_one_being_read() {
     workspace.open_path_behind(PathBuf::from("/notes/third.md"));
     assert!(workspace.tabs[2].code_view);
 }
+
+/// A link from a note to the plain text file beside it opens a tab rather than being handed to the OS. Before `.txt` was a format, clicking one left the app and nothing came back.
+#[test]
+fn a_link_to_a_text_file_opens_in_the_app() {
+    let current = fixture_source_path("guide/chapter/README.md");
+
+    assert!(is_document_link("./notes.txt"));
+    assert_eq!(
+        linked_document_path("./notes.txt", &current),
+        Some(fixture_source_path("guide/chapter/notes.txt"))
+    );
+    // And it is not the other answer: a link the app follows itself never reaches the machine.
+    assert_eq!(missing_linked_file("./notes.txt", &current), None);
+}

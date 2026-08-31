@@ -16,6 +16,10 @@ pub(crate) use eml::*;
 #[path = "html.rs"]
 mod html_document;
 pub(crate) use html_document::*;
+mod text;
+pub(crate) use text::*;
+mod ini;
+pub(crate) use ini::*;
 mod theme;
 pub(crate) use markdown::*;
 pub use markdown::{
@@ -42,7 +46,9 @@ pub use assets::{
 };
 mod format;
 pub use format::{
-    all_document_extensions, is_supported_document_path, DocumentFormat, MARKDOWN_EXPORT_EXTENSIONS,
+    all_document_extensions, is_listed_document_path, is_supported_document_path,
+    source_definition, source_definitions, source_extensions, DocumentFormat, SourceDefinition,
+    MARKDOWN_EXPORT_EXTENSIONS,
 };
 mod folder_tree;
 pub use folder_tree::{read_folder_listing, FolderCrumb, FolderListing};
@@ -531,7 +537,46 @@ pub fn opened_document_from_source_with_host(
             render_html_document,
             host,
         ),
+        DocumentFormat::Ini => {
+            opened_document_from_tree(source, path, DocumentFormat::Ini, render_ini_document, host)
+        }
+        DocumentFormat::Text => opened_document_from_tree(
+            source,
+            path,
+            DocumentFormat::Text,
+            render_text_document,
+            host,
+        ),
+        DocumentFormat::Code => opened_document_from_code(source, path, host),
         DocumentFormat::Markdown => opened_document_from_markdown_with_host(source, path, host),
+    }
+}
+
+fn opened_document_from_code(source: &str, path: &Path, host: &dyn LeafHost) -> OpenedDocument {
+    let definition = source_definition(path).expect("Code paths have a source definition");
+    let title = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Source file");
+    let body_html = format!(
+        "<h1{BORROWED_TITLE_ATTR}>{}</h1>{}",
+        encode_text(title),
+        render_source_code_block(source, definition.language_token, definition.display_name),
+    );
+    let article = format!(
+        r#"<article class="document-body">{body_html}{}</article>"#,
+        host.pager_placeholder().unwrap_or_default()
+    );
+    OpenedDocument {
+        title: title.to_string(),
+        path: path.display().to_string(),
+        html: article,
+        minimap: build_minimap_model_from_html(&body_html),
+        format: DocumentFormat::Code,
+        blocks: Vec::new(),
+        tasks: Vec::new(),
+        source: source.to_string(),
+        dialect: None,
     }
 }
 

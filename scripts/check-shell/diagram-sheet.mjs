@@ -1397,8 +1397,8 @@ export function run() {
     }
   });
 
-  // Nothing in the shape grid is drawn from the selection: the table, the eight families and the little pictures are all fixed for the life of the app, so the same forty-seven buttons answer every draw and the one fact that moves is which of them is marked. Rebuilding them spent 13.2ms of a 16.7ms frame on a click from one box to the next; the same redraw with the grid left standing is 0.7. The proof is identity — the same objects come back — because a grid rebuilt out of the same table would pass every count.
-  check('the shape grid is built once, and a redraw moves only the mark', () => {
+  // Nothing in the shape grid is drawn from the selection: the table, the eight families and the little pictures are all fixed for the life of the app, so the same forty-seven buttons answer every draw and the one fact that moves is which of them is marked. Rebuilding them spent 13.2ms of a 16.7ms frame on a click from one box to the next; the same redraw with the grid left standing is 0.7. Nor does it leave the page under a line, because putting it back is a fresh layout of the lot — 8.0ms a click, against 1.3 once the wrapper merely collapses. The proof is identity — the same objects come back — because a grid rebuilt out of the same table would pass every count.
+  check('the shape grid is built once, collapses rather than leaving, and a redraw moves only the mark', () => {
     const read = (expression) => vm.runInContext(expression, booted);
     const body = read('flowPickerBody');
     if (!body) throw new Error('the page has no picker body');
@@ -1423,13 +1423,16 @@ export function run() {
       read(`flowSelection = { kind: 'node', id: '${boxes[0]}' };`);
       booted.drawFlowPicker();
       const grid = read('flowShapeGrid');
+      const wrap = read('flowShapeWrap');
       const buttons = read('flowShapeButtons');
       const shapes = read('flowShapeCatalog()').length;
+      if (!wrap) throw new Error('the grid was built without a wrapper to collapse');
+      if (grid.some((element) => element.parentElement !== wrap)) throw new Error('the grid is not all inside its wrapper');
       if (buttons.size !== shapes) throw new Error(`the grid holds ${buttons.size} buttons against ${shapes} shapes`);
       if (grid.length !== shapes + 8) throw new Error(`the grid holds ${grid.length} elements, which is not eight headings and ${shapes} buttons`);
       if (marked() !== 'rect') throw new Error(`the first box is marked ${marked()}`);
-      // Everything drawn from the selection stands in front of the grid, so the body's first heading is still the one wearing no top margin. Delete is the one thing past it.
-      if (spot(grid[0]) < 3) throw new Error(`the grid starts at ${spot(grid[0])}, ahead of the fields the selection draws`);
+      // Everything drawn from the selection stands in front of the wrapper. Delete is the one thing past it.
+      if (spot(wrap) < 3) throw new Error(`the wrapper sits at ${spot(wrap)}, ahead of the fields the selection draws`);
       const last = [...body.children].pop();
       if (!last.classList.contains('flow-delete')) throw new Error('delete is not the last thing in the body');
       if (buttons.get('rect').innerHTML.includes('svg')) throw new Error('a button carried a picture before any was drawn');
@@ -1441,16 +1444,31 @@ export function run() {
       if (read('flowShapeButtons').get('rect') !== buttons.get('rect')) throw new Error('a second draw replaced the buttons');
       if (marked() !== 'diam') throw new Error(`the second box is marked ${marked()}`);
 
-      // A line has two grids of its own and no shapes at all, so the held grid steps out of the body and comes back when a box is picked again.
+      // A line has two grids of its own and no shapes at all. The wrapper stays in the body and collapses to nothing rather than emptying, because putting fifty-five elements back is a fresh layout of forty-seven SVGs: 8.0ms a click against 1.3. It is saying `inert` the long way — that word was watched costing 5ms of the layout the collapse saves.
       read(`flowSelection = { kind: 'edge', id: '${line}' };`);
       booted.drawFlowPicker();
-      if (grid.some((element) => spot(element) >= 0)) throw new Error('the shape grid stayed in the body under a selected line');
+      if (spot(wrap) < 0) throw new Error('the wrapper left the body under a selected line');
+      if (grid.some((element) => element.parentElement !== wrap)) throw new Error('the shape grid left its wrapper under a selected line');
+      if (!wrap.classList.contains('is-collapsed')) throw new Error('the wrapper did not collapse under a selected line');
+      if (wrap.getAttribute('aria-hidden') !== 'true') throw new Error('the collapsed wrapper is still read out');
+      const walkable = [...buttons.values()].filter((button) => button.tabIndex !== -1);
+      if (walkable.length) throw new Error(`${walkable.length} collapsed shape buttons are still in the tab order`);
       const captions = [...body.children].filter((one) => one.classList.contains('flow-menu-heading')).map((one) => one.textContent);
       if (captions.join() !== 'Line,Ends') throw new Error(`a selected line drew the headings ${captions.join(', ')}`);
+      // The wrapper stands behind everything the selection drew and ahead of nothing but delete, so the fields and the two line grids read in the order they always did.
+      const behind = [...body.children].slice(0, spot(wrap)).every((one) => !one.classList.contains('flow-delete'));
+      if (!behind) throw new Error('delete came before the wrapper under a selected line');
+      if ([...body.children].pop().classList.contains('flow-delete') === false) throw new Error('delete is not the last thing under a selected line');
+
       read(`flowSelection = { kind: 'node', id: '${boxes[0]}' };`);
       booted.drawFlowPicker();
       if (read('flowShapeGrid') !== grid) throw new Error('coming back to a box built a new grid');
-      if (spot(grid[0]) < 3) throw new Error('coming back to a box left the grid out of the body, or ahead of the fields');
+      if (read('flowShapeWrap') !== wrap) throw new Error('coming back to a box built a new wrapper');
+      if (wrap.classList.contains('is-collapsed')) throw new Error('coming back to a box left the grid collapsed');
+      if (wrap.getAttribute('aria-hidden')) throw new Error('coming back to a box left the grid hidden from a reader');
+      const shut = [...buttons.values()].filter((button) => button.tabIndex !== 0);
+      if (shut.length) throw new Error(`${shut.length} shape buttons stayed out of the tab order under a box`);
+      if (spot(wrap) < 3) throw new Error('coming back to a box left the wrapper out of the body, or ahead of the fields');
       if (marked() !== 'rect') throw new Error(`coming back to the first box marked ${marked()}`);
 
       // A press asks what it means now, rather than carrying what it meant when the button was built: a held closure would put the shape on the box selected two clicks ago.
@@ -1467,6 +1485,10 @@ export function run() {
       booted.drawFlowPicker();
       const filled = read('flowShapeButtons');
       if (filled === buttons) throw new Error('the grid survived the pictures landing');
+      const rebuilt = read('flowShapeWrap');
+      if (rebuilt === wrap) throw new Error('the wrapper survived the pictures landing');
+      if (spot(wrap) >= 0) throw new Error('the thrown-away wrapper is still in the body');
+      if (spot(rebuilt) < 0) throw new Error('the rebuilt wrapper never reached the body');
       const bare = [...filled.values()].filter((button) => !wearing(button));
       if (bare.length) throw new Error(`${bare.length} buttons came back without their picture`);
       if (marked() !== 'cyl') throw new Error(`the rebuilt grid marked ${marked()}`);

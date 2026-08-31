@@ -354,7 +354,7 @@ impl VaultCorpus {
 
     /// Whether a changed path is one this corpus holds text for. Asked before [`Self::refresh`], because getting that far can cost a clone of the whole corpus, and most of what the watcher reports is not a document.
     pub fn covers(&self, path: &Path) -> bool {
-        path.starts_with(&self.root) && crate::is_supported_document_path(path)
+        path.starts_with(&self.root) && crate::is_listed_document_path(path)
     }
 
     /// Bring one path up to date after the watcher reports a change: re-read it, add it if it is new, drop it if it is gone. Cheaper than re-reading the vault, and it is what keeps search and the graph live while you edit.
@@ -815,7 +815,7 @@ pub(crate) fn collect_documents(
                 continue;
             }
             subfolders.push(path);
-        } else if file_type.is_file() && crate::is_supported_document_path(&path) {
+        } else if file_type.is_file() && crate::is_listed_document_path(&path) {
             // The size is already in the directory entry, so this is not a second look at the disk.
             let size = entry.metadata().map(|meta| meta.len()).unwrap_or(0);
             preview.offer(size, &path);

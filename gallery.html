@@ -9474,7 +9474,10 @@ body.is-home-row-dragging .home-list-scroll li {
   letter-spacing: var(--lt-tracking-060);
   text-transform: uppercase;
 }
-.flow-menu-heading:first-child {
+/* The heading that opens a menu or a sheet wears no space above it. Scoped to the container's own children on purpose: the shape grid sits in a wrapper, so its first heading is `:first-child` wherever that wrapper stands and would otherwise lose the 6px it has today. The third selector is the one case where it really does open the sheet — a box being added, which draws no fields above the grid. */
+.flow-menu > .flow-menu-heading:first-child,
+.flow-picker-body > .flow-menu-heading:first-child,
+.flow-picker-body > .flow-shape-grid:first-child > .flow-menu-heading:first-child {
   margin-top: 0;
 }
 .flow-menu-item {
@@ -9556,6 +9559,19 @@ body.is-home-row-dragging .home-list-scroll li {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--lt-space-2);
   padding: var(--lt-space-4) var(--lt-space-10) var(--lt-space-12);
+}
+/* The forty-seven shape buttons never leave the page, so this wrapper stands in the body whatever is selected. It spans both of the body's columns and repeats them, with the same gap, so every button keeps the x, the width and the row it had when the fifty-five elements sat loose in the body. */
+.flow-shape-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-2);
+}
+/* A line has no shapes, so the wrapper collapses to nothing rather than emptying. A height of zero keeps the buttons laid out where `display: none` would throw their boxes away exactly the way removing them does — 1.3ms coming back against 4.9 for a hidden wrapper and 5.6 for hidden buttons. Out of the flow as well as flat, or a wrapper no taller than nothing still takes a row of the body's grid and one of its gaps, which pushed Delete 2px down the sheet every time a line was picked. Measured: it costs nothing, and the buttons come back at the pixel they left. */
+.flow-shape-grid.is-collapsed {
+  position: absolute;
+  height: 0;
+  overflow: hidden;
 }
 /* Delete belongs to the whole selection rather than to one column of choices, so it gets the row to itself — and is not worth the whole width of it. */
 .flow-picker-body > .flow-delete {

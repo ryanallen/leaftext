@@ -758,7 +758,7 @@ pub(crate) fn corpus_changes_redraw(
         Some(GraphSource::Document(seed))
             if changed
                 .iter()
-                .any(|path| crate::is_supported_document_path(path)) =>
+                .any(|path| leaftext::is_listed_document_path(path)) =>
         {
             GraphRedraw::Document {
                 seed,

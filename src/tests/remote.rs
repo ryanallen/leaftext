@@ -146,13 +146,16 @@ fn a_file_the_app_cannot_open_is_skipped_rather_than_copied() {
     assert_eq!(report.skipped, 3);
 
     // What may come down is the one format table and never a second list, so a format added there arrives here by existing.
-    for format in DocumentFormat::ALL {
+    for format in DocumentFormat::ALL
+        .into_iter()
+        .filter(|format| *format != DocumentFormat::Code)
+    {
         let extension = format.extensions()[0];
         write(&source_root.join(format!("sample.{extension}")), "x");
     }
     let second = dir.join("mirror-again");
     let report = fill_mirror(&FolderSource::new(&source_root), "", &second, None).expect("filled");
-    assert_eq!(report.copied, 3 + DocumentFormat::ALL.len());
+    assert_eq!(report.copied, 3 + DocumentFormat::ALL.len() - 1);
 
     let _ = fs::remove_dir_all(&dir);
 }

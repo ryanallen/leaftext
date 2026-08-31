@@ -359,6 +359,77 @@ jobs:
                   <string>public.html</string>
                 </array>
               </dict>
+              <!-- Extensions only, and the existing plain text entry above is
+                   left exactly as it is: putting txt into that entry would
+                   attach the leaf to public.plain-text, which is every .log and
+                   .csv on the machine, where this claims the one spelling.
+                   Alternate rank, because TextEdit owns .txt and taking it from
+                   everybody who installs an update is not this app's to do. -->
+              <!-- Extensions only, for the same reason as the entry below it:
+                   a config file has no system content type to name, and naming
+                   one would make Launch Services ignore the extension beside
+                   it. Alternate, because whatever opens a machine's config
+                   files today keeps them. -->
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>INI Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>ini</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>Text Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>txt</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>Source Code Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>ts</string>
+                  <string>tsx</string>
+                  <string>js</string>
+                  <string>jsx</string>
+                  <string>jsonc</string>
+                  <string>css</string>
+                  <string>scss</string>
+                  <string>sh</string>
+                  <string>bash</string>
+                  <string>zsh</string>
+                  <string>toml</string>
+                  <string>rs</string>
+                  <string>py</string>
+                  <string>sql</string>
+                  <string>diff</string>
+                  <string>patch</string>
+                  <string>env</string>
+                  <string>graphql</string>
+                  <string>gql</string>
+                </array>
+              </dict>
             </array>
           </dict>
           </plist>

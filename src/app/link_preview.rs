@@ -45,7 +45,7 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
     })
 }
 
-/// How much of a file its own renderer needs. Exhaustive on `DocumentFormat` on purpose: a sixth format answers for itself here rather than silently inheriting Markdown's opening.
+/// How much of a file its own renderer needs. Exhaustive on `DocumentFormat` on purpose: a new format answers for itself here rather than silently inheriting Markdown's opening.
 fn read_for_preview(path: &Path, size: u64) -> Option<SourceText> {
     match DocumentFormat::from_path(path) {
         // Prose reads back as prose wherever it is cut, so the opening is a smaller document.
@@ -54,7 +54,10 @@ fn read_for_preview(path: &Path, size: u64) -> Option<SourceText> {
         | DocumentFormat::Json
         | DocumentFormat::Yaml
         | DocumentFormat::Eml
-        | DocumentFormat::Html => (size <= LINK_PREVIEW_WHOLE_FILE_BYTES)
+        | DocumentFormat::Html
+        | DocumentFormat::Text
+        | DocumentFormat::Ini
+        | DocumentFormat::Code => (size <= LINK_PREVIEW_WHOLE_FILE_BYTES)
             .then(|| read_source(path).ok())
             .flatten(),
     }

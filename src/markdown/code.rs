@@ -21,19 +21,32 @@ pub(crate) fn render_code_block(
         return render_mermaid_code_block(&capture.code, source_path, host);
     }
 
-    let requested_language = language;
-    let language = language_definition(requested_language);
-    let display_language = language
-        .as_ref()
-        .map(|language| language.display_name)
-        .unwrap_or(requested_language);
+    render_source_code_block(
+        &capture.code,
+        language,
+        language_definition(language)
+            .as_ref()
+            .map(|definition| definition.display_name)
+            .unwrap_or(language),
+    )
+}
+
+pub(crate) fn render_source_code_block(
+    code: &str,
+    language: &str,
+    display_language: &str,
+) -> String {
+    #[cfg(not(feature = "highlight"))]
+    let _ = language;
+    #[cfg(feature = "highlight")]
+    let language = language_definition(language);
     let language_class = format!("language-{}", safe_css_identifier(display_language));
     #[cfg(feature = "highlight")]
     let highlighted = language
-        .and_then(|language| highlight_code(&capture.code, &language))
-        .unwrap_or_else(|| encode_text(&capture.code).to_string());
+        .and_then(|language| highlight_code(code, &language))
+        .unwrap_or_else(|| encode_text(code).to_string());
     #[cfg(not(feature = "highlight"))]
-    let highlighted = encode_text(&capture.code).to_string();
+    let highlighted = encode_text(code).to_string();
     format!(
         r#"<pre class="highlight" data-language="{}"><code class="{}">{}</code></pre>"#,
         encode_double_quoted_attribute(display_language),

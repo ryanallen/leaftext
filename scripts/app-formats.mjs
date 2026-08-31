@@ -28,6 +28,7 @@ export function documentRows(source) {
   if (at < 0) throw new Error('could not find `fn extensions(self)` in src/format.rs');
   const arms = source.slice(at);
   return variants.map((variant) => {
+    if (variant === 'Code') return [variant, sourceExtensions(source)];
     const arm = new RegExp(`Self::${variant}\\s*=>\\s*&\\[([^\\]]*)\\]`).exec(arms);
     if (!arm) throw new Error(`\`DocumentFormat::ALL\` names ${variant} and no \`Self::${variant} => &[…]\` arm answers for it`);
     const spellings = [...arm[1].matchAll(/"([^"]*)"/g)].map((one) => one[1]);
@@ -35,6 +36,16 @@ export function documentRows(source) {
     if (spellings.some((one) => !one)) throw new Error(`the ${variant} arm holds an empty extension`);
     return [variant, spellings];
   });
+}
+
+/** Source extensions, read from the source-definition rows rather than copied into this checker. */
+export function sourceExtensions(source) {
+  const table = /SOURCE_DEFINITIONS: &\[SourceDefinition\] = &\[([\s\S]*?)\n\];/.exec(source);
+  if (!table) throw new Error('could not find `SOURCE_DEFINITIONS` in src/format.rs');
+  const extensions = [...table[1].matchAll(/extensions:\s*&\[([^\]]*)\]/g)]
+    .flatMap((row) => [...row[1].matchAll(/"([^"]+)"/g)].map((match) => match[1]));
+  if (!extensions.length) throw new Error('`SOURCE_DEFINITIONS` names no extensions');
+  return extensions;
 }
 
 /** The spellings of one named format, or `null` where the table could not be read. The diagram export table takes Markdown's spellings from here rather than restating them. */

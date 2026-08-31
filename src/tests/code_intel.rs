@@ -156,7 +156,7 @@ fn one_alias_claimed_twice_goes_to_the_same_note_every_time() {
 fn a_folder_answers_notes_names_and_reads_for_a_document_outside_every_vault() {
     let dir = intel_dir("folder");
     fs::write(dir.join("Sibling.md"), "# Sibling\n\nbody\n").expect("sibling written");
-    fs::write(dir.join("notes.txt"), "not a document").expect("txt written");
+    fs::write(dir.join("notes.rtf"), "not a document").expect("non-document written");
 
     let items = folder_note_items(&dir);
     assert_eq!(items.len(), 1);

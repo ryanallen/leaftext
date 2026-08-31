@@ -372,3 +372,46 @@ fn the_flowchart_canvas_is_dragged_by_the_stage_not_by_its_scrollbars() {
         "the flowchart sheet must clip its rounded corners: {sheet}"
     );
 }
+
+#[test]
+fn the_shape_grid_collapses_out_of_the_flow_rather_than_leaving_the_page() {
+    // Taking the forty-seven shape buttons out of the picker and putting them back is a fresh layout of the lot — 8.0ms on a click from a line onto a box, against 1.3 once the wrapper merely collapses. So the rule has to keep the layout boxes, which is what rules `display: none` out: on the wrapper it reads 4.9ms and on the buttons 5.6, because it throws those boxes away exactly the way removing the elements does. And it has to leave the flow, or a wrapper no taller than nothing still takes a row of the body's grid and one of its gaps, which put Delete 2px down the sheet under every selected line.
+    let css = reading_mode_css();
+
+    let wrapper = rule_body(&css, ".flow-shape-grid {");
+    assert!(
+        wrapper.contains("grid-column: 1 / -1;")
+            && wrapper.contains("grid-template-columns: repeat(2, minmax(0, 1fr));")
+            && wrapper.contains("gap: var(--lt-space-2);"),
+        "the shape grid's wrapper must repeat the picker body's two columns and its gap, or every button moves: {wrapper}"
+    );
+
+    let collapsed = rule_body(&css, ".flow-shape-grid.is-collapsed {");
+    assert!(
+        collapsed.contains("position: absolute;")
+            && collapsed.contains("height: 0;")
+            && collapsed.contains("overflow: hidden;"),
+        "the collapsed shape grid must be flat and out of the flow: {collapsed}"
+    );
+    assert!(
+        !collapsed.contains("display: none"),
+        "hiding the shape grid throws away the layout boxes the collapse exists to keep: {collapsed}"
+    );
+}
+
+#[test]
+fn the_first_heading_of_a_menu_keeps_its_zero_top_margin_and_the_shape_grid_does_not_steal_it() {
+    // `.flow-menu-heading:first-child` unscoped matched the first shape heading the moment the grid moved into a wrapper, wherever that wrapper stood, and the six elements at the top of the grid came back 6px higher. So the rule is keyed on each container's own children — and the one case where the wrapper really does open the sheet, a box being added, which draws no fields above it, is written out.
+    let css = reading_mode_css();
+
+    assert_contains(&css, ".flow-menu > .flow-menu-heading:first-child,");
+    assert_contains(&css, ".flow-picker-body > .flow-menu-heading:first-child,");
+    assert_contains(
+        &css,
+        ".flow-picker-body > .flow-shape-grid:first-child > .flow-menu-heading:first-child {",
+    );
+    assert!(
+        !css.contains("\n.flow-menu-heading:first-child {"),
+        "an unscoped first-child rule takes the shape grid's own first heading wherever the wrapper stands"
+    );
+}

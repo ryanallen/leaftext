@@ -137,8 +137,15 @@ pub(crate) fn enter_code_view(
     // Building the editor on a big source takes a while; the code-view script clears the spinner once it is on screen.
     begin_reader_loading(webview);
     let text = edit.text().to_string();
-    let language = edit.format.language_token().to_string();
-    let display = edit.format.display_name().to_string();
+    let source_definition = leaftext::source_definition(&edit.path);
+    let language = source_definition
+        .map(|definition| definition.language_token)
+        .unwrap_or(edit.format.language_token())
+        .to_string();
+    let display = source_definition
+        .map(|definition| definition.display_name)
+        .unwrap_or(edit.format.display_name())
+        .to_string();
     let dirty = edit.is_dirty();
 
     let url = stage_source_payload(code_view_payload(

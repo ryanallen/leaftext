@@ -162,7 +162,7 @@ fn read_entries(dir: &Path) -> (Vec<FileTreeNode>, usize) {
                 children: Vec::new(),
             });
         } else if is_folder == Some(false) {
-            if crate::is_supported_document_path(&path) {
+            if crate::is_listed_document_path(&path) {
                 files.push(FileTreeNode {
                     name,
                     path: path_to_string(&path),

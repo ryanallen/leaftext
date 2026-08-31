@@ -121,10 +121,7 @@ pub(crate) fn collect_pager_entries_into(dir: &Path, into: &mut Vec<PagerEntry>)
             subdirs.push(path);
         } else if path.file_name().and_then(|n| n.to_str()).is_some() {
             // Every format the app renders is a page; README (landing page) and GLOSSARY (the sheet) are excluded by stem.
-            let is_doc = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .is_some_and(is_pager_page_extension);
+            let is_doc = is_listed_document_path(&path);
             let stem = path
                 .file_stem()
                 .and_then(|s| s.to_str())
@@ -180,7 +177,7 @@ pub(crate) fn by_pager_name(a: &PathBuf, b: &PathBuf) -> std::cmp::Ordering {
 
 /// Extensions the pager walks as sequential pages: every format the reading view renders, so Prev/Next covers a folder rather than part of it. Asks the format table rather than restating it — a page the app can open but the pager can't see is invisible to Prev/Next and keeps its extension in the label.
 pub(crate) fn is_pager_page_extension(extension: &str) -> bool {
-    DocumentFormat::from_extension(extension).is_some()
+    matches!(DocumentFormat::from_extension(extension), Some(format) if format != DocumentFormat::Code)
 }
 
 /// Turn an on-disk name into a display label (matches the web `label()`): drop a trailing page extension, collapse `-`/`_` runs to spaces, title-case each word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.

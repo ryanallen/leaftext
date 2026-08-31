@@ -658,7 +658,7 @@ fn unreadable_extensions_have_no_format() {
         "photo.png",
         "book.epub",
         "archive.zip",
-        "notes.txt",
+        "notes.rtf",
         "README",
     ] {
         assert_eq!(
@@ -674,7 +674,10 @@ fn unreadable_extensions_have_no_format() {
 #[test]
 fn every_listed_extension_maps_back_to_its_format() {
     let mut listed = Vec::new();
-    for format in DocumentFormat::ALL {
+    for format in DocumentFormat::ALL
+        .into_iter()
+        .filter(|format| *format != DocumentFormat::Code)
+    {
         assert!(
             !format.extensions().is_empty(),
             "{format:?} must name at least one extension"
@@ -702,6 +705,14 @@ fn every_listed_extension_maps_back_to_its_format() {
             );
             listed.push(extension);
         }
+    }
+    for extension in source_extensions() {
+        assert_eq!(
+            DocumentFormat::from_extension(extension),
+            Some(DocumentFormat::Code)
+        );
+        assert!(!listed.contains(&extension), ".{extension} is listed twice");
+        listed.push(extension);
     }
     assert_eq!(all_document_extensions(), listed);
 }
@@ -738,11 +749,15 @@ fn installer_claims_every_readable_extension() {
         "installer/src/plan.rs claims a different set of extensions from format.rs"
     );
 
-    for extension in ["html", "htm"] {
+    // The bare extension key is what takes a file type off whatever opens it today, so the formats Leaftext is only offered for must not carry one: HTML stays with the browser, and plain text with Notepad.
+    for extension in ["html", "htm", "txt", "ini"] {
         assert!(
             !wxs.contains(&format!(r"Key='Software\Classes\.{extension}' Type=")),
-            "the MSI takes .{extension} away from the browser"
+            "the MSI takes .{extension} away from whatever opens it today"
         );
+    }
+
+    for extension in ["html", "htm"] {
         let entry = macos_document_type_entries()
             .into_iter()
             .find(|entry| {
@@ -756,6 +771,168 @@ fn installer_claims_every_readable_extension() {
             Some("Alternate")
         );
         assert_eq!(plist_strings(&entry, "LSItemContentTypes"), ["public.html"]);
+    }
+}
+
+#[test]
+fn source_extensions_are_offered_without_becoming_the_windows_default() {
+    let wxs = include_str!("../../wix/main.wxs");
+    let source_entry = macos_document_type_entries()
+        .into_iter()
+        .find(|entry| {
+            plist_string(entry, "CFBundleTypeName").as_deref() == Some("Source Code Document")
+        })
+        .expect("macOS offers source files");
+    assert_eq!(
+        plist_string(&source_entry, "LSHandlerRank").as_deref(),
+        Some("Alternate")
+    );
+    for extension in source_extensions() {
+        assert!(
+            !wxs.contains(&format!(r"Key='Software\Classes\.{extension}' Type=")),
+            ".{extension} becomes a Windows default"
+        );
+        assert!(plist_strings(&source_entry, "CFBundleTypeExtensions")
+            .iter()
+            .any(|item| item == extension));
+    }
+}
+
+/// `.txt` is offered and never imposed. Notepad and TextEdit own plain text on the machines Leaftext installs onto, so the claim has to be the smaller one everywhere: no bare extension key in either Windows installer, and on macOS an entry claiming the one spelling with no content type beside it. A content type would attach the leaf to `public.plain-text`, which is every `.log` and `.csv` on the machine — a far bigger claim than opening one file — which is why the existing plain-text entry is left claiming no extensions at all.
+#[test]
+fn plain_text_is_offered_by_its_one_spelling_and_never_imposed() {
+    let wxs = include_str!("../../wix/main.wxs");
+    let entries = macos_document_type_entries();
+
+    // Offered in all three Windows shapes.
+    for needle in [
+        r"Key='Software\Classes\.txt\OpenWithProgids'",
+        r"SupportedTypes' Name='.txt'",
+        r"Capabilities\FileAssociations' Name='.txt'",
+    ] {
+        assert!(
+            wxs.contains(needle),
+            "the MSI does not offer .txt: {needle}"
+        );
+    }
+    // And never taken.
+    assert!(
+        !wxs.contains(r"Key='Software\Classes\.txt' Type="),
+        "the MSI takes .txt away from whatever opens it today"
+    );
+    assert!(
+        plan_owned_extensions().iter().all(|owned| *owned != "txt"),
+        "installer/src/plan.rs makes Leaftext the default handler for .txt"
+    );
+
+    let entry = entries
+        .iter()
+        .find(|entry| plist_string(entry, "CFBundleTypeName").as_deref() == Some("Text Document"))
+        .expect("macOS offers plain text files");
+    assert_eq!(plist_strings(entry, "CFBundleTypeExtensions"), ["txt"]);
+    assert_eq!(
+        plist_string(entry, "LSHandlerRank").as_deref(),
+        Some("Alternate"),
+        "Default rank here would take .txt from TextEdit on every Mac that installs an update"
+    );
+    assert_eq!(
+        plist_string(entry, "CFBundleTypeRole").as_deref(),
+        Some("Viewer")
+    );
+    assert_eq!(
+        plist_string(entry, "CFBundleTypeIconFile").as_deref(),
+        Some("Leaf"),
+        "an entry claiming an extension and naming no icon leaves Finder a blank page"
+    );
+    assert!(
+        !entry.contains("<key>LSItemContentTypes</key>"),
+        "a content type here puts the leaf on public.plain-text, which is every .log and .csv on the machine"
+    );
+
+    // The entry that does name that content type is left exactly as it was: no extensions, so it claims no file.
+    let plain = entries
+        .iter()
+        .find(|entry| {
+            plist_string(entry, "CFBundleTypeName").as_deref() == Some("Plain Text Document")
+        })
+        .expect("the plain text entry is still there");
+    assert!(plist_strings(plain, "CFBundleTypeExtensions").is_empty());
+    assert_eq!(
+        plist_strings(plain, "LSItemContentTypes"),
+        ["public.plain-text"]
+    );
+    assert_eq!(
+        plist_string(plain, "LSHandlerRank").as_deref(),
+        Some("Alternate")
+    );
+}
+
+/// `.ini` is claimed the same way `.txt` is, and for the same reason: whatever opens a machine's config files today keeps them. On macOS the entry names no content type, because a config file has none to name and naming one would make Launch Services ignore the extension beside it.
+#[test]
+fn an_ini_file_is_offered_by_its_one_spelling_and_never_imposed() {
+    let wxs = include_str!("../../wix/main.wxs");
+
+    for needle in [
+        r"Key='Software\Classes\.ini\OpenWithProgids'",
+        r"SupportedTypes' Name='.ini'",
+        r"Capabilities\FileAssociations' Name='.ini'",
+    ] {
+        assert!(
+            wxs.contains(needle),
+            "the MSI does not offer .ini: {needle}"
+        );
+    }
+    assert!(
+        !wxs.contains(r"Key='Software\Classes\.ini' Type="),
+        "the MSI takes .ini away from whatever opens it today"
+    );
+    assert!(
+        plan_owned_extensions().iter().all(|owned| *owned != "ini"),
+        "installer/src/plan.rs makes Leaftext the default handler for .ini"
+    );
+
+    let entries = macos_document_type_entries();
+    let entry = entries
+        .iter()
+        .find(|entry| plist_string(entry, "CFBundleTypeName").as_deref() == Some("INI Document"))
+        .expect("macOS offers INI files");
+    assert_eq!(plist_strings(entry, "CFBundleTypeExtensions"), ["ini"]);
+    assert_eq!(
+        plist_string(entry, "LSHandlerRank").as_deref(),
+        Some("Alternate")
+    );
+    assert_eq!(
+        plist_string(entry, "CFBundleTypeIconFile").as_deref(),
+        Some("Leaf")
+    );
+    assert!(!entry.contains("<key>LSItemContentTypes</key>"));
+
+    // And exactly one entry claims it: a config file read as a page of sections is not the source-code entry's any more.
+    let claiming = entries
+        .iter()
+        .filter(|entry| {
+            plist_strings(entry, "CFBundleTypeExtensions")
+                .iter()
+                .any(|item| item == "ini")
+        })
+        .count();
+    assert_eq!(claiming, 1, "two macOS entries claim .ini");
+}
+
+/// The installation page's list of registered extensions is a promise to somebody deciding whether to install, and it is written by hand — so it goes stale the moment a format lands and nobody thinks of it. Every ending a named format reads has to appear there. The source-file endings are the one exception, and deliberately: that page names them as a class rather than listing thirty of them, and [the rendering page](../../docs/01-features/01-rendering.md#source-files) lists the languages.
+#[test]
+fn the_installation_page_names_every_extension_the_app_registers() {
+    let page = include_str!("../../docs/02-installation.md");
+    for format in DocumentFormat::ALL {
+        if format == DocumentFormat::Code {
+            continue;
+        }
+        for extension in format.extensions() {
+            assert!(
+                page.contains(&format!("`.{extension}`")),
+                "docs/02-installation.md does not name .{extension}, which the installers register"
+            );
+        }
     }
 }
 
@@ -946,6 +1123,23 @@ fn exe_installer_extensions() -> Vec<&'static str> {
         .collect()
 }
 
+/// The `OWNED_EXTENSIONS` list out of the EXE installer's plan — the shorter list, the one that takes a file type off whatever opens it today. Read the same way `exe_installer_extensions` reads the longer one.
+fn plan_owned_extensions() -> Vec<&'static str> {
+    let plan = include_str!("../../installer/src/plan.rs");
+    let table = plan
+        .split_once("pub const OWNED_EXTENSIONS: &[&str] = &[")
+        .expect("installer/src/plan.rs must hold one table of owned extensions")
+        .1
+        .split_once("];")
+        .expect("the owned extension table must close")
+        .0;
+    table
+        .split(',')
+        .map(|entry| entry.trim().trim_matches('"'))
+        .filter(|entry| !entry.is_empty())
+        .collect()
+}
+
 /// The `CFBundleDocumentTypes` entries out of the Info.plist the macOS workflow writes, one string per entry. Read as structure rather than searched as text: an extension in a comment is not a claim, and a key in one entry says nothing about the next.
 fn macos_document_type_entries() -> Vec<String> {
     let workflow = include_str!("../../.github/workflows/release-distributions.yml");
@@ -1070,7 +1264,7 @@ fn a_cursor_rule_is_claimed_by_extension_rather_than_by_a_type_that_omits_it() {
 fn every_macos_file_type_claiming_extensions_names_the_icon() {
     let workflow = include_str!("../../.github/workflows/release-distributions.yml");
     let entries = macos_document_type_entries();
-    assert_eq!(entries.len(), 8, "the bundle claims eight file types");
+    assert_eq!(entries.len(), 11, "the bundle claims eleven file types");
 
     for entry in &entries {
         let name = plist_string(entry, "CFBundleTypeName").expect("every entry names its type");
@@ -1125,10 +1319,13 @@ fn macos_folder_asks_say_what_the_app_does() {
     );
 }
 
-/// The pager, the file dialog, drag-and-drop, link following and the library pane all ask `format.rs` rather than carrying a list. Anything the app can open must page too.
+/// Opening and listing are separate format-table answers: a source path opens when named without becoming a page beside a note.
 #[test]
-fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
-    for extension in all_document_extensions() {
+fn direct_open_and_listed_document_gates_keep_source_files_out_of_the_pager() {
+    for extension in all_document_extensions()
+        .into_iter()
+        .filter(|extension| !source_extensions().contains(extension))
+    {
         assert!(
             is_pager_page_extension(extension),
             ".{extension} opens but Prev/Next skips it"
@@ -1137,6 +1334,12 @@ fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
             is_pager_page_extension(&extension.to_ascii_uppercase()),
             ".{extension} uppercase should page too"
         );
+    }
+    for extension in source_extensions() {
+        assert!(is_supported_document_path(Path::new(&format!(
+            "file.{extension}"
+        ))));
+        assert!(!is_pager_page_extension(extension));
     }
     // `.markdown` and `.mdown` open like any other page, so they must also page and lose their extension in the label.
     assert!(is_pager_page_extension("markdown"));

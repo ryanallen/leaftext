@@ -693,6 +693,7 @@ fn each_window_offers_what_its_platform_can_honestly_read() {
     // The first save of a note with no file keeps its one row on a Mac, because that is the ending the panel appends to a bare name — the reader was asked which format before the window opened.
     let readable: Vec<(&'static str, &'static [&'static str])> = DocumentFormat::ALL
         .iter()
+        .filter(|format| **format != DocumentFormat::Code)
         .map(|format| (format.display_name(), format.extensions()))
         .collect();
     let offer = save_window_offer(&readable, Some("yaml"), "Untitled");

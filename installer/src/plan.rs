@@ -37,10 +37,11 @@ pub const UNINSTALLER_RELATIVE_PATH: &str = "leaftext-setup.exe";
 /// Every extension the app reads, claimed in the same three registry shapes `wix/main.wxs` uses. `src/format.rs` is the source; `installer_claims_every_readable_extension` fails when this list falls behind it.
 pub const EXTENSIONS: &[&str] = &[
     "md", "markdown", "mdown", "mdc", "xml", "json", "yaml", "yml", "eml", "mht", "mhtml", "html",
-    "htm",
+    "htm", "txt", "ini", "ts", "tsx", "js", "jsx", "jsonc", "css", "scss", "sh", "bash", "zsh",
+    "toml", "rs", "py", "sql", "diff", "patch", "env", "graphql", "gql",
 ];
 
-/// Readable extensions Leaftext may claim where no default exists. HTML stays with the browser unless a person chooses Leaftext.
+/// Readable extensions Leaftext may claim where no default exists. HTML stays with the browser, and plain text with whatever already opens it, unless a person chooses Leaftext.
 pub const OWNED_EXTENSIONS: &[&str] = &[
     "md", "markdown", "mdown", "mdc", "xml", "json", "yaml", "yml", "eml", "mht", "mhtml",
 ];

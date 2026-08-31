@@ -73,7 +73,7 @@ fn gather(seed: &Path) -> (Vec<CorpusDocument>, bool) {
             continue;
         }
         let path = PathBuf::from(&target);
-        if !crate::is_supported_document_path(&path) {
+        if !crate::is_listed_document_path(&path) {
             continue;
         }
         if let Some(linked) = read_document(&path) {
@@ -93,7 +93,7 @@ pub(crate) fn folder_documents(folder: &Path) -> Vec<PathBuf> {
         .flatten()
         .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_file()))
         .map(|entry| entry.path())
-        .filter(|path| crate::is_supported_document_path(path))
+        .filter(|path| crate::is_listed_document_path(path))
         .collect();
     // Sorted so the cap above keeps the same documents every time. A map that reshuffles between two reads of a folder nobody touched reads as a bug.
     paths.sort();

@@ -14,7 +14,7 @@ use std::path::Path;
 
 use serde::Serialize;
 
-use crate::is_supported_document_path;
+use crate::is_listed_document_path;
 
 /// How deep under the picked folder the mirror will walk. A source is asked what is in one folder at a time, and a source that answers with a loop — or with a tree deeper than anybody meant to point at — must not be able to walk this thread forever. What it stops is counted rather than swallowed.
 const MAX_MIRROR_DEPTH: usize = 24;
@@ -181,7 +181,7 @@ fn copy_folder(
             }
             RemoteEntryKind::File => {
                 let path = into.join(name);
-                if !is_supported_document_path(&path) {
+                if !is_listed_document_path(&path) {
                     report.skipped += 1;
                     continue;
                 }
@@ -248,7 +248,7 @@ pub fn refresh_mirror(
             RemoteEntryKind::Document => mirror_root.join(format!("{name}{POINTER_SUFFIX}")),
             _ => mirror_root.join(&name),
         };
-        if matches!(entry.kind, RemoteEntryKind::File) && !is_supported_document_path(&landing) {
+        if matches!(entry.kind, RemoteEntryKind::File) && !is_listed_document_path(&landing) {
             report.skipped += 1;
             continue;
         }

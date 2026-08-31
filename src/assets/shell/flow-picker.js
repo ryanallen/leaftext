@@ -50,9 +50,9 @@ function drawFlowPicker(options) {
   const graph = flowSession && flowSession.graph;
   const selection = flowSelection;
   flowPickerHead.textContent = '';
-  // Only what the selection draws goes. The shape grid is left standing where it is: nothing about it changes with the selection but which one button is marked.
+  // Only what the selection draws goes. The shape grid's wrapper is left standing where it is: nothing inside it changes with the selection but which one button is marked, and taking it out is the whole cost this sheet used to pay.
   for (const child of [...flowPickerBody.children]) {
-    if (!flowShapeHeld || !flowShapeHeld.has(child)) child.remove();
+    if (child !== flowShapeWrap) child.remove();
   }
   const node = graph && selection && selection.kind === 'node' ? flowFindNode(graph, selection.id) : null;
   const edge = graph && selection && selection.kind === 'edge' ? flowFindEdge(graph, selection.id) : null;
@@ -86,7 +86,7 @@ function drawFlowPicker(options) {
     flowShapeGridStands();
     markFlowShape(node ? node.shape : null);
   } else {
-    // A line has two grids of its own, so the shape grid steps out of the body until a box is picked again.
+    // A line has two grids of its own, so the shape grid collapses to nothing until a box is picked again.
     flowShapePress = null;
     flowShapeGridStandsDown();
     // An invisible line is the one style that takes no ends — mermaid spells it `~~~` and nothing else. Picking it drops the ends; picking an end back makes the line solid again, rather than offering a spelling that is not.
@@ -214,20 +214,19 @@ function flowPickerChoice(caption, option, chip, apply) {
   return button;
 }
 
-// Where a part drawn from the selection goes: in front of the held grid while it is standing, so the first heading in the body is the one that was always first and still wears no top margin, and on the end while it is not. The delete button is the one thing appended past the grid.
+// Where a part drawn from the selection goes: in front of the shape grid's wrapper, which stands in the body whether it is showing its buttons or collapsed, so the fields and the two line grids are always ahead of it. The delete button is the one thing appended past it.
 function flowPickerPlace(element) {
-  const first = flowShapeGrid && flowShapeGrid.length && flowShapeGrid[0].parentElement === flowPickerBody ? flowShapeGrid[0] : null;
-  if (first) flowPickerBody.insertBefore(element, first);
+  if (flowShapeWrap && flowShapeWrap.parentElement === flowPickerBody) flowPickerBody.insertBefore(element, flowShapeWrap);
   else flowPickerBody.appendChild(element);
 }
 
 // ---- the shape grid, built once --------------------------------------------
 //
-// Eight headings and forty-seven buttons, each with a whole SVG parsed into it. None of it depends on the selection: the shape table, the families and the pictures are fixed for the life of the app, and the only per-selection fact in the grid is which one button wears `is-current`. Rebuilding it on every redraw cost a click from box to box 13.2ms of a 16.7ms frame; leaving it standing costs 0.7ms.
+// Eight headings and forty-seven buttons, each with a whole SVG parsed into it. None of it depends on the selection: the shape table, the families and the pictures are fixed for the life of the app, and the only per-selection fact in the grid is which one button wears `is-current`. Rebuilding it on every redraw cost a click from box to box 13.2ms of a 16.7ms frame; leaving it standing costs 0.7ms. It never leaves the body either, because putting it back is a fresh layout of the lot — a click from a line onto a box was 8.0ms, and 1.3ms once the wrapper below merely collapses.
 //
 // Held here rather than in state.js because this fragment is the only thing that touches it. flow-canvas.js reaches the throwaway below by name, and a function declaration is there whichever way round the two fragments are served.
 let flowShapeGrid = null;
-let flowShapeHeld = null;
+let flowShapeWrap = null;
 let flowShapeButtons = null;
 let flowShapeMarked = null;
 let flowShapePress = null;
@@ -236,6 +235,9 @@ function flowShapeGridStands() {
   if (!flowShapeGrid) {
     flowShapeGrid = [];
     flowShapeButtons = new Map();
+    // One wrapper around the lot, laid out as the same two columns the body is, so a button comes back at the x and the width it had loose in the body. It is what lets the grid stay in the page and merely collapse: fifty-five elements taken out and put back are a fresh layout of forty-seven SVGs, which is 8.0ms of a click from a line onto a box against 1.3ms.
+    flowShapeWrap = document.createElement('div');
+    flowShapeWrap.className = 'flow-shape-grid';
     for (const family of flowShapeFamilies()) {
       if (!family.shapes.length) continue;
       flowShapeGrid.push(flowPickerHeading(family.name));
@@ -243,20 +245,27 @@ function flowShapeGridStands() {
         const button = flowPickerChoice(family.name, shape, flowShapeChip(shape.id), (id) => {
           if (flowShapePress) flowShapePress(id);
         });
+        button.tabIndex = 0;
         flowShapeButtons.set(shape.id, button);
         flowShapeGrid.push(button);
       }
     }
-    flowShapeHeld = new Set(flowShapeGrid);
+    for (const element of flowShapeGrid) flowShapeWrap.appendChild(element);
     flowShapeMarked = null;
   }
-  if (flowShapeGrid.length && flowShapeGrid[0].parentElement === flowPickerBody) return;
-  for (const element of flowShapeGrid) flowPickerBody.appendChild(element);
+  if (flowShapeWrap.parentElement !== flowPickerBody) flowPickerBody.appendChild(flowShapeWrap);
+  if (!flowShapeWrap.classList.contains('is-collapsed')) return;
+  flowShapeWrap.classList.remove('is-collapsed');
+  flowShapeWrap.removeAttribute('aria-hidden');
+  for (const button of flowShapeButtons.values()) button.tabIndex = 0;
 }
 
+// Collapsed to nothing, never emptied. A height of zero keeps every button's layout box, so coming back is a height change rather than a fresh layout of forty-seven SVGs: 1.3ms against 8.0. `display: none` is not an alternative — on the wrapper it reads 4.9ms and on the buttons 5.6ms, because it throws the boxes away exactly the way removing them does. A collapsed grid is still forty-seven buttons a Tab out of the line rows could walk into, and still forty-seven things a screen reader could read. `inert` is the word for what it is and the wrong thing to write: toggling it invalidates the whole subtree and hands back the 5ms the collapse just saved. Saying the same thing the long way costs nothing.
 function flowShapeGridStandsDown() {
-  if (!flowShapeGrid) return;
-  for (const element of flowShapeGrid) element.remove();
+  if (!flowShapeWrap || flowShapeWrap.classList.contains('is-collapsed')) return;
+  flowShapeWrap.classList.add('is-collapsed');
+  flowShapeWrap.setAttribute('aria-hidden', 'true');
+  for (const button of flowShapeButtons.values()) button.tabIndex = -1;
 }
 
 // The mark moves rather than being written into forty-seven class strings.
@@ -270,9 +279,9 @@ function markFlowShape(id) {
 
 // The first grid of a session is built before mermaid has drawn one picture, so every button in it is empty. It is thrown away the moment the pictures land; held instead, it would keep forty-seven blank buttons for the rest of the session.
 function forgetFlowShapeGrid() {
-  flowShapeGridStandsDown();
+  if (flowShapeWrap) flowShapeWrap.remove();
+  flowShapeWrap = null;
   flowShapeGrid = null;
-  flowShapeHeld = null;
   flowShapeButtons = null;
   flowShapeMarked = null;
 }

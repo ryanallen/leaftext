@@ -595,6 +595,7 @@ fn readable_formats_ride_to_the_page_from_the_format_table() {
     .expect("the page is handed a list it can read");
     let expected: Vec<serde_json::Value> = DocumentFormat::ALL
         .iter()
+        .filter(|format| **format != DocumentFormat::Code)
         .map(|format| {
             serde_json::json!({ "label": format.display_name(), "ext": format.extensions()[0] })
         })

@@ -193,6 +193,28 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\.mhtml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.html\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.htm\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.txt\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.ini\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.ts\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.tsx\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.js\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.jsx\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.jsonc\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.css\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.scss\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.sh\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.bash\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.zsh\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.toml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.rs\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.py\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.sql\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.diff\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.patch\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.ini\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.env\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.graphql\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.gql\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
 
                 <!-- Puts leaftext in the "Open with" list even for extensions it
                      does not own. -->
@@ -211,6 +233,28 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mhtml' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.html' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.htm' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.txt' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.ini' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.ts' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.tsx' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.js' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.jsx' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.jsonc' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.css' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.scss' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.sh' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.bash' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.zsh' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.toml' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.rs' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.py' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.sql' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.diff' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.patch' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.ini' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.env' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.graphql' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.gql' Type='string' Value=''/>
                 <RemoveRegistryKey Root='HKCU' Key='Software\Classes\Applications\leaftext.exe' Action='removeOnUninstall'/>
 
                 <!-- Default Programs registration, so the app is listed in
@@ -230,6 +274,28 @@
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mhtml' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.html' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.htm' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.txt' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.ini' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.ts' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.tsx' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.js' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.jsx' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.jsonc' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.css' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.scss' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.sh' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.bash' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.zsh' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.toml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.rs' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.py' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.sql' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.diff' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.patch' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.ini' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.env' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.graphql' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.gql' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\RegisteredApplications' Name='Leaftext' Type='string' Value='Software\ryanallen\leaftext\Capabilities'/>
             </Component>
         </DirectoryRef>

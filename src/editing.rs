@@ -288,15 +288,19 @@ impl EditableDocument {
         )
     }
 
-    /// The block source map for the live buffer: Markdown via pulldown-cmark offsets, XML via roxmltree node ranges, JSON and YAML via their readers. The reading view attaches these to rendered blocks so an edit knows which source range to splice. JSON and YAML blocks are mapped but never editable — see `data.rs` for why.
+    /// The block source map for the live buffer: Markdown via pulldown-cmark offsets, XML via roxmltree node ranges, JSON, YAML and INI via their readers. The reading view attaches these to rendered blocks so an edit knows which source range to splice. JSON and YAML blocks are mapped but never editable — see `data.rs` for why.
     pub fn block_source_map(&self) -> Vec<BlockSpan> {
         match self.format {
             DocumentFormat::Markdown => block_source_map(&self.text),
             DocumentFormat::Xml => xml_block_source_map(&self.text),
             DocumentFormat::Json => json_block_source_map(&self.text),
             DocumentFormat::Yaml => yaml_block_source_map(&self.text),
-            // Bodies are transfer-encoded, so no rendered block can prove a source range; the code view edits the raw message.
-            DocumentFormat::Eml | DocumentFormat::Html => Vec::new(),
+            DocumentFormat::Ini => ini_block_source_map(&self.text),
+            // Bodies are transfer-encoded, so no rendered block can prove a source range; the code view edits the raw message. A plain text file is one block covering the whole of itself, so a range here would draw the source view a second time inside the reading view.
+            DocumentFormat::Eml
+            | DocumentFormat::Html
+            | DocumentFormat::Text
+            | DocumentFormat::Code => Vec::new(),
         }
     }
 
@@ -334,7 +338,10 @@ impl EditableDocument {
             | DocumentFormat::Json
             | DocumentFormat::Yaml
             | DocumentFormat::Eml
-            | DocumentFormat::Html => Vec::new(),
+            | DocumentFormat::Html
+            | DocumentFormat::Text
+            | DocumentFormat::Ini
+            | DocumentFormat::Code => Vec::new(),
         }
     }
 
@@ -346,7 +353,10 @@ impl EditableDocument {
             | DocumentFormat::Json
             | DocumentFormat::Yaml
             | DocumentFormat::Eml
-            | DocumentFormat::Html => Vec::new(),
+            | DocumentFormat::Html
+            | DocumentFormat::Text
+            | DocumentFormat::Ini
+            | DocumentFormat::Code => Vec::new(),
         }
     }
 }

@@ -139,6 +139,12 @@ export const ALLOWED = [
     because: 'the same crate, and the read takes the value rather than asserting a call',
   },
   {
+    file: 'src/tests/settings_paths.rs',
+    reads: 'plan.rs',
+    asserts: '"installer/src/plan.rs must hold one table of owned extensions"',
+    because: 'the same crate, and the read takes the value rather than asserting a call',
+  },
+  {
     file: 'src/tests/updater.rs',
     reads: 'plan.rs',
     asserts: '"installer/src/plan.rs must name {name} once"',

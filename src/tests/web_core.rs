@@ -39,6 +39,23 @@ pub(super) const YAML_FIXTURE: &str =
 
 pub(super) const EML_FIXTURE: &str = "From: Ada <ada@example.com>\nTo: Grace <grace@example.com>\nSubject: A message\nDate: Mon, 3 Aug 2026 09:00:00 +0000\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\n\nOne short body.\n";
 
+pub(super) const INI_FIXTURE: &str = "; a comment
+editor = leaftext
+
+[display]
+font_size = 14
+url = https://example.com/page#anchor
+";
+
+pub(super) const TEXT_FIXTURE: &str = "Notes
+=====
+
+    indented list
+    another
+
+a < b & c > d
+";
+
 pub(super) const HTML_FIXTURE: &str = "<!doctype html><html><body><main><h1>A page</h1><p>Safe words.</p><script>alert(1)</script></main></body></html>";
 
 /// The document phase 4's source edits splice into: every block kind that has a byte range worth addressing.
@@ -110,6 +127,16 @@ pub(super) fn web_core_fixtures() -> Vec<WebCoreFixture> {
             name: "html",
             file: "page.html",
             source: HTML_FIXTURE,
+        },
+        WebCoreFixture {
+            name: "text",
+            file: "plain.txt",
+            source: TEXT_FIXTURE,
+        },
+        WebCoreFixture {
+            name: "ini",
+            file: "settings.ini",
+            source: INI_FIXTURE,
         },
     ]
 }
@@ -512,6 +539,8 @@ fn the_fixture_set_covers_every_format_the_app_reads() {
         DocumentFormat::Yaml,
         DocumentFormat::Eml,
         DocumentFormat::Html,
+        DocumentFormat::Text,
+        DocumentFormat::Ini,
     ] {
         assert!(
             covered.contains(&format),
@@ -583,6 +612,14 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "html",
         "d1d04a3bf08f6f6dd95accc91b794e4ee110929092aaa8562bb20d977f77bbdd",
+    ),
+    (
+        "text",
+        "f0dbd24b6ddc3457449306de7b6fb98e39cd0dbf45c9585a3da049aefb929d29",
+    ),
+    (
+        "ini",
+        "080e3f6cb20f7b761e5672f38b89578ec4ab2e856259c1bafb1748113a649419",
     ),
 ];
 
@@ -741,4 +778,28 @@ fn apply_pinned_buffer_edit(edit: &mut EditableDocument, step: &serde_json::Valu
         // A step the buffer knows nothing about, which has to move nothing rather than doing something near it.
         _ => {}
     }
+}
+
+/// A published site and the window draw a text file the same way: one preformatted block holding the file as typed. The block is the only thing on the page, so a browser drawing it differently would be drawing a different document rather than the same one missing a decoration.
+#[test]
+fn a_browser_draws_a_text_file_as_the_same_block_the_window_does() {
+    let path = web_core_fixture_path("plain.txt");
+    let desktop = opened_document_from_source(TEXT_FIXTURE, &path);
+    let browser = opened_document_from_source_with_host(TEXT_FIXTURE, &path, &BareHost);
+
+    let block = |html: &str| {
+        html.split_once("<pre><code>")
+            .expect("the file is drawn as one preformatted block")
+            .1
+            .split_once("</code></pre>")
+            .expect("and that block closes")
+            .0
+            .to_string()
+    };
+    assert_eq!(block(&desktop.html), block(&browser.html));
+    assert_eq!(
+        block(&browser.html),
+        "Notes\n=====\n\n    indented list\n    another\n\na &lt; b &amp; c &gt; d\n"
+    );
+    assert!(browser.blocks.is_empty());
 }

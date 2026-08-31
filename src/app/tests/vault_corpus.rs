@@ -826,7 +826,10 @@ fn the_vaults_text_is_patched_for_every_format_the_watcher_reports() {
     let root = plain_event_path(canonical.clone());
 
     let mut corpus = VaultCorpus::read(&root);
-    for extension in all_document_extensions() {
+    for extension in all_document_extensions()
+        .into_iter()
+        .filter(|extension| !leaftext::source_extensions().contains(extension))
+    {
         let name = format!("new.{extension}");
         fs::write(dir.join(&name), "hello").expect("fixture document is written");
         // As the watcher would report it, translated at the boundary.

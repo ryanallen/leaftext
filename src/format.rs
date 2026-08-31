@@ -14,17 +14,23 @@ pub enum DocumentFormat {
     Yaml,
     Eml,
     Html,
+    Text,
+    Ini,
+    Code,
 }
 
 impl DocumentFormat {
     /// Every format, in the order the file dialog lists them. Callers derive their lists from this rather than restating one.
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 9] = [
         Self::Markdown,
         Self::Xml,
         Self::Json,
         Self::Yaml,
         Self::Eml,
         Self::Html,
+        Self::Text,
+        Self::Ini,
+        Self::Code,
     ];
 
     /// The extensions that name this format, lowercase and without the dot. The first is canonical; the rest are accepted spellings.
@@ -40,6 +46,13 @@ impl DocumentFormat {
             // MHT web archives are the same MIME envelope as mail, so the one reader opens both.
             Self::Eml => &["eml", "mht", "mhtml"],
             Self::Html => &["html", "htm"],
+            // The commonest text file there is, and the app was never told what shape one holds — so it is kept exactly as typed rather than read as prose.
+            Self::Text => &["txt"],
+            // A config file is a page of sections rather than a colored block, so it has its own reader and its own arm — which is why `SOURCE_DEFINITIONS` below does not name it.
+            Self::Ini => &["ini"],
+            // Source endings come from `SOURCE_DEFINITIONS`; the file dialog asks
+            // `source_extensions` so this arm cannot become a second list.
+            Self::Code => &[],
         }
     }
 
@@ -49,6 +62,7 @@ impl DocumentFormat {
         Self::ALL
             .into_iter()
             .find(|format| format.extensions().contains(&extension.as_str()))
+            .or_else(|| source_definition_for_extension(&extension).map(|_| Self::Code))
     }
 
     /// The format `path` names, or `None` when the app can't read it. This is the question to ask before opening a file; [`Self::from_path`] is the one to ask once it is already open.
@@ -56,6 +70,7 @@ impl DocumentFormat {
         path.extension()
             .and_then(|extension| extension.to_str())
             .and_then(Self::from_extension)
+            .or_else(|| source_definition_for_path(path).map(|_| Self::Code))
     }
 
     /// The format to render `path` as, falling back to Markdown for anything unrecognized. The loader is total — a file that reached it gets rendered as something — so extension-less READMEs read as Markdown rather than failing to open.
@@ -73,6 +88,9 @@ impl DocumentFormat {
             // No email grammar is bundled; the code view falls back to plain text, which still edits and minimaps.
             Self::Eml => "email",
             Self::Html => "html",
+            Self::Text => "text",
+            Self::Ini => "ini",
+            Self::Code => "text",
         }
     }
 
@@ -85,8 +103,159 @@ impl DocumentFormat {
             Self::Yaml => "YAML",
             Self::Eml => "Email",
             Self::Html => "HTML",
+            Self::Text => "Text",
+            Self::Ini => "INI",
+            Self::Code => "Source code",
         }
     }
+}
+
+/// One source-file definition: all admissions and the matching highlighter token live here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceDefinition {
+    pub extensions: &'static [&'static str],
+    pub file_names: &'static [&'static str],
+    pub language_token: &'static str,
+    pub display_name: &'static str,
+}
+
+pub const SOURCE_DEFINITIONS: &[SourceDefinition] = &[
+    SourceDefinition {
+        extensions: &["ts"],
+        file_names: &[],
+        language_token: "typescript",
+        display_name: "TypeScript",
+    },
+    SourceDefinition {
+        extensions: &["tsx"],
+        file_names: &[],
+        language_token: "tsx",
+        display_name: "TSX",
+    },
+    SourceDefinition {
+        extensions: &["js"],
+        file_names: &[],
+        language_token: "javascript",
+        display_name: "JavaScript",
+    },
+    SourceDefinition {
+        extensions: &["jsx"],
+        file_names: &[],
+        language_token: "jsx",
+        display_name: "JSX",
+    },
+    SourceDefinition {
+        extensions: &["jsonc"],
+        file_names: &[],
+        language_token: "jsonc",
+        display_name: "JSONC",
+    },
+    SourceDefinition {
+        extensions: &["css"],
+        file_names: &[],
+        language_token: "css",
+        display_name: "CSS",
+    },
+    SourceDefinition {
+        extensions: &["scss"],
+        file_names: &[],
+        language_token: "scss",
+        display_name: "SCSS",
+    },
+    SourceDefinition {
+        extensions: &["sh", "bash", "zsh"],
+        file_names: &[],
+        language_token: "sh",
+        display_name: "Bash",
+    },
+    SourceDefinition {
+        extensions: &["toml"],
+        file_names: &[],
+        language_token: "toml",
+        display_name: "TOML",
+    },
+    SourceDefinition {
+        extensions: &["rs"],
+        file_names: &[],
+        language_token: "rust",
+        display_name: "Rust",
+    },
+    SourceDefinition {
+        extensions: &["py"],
+        file_names: &[],
+        language_token: "python",
+        display_name: "Python",
+    },
+    SourceDefinition {
+        extensions: &["sql"],
+        file_names: &[],
+        language_token: "sql",
+        display_name: "SQL",
+    },
+    SourceDefinition {
+        extensions: &["diff", "patch"],
+        file_names: &[],
+        language_token: "diff",
+        display_name: "Diff",
+    },
+    SourceDefinition {
+        extensions: &["env"],
+        file_names: &[".env"],
+        language_token: "dotenv",
+        display_name: "Dotenv",
+    },
+    SourceDefinition {
+        extensions: &["graphql", "gql"],
+        file_names: &[],
+        language_token: "graphql",
+        display_name: "GraphQL",
+    },
+    SourceDefinition {
+        extensions: &[],
+        file_names: &["Dockerfile"],
+        language_token: "dockerfile",
+        display_name: "Dockerfile",
+    },
+];
+
+pub fn source_definitions() -> &'static [SourceDefinition] {
+    SOURCE_DEFINITIONS
+}
+
+pub fn source_definition_for_extension(extension: &str) -> Option<SourceDefinition> {
+    SOURCE_DEFINITIONS
+        .iter()
+        .copied()
+        .find(|definition| definition.extensions.contains(&extension))
+}
+
+pub fn source_definition_for_path(path: &Path) -> Option<SourceDefinition> {
+    let file_name = path.file_name()?.to_str()?;
+    SOURCE_DEFINITIONS.iter().copied().find(|definition| {
+        definition
+            .file_names
+            .iter()
+            .any(|name| name.eq_ignore_ascii_case(file_name))
+            || path
+                .extension()
+                .and_then(|extension| extension.to_str())
+                .and_then(|extension| {
+                    source_definition_for_extension(&extension.to_ascii_lowercase())
+                })
+                .is_some_and(|found| found == *definition)
+    })
+}
+
+pub fn source_extensions() -> Vec<&'static str> {
+    SOURCE_DEFINITIONS
+        .iter()
+        .flat_map(|definition| definition.extensions)
+        .copied()
+        .collect()
+}
+
+pub fn source_definition(path: &Path) -> Option<SourceDefinition> {
+    source_definition_for_path(path)
 }
 
 /// The Markdown endings an export may write, which is not every ending the app reads. A diagram or a picture exported as Markdown writes an ordinary document with no frontmatter, so offering `.mdc` there would name a Cursor rule over a file that is not one. Readable spellings are [`DocumentFormat::extensions`] above; both lists stay in this file so neither becomes a second table.
@@ -98,10 +267,17 @@ pub fn all_document_extensions() -> Vec<&'static str> {
         .into_iter()
         .flat_map(DocumentFormat::extensions)
         .copied()
+        .chain(source_extensions())
         .collect()
 }
 
 /// True when `path` names a file the app can open. The one answer behind the file dialog, drag-and-drop, in-app link following, the pager and the library pane, so all five agree on what a document is.
 pub fn is_supported_document_path(path: &Path) -> bool {
     DocumentFormat::for_path(path).is_some()
+}
+
+/// True when `path` belongs in a folder, pager, corpus, or graph. Source files
+/// open when named, without turning a repository into a library of its code.
+pub fn is_listed_document_path(path: &Path) -> bool {
+    matches!(DocumentFormat::for_path(path), Some(format) if format != DocumentFormat::Code)
 }

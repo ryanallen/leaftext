@@ -7,14 +7,15 @@ use crate::locations;
 use crate::plan::{self, Root};
 
 #[test]
-fn html_is_offered_without_taking_the_browsers_place() {
+fn the_formats_leaftext_does_not_own_are_offered_without_taking_anybodys_place() {
     let plan = plan::plan(
         std::path::Path::new(r"C:\x"),
         std::path::Path::new(r"C:\y"),
         "0.0.0",
     );
 
-    for extension in ["html", "htm"] {
+    // Plain text sits with them: Notepad owns `.txt` on every machine Leaftext installs onto, and an update that took it would be taking a file type off somebody who never asked.
+    for extension in ["html", "htm", "txt", "ini"] {
         let bare = format!(r"Software\Classes\.{extension}");
         assert!(!plan
             .values

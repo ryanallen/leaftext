@@ -387,8 +387,15 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         edit.adopt_external(source.clone());
         if in_code_view {
             let text = edit.text().to_string();
-            let language = edit.format.language_token().to_string();
-            let display = edit.format.display_name().to_string();
+            let source_definition = leaftext::source_definition(&edit.path);
+            let language = source_definition
+                .map(|definition| definition.language_token)
+                .unwrap_or(edit.format.language_token())
+                .to_string();
+            let display = source_definition
+                .map(|definition| definition.display_name)
+                .unwrap_or(edit.format.display_name())
+                .to_string();
             let url = stage_source_payload(code_view_payload(
                 &text, &language, &display, false,
                 // Live reload refreshes in place; the page keeps its scroll.
