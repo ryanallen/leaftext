@@ -774,6 +774,41 @@ fn installer_claims_every_readable_extension() {
     }
 }
 
+/// WiX derives a component's GUID from the registry key it writes, so two rows writing one key are one key added twice and `light` stops the build with `Item has already been added` — which is a failure only the release sees, because WiX cannot run on this machine. Two tickets adding `.ini` on the same afternoon is exactly how it happens, and v1.51.0's Windows build died on it.
+#[test]
+fn the_msi_writes_each_registry_key_once() {
+    let wxs = include_str!("../../wix/main.wxs");
+    let mut seen: Vec<(String, String, String)> = Vec::new();
+
+    // One `<RegistryValue .../>` a line, which is how the file is written; a row split over lines would read as no row at all rather than as a false pass, because the three fields are read off the same line.
+    for line in wxs.lines().filter(|line| line.contains("<RegistryValue")) {
+        let field = |name: &str| {
+            line.split_once(&format!("{name}='"))
+                .and_then(|(_, rest)| rest.split_once('\''))
+                .map(|(value, _)| value.to_string())
+                .unwrap_or_default()
+        };
+        let row = (field("Root"), field("Key"), field("Name"));
+        if row.1.is_empty() {
+            continue;
+        }
+        assert!(
+            !seen.contains(&row),
+            "wix/main.wxs writes {}\\{} ({}) twice, which WiX refuses as one component added twice",
+            row.0,
+            row.1,
+            row.2
+        );
+        seen.push(row);
+    }
+
+    assert!(
+        seen.len() > 100,
+        "only {} registry rows were read, so the reader stopped matching the file",
+        seen.len()
+    );
+}
+
 #[test]
 fn source_extensions_are_offered_without_becoming_the_windows_default() {
     let wxs = include_str!("../../wix/main.wxs");
