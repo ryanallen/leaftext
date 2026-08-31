@@ -1145,6 +1145,11 @@ function laneWideTables(root = app) {
   measureWideTables(root);
 }
 
+// Whether this reader gets cards at all. The width lives in the stylesheet — the lane rests at `--reader-table-cards: 0` and the container query that already draws the cards turns it to `1` — so the measured answer and the width fallback read one number in one place, and a reader with room keeps the grid the bands and the sideways wheel were built for.
+function laneWantsCards(lane) {
+  return window.getComputedStyle(lane).getPropertyValue('--reader-table-cards').trim() === '1';
+}
+
 // A carded table has no grid width left in the layout, so every decision takes the cards off first and reads the grid a reader would have seen. Nothing is kept between decisions: the width a table that fits reports is its lane, so a remembered one turns the table into cards the moment the lane narrows under whatever it happened to be measured at, however much room the grid still has. The resets are all written before any width is read, so one settled layout answers every lane: over the plan log's sixteen lanes a delivery cost 71ms deciding lane by lane, each class write flushing layout for its own grid read, and costs 10ms read against one flush — from four frames a width change to under one.
 function measureWideTables(root = app) {
   if (wideTableResizeObserver) wideTableResizeObserver.disconnect();
@@ -1158,8 +1163,8 @@ function measureWideTables(root = app) {
       table.classList.add('no-cards');
       pairs.push({ lane, table });
     }
-    // The same 2px dead band the minimap keeps, and for the same reason: a lane sitting exactly on the width the grid wants would flip on every fractional resize.
-    const cards = pairs.map(({ lane, table }) => table.scrollWidth > lane.clientWidth + 2);
+    // The flag before the grid, so above the card width no table is measured at all. The same 2px dead band the minimap keeps below it, and for the same reason: a lane sitting exactly on the width the grid wants would flip on every fractional resize.
+    const cards = pairs.map(({ lane, table }) => laneWantsCards(lane) && table.scrollWidth > lane.clientWidth + 2);
     pairs.forEach(({ table }, at) => table.classList.toggle('is-cards', cards[at]));
   };
   decide(lanes);

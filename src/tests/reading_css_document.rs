@@ -63,6 +63,44 @@ fn narrow_tables_become_labeled_cards_only_on_a_screen() {
     assert!(guarded >= 1, "no card container query is in the stylesheet");
 }
 
+/// Cards are the answer for a reader with no room and only for one, so the width is a flag the lane publishes and the changeover reads: the lane rests at `--reader-table-cards: 0` and the container query that already draws the cards turns it to `1`. Written twice the measured answer and the width fallback could disagree about which reader gets which reading, which is the whole fault this replaces.
+#[test]
+fn the_card_width_is_one_number_published_on_the_lane() {
+    let css = reading_mode_css();
+
+    let lane = rule_body(css, ".table-bay > .table-lane {");
+    assert_contains(lane, "--reader-table-cards: 0;");
+    assert_eq!(
+        css.matches("--reader-table-cards: 0;").count(),
+        1,
+        "the card flag rests in more than one rule, so the card width is written twice"
+    );
+    assert_eq!(
+        css.matches("--reader-table-cards: 1;").count(),
+        1,
+        "more than one rule turns the card flag on, so a reader can be handed two answers"
+    );
+
+    // And the rule that turns it on is inside the container query that already draws the cards, closed before that query is.
+    let on = css
+        .find("--reader-table-cards: 1;")
+        .expect("nothing turns the card flag on");
+    let opened = css[..on]
+        .rfind("@container (max-width: 720px)")
+        .expect("the card flag is turned on outside the container query that draws the cards");
+    assert!(
+        !css[opened..on].contains('}'),
+        "the card flag is turned on after its container query has closed, so a reader with room is carded anyway"
+    );
+    // The same number the two published sites key their own copy on, since neither of them builds a reader container to query.
+    assert_contains(css, "@media screen and (max-width: 720px)");
+
+    // Every at-rule here indents what it holds, so a selector at the head of a line is at the top level — where the measured class stays. The changeover runs on screen and the class it writes has to carry onto paper: cards show every column, and a printed grid loses the ones past the sheet's edge.
+    for tail in ["{", "thead {", "tr {", "td {"] {
+        rule_at(css, &format!(".document-body table.is-cards {tail}"));
+    }
+}
+
 /// A run of repeated records is drawn as a table of its own, and it fails the same way a written one does: cramped rather than cut. So the card rules are keyed on the table and never narrowed away from that one, and the rule that wraps its long cells sets no display of its own to fight them with.
 #[test]
 fn a_record_table_is_carded_by_the_same_rules() {

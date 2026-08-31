@@ -63,6 +63,8 @@
   max-width: 100%;
   /* The bands sit here and the scroll is the table's, one box down, so the timeline has to be published up to this element for them to name it. */
   timeline-scope: --lt-table-scroll;
+  /* Whether this reader gets cards at all, published where decorate.js can read it so the card width is written once and the measured class cannot disagree with the width fallback about it. `0` is a reader with room, and the container query below is the only thing that turns it to `1`. */
+  --reader-table-cards: 0;
 }
 .table-lane > table {
   scroll-timeline: --lt-table-scroll inline;
@@ -253,12 +255,16 @@
   background-attachment: fixed;
 }
 /* Cards, and the last word on a cell: this block sits below the striping and the grain on purpose. Those two are written for a grid, they carry the same weight as these selectors, and a card is one surface — left above them, every second card came out shaded and every cell in it wore a box of its own. */
-/* The sites have no reader container, so their screen rule shares the card shape the window keys to its reader container. `no-cards` is the measured answer: it silences the width fallback for a grid that fits, while `is-cards` turns a wide grid into cards at any window width. */
+/* The sites have no reader container, so their screen rule shares the card shape the window keys to its reader container. `no-cards` is the measured answer: it silences the width fallback for a grid that fits, while `is-cards` cards a grid that does not fit — and only for a reader under the card width, because the changeover reads `--reader-table-cards` off the lane first. Above it a wide grid keeps its lane, its two bands and the sideways wheel, which is the whole reading those three shipped features draw. */
 /* On a screen and never on paper. The reader is a query container on the printed sheet too, and a printed lane is written as a pixel width off the chosen paper — narrower than this number on most of them — so an unguarded container query cards every table in an export or a print, which is the one place a grid has all the room it needs. The media rule under it already says `screen and` for the same reason. */
 /* The cell is a block, never a flex box. A flex container makes every child its own item, so a cell of three links and the words between them came out as six columns side by side, each one broken a word-piece per line; and a flex item cannot shrink under its longest unbreakable word, so a path ran clean out of the card. As a block the whole cell is one run of words, the label an inline box at the head of it, and `overflow-wrap: anywhere` is what lets a path break rather than overhang. */
 /* The row wraps rather than gridding, which is what puts a `#` beside a `Ticket` and leaves a paragraph a line of its own: equal grid tracks handed both the same room. A cell is laid out at its own width and the browser breaks the line where the next one stops fitting, so nothing here reads a cell to decide how long it is. */
 @media screen {
   @container (max-width: 720px) {
+    /* The one place the card width is decided for the window, and the flag the changeover reads. A reader wider than this is left a grid however far it overflows its lane, so the bands and the Control wheel have something to run on. */
+    .table-bay > .table-lane {
+      --reader-table-cards: 1;
+    }
     .document-body table:not(.no-cards) {
       border-collapse: separate;
       border-spacing: 0;

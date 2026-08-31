@@ -1582,6 +1582,45 @@ export function run() {
     }
   });
 
+  checkSettled('the shape pictures are rebuilt for a changed theme', async () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const held = booted.window.mermaid;
+    let picture = 'light';
+    try {
+      booted.window.mermaid = { initialize: () => {}, render: () => Promise.resolve({ svg: '<svg data-theme="' + picture + '"></svg>' }) };
+      read(`flowSession = { save: null, text: 'flowchart TD\\n  A["a"]', graph: null }; flowSession.graph = parseFlow(flowSession.text); flowSelection = { kind: 'node', id: flowSession.graph.nodes[0].id }; flowChipCache.clear(); flowChipsAsked = false;`);
+      booted.forgetFlowShapeGrid();
+      booted.loadFlowChips();
+      await settle();
+      const lightGrid = read('flowShapeGrid');
+      if (read('flowChipCache.size') !== read('flowShapeCatalog()').length) throw new Error('the first theme did not fill the picture store');
+      picture = 'dark';
+      booted.refreshFlowChipsForTheme();
+      await settle();
+      if (read('flowShapeGrid') === lightGrid) throw new Error('the theme change kept the old shape grid');
+      if ([...read('flowChipCache.values()')].some((svg) => !svg.includes('data-theme="dark"'))) throw new Error('the theme change kept a light picture');
+      read('flowSession = null;');
+      booted.refreshFlowChipsForTheme();
+      if (read('flowChipCache.size') || read('flowChipsAsked') || read('flowShapeGrid')) throw new Error('a shut sheet kept its old themed pictures');
+      read(`flowSession = { save: null, text: 'flowchart TD\\n  A["a"]', graph: null }; flowSession.graph = parseFlow(flowSession.text);`);
+      booted.loadFlowChips();
+      await settle();
+      if ([...read('flowChipCache.values()')].some((svg) => !svg.includes('data-theme="dark"'))) throw new Error('a reopened sheet did not draw the current theme');
+    } finally {
+      booted.window.mermaid = held;
+      read('flowSession = null; flowSelection = null; flowChipCache.clear(); flowChipsAsked = false; flowChipThemeVersion = 0; flowPickerBody.textContent = ""; flowPickerHead.textContent = "";');
+      booted.forgetFlowShapeGrid();
+      booted.__frames.drain();
+    }
+  });
+
+  check('a theme change asks the flowchart sheet to refresh its pictures', () => {
+    const theme = readFileSync(join(root, 'src/assets/shell/theme.js'), 'utf8');
+    if (!/function applyThemeToPage\(theme, color\) \{[\s\S]*?refreshFlowChipsForTheme\(\)/.test(theme)) {
+      throw new Error('the page theme change does not refresh the shape pictures');
+    }
+  });
+
   // The divider between the text and the picture only moves the canvas around the drawing. The stage is sized from the diagram's own box and every position on the overlay is recorded against the stage's own origin, so nothing inside it moves — which is why a width change measures nothing. The proof is a sentinel: the reading is stamped, the divider is taken from its ceiling to its floor, and the stamp has to survive.
   check('a width change leaves the reading alone', () => {
     const read = (expression) => vm.runInContext(expression, booted);

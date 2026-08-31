@@ -521,15 +521,50 @@ function requestLinkPreview(key, token) {
 // The last answer the host sent, parsed once — one file's render is parsed once however many of its sections are rested on, and it is only read from, so holding it between rests is safe.
 let linkPreviewParsedHtml = null;
 let linkPreviewParsedRoot = null;
-// How much of the answer the card is given. The box shows 176 pixels and throws the rest away, so a whole file put into it is laid out entire to draw a strip: on a 400-row table document the answer was 148 KB and 35ms of layout, and cutting it here takes that to 68 KB and 18ms. The cut is on whole top-level blocks so the card can never draw half a table or an unclosed element, which is also why a first block already past the ceiling is taken whole — that one table is what the 18ms still is.
+// How much of the answer the card is given. The box shows 176 pixels and throws the rest away, so a whole file put into it is laid out entire to draw a strip: on a 400-row table document the answer was 148 KB and 35ms of layout, and cutting it here takes that to 68 KB. The cut is on whole top-level blocks so the card can never draw half a table or an unclosed element, and a block with no room left for it is rebuilt below rather than taken whole — one four-hundred-row table is bigger than the whole opening it was cut to.
 const LINK_PREVIEW_OPENING_BYTES = 4096;
 function linkPreviewOpeningHtml(blocks) {
   let taken = '';
   for (const block of blocks) {
-    taken += block.outerHTML;
-    if (taken.length >= LINK_PREVIEW_OPENING_BYTES) break;
+    const room = LINK_PREVIEW_OPENING_BYTES - taken.length;
+    if (room <= 0) break;
+    const whole = block.outerHTML;
+    if (whole.length <= room) {
+      taken += whole;
+      continue;
+    }
+    taken += linkPreviewShortenedHtml(block, room);
+    break;
   }
   return taken;
+}
+// The block that does not fit, rebuilt at the size the opening has room for. A clone takes complete children while they fit, descends into the first one that does not, and shortens a run of words only once its ancestors are cloned — so a table keeps its head and its early rows, and a code block keeps the element its one long run of words sits in. Every cloned ancestor is closed on the way out, which is why what comes back is still markup the card can draw, and why the room is what the opening may hold rather than an exact count of the result: those closing tags are what makes it valid.
+function linkPreviewShortenedHtml(block, room) {
+  const shell = block.cloneNode(false);
+  fillLinkPreviewOpening(block, shell, room - shell.outerHTML.length);
+  return shell.outerHTML;
+}
+function fillLinkPreviewOpening(source, target, room) {
+  for (const node of [...source.childNodes]) {
+    if (room <= 0) break;
+    if (node.nodeType === 3) {
+      const words = String(node.nodeValue == null ? '' : node.nodeValue);
+      target.appendChild(document.createTextNode(words.length <= room ? words : words.slice(0, room)));
+      room -= words.length;
+      continue;
+    }
+    if (node.nodeType !== 1) continue;
+    const whole = node.outerHTML;
+    if (whole.length <= room) {
+      target.appendChild(node.cloneNode(true));
+      room -= whole.length;
+      continue;
+    }
+    const shell = node.cloneNode(false);
+    target.appendChild(shell);
+    fillLinkPreviewOpening(node, shell, room - shell.outerHTML.length);
+    break;
+  }
 }
 // The part of the host's answer the card draws, as words. The answer is a base and one `article` the card measures the note by, so the opening the host wrote is kept and only what stands inside it is swapped. A glossary link names its term through the scheme, which has no `#` to cut at, so that is read first. An address naming a section gets that section, one naming none gets the file's own opening, and both are then cut to what the box can show. A glossary term the answer has not got is nothing at all, because a whole glossary is not what that reader was promised; an ordinary address naming nothing keeps the whole answer, since the file is still what the press opens.
 function linkPreviewSectionHtml(html, href) {

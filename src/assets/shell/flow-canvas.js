@@ -1018,6 +1018,7 @@ function drawFlowOverlay() {
 // A shape's button shows the shape, and mermaid draws that too — one tiny diagram per shape, rendered once when the sheet opens and kept for the session. The picker names every shape as well, so it reads before they land.
 const flowChipCache = new Map();
 let flowChipsAsked = false;
+let flowChipThemeVersion = 0;
 
 function flowShapeChip(id) {
   return flowChipCache.get(id) || '';
@@ -1026,6 +1027,7 @@ function flowShapeChip(id) {
 function loadFlowChips() {
   if (flowChipsAsked) return;
   flowChipsAsked = true;
+  const themeVersion = flowChipThemeVersion;
   loadMermaid()
     .then(async (mermaid) => {
       mermaid.initialize(mermaidRuntimeConfig());
@@ -1034,12 +1036,15 @@ function loadFlowChips() {
         const body = shape.open ? shape.open + label + shape.close : '@{ shape: ' + shape.id + ', label: " " }';
         try {
           const { svg } = await mermaid.render('leafFlowChip-' + shape.id, 'flowchart LR\n  c' + body);
+          if (themeVersion !== flowChipThemeVersion) return;
           flowChipCache.set(shape.id, svg.replace(/<svg /, '<svg class="flow-chip" preserveAspectRatio="xMidYMid meet" '));
         } catch (error) {
+          if (themeVersion !== flowChipThemeVersion) return;
           // A shape this copy of mermaid will not draw simply has no picture.
           flowChipCache.set(shape.id, '');
         }
       }
+      if (themeVersion !== flowChipThemeVersion) return;
       // The grid the picker built before any of this landed holds forty-seven empty buttons, so it goes rather than being held blank for the rest of the session.
       forgetFlowShapeGrid();
       // The pictured replacement is built here, where nobody is waiting: left to the first draw that wants it, the same 4.4ms lands on somebody's first click on a box.
@@ -1047,6 +1052,14 @@ function loadFlowChips() {
       if (flowSession) drawFlowPicker();
     })
     .catch(() => {});
+}
+
+function refreshFlowChipsForTheme() {
+  flowChipThemeVersion += 1;
+  flowChipCache.clear();
+  flowChipsAsked = false;
+  forgetFlowShapeGrid();
+  if (flowSession) loadFlowChips();
 }
 
 // ---- the two ways in -------------------------------------------------------

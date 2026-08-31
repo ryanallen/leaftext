@@ -628,6 +628,65 @@ export function run() {
     }
   });
 
+  // Cards are the answer for a reader with no room, and only for one. Read as classes alone this passes on a page that cards every wide grid, so the roomy table's own grid width is watched for the read that must never come: the flag is asked first and the grid never measured above the card width, which is what leaves the bands, the timeline and the sideways wheel something to run on.
+  check('a reader with room keeps a scrollable grid and is never measured for one', () => {
+    const laneAt = (flag, grid) => {
+      const lane = fakeElement(`cardFlagLane${flag}${grid}`);
+      lane.className = 'table-lane';
+      lane.style.setProperty('--reader-table-cards', flag);
+      lane.clientWidth = 100;
+      const table = Object.assign(fakeElement(`cardFlagTable${flag}${grid}`), { tagName: 'TABLE' });
+      let reads = 0;
+      Object.defineProperty(table, 'scrollWidth', {
+        get() {
+          reads += 1;
+          return grid;
+        },
+      });
+      lane.appendChild(table);
+      return { lane, table, reads: () => reads };
+    };
+    const roomy = laneAt('0', 400);
+    const narrow = laneAt('1', 400);
+    const fits = laneAt('1', 100);
+    const page = fakeElement('cardFlagPage');
+    for (const one of [roomy, narrow, fits]) page.appendChild(one.lane);
+
+    booted.measureWideTables(page);
+
+    if (roomy.table.classList.contains('is-cards')) {
+      throw new Error('a reader with room was handed cards anyway, so the bands, the timeline and the sideways wheel stay unreachable');
+    }
+    if (roomy.reads() !== 0) {
+      throw new Error('a lane above the card width was measured all the same, so every width change pays for a grid nothing is going to card');
+    }
+    if (!narrow.table.classList.contains('is-cards')) {
+      throw new Error('a narrow reader lost the cards a grid too wide for its lane needs');
+    }
+    if (fits.table.classList.contains('is-cards')) {
+      throw new Error('a grid that fits its narrow lane was carded');
+    }
+    for (const one of [roomy, narrow, fits]) {
+      if (!one.table.classList.contains('no-cards')) throw new Error('a table lost the mark that silences the stylesheet’s width fallback');
+    }
+
+    // One flag and one number: the lane rests at 0 and exactly one rule turns it on, inside the container query that already draws the cards, at the width the two sites' own copy keys on.
+    const css = readingCss();
+    const resting = (css.match(/--reader-table-cards: 0;/g) || []).length;
+    const turned = (css.match(/--reader-table-cards: 1;/g) || []).length;
+    if (resting !== 1 || turned !== 1) {
+      throw new Error(`the card flag rests in ${resting} rules and is turned on by ${turned}; one of each, or the card width is written twice`);
+    }
+    const on = css.indexOf('--reader-table-cards: 1;');
+    const opener = css.lastIndexOf('@container (max-width: ', on);
+    if (opener < 0) throw new Error('the flag is turned on outside a container query, so the card width no longer lives in one place');
+    const width = css.slice(opener).match(/@container \(max-width: (\d+)px\)/)[1];
+    const fallback = css.match(/@media screen and \(max-width: (\d+)px\)/);
+    if (!fallback || fallback[1] !== width) {
+      throw new Error(`the flag cards at ${width}px and the two sites' own copy cards at ${fallback ? fallback[1] : 'no'}px`);
+    }
+  });
+
   // The card shape, read as the three copies it has to be: the window's container query, the two sites' width query and the measured class. Every fault this catches was watched in a running copy — a cell of links shredded into a column each, a path hanging out of the card, and every second card shaded because the striping is written for a grid and carries the same weight as these selectors.
   check('a card is one surface and a cell inside it is one run of words', () => {
     const css = readingCss();

@@ -516,15 +516,58 @@ export function run() {
       if (!section.includes('id="far-down"') || !section.includes('id="deep-0"')) throw new Error('the section did not start at the heading its address named');
       if (section.includes('id="para-0"')) throw new Error('the section opened at the file rather than at the heading');
       if (section.includes('id="deep-39"')) throw new Error('the section kept the tail the card would never draw');
+    } finally {
+      forgetPreviewParse();
+    }
+  });
 
-      // A block already past the ceiling is taken whole, because half a table is markup the card would have to close itself. It is the one answer the cut cannot shorten.
-      const wide = PREVIEW_SECTION_OPENING + `<table id="wide"><tbody>${'<tr><td>a cell wide enough to matter</td></tr>'.repeat(200)}</tbody></table><p id="after">After.</p>` + '</article>';
-      seedPreviewParse(wide);
-      vm.runInContext('pendingPreviewTokens.set(50, "notes/wide.md");', booted);
-      booted.window.leafLinkPreview(50, wide);
-      const whole = vm.runInContext('linkPreviewCache.get("notes/wide.md")', booted);
-      if (!whole.includes('</tbody></table>')) throw new Error('a block bigger than the ceiling was cut inside itself');
-      if (whole.includes('id="after"')) throw new Error('the cut ran on past the block that crossed the ceiling');
+  // One block can be bigger than the whole opening it was cut to: a document opening on a four-hundred-row table, or on a code block whose one run of words is most of the file. Taking that block whole hands the card the layout the cut exists to save, so it is rebuilt instead — complete children while they fit, then down into the first one that does not, and a run of words shortened only inside a clone of the element it sits in. What comes back closes every tag it opened, keeps the head a table is read by, and holds nothing of the block's tail or of the block after it.
+  const previewOversizedWitnesses = [
+    {
+      name: 'a table',
+      block: `<table id="wide"><thead><tr><th>Head</th></tr></thead><tbody>${Array.from({ length: 200 }, (unused, at) => `<tr><td>row ${at} of a cell wide enough to matter</td></tr>`).join('')}</tbody></table>`,
+      kept: ['id="wide"', '<thead>', 'row 0 of'],
+      dropped: ['row 199 of'],
+    },
+    {
+      name: 'a list',
+      block: `<ul id="wide">${Array.from({ length: 200 }, (unused, at) => `<li>item ${at}, written long enough to matter</li>`).join('')}</ul>`,
+      kept: ['id="wide"', 'item 0,'],
+      dropped: ['item 199,'],
+    },
+    {
+      name: 'a code block',
+      block: `<pre id="wide"><code>${Array.from({ length: 200 }, (unused, at) => `line ${at} of code, long enough to matter`).join('\n')}</code></pre>`,
+      kept: ['id="wide"', '<code>', 'line 0 of'],
+      dropped: ['line 199 of'],
+    },
+  ];
+  check('a first block bigger than the whole opening is rebuilt to the size the card can draw, closed and complete', () => {
+    try {
+      const ceiling = vm.runInContext('LINK_PREVIEW_OPENING_BYTES', booted);
+      let token = 50;
+      for (const witness of previewOversizedWitnesses) {
+        const key = `notes/oversized-${token}.md`;
+        const answer = PREVIEW_SECTION_OPENING + witness.block + '<p id="after">After.</p></article>';
+        seedPreviewParse(answer);
+        vm.runInContext(`pendingPreviewTokens.set(${token}, ${JSON.stringify(key)});`, booted);
+        booted.window.leafLinkPreview(token, answer);
+        const cut = vm.runInContext(`linkPreviewCache.get(${JSON.stringify(key)})`, booted);
+        token += 1;
+        if (cut.length >= answer.length) throw new Error(`${witness.name} bigger than the opening was handed to the card whole`);
+        // The opening it was cut to, plus the closing tags that make the rebuilt block valid.
+        if (cut.length > PREVIEW_SECTION_OPENING.length + ceiling + 256) throw new Error(`${witness.name} ran past the opening the card can draw`);
+        for (const want of witness.kept) if (!cut.includes(want)) throw new Error(`${witness.name} lost ${want}, which the card can draw`);
+        for (const gone of witness.dropped) if (cut.includes(gone)) throw new Error(`${witness.name} kept ${gone}, which the card would never draw`);
+        if (cut.includes('id="after"')) throw new Error(`the cut ran on past ${witness.name} that filled the opening`);
+        if (!cut.endsWith('</article>')) throw new Error(`${witness.name} left the card's own element open`);
+        // Closed markup or nothing: a parser handed an unclosed tag fixes it silently, so what it says back would no longer be what the page sent.
+        const inner = cut.slice(PREVIEW_SECTION_OPENING.length, cut.length - '</article>'.length);
+        const reparsed = booted.document.createElement('div');
+        reparsed.innerHTML = inner;
+        if (reparsed.innerHTML !== inner) throw new Error(`${witness.name} came back as markup a parser had to close for it`);
+        forgetPreviewParse();
+      }
     } finally {
       forgetPreviewParse();
     }
