@@ -576,7 +576,7 @@ function centerFlowCanvas() {
 // A width change moves the canvas, not the diagram.
 const FLOW_CODE_MIN = 180;
 
-// The room the text may take, and the floor the picture keeps out of it. The floor is the stylesheet's own number, so a drag stops exactly where the grid's min() does instead of five pixels short of it; a page that cannot answer leaves the drag uncapped rather than inventing a second one.
+// The room the text may take, and the floor the picture keeps out of it. The floor is the stylesheet's own number, because a literal here forgets the 5px the divider spends and stops the drag short of the floor the grid holds; a page that cannot answer leaves the drag uncapped rather than inventing a second number.
 function flowRoom() {
   const room = (flowSheet && flowSheet.clientWidth) || 900;
   const floor = flowSheet

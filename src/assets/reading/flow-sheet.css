@@ -81,7 +81,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  /* How wide the text pane is, dragged by the bar between the two. The min() is what keeps the picture: grid resolves it on every layout, so a window made smaller takes the room out of the text rather than out of the drawing, and the dragged width is still there when the window is widened again. */
+  /* How wide the text pane is, dragged by the bar between the two. The min() is what keeps the picture: grid resolves it on every layout, so a smaller window takes its room out of the text while the property still holds the width that was dragged to. */
   grid-template-columns: minmax(0, 1fr) 5px min(var(--flow-code-width, 340px), 100% - var(--flow-picture-floor));
 }
 /* The bar between the picture and the text. Thin ink, a wide grab area. */

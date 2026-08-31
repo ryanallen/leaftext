@@ -127,7 +127,7 @@ export function run() {
     context.closeFindBar();
   });
 
-  // "Find in selection" once turned every occurrence in the whole document into a DOM range and asked it where it sat, and a candidate the selection rejected never counted toward the 999 cap — so the work was the document's occurrence count. The flattening already knows where each piece of text starts, so the selection is a pair of numbers and a candidate is a comparison.
+  // Turning every occurrence in the whole document into a DOM range to ask where it sits is work the 999 cap cannot bound, because a candidate the selection rejects never counts toward it. The flattening already knows where each piece of text starts, so the selection is a pair of numbers and a candidate is a comparison.
   check('a find narrowed to a selection compares places, and falls back to ranges only where it cannot', () => {
     const { context } = bootReading({ path: 'C:\Notes\scope.md', blocks: [{ srcStart: 0 }] });
     const field = context.document.getElementById('findInput');

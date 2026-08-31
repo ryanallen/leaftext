@@ -1632,7 +1632,7 @@ export function run() {
     }
   });
 
-  // A window made smaller is not a gesture on the divider, so nothing runs and the text pane goes on asking for the width it was dragged to. The grid is what holds the picture's floor instead: the track is capped against the sheet's own inline size, so the room comes out of the text every layout and the dragged width is still remembered when the window is widened again. Read as text on purpose — this harness is a fake page with no layout engine, so it can prove the rule is written and cannot resolve what grid does with it; the resolved tracks are watched in a real window.
+  // A window made smaller is not a gesture on the divider, so nothing runs and the text pane goes on asking for the width it was dragged to; the grid holds the picture's floor instead, capping the track against the sheet's own inline size on every layout. Read as text on purpose — this harness is a fake page with no layout engine, so it can prove the rule is written and not what grid does with it, which is watched in a real window.
   check('the picture keeps a floor the grid holds on every layout', () => {
     const css = readingCss();
     const sheet = css.slice(css.indexOf('.flow-sheet {'));
@@ -1646,7 +1646,7 @@ export function run() {
     }
   });
 
-  // One number, in the stylesheet, read by both. The drag's ceiling used to be a literal of its own that forgot the 5px the divider spends, so a drag to the ceiling left the picture 315px against a floor the CSS holds at 320px. This is what fails if a second number comes back: 675px is the sheet's 1000px less the floor written on it, and a literal would write 680px.
+  // One number, in the stylesheet, read by both: a ceiling written as a literal of its own forgets the 5px the divider spends and leaves the picture 315px against a floor the CSS holds at 320px. This is what fails if a second number comes back — 675px is the sheet's 1000px less the floor written on it, and a literal would write 680px.
   check('the drag stops where the stylesheet stops', () => {
     const { drag, floorReads, widthWritten, restore } = dividerStand(booted);
     try {

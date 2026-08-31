@@ -177,7 +177,7 @@ function collectRenderedMatches() {
   const found = [];
   findTruncated = false;
   if (!pattern) return found;
-  // Where the selection sits, read once for the whole search rather than a range built per candidate. A candidate the selection rejects never reached the cap, so that path was the document's occurrence count rather than 999 — a dropped frame a letter on a megabyte.
+  // Where the selection sits, read once for the whole search. A range built per candidate cannot be bounded by the cap, because a candidate the selection rejects never counts toward it — the document's occurrence count rather than 999, which is a dropped frame a letter on a megabyte.
   const scope = findScopeFlatBounds();
   for (let match = pattern.exec(findFlatText); match; match = pattern.exec(findFlatText)) {
     // An expression that can match nothing would spin here forever.
