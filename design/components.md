@@ -105,6 +105,7 @@ The renderer writes these into a rendered page. They are not parts of the app's 
 | blockquote-lines | The box those bars are drawn in. |
 | data-table | A JSON or YAML tree, rendered. |
 | data-fields | Its key rows. |
+| data-error | A file that could not be parsed, and the reader's message saying why. |
 | data-attributes | An XML element's attributes. |
 | data-value-attrs | A value that carries attributes of its own. |
 | tei-front | A TEI document's front matter. |

@@ -92,7 +92,7 @@ impl DataError {
             text.push_str(&format!(" (line {line})"));
         }
         format!(
-            "<p><strong>{format} parse error.</strong> {}</p>",
+            "<p class=\"data-error\"><strong>{format} parse error.</strong> {}</p>",
             encode_text(&text)
         )
     }
@@ -793,7 +793,7 @@ impl DataCtx {
     }
 }
 
-/// Write one opening tag's `data-*` attributes and record its source range. A node with no proven range still gets an id and a kind, just no `data-src-*` — and so no entry in the map, which indexes source ranges.
+/// Write one opening tag's source range and record it in the map. A node with no proven range gets no attribute at all: the page reads a data block's kind back off the tag it was drawn with (`dataBlockKindOf`), so an id nothing ever read and a word the tag already says came to 30% of a megabyte-of-config page.
 fn write_block_attrs(
     out: &mut String,
     blocks: &mut Vec<BlockSpan>,
@@ -803,18 +803,14 @@ fn write_block_attrs(
 ) {
     let id = *next_block_id;
     *next_block_id += 1;
-    match span {
-        Some(range) => {
-            blocks.push(BlockSpan::new(id, kind, range.start, range.end));
-            write!(
-                out,
-                " data-block-id=\"{id}\" data-src-start=\"{}\" data-src-end=\"{}\" data-block-kind=\"{kind}\"",
-                range.start, range.end
-            )
-            .expect("writing into a string");
-        }
-        None => write!(out, " data-block-id=\"{id}\" data-block-kind=\"{kind}\"")
-            .expect("writing into a string"),
+    if let Some(range) = span {
+        blocks.push(BlockSpan::new(id, kind, range.start, range.end));
+        write!(
+            out,
+            " data-src-start=\"{}\" data-src-end=\"{}\"",
+            range.start, range.end
+        )
+        .expect("writing into a string");
     }
 }
 

@@ -812,6 +812,48 @@ fn json_blocks_anchor_to_the_exact_source_they_came_from() {
 }
 
 #[test]
+fn a_data_pages_stamped_ranges_are_its_blocks_list_in_order() {
+    // Nothing in a data page's markup pairs a block with its entry in `blocks` any more — the id that used to sit there was never read, and weighed 30% of a large page with the kind beside it. What pairs them is the order: the nth stamped tag is the nth entry. A renderer that stamped a range it did not record, or recorded one it did not stamp, would slide the whole list along by one and splice a reader's typing over somebody else's value.
+    let yaml = "title: A Book
+pages: 42
+tags:
+  - one
+  - two
+open: true
+";
+    let (_title, json_html, json_blocks) = render_json_document(PACKAGE_JSON, Some("Package"));
+    let (_title, yaml_html, yaml_blocks) = render_yaml_document(yaml, Some("Book"));
+
+    for (name, source, html, blocks) in [
+        ("JSON", PACKAGE_JSON, &json_html, &json_blocks),
+        ("YAML", yaml, &yaml_html, &yaml_blocks),
+    ] {
+        let mut stamped: Vec<(usize, usize)> = Vec::new();
+        let mut rest = html.as_str();
+        while let Some(at) = rest.find("data-src-start=\"") {
+            let tag = &rest[at..];
+            let tag = &tag[..tag.find('>').expect("a closed tag")];
+            stamped.push((
+                stamp_offset(tag, "data-src-start=\""),
+                stamp_offset(tag, "data-src-end=\""),
+            ));
+            rest = &rest[at + 1..];
+        }
+        let recorded: Vec<(usize, usize)> = blocks.iter().map(|b| (b.start, b.end)).collect();
+
+        assert!(!stamped.is_empty(), "{name} stamped no ranges: {html}");
+        assert_eq!(stamped, recorded, "{name}: {html}");
+        // And every one of them slices something out of the file it was taken from.
+        for (start, end) in &stamped {
+            assert!(
+                start < end && *end <= source.len(),
+                "{name}: {start}..{end}"
+            );
+        }
+    }
+}
+
+#[test]
 fn a_data_documents_own_title_heading_anchors_to_the_value_it_came_from() {
     // The title-ish key is left out of the body, so the heading is that value's only appearance on the page. Without a range on it, the one value a reader most wants to correct is the one thing on the page that answers a press with nothing.
     let json = r#"{"title": "Release notes", "version": "1.0"}"#;
@@ -993,6 +1035,8 @@ fn malformed_json_reports_the_line_rather_than_rendering_nothing() {
 
     assert!(title.is_none(), "{title:?}");
     assert_contains(&html, "<strong>JSON parse error.</strong>");
+    // The notice wears a class of its own so a press on it is never answered as a value somebody could edit: a data page's blocks are told apart by the tag they are drawn with, and this is the one paragraph that is not a block.
+    assert_contains(&html, "<p class=\"data-error\">");
     assert_contains(&html, "(line 3)");
     assert!(blocks.is_empty(), "{blocks:?}");
 }

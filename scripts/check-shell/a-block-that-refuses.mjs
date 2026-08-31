@@ -53,6 +53,8 @@ export function run() {
   // The data half of the same fault: a JSON or YAML block with no proven range is drawn exactly like the ones beside it that open, so a press on one must not answer with nothing at all and read as the page being broken. A press on a block that opens still says nothing, because it is about to open.
   check('a data block that cannot open says why when it is pressed', () => {
     const { wireDataClosedParts } = booted;
+    const read = (expression) => vm.runInContext(expression, booted);
+    const shapes = read('DATA_BLOCK_SHAPES');
     const said = [];
     const wasToast = booted.leafToast;
     let press = null;
@@ -61,38 +63,52 @@ export function run() {
         if (type === 'pointerdown') press = handler;
       },
     };
-    // `closest` answers for whichever ancestors this element is said to have; a block answers with its own kind.
-    const at = (held, kind) => ({
-      closest: (selector) => (held.includes(selector) ? (selector === '[data-block-id]' ? { dataset: { blockKind: kind } } : {}) : null),
+    // The blocks as the renderer draws them: nothing but the tag, the class and the parent the kind is read back from.
+    const wearing = (...names) => ({ contains: (one) => names.includes(one) });
+    const heading = { tagName: 'H2', classList: wearing() };
+    const field = { tagName: 'DD', classList: wearing(), parentElement: { classList: wearing('data-fields') } };
+    const list = { tagName: 'UL', classList: wearing('data-list') };
+    const table = { tagName: 'TABLE', classList: wearing('data-table') };
+    const notice = { tagName: 'P', classList: wearing('data-error') };
+    // `closest` answers for whichever ancestors this element is said to have, and the shapes selector answers with the block itself.
+    const at = (held, block) => ({
+      closest: (selector) => {
+        if (selector === shapes) return block || null;
+        return held.includes(selector) ? {} : null;
+      },
     });
     try {
       booted.leafToast = (message) => said.push(message);
       wireDataClosedParts(body);
       if (!press) throw new Error('nothing listens for a press on the page');
 
-      press({ target: at(['[data-block-id]'], 'data_field') });
+      press({ target: at([], field) });
       if (said.length !== 1 || !said[0].includes('source view')) {
         throw new Error(`a value nothing could place did not say where to edit it: ${JSON.stringify(said)}`);
       }
       // A list and a table could not be placed for a different reason — where they end — so they say that instead.
-      press({ target: at(['[data-block-id]'], 'data_list') });
+      press({ target: at([], list) });
       if (said.length !== 2 || !said[1].includes('where this ends')) {
         throw new Error(`a list did not say why it could not open: ${JSON.stringify(said)}`);
       }
+      press({ target: at([], table) });
+      if (said.length !== 3 || !said[2].includes('where this ends')) {
+        throw new Error(`a table did not say why it could not open: ${JSON.stringify(said)}`);
+      }
 
       // A heading is a key's name as often as it is a value, so it says where its words came from rather than claiming how a value is spelled.
-      press({ target: at(['[data-block-id]'], 'data_heading') });
-      if (said.length !== 3 || !said[2].includes('comes from the file')) {
+      press({ target: at([], heading) });
+      if (said.length !== 4 || !said[3].includes('comes from the file')) {
         throw new Error(`a heading was told it was a value: ${JSON.stringify(said)}`);
       }
 
-      // A block that opens answers for itself, the big heading over a file with no title of its own opens the rename box, and a press on nothing at all is not a block.
-      press({ target: at(['[data-src-start]', '[data-block-id]'], 'data_field') });
-      press({ target: at(['[data-borrowed-title]', '[data-block-id]'], 'data_heading') });
+      // A block that opens answers for itself, the big heading over a file with no title of its own opens the rename box, a press on nothing at all is not a block, and the parse-error notice is the page talking rather than a value anybody can edit.
+      press({ target: at(['[data-src-start]'], field) });
+      press({ target: at(['[data-borrowed-title]'], heading) });
       press({ target: at([], null) });
-      if (said.length !== 3) throw new Error(`a block that answers was growled at: ${JSON.stringify(said)}`);
+      press({ target: at([], notice) });
+      if (said.length !== 4) throw new Error(`a block that answers was growled at: ${JSON.stringify(said)}`);
       // And the page wires it: a data document reaching the reading editor gets the same answer, or the lines above are a function nothing ever calls.
-      const read = (expression) => vm.runInContext(expression, booted);
       const inApp = read('app');
       const wasQuery = inApp.querySelector;
       const wasUnlocked = read('readingUnlocked');
@@ -110,7 +126,7 @@ export function run() {
         booted.bindReadingEditor({ format: 'yaml', blocks: [], source: 'title: |\n  words\n' }, { deferCaret: true });
         if (!bound) throw new Error('a data document reaching the reading editor listens for no press');
         said.length = 0;
-        bound({ target: at(['[data-block-id]'], 'data_heading') });
+        bound({ target: at([], heading) });
         if (said.length !== 1) throw new Error(`the page wired no answer for a block that cannot open: ${JSON.stringify(said)}`);
       } finally {
         inApp.querySelector = wasQuery;
@@ -119,6 +135,43 @@ export function run() {
       }
     } finally {
       booted.leafToast = wasToast;
+    }
+  });
+
+  // The kind the page works out has to be the kind the renderer would have written, or the answer a press gets changes without anything on the page changing. Each stand carries both: the shape src/data.rs draws the block as, and the word it stamps beside it.
+  check('a data block’s kind is read back off the shape it was drawn as', () => {
+    const { dataBlockKindOf } = booted;
+    const wearing = (...names) => ({ contains: (one) => names.includes(one) });
+    const fields = { classList: wearing('data-fields') };
+    const drawn = [
+      { tagName: 'H1', classList: wearing(), dataset: { blockKind: 'data_heading' } },
+      { tagName: 'H6', classList: wearing(), dataset: { blockKind: 'data_heading' } },
+      { tagName: 'DD', classList: wearing(), parentElement: fields, dataset: { blockKind: 'data_field' } },
+      { tagName: 'UL', classList: wearing('data-list'), dataset: { blockKind: 'data_list' } },
+      { tagName: 'TABLE', classList: wearing('data-table'), dataset: { blockKind: 'data_table' } },
+      { tagName: 'P', classList: wearing(), dataset: { blockKind: 'data_prose' } },
+    ];
+    for (const el of drawn) {
+      const got = dataBlockKindOf(el);
+      if (got !== el.dataset.blockKind) {
+        throw new Error(`a ${el.tagName} was read as ${JSON.stringify(got)}, the renderer writes ${el.dataset.blockKind}`);
+      }
+    }
+
+    // And nothing the renderer never stamped is read as a block: the parse-error notice, a list or a table of the document's own, a definition outside a field list, and nothing at all.
+    const none = [
+      { tagName: 'P', classList: wearing('data-error') },
+      { tagName: 'UL', classList: wearing() },
+      { tagName: 'TABLE', classList: wearing() },
+      { tagName: 'DD', classList: wearing(), parentElement: { classList: wearing() } },
+      { tagName: 'DIV', classList: wearing() },
+      null,
+    ];
+    for (const el of none) {
+      const got = dataBlockKindOf(el);
+      if (got !== null) {
+        throw new Error(`${el ? el.tagName : 'nothing'} was read as a ${got} block`);
+      }
     }
   });
 

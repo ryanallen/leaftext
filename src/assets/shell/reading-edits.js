@@ -1648,6 +1648,23 @@ function wireEmailClosedParts(body) {
   });
 }
 
+// The shapes a data document draws a block as. Read with dataBlockKindOf, which is what says whether the element this finds is a block at all.
+const DATA_BLOCK_SHAPES = 'h1, h2, h3, h4, h5, h6, dd, ul.data-list, table.data-table, p';
+
+// A data block's kind, worked out from the tag and the class the renderer drew it as. The renderer used to spell it out in an attribute on every block, which on a megabyte of config weighed a megabyte on its own; the tag already says it, and one press is the only thing that ever asks.
+function dataBlockKindOf(el) {
+  if (!el || !el.tagName) return null;
+  const tag = el.tagName;
+  if (/^H[1-6]$/.test(tag)) return 'data_heading';
+  const holds = (node, name) => !!node && !!node.classList && node.classList.contains(name);
+  if (tag === 'DD') return holds(el.parentElement, 'data-fields') ? 'data_field' : null;
+  if (tag === 'UL') return holds(el, 'data-list') ? 'data_list' : null;
+  if (tag === 'TABLE') return holds(el, 'data-table') ? 'data_table' : null;
+  // The parse-error notice is a paragraph the reader is being shown rather than a value they could edit, and it wears its own class to say so.
+  if (tag === 'P') return holds(el, 'data-error') ? null : 'data_prose';
+  return null;
+}
+
 // The data half of the same answer. A JSON or YAML block with no proven range is drawn exactly like the ones beside it that open, so silence reads as the page being broken rather than as the file being written a way nothing can place. The two lines split on what could not be proved: where a collection ends, or how a single value is spelled.
 function wireDataClosedParts(body) {
   body.addEventListener('pointerdown', (event) => {
@@ -1657,9 +1674,9 @@ function wireDataClosedParts(body) {
     if (target.closest('[data-src-start]')) return;
     // The big heading over a file that names no title of its own is the file's name, and pressing it opens the rename box. It is answered, so it is not silent.
     if (target.closest('[data-borrowed-title]')) return;
-    const block = target.closest('[data-block-id]');
-    if (!block) return;
-    const kind = block.dataset.blockKind;
+    // The renderer says nothing about which block this is, so the page reads it off the shape it was drawn as.
+    const kind = dataBlockKindOf(target.closest(DATA_BLOCK_SHAPES));
+    if (!kind) return;
     if (kind === 'data_table' || kind === 'data_list') {
       leafToast('The page cannot tell where this ends in the file. Edit it in the source view.');
       return;

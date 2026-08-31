@@ -1346,6 +1346,21 @@ export function run() {
       canvas.appendChild(first);
       booted.measureFlowDiagram();
       if (!rectReads) throw new Error('the first measurement read nothing off the drawing');
+      read("flowSelection = { kind: 'edge', id: 'e1' };");
+      booted.drawFlowOverlay();
+      const overlay = first.querySelector('.flow-overlay');
+      if (!overlay) throw new Error('the drawing has no overlay');
+      const furniture = () => {
+        const all = [];
+        const visit = (element) => {
+          all.push(element);
+          for (const child of element.children) visit(child);
+        };
+        for (const child of overlay.children) visit(child);
+        return all;
+      };
+      const standing = furniture();
+      if (!standing.length) throw new Error('the first overlay built no furniture');
       const life = placement();
       // The box sits 60 across and 40 down from the stage, is 120 by 56, and its corners were probed at 12.
       const want = [60, 40, 120, 56, 12, 40, 20, 180, 110, 10, 70, 60, 70, 110, 70];
@@ -1362,6 +1377,10 @@ export function run() {
         if (rectReads) throw new Error(`a wheel notch went back to the drawing for ${rectReads} measurements`);
         const at = read('flowZoom');
         if (Math.abs(at - zoom) > 0.001) throw new Error(`the wheel reached ${at} rather than ${zoom}`);
+        const after = furniture();
+        if (after.length !== standing.length || after.some((element, spot) => element !== standing[spot])) {
+          throw new Error('a wheel notch rebuilt the overlay furniture');
+        }
         const scaled = placement();
         life.forEach((number, spot) => {
           if (Math.abs(scaled[spot] - number * at) > 0.05) {
@@ -1381,6 +1400,11 @@ export function run() {
       rectReads = 0;
       booted.measureFlowDiagram();
       if (!rectReads) throw new Error('a fresh render measured nothing');
+      booted.drawFlowOverlay();
+      const redrawn = [...canvas.querySelectorAll('.flow-overlay')][0];
+      if (!redrawn || !redrawn.children.length || redrawn.children[0] === standing[0]) {
+        throw new Error('a redraw kept overlay furniture from the old drawing');
+      }
 
       // And a canvas with no drawing on it drops the coordinates as well as the placement, or the next notch would put handles back over a diagram that has gone.
       for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
@@ -1393,6 +1417,7 @@ export function run() {
       read('flowNatural = null;');
       read('flowSize = null;');
       read('flowZoom = 1;');
+      read('flowSelection = null;');
       for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
     }
   });

@@ -572,6 +572,8 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
 /// So has the xml one: every value the file keeps inside a tag now carries the bytes between its quotes, and the values composed into one run are drawn in an element each so a press can name one of them. Same title, same blocks, more names on the markup.
 ///
 /// And the markdown one again: every body cell of a table now carries its column's heading, which is what lets a narrowed table draw its rows as labeled cards on all three hosts. Same title, same blocks, an attribute on each cell.
+///
+/// And the four data ones: a JSON, YAML or config page carried `data-block-id` and `data-block-kind` on every block, and neither said anything about the file — the id's number was read nowhere at all, and the kind is what the tag the block is drawn with already says, which is where the page reads it now (`dataBlockKindOf`). Same title, same blocks, same source ranges; a block with no range now carries no attribute at all, and a large config page loses about 30% of its bytes.
 const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "markdown",
@@ -595,15 +597,15 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "json",
-        "47f8f7036d49abdecb5e773f14665c62acc2c558a6f2464660c064f6f84bb178",
+        "dbcc21989572cf833c2eaba548fe8f8703aa1027939323b67f93c7879243ee91",
     ),
     (
         "scholar-rich-document",
-        "9b70d0338a0b8a2a5bdda49c4f6d468ae24ba3523e60afd5e84cd87dacbc7f4e",
+        "2b39ba906f40290e4e05e2a6e74b2f93a161c78888ef4e9508abf638da241e93",
     ),
     (
         "yaml",
-        "224b68c108e537159e17bf5aa80f6cae1b94f79a9ff61185aa0751448cb7d6e6",
+        "581bba078286a14c8fb499369cb0d8e0c1eb44fe4a2a164f3693e6e0430b0995",
     ),
     (
         "eml",
@@ -619,7 +621,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "ini",
-        "080e3f6cb20f7b761e5672f38b89578ec4ab2e856259c1bafb1748113a649419",
+        "3adcca3566982916f5f9f6aee7a464344ce31d2a5274f5ef2e15299e759f30a8",
     ),
 ];
 

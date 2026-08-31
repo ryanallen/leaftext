@@ -539,7 +539,7 @@ function setFlowZoom(next) {
   // The drawing is the same drawing, only bigger — so it is resized rather than asked for again, and the measurements are scaled rather than taken afresh.
   sizeFlowStage();
   placeFlowDiagram();
-  drawFlowOverlay();
+  placeFlowOverlay();
 }
 
 // As large as it goes without spilling, and never enlarged past life size — a three-box diagram blown up to fill the pane looks broken, not helpful.
@@ -915,12 +915,11 @@ function flowProbeDrawnRadius(group) {
 // How far the ring stands off the shape it is around.
 const FLOW_RING_GAP = 8;
 
-// Rings, + handles, line ends and drop marks. Plain elements over the drawing, so nothing has to be drawn twice and a selection costs no render.
-function drawFlowOverlay() {
+// The standing overlay follows the measured drawing without making new controls for every zoom notch.
+function placeFlowOverlay() {
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   const layer = stage && stage.querySelector('.flow-overlay');
   if (!layer) return;
-  layer.textContent = '';
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowPlaced) return;
   // A line is selected by coloring mermaid's own path; there is nothing to overlay on a curve we did not draw.
@@ -930,21 +929,49 @@ function drawFlowOverlay() {
   const sides = flowBudSidesFor(graph);
   for (const box of flowPlaced.nodes) {
     const chosen = flowSelection && flowSelection.kind === 'node' && flowSelection.id === box.id;
-    const tools = document.createElement('div');
-    tools.className = 'flow-node-tools' + (chosen ? ' is-selected' : '');
-    tools.dataset.node = box.id;
+    const tools = Array.from(layer.children).find((child) => child.dataset.node === box.id);
+    if (!tools) continue;
+    tools.classList.toggle('is-selected', !!chosen);
     tools.style.left = box.x - FLOW_RING_GAP + 'px';
     tools.style.top = box.y - FLOW_RING_GAP + 'px';
     tools.style.width = box.width + FLOW_RING_GAP * 2 + 'px';
     tools.style.height = box.height + FLOW_RING_GAP * 2 + 'px';
+    const ring = tools.querySelector('.flow-ring');
+    if (!ring) continue;
+    // Nested corners, in reverse: the inner radius is the outer minus the gap, so the outer is the inner plus it. A square shape still gets the gap's worth of round, which is what keeps the two outlines parallel.
+    ring.style.borderRadius = Math.round(box.radius + FLOW_RING_GAP) + 'px';
+  }
+  const chosenEdge = flowSelection && flowSelection.kind === 'edge' ? flowSelection.id : null;
+  for (const placed of flowPlaced.edges) {
+    if (placed.id !== chosenEdge) continue;
+    for (const which of ['from', 'to']) {
+      const grip = Array.from(layer.children).find((child) => child.dataset.edge === placed.id && child.dataset.endpoint === which);
+      if (!grip) continue;
+      grip.style.left = placed[which].x + 'px';
+      grip.style.top = placed[which].y + 'px';
+    }
+  }
+}
+
+// Rings, + handles, line ends and drop marks. Plain elements over the drawing, so nothing has to be drawn twice and a selection costs no render.
+function drawFlowOverlay() {
+  const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
+  const layer = stage && stage.querySelector('.flow-overlay');
+  if (!layer) return;
+  layer.textContent = '';
+  const graph = flowSession && flowSession.graph;
+  if (!graph || !flowPlaced) return;
+  const sides = flowBudSidesFor(graph);
+  for (const box of flowPlaced.nodes) {
+    const tools = document.createElement('div');
+    tools.className = 'flow-node-tools';
+    tools.dataset.node = box.id;
     const node = flowFindNode(graph, box.id);
     const ring = document.createElement('div');
     // A picture and an icon show themselves — mermaid draws them. A link shows nothing at all, so the box wears a dotted ring of its own and says where it goes: a box holding something invisible is a box nobody edits on purpose.
     ring.className = 'flow-ring' + (node && node.href ? ' is-linked' : '');
     if (node && node.href) ring.title = 'Clicking this box opens ' + node.href;
     ring.dataset.node = box.id;
-    // Nested corners, in reverse: the inner radius is the outer minus the gap, so the outer is the inner plus it. A square shape still gets the gap's worth of round, which is what keeps the two outlines parallel.
-    ring.style.borderRadius = Math.round(box.radius + FLOW_RING_GAP) + 'px';
     tools.appendChild(ring);
     // The buds sit on the wrapper's own sides, so nothing has to be measured twice and they follow the box wherever mermaid puts it.
     for (const side of sides) {
@@ -969,11 +996,10 @@ function drawFlowOverlay() {
       grip.dataset.endpoint = which;
       grip.dataset.edge = placed.id;
       grip.title = 'Drag onto another box to move this end';
-      grip.style.left = placed[which].x + 'px';
-      grip.style.top = placed[which].y + 'px';
       layer.appendChild(grip);
     }
   }
+  placeFlowOverlay();
 }
 
 
