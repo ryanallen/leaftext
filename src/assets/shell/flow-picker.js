@@ -231,7 +231,7 @@ let flowShapeButtons = null;
 let flowShapeMarked = null;
 let flowShapePress = null;
 
-// Building the buttons and putting them in the body are two jobs, because only the second one has somebody's click behind it. Preparing costs 4.4ms of the first draw of a session; the pictures landing is a moment nobody is waiting on, so that is where the build is asked for. A draw that finds one prepared merely places it.
+// Building the buttons and placing them in the body are two jobs, because only the second has somebody's click behind it: building costs 4.4ms, so it is asked for when the pictures land and a draw that finds one prepared merely places it.
 function flowShapeGridPrepared() {
   if (flowShapeGrid) return;
   flowShapeGrid = [];
@@ -256,7 +256,7 @@ function flowShapeGridPrepared() {
 }
 
 function flowShapeGridStands() {
-  // Still built here where the pictures never arrived, so a copy whose mermaid load failed shows a sheet full of named shapes rather than an empty one.
+  // The fallback for a copy the pictures never reached, so one whose mermaid load failed shows a sheet full of named shapes rather than an empty one.
   flowShapeGridPrepared();
   if (flowShapeWrap.parentElement !== flowPickerBody) flowPickerBody.appendChild(flowShapeWrap);
   if (!flowShapeWrap.classList.contains('is-collapsed')) return;

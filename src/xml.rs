@@ -668,6 +668,7 @@ fn value_html(node: Node) -> Option<String> {
 /// Escape a value, linking it when the whole of it is a URL. Only whole-value URLs link, so prose can't be mangled by a stray `http://` inside it.
 pub(crate) fn linkify(value: &str) -> String {
     let trimmed = value.trim();
+    // The three prefixes come first because a value that is not a URL is then settled by its first character rather than scanned to its end for whitespace.
     let is_url = (trimmed.starts_with("http://")
         || trimmed.starts_with("https://")
         || trimmed.starts_with("mailto:"))

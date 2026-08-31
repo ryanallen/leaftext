@@ -1537,12 +1537,12 @@ export function run() {
       if (buttons.size !== shapes) throw new Error(`the prepared grid holds ${buttons.size} buttons against ${shapes} shapes`);
       if (!buttons.get('rect').innerHTML.includes('svg')) throw new Error('the prepared buttons came without their pictures');
       if (placed()) throw new Error('the prepared grid was placed in a shut sheet');
-      // So the first click on a box only places what is already standing.
+      // The first click on a box only places what is already standing.
       read(`flowSession = { save: null, text: 'flowchart TD\\n  A["a"]', graph: null }; flowSession.graph = parseFlow(flowSession.text); flowSelection = { kind: 'node', id: flowSession.graph.nodes[0].id };`);
       booted.drawFlowPicker();
       if (read('flowShapeGrid') !== grid) throw new Error('the first click on a box built the grid again');
       if (!placed()) throw new Error('the first click on a box never placed the grid');
-      // And where mermaid never answered, that first box still gets every named shape under its eight headings.
+      // Where mermaid never answered, that first box still gets every named shape under its eight headings.
       read('flowChipCache.clear();');
       booted.forgetFlowShapeGrid();
       booted.drawFlowPicker();

@@ -793,7 +793,7 @@ impl DataCtx {
     }
 }
 
-/// Stamp one opening tag while recording the matching source range.
+/// Write one opening tag's `data-*` attributes and record its source range. A node with no proven range still gets an id and a kind, just no `data-src-*` — and so no entry in the map, which indexes source ranges.
 fn write_block_attrs(
     out: &mut String,
     blocks: &mut Vec<BlockSpan>,
