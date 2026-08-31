@@ -117,30 +117,42 @@ export function run() {
       press({ target: at([], null) });
       press({ target: at([], notice) });
       if (said.length !== 5) throw new Error(`a block that answers was growled at: ${JSON.stringify(said)}`);
-      // And the page wires it: a data document reaching the reading editor gets the same answer, or the lines above are a function nothing ever calls.
+      // And the page wires it, for every format the data renderer draws: a config file's headings are the same headings a YAML file's are, so a press on one that answers on the one and not the other is this fault by another name.
       const inApp = read('app');
       const wasQuery = inApp.querySelector;
       const wasUnlocked = read('readingUnlocked');
-      let bound = null;
-      const page = {
-        addEventListener: (type, handler) => {
-          if (type === 'pointerdown') bound = handler;
-        },
-        querySelectorAll: () => [],
-        querySelector: () => null,
-      };
+      const wired = [
+        { format: 'yaml', source: 'title: |\n  words\n' },
+        { format: 'ini', source: '[server]\nhost = localhost\n' },
+      ];
       try {
         read('readingUnlocked = true;');
-        inApp.querySelector = (selector) => (selector === '.document-body' ? page : wasQuery(selector));
-        booted.bindReadingEditor({ format: 'yaml', blocks: [], source: 'title: |\n  words\n' }, { deferCaret: true });
-        if (!bound) throw new Error('a data document reaching the reading editor listens for no press');
-        said.length = 0;
-        bound({ target: at([], heading) });
-        if (said.length !== 1) throw new Error(`the page wired no answer for a block that cannot open: ${JSON.stringify(said)}`);
+        for (const { format, source: text } of wired) {
+          let bound = null;
+          const page = {
+            addEventListener: (type, handler) => {
+              if (type === 'pointerdown') bound = handler;
+            },
+            querySelectorAll: () => [],
+            querySelector: () => null,
+          };
+          inApp.querySelector = (selector) => (selector === '.document-body' ? page : wasQuery(selector));
+          booted.bindReadingEditor({ format, blocks: [], source: text }, { deferCaret: true });
+          if (!bound) throw new Error(`a ${format} document reaching the reading editor listens for no press`);
+          said.length = 0;
+          bound({ target: at([], heading) });
+          if (said.length !== 1) throw new Error(`the page wired no answer for a ${format} block that cannot open: ${JSON.stringify(said)}`);
+        }
       } finally {
         inApp.querySelector = wasQuery;
         read(`readingUnlocked = ${wasUnlocked};`);
         read("currentDocumentFormat = 'markdown'; currentDocumentSource = ''; currentDocumentBindsAnything = true;");
+      }
+
+      // The list itself, pinned: dropping one leaves that format silent, and adding one the data renderer does not draw puts the sentence on a page whose blocks it says nothing true about.
+      const formats = read('DATA_RENDERER_FORMATS');
+      if ([...formats].sort().join() !== 'ini,json,yaml') {
+        throw new Error(`the data renderer's formats are ${JSON.stringify(formats)}`);
       }
     } finally {
       booted.leafToast = wasToast;

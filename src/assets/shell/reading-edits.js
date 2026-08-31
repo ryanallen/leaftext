@@ -1666,7 +1666,10 @@ function dataBlockKindOf(el) {
   return null;
 }
 
-// The data half of the same answer. A JSON or YAML block with no proven range is drawn exactly like the ones beside it that open, so silence reads as the page being broken rather than as the file being written a way nothing can place. The two lines split on what could not be proved: where a collection ends, or how a single value is spelled.
+// The formats `render_data_document` draws, read off its three call sites in `src/data.rs` and `src/ini.rs`. A page it drew gets the answer below, so a fourth format routed through it is one entry here rather than another spelling in the wiring.
+const DATA_RENDERER_FORMATS = ['json', 'yaml', 'ini'];
+
+// The data half of the same answer. A block the data renderer drew with no proven range looks exactly like the ones beside it that open, so silence reads as the page being broken rather than as the file being written a way nothing can place. The two lines split on what could not be proved: where a collection ends, or how a single value is spelled.
 function wireDataClosedParts(body) {
   body.addEventListener('pointerdown', (event) => {
     const target = event.target;
@@ -1749,7 +1752,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
     if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
-    if (currentDocumentFormat === 'json' || currentDocumentFormat === 'yaml') wireDataClosedParts(body);
+    if (DATA_RENDERER_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
 
     // An unlocked document with no blocks in it -- a new one -- has nothing to click into. Open its first line, or the page is unlocked and untypable.
     if (currentDocumentFormat === 'markdown' && !pendingCaret && !body.querySelector('[data-src-start]')) {

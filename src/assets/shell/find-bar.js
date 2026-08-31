@@ -39,8 +39,12 @@ let findTextNodes = [];
 // The same records again, keyed on the text node, so asking where a node sits in the flat string is a read rather than a walk.
 let findNodeRecords = new Map();
 let findTextValid = false;
-// What "find in selection" narrows to: a DOM range in the reading view, a Monaco range in the source view. Captured when the toggle goes on, because focusing the field is what takes the page's selection away.
+// What "find in selection" narrows to: a DOM range in the reading view, a Monaco range in the source view. Captured when the toggle goes on, off the kept range below.
 let findScopeRange = null;
+// The last thing the reader highlighted in the page. The toggle cannot read the selection when it is pressed — opening the bar focuses the field, and that collapses the page's own selection — so the highlight is kept as it is made and the toggle reads this instead.
+let findKeptRange = null;
+// The range the bar itself drew the current match with, where the web view has no highlight API and drawing means selecting it. Without this the keeper would record it and the reader's highlight would become whichever match they stepped onto. Held and compared rather than flagged around the call, because `selectionchange` arrives on a later task and a flag raised around it is already down by then.
+let findPaintedRange = null;
 let findMonacoScope = null;
 let findMonacoDecorations = null;
 // The document can be re-rendered under an open bar (an edit lands, a live reload), and every range it holds then points at nodes that are gone.
@@ -158,6 +162,18 @@ function findScopeFlatBounds() {
   return { low, high };
 }
 
+// Whether two ranges name the same piece of the page. Both ends compared rather than the ranges themselves, because the bar hands its painted range to the selection and gets a different object back.
+function findSameRange(one, other) {
+  return (
+    !!one &&
+    !!other &&
+    one.startContainer === other.startContainer &&
+    one.startOffset === other.startOffset &&
+    one.endContainer === other.endContainer &&
+    one.endOffset === other.endOffset
+  );
+}
+
 // Only matches inside the range "find in selection" captured.
 function findWithinScope(range) {
   if (!range) return false;
@@ -214,6 +230,7 @@ function paintRenderedMatches() {
     const range = match ? findRangeFor(match) : null;
     const selection = window.getSelection();
     if (range && selection) {
+      findPaintedRange = range;
       selection.removeAllRanges();
       selection.addRange(range);
     }
@@ -380,6 +397,7 @@ function closeFindBar() {
   findCurrent = -1;
   findScopeRange = null;
   findMonacoScope = null;
+  findPaintedRange = null;
   setFindFlag('scoped', false);
   clearRenderedHighlights();
   clearSourceMatches();
@@ -400,16 +418,16 @@ function setFindFlag(name, on) {
   if (button) button.setAttribute('aria-pressed', on ? 'true' : 'false');
 }
 
-// "Find in selection" has to take the selection now: focusing the field is what takes it away.
+// "Find in selection" narrows to the last thing the reader highlighted, not to the selection as it stands: opening the bar focuses the field, and by the time this runs the page's own selection is gone. The source view still reads live, because Monaco keeps its selection across a focus change.
 function captureFindScope() {
   if (findInSourceView()) {
     const range = monacoEditor.getSelection();
     findMonacoScope = range && !range.isEmpty() ? range : null;
     return !!findMonacoScope;
   }
-  const selection = window.getSelection();
-  if (!selection || !selection.rangeCount || selection.isCollapsed) return false;
-  findScopeRange = selection.getRangeAt(0).cloneRange();
+  // A redraw leaves the kept range attached to the page but collapsed onto nothing, which is the same non-selection a live read refuses — so the reader gets the growl rather than the bar answering "No results" over a range pointing nowhere.
+  if (!findKeptRange || findKeptRange.collapsed) return false;
+  findScopeRange = findKeptRange.cloneRange();
   return true;
 }
 
@@ -611,6 +629,21 @@ findSelectAllButton.addEventListener('click', () => findSelectAllOccurrences());
 Object.keys(findFlagButtons).forEach((name) => {
   const button = findFlagButtons[name];
   if (button) button.addEventListener('click', () => toggleFindFlag(name));
+});
+
+// The reader's highlight, kept as it is made. On the document rather than started with the bar, because the highlight is made before Ctrl+F is pressed and pressing it is what takes the highlight away.
+//
+// A collapsed range inside the find bar is the field taking the caret at open, so the kept range stands; anything else collapsed is the reader clearing their highlight, so it goes and the toggle growls again.
+document.addEventListener('selectionchange', () => {
+  const selection = window.getSelection();
+  const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+  if (range && !selection.isCollapsed) {
+    if (findSameRange(range, findPaintedRange)) return;
+    findKeptRange = range.cloneRange();
+    return;
+  }
+  if (range && findBar.contains(range.startContainer)) return;
+  findKeptRange = null;
 });
 
 // Ctrl+F opens it over whichever view is on screen, Ctrl+H opens it with the replace row down, and Escape closes it from anywhere — including from inside Monaco, which has no find widget of its own to answer either key.

@@ -204,6 +204,127 @@ export function run() {
     if (ranges !== 0) throw new Error(`an unnarrowed search built ${ranges} ranges`);
   });
 
+  // Opening the bar is what takes the page's highlight away: focusing the field collapses the selection, and the toggle read the selection at the moment it was pressed — so it refused every time and no gesture in the rendered document could turn it on. The page keeps the highlight as it is made instead, and the toggle reads that.
+  check('find in selection narrows to the highlight the open took away, and still refuses when there is none', () => {
+    const { context } = bootReading({ path: 'C:\Notes\kept.md', blocks: [{ srcStart: 0 }] });
+    const bar = context.document.getElementById('findBar');
+    const field = context.document.getElementById('findInput');
+    const pieces = ['alpha needle one ', 'beta needle two ', 'gamma needle three'];
+    const nodes = pieces.map((text) => ({ nodeType: 3, nodeValue: text, textContent: text }));
+    context.document.createTreeWalker = () => {
+      let at = 0;
+      return { nextNode: () => (at < nodes.length ? nodes[at++] : null) };
+    };
+    // A range its clones stay live to, the way a browser's is: a redraw collapses the range the page kept, and the clone the toggle takes has to see that rather than a copy of how it used to be.
+    const rangeOver = (start, startOffset, end, endOffset) => {
+      const range = {
+        startContainer: start,
+        startOffset,
+        endContainer: end,
+        endOffset,
+        collapsed: false,
+        cloneRange: () => ({
+          ...range,
+          get collapsed() {
+            return range.collapsed;
+          },
+          cloneRange: range.cloneRange,
+        }),
+      };
+      return range;
+    };
+    // The page's one selection, and the event the web view raises whenever it moves. Real enough to be written to, because drawing the current match is the bar putting a range into it.
+    let held = [];
+    const selection = {
+      get rangeCount() {
+        return held.length;
+      },
+      get isCollapsed() {
+        return !held.length || !!held[0].collapsed;
+      },
+      getRangeAt: (at) => held[at],
+      removeAllRanges() {
+        held = [];
+      },
+      addRange(range) {
+        held = [range];
+      },
+      toString: () => '',
+    };
+    context.getSelection = () => selection;
+    const selectionMoved = () => (context.document.listeners.get('selectionchange') || []).forEach((handler) => handler({}));
+    const kept = () => vm.runInContext('findKeptRange', context);
+    const found = () => vm.runInContext('findMatches.length', context);
+    const on = () => vm.runInContext('findFlags.scoped', context);
+    const said = [];
+    context.leafToast = (words) => said.push(words);
+    const refusal = 'Select some text first, then find inside it.';
+    // A find bar that really holds what is put inside it, so the caret the open leaves there is told apart from a caret in the page.
+    const inTheBar = { nodeType: 1 };
+    bar.contains = (node) => node === inTheBar;
+
+    // The reader highlights the middle paragraph and presses Ctrl+F. The open focuses the field, and that collapses the page's selection into the bar — which is the whole fault, so it is played rather than described.
+    const highlight = rangeOver(nodes[1], 0, nodes[1], pieces[1].length);
+    held = [highlight];
+    selectionMoved();
+    context.openFindBar();
+    const caretInBar = rangeOver(inTheBar, 0, inTheBar, 0);
+    caretInBar.collapsed = true;
+    held = [caretInBar];
+    selectionMoved();
+    if (!kept()) throw new Error('the caret the open left in the bar dropped the highlight');
+
+    field.value = 'needle';
+    context.toggleFindFlag('scoped');
+    if (!on()) throw new Error(`find in selection refused after the open: ${said.join(' ')}`);
+    if (found() !== 1) throw new Error(`the narrowed find counted ${found()} of the three`);
+
+    // Where the web view has no highlight API the bar draws the current match by putting it into the page's own selection. That is a real range in the document, and the keeper has to ignore exactly it or the reader's highlight becomes whichever match they stepped onto.
+    if (!vm.runInContext('findPaintedRange', context)) throw new Error('the bar drew the current match without recording what it selected');
+    selectionMoved();
+    if (kept().startContainer !== nodes[1]) throw new Error("the match the bar drew was taken for the reader's highlight");
+
+    // A redraw leaves the kept range attached to the page but collapsed onto nothing, which is no selection at all — so the reader gets the growl rather than a bar answering over a range pointing nowhere.
+    context.toggleFindFlag('scoped');
+    highlight.collapsed = true;
+    said.length = 0;
+    context.toggleFindFlag('scoped');
+    if (on()) throw new Error('a kept range a redraw collapsed was taken for a selection');
+    if (said[0] !== refusal) throw new Error(`a collapsed kept range said: ${said.join(' ')}`);
+
+    // And a caret the reader puts down in the page is them clearing the highlight, so the toggle refuses again.
+    highlight.collapsed = false;
+    held = [highlight];
+    selectionMoved();
+    const caret = rangeOver(nodes[0], 3, nodes[0], 3);
+    caret.collapsed = true;
+    held = [caret];
+    selectionMoved();
+    if (kept()) throw new Error('a caret put down in the page left the old highlight standing');
+    said.length = 0;
+    context.toggleFindFlag('scoped');
+    if (on()) throw new Error('find in selection turned on with nothing highlighted');
+    if (said[0] !== refusal) throw new Error(`a cleared highlight said: ${said.join(' ')}`);
+    context.closeFindBar();
+    // The other half of the drawing: where the web view does have the highlight API, nothing goes into the page's selection at all, so the bar must be holding no painted range — otherwise a stale one from an earlier document could swallow a real highlight that happened to sit on the same nodes.
+    held = [highlight];
+    selectionMoved();
+    const highlights = new Map();
+    context.CSS = { highlights };
+    context.Highlight = function Highlight() {
+      this.add = () => {};
+    };
+    context.openFindBar();
+    context.toggleFindFlag('scoped');
+    if (!on()) throw new Error('the toggle refused with the highlight API in place');
+    if (vm.runInContext('findPaintedRange', context)) throw new Error('the bar held a painted range while drawing through the highlight API');
+    if (!highlights.size) throw new Error('the bar drew no highlights through the API it has');
+    selectionMoved();
+    if (kept().startContainer !== nodes[1]) throw new Error('the highlight was dropped by a draw that never touched the selection');
+    context.closeFindBar();
+
+  });
+
   check('a replace in the reading view rewrites the block, or refuses it whole', () => {
     const { findRewriteBlock, toggleFindFlag } = booted;
     const field = booted.document.getElementById('findInput');
