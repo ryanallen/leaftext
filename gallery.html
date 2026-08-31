@@ -8421,12 +8421,11 @@ body.is-home-row-dragging .home-list-scroll li {
   /* Dropping away, so it accelerates and is over sooner than the rise. */
   transition: transform var(--lt-duration-200) var(--lt-ease-accelerate);
 }
-/* The same cassette grain the app bar and the reading surfaces wear, so a sheet reads as one of this app's surfaces rather than a plain card dropped on it. The color under it is each sheet's own; only the lattice is shared, and it is anchored to the window so every grained surface keeps one phase. */
+/* The same cassette grain the app bar and the reading surfaces wear, so a sheet reads as one of this app's surfaces rather than a plain card dropped on it. The color under it is each sheet's own, written as `background-color`: the shorthand would reset the lattice. It tiles from the sheet's own box rather than from the window, which is right for a surface that slides up over the page — and is what it does anyway, since a sheet always carries a transform and a transform re-anchors a fixed background to the element itself. */
 .leaf-sheet {
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
-  background-attachment: fixed;
 }
 .leaf-sheet[hidden] {
   display: none;
@@ -8651,7 +8650,7 @@ body.is-home-row-dragging .home-list-scroll li {
 .glossary-sheet {
   position: fixed;
   z-index: var(--lt-z-43);
-  background: var(--lt-background);
+  background-color: var(--lt-background);
   color: var(--lt-foreground);
 }
 /* A folded start-screen list, given the window — same slide-up pattern again. */
@@ -8660,7 +8659,7 @@ body.is-home-row-dragging .home-list-scroll li {
   z-index: var(--lt-z-41);
   /* The skirt is carried in the bottom padding: a plain `padding` here would drop the component's own and leave the last row hanging below the window's edge. */
   padding: 0 var(--lt-space-20) calc(var(--lt-space-24) + var(--sheet-raise));
-  background: var(--lt-background);
+  background-color: var(--lt-background);
   color: var(--lt-foreground);
   font-family: var(--app-font);
 }
@@ -8705,7 +8704,7 @@ body.is-home-row-dragging .home-list-scroll li {
   gap: var(--lt-space-14);
   /* The skirt is carried in the bottom padding, as on the start-screen sheet. */
   padding: 0 var(--lt-space-20) calc(var(--lt-space-24) + var(--sheet-raise));
-  background: var(--lt-surface-elevated);
+  background-color: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   font-family: var(--app-font);
 }
@@ -9570,7 +9569,7 @@ body.is-home-row-dragging .home-list-scroll li {
   position: absolute;
   z-index: 5;
   max-height: 62%;
-  background: var(--lt-surface-elevated);
+  background-color: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   border-top: var(--lt-stroke-1) solid var(--lt-border);
 }

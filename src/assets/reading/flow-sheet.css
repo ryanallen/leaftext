@@ -488,7 +488,7 @@
   position: absolute;
   z-index: 5;
   max-height: 62%;
-  background: var(--lt-surface-elevated);
+  background-color: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   border-top: var(--lt-stroke-1) solid var(--lt-border);
 }

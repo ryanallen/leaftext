@@ -23,6 +23,9 @@ let hintBubble = null;
 let hintShowing = null;
 // The control the bubble on screen points at, and the pointer watch put on it. Held so the watch comes off with the bubble rather than outliving it.
 let hintWatched = null;
+// The sheets standing over the app, and the name of the bubble one of them took down. A sheet is not a gesture that ends the way a menu is: it stands until it is dismissed, and everything it covers is out of reach while it does — including the control a bubble is pointing at, and both of the gestures that meet a hint. So the promise is held rather than lost.
+const hintSheets = new Set();
+let hintSuspended = null;
 
 // All three travel together — none of them means anything without the others.
 function saveHintState() {
@@ -116,6 +119,38 @@ function hintIsMet(name) {
   return hintsSeen.has(name);
 }
 
+// A sheet is coming up, so the bubble goes and its name stays unmet. Nothing is spent: the launch was counted when it drew, and the reader still has this one to meet it in once the sheet is gone.
+function suspendHintForSheet(sheet) {
+  if (HINTS_OFF || !sheet) return;
+  hintSheets.add(sheet);
+  if (!hintShowing) return;
+  hintSuspended = hintShowing;
+  hideHintBubble();
+}
+
+// Whether any of them is still on the window, asked of the sheets themselves rather than of a tally of closes: the flowchart editor hides its own shape picker instead of closing it, so a count would wait for ever on a close nobody is going to make.
+function hintSheetsStanding() {
+  for (const sheet of [...hintSheets]) {
+    if (sheet.hidden) hintSheets.delete(sheet);
+  }
+  return hintSheets.size > 0;
+}
+
+// A sheet has finished leaving. The held bubble comes back only once the last one has gone and only while its name is still unmet, and it is measured again rather than put back where it was, because a sheet can leave the pane behind it a different shape.
+function restoreHintAfterSheet(sheet) {
+  if (HINTS_OFF) return;
+  if (sheet) hintSheets.delete(sheet);
+  const name = hintSuspended;
+  if (!name || hintSheetsStanding()) return;
+  hintSuspended = null;
+  if (hintsSeen.has(name)) return;
+  const hint = hintRegistry.get(name);
+  if (!hint) return;
+  const target = hintTarget(hint);
+  if (!target) return;
+  drawHintBubble(hint, target);
+}
+
 function drawHintBubble(hint, target) {
   hideHintBubble();
   const { element, rect: targetRect } = target;
@@ -190,6 +225,8 @@ window.leafResetHints = () => {
   hintsSeen.clear();
   hintLaunches = 0;
   hintLastLaunch = 0;
+  hintSheets.clear();
+  hintSuspended = null;
   saveHintState();
   hideHintBubble();
   return true;

@@ -201,6 +201,8 @@ function runSheetMotion(sheet, className, ms, done) {
 // `backdrop` is optional -- the shape picker inside the flowchart editor has none. `keepParked` is the picker's too: it redraws while it is open and stays where it was pushed to.
 function openSheet(sheet, backdrop, options) {
   if (!sheet) return;
+  // Whatever the first-run bubble is pointing at, this sheet is about to stand over it. Asked for again while it is already up as well, because the count of what is standing is what decides when the bubble comes back.
+  suspendHintForSheet(sheet);
   const already = !sheet.hidden && sheet.classList.contains('open');
   if (backdrop) backdrop.hidden = false;
   sheet.hidden = false;
@@ -239,6 +241,8 @@ function closeSheet(sheet, backdrop, options) {
       backdrop.hidden = true;
       backdrop.classList.remove('is-held');
     }
+    // Only now is the sheet actually off the window, which is what the held bubble is waiting on.
+    restoreHintAfterSheet(sheet);
   });
 }
 function makeSheetDraggable(sheet, grip, dismiss) {

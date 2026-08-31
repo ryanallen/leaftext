@@ -42,7 +42,8 @@ export function run() {
         style: { left: '', top: '', properties: {}, setProperty(name, value) { this.properties[name] = value; }, removeProperty() {}, getPropertyValue: () => '' },
         addEventListener: (name, handler) => listeners.set(name, handler),
         appendChild(child) {
-          this.children.push(child);
+          // Elements and nothing else, the way the page's own list is: setting the text on a box puts a run of words inside it, and words among an element's children are walked as elements the moment the box is taken off the window.
+          if (child && child.nodeType !== 3) this.children.push(child);
           return child;
         },
       });
@@ -201,6 +202,72 @@ export function run() {
       if (bubbles(built).length !== 1) throw new Error('the launch after the rest drew nothing');
       if (!words(bubbles(built)[0]).includes('registered by the check')) throw new Error('the second hint did not follow');
     } finally {
+      booted.leafResetHints();
+      restore();
+    }
+  });
+
+  check('a sheet takes the bubble down unmet, and the last one to leave measures its target again', () => {
+    const { sent, built, restore } = hintHarness();
+    const wasTimeout = booted.setTimeout;
+    try {
+      booted.leafResetHints();
+      const surface = booted.document.getElementById('appSurface');
+      const button = booted.document.getElementById('libraryVaultSwitch');
+      if (!surface || !button) throw new Error('the page has no surface or vault switch');
+      // Low on the left, so the only side with room is to its right — and moved before the sheets go, so where the bubble comes back says whether it was measured again or put back where it was.
+      let box = { left: 8, top: 700, right: 40, bottom: 726, width: 32, height: 26 };
+      button.getBoundingClientRect = () => box;
+      const watches = new Map();
+      button.addEventListener = (name, handler) => watches.set(name, handler);
+      button.removeEventListener = (name) => watches.delete(name);
+      // A close waits out its exit animation, and nothing here ever tells a sheet its animation ended, so the fallback runs where it stands.
+      booted.setTimeout = (fn) => { fn(); return 0; };
+      const onSurface = () => surface.children.filter((child) => child.classes && child.classes.has('hint-bubble'));
+      const met = () => hintStates(sent).some((state) => state.seen.includes('libraryVault'));
+
+      built.length = 0;
+      sent.length = 0;
+      booted.runHintPass();
+      if (onSurface().length !== 1) throw new Error('the launch drew no bubble to take down');
+      // Where the first one stood: ten past the right edge of the control, which is what the restored one is read against.
+      const first = onSurface()[0].style.left;
+      if (first !== '50px') throw new Error(`the bubble was placed at ${first}`);
+
+      // The shared pair, which Themes, the glossary, the start-screen list and the shape picker all go through.
+      booted.openThemeSheet();
+      if (onSurface().length !== 0) throw new Error('the bubble stood over an open sheet');
+      if (met()) throw new Error('a sheet covering the control counted as the reader meeting it');
+      if (watches.has('pointerenter')) throw new Error('the pointer watch outlived the bubble');
+
+      // A second sheet over the first: the bubble comes back for the last one to leave, not for the first.
+      booted.showGlossary();
+      booted.closeThemeSheet();
+      if (onSurface().length !== 0) throw new Error('the bubble came back while another sheet still stood');
+      // The pane the control sits in is a different width once the sheet has gone, which is the whole reason the restored bubble is measured again rather than put back where it was.
+      box = { left: 600, top: 100, right: 632, bottom: 126, width: 32, height: 26 };
+      booted.dismissGlossary();
+      const back = onSurface();
+      if (back.length !== 1) throw new Error(`the last sheet to leave put back ${back.length} bubbles`);
+      // Ten past the control's new right edge: a bubble put back where it was would still be at 50.
+      if (back[0].style.left !== '642px') throw new Error(`the restored bubble was placed at ${back[0].style.left}`);
+      const words = back[0].children.map((child) => child.textContent).join('');
+      if (!words.includes('folder the list below shows')) throw new Error(`the restored bubble said "${words}"`);
+
+      // The flowchart editor, which shows and hides itself rather than going through that pair.
+      booted.openFlowSheet({ title: 'Flowchart', text: 'flowchart LR\n  A --> B', save: () => true });
+      if (onSurface().length !== 0) throw new Error('the bubble stood over the flowchart editor');
+      if (met()) throw new Error('the flowchart editor counted as the reader meeting the hint');
+      booted.closeFlowSheet();
+      if (onSurface().length !== 1) throw new Error('the flowchart editor did not put the bubble back as it left');
+
+      // Met while a sheet stands, by the other control the hint retires on: nothing comes back, because the promise was kept rather than held.
+      booted.openThemeSheet();
+      booted.retireHint('libraryVault');
+      booted.closeThemeSheet();
+      if (onSurface().length !== 0) throw new Error('a hint met while a sheet stood came back after it closed');
+    } finally {
+      booted.setTimeout = wasTimeout;
       booted.leafResetHints();
       restore();
     }

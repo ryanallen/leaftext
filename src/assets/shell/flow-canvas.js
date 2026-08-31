@@ -102,6 +102,8 @@ function onFlowSaveAnswered(held, why) {
 // `save` is handed the mermaid text and decides where it goes: the insert row writes a new block, a diagram already in the page splices its own range. It answers false where it has nowhere left to land, a number where the host now owes an answer, and true where it wrote the block itself.
 function openFlowSheet({ title, text, save }) {
   if (!flowSheet || !flowBackdrop) return;
+  // The editor owns its own transition rather than the shared sheet pair, so it says the same two things to the first-run bubble itself.
+  suspendHintForSheet(flowSheet);
   dropFlowSaveWait();
   flowLastFocus = document.activeElement;
   flowSession = { save, text: typeof text === 'string' ? text : '', graph: null };
@@ -155,6 +157,8 @@ function closeFlowSheet() {
     flowSheet.hidden = true;
     flowBackdrop.hidden = true;
     flowSheet.removeEventListener('transitionend', hide);
+    // The picker went with it above, so this is the last sheet the editor had up.
+    restoreHintAfterSheet(flowSheet);
   };
   flowSheet.addEventListener('transitionend', hide);
   window.setTimeout(hide, 320);

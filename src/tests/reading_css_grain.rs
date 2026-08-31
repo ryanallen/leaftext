@@ -661,6 +661,94 @@ fn the_confirmation_throws_the_shared_dot_shadow_rather_than_a_blur_of_its_own()
     assert_contains(dialog, "z-index: var(--lt-z-41);");
 }
 
+/// Every rule whose selector is written exactly `selector`, comments taken out. Exact and not a search: `.theme-sheet-browse:hover` and `.home-sheet .home-list-fade` both write a `background:` shorthand, and neither of them touches what the sheet element itself is given.
+fn rules_selected_exactly(css: &str, selector: &str) -> Vec<String> {
+    let css = strip_css_comments(css);
+    let mut found = Vec::new();
+    for (opens, _) in css.match_indices('{') {
+        // Back to the nearest brace either way: that is the head of this rule, whether it sits at the top of the file or inside a media query.
+        let head = css[..opens]
+            .rsplit(['{', '}'])
+            .next()
+            .unwrap_or_default()
+            .trim();
+        if head != selector {
+            continue;
+        }
+        let shuts = css[opens..].find('}').map_or(css.len(), |end| opens + end);
+        found.push(css[opens + 1..shuts].to_string());
+    }
+    found
+}
+
+/// The class each bottom sheet is filled by, read off the shell rather than written down here — the other token on every element whose class list holds `leaf-sheet` — so a fifth sheet is held to the same rule the day somebody adds it.
+fn sheet_fill_classes(html: &str) -> Vec<String> {
+    let mut classes = Vec::new();
+    for (at, _) in html.match_indices("class=\"") {
+        let opens = at + "class=\"".len();
+        let shuts = opens + html[opens..].find('"').expect("the attribute closes");
+        let list: Vec<&str> = html[opens..shuts].split_whitespace().collect();
+        if !list.contains(&"leaf-sheet") {
+            continue;
+        }
+        for token in list {
+            if token != "leaf-sheet" {
+                classes.push(token.to_string());
+            }
+        }
+    }
+    classes
+}
+
+#[test]
+fn every_bottom_sheet_keeps_the_grain_the_shared_rule_gives_it() {
+    // `.leaf-sheet` draws the lattice and each sheet writes its own color underneath. A `background:` shorthand there resets every part it does not name, so the image and the attachment go back to nothing and the sheet lands as a plain card — which is what all four did. Naming `background-color` is what leaves the shared rule standing, and `.flow-picker` is in a file concatenated after this one, so declaring the grain later cannot reach it.
+    let html = app_shell_page();
+    let css = reading_mode_css();
+
+    let classes = sheet_fill_classes(&html);
+    for class in &classes {
+        let selector = format!(".{class}");
+        let rules = rules_selected_exactly(css, &selector);
+        assert!(
+            !rules.is_empty(),
+            "{selector} fills a bottom sheet but the stylesheet has no rule of its own for it"
+        );
+        assert!(
+            rules.iter().any(|rule| rule.contains("background-color:")),
+            "{selector} fills a bottom sheet without naming `background-color`"
+        );
+        for rule in &rules {
+            assert!(
+                !rule.contains("background:"),
+                "{selector} writes its fill as a `background:` shorthand, which resets the lattice `.leaf-sheet` gives it: {rule}"
+            );
+        }
+    }
+    // The shell carries four sheets today. Reading them off the markup is what holds a fifth; counting what the reading found is what stops a change to the markup leaving this looping over nothing and reporting green.
+    assert!(
+        classes.len() >= 4,
+        "the shell should still fill four bottom sheets ({} read)",
+        classes.len()
+    );
+}
+
+#[test]
+fn the_shared_sheet_rule_tiles_its_grain_from_the_sheets_own_box() {
+    // A sheet always carries a transform — the translate holding it below the window at rest, the one seating it when open — and a transform re-anchors a fixed background to the element itself. So an anchor written here is a promise the engine cannot keep, and the rule would claim a phase with the app bar that it has never had.
+    let css = reading_mode_css();
+    let rules = rules_selected_exactly(css, ".leaf-sheet");
+
+    let grain = rules
+        .iter()
+        .find(|rule| rule.contains("background-image: radial-gradient(circle, var(--lt-grain-dot)"))
+        .expect("the shared sheet rule still draws the lattice");
+    assert!(
+        !grain.contains("background-attachment:"),
+        "`.leaf-sheet` anchors its grain again, which its own transform makes inert: {grain}"
+    );
+}
+
 /// The `background-attachment` a rule declares, as written — one value or a list. Read off the rule with its comments taken out: every comment about the lattice in this stylesheet names the declaration in prose, and the prose has no semicolon to stop at.
 fn declared_attachment(rule: &str) -> Option<String> {
     let rule = strip_css_comments(rule);
@@ -700,12 +788,14 @@ fn dot_layer_is_anchored(css: &str, rule: &str, selector: &str) -> bool {
 
 #[test]
 fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
-    // The grain is anchored rather than tiled from each box, so two surfaces meeting share one lattice and the seam between them cannot show. `contain: paint` moves what "anchored" means for everything inside it — from the window to the app surface — which costs nothing while every anchored surface is inside that box, and puts one lattice out of phase with all the others the moment one is not. Three boxes tile from themselves on purpose and are named here, so a fourth is a decision somebody made rather than a drift.
-    const OWN_BOX: [&str; 3] = [
+    // The grain is anchored rather than tiled from each box, so two surfaces meeting share one lattice and the seam between them cannot show. `contain: paint` moves what "anchored" means for everything inside it — from the window to the app surface — which costs nothing while every anchored surface is inside that box, and puts one lattice out of phase with all the others the moment one is not. Four boxes tile from themselves on purpose and are named here, so a fifth is a decision somebody made rather than a drift.
+    const OWN_BOX: [&str; 4] = [
         ".tab",
         ".home-list-scroll li.is-dropzone",
         // The tools ride down out of the tray's nub on a transform, and the tray itself is centered by another, so a fixed attachment here is a lattice the web view cannot hold. The well floats over the tray's own ungrained face and meets no other grain, so it has no seam to show.
         ".reader-view-tools",
+        // A sheet always carries a transform — the translate that holds it below the window at rest, the one that seats it when open — and a transform re-anchors a fixed background to the element itself, so the anchor could only ever have been a promise. It slides up over the page as its own surface, which is what a lattice tiled from its own box reads as.
+        ".leaf-sheet",
     ];
     let css = reading_mode_css();
     let lattice = "background-image: radial-gradient(circle, var(--lt-grain-dot)";
