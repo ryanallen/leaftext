@@ -1063,7 +1063,7 @@ ${run}
     const at = source.indexOf(value);
     const heading = fakeElement('title');
     heading.tagName = 'H1';
-    // A data block carries its range and nothing else: the renderer stopped saying which block it is, because the tag already does.
+    // A data block carries its range and nothing else: which block it is goes unsaid, because the tag already says it.
     heading.dataset = { srcStart: String(at), srcEnd: String(at + value.length) };
     heading.textContent = 'Release notes';
     const body = { querySelectorAll: () => [heading] };

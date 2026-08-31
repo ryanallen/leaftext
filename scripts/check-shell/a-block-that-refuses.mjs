@@ -138,7 +138,7 @@ export function run() {
     }
   });
 
-  // The kind the page works out has to be the kind the renderer would have written, or the answer a press gets changes without anything on the page changing. Each stand carries both: the shape src/data.rs draws the block as, and the word it stamps beside it.
+  // The shape a block is drawn as has to answer with the kind that names it, or the answer a press gets changes without anything on the page changing. Each stand carries both: the shape `src/data.rs` draws the block as, and the kind it stands for.
   check('a data block’s kind is read back off the shape it was drawn as', () => {
     const { dataBlockKindOf } = booted;
     const wearing = (...names) => ({ contains: (one) => names.includes(one) });
@@ -158,7 +158,7 @@ export function run() {
       }
     }
 
-    // And nothing the renderer never stamped is read as a block: the parse-error notice, a list or a table of the document's own, a definition outside a field list, and nothing at all.
+    // And nothing that is not a block is read as one: the parse-error notice, a list or a table of the document's own, a definition outside a field list, and nothing at all.
     const none = [
       { tagName: 'P', classList: wearing('data-error') },
       { tagName: 'UL', classList: wearing() },

@@ -1651,7 +1651,7 @@ function wireEmailClosedParts(body) {
 // The shapes a data document draws a block as. Read with dataBlockKindOf, which is what says whether the element this finds is a block at all.
 const DATA_BLOCK_SHAPES = 'h1, h2, h3, h4, h5, h6, dd, ul.data-list, table.data-table, p';
 
-// A data block's kind, worked out from the tag and the class the renderer drew it as. The renderer used to spell it out in an attribute on every block, which on a megabyte of config weighed a megabyte on its own; the tag already says it, and one press is the only thing that ever asks.
+// A data block's kind, worked out from the tag and the class the renderer drew it as. Spelled out in an attribute on every block it weighs a megabyte on a megabyte of config; the tag already says it, and one press is the only thing that ever asks.
 function dataBlockKindOf(el) {
   if (!el || !el.tagName) return null;
   const tag = el.tagName;

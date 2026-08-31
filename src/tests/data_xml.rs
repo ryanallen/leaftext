@@ -813,7 +813,7 @@ fn json_blocks_anchor_to_the_exact_source_they_came_from() {
 
 #[test]
 fn a_data_pages_stamped_ranges_are_its_blocks_list_in_order() {
-    // Nothing in a data page's markup pairs a block with its entry in `blocks` any more — the id that used to sit there was never read, and weighed 30% of a large page with the kind beside it. What pairs them is the order: the nth stamped tag is the nth entry. A renderer that stamped a range it did not record, or recorded one it did not stamp, would slide the whole list along by one and splice a reader's typing over somebody else's value.
+    // Nothing in a data page's markup pairs a block with its entry in `blocks`: an id there is read nowhere, and with the kind beside it weighs 30% of a large page. What pairs them is the order: the nth stamped tag is the nth entry. A renderer that stamped a range it did not record, or recorded one it did not stamp, would slide the whole list along by one and splice a reader's typing over somebody else's value.
     let yaml = "title: A Book
 pages: 42
 tags:

@@ -793,7 +793,7 @@ impl DataCtx {
     }
 }
 
-/// Write one opening tag's source range and record it in the map. A node with no proven range gets no attribute at all: the page reads a data block's kind back off the tag it was drawn with (`dataBlockKindOf`), so an id nothing ever read and a word the tag already says came to 30% of a megabyte-of-config page.
+/// Write one opening tag's source range and record it in the map. A node with no proven range gets no attribute at all: the page reads a data block's kind back off the tag it was drawn with (`dataBlockKindOf`), and an id nothing reads plus a word the tag already says come to 30% of a megabyte-of-config page.
 fn write_block_attrs(
     out: &mut String,
     blocks: &mut Vec<BlockSpan>,
