@@ -590,7 +590,7 @@ export function run() {
     }
   });
 
-  // Every child the rebuild keeps has had its markup built already — that is the string the fit test read its length off — so appending a deep clone of it and serializing the shell at the end writes the same bytes a second time, which is half of what a rest that rebuilds costs. Counted rather than timed: the answer is grown as a string now, so the only clone left is the shallow one the opening and closing tags are cut out of, and a deep one anywhere in the walk is the duplicate coming back.
+  // Every child the rebuild keeps has had its markup built already — that is the string the fit test read its length off — so appending a deep clone of it and serializing the shell at the end writes the same bytes a second time, which is half of what a rest that rebuilds costs. Counted rather than timed: the answer is grown as a string, so the only clone left is the shallow one the opening and closing tags are cut out of, and a deep one anywhere in the walk is the duplicate coming back.
   check('the rebuild of a block bigger than the opening clones nothing deeply', () => {
     try {
       const answer = PREVIEW_SECTION_OPENING + previewOversizedWitnesses[0].block + '<p id="after">After.</p></article>';

@@ -411,7 +411,8 @@ sequenceDiagram
 Key details:
 
 - The file watcher debounces events with a 200 ms window, and everything that changed inside one window is handled together rather than one file at a time — so a branch switch, a folder sync or a pull that rewrites thousands of files leaves the window answering while they land.
-- Leaftext hashes the file contents to skip duplicate reloads, and skips a reload outright when the file already holds exactly what is on screen — the hash is unknown right after a document opens, and the whole folder is watched, so the first event to arrive is usually about something else.
+- A [Word, Excel, PowerPoint or OpenDocument file](01-rendering.md#office-and-opendocument-files) states what every part inside it holds in a directory at its own end, so an event about one is answered by reading that end rather than the file: a save coming back never reopens the archive it came from. Every other format is its own text and has no cheaper answer, so it is read.
+- Leaftext hashes what it read to skip duplicate reloads, and skips a reload outright when the file already holds exactly what is on screen — the hash is unknown right after a document opens, and the whole folder is watched, so the first event to arrive is usually about something else.
 - Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, [JSON and YAML](01-rendering.md#data-files-json-and-yaml) stay themselves, [email](01-rendering.md#email-eml) stays email, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.

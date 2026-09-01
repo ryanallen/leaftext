@@ -319,7 +319,7 @@ pub(crate) fn render_hash(path: &Path, contents: Option<&str>) -> Option<u64> {
 
 /// Whether the file still holds what the last reload recorded, answered without opening it.
 ///
-/// A package states what every member's bytes are in the directory at its own end, so this costs a read of the tail where the reload below costs the whole file and one member inflated out of it — which is what an event about an open document used to spend to be told nothing had moved. A format that is its own text has no identity cheaper than its bytes, so [`render_hash`] answers `None` for it, this never holds, and the file is read exactly as it always was.
+/// A package states what every member's bytes are in the directory at its own end, so this costs a read of the tail where the reload below costs the whole file and one member inflated out of it, which is what an event about an open document nothing wrote would otherwise spend to be told nothing had moved. A format that is its own text has no identity cheaper than its bytes, so [`render_hash`] answers `None` for it, this never holds, and the file is read exactly as it always was.
 pub(crate) fn file_still_matches_last_reload(path: &Path, active_hash: Option<u64>) -> bool {
     render_hash(path, None).is_some_and(|identity| active_hash == Some(identity))
 }
