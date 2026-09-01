@@ -493,7 +493,7 @@ fn a_package_is_not_opened_for_a_reconciliation_that_could_only_refuse_it() {
 
 #[test]
 fn a_clean_package_buffer_is_reconciled_on_its_identity_rather_than_its_words() {
-    // The gate that replaces the read phase 1 took away. A package's buffer holds one member, so what says the file moved is the identity its own directory states.
+    // The gate in place of that read. A package's buffer holds one member, so what says the file moved is the identity its own directory states.
     let path = scratch_dir("tabs-package-buffer").join("report.docx");
     let opened = one_member_package("word/document.xml", b"<w:document/>");
     std::fs::write(&path, &opened).expect("the package is written");

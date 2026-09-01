@@ -468,7 +468,7 @@ fn a_task_toggle_through_the_pipe_moves_one_marker_and_keeps_the_file_spelling()
 
 /// A file changed outside the app after it was read: the tick is refused rather than writing the app's own copy back over it, and the words somebody else wrote are still in the file.
 ///
-/// This is the whole fault the guard exists to catch and could not: the fingerprint was taken over the buffer the caller had already been handed, so a stale copy matched itself.
+/// This is the fault the guard exists to catch: taken over the buffer the caller was already handed, the fingerprint is a stale copy matching itself.
 #[test]
 fn a_task_toggle_is_refused_when_the_file_moved_under_a_clean_buffer() {
     let dir = std::env::temp_dir().join(format!("leaf-pipe-task-moved-{}", std::process::id()));
@@ -610,7 +610,7 @@ fn a_splice_is_refused_when_the_file_moved_under_a_clean_buffer() {
     let _ = fs::remove_dir_all(&dir);
 }
 
-/// Unsaved words still beat the disk. The reconciliation the three writes now make refuses a dirty buffer, so a document somebody is part-way through typing is written on its own fingerprint exactly as it was — which is the case the save ask exists for.
+/// Unsaved words still beat the disk. The reconciliation the three writes make refuses a dirty buffer, so a document somebody is part-way through typing is written on its own fingerprint exactly as it was — which is the case the save ask exists for.
 #[test]
 fn a_buffer_with_unsaved_words_is_still_written_on_its_own_fingerprint() {
     let dir = std::env::temp_dir().join(format!("leaf-pipe-save-dirty-{}", std::process::id()));
@@ -663,7 +663,7 @@ fn a_buffer_with_unsaved_words_is_still_written_on_its_own_fingerprint() {
 
 /// Two reads either side of a change made outside the app, on a document that never left the front: the second answers the file rather than the copy the app was sitting on.
 ///
-/// The read is where an agent takes the fingerprint it will quote back, and arriving at a document was the only thing that ever reconciled — so for every read after the first, the answer was the stale one. That is what made the loss the ordinary case rather than a race.
+/// The read is where an agent takes the fingerprint it will quote back, and arriving at a document is the other thing that reconciles — so without this, every read after the first answers the stale copy, which is what makes the loss the ordinary case rather than a race.
 #[test]
 fn a_second_read_of_the_document_at_the_front_answers_the_file_that_moved() {
     let dir = std::env::temp_dir().join(format!("leaf-pipe-read-moved-{}", std::process::id()));
