@@ -18,6 +18,7 @@ Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | [TEI XML](#tei-xml-84000-translations) | 84000 Buddhist-translation format; headings, paragraphs, verse, footnotes |
 | [JSON and YAML](#data-files-json-and-yaml) | Any `.json`, `.yaml`, or `.yml` file, read by the same shape rules as XML |
 | [Email](#email-eml) | Any `.eml`, `.mht`, or `.mhtml` file: headers, the message body, inline images, attachments |
+| [Word, Excel, PowerPoint and OpenDocument](#office-and-opendocument-files) | Any `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods` or `.odp` file, read as the document it is and edited in place |
 | [Plain text](#plain-text-files) | Any `.txt` file, kept exactly as typed |
 | [INI](#ini-files) | Any `.ini` file: sections, keys and values, each key drawn as it was written |
 | [Source files](#source-files) | TypeScript, JavaScript, JSONC, CSS, shell, TOML, Rust, Python, SQL, diff, dotenv, GraphQL, and Dockerfile files as highlighted source |
@@ -616,6 +617,29 @@ A message is also [edited where you read it](07-editing.md#editing-an-email), wh
 
 > [!NOTE]
 > Installing Leaftext [registers it for](../02-installation.md#file-associations) `.eml`, `.mht`, and `.mhtml`, though a mail app that already owns `.eml` keeps it.
+
+## Office and OpenDocument files
+
+Leaftext opens `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods` and `.odp` files — the documents most people are handed — with no network, no account and no sign-in. Each of these is a zip of XML, so the app unpacks the part holding the words and draws it as a document like any other.
+
+| In the file | Rendered as |
+|---|---|
+| A Word title or heading style | The page heading, and the headings under it |
+| A Word paragraph, bulleted item or numbered item | A paragraph or a list item |
+| A Word table | The table drawing a Markdown table takes |
+| A sheet in a workbook | A heading with the sheet's name, then its rows as a record table |
+| A slide in a deck | A heading with the slide's title, then the words in its boxes |
+
+**An edit is written back into the file it came out of, and nothing else in that file is touched.** Only the part holding the words is rewritten; the styles, the theme, the comments, the tracked changes, the charts and the macros are copied across exactly as they were, because nothing here reads them and nothing here rewrites them. An OpenDocument file keeps the first part that says what it is, in the place a computer looks for it.
+
+A document with more than one part of words — a workbook of several sheets, a deck of several slides — is read whole and typed into on its first sheet or first slide. A block anywhere else is read rather than typed into, the same treatment a value the app cannot vouch for gets in a data file. The [code view](07-editing.md#code-view) shows the XML of the part the page is anchored to.
+
+A cell in a spreadsheet is typed into where it is drawn. Excel keeps almost every cell's text in one shared table rather than in the sheet, so what Leaftext writes is the cell itself, saying its own words: a cell that shared its text with another one stops sharing it, and the other cell reads what it always read.
+
+> [!NOTE]
+> Installing Leaftext [registers it for](../02-installation.md#file-associations) all six, though Word, Excel, PowerPoint and whatever opens an OpenDocument file each keep their own file types.
+
+Legacy `.doc`, `.xls` and `.ppt` files are a different format altogether and do not open.
 
 ## File encodings
 

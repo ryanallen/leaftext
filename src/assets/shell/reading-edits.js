@@ -375,7 +375,22 @@ function blockDomToSource(el) {
   if (currentDocumentFormat === 'xml') {
     return blockHoldsCommentWords(el) ? el.textContent : escapeTreeText(el.textContent);
   }
+  // A packaged document is XML inside a zip, so what a block writes is XML text, never Markdown: asterisks typed into a Word paragraph would be asterisks in the file.
+  if (OFFICE_FORMATS.includes(currentDocumentFormat)) return escapeTreeText(el.textContent);
   return blockDomToMarkdown(el);
+}
+
+// Word, Excel, PowerPoint and OpenDocument: the formats whose file is a zip of XML rather than a file somebody typed. Read off `DocumentFormat::source_shape` in `src/format.rs`, which is the one table saying which of the two a format is.
+const OFFICE_FORMATS = ['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp'];
+
+// Whether a sheet cell can be typed on. There is no proof against the source here and there cannot be: a workbook keeps its cell text in `xl/sharedStrings.xml`, so the words on screen are usually nowhere in the member this range points into. What is proved instead is the shape — the range is one whole cell element — and the host rewrites that element to say what was typed, which is what leaves a string two cells share alone.
+function officeCellTypeableInPlace(el) {
+  const start = Number(el.dataset.cellStart);
+  const end = Number(el.dataset.cellEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  if (!src.startsWith('<c') || !(src.endsWith('</c>') || src.endsWith('/>'))) return null;
+  return { start, end };
 }
 
 // Whether this is the box holding a comment's words rather than an element's. The class the renderer draws it with is the mark, because the words sit inside the fold rather than being it.
@@ -603,6 +618,8 @@ function liveEditOf(el, words) {
   }
   if (!el.__editingActive) return null;
   if (el.dataset.blockKind === 'table' && currentDocumentFormat === 'markdown') return null;
+  // A sheet cell waits for the click-out, for the reason a note's table does: the host writes a rewritten cell element rather than the words it was sent, so there is no length the page could move its own map by.
+  if (el.__officeCell) return null;
   const text = words === undefined ? blockDomToSource(el) : words;
   const span = el.__innerSpan;
   if (span) return { start: span.start, end: span.end, text, inner: true };
@@ -1602,6 +1619,16 @@ function bindEditableBlocks(format) {
       sourceBlocks.push(el);
     }
   });
+  // A workbook's cells, which are the one thing in a packaged document that can be typed on where it is drawn: a paragraph's range is its own XML and gets the raw-slice editor, and a cell's range is an element whose words are somewhere else entirely.
+  if (currentDocumentFormat === 'xlsx') {
+    body.querySelectorAll('table [data-cell-start]').forEach((el) => {
+      const cellSpan = officeCellTypeableInPlace(el);
+      if (!cellSpan) return;
+      el.__innerSpan = cellSpan;
+      el.__officeCell = true;
+      wysiwygBlocks.push(el);
+    });
+  }
   // A cell of a table is drawn from one leaf element, so it can answer the same question — but nothing walks a cell, because the pass above walks the names a block is found by. So the cells get a pass of their own, and the ones that cannot be proved are left to the table's own press to answer. The question is asked of anything in a table carrying the range rather than of a cell: where several elements folded into one cell, each is a span of its own and the cell carries no range at all.
   if (format === 'xml') {
     body.querySelectorAll('table [data-cell-start]').forEach((el) => {
@@ -1669,13 +1696,18 @@ function dataBlockKindOf(el) {
 // The formats `render_data_document` draws, read off its three call sites in `src/data.rs` and `src/ini.rs`. A page it drew gets the answer below, so a fourth format routed through it is one entry here rather than another spelling in the wiring.
 const DATA_RENDERER_FORMATS = ['json', 'yaml', 'ini'];
 
-// The data half of the same answer. A block the data renderer drew with no proven range looks exactly like the ones beside it that open, so silence reads as the page being broken rather than as the file being written a way nothing can place. The two lines split on what could not be proved: where a collection ends, or how a single value is spelled.
+// Every format drawn in those shapes, which is not the same list: `src/xml.rs` is a renderer of its own and writes `data-fields` and `data-table` itself, so a feed, sitemap, plist or TEI page is answered by the handler below without it being taught one thing about XML.
+const DATA_SHAPE_FORMATS = [...DATA_RENDERER_FORMATS, 'xml'];
+
+// The answer for every page drawn in the data shapes, whichever renderer drew it. A block with no proven range looks exactly like the ones beside it that open, so silence reads as the page being broken rather than as the file being written a way nothing can place. The two lines split on what could not be proved: where a collection ends, or how a single value is spelled.
 function wireDataClosedParts(body) {
   body.addEventListener('pointerdown', (event) => {
     const target = event.target;
     if (!target || !target.closest) return;
     // Something with a range under the pointer is a block that opens; it answers for itself.
     if (target.closest('[data-src-start]')) return;
+    // A value inside a tag opens too, and proves itself under a second name: `src/xml.rs` stamps `data-value-start` rather than a block's own name, because four other things read that one. Without this line an XML value that opens for typing is told it cannot be placed.
+    if (target.closest('[data-value-start]')) return;
     // The big heading over a file that names no title of its own is the file's name, and pressing it opens the rename box. It is answered, so it is not silent.
     if (target.closest('[data-borrowed-title]')) return;
     // The renderer says nothing about which block this is, so the page reads it off the shape it was drawn as.
@@ -1752,7 +1784,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
     if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
-    if (DATA_RENDERER_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
+    if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
 
     // An unlocked document with no blocks in it -- a new one -- has nothing to click into. Open its first line, or the page is unlocked and untypable.
     if (currentDocumentFormat === 'markdown' && !pendingCaret && !body.querySelector('[data-src-start]')) {

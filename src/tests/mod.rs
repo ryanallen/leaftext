@@ -37,6 +37,7 @@ mod markdown_github;
 mod markdown_rawhtml;
 mod markdown_render;
 mod minimap;
+mod office;
 mod png;
 mod query;
 mod reading_css_code_view;

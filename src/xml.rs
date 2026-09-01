@@ -79,9 +79,11 @@ pub(crate) fn xml_fallback_title(stem: &str) -> String {
 }
 
 /// Reading-view message for a file that isn't well-formed XML. roxmltree's error names the position, so show it — a bad file is usually a typo worth fixing.
+///
+/// It wears `data-error`, the same class the JSON and YAML notice wears, because this paragraph is the page talking rather than a value out of the file: without the class the closed-parts handler reads it as an unplaceable value and offers to edit the error message.
 pub(crate) fn xml_parse_error_html(error: &roxmltree::Error) -> String {
     format!(
-        "<p><strong>XML parse error.</strong> {}</p>",
+        "<p class=\"data-error\"><strong>XML parse error.</strong> {}</p>",
         encode_text(&error.to_string())
     )
 }

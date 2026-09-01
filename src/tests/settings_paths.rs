@@ -749,7 +749,7 @@ fn installer_claims_every_readable_extension() {
         "installer/src/plan.rs claims a different set of extensions from format.rs"
     );
 
-    // The bare extension key is what takes a file type off whatever opens it today, so the formats Leaftext is only offered for must not carry one: HTML stays with the browser, and plain text with Notepad.
+    // The bare extension key is what takes a file type off whatever opens it today, so the formats Leaftext is only offered for must not carry one: HTML stays with the browser, and plain text with Notepad. The six packaged formats are offered the same way and have a test of their own, because what each of them keeps is a whole application rather than a system default.
     for extension in ["html", "htm", "txt", "ini"] {
         assert!(
             !wxs.contains(&format!(r"Key='Software\Classes\.{extension}' Type=")),
@@ -771,6 +771,48 @@ fn installer_claims_every_readable_extension() {
             Some("Alternate")
         );
         assert_eq!(plist_strings(&entry, "LSItemContentTypes"), ["public.html"]);
+    }
+}
+
+/// The six packaged formats are offered and never taken. Word owns `.docx` on a machine that has Word, Excel owns `.xlsx` and PowerPoint owns `.pptx`, and taking a file type away from the application that owns it is the class of thing that has cost this app version numbers — so all three registry shapes claim them, the bare class key never names one, and neither installer makes Leaftext their default.
+#[test]
+fn the_installers_offer_the_packaged_formats_and_own_none_of_them() {
+    let wxs = include_str!("../../wix/main.wxs");
+    let entries = macos_document_type_entries();
+
+    for extension in ["docx", "xlsx", "pptx", "odt", "ods", "odp"] {
+        assert!(
+            !wxs.contains(&format!(r"Key='Software\Classes\.{extension}' Type=")),
+            "the MSI takes .{extension} away from the application that owns it"
+        );
+        assert!(
+            plan_owned_extensions()
+                .iter()
+                .all(|owned| *owned != extension),
+            "installer/src/plan.rs makes Leaftext the default handler for .{extension}"
+        );
+        let entry = entries
+            .iter()
+            .find(|entry| {
+                plist_strings(entry, "CFBundleTypeExtensions")
+                    .iter()
+                    .any(|item| item == extension)
+            })
+            .unwrap_or_else(|| panic!("macOS offers .{extension} files"));
+        assert_eq!(
+            plist_string(entry, "LSHandlerRank").as_deref(),
+            Some("Alternate"),
+            "Default rank here would take .{extension} from the app that owns it on every Mac that installs an update"
+        );
+        assert_eq!(
+            plist_string(entry, "CFBundleTypeIconFile").as_deref(),
+            Some("Leaf"),
+            "an entry claiming .{extension} and naming no icon leaves Finder a blank page"
+        );
+        assert!(
+            plist_strings(entry, "LSItemContentTypes").is_empty(),
+            "naming a content type for .{extension} makes Launch Services ignore the extension beside it"
+        );
     }
 }
 
@@ -1299,7 +1341,7 @@ fn a_cursor_rule_is_claimed_by_extension_rather_than_by_a_type_that_omits_it() {
 fn every_macos_file_type_claiming_extensions_names_the_icon() {
     let workflow = include_str!("../../.github/workflows/release-distributions.yml");
     let entries = macos_document_type_entries();
-    assert_eq!(entries.len(), 11, "the bundle claims eleven file types");
+    assert_eq!(entries.len(), 15, "the bundle claims fifteen file types");
 
     for entry in &entries {
         let name = plist_string(entry, "CFBundleTypeName").expect("every entry names its type");

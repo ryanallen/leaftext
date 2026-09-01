@@ -62,6 +62,11 @@ pub trait LeafHost {
         Err(no_such_host(path))
     }
 
+    /// Write a document that is bytes rather than text. A zipped document has no spelling to spend — its members carry their own — so it cannot go out through [`Self::save`], and a host with no disk refuses rather than guessing what writing an archive would mean.
+    fn save_bytes(&self, path: &Path, _bytes: &[u8]) -> io::Result<()> {
+        Err(no_such_host(path))
+    }
+
     /// The source changed by this much, as the range it replaced rather than the whole buffer. The host holds the buffer, so it is told rather than asked.
     fn splice_source(&self, _edit: SourceSplice<'_>) {}
 
@@ -185,7 +190,23 @@ impl LeafHost for DesktopHost<'_> {
     }
 
     fn save(&self, path: &Path, text: &SourceText) -> io::Result<()> {
+        // A package is an archive, and the text behind it is one member of that archive — writing it over the file would replace a Word document with a page of XML. So this refuses rather than writes, and [`Self::save_bytes`] is the only way a package leaves the app.
+        if crate::DocumentFormat::from_path(path).source_shape() == crate::SourceShape::Bytes {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!(
+                    "a {} is read here and not written yet",
+                    crate::DocumentFormat::from_path(path)
+                        .display_name()
+                        .to_lowercase()
+                ),
+            ));
+        }
         crate::write_source(path, &text.text, text.spelling)
+    }
+
+    fn save_bytes(&self, path: &Path, bytes: &[u8]) -> io::Result<()> {
+        std::fs::write(path, bytes)
     }
 
     fn open_link(&self, target: &str) {

@@ -268,7 +268,7 @@ If a small box says **the system administrator has set policies to prevent this 
 
 ### Opening files with it
 
-Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text and `.ini` stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
+Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`, `.odp`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text, `.ini` and Word, Excel, PowerPoint and OpenDocument files stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
 
 ## Learn it
 

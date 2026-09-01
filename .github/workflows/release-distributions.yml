@@ -398,6 +398,71 @@ jobs:
                   <string>txt</string>
                 </array>
               </dict>
+              <!-- Extensions only, for the reason the entries above give: a
+                   named UTI makes Launch Services ignore the extensions beside
+                   it, and these three each have one whoever installed Office
+                   owns. Alternate rank throughout: Word, Excel and PowerPoint
+                   own their own file types on a machine that has them, and
+                   taking one away from the app that owns it is the class of
+                   thing that has cost this app version numbers. -->
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>Word Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>docx</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>Excel Workbook</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>xlsx</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>PowerPoint Presentation</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>pptx</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>OpenDocument File</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>odt</string>
+                  <string>ods</string>
+                  <string>odp</string>
+                </array>
+              </dict>
               <dict>
                 <key>CFBundleTypeName</key>
                 <string>Source Code Document</string>

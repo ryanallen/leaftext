@@ -26,12 +26,14 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
     });
     cached.or_else(|| {
         let source = read_for_preview(&path, meta.len())?;
-        // The card walks no folder, so it is drawn by a host that promises no Previous/Next strip.
+        // A package is drawn from the file rather than from that source: what the read answers for one is a single member, and the document is the whole archive. The card walks no folder, so it is drawn by a host that promises no Previous/Next strip.
         let host = DesktopHost {
             no_pager_placeholder: true,
             ..DesktopHost::default()
         };
-        let html = opened_document_from_source_with_host(&source.text, &path, &host).html;
+        let html = opened_document_for_path_with_host(&path, &source.text, &host)
+            .ok()?
+            .html;
         LINK_PREVIEW_CACHE.with(|cache| {
             cache.borrow_mut().keep(
                 path,
@@ -57,8 +59,15 @@ fn read_for_preview(path: &Path, size: u64) -> Option<SourceText> {
         | DocumentFormat::Html
         | DocumentFormat::Text
         | DocumentFormat::Ini
+        // A package is unpacked whole or not at all, the way a tree format is parsed whole or not at all, so the same ceiling answers for it.
+        | DocumentFormat::Docx
+        | DocumentFormat::Xlsx
+        | DocumentFormat::Pptx
+        | DocumentFormat::Odt
+        | DocumentFormat::Ods
+        | DocumentFormat::Odp
         | DocumentFormat::Code => (size <= LINK_PREVIEW_WHOLE_FILE_BYTES)
-            .then(|| read_source(path).ok())
+            .then(|| read_document_source(path).ok())
             .flatten(),
     }
 }

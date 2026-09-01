@@ -20,6 +20,16 @@ check-installer:
 test:
     cargo test
 
+# Write the six sample Office documents into ../docs/tests/office/ and print where they
+# went, for somebody who wants to open one in Word or read one in Leaftext. They sit beside
+# the other sample documents in the plan tree, which is the folder somebody would look in.
+# They are built by the same code the reader tests assert against, which is the only
+# arrangement that tells a broken reader from a broken fixture. The one `#[ignore]`d test in
+# the suite, so `just verify` neither writes them nor reads them, and `#[cfg(test)]` keeps
+# every byte of the builders out of the app.
+make-test-docs:
+    cargo test --lib -- --ignored --nocapture tests::office::make_test_docs
+
 # Fail on a test that holds its subject by reading any `.rs` file as a string or as bytes.
 # What such a test holds is spelling: all ten of the event loop's passed with the behavior
 # they named deleted. Eighteen reads stay, one allowance row each, keyed on the exact

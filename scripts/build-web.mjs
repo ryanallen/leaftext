@@ -234,6 +234,13 @@ function pinnedEdit(step, text, blocks) {
       // A step marked `continuing` is a splice of a typing run after its first, which records no undo point of its own — so one press takes the whole run back however many times it paused.
       return { edit: 'block', start: span.start, end: span.end, text: step.text_in, undo: !step.continuing };
     }
+    // A workbook's cell is named by its own element rather than by a block, and its offsets are counted in bytes the way every block range is.
+    case 'sheet_cell': {
+      const at = text.indexOf(step.element);
+      if (at === -1) throw new Error(`the buffer does not hold ${JSON.stringify(step.element)}`);
+      const start = encoder.encode(text.slice(0, at)).length;
+      return { edit: 'block', start, end: start + encoder.encode(step.element).length, text: step.text_in };
+    }
     case 'cell': {
       const span = blockHolding(text, blocks, step.block);
       return {
@@ -273,11 +280,37 @@ function pinnedEdit(step, text, blocks) {
 
 const pinned = JSON.parse(readFileSync(join(root, 'web', 'buffer.json'), 'utf8'));
 const buffers = await instantiateCore(embed.file);
-const held = buffers.buffer.open(pinned.source, pinned.path);
+// Every pinned document on a buffer of its own, in order. A note takes every kind of edit; a workbook takes the one that is only ever its own, because its cell words are in the shared string table rather than in the member the buffer holds.
+for (const document of pinned.documents.slice(1)) {
+  const other = buffers.buffer.open(document.source, document.path);
+  if (!other) {
+    problems.push(`the embed module refused to open a buffer over ${document.path}`);
+    continue;
+  }
+  for (const [at, step] of document.steps.entries()) {
+    const before = buffers.buffer.source(other);
+    const answer = buffers.buffer.edit(other, pinnedEdit(step, before, buffers.buffer.render(other).blocks));
+    if (!answer) {
+      problems.push(`${document.path} step ${at} (${step.what}) came back with nothing at all`);
+      continue;
+    }
+    if (answer.changed !== step.changed) {
+      problems.push(`${document.path} step ${at} (${step.what}) says changed: ${answer.changed} and web/buffer.json pins ${step.changed}`);
+    }
+    const now = buffers.buffer.source(other);
+    if (now !== step.text) {
+      problems.push(`${document.path} step ${at} (${step.what}) left the module's buffer holding ${JSON.stringify(now)}, and the desktop's holds ${JSON.stringify(step.text)}`);
+    }
+  }
+  buffers.buffer.close(other);
+}
+
+const note = pinned.documents[0];
+const held = buffers.buffer.open(note.source, note.path);
 if (!held) {
-  problems.push('the embed module refused to open a buffer over the pinned document');
+  problems.push(`the embed module refused to open a buffer over ${note.path}`);
 } else {
-  for (const [at, step] of pinned.steps.entries()) {
+  for (const [at, step] of note.steps.entries()) {
     const before = buffers.buffer.source(held);
     const answer = buffers.buffer.edit(held, pinnedEdit(step, before, buffers.buffer.render(held).blocks));
     if (!answer) {

@@ -22,6 +22,17 @@ pub struct EditableDocument {
     undo_stack: Vec<String>,
     /// What each undo displaced, newest last, so a press too many can be walked forward again. A fresh undoable edit drops it: the future those snapshots belonged to no longer exists.
     redo_stack: Vec<String>,
+    /// The archive this buffer's text came out of, where the document is a package rather than a file somebody typed. `None` for the nine text formats, which are their own file.
+    package: Option<PackageBuffer>,
+}
+
+/// A package behind an edit buffer: the archive as it was read, and which member of it the buffer's text is.
+///
+/// The buffer holds one member because one splice, one undo stack and one save are what the whole editing model is; a save puts that member back and copies every other one byte for byte, which is why a chart, a theme, a tracked change and a macro survive an edit nothing here understands.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PackageBuffer {
+    pub bytes: Vec<u8>,
+    pub member: String,
 }
 
 impl EditableDocument {
@@ -39,7 +50,21 @@ impl EditableDocument {
             version: 0,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
+            package: None,
         }
+    }
+
+    /// The same, over a package: the buffer's text is the member named, and the archive travels with it so a save can put that member back into the file it came out of.
+    pub fn over_package(path: PathBuf, contents: SourceText, package: PackageBuffer) -> Self {
+        Self {
+            package: Some(package),
+            ..Self::new(path, contents)
+        }
+    }
+
+    /// The archive behind this buffer, where the document is a package.
+    pub fn package(&self) -> Option<&PackageBuffer> {
+        self.package.as_ref()
     }
 
     /// An empty document with no file behind it. `path` is the name it wears until the first save asks where it goes.
@@ -152,6 +177,23 @@ impl EditableDocument {
     /// Splice `replacement` into the buffer over byte range `[start, end)` — the core of source-anchored in-viewer editing. The range is clamped to the buffer and snapped outward to char boundaries so a bad offset can't panic or corrupt UTF-8; start past end is an insertion at `start`. Returns whether the dirty state changed.
     pub fn replace_range(&mut self, start: usize, end: usize, replacement: &str) -> bool {
         self.splice(start, end, replacement, true)
+    }
+
+    /// Rewrite a sheet cell to say `text`, as one undoable edit over the cell's own element.
+    ///
+    /// The words a workbook shows are usually not in the sheet at all — they are in `xl/sharedStrings.xml`, with the cell holding an index — so there is no run of words in this buffer to splice. What is spliced is the cell element, rewritten as an inline string, which reaches the same outcome without opening the shared table and so leaves a string two cells share exactly as it was. Answers whether anything was written: a range that is not a cell element is left alone rather than quietly turned into one.
+    pub fn replace_sheet_cell(&mut self, start: usize, end: usize, text: &str) -> bool {
+        // Only a workbook has cells written this way, and asking the format first is what stops a Markdown note that happens to hold the characters of a cell element being rewritten as one.
+        if self.format != DocumentFormat::Xlsx {
+            return false;
+        }
+        let Some(element) = self.text.get(start..end) else {
+            return false;
+        };
+        let Some(rewritten) = crate::office::sheet_cell_saying(element, text) else {
+            return false;
+        };
+        self.splice(start, end, &rewritten, true)
     }
 
     /// Like `replace_range` but records no undo snapshot — for the auto-saving checkbox path, which is deliberately not undoable, and for every splice of a typing run after its first, so a run that paused four times is still one press of undo.
@@ -288,7 +330,7 @@ impl EditableDocument {
         )
     }
 
-    /// The block source map for the live buffer: Markdown via pulldown-cmark offsets, XML via roxmltree node ranges, JSON, YAML and INI via their readers. The reading view attaches these to rendered blocks so an edit knows which source range to splice. JSON and YAML blocks are mapped but never editable — see `data.rs` for why.
+    /// The block source map for the live buffer: Markdown via pulldown-cmark offsets, XML via roxmltree node ranges, JSON, YAML and INI via their readers. A packaged format maps nothing, because this buffer holds one member of an archive and a page splicing into it would be writing over the wrong file. The reading view attaches these to rendered blocks so an edit knows which source range to splice. JSON and YAML blocks are mapped but never editable — see `data.rs` for why.
     pub fn block_source_map(&self) -> Vec<BlockSpan> {
         match self.format {
             DocumentFormat::Markdown => block_source_map(&self.text),
@@ -300,6 +342,13 @@ impl EditableDocument {
             DocumentFormat::Eml
             | DocumentFormat::Html
             | DocumentFormat::Text
+            // A package's blocks anchor to a member and a range, which this buffer holds one of; until it holds the archive, an office document is read rather than typed into.
+            | DocumentFormat::Docx
+            | DocumentFormat::Xlsx
+            | DocumentFormat::Pptx
+            | DocumentFormat::Odt
+            | DocumentFormat::Ods
+            | DocumentFormat::Odp
             | DocumentFormat::Code => Vec::new(),
         }
     }
@@ -341,6 +390,12 @@ impl EditableDocument {
             | DocumentFormat::Html
             | DocumentFormat::Text
             | DocumentFormat::Ini
+            | DocumentFormat::Docx
+            | DocumentFormat::Xlsx
+            | DocumentFormat::Pptx
+            | DocumentFormat::Odt
+            | DocumentFormat::Ods
+            | DocumentFormat::Odp
             | DocumentFormat::Code => Vec::new(),
         }
     }
@@ -356,6 +411,12 @@ impl EditableDocument {
             | DocumentFormat::Html
             | DocumentFormat::Text
             | DocumentFormat::Ini
+            | DocumentFormat::Docx
+            | DocumentFormat::Xlsx
+            | DocumentFormat::Pptx
+            | DocumentFormat::Odt
+            | DocumentFormat::Ods
+            | DocumentFormat::Odp
             | DocumentFormat::Code => Vec::new(),
         }
     }

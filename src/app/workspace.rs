@@ -60,14 +60,18 @@ impl Tab {
         !self.has_edit_for(path)
     }
 
-    /// The edit buffer for `path`, seeded from `contents` when there's no buffer yet. Re-editing the same document reuses it; a different document replaces it.
+    /// The edit buffer for `path`, seeded from `contents` when there's no buffer yet. Re-editing the same document reuses it; a different document replaces it. A package's buffer carries the archive its text came out of, so a save can put that one member back.
     pub(crate) fn edit_buffer(
         &mut self,
         path: &Path,
-        contents: SourceText,
+        contents: impl Into<DocumentSource>,
     ) -> &mut EditableDocument {
         if self.needs_edit_seed(path) {
-            self.edit = Some(EditableDocument::new(path.to_path_buf(), contents));
+            let DocumentSource { text, package } = contents.into();
+            self.edit = Some(match package {
+                Some(package) => EditableDocument::over_package(path.to_path_buf(), text, package),
+                None => EditableDocument::new(path.to_path_buf(), text),
+            });
         }
         self.edit.as_mut().expect("edit buffer just ensured")
     }

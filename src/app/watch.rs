@@ -309,7 +309,7 @@ pub(crate) fn reload_if_file_moved(reader: &mut Reader, file_watch: &mut FileWat
         return;
     };
     // Unreadable mid-save or briefly gone: leave the page as it is rather than dropping the answer over a read that would have settled.
-    let Ok(source) = read_source(&path) else {
+    let Ok(source) = read_document_source(&path) else {
         return;
     };
     let still_shown = reader
@@ -347,7 +347,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         return;
     }
 
-    let source = match read_source(&path) {
+    let source = match read_document_source(&path) {
         Ok(source) => source,
         // May be mid-save or briefly absent during an atomic rename; a later event delivers the settled contents.
         Err(error) => {
@@ -411,7 +411,14 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     }
 
     // Render through the same path as an initial open, reusing the content already read for the hash-gate.
-    let document = opened_document_from_source_with_host(&contents, &path, &DesktopHost::default());
+    let document =
+        match opened_document_for_path_with_host(&path, &contents, &DesktopHost::default()) {
+            Ok(document) => document,
+            Err(error) => {
+                eprintln!("Live reload: failed to read {}: {error}", path.display());
+                return;
+            }
+        };
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.title = document.title.clone();
         // Cache it, so switching away and back doesn't redo this render.

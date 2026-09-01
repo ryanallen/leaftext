@@ -724,6 +724,8 @@ fn malformed_xml_reports_where_it_broke() {
 
     assert!(title.is_none());
     assert_contains(&html, "<strong>XML parse error.</strong>");
+    // The notice wears the same class the JSON and YAML one does, so a press on it is never answered as a value somebody could edit: it is the page talking, and there is nothing in the file to open.
+    assert_contains(&html, "<p class=\"data-error\">");
     assert_contains(&html, "1:7");
 }
 

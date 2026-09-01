@@ -16,12 +16,25 @@ pub enum DocumentFormat {
     Html,
     Text,
     Ini,
+    Docx,
+    Xlsx,
+    Pptx,
+    Odt,
+    Ods,
+    Odp,
     Code,
+}
+
+/// How a format's files arrive: as text the loader decoded, or as the bytes on disk.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourceShape {
+    Text,
+    Bytes,
 }
 
 impl DocumentFormat {
     /// Every format, in the order the file dialog lists them. Callers derive their lists from this rather than restating one.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 15] = [
         Self::Markdown,
         Self::Xml,
         Self::Json,
@@ -30,6 +43,12 @@ impl DocumentFormat {
         Self::Html,
         Self::Text,
         Self::Ini,
+        Self::Docx,
+        Self::Xlsx,
+        Self::Pptx,
+        Self::Odt,
+        Self::Ods,
+        Self::Odp,
         Self::Code,
     ];
 
@@ -50,6 +69,13 @@ impl DocumentFormat {
             Self::Text => &["txt"],
             // A config file is a page of sections rather than a colored block, so it has its own reader and its own arm — which is why `SOURCE_DEFINITIONS` below does not name it.
             Self::Ini => &["ini"],
+            // The six packaged formats: a zip of XML rather than a file somebody typed. The macro-enabled spellings — `.docm`, `.xlsm`, `.pptm` — are not here; they are their own ticket.
+            Self::Docx => &["docx"],
+            Self::Xlsx => &["xlsx"],
+            Self::Pptx => &["pptx"],
+            Self::Odt => &["odt"],
+            Self::Ods => &["ods"],
+            Self::Odp => &["odp"],
             // Source endings come from `SOURCE_DEFINITIONS`; the file dialog asks `source_extensions` so this arm cannot become a second list.
             Self::Code => &[],
         }
@@ -89,7 +115,29 @@ impl DocumentFormat {
             Self::Html => "html",
             Self::Text => "text",
             Self::Ini => "ini",
+            // The code view shows one member of the package, and every member this app reads is XML.
+            Self::Docx | Self::Xlsx | Self::Pptx | Self::Odt | Self::Ods | Self::Odp => "xml",
             Self::Code => "text",
+        }
+    }
+
+    /// Whether this format's files reach the app as decoded text or as raw bytes.
+    ///
+    /// Text is the path every format had until an Office file arrived: the loader decodes by the byte order mark and refuses anything holding a zero byte, which is a file this app cannot render as words. A zipped format is that refusal's whole point — its second byte is `K` and its fifth is zero — so it has to reach its reader before any of that runs.
+    pub const fn source_shape(self) -> SourceShape {
+        match self {
+            Self::Markdown
+            | Self::Xml
+            | Self::Json
+            | Self::Yaml
+            | Self::Eml
+            | Self::Html
+            | Self::Text
+            | Self::Ini
+            | Self::Code => SourceShape::Text,
+            Self::Docx | Self::Xlsx | Self::Pptx | Self::Odt | Self::Ods | Self::Odp => {
+                SourceShape::Bytes
+            }
         }
     }
 
@@ -104,6 +152,12 @@ impl DocumentFormat {
             Self::Html => "HTML",
             Self::Text => "Text",
             Self::Ini => "INI",
+            Self::Docx => "Word document",
+            Self::Xlsx => "Excel workbook",
+            Self::Pptx => "PowerPoint presentation",
+            Self::Odt => "OpenDocument text",
+            Self::Ods => "OpenDocument spreadsheet",
+            Self::Odp => "OpenDocument presentation",
             Self::Code => "Source code",
         }
     }

@@ -656,33 +656,37 @@ fn the_desktop_renders_every_fixture_exactly_as_it_did_before_the_boundary() {
 fn a_buffer_edit_lands_on_the_bytes_both_sides_have_to_agree_on() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!("../../web/buffer.json"))
         .expect("the buffer fixture reads");
-    let source = fixture["source"].as_str().expect("a document to edit");
-    let path = PathBuf::from(fixture["path"].as_str().unwrap_or("notes.md"));
-    let steps = fixture["steps"].as_array().expect("steps to walk");
-
-    let mut edit = EditableDocument::new(path, SourceText::utf8(source.to_string()));
+    let documents = fixture["documents"].as_array().expect("documents to walk");
     let mut wrong = Vec::new();
 
-    for (at, step) in steps.iter().enumerate() {
-        let what = step["what"].as_str().unwrap_or("");
-        let before = edit.text().to_string();
-        apply_pinned_buffer_edit(&mut edit, step);
-        let changed = edit.text() != before;
+    for document in documents {
+        let source = document["source"].as_str().expect("a document to edit");
+        let path = PathBuf::from(document["path"].as_str().unwrap_or("notes.md"));
+        let name = path.display().to_string();
+        let steps = document["steps"].as_array().expect("steps to walk");
+        let mut edit = EditableDocument::new(path, SourceText::utf8(source.to_string()));
 
-        let expected_change = step["changed"].as_bool().unwrap_or(true);
-        if changed != expected_change {
-            wrong.push(format!(
-                "  step {at} ({what}) says changed: {expected_change} and the buffer {}",
-                if changed { "moved" } else { "did not move" }
-            ));
-        }
-        match step["text"].as_str() {
-            Some(expected) if expected == edit.text() => {}
-            _ => wrong.push(format!(
-                "  step {at} ({what}) is pinned as {} and the buffer now holds {}",
-                step["text"],
-                serde_json::Value::String(edit.text().to_string())
-            )),
+        for (at, step) in steps.iter().enumerate() {
+            let what = step["what"].as_str().unwrap_or("");
+            let before = edit.text().to_string();
+            apply_pinned_buffer_edit(&mut edit, step);
+            let changed = edit.text() != before;
+
+            let expected_change = step["changed"].as_bool().unwrap_or(true);
+            if changed != expected_change {
+                wrong.push(format!(
+                    "  {name} step {at} ({what}) says changed: {expected_change} and the buffer {}",
+                    if changed { "moved" } else { "did not move" }
+                ));
+            }
+            match step["text"].as_str() {
+                Some(expected) if expected == edit.text() => {}
+                _ => wrong.push(format!(
+                    "  {name} step {at} ({what}) is pinned as {} and the buffer now holds {}",
+                    step["text"],
+                    serde_json::Value::String(edit.text().to_string())
+                )),
+            }
         }
     }
 
@@ -732,6 +736,15 @@ fn apply_pinned_buffer_edit(edit: &mut EditableDocument, step: &serde_json::Valu
             } else {
                 edit.replace_range(start, end, text("text_in"));
             }
+        }
+        // A workbook's cell is named by its own element rather than by a block, because the buffer here is a sheet member and the blocks over it are rows, not cells.
+        Some("sheet_cell") => {
+            let element = text("element");
+            let start = edit
+                .text()
+                .find(element)
+                .unwrap_or_else(|| panic!("the buffer does not hold {element:?}"));
+            edit.replace_sheet_cell(start, start + element.len(), text("text_in"));
         }
         Some("cell") => {
             let (start, end) = range(edit, text("block"));

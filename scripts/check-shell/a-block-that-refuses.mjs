@@ -116,14 +116,17 @@ export function run() {
       press({ target: at([], looseName) });
       press({ target: at([], null) });
       press({ target: at([], notice) });
+      // A value inside a tag opens too and proves itself under a name of its own, so the field it is drawn in must not be told the page cannot place it.
+      press({ target: at(['[data-value-start]'], field) });
       if (said.length !== 5) throw new Error(`a block that answers was growled at: ${JSON.stringify(said)}`);
-      // And the page wires it, for every format the data renderer draws: a config file's headings are the same headings a YAML file's are, so a press on one that answers on the one and not the other is this fault by another name.
+      // And the page wires it, for every format drawn in these shapes: a config file's headings are the same headings a YAML file's are, and an XML page draws the same field rows out of a renderer of its own, so a press that answers on one and not another is this fault by another name.
       const inApp = read('app');
       const wasQuery = inApp.querySelector;
       const wasUnlocked = read('readingUnlocked');
       const wired = [
         { format: 'yaml', source: 'title: |\n  words\n' },
         { format: 'ini', source: '[server]\nhost = localhost\n' },
+        { format: 'xml', source: '<feed><entry><title>Words</title></entry></feed>' },
       ];
       try {
         read('readingUnlocked = true;');
@@ -149,10 +152,14 @@ export function run() {
         read("currentDocumentFormat = 'markdown'; currentDocumentSource = ''; currentDocumentBindsAnything = true;");
       }
 
-      // The list itself, pinned: dropping one leaves that format silent, and adding one the data renderer does not draw puts the sentence on a page whose blocks it says nothing true about.
+      // Both lists, pinned: dropping one leaves that format silent, and adding one that is not drawn in these shapes puts the sentence on a page whose blocks it says nothing true about.
       const formats = read('DATA_RENDERER_FORMATS');
       if ([...formats].sort().join() !== 'ini,json,yaml') {
         throw new Error(`the data renderer's formats are ${JSON.stringify(formats)}`);
+      }
+      const shaped = read('DATA_SHAPE_FORMATS');
+      if ([...shaped].sort().join() !== 'ini,json,xml,yaml') {
+        throw new Error(`the formats drawn in the data shapes are ${JSON.stringify(shaped)}`);
       }
     } finally {
       booted.leafToast = wasToast;

@@ -123,6 +123,32 @@ pub unsafe extern "C" fn leaf_render(
     into_length_prefixed(json.into_bytes())
 }
 
+/// The same render over a document's own **bytes** rather than its text, which is the only way a packaged format can arrive: a Word, Excel, PowerPoint or OpenDocument file is a zip, so there is no string to hand across. A text format arrives here too and is decoded exactly as the desktop decodes a file it read off the disk.
+///
+/// A null pointer back means the bytes are not a document that format can read — a `.docx` that is not an archive, or a text file holding a zero byte. One front end, three hosts: what the desktop draws for these six, a page drawing through this module draws too.
+///
+/// # Safety
+/// Both pointers must address that many initialized bytes, and both stay the page's to free.
+#[no_mangle]
+pub unsafe extern "C" fn leaf_render_bytes(
+    bytes_ptr: *const u8,
+    bytes_len: usize,
+    path_ptr: *const u8,
+    path_len: usize,
+) -> *mut u8 {
+    let Some(bytes) = borrow_bytes(bytes_ptr, bytes_len) else {
+        return std::ptr::null_mut();
+    };
+    let path = borrow_str(path_ptr, path_len).unwrap_or("document.md");
+    let Ok(document) =
+        leaftext::opened_document_from_bytes_with_host(bytes, Path::new(path), &PageHost)
+    else {
+        return std::ptr::null_mut();
+    };
+    let json = serde_json::to_string(&document).unwrap_or_else(|_| String::from("{}"));
+    into_length_prefixed(json.into_bytes())
+}
+
 /// Leaftext's own stylesheet — the themes, the tokens, the icons and the document rules, in the order they have to resolve in. The embedding page owns the frame; this is what makes what sits inside it a Leaftext document rather than someone's approximation of one.
 ///
 /// A theme is chosen by stamping `data-leaf-theme` and `data-leaf-appearance` on the root element, which is what the desktop's own page does.
@@ -556,8 +582,11 @@ fn apply_buffer_edit(edit: &mut EditableDocument, asked: &serde_json::Value) -> 
                     record_undo,
                 )
             });
-            if !cell_written {
-                let replacement = text("text").unwrap_or_default();
+            // Then a workbook's cell, exactly as the desktop's arm does it: the words a sheet shows are in its shared string table rather than in the member this range points into, so the cell element is rewritten to say them inline. It answers only for a range that really is a cell element, so an ordinary splice cannot be turned into one.
+            let replacement = text("text").unwrap_or_default();
+            let sheet_cell =
+                !cell_written && edit.replace_sheet_cell(at("start"), at("end"), replacement);
+            if !cell_written && !sheet_cell {
                 if record_undo {
                     edit.replace_range(at("start"), at("end"), replacement);
                 } else {

@@ -1,160 +1,188 @@
 {
-  "why": "The module's document buffer and the desktop's are the same EditableDocument, and the one thing that could quietly differ is the dispatch on top of it: which call an edit reaches, in what order, with which offsets. So every kind of edit is walked through one buffer here and the text after each is pinned. Both sides walk this file: the Rust test in src/tests/web_core.rs against the desktop's own buffer, and scripts/build-web.mjs against the built module. A step names its block by something the block's source contains and a splice by the text it lands after, so neither side carries a byte offset that a step above it would shift.",
-  "path": "notes.md",
-  "source": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [ ] wash the café ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n",
-  "steps": [
+  "why": "The module's document buffer and the desktop's are the same EditableDocument, and the one thing that could quietly differ is the dispatch on top of it: which call an edit reaches, in what order, with which offsets. So every kind of edit is walked through one buffer here and the text after each is pinned. Both sides walk this file: the Rust test in src/tests/web_core.rs against the desktop's own buffer, and scripts/build-web.mjs against the built module. A step names its block by something the block's source contains and a splice by the text it lands after, so neither side carries a byte offset that a step above it would shift. Each document in `documents` is walked on its own buffer, in order.",
+  "documents": [
     {
-      "what": "a code-view splice over a range counted in UTF-16 units, landing after an accent and before an emoji",
-      "kind": "splice",
-      "after": "wash the ",
-      "removed": 4,
-      "inserted": "tea",
-      "changed": true,
-      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [ ] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n"
+      "why": "Every kind of edit a note takes, walked in order over one document.",
+      "path": "notes.md",
+      "source": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [ ] wash the café ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n",
+      "steps": [
+        {
+          "what": "a code-view splice over a range counted in UTF-16 units, landing after an accent and before an emoji",
+          "kind": "splice",
+          "after": "wash the ",
+          "removed": 4,
+          "inserted": "tea",
+          "changed": true,
+          "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [ ] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n"
+        },
+        {
+          "what": "one task marker flipped, one ASCII byte for another, so nothing after it shifts",
+          "kind": "task",
+          "index": 0,
+          "changed": true,
+          "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n"
+        },
+        {
+          "what": "an inline edit over one block's whole source range",
+          "kind": "block",
+          "block": "The last paragraph.",
+          "text_in": "The last line.",
+          "changed": true,
+          "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last line.\n"
+        },
+        {
+          "what": "one table cell written on its own, so the rest of the table keeps the spacing somebody gave it",
+          "kind": "cell",
+          "block": "| a | b |",
+          "row": 1,
+          "column": 0,
+          "columns": 2,
+          "cell_text": "ONE",
+          "text_in": "| a | b |\n| --- | --- |\n| ONE | two |",
+          "changed": true,
+          "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| ONE | two |\n\nThe last line.\n"
+        },
+        {
+          "what": "two sibling blocks reordered, with the blank line between them left where it was",
+          "kind": "move",
+          "blocks": [
+            "| a | b |",
+            "The last line."
+          ],
+          "from": 1,
+          "to": 0,
+          "changed": true,
+          "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "one frontmatter field set, by the parser's own splice",
+          "kind": "field",
+          "key": "title",
+          "set": "Renamed",
+          "changed": true,
+          "text": "---\ntitle: Renamed\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "every item of a list field at once, written the way the file already writes one",
+          "kind": "field",
+          "key": "tags",
+          "items": [
+            "three",
+            "four"
+          ],
+          "changed": true,
+          "text": "---\ntitle: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "a field's key renamed, keeping its value and its place in the block",
+          "kind": "field",
+          "key": "title",
+          "rename": "heading",
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "a field removed",
+          "kind": "field",
+          "key": "heading",
+          "remove": true,
+          "changed": true,
+          "text": "---\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "the last undoable edit taken back, which is the removal above and not the two edits that record nothing",
+          "kind": "undo",
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "an edit naming nothing this buffer knows moves nothing at all",
+          "kind": "unknown",
+          "changed": false,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "the first pause of a typing run, which is the splice the whole run is taken back to",
+          "kind": "block",
+          "block": "The last line.",
+          "text_in": "The last line, typed",
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "a later pause in the same run, splicing over what the pause before it wrote and recording nothing",
+          "kind": "block",
+          "block": "The last line, typed",
+          "text_in": "The last line, typed on",
+          "continuing": true,
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "the commit that ends the run, which continues it too — the words on screen and the words in the buffer are the same by then",
+          "kind": "block",
+          "block": "The last line, typed on",
+          "text_in": "The last line, typed on and on.",
+          "continuing": true,
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on and on.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "one press of undo taking the whole run back, however many pauses it had in it",
+          "kind": "undo",
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "the press too many walked forward again, which brings the whole typing run back in one step",
+          "kind": "redo",
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on and on.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "undo once more, so there is a future standing for the edit below to drop",
+          "kind": "undo",
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "a fresh undoable edit, which ends the future the undo above left standing",
+          "kind": "block",
+          "block": "The last line.",
+          "text_in": "The last line. Again.",
+          "changed": true,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line. Again.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        },
+        {
+          "what": "redo after that edit, which has nothing left to bring back and so moves nothing",
+          "kind": "redo",
+          "changed": false,
+          "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line. Again.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+        }
+      ]
     },
     {
-      "what": "one task marker flipped, one ASCII byte for another, so nothing after it shifts",
-      "kind": "task",
-      "index": 0,
-      "changed": true,
-      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last paragraph.\n"
-    },
-    {
-      "what": "an inline edit over one block's whole source range",
-      "kind": "block",
-      "block": "The last paragraph.",
-      "text_in": "The last line.",
-      "changed": true,
-      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| one | two |\n\nThe last line.\n"
-    },
-    {
-      "what": "one table cell written on its own, so the rest of the table keeps the spacing somebody gave it",
-      "kind": "cell",
-      "block": "| a | b |",
-      "row": 1,
-      "column": 0,
-      "columns": 2,
-      "cell_text": "ONE",
-      "text_in": "| a | b |\n| --- | --- |\n| ONE | two |",
-      "changed": true,
-      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\n| a | b |\n| --- | --- |\n| ONE | two |\n\nThe last line.\n"
-    },
-    {
-      "what": "two sibling blocks reordered, with the blank line between them left where it was",
-      "kind": "move",
-      "blocks": [
-        "| a | b |",
-        "The last line."
-      ],
-      "from": 1,
-      "to": 0,
-      "changed": true,
-      "text": "---\ntitle: Notes\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "one frontmatter field set, by the parser's own splice",
-      "kind": "field",
-      "key": "title",
-      "set": "Renamed",
-      "changed": true,
-      "text": "---\ntitle: Renamed\ntags:\n  - one\n  - two\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "every item of a list field at once, written the way the file already writes one",
-      "kind": "field",
-      "key": "tags",
-      "items": [
-        "three",
-        "four"
-      ],
-      "changed": true,
-      "text": "---\ntitle: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "a field's key renamed, keeping its value and its place in the block",
-      "kind": "field",
-      "key": "title",
-      "rename": "heading",
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "a field removed",
-      "kind": "field",
-      "key": "heading",
-      "remove": true,
-      "changed": true,
-      "text": "---\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "the last undoable edit taken back, which is the removal above and not the two edits that record nothing",
-      "kind": "undo",
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "an edit naming nothing this buffer knows moves nothing at all",
-      "kind": "unknown",
-      "changed": false,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "the first pause of a typing run, which is the splice the whole run is taken back to",
-      "kind": "block",
-      "block": "The last line.",
-      "text_in": "The last line, typed",
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "a later pause in the same run, splicing over what the pause before it wrote and recording nothing",
-      "kind": "block",
-      "block": "The last line, typed",
-      "text_in": "The last line, typed on",
-      "continuing": true,
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "the commit that ends the run, which continues it too — the words on screen and the words in the buffer are the same by then",
-      "kind": "block",
-      "block": "The last line, typed on",
-      "text_in": "The last line, typed on and on.",
-      "continuing": true,
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on and on.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "one press of undo taking the whole run back, however many pauses it had in it",
-      "kind": "undo",
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "the press too many walked forward again, which brings the whole typing run back in one step",
-      "kind": "redo",
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line, typed on and on.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "undo once more, so there is a future standing for the edit below to drop",
-      "kind": "undo",
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "a fresh undoable edit, which ends the future the undo above left standing",
-      "kind": "block",
-      "block": "The last line.",
-      "text_in": "The last line. Again.",
-      "changed": true,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line. Again.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
-    },
-    {
-      "what": "redo after that edit, which has nothing left to bring back and so moves nothing",
-      "kind": "redo",
-      "changed": false,
-      "text": "---\nheading: Renamed\ntags:\n  - three\n  - four\n---\n\n# Notes\n\n- [x] wash the tea ☕\n- [x] rest\n\nThe last line. Again.\n\n| a | b |\n| --- | --- |\n| ONE | two |\n"
+      "why": "A workbook is the one document whose words are not in the buffer at all: every text cell takes its text from `xl/sharedStrings.xml` and holds an index into it, so what an edit rewrites is the cell element rather than any run of words. The buffer here is the sheet member, which is exactly what a package's buffer holds. Two cells share string 2, and the pinned text after the first step is what says the other one was left alone.",
+      "path": "figures.xlsx",
+      "source": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n  <sheetData>\n    <row r=\"1\"><c r=\"A1\" t=\"s\"><v>0</v></c><c r=\"B1\" t=\"s\"><v>1</v></c></row>\n    <row r=\"2\"><c r=\"A2\" s=\"1\" t=\"s\"><v>2</v></c><c r=\"B2\" t=\"s\"><v>2</v></c></row>\n  </sheetData>\n</worksheet>\n",
+      "steps": [
+        {
+          "what": "a shared-string cell rewritten to say its words inline, leaving the cell beside it pointing at the string they shared",
+          "kind": "sheet_cell",
+          "element": "<c r=\"A2\" s=\"1\" t=\"s\"><v>2</v></c>",
+          "text_in": "North",
+          "changed": true,
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n  <sheetData>\n    <row r=\"1\"><c r=\"A1\" t=\"s\"><v>0</v></c><c r=\"B1\" t=\"s\"><v>1</v></c></row>\n    <row r=\"2\"><c r=\"A2\" s=\"1\" t=\"inlineStr\"><is><t xml:space=\"preserve\">North</t></is></c><c r=\"B2\" t=\"s\"><v>2</v></c></row>\n  </sheetData>\n</worksheet>\n"
+        },
+        {
+          "what": "a cell typed empty, which a sheet writes as a cell holding nothing rather than as an empty string",
+          "kind": "sheet_cell",
+          "element": "<c r=\"B1\" t=\"s\"><v>1</v></c>",
+          "text_in": "",
+          "changed": true,
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n  <sheetData>\n    <row r=\"1\"><c r=\"A1\" t=\"s\"><v>0</v></c><c r=\"B1\"/></row>\n    <row r=\"2\"><c r=\"A2\" s=\"1\" t=\"inlineStr\"><is><t xml:space=\"preserve\">North</t></is></c><c r=\"B2\" t=\"s\"><v>2</v></c></row>\n  </sheetData>\n</worksheet>\n"
+        }
+      ]
     }
   ]
 }

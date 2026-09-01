@@ -156,7 +156,7 @@ impl Reader {
 
     /// The document for `path`: the tab's cached render when the file still hashes the same, a fresh render (cached on the tab) when not. The read is cheap; the render is what the cache saves.
     fn document_for(&mut self, index: usize, path: &Path) -> io::Result<OpenedDocument> {
-        let source = read_source(path)?;
+        let source = read_document_source(path)?;
         let hash = content_hash(&source.text);
         if let Some(cache) = self
             .workspace
@@ -168,7 +168,7 @@ impl Reader {
             return Ok(cache.document.clone());
         }
         let document =
-            opened_document_from_source_with_host(&source.text, path, &DesktopHost::default());
+            opened_document_for_path_with_host(path, &source.text, &DesktopHost::default())?;
         if let Some(tab) = self.workspace.tabs.get_mut(index) {
             tab.rendered = Some(RenderedCache {
                 path: path.to_path_buf(),

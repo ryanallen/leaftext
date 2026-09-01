@@ -92,6 +92,14 @@ fn suites_for(format: DocumentFormat) -> &'static [Suite] {
         | DocumentFormat::Html
         | DocumentFormat::Text
         | DocumentFormat::Ini
+        // Nothing comparable is published for the packaged formats either, and a
+        // suite of them would be a folder of binaries rather than a file of cases.
+        | DocumentFormat::Docx
+        | DocumentFormat::Xlsx
+        | DocumentFormat::Pptx
+        | DocumentFormat::Odt
+        | DocumentFormat::Ods
+        | DocumentFormat::Odp
         | DocumentFormat::Code => &[],
     }
 }
@@ -411,6 +419,12 @@ pub(super) fn read_case(suite: Suite, case: &Case) {
         | DocumentFormat::Html
         | DocumentFormat::Text
         | DocumentFormat::Ini
+        | DocumentFormat::Docx
+        | DocumentFormat::Xlsx
+        | DocumentFormat::Pptx
+        | DocumentFormat::Odt
+        | DocumentFormat::Ods
+        | DocumentFormat::Odp
         | DocumentFormat::Code => {}
     }
 }

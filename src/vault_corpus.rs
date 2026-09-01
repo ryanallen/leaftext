@@ -850,7 +850,14 @@ fn skipped_folder_labels(root: &Path, left_out: Vec<PathBuf>) -> Vec<String> {
 /// Read one document. `None` when it is gone or unreadable, which is how a deleted file leaves the corpus.
 pub(crate) fn read_document(path: &Path) -> Option<CorpusDocument> {
     // Decoded, not just read: a UTF-16 document in the vault should be findable by search and appear in the link graph like any other.
-    let mut text = read_source(path).ok()?.text;
+    let format = crate::DocumentFormat::from_path(path);
+    let mut text = match format.source_shape() {
+        crate::SourceShape::Text => read_source(path).ok()?.text,
+        // A package's words are inside its members, so the corpus reads the document rather than the file — otherwise a vault of Word files is listed in the pane and absent from search.
+        crate::SourceShape::Bytes => {
+            crate::office::document_text(&std::fs::read(path).ok()?, format)?
+        }
+    };
     if text.len() > MAX_DOCUMENT_BYTES {
         // Cut on a character boundary, never mid-codepoint.
         let mut cut = MAX_DOCUMENT_BYTES;

@@ -20,6 +20,8 @@ mod text;
 pub(crate) use text::*;
 mod ini;
 pub(crate) use ini::*;
+/// Word, Excel, PowerPoint and OpenDocument files: the packaged formats, which arrive as bytes rather than as text.
+mod office;
 mod theme;
 pub(crate) use markdown::*;
 pub use markdown::{
@@ -48,7 +50,7 @@ mod format;
 pub use format::{
     all_document_extensions, is_listed_document_path, is_supported_document_path,
     source_definition, source_definitions, source_extensions, DocumentFormat, SourceDefinition,
-    MARKDOWN_EXPORT_EXTENSIONS,
+    SourceShape, MARKDOWN_EXPORT_EXTENSIONS,
 };
 mod folder_tree;
 pub use folder_tree::{read_folder_listing, FolderCrumb, FolderListing};
@@ -88,8 +90,8 @@ pub use code_intel::{
 mod editing;
 pub use editing::{
     block_source_map, kind_is_editable, table_cell_replacement, table_source_map, task_entries,
-    task_marker_offsets, BlockSpan, EditableDocument, TableCellMap, TableComment, TableMap,
-    TableRowMap, TaskEntry,
+    task_marker_offsets, BlockSpan, EditableDocument, PackageBuffer, TableCellMap, TableComment,
+    TableMap, TableRowMap, TaskEntry,
 };
 mod encoding;
 pub use encoding::{
@@ -487,8 +489,7 @@ fn normalize_recent_path(path: &Path) -> PathBuf {
 
 pub fn load_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
     let path = path.as_ref();
-    let source = read_source(path)?;
-    Ok(opened_document_from_source(&source.text, path))
+    opened_document_from_bytes(&fs::read(path)?, path)
 }
 
 /// What a tab is called: the file's own name without its suffix, never the document's heading — a tab strip is a list of files, and two notes titled the same are still two files.
@@ -497,6 +498,138 @@ pub fn tab_title_from_path(path: &Path) -> String {
         .and_then(|stem| stem.to_str())
         .map(str::to_string)
         .unwrap_or_else(|| path.display().to_string())
+}
+
+/// Render a file's bytes, decoding them first where the path's format is one that arrives as text. The counterpart to [`opened_document_from_source`] for a format whose file is not text at all, and the one place that decides which of the two a path takes — so the loader asks this rather than choosing for itself.
+///
+/// Fails where a text format's bytes are not text (the zero-byte refusal, unchanged) and where a byte-shaped format's bytes are not a document its reader can read. That is deliberately not the total fallback [`DocumentFormat::from_path`] gives an unknown extension: an unreadable `.docx` opening as Markdown would draw a page of zip noise and call it a document.
+pub fn opened_document_from_bytes(
+    bytes: &[u8],
+    path: impl AsRef<Path>,
+) -> io::Result<OpenedDocument> {
+    opened_document_from_bytes_with_host(bytes, path.as_ref(), &DesktopHost::default())
+}
+
+/// The same, told who answers what a render cannot get from the document itself.
+pub fn opened_document_from_bytes_with_host(
+    bytes: &[u8],
+    path: impl AsRef<Path>,
+    host: &dyn LeafHost,
+) -> io::Result<OpenedDocument> {
+    let path = path.as_ref();
+    let format = DocumentFormat::from_path(path);
+    match format.source_shape() {
+        SourceShape::Text => {
+            let source = decode_source(bytes).map_err(|message| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("{} ({})", message, path.display()),
+                )
+            })?;
+            Ok(opened_document_from_source_with_host(
+                &source.text,
+                path,
+                host,
+            ))
+        }
+        SourceShape::Bytes => office::opened_document_from_office(bytes, path, format, host),
+    }
+}
+
+/// A document's source text: the file decoded where its format arrives as text, and the anchored member's XML where it arrives as a package. What the code view shows and what a hash gate compares — a package's own source is the one member the app reads it through, because the rest of the archive is bytes nobody typed.
+pub fn read_document_source(path: impl AsRef<Path>) -> io::Result<SourceText> {
+    Ok(read_document_for_editing(path)?.text)
+}
+
+/// What an edit buffer is opened over: the document's source text, and — where the document is a package — the archive that text came out of and the member it is. One read, because the buffer needs both and reading the file twice invites the two halves to disagree.
+pub fn read_document_for_editing(path: impl AsRef<Path>) -> io::Result<DocumentSource> {
+    let path = path.as_ref();
+    let format = DocumentFormat::from_path(path);
+    match format.source_shape() {
+        SourceShape::Text => Ok(DocumentSource {
+            text: read_source(path)?,
+            package: None,
+        }),
+        SourceShape::Bytes => {
+            let bytes = fs::read(path)?;
+            let (text, member) = office::anchored_member_source(&bytes, path, format)?;
+            Ok(DocumentSource {
+                text,
+                package: Some(PackageBuffer { bytes, member }),
+            })
+        }
+    }
+}
+
+/// A document as an edit buffer takes it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocumentSource {
+    pub text: SourceText,
+    /// The archive behind a package, or `None` for a file somebody typed.
+    pub package: Option<PackageBuffer>,
+}
+
+/// Text on its own is a document with no archive behind it, which is every format but the six packaged ones.
+impl From<SourceText> for DocumentSource {
+    fn from(text: SourceText) -> Self {
+        Self {
+            text,
+            package: None,
+        }
+    }
+}
+
+/// The document an edit buffer now holds, drawn from the buffer rather than from the file — which is what the reading view shows while there are unsaved edits.
+///
+/// A package is drawn from its own archive with the anchored member replaced by what the buffer holds, so an edit is on screen before it is saved the way an edit to a note is. Reading the file instead would draw the last save, and a reader who typed a word would watch nothing happen.
+pub fn opened_document_from_buffer_with_host(
+    edit: &EditableDocument,
+    path: &Path,
+    host: &dyn LeafHost,
+) -> io::Result<OpenedDocument> {
+    match edit.package() {
+        Some(package) => opened_document_from_bytes_with_host(
+            &office::archive_with_member(&package.bytes, &package.member, edit.text())?,
+            path,
+            host,
+        ),
+        None => Ok(opened_document_from_source_with_host(
+            edit.text(),
+            path,
+            host,
+        )),
+    }
+}
+
+/// Write an edit buffer to its own path through `host`: the text spelled the way the file arrived, or — where the document is a package — the whole archive with the anchored member replaced by what the buffer now holds.
+///
+/// The one door a document leaves the app by, so the question of which of the two a path takes is answered once. [`LeafHost::save`] refuses a package outright, which is what stops any other route writing one member's XML over a whole Word file.
+pub fn save_editable_document(host: &dyn LeafHost, edit: &EditableDocument) -> io::Result<()> {
+    match edit.package() {
+        Some(package) => host.save_bytes(
+            &edit.path,
+            &office::archive_with_member(&package.bytes, &package.member, edit.text())?,
+        ),
+        None => host.save(
+            &edit.path,
+            &SourceText {
+                text: edit.text().to_string(),
+                spelling: edit.spelling,
+            },
+        ),
+    }
+}
+
+/// The document at `path`, for a caller that has already read its source for a hash gate of its own: the text it read where the format arrives as text, and the file's own bytes where it does not. One call rather than a shape test at every render site.
+pub fn opened_document_for_path_with_host(
+    path: &Path,
+    source: &str,
+    host: &dyn LeafHost,
+) -> io::Result<OpenedDocument> {
+    match DocumentFormat::from_path(path).source_shape() {
+        SourceShape::Text => Ok(opened_document_from_source_with_host(source, path, host)),
+        SourceShape::Bytes => opened_document_from_bytes_with_host(&fs::read(path)?, path, host),
+    }
 }
 
 /// Render source already in hand, picking the renderer by the path's format: the counterpart to [`load_document`] for live reload's hash-gated bytes and the code view's unsaved edits. The one routing table, because a second one drifts.
@@ -547,6 +680,13 @@ pub fn opened_document_from_source_with_host(
             render_text_document,
             host,
         ),
+        // A package reaches this table only as one member's own text — the loader sends the file itself down the byte path — and that member is XML, which is what this draws.
+        DocumentFormat::Docx
+        | DocumentFormat::Xlsx
+        | DocumentFormat::Pptx
+        | DocumentFormat::Odt
+        | DocumentFormat::Ods
+        | DocumentFormat::Odp => opened_document_from_xml_with_host(source, path, host),
         DocumentFormat::Code => opened_document_from_code(source, path, host),
         DocumentFormat::Markdown => opened_document_from_markdown_with_host(source, path, host),
     }
@@ -651,7 +791,7 @@ pub fn opened_document_from_eml(eml: &str, path: impl AsRef<Path>) -> OpenedDocu
 pub(crate) const BORROWED_TITLE_ATTR: &str = " data-borrowed-title";
 
 /// Render a document that is a tree rather than prose — every format but Markdown — into an `OpenedDocument`. They differ only in the reader that turns source into HTML; the shell around it is the same, and none of them can be reconstructed from the DOM, so each sends its `source` along.
-fn opened_document_from_tree(
+pub(crate) fn opened_document_from_tree(
     source: &str,
     path: &Path,
     format: DocumentFormat,

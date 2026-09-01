@@ -25,6 +25,13 @@ pub(crate) fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
         | DocumentFormat::Eml
         | DocumentFormat::Text
         | DocumentFormat::Ini
+        // A package's links are written in its relationship parts rather than in its words, so nothing here scans one; a Word file's hyperlinks are their own work.
+        | DocumentFormat::Docx
+        | DocumentFormat::Xlsx
+        | DocumentFormat::Pptx
+        | DocumentFormat::Odt
+        | DocumentFormat::Ods
+        | DocumentFormat::Odp
         | DocumentFormat::Code => Vec::new(),
         DocumentFormat::Markdown => markdown_links(content, source_abs),
     };

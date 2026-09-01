@@ -58,7 +58,10 @@ pub(crate) fn source_payload_response(uri: &str) -> SourcePayload {
 
 /// Render a tab's reading view from its edit buffer, so unsaved edits show. The buffer's format came from its path, so the shared router picks the same renderer an initial open would have.
 pub(crate) fn reading_document_from_buffer(edit: &EditableDocument, path: &Path) -> OpenedDocument {
-    opened_document_from_source_with_host(edit.text(), path, &DesktopHost::default())
+    // A package is drawn from its archive with the buffer's member put back, so an unsaved edit is on screen. A buffer that cannot be packed back — nothing has managed it, but the answer cannot be a panic — falls back to its own text, which for a package is the member the code view shows.
+    opened_document_from_buffer_with_host(edit, path, &DesktopHost::default()).unwrap_or_else(
+        |_| opened_document_from_source_with_host(edit.text(), path, &DesktopHost::default()),
+    )
 }
 
 /// Why an edit buffer could not be seeded, as the facts rather than a sentence. The window and the ask pipe word their own from these, because a reader looking at a growl and a caller reading the answer as text want different things said.
@@ -81,12 +84,15 @@ fn seeded_active_edit<'a>(
         .get(index)
         .is_some_and(|tab| tab.needs_edit_seed(&path));
     let contents = if needs_seed {
-        match read_source(&path) {
+        match read_document_for_editing(&path) {
             Ok(contents) => contents,
             Err(error) => return Err(SeedRefusal::Unreadable { path, error }),
         }
     } else {
-        SourceText::utf8(String::new())
+        DocumentSource {
+            text: SourceText::utf8(String::new()),
+            package: None,
+        }
     };
     let Some(tab) = workspace.tabs.get_mut(index) else {
         return Err(SeedRefusal::NothingOpen);
@@ -295,13 +301,7 @@ pub(crate) fn save_active_document(
     let text = edit.text().to_string();
     let path_str = path.display().to_string();
 
-    let (script, written) = match DesktopHost::default().save(
-        &path,
-        &SourceText {
-            text: text.clone(),
-            spelling: edit.spelling,
-        },
-    ) {
+    let (script, written) = match save_editable_document(&DesktopHost::default(), edit) {
         Ok(()) => {
             after_document_saved(edit, &text, file_watch, vault_state, refresh_book, webview);
             (save_result_script(&path_str, true, None), Ok(()))
@@ -358,6 +358,10 @@ pub(crate) fn apply_block_edit(
         ) {
             return Ok(());
         }
+    }
+    // A workbook's cell is the one place the drawn words are not in the buffer at all — they are in the shared string table, with the cell holding an index — so what the page sends over a cell element is the words, and the cell is rewritten to say them inline. Nothing else matches: the rewrite answers only for a range that really is a cell element, so an ordinary splice cannot be quietly turned into one.
+    if edit.replace_sheet_cell(start, end, text) {
+        return Ok(());
     }
     if record_undo {
         edit.replace_range(start, end, text);
@@ -474,13 +478,7 @@ pub(crate) fn autosave_active_buffer(
         return Ok(());
     };
     let text = edit.text().to_string();
-    match DesktopHost::default().save(
-        &edit.path,
-        &SourceText {
-            text: text.clone(),
-            spelling: edit.spelling,
-        },
-    ) {
+    match save_editable_document(&DesktopHost::default(), edit) {
         Ok(()) => {
             after_document_saved(edit, &text, file_watch, vault_state, refresh_book, webview);
             Ok(())
@@ -664,13 +662,7 @@ pub(crate) fn flip_task_and_save(
         .get(offset)
         .is_some_and(|byte| *byte != b' ');
     let text = edit.text().to_string();
-    match DesktopHost::default().save(
-        &edit.path,
-        &SourceText {
-            text: text.clone(),
-            spelling: edit.spelling,
-        },
-    ) {
+    match save_editable_document(&DesktopHost::default(), edit) {
         Ok(()) => {
             after_document_saved(edit, &text, file_watch, vault_state, refresh_book, webview);
         }

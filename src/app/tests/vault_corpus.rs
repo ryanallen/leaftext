@@ -838,6 +838,12 @@ fn the_vaults_text_is_patched_for_every_format_the_watcher_reports() {
             corpus.covers(&changed),
             "a new .{extension} under the vault must be the corpus's business"
         );
+        // A packaged format's file is an archive, and five bytes of prose is not one — so this fixture can only ask the boundary question of those six. That a real Word file joins the corpus with its own words in it is proved beside the readers, in `a_vault_reads_a_word_files_words`.
+        if leaftext::DocumentFormat::from_extension(extension)
+            .is_some_and(|format| format.source_shape() == leaftext::SourceShape::Bytes)
+        {
+            continue;
+        }
         assert!(
             corpus.refresh(&changed),
             "a new .{extension} under the vault must join the corpus"
